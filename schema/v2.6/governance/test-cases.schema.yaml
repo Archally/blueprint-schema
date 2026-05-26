@@ -1,0 +1,350 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Test Cases
+description: "Governance Plane: Test cases organized as happy-path, edge-case, and error-case suites. Owns validates references as the authoritative source of test-to-blueprint traceability."
+type: object
+additionalProperties: false
+required:
+  - version
+properties:
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version. Bump minor for new tests, patch for assertion updates."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: "Bounded context this test-cases file belongs to."
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default. Entities inherit unless overridden."
+  happy_path:
+    type: array
+    description: "Tests for normal, expected operation. Validates primary success scenarios — the golden path. Every blueprint should have at least one."
+    items:
+      $ref: "#/$defs/test_case"
+  edge_cases:
+    type: array
+    description: "Tests for boundary conditions and unusual but valid inputs: empty collections, maximum values, concurrent access, unusual combinations."
+    items:
+      $ref: "#/$defs/test_case"
+  error_cases:
+    type: array
+    description: "Tests for failure scenarios and error handling. Validates graceful failure, correct error messages, and invariant maintenance."
+    items:
+      $ref: "#/$defs/test_case"
+  fitness_functions:
+    type: array
+    description: "Architectural fitness functions — automated constraints validated against the blueprint structure itself. Examples: No service may have more than 5 direct dependencies; Every command operation must have at least one entry in produces."
+    items:
+      $ref: "#/$defs/fitness_function"
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+$defs:
+
+  fitness_function:
+    type: object
+    description: "Architectural fitness function — automated constraint validated against the blueprint structure itself."
+    additionalProperties: false
+    required: [id, name, assertion]
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/fitness_function_ref"
+        description: "Unique fitness function identifier (FF001, FF002, etc.)."
+      name:
+        type: string
+        description: "Human-readable fitness function name."
+      description:
+        type: string
+        description: "What this fitness function validates and why."
+      scope:
+        type: string
+        enum: [operation, concept, rule, service, dependency, story, cross-cutting]
+        description: "Blueprint layer this fitness function targets."
+      assertion:
+        type: string
+        description: "The constraint expression to evaluate against the blueprint graph."
+      severity:
+        type: string
+        enum: [error, warning, info]
+        default: warning
+        description: "How to treat violations: error=block, warning=report, info=log."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  test_case:
+    type: object
+    description: "A single test case. Minimum: id, name, summary, validates."
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - validates
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/test_ref"
+        description: "Unique test ID. Prefix indicates suite: TC=happy-path, EC=edge-case, ER=error-case."
+      description:
+        type: string
+        description: "Human-readable description."
+      name:
+        type: string
+        description: "Human-readable scenario name (e.g. 'Submit order with valid items')."
+      summary:
+        type: string
+        maxLength: 120
+        description: "One-line summary for listings (≤120 chars). Self-contained."
+      validates:
+        $ref: "#/$defs/validates_refs"
+        description: "What this test proves. Authoritative source for test-to-blueprint traceability."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Test version for lifecycle tracking."
+      given:
+        $ref: "#/$defs/test_setup"
+        description: "Initial state and preconditions (Arrange phase)."
+      expected_result:
+        $ref: "#/$defs/expected_result"
+        description: "Expected outcome (Assert phase). All fields optional — use what's relevant."
+      note:
+        type: string
+        description: "Additional context for test reviewers. Useful for non-obvious logic."
+      golden_output:
+        type: string
+        description: "Expected output as inline multiline content or a file path (e.g. ./golden/TC001.txt). Tooling determines interpretation."
+      counter_example:
+        type: object
+        description: "Documents what WRONG behavior looks like. Helps prevent future regressions from being mistaken for correct behavior."
+        additionalProperties: false
+        properties:
+          description:
+            type: string
+            description: "What incorrect behavior this test guards against."
+          wrong_expect:
+            type: string
+            description: "What a wrong implementation might produce."
+          wrong_output:
+            type: string
+            description: "Example of incorrect output."
+      contract:
+        type: object
+        description: "Contract evidence linking this test to a formal API contract."
+        additionalProperties: false
+        required:
+          - kind
+          - file
+        properties:
+          kind:
+            type: string
+            description: "Contract format (e.g. pact, openapi, asyncapi)."
+          file:
+            type: string
+            description: "Path to the contract file."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Test case-level ownership override."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  validates_refs:
+    type: object
+    description: "Typed references to blueprint entities this test validates. Tests OWN these links — authoritative for traceability."
+    additionalProperties: false
+    properties:
+      rules:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/rule_ref"
+        description: "Rules this test validates."
+      operations:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations this test exercises."
+      concepts:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+        description: "Concepts this test verifies behavior of."
+      models:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/model_ref"
+        description: "Models this test validates structure of."
+      stories:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/story_ref"
+        description: "Stories this test validates flow of."
+      ui:
+        type: object
+        description: "UI elements this test validates."
+        additionalProperties: false
+        properties:
+          screens:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/screen_ref"
+            description: "Screens this test validates."
+          actions:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/ui_action_ref"
+            description: "UI actions this test validates."
+      questions:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/question_ref"
+        description: >
+          Questions this test validates the answer quality of.
+          E.g., a test may verify that "What is the current order status?"
+          is answered correctly under various conditions.
+      ownership:
+        type: array
+        items:
+          type: string
+          pattern: "^([a-z][a-z0-9-]*\\.)?(PRT|DPT|TM)\\d{3}$"
+        description: "Org ownership refs (party, department, or team) this test validates."
+
+  test_setup:
+    type: object
+    description: "Initial state and preconditions for the test (Arrange phase of Arrange-Act-Assert)."
+    additionalProperties: false
+    properties:
+      description:
+        type: string
+        description: "Human-readable description of the initial state."
+      source:
+        type: string
+        description: "Source data or fixture path (e.g. ./fixtures/orders.json)."
+      args:
+        type: array
+        items:
+          type: string
+        description: "Command-line arguments or operation parameters."
+      state:
+        type: object
+        additionalProperties: true
+        description: "Named state conditions that must be true before the test. Free-form for flexibility."
+      fixtures:
+        type: array
+        description: "Data fixtures required for this test."
+        items:
+          type: object
+          additionalProperties: false
+          properties:
+            path:
+              type: string
+              description: "Fixture file path."
+            description:
+              type: string
+              description: "What this fixture provides."
+            size:
+              type: integer
+              description: "Expected size in bytes."
+            mtime:
+              type: string
+              description: "Expected modification time."
+
+  expected_result:
+    type: object
+    description: "Expected test outcome (Assert phase). Covers result codes, output assertions, format checks, and behavior."
+    additionalProperties: false
+    properties:
+      code:
+        type: integer
+        description: "Expected result code: CLI exit code (0=success) or HTTP status (200, 400, etc.)."
+      status:
+        type: string
+        enum: [success, failure, error]
+        description: "High-level outcome: success=intended completion, failure=domain rejection, error=unexpected fault."
+      counts:
+        type: object
+        description: "Expected numeric counts in output. Useful for collection-processing operations."
+        additionalProperties: false
+        properties:
+          missing:
+            type: integer
+            description: "Expected count of missing items."
+          extra:
+            type: integer
+            description: "Expected count of extra/unexpected items."
+          different:
+            type: integer
+            description: "Expected count of changed items."
+          total:
+            type: integer
+            description: "Expected total item count."
+      output:
+        type: object
+        description: "Assertions about output content: string matching, structural lists, and format checks."
+        additionalProperties: false
+        properties:
+          contains:
+            type: array
+            items:
+              type: string
+            description: "Strings that must appear in the output. Each checked independently."
+          not_contains:
+            type: array
+            items:
+              type: string
+            description: "Strings that must NOT appear in the output."
+          lists:
+            type: object
+            description: "Structural assertions about collections in output (task #3: nested under output)."
+            additionalProperties: false
+            properties:
+              missing_paths:
+                type: array
+                items:
+                  type: string
+                description: "Paths/items expected to be reported as missing."
+              extra_paths:
+                type: array
+                items:
+                  type: string
+                description: "Paths/items expected to be reported as extra."
+              different_paths:
+                type: array
+                items:
+                  type: string
+                description: "Paths/items expected to be reported as different."
+          sections:
+            type: array
+            items:
+              type: string
+            description: "Expected sections in output (e.g. Header, Summary, Details). Validates structural layout."
+          format:
+            type: string
+            description: "Expected output format (e.g. table, json, markdown)."
+          regex:
+            type: string
+            description: "Regular expression the output must match. For precise format validation."
+          prefix:
+            type: string
+            description: "Expected prefix of the output (e.g. '## Backup Report')."
+      model:
+        type: object
+        description: "Expected output data model. Reference to models.schema.yaml or inline JSON Schema."
+        additionalProperties: false
+        properties:
+          $ref:
+            type: string
+            description: "Reference to a model (e.g. ./models/orders.yaml#/components/schemas/OrderConfirmed)."
+          schema:
+            type: object
+            description: "Inline JSON Schema for the expected output structure."
+      behavior:
+        type: string
+        description: "Free-text expected behavior when structural assertions are insufficient."

@@ -1,0 +1,545 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Quality
+description: "Design Plane: Non-functional requirements as first-class entities. Covers metrics, KPIs, SLOs, SLAs, security, compliance, resilience, and observability. Traceability chain: goal→KPI→metric→operation/concept→SLO→SLA."
+type: object
+additionalProperties: false
+required:
+  - version
+properties:
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version of this quality document."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: "Bounded context this quality file belongs to."
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default. Entities inherit unless overridden."
+  metrics:
+    type: array
+    description: "Quantitative measurements of system behavior. Foundation for KPIs, SLOs, and observability — define what you measure before defining targets."
+    items:
+      $ref: "#/$defs/metric"
+  kpis:
+    type: array
+    description: "Key Performance Indicators — metrics with business targets. Link operational measurements to strategic goals from motivation.schema.yaml."
+    items:
+      $ref: "#/$defs/kpi"
+  slos:
+    type: array
+    description: "Service Level Objectives — operational reliability targets the engineering team commits to. Based on metrics, constrain operations."
+    items:
+      $ref: "#/$defs/slo"
+  slas:
+    type: array
+    description: "Service Level Agreements — external contractual commitments built on SLOs. Carry business consequences (penalties, credits) when breached."
+    items:
+      $ref: "#/$defs/sla"
+  security:
+    type: array
+    description: "Security requirements governing operations and data: authentication, authorization, encryption, access control, audit."
+    items:
+      $ref: "#/$defs/security_requirement"
+  compliance:
+    type: array
+    description: "Regulatory, privacy, and data retention requirements. Links concepts to the regulations that govern them."
+    items:
+      $ref: "#/$defs/compliance_requirement"
+  resilience:
+    type: array
+    description: "Availability, disaster recovery, and backup requirements. Defines RTO, RPO, and failover strategies."
+    items:
+      $ref: "#/$defs/resilience_requirement"
+  observability:
+    type: object
+    description: "Observability strategy across four pillars: metrics, logs, traces, events. Each pillar is optional — start with what you need."
+    additionalProperties: false
+    properties:
+      metrics:
+        $ref: "#/$defs/observability_pillar"
+        description: "Numeric measurements pillar (counters, gauges, histograms)."
+      logs:
+        $ref: "#/$defs/observability_pillar"
+        description: "Structured event records pillar."
+      traces:
+        $ref: "#/$defs/observability_pillar"
+        description: "Distributed request tracking pillar."
+      events:
+        $ref: "#/$defs/observability_pillar"
+        description: "Domain events for audit and debugging pillar."
+
+$defs:
+
+  metric:
+    type: object
+    description: "A quantitative measurement of system behavior. Metrics are the foundation of all quality management."
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - type
+      - unit
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/metric_ref"
+        description: "Unique metric identifier (MT + NNN)."
+      name:
+        type: string
+        description: "Human-readable metric name (e.g. 'Order Processing Latency')."
+      summary:
+        type: string
+        maxLength: 120
+        description: "One-line summary for listings."
+      type:
+        type: string
+        enum:
+          - latency
+          - throughput
+          - availability
+          - error-rate
+          - saturation
+          - business
+          - custom
+        description: "Metric category: latency=time-to-complete, throughput=processing rate, availability=uptime, error-rate=failure rate, saturation=resource utilization, business=domain KPI, custom=other."
+      unit:
+        type: string
+        description: "Unit of measurement (e.g. 'ms', 'req/s', '%', 'orders/hour')."
+      measures:
+        type: object
+        description: "Blueprint entities this metric observes. Links measurement to domain model."
+        additionalProperties: false
+        properties:
+          operations:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            description: "Operations this metric measures."
+          concepts:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+            description: "Concepts this metric measures."
+      collection:
+        type: object
+        description: "How this metric is gathered. Optional — useful for implementation planning."
+        additionalProperties: false
+        properties:
+          method:
+            type: string
+            enum: [automated, manual, sampled]
+            description: "How data is collected."
+          source:
+            type: string
+            description: "Where data comes from (e.g. 'APM', 'database query', 'user survey')."
+          frequency:
+            type: string
+            enum: [continuous, hourly, daily, weekly, monthly]
+            description: "How often the metric is updated."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Metric version for lifecycle tracking."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Metric-level ownership override."
+      description:
+        type: string
+        description: "Human-readable description."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  kpi:
+    type: object
+    description: "A Key Performance Indicator — metric with business target. Links operational measurement to strategic goal."
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - target
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/kpi_ref"
+        description: "Unique KPI identifier (KPI + NNN)."
+      name:
+        type: string
+        description: "Human-readable KPI name."
+      metric:
+        $ref: "../metamodel.schema.yaml#/$defs/metric_ref"
+        description: "Metric this KPI is based on. Omit if metric not yet formally defined."
+      target:
+        type: string
+        description: "Target value (e.g. '99.5%', '< 200ms p95', '> 1000 orders/hour')."
+      window:
+        type: string
+        description: "Measurement window (e.g. '30d rolling', 'calendar month', 'per release')."
+      goal:
+        $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
+        description: "Motivation goal this KPI tracks. Closes the goal→KPI→metric traceability chain."
+      bounded_context_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+        description: >
+          Optional bounded context this KPI verifies. When set, the KPI
+          surfaces in the BCC v5 node footer (Verification Metrics section)
+          for that context. Added in v2.6.3.
+      thresholds:
+        type: object
+        description: "Alert thresholds — when the metric crosses these levels, action is needed."
+        additionalProperties: false
+        properties:
+          warning:
+            type: string
+            description: "Warning threshold (e.g. '98%')."
+          critical:
+            type: string
+            description: "Critical threshold triggering escalation (e.g. '95%')."
+      owner:
+        type: string
+        description: "Actor responsible for this KPI (use actor_ref ACTnnn for traceability)."
+      description:
+        type: string
+        description: "Human-readable description."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "KPI version for lifecycle tracking."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  slo:
+    type: object
+    description: "Service Level Objective — an internal reliability target the team commits to. Operationalizes quality through specific measurable thresholds."
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - target
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/slo_ref"
+        description: "Unique SLO identifier (SLO + NNN)."
+      name:
+        type: string
+        description: "Human-readable SLO name."
+      metric:
+        $ref: "../metamodel.schema.yaml#/$defs/metric_ref"
+        description: "Metric this SLO targets."
+      target:
+        type: string
+        description: "Target value (e.g. '99.9%')."
+      window:
+        type: string
+        description: "Measurement window (e.g. '30d rolling')."
+      operations:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations this SLO constrains."
+      error_budget:
+        type: string
+        description: "Acceptable failure rate within the window (e.g. '0.1%' = complement of 99.9%)."
+      breach:
+        type: object
+        description: "Response when the SLO is breached."
+        additionalProperties: false
+        properties:
+          action:
+            type: string
+            description: "Action to take (e.g. 'escalate', 'freeze deploys', 'page on-call')."
+          notification:
+            type: string
+            description: "Who to notify (e.g. 'on-call team', 'engineering lead')."
+      description:
+        type: string
+        description: "Human-readable description."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "SLO version for lifecycle tracking."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  sla:
+    type: object
+    description: "Service Level Agreement — external contractual commitment built on SLOs. Carries business consequences when breached."
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - slos
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/sla_ref"
+        description: "Unique SLA identifier (SLA + NNN)."
+      name:
+        type: string
+        description: "Human-readable SLA name."
+      slos:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/slo_ref"
+        description: "SLOs this SLA is built upon."
+      parties:
+        type: object
+        description: "Parties involved in this agreement."
+        additionalProperties: false
+        properties:
+          provider:
+            type: string
+            description: "Provider party (actor_ref or name)."
+          consumer:
+            type: string
+            description: "Consumer party (actor_ref or name)."
+      penalties:
+        type: array
+        description: "Business consequences of SLA breach."
+        items:
+          type: object
+          additionalProperties: false
+          required:
+            - condition
+            - action
+          properties:
+            condition:
+              type: string
+              description: "When penalty applies (e.g. 'SLO001 breached for >4h')."
+            action:
+              type: string
+              description: "Penalty action (e.g. '10% service credit')."
+      review_period:
+        type: string
+        description: "How often the SLA is reviewed (e.g. 'quarterly')."
+      description:
+        type: string
+        description: "Human-readable description."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "SLA version for lifecycle tracking."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  security_requirement:
+    type: object
+    description: "A security requirement governing operations or data protection."
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - type
+      - requirement
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/security_ref"
+        description: "Unique security requirement identifier (SEC + NNN)."
+      name:
+        type: string
+        description: "Human-readable name."
+      type:
+        type: string
+        enum:
+          - authentication
+          - authorization
+          - encryption
+          - access-control
+          - audit
+          - data-protection
+        description: "Security concern category."
+      requirement:
+        type: string
+        description: "What is required (e.g. 'All API endpoints require JWT authentication with RS256 signing')."
+      operations:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations this requirement applies to."
+      concepts:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+        description: "Concepts (data) this requirement protects."
+      standard:
+        type: string
+        description: "Referenced standard or framework (e.g. 'OAuth 2.0', 'OWASP Top 10')."
+      description:
+        type: string
+        description: "Human-readable description."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Security requirement version for lifecycle tracking."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  compliance_requirement:
+    type: object
+    description: "A regulatory, privacy, or data governance requirement."
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - regulation
+      - requirement
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/compliance_ref"
+        description: "Unique compliance requirement identifier (CMP + NNN)."
+      name:
+        type: string
+        description: "Human-readable name."
+      regulation:
+        type: string
+        description: "Regulation or standard (e.g. 'GDPR', 'SOC2', 'PCI-DSS', 'HIPAA')."
+      requirement:
+        type: string
+        description: "What is required by the regulation."
+      concepts:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+        description: "Concepts (data) subject to this regulation."
+      retention:
+        type: object
+        description: "Data retention policy if applicable."
+        additionalProperties: false
+        properties:
+          period:
+            type: string
+            description: "Retention period (e.g. '30d', '7y')."
+          action:
+            type: string
+            enum: [delete, archive, anonymize]
+            description: "Action when retention period expires."
+      description:
+        type: string
+        description: "Human-readable description."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Compliance requirement version for lifecycle tracking."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  resilience_requirement:
+    type: object
+    description: "An availability, disaster recovery, or continuity requirement."
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - type
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/resilience_ref"
+        description: "Unique resilience requirement identifier (RES + NNN)."
+      name:
+        type: string
+        description: "Human-readable name."
+      type:
+        type: string
+        enum:
+          - availability
+          - disaster-recovery
+          - backup
+          - redundancy
+          - failover
+        description: "Resilience concern category."
+      target:
+        type: string
+        description: "Target (e.g. '99.99%' for availability)."
+      rto:
+        type: string
+        description: "Recovery Time Objective — maximum acceptable downtime (e.g. '5min', '1h')."
+      rpo:
+        type: string
+        description: "Recovery Point Objective — maximum acceptable data loss (e.g. '0', '1h')."
+      strategy:
+        type: string
+        description: "How resilience is achieved (e.g. 'active-passive failover', 'multi-region active-active')."
+      description:
+        type: string
+        description: "Human-readable description."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Resilience requirement version for lifecycle tracking."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  observability_pillar:
+    type: object
+    description: "Configuration for one observability pillar. Start with a strategy string; add specific signals as instrumentation matures."
+    additionalProperties: false
+    properties:
+      strategy:
+        type: string
+        description: "High-level approach (e.g. 'Structured JSON logs to centralized ELK' or 'OpenTelemetry traces to Jaeger')."
+      signals:
+        type: array
+        description: "Specific observability signals emitted by the system."
+        items:
+          $ref: "#/$defs/observability_signal"
+
+  observability_signal:
+    type: object
+    description: "A single observability signal emitted by the system. Minimum: just a description (low barrier)."
+    additionalProperties: false
+    required:
+      - description
+    properties:
+      name:
+        type: string
+        description: "Signal name (e.g. 'order-processing-duration')."
+      description:
+        type: string
+        description: "What this signal captures and why it matters."
+      type:
+        type: string
+        enum:
+          - counter
+          - gauge
+          - histogram
+          - summary
+          - log-entry
+          - span
+          - event
+        description: "Signal type: counter=monotonic count, gauge=point-in-time value, histogram=distribution, summary=quantiles, log-entry=structured record, span=trace span, event=domain event."
+      channel:
+        type: string
+        enum: [stdout, stderr, file, metric, log, trace]
+        description: "Output channel for this signal."
+      operation:
+        $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operation that emits this signal."
+      format:
+        type: string
+        description: "Signal format (e.g. 'prometheus', 'json', 'opentelemetry', 'cloud-events')."
+      condition:
+        type: string
+        description: "When this signal is emitted (e.g. 'on every request', 'on error only', 'sampled at 10%')."

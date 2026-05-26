@@ -1,0 +1,671 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Metamodel
+description: >
+  Cross-cutting definitions for all blueprint layers. Provides typed ID refs,
+  versioning, SpecPath, and shared vocabulary. Consumed by all design and
+  governance schema files. Supersedes schemas/blueprint/v1/definitions/metamodel.schema.json.
+
+$defs:
+
+  # ---------------------------------------------------------------------------
+  # Versioning
+  # ---------------------------------------------------------------------------
+
+  semver:
+    type: string
+    pattern: "^\\d+\\.\\d+\\.\\d+$"
+    description: "Semantic version string (MAJOR.MINOR.PATCH). Used at schema, document, and entity levels."
+
+  versioned_header:
+    type: object
+    description: "Common header for blueprint documents. Only 'version' required; 'schemaVersion' omitted means latest schema assumed."
+    properties:
+      version:
+        $ref: "#/$defs/semver"
+        description: "Content version of this document."
+      schemaVersion:
+        $ref: "#/$defs/semver"
+        description: "Schema definition version this document conforms to. Omit to assume latest."
+      scope:
+        $ref: "#/$defs/context_prefix"
+        description: "Bounded context this file belongs to. Enables scoping in multi-context blueprints."
+    required:
+      - version
+
+  entity_version:
+    $ref: "#/$defs/semver"
+    description: "Optional SemVer for individual entity lifecycle tracking."
+
+  schema_version:
+    type: string
+    enum: ["2.6.0", "2.5.0", "2.4.0", "2.3.0", "2.2.0"]
+    description: "Blueprint schema version. v2.6 schemas accept v2.5, v2.4, v2.3, and v2.2 documents for backward compatibility."
+
+  # ---------------------------------------------------------------------------
+  # Entity Properties (v2.3)
+  # Open metadata bag for entity extensions. Every entity $def includes this.
+  # ---------------------------------------------------------------------------
+
+  entity_properties:
+    type: object
+    additionalProperties: true
+    description: >
+      Open metadata bag for entity extensions. Authors may add domain-specific
+      key-value pairs. Known optional keys: term (DDD formal name),
+      definition (formal glossary entry). Custom keys are preserved in the
+      model and available to viewers and generators.
+
+  # ---------------------------------------------------------------------------
+  # Bounded Context
+  # ---------------------------------------------------------------------------
+
+  context_prefix:
+    type: string
+    pattern: "^[a-z][a-z0-9-]*$"
+    description: "Bounded context name in kebab-case (e.g. billing, order-mgmt)."
+
+  # ---------------------------------------------------------------------------
+  # Tags (cross-cutting)
+  # ---------------------------------------------------------------------------
+
+  tags:
+    type: array
+    items:
+      type: string
+    description: "Free-form tags for grouping. Root-level inherited by entities; entity-level merged with root during loading."
+
+  # ---------------------------------------------------------------------------
+  # Typed ID References
+  # All patterns support optional context prefix using dot notation.
+  # ---------------------------------------------------------------------------
+
+  concept_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?CN\\d{3}$"
+    description: "Reference to a concept (e.g. CN001 or billing.CN001)."
+
+  rule_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?(SR|CR|DR|EQ|VR)\\d{3}$"
+    description: "Reference to a rule by type prefix: SR=structural, CR=classification, DR=derivation, EQ=equivalence, VR=validation."
+
+  command_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?CMD\\d{3}$"
+    description: "Command operation identifier. Commands express intent to change state."
+
+  event_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?EVT\\d{3}$"
+    description: "Event operation identifier. Events are facts that happened (past tense, broadcast)."
+
+  query_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?QRY\\d{3}$"
+    description: "Query operation identifier. Queries are read-only data requests."
+
+  document_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?DOC\\d{3}$"
+    description: "Document operation identifier. Documents represent full state transfers."
+
+  operation_ref:
+    description: >
+      Any operation reference. Two formats supported:
+      (1) ID-based: optional context prefix + kind + digits (e.g., CMD001, orders.CMD001).
+      (2) Domain:key: domainRef + camelCase operation key (e.g., orders:submitOrder).
+      Format 1 is machine-stable; format 2 is human-readable.
+    anyOf:
+      - type: string
+        pattern: "^([a-z][a-z0-9-]*\\.)?(CMD|EVT|QRY|DOC)\\d{3,}$"
+        description: "ID-based reference (e.g., orders.CMD001)."
+      - type: string
+        pattern: "^[a-z][a-z0-9-]*:[a-z][a-zA-Z0-9]*$"
+        description: "Domain:key reference (e.g., orders:submitOrder)."
+
+  decision_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?D\\d{3}$"
+    description: "Reference to a decision (e.g. D001 or billing.D001)."
+
+  business_decision_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?BD\\d{3,}$"
+    description: >
+      Reference to a Bounded Context Canvas business decision (e.g. BD001 or
+      orders.BD001). Distinct from `decision_ref` (D###, ADR rationale): a
+      business_decision is a high-level policy statement scoped to a bounded
+      context, not an architectural decision record.
+
+  test_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?(TC|EC|ER)\\d{3}$"
+    description: "Reference to a test case by suite: TC=happy-path, EC=edge-case, ER=error-case."
+
+  goal_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?G\\d{3}$"
+    description: "Reference to a motivation goal (e.g. G001 or billing.G001)."
+
+  risk_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?R\\d{3}$"
+    description: "Reference to a motivation risk (e.g. R001 or billing.R001)."
+
+  assumption_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?A\\d{3}$"
+    description: "Reference to a motivation assumption (e.g. A001 or billing.A001)."
+
+  trade_off_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?T\\d{3}$"
+    description: "Reference to a motivation trade-off (e.g. T001 or billing.T001)."
+
+  inquiry_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?INQ\\d{3,}$"
+    description: "Reference to a governance inquiry (e.g. INQ001 or orders.INQ001)."
+
+  parallelism_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?PAR\\d{3}$"
+    description: "Reference to a dynamics parallelism opportunity (e.g. PAR001 or billing.PAR001)."
+
+  ordering_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?ORD\\d{3}$"
+    description: "Reference to a dynamics ordering constraint (e.g. ORD001 or billing.ORD001)."
+
+  race_condition_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?RC\\d{3}$"
+    description: "Reference to a dynamics race condition (e.g. RC001 or billing.RC001)."
+
+  actor_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?ACT\\d{3}$"
+    description: "Reference to an actor (e.g. ACT001 or billing.ACT001)."
+
+  enumeration_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?EN\\d{3}$"
+    description: "Reference to an enumeration (e.g. EN001 or billing.EN001)."
+
+  association_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?AS\\d{3}$"
+    description: "Reference to an association (e.g. AS001 or billing.AS001)."
+
+  transition_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?TR\\d{3}$"
+    description: "Reference to a state transition rule (e.g. TR001 or billing.TR001)."
+
+  story_activity_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?SA\\d{3}$"
+    description: "Reference to a story activity (e.g. SA001 or billing.SA001)."
+
+  story_process_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?SP\\d{3}$"
+    description: "Reference to a story process (e.g. SP001 or billing.SP001)."
+
+  user_story_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?US\\d{3,}$"
+    description: "Reference to a user story (US + 3+ digits, optional context prefix)."
+
+  use_case_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?UC\\d{3,}$"
+    description: "Reference to a use case (UC + 3+ digits, optional context prefix)."
+
+  milestone_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?MS\\d{3,}$"
+    description: "Reference to a roadmap milestone (MS + 3+ digits, optional context prefix)."
+
+  error_ref:
+    description: >
+      Reference to a domain error. Two formats supported:
+      (1) ID-based: optional context prefix + ERR + digits (e.g., ERR001, orders.ERR001).
+      (2) Domain:key: domainRef + camelCase error key (e.g., orders:orderValidationFailed).
+      Format 1 is machine-stable; format 2 is human-readable.
+    anyOf:
+      - type: string
+        pattern: "^([a-z][a-z0-9-]*\\.)?ERR\\d{3,}$"
+        description: "ID-based reference (e.g., orders.ERR001)."
+      - type: string
+        pattern: "^[a-z][a-z0-9-]*:[a-z][a-zA-Z0-9]*$"
+        description: "Domain:key reference (e.g., orders:orderValidationFailed)."
+
+  fitness_function_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?FF\\d{3}$"
+    description: "Reference to an architectural fitness function (e.g. FF001 or billing.FF001)."
+
+  migration_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?MIG\\d{3}$"
+    description: "Reference to a blueprint model migration (e.g. MIG001 or billing.MIG001)."
+
+  model_ref:
+    description: >
+      Reference to a model component. Four forms supported:
+      (1) Typed ID: MDL + digits with optional context prefix (MDL001, billing.MDL003).
+      (2) PascalCase name matching a components.schemas key (OrderSchema).
+      (3) JSON Pointer to any component (#/components/schemas/OrderSchema).
+      (4) File-relative JSON Pointer (./models.yaml#/components/schemas/OrderSchema).
+      Form 1 is preferred for new blueprints. Forms 2-4 exist for
+      OpenAPI/AsyncAPI interop where models mirror external spec component names.
+    anyOf:
+      - type: string
+        pattern: "^([a-z][a-z0-9-]*\\.)?MDL\\d{3,}$"
+        description: "Typed Blueprint model ID (preferred)."
+      - type: string
+        pattern: "^[A-Z][A-Za-z0-9]+$"
+        description: "PascalCase component name (OpenAPI/AsyncAPI interop)."
+      - type: string
+        pattern: "^#/components/.+$"
+        description: "JSON Pointer to component (OpenAPI/AsyncAPI interop)."
+      - type: string
+        pattern: "^\\.\\/.*#/components/.+$"
+        description: "File-relative JSON Pointer (e.g. ./models.yaml#/components/schemas/Order)."
+
+  # ---------------------------------------------------------------------------
+  # Typed ID References (v2.2)
+  # New refs for concept attributes, UI, org, stories, and model IDs.
+  # ---------------------------------------------------------------------------
+
+  attribute_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?CAT\\d{3,}$"
+    description: "Concept attribute identifier (e.g. CAT001 or catalog.CAT001). Optional context prefix for cross-context disambiguation."
+
+  screen_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?SCR\\d{3}$"
+    description: "Reference to a UI screen (e.g. SCR001 or orders.SCR001)."
+
+  ui_action_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?UAC\\d{3}$"
+    description: "Reference to a UI action (e.g. UAC001 or orders.UAC001)."
+
+  ui_nav_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?UNV\\d{3}$"
+    description: "Reference to a UI navigation element (e.g. UNV001 or orders.UNV001)."
+
+  party_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?PRT\\d{3}$"
+    description: "Reference to an organizational party (e.g. PRT001 or billing.PRT001)."
+
+  department_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?DPT\\d{3}$"
+    description: "Reference to an organizational department (e.g. DPT001 or billing.DPT001)."
+
+  team_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?TM\\d{3}$"
+    description: "Reference to a team (e.g. TM001 or billing.TM001)."
+
+  story_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?STR\\d{3}$"
+    description: "Reference to a domain story (e.g. STR001 or orders.STR001)."
+
+  question_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?QN\\d{3,}$"
+    description: >
+      Reference to a domain competency question (e.g. QN001 or billing.QN001).
+      Questions are first-class entities representing knowledge requirements
+      of a bounded context. They exist independently of operations and bridge
+      strategic goals to operational implementation.
+
+  x_model_id:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?MDL\\d{3,}$"
+    description: "Model identifier as JSON Schema x-extension (e.g. MDL001 or orders.MDL001)."
+
+  # ---------------------------------------------------------------------------
+  # Ownership (v2.2)
+  # File-level default with entity-level override. Exactly one owner.
+  # ---------------------------------------------------------------------------
+
+  owned_by:
+    type: object
+    description: "Entity ownership. Exactly one of team, department, or party. File-level default; entity-level overrides."
+    additionalProperties: false
+    properties:
+      team:
+        $ref: "#/$defs/team_ref"
+        description: "Owning team reference."
+      department:
+        $ref: "#/$defs/department_ref"
+        description: "Owning department reference."
+      party:
+        $ref: "#/$defs/party_ref"
+        description: "Owning organizational party reference."
+    oneOf:
+      - required: [team]
+      - required: [department]
+      - required: [party]
+
+  # ---------------------------------------------------------------------------
+  # Architecture Vocabulary
+  # ---------------------------------------------------------------------------
+
+  service_kind:
+    type: string
+    enum: [service, worker, api, webapp, cli, library, function]
+    description: "Architectural component type: service=backend, worker=job processor, api=endpoint, webapp=frontend, cli=command-line, library=package, function=serverless."
+
+  value_stream_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?VS\\d{3,}$"
+    description: "Reference to a value stream (e.g. VS001 or orders.VS001)."
+
+  capability_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?CAP\\d{3}$"
+    description: "Reference to a business capability (e.g. CAP001 or billing.CAP001)."
+
+  non_goal_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?NG\\d{3}$"
+    description: "Reference to a motivation non-goal (e.g. NG001 or billing.NG001)."
+
+  metric_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?MT\\d{3}$"
+    description: "Reference to a quality metric (e.g. MT001 or billing.MT001)."
+
+  kpi_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?KPI\\d{3}$"
+    description: "Reference to a quality KPI (e.g. KPI001 or billing.KPI001)."
+
+  slo_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?SLO\\d{3}$"
+    description: "Reference to a service level objective (e.g. SLO001 or billing.SLO001)."
+
+  sla_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?SLA\\d{3}$"
+    description: "Reference to a service level agreement (e.g. SLA001 or billing.SLA001)."
+
+  security_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?SEC\\d{3}$"
+    description: "Reference to a security requirement (e.g. SEC001 or billing.SEC001)."
+
+  compliance_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?CMP\\d{3}$"
+    description: "Reference to a compliance requirement (e.g. CMP001 or billing.CMP001)."
+
+  resilience_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?RES\\d{3}$"
+    description: "Reference to a resilience requirement (e.g. RES001 or billing.RES001)."
+
+  context_relationship:
+    type: string
+    enum:
+      - shared-kernel
+      - customer-supplier
+      - conformist
+      - anticorruption-layer
+      - open-host-service
+      - published-language
+      - separate-ways
+      - partnership
+    description: "DDD strategic relationship between bounded contexts. Captures architectural intent beyond technical integration."
+
+  # ---------------------------------------------------------------------------
+  # SpecPath
+  # Addressable path to any blueprint element for Change Impact Analysis (CIA).
+  # Layer names are kebab-case; ID segments may contain uppercase (CN001, CMD001).
+  # ---------------------------------------------------------------------------
+
+  spec_path:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?[a-z][a-z0-9-]*(\\.[a-zA-Z0-9_-]+)*$"
+    description: "Addressable path to any blueprint element. Format: [context.]layer[.category].ID[.field]. Examples: rules.classification.CR003, billing.rules.classification.CR003, concepts.CN005, test-cases.happy-path.TC001."
+
+  # ---------------------------------------------------------------------------
+  # Change Tracking
+  # ---------------------------------------------------------------------------
+
+  change_kind:
+    type: string
+    enum: [add, modify, deprecate, remove, rename, split, merge]
+    description: "Change type for CIA. Semver impact: add→minor, modify→minor/major, deprecate→minor, remove/rename/split/merge→major."
+
+  semver_impact:
+    type: string
+    enum: [major, minor, patch]
+    description: "Semantic versioning impact: major=breaking, minor=backward-compatible addition, patch=docs or clarification."
+
+  # ---------------------------------------------------------------------------
+  # Rule Vocabulary (SBVR)
+  # ---------------------------------------------------------------------------
+
+  sbvr_modality:
+    type: string
+    enum: [necessary, obligatory, prohibited, permitted]
+    description: "SBVR deontic modality expressing rule strength."
+
+  logic_tuple:
+    type: object
+    description: "When/then/else structure for rule logic. 'when' omitted for invariants; 'then' always required."
+    properties:
+      when:
+        type: string
+        description: "Condition or triggering context."
+      then:
+        type: string
+        description: "Required conclusion or obligation."
+      else:
+        type: string
+        description: "Alternative conclusion when condition is false."
+    required:
+      - then
+
+  # ---------------------------------------------------------------------------
+  # Decision Lifecycle
+  # ---------------------------------------------------------------------------
+
+  decision_status:
+    type: string
+    enum: [proposed, accepted, landed, rejected, deprecated]
+    description: "Decision lifecycle: proposed→accepted→landed; rejected or deprecated at any stage."
+
+  # ---------------------------------------------------------------------------
+  # Code Traceability (v2.4)
+  # Links blueprint entities to source code files for viewer integration.
+  # ---------------------------------------------------------------------------
+
+  code_ref_entry:
+    type: object
+    description: >
+      Reference to a source code file implementing or reflecting this entity.
+      Path is relative to repository root for same-repo files.
+      For cross-repo files, use URI-style prefix: org/repo#path/to/file.
+      In the viewer, paths render as clickable links to the file in the
+      configured repository provider (GitHub, GitLab, Bitbucket).
+    additionalProperties: false
+    required:
+      - path
+    properties:
+      path:
+        type: string
+        description: >
+          File path relative to repository root (e.g., src/models/Order.ts).
+          For cross-repo: org/repo#src/models/Order.ts.
+      role:
+        type: string
+        description: >
+          Purpose of this file relative to the entity.
+          Recommended values: model, interface, implementation,
+          test, validation, migration, configuration, documentation,
+          schema, proto, api-spec, seed-data.
+          Custom values are accepted.
+      description:
+        type: string
+        description: "Optional clarification of what this file contributes."
+
+  code_refs:
+    type: array
+    items:
+      $ref: "#/$defs/code_ref_entry"
+    description: "Source code files implementing or reflecting this entity."
+
+  # ---------------------------------------------------------------------------
+  # Delivery Planning (v2.5)
+  # Cross-cutting definitions for PRD generation and release planning.
+  # ---------------------------------------------------------------------------
+
+  delivery_priority:
+    type: string
+    enum: [must-have, should-have, could-have, wont-have]
+    description: >
+      MoSCoW delivery priority for release planning and PRD generation.
+      must-have: required for target release.
+      should-have: important but not critical.
+      could-have: desirable if time permits.
+      wont-have: explicitly excluded from target release.
+
+  release_target:
+    type: string
+    description: >
+      Target release or milestone label (e.g., "MVP", "v1.1", "Q3-2026").
+      Free-form string — use milestone IDs (MS###) for formal traceability.
+
+  # ---------------------------------------------------------------------------
+  # Epistemic Metadata (v2.5)
+  # Cross-cutting governance assertions: maturity stage and confidence level.
+  # Applied to all 7 governance entities: goal, non_goal, risk, assumption,
+  # trade_off, inquiry, capability.
+  # ---------------------------------------------------------------------------
+
+  discovery_stage:
+    type: string
+    enum: [hypothesis, exploring, validated, committed, obsolete]
+    description: >
+      Epistemic maturity of a governance entity.
+      hypothesis: initial idea, no evidence yet.
+      exploring: actively being investigated or researched.
+      validated: evidence supports this entity's claims.
+      committed: stakeholders agreed and resources allocated.
+      obsolete: superseded by new understanding.
+
+  certainty:
+    type: string
+    enum: [speculative, probable, confirmed]
+    description: >
+      Confidence level of a governance assertion or relationship.
+      speculative: based on assumption or analogy.
+      probable: supported by partial evidence.
+      confirmed: validated by research or stakeholder agreement.
+
+  # ---------------------------------------------------------------------------
+  # Evidence Chain (v2.6)
+  # Justifies a governance entity's discovery_stage and certainty with
+  # structured evidence records. Applied to governance entities only.
+  # ---------------------------------------------------------------------------
+
+  evidence:
+    type: array
+    description: "Evidence chain justifying this entity's discovery_stage and certainty."
+    items:
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - summary
+      properties:
+        kind:
+          type: string
+          enum:
+            - interview
+            - survey
+            - analytics
+            - stakeholder-signoff
+            - competitive-analysis
+            - codebase-analysis
+            - documentation
+            - assumption
+            - experiment
+          description: "Type of evidence."
+        source:
+          type: string
+          description: "Where this evidence comes from (URL, document name, person/team)."
+        date:
+          type: string
+          format: date
+          description: "When this evidence was collected (ISO 8601)."
+        summary:
+          type: string
+          description: "Brief description of what the evidence shows."
+        confidence_impact:
+          type: string
+          enum: [supports, weakens, invalidates]
+          description: "How this evidence affects confidence in the entity."
+
+  # ---------------------------------------------------------------------------
+  # Shared Traceability Links (use typed refs)
+  # ---------------------------------------------------------------------------
+
+  validates_links:
+    type: object
+    description: "Cross-layer traceability from a test case to what it validates."
+    properties:
+      rules:
+        type: array
+        items:
+          $ref: "#/$defs/rule_ref"
+        description: "Rules validated by this test."
+      operations:
+        type: array
+        items:
+          $ref: "#/$defs/operation_ref"
+        description: "Operations exercised by this test."
+      concepts:
+        type: array
+        items:
+          $ref: "#/$defs/concept_ref"
+        description: "Concepts covered by this test."
+
+  impacts_links:
+    type: object
+    description: "Decision impact references across layers."
+    properties:
+      rules:
+        type: array
+        items:
+          $ref: "#/$defs/rule_ref"
+        description: "Rules impacted by this decision."
+      operations:
+        type: array
+        items:
+          $ref: "#/$defs/operation_ref"
+        description: "Operations impacted by this decision."
+      concepts:
+        type: array
+        items:
+          $ref: "#/$defs/concept_ref"
+        description: "Concepts impacted by this decision."
+      contract:
+        type: array
+        items:
+          $ref: "#/$defs/spec_path"
+        description: "Contract elements impacted, as SpecPath references."

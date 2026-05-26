@@ -1,0 +1,189 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint UI
+description: "Design Plane: User interface screens, actions, and navigation. Cross-links to models, operations, goals, decisions, tests, and stories for CIA traceability from domain changes to UI impact."
+type: object
+additionalProperties: false
+required:
+  - version
+properties:
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version of this UI document."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: "Bounded context this UI file belongs to."
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default. Entities inherit unless overridden."
+  screens:
+    type: array
+    description: "UI screens the user interacts with. Each screen links to the models it displays, goals it serves, and stories it participates in."
+    items:
+      $ref: "#/$defs/screen"
+  actions:
+    type: array
+    description: "User-initiated actions on screens that trigger domain operations. Links UI interactions to domain behavior."
+    items:
+      $ref: "#/$defs/action"
+  navigation:
+    type: array
+    description: "Directed transitions between screens. Defines the UI flow graph with optional conditions."
+    items:
+      $ref: "#/$defs/navigation"
+  design_references:
+    type: object
+    additionalProperties: false
+    description: >
+      External design artifact links for PRD design section.
+      All fields optional — include what exists.
+    properties:
+      figma_url:
+        type: string
+        description: "Link to Figma design file or project."
+      storybook_url:
+        type: string
+        description: "Link to Storybook component library."
+      design_system:
+        type: string
+        description: "Design system name or URL."
+      prototype_url:
+        type: string
+        description: "Link to interactive prototype."
+      accessibility_standard:
+        type: string
+        enum: [WCAG-2.0-AA, WCAG-2.1-AA, WCAG-2.2-AA, WCAG-2.1-AAA]
+        description: "Target accessibility compliance standard."
+
+$defs:
+
+  screen:
+    type: object
+    description: "A UI screen or view the user interacts with. Links to models, goals, decisions, tests, and stories."
+    additionalProperties: false
+    required:
+      - id
+      - name
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/screen_ref"
+        description: "Unique screen identifier (SCR001, SCR002, etc.)."
+      name:
+        type: string
+        description: "Human-readable screen name (e.g. 'Order Summary')."
+      summary:
+        type: string
+        maxLength: 120
+        description: "One-line summary for listings (≤120 chars)."
+      description:
+        type: string
+        description: "Detailed screen purpose and content overview."
+      uses_models:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/model_ref"
+        description: "Data models this screen displays or consumes."
+      motivated_by:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
+        description: "Goals this screen helps achieve."
+      decisions:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/decision_ref"
+        description: "Decisions that shaped this screen's design."
+      validated_by:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/test_ref"
+        description: "Tests that verify this screen's behavior."
+      stories:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/story_ref"
+        description: "Domain stories this screen participates in."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Screen version for lifecycle tracking."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Screen-level ownership override."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  action:
+    type: object
+    description: "A user action on a screen that triggers domain operations."
+    additionalProperties: false
+    required:
+      - id
+      - screen
+      - name
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/ui_action_ref"
+        description: "Unique action identifier (UAC001, UAC002, etc.)."
+      screen:
+        $ref: "../metamodel.schema.yaml#/$defs/screen_ref"
+        description: "Screen this action belongs to."
+      name:
+        type: string
+        description: "Human-readable action name (e.g. 'Submit Order')."
+      description:
+        type: string
+        description: "What this action does from the user's perspective."
+      triggers_operations:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Domain operations triggered by this action."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Action-level ownership override."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  navigation:
+    type: object
+    description: "A directed transition between two screens with optional condition."
+    additionalProperties: false
+    required:
+      - id
+      - from
+      - to
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/ui_nav_ref"
+        description: "Unique navigation identifier (UNV001, UNV002, etc.)."
+      from:
+        $ref: "../metamodel.schema.yaml#/$defs/screen_ref"
+        description: "Source screen of this navigation."
+      to:
+        $ref: "../metamodel.schema.yaml#/$defs/screen_ref"
+        description: "Target screen of this navigation."
+      condition:
+        type: string
+        description: "When this navigation is available or triggered."
+      description:
+        type: string
+        description: "What this navigation transition represents."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"

@@ -1,0 +1,200 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Models
+description: "Design Plane: Reusable data model definitions (schemas, fields, parameters) with optional concept back-references. Follows OpenAPI/AsyncAPI component naming conventions."
+type: object
+additionalProperties: false
+required:
+  - version
+  - components
+properties:
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version of this models document."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: "Bounded context this models file belongs to."
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default. Entities inherit unless overridden."
+  components:
+    type: object
+    description: "Container for reusable data model definitions. Follows OpenAPI/AsyncAPI components structure."
+    additionalProperties: false
+    properties:
+      schemas:
+        type: object
+        description: "Composite data model definitions (JSON Schema). Equivalent to OpenAPI components/schemas."
+        additionalProperties:
+          $ref: "#/$defs/model_schema"
+      x-field:
+        type: object
+        description: "Reusable atomic field definitions. Single typed values referenced by schemas. Custom OpenAPI extension for field-level reuse."
+        additionalProperties:
+          $ref: "#/$defs/field_definition"
+      x-parameter:
+        type: object
+        description: "Reusable parameter definitions for operations. Equivalent to OpenAPI components/parameters."
+        additionalProperties:
+          $ref: "#/$defs/parameter_definition"
+      operationTraits:
+        type: object
+        description: "Optional. Reusable operation-level traits (AsyncAPI convention). Common bindings, security, or protocol settings."
+        additionalProperties: true
+      messageTraits:
+        type: object
+        description: "Optional. Reusable message-level traits (AsyncAPI convention). Common headers, metadata, or envelope structures."
+        additionalProperties: true
+
+$defs:
+
+  model_schema:
+    type: object
+    description: "Composite data model with concept traceability via represents[]."
+    properties:
+      purpose:
+        type: string
+        enum: [command-payload, event-payload, read-model, shared, dto]
+        description: "CQRS role: command-payload, event-payload, read-model, shared, dto."
+      represents:
+        type: array
+        description: "Concept mappings this model represents."
+        items:
+          $ref: "#/$defs/represents_entry"
+      x-model-id:
+        $ref: "../metamodel.schema.yaml#/$defs/x_model_id"
+        description: "Optional typed model ID (MDL###) for viewer graph identity."
+      type:
+        type: string
+        description: "JSON Schema type (e.g. object, array, string)."
+      properties:
+        type: object
+        description: "Schema property definitions (JSON Schema object properties)."
+      metadata:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+        description: "Open metadata bag. Named 'metadata' here to avoid conflict with JSON Schema 'properties'."
+      required:
+        type: array
+        items:
+          type: string
+        description: "List of required property names."
+      compatibility:
+        type: string
+        enum: [full, backward, forward, none]
+        description: >
+          Schema evolution compatibility guarantee.
+          full = both forward and backward compatible.
+          backward = new schema can read old data.
+          forward = old schema can read new data.
+          none = no compatibility guarantee (breaking change).
+      description:
+        type: string
+        description: "Human-readable description of this data model."
+      additionalProperties: {}
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Model-level ownership override."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  represents_entry:
+    type: object
+    description: "Maps a model to a domain concept with optional property mapping."
+    additionalProperties: false
+    required:
+      - concept
+    properties:
+      concept:
+        $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+        description: "Domain concept this model represents."
+      kind:
+        type: string
+        enum: [api, event, persistence, ui, report, other]
+        description: "How this model represents the concept."
+      mapping:
+        $ref: "#/$defs/concept_mapping"
+        description: "Property-to-attribute mapping strategy."
+
+  concept_mapping:
+    type: object
+    description: "Strategy for mapping model properties to concept attributes."
+    additionalProperties: false
+    properties:
+      strategy:
+        type: string
+        enum: [same-names, property-map]
+        default: same-names
+        description: "Mapping approach: same-names (convention) or property-map (explicit)."
+      property_map:
+        type: object
+        description: "Explicit map: model property name → concept attribute ref (CAT###)."
+        additionalProperties:
+          $ref: "../metamodel.schema.yaml#/$defs/attribute_ref"
+
+  field_definition:
+    type: object
+    description: "Atomic field definition with domain metadata. Reusable across schemas."
+    properties:
+      type:
+        type: string
+        description: "JSON Schema type."
+      format:
+        type: string
+        description: "JSON Schema format (e.g. date-time, uuid, email)."
+      description:
+        type: string
+        description: "Field description."
+      pattern:
+        type: string
+        description: "Regex pattern constraining valid values."
+      maxLength:
+        type: integer
+        description: "Maximum string length."
+      enum:
+        type: array
+        description: "Allowed values (closed set)."
+      default: {}
+      example: {}
+      externalDocs:
+        type: object
+        description: "Link to external documentation for this field."
+        additionalProperties: false
+        properties:
+          description:
+            type: string
+            description: "External docs description."
+          url:
+            type: string
+            format: uri
+            description: "External docs URL."
+
+  parameter_definition:
+    type: object
+    description: "Reusable parameter for operation exchanges. Follows OpenAPI parameter structure."
+    properties:
+      $ref:
+        type: string
+        description: "JSON Pointer to a field definition (e.g. #/components/x-field/orderId)."
+      name:
+        type: string
+        description: "Parameter name."
+      in:
+        type: string
+        enum: [path, query, header, cookie]
+        description: "Parameter location in the request."
+      required:
+        type: boolean
+        description: "Whether this parameter is required."
+      description:
+        type: string
+        description: "Parameter description."
+      schema:
+        type: object
+        description: "Inline JSON Schema for this parameter's type."

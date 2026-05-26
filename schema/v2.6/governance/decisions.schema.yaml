@@ -1,0 +1,440 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Decisions
+description: "Governance Plane: Architecture Decision Log (ADR). Chronological, append-only record of design decisions with typed impact references, motivation traceability, and change-set analysis."
+type: object
+additionalProperties: false
+required:
+  - version
+  - decisions
+properties:
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version. Bump minor for new decisions, patch for status updates."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: "Bounded context this decisions file belongs to. Enables filtering in multi-context blueprints."
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default. Entities inherit unless overridden."
+  decisions:
+    type: array
+    description: "Architecture Decision Log. Chronological, append-only. Each entry is immutable once landed — supersede rather than modify."
+    items:
+      $ref: "#/$defs/decision"
+  business_decisions:
+    type: array
+    description: >
+      Bounded Context Canvas v5 business decisions (BD###). Distinct from
+      `decisions[]` above: business_decisions are high-level policy statements
+      governing a bounded context's behaviour, not ADRs. Optional; introduced
+      in v2.6.3.
+    items:
+      $ref: "#/$defs/business_decision"
+
+$defs:
+
+  decision:
+    type: object
+    description: "An Architecture Decision Record (ADR). Minimum: id, title, summary, date, status, rationale."
+    additionalProperties: false
+    required:
+      - id
+      - title
+      - date
+      - status
+      - rationale
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/decision_ref"
+        description: "Unique decision ID (e.g. D001 or billing.D001). Assigned chronologically; never reused."
+      description:
+        type: string
+        description: "Human-readable description."
+      title:
+        type: string
+        description: "Short descriptive title understandable without reading the full rationale."
+      summary:
+        type: string
+        maxLength: 120
+        description: "One-line summary for listings and quick scanning (≤120 chars). Self-contained."
+      date:
+        type: string
+        pattern: "^\\d{4}-\\d{2}(-\\d{2})?$"
+        description: "Date proposed or accepted. Format: YYYY-MM or YYYY-MM-DD."
+      status:
+        $ref: "../metamodel.schema.yaml#/$defs/decision_status"
+        description: "Lifecycle status: proposed→accepted→landed; rejected or deprecated at any stage."
+      rationale:
+        $ref: "#/$defs/rationale"
+        description: "The reasoning behind this decision. Answers 'why' for future readers."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Decision version for individual lifecycle tracking."
+      decision_scope:
+        type: string
+        description: "Context, component, or SpecPath prefix this decision applies to (e.g. billing, billing.rules, order-api)."
+      motivation_refs:
+        $ref: "#/$defs/motivation_links"
+        description: "Motivation entities driving this decision: goals served, risks mitigated, assumptions, trade-offs accepted."
+      capability_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/capability_ref"
+        description: "Business capabilities this decision supports or enables."
+      change_set:
+        type: array
+        description: "Machine-readable manifest of changes introduced. Each entry describes one blueprint element change."
+        items:
+          $ref: "#/$defs/change_item"
+      declared_impact:
+        $ref: "#/$defs/impact_declaration"
+        description: "Author's declaration of affected blueprint entities. Direct changes plus transitive ripple hints."
+      consequences:
+        type: object
+        description: "Known consequences of this decision: positive benefits and negative costs or technical debt."
+        additionalProperties: false
+        properties:
+          positive:
+            type: array
+            items:
+              type: string
+            description: "Benefits and improvements from this decision."
+          negative:
+            type: array
+            items:
+              type: string
+            description: "Costs, limitations, or technical debt introduced."
+      acceptance:
+        $ref: "#/$defs/acceptance_criteria"
+        description: "Conditions that must be met for this decision to be considered fully implemented."
+      links:
+        $ref: "#/$defs/decision_links"
+        description: "External references: issue tracker, PRs, docs, and decision chain (supersedes/superseded_by)."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Decision-level ownership override."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      discovery_stage:
+        $ref: "../metamodel.schema.yaml#/$defs/discovery_stage"
+        description: "Epistemic maturity of this decision. Proposed decisions are typically hypothesis or exploring."
+      certainty:
+        $ref: "../metamodel.schema.yaml#/$defs/certainty"
+        description: "Confidence level of this decision. Speculative for proposed, confirmed for landed."
+      evidence:
+        $ref: "../metamodel.schema.yaml#/$defs/evidence"
+        description: "Evidence chain justifying this decision — benchmarks, experiments, stakeholder feedback."
+
+  rationale:
+    type: object
+    description: "The reasoning behind a decision: problem context, options explored, chosen approach."
+    additionalProperties: false
+    required:
+      - problem
+      - chosen
+    properties:
+      problem:
+        type: string
+        description: "The problem or question that prompted this decision. Describes context and constraints."
+      options:
+        type: array
+        description: >
+          Alternative approaches considered before choosing. Items can be plain
+          strings (backward compatible) or structured objects with pros/cons
+          analysis for ADR generation.
+        items:
+          oneOf:
+            - type: string
+            - $ref: "#/$defs/option"
+      chosen:
+        type: string
+        description: "The option selected and why it was preferred over alternatives."
+
+  motivation_links:
+    type: object
+    description: "Traceability from decision to motivation layer: what goals, risks, assumptions, and trade-offs drove it."
+    additionalProperties: false
+    properties:
+      goals:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
+        description: "Goals this decision serves or advances."
+      risks:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/risk_ref"
+        description: "Risks this decision mitigates."
+      assumptions:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/assumption_ref"
+        description: "Assumptions this decision depends on being true."
+      trade_offs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/trade_off_ref"
+        description: "Trade-offs this decision consciously accepts."
+      questions:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/question_ref"
+        description: >
+          Domain competency questions (QN###) that drove this decision.
+      inquiries:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/inquiry_ref"
+        description: >
+          Governance inquiries (INQ###) that drove or are resolved by this
+          decision. Distinct from questions — inquiries are temporary governance
+          concerns, questions are permanent domain knowledge requirements.
+
+  change_item:
+    type: object
+    description: "A single change introduced by a decision. Blueprint element change with versioning impact."
+    additionalProperties: false
+    required:
+      - kind
+      - target
+    properties:
+      kind:
+        $ref: "../metamodel.schema.yaml#/$defs/change_kind"
+        description: "Change type: add→minor, modify→minor/major, deprecate→minor, remove/rename/split/merge→major."
+      target:
+        $ref: "../metamodel.schema.yaml#/$defs/spec_path"
+        description: "SpecPath to the affected blueprint element (e.g. rules.classification.CR003)."
+      before:
+        type: string
+        description: "State before the change (snapshot or description). Required for modify/remove."
+      after:
+        type: string
+        description: "State after the change (snapshot or description). Required for add/modify."
+      semver:
+        $ref: "../metamodel.schema.yaml#/$defs/semver_impact"
+        description: "Versioning impact of this specific change."
+      notes:
+        type: string
+        description: "Explanation of why this change is needed."
+
+  impact_declaration:
+    type: object
+    description: "Author's declaration of affected entities: direct changes and transitive ripple hints."
+    additionalProperties: false
+    properties:
+      direct:
+        type: object
+        description: "Entities directly changed by this decision."
+        additionalProperties: false
+        properties:
+          concepts:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+            description: "Concepts directly affected."
+          rules:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/rule_ref"
+            description: "Rules directly affected."
+          operations:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            description: "Operations directly affected."
+          tests:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/test_ref"
+            description: "Tests directly affected."
+          models:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/model_ref"
+            description: "Models directly affected."
+          stories:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/story_ref"
+            description: "Stories directly affected."
+          ui:
+            type: object
+            description: "UI elements directly affected by this decision."
+            additionalProperties: false
+            properties:
+              screens:
+                type: array
+                items:
+                  $ref: "../metamodel.schema.yaml#/$defs/screen_ref"
+                description: "Screens directly affected."
+              actions:
+                type: array
+                items:
+                  $ref: "../metamodel.schema.yaml#/$defs/ui_action_ref"
+                description: "UI actions directly affected."
+              navigation:
+                type: array
+                items:
+                  $ref: "../metamodel.schema.yaml#/$defs/ui_nav_ref"
+                description: "Navigation flows directly affected."
+      transitive_hints:
+        type: array
+        items:
+          type: string
+        description: "Human hints about expected ripple effects beyond direct impacts."
+
+  acceptance_criteria:
+    type: object
+    description: "Conditions for this decision to be considered fully implemented. Free strings for low barrier."
+    additionalProperties: false
+    properties:
+      must_pass_tests:
+        type: array
+        items:
+          type: string
+        description: "Tests that must pass (names or free strings)."
+      new_tests_to_add:
+        type: array
+        items:
+          type: string
+        description: "New tests that need to be created."
+      docs_to_update:
+        type: array
+        items:
+          type: string
+        description: "Documentation that needs updating."
+      reviews_required:
+        type: array
+        items:
+          type: string
+        description: "Reviews or approvals needed before landing."
+
+  decision_links:
+    type: object
+    description: "External references and decision chain links."
+    additionalProperties: false
+    properties:
+      issues:
+        type: array
+        items:
+          type: string
+        description: "Issue tracker references (URLs or IDs)."
+      prs:
+        type: array
+        items:
+          type: string
+        description: "Pull request references."
+      docs:
+        type: array
+        items:
+          type: string
+        description: "Documentation references."
+      supersedes:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/decision_ref"
+        description: "Decisions this one replaces. Array supports many-to-one merge (multiple old decisions consolidated)."
+      superseded_by:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/decision_ref"
+        description: "Decisions that replace this one. Array supports one-to-many split (one decision divided)."
+
+  option:
+    type: object
+    description: >
+      A structured decision option with description, pros, cons, and open
+      questions. Used for ADR generation with full analysis per alternative.
+    additionalProperties: false
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: "Short name of the option (e.g. 'x-vector voice conversion', 'McAdams coefficient')."
+      description:
+        type: string
+        description: "Detailed description of the option — technical approach, constraints, prerequisites."
+      pros:
+        type: array
+        items:
+          type: string
+        description: "Advantages of this option. Each item is a self-contained benefit statement."
+      cons:
+        type: array
+        items:
+          type: string
+        description: "Disadvantages, risks, or costs of this option. Each item is a self-contained concern."
+      open_questions:
+        type: array
+        items:
+          type: string
+        description: "Unresolved questions that must be answered before this option can be chosen."
+
+  # ---------------------------------------------------------------------------
+  # Bounded Context Canvas v5 — Business Decision (BD###)
+  # Added in v2.6.3. Distinct from `decision` (D###, ADR rationale): a
+  # business_decision is a high-level policy statement scoped to a bounded
+  # context. Lives in the same governance file as ADRs because both belong to
+  # the governance plane; the $def names disambiguate.
+  # ---------------------------------------------------------------------------
+
+  business_decision:
+    type: object
+    description: >
+      BCC v5 Business Decision — a key rule or policy that governs the
+      behaviour of one or more bounded contexts. NOT a data-level invariant
+      (those live in rules.schema.yaml as Rule); NOT an ADR (D### above).
+      These are higher-level policy statements expressing "what we will / will
+      not do" in the bounded context's domain.
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - description
+      - bounded_context_ref
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/business_decision_ref"
+        description: "Unique business decision identifier (e.g. BD001 or orders.BD001)."
+      name:
+        type: string
+        description: "Short human-readable name. Used in displayId fallback when no context prefix is set."
+      description:
+        type: string
+        description: "Full statement of the decision. Free text; may be multi-paragraph."
+      bounded_context_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+        description: "Owning bounded context (kebab-case context name). A single decision may apply to multiple contexts via linked_contexts[]."
+      linked_contexts:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+        description: "Other contexts this decision affects (cross-context policy)."
+      linked_user_stories:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/user_story_ref"
+        description: "User stories that motivated this decision."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Decision version for individual lifecycle tracking."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Entity-level ownership override."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
