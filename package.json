@@ -1,0 +1,60 @@
+{
+  "name": "@archally/blueprint-schema",
+  "version": "2.7.0",
+  "description": "YAML-based schema for digital system modeling — domain-first multi-method specification format",
+  "license": "Apache-2.0",
+  "author": "Adam Walkowski <adam.walkowski@inperceptic.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/archally/blueprint-schema"
+  },
+  "homepage": "https://archally.pro",
+  "keywords": [
+    "ddd",
+    "domain-driven-design",
+    "architecture",
+    "schema",
+    "yaml",
+    "json-schema",
+    "blueprint"
+  ],
+  "type": "module",
+  "exports": {
+    "./schema/v2.7/*": "./schema/v2.7/schema/*",
+    "./model": "./tools/model-builder/dist/index.js"
+  },
+  "files": [
+    "schema/",
+    "tools/",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "validate": "node tools/validator/src/cli.mjs",
+    "validate:examples": "node tools/validator/src/cli.mjs examples/ecommerce/.blueprint/v2.6 --schemas schema/v2.6",
+    "build": "tsc -p tools/model-builder/tsconfig.json && tsc -p tools/semantic-checker/tsconfig.json && tsc -p tools/schema-update/tsconfig.json",
+    "check": "node tools/semantic-checker/dist/cli.js",
+    "check:examples": "node tools/semantic-checker/dist/cli.js examples/ecommerce/.blueprint/v2.6",
+    "test": "vitest run --config tools/model-builder/vitest.config.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "bin": {
+    "blueprint-validate": "tools/validator/src/cli.mjs",
+    "blueprint-model": "tools/model-builder/dist/cli.js",
+    "blueprint-check": "tools/semantic-checker/dist/cli.js",
+    "blueprint-schema-update": "tools/schema-update/dist/cli.js"
+  },
+  "dependencies": {
+    "ajv": "^8.17.0",
+    "ajv-formats": "^3.0.0",
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

@@ -1,0 +1,137 @@
+import type {
+  ParsedBlueprintDocument,
+  BlueprintModel,
+  BlueprintFileMetadata,
+  DocumentsBySchemaType,
+  RepositoryConfig,
+} from './types.js';
+import { getSchemaTypeFromPath } from '../extraction/entities/id.js';
+import { extractAllEntities } from '../extraction/entities/index.js';
+import { buildRelations } from '../extraction/relations/index.js';
+
+/**
+ * Group parsed documents by schema type (derived from file path).
+ * Documents with unknown schema type are excluded from extraction
+ * but can still contribute to metadata via the caller keeping the full list.
+ *
+ * Blueprint-type documents are included under the 'blueprint' key for metadata
+ * extraction (repository config). Entity extractors skip them (no extractor registered).
+ */
+export function groupDocumentsBySchemaType(
+  documents: ParsedBlueprintDocument[]
+): DocumentsBySchemaType {
+  const groups: DocumentsBySchemaType = {};
+  for (const doc of documents) {
+    const schemaType = getSchemaTypeFromPath(doc.filePath);
+    if (!schemaType) continue;
+    (groups[schemaType] ??= []).push(doc);
+  }
+  return groups;
+}
+
+/**
+ * Build the internal blueprint model from documents pre-grouped by schema type.
+ * Same-type documents (e.g. domain-a/concepts.yaml + domain-b/concepts.yaml) are
+ * processed together so their entities end up in a single entity list.
+ *
+ * @param documentsByType - Documents grouped by schema type (use groupDocumentsBySchemaType)
+ * @returns BlueprintModel with entities (including Missing placeholders), relations, metadata
+ */
+export function buildBlueprintModel(documentsByType: DocumentsBySchemaType): BlueprintModel {
+  const allDocs = Object.values(documentsByType).flat();
+
+  const files: BlueprintFileMetadata[] = allDocs.map((doc) => ({
+    path: doc.filePath ?? '',
+    schemaType: getSchemaTypeFromPath(doc.filePath) ?? undefined,
+    size: undefined,
+    lastModified: undefined,
+  }));
+
+  const entities = extractAllEntities(documentsByType);
+  const { relations, addedEntities } = buildRelations(entities, documentsByType);
+  const domainDescriptions = extractDomainDescriptions(documentsByType);
+  const repository = extractRepositoryConfig(documentsByType.blueprint);
+
+  // Merge placeholder "Missing" entities into the entity list so the model
+  // has one unified array (frontend renders placeholders as gray nodes).
+  const allEntities = [...entities, ...addedEntities];
+
+  return {
+    entities: allEntities,
+    relations,
+    metadata: {
+      files,
+      total_entities: allEntities.length,
+      total_relations: relations.length,
+      last_loaded: new Date().toISOString(),
+      domain_descriptions: domainDescriptions,
+      ...(repository && { repository }),
+    },
+  };
+}
+
+function inferDomainFromPath(path: string | undefined): string {
+  if (!path) return 'Global';
+  const normalized = path.replace(/\\/g, '/');
+  const seg = normalized.split('/').filter(Boolean)[0];
+  if (!seg || seg === '.' || seg === '..') return 'Global';
+  if (seg === 'default') return 'Global';
+  return seg;
+}
+
+function extractDomainDescriptions(
+  documentsByType: DocumentsBySchemaType
+): Record<string, string> {
+  const domainDocs = documentsByType.domain ?? [];
+  if (domainDocs.length === 0) return {};
+
+  const rows = domainDocs
+    .map((doc) => {
+      const raw = doc.data?.description;
+      if (typeof raw !== 'string') return null;
+      const description = raw.trim();
+      if (!description) return null;
+      return {
+        path: doc.filePath ?? '',
+        domain: inferDomainFromPath(doc.filePath),
+        description,
+      };
+    })
+    .filter((r): r is { path: string; domain: string; description: string } => r !== null)
+    .sort((a, b) => a.path.localeCompare(b.path));
+
+  const grouped = new Map<string, string[]>();
+  for (const row of rows) {
+    (grouped.get(row.domain) ?? grouped.set(row.domain, []).get(row.domain)!).push(
+      row.description
+    );
+  }
+
+  const out: Record<string, string> = {};
+  for (const [domain, parts] of grouped) {
+    out[domain] = parts.join('\n\n');
+  }
+  return out;
+}
+
+/**
+ * Extract repository config from blueprint root documents (v2.4).
+ * Returns the first repository config found, or undefined.
+ */
+function extractRepositoryConfig(
+  blueprintDocs?: ParsedBlueprintDocument[]
+): RepositoryConfig | undefined {
+  if (!blueprintDocs) return undefined;
+  for (const doc of blueprintDocs) {
+    const repo = doc.data?.repository as Record<string, unknown> | undefined;
+    if (!repo || typeof repo !== 'object') continue;
+    const url = repo.url as string | undefined;
+    if (!url) continue;
+    return {
+      url,
+      branch: repo.branch != null ? String(repo.branch) : undefined,
+      provider: repo.provider != null ? String(repo.provider) : undefined,
+    };
+  }
+  return undefined;
+}
