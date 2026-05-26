@@ -1,0 +1,281 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Meta-Schema
+description: "Meta-schema composing all blueprint layers into Design + Governance planes with cross-cutting metamodel. Supersedes v1 layer-based blueprint.schema.json. Minimal blueprint: version + name only."
+type: object
+additionalProperties: false
+required:
+  - version
+  - name
+properties:
+  version:
+    $ref: "metamodel.schema.yaml#/$defs/semver"
+    description: "Blueprint content revision (SemVer)."
+  schemaVersion:
+    $ref: "metamodel.schema.yaml#/$defs/schema_version"
+    description: "Blueprint schema version. Omit to assume latest."
+  name:
+    type: string
+    description: "Name of the system being modeled."
+  description:
+    type: string
+    description: "Brief system summary for human and AI agent orientation."
+
+  # === Repository (v2.4) ===
+  repository:
+    type: object
+    description: >
+      Source code repository configuration. Used by the viewer to construct
+      clickable links from code_refs to the actual files in the repository.
+    additionalProperties: false
+    required:
+      - url
+    properties:
+      url:
+        type: string
+        description: "Repository URL (e.g., https://github.com/acme/ecommerce)."
+      branch:
+        type: string
+        default: main
+        description: "Default branch for constructing file URLs. Defaults to main."
+      provider:
+        description: >
+          Repository hosting provider. Determines URL construction pattern:
+          github: {url}/blob/{branch}/{path},
+          gitlab: {url}/-/blob/{branch}/{path},
+          bitbucket: {url}/src/{branch}/{path}.
+          x-custom prefixed providers fall back to GitHub pattern.
+        oneOf:
+          - type: string
+            enum: [github, gitlab, bitbucket]
+          - type: string
+            pattern: "^x-[a-z][a-z0-9-]*$"
+
+  # === Layout ===
+  layout:
+    description: "Blueprint file layout. Omit for legacy single-folder layout using design/governance paths."
+    oneOf:
+      - type: object
+        additionalProperties: false
+        properties:
+          mode:
+            const: unified
+            description: "Single design/governance block or file set."
+      - type: object
+        additionalProperties: false
+        properties:
+          mode:
+            const: slices
+            description: "DDD domain slices as subfolders; optional shared root files."
+          slices:
+            type: array
+            items:
+              type: string
+              pattern: "^[a-z][a-z0-9-]*$"
+            description: "Subfolder names (kebab-case) for domain slices."
+          shared:
+            type: object
+            description: "Optional root-level paths for shared/system entities."
+            additionalProperties: false
+            properties:
+              architecture: { type: string, description: "Path to arch.yaml." }
+              concepts: { type: string, description: "Path to concepts.yaml." }
+              rules: { type: string, description: "Path to rules.yaml." }
+              domain: { type: string, description: "Path to domain.yaml." }
+              models: { type: string, description: "Path to models.yaml." }
+              story: { type: string, description: "Path to story.yaml." }
+              dynamics: { type: string, description: "Path to dynamics.yaml." }
+              quality: { type: string, description: "Path to quality.yaml." }
+              infrastructure: { type: string, description: "Path to infrastructure.yaml." }
+              motivation: { type: string, description: "Path to motivation.yaml." }
+              capability: { type: string, description: "Path to capability.yaml." }
+              decisions: { type: string, description: "Path to decisions.yaml." }
+              tests: { type: string, description: "Path to test-cases.yaml." }
+              interactions: { type: string, description: "Path to interactions.yaml." }
+              organization: { type: string, description: "Path to organization.yaml." }
+              roadmap: { type: string, description: "Path to roadmap.yaml." }
+              value_stream: { type: string, description: "Path to value-stream.yaml." }
+
+  # === Constitution ===
+  constitution:
+    type: object
+    description: "Core design principles and conventions governing this blueprint. Machine-readable codification of architectural standards."
+    additionalProperties: false
+    properties:
+      principles:
+        type: array
+        description: "Named design principles with descriptions."
+        items:
+          type: object
+          required: [name, statement]
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              description: "Principle name (e.g., 'Single Source of Truth')."
+            statement:
+              type: string
+              description: "Principle statement — what it means and why."
+            applies_to:
+              type: string
+              description: "Scope: which schemas or entities this principle governs."
+      naming_conventions:
+        type: object
+        description: "Naming rules for the blueprint."
+        additionalProperties: true
+        properties:
+          file_names:
+            type: string
+            description: "Convention for file names (e.g., 'kebab-case')."
+          property_names:
+            type: string
+            description: "Convention for YAML property names (e.g., 'snake_case')."
+          enum_values:
+            type: string
+            description: "Convention for enum values (e.g., 'kebab-case')."
+      conventions:
+        type: array
+        description: "Soft constraints documented as conventions. Validators WARN on violation but do not reject. Examples: Produces Convention — commands typically produce events/documents; Operation ID-Kind Consistency — operation ID prefix must match kind (CMD=command, EVT=event, QRY=query, DOC=document)."
+        items:
+          type: object
+          required: [name, rule]
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              description: "Convention name."
+            rule:
+              type: string
+              description: "The convention rule."
+            severity:
+              type: string
+              enum: [warn, info]
+              default: warn
+              description: "Validator behavior on violation."
+
+  # === Migrations ===
+  migrations:
+    type: array
+    description: "Ordered list of model migrations. Loader applies pending migrations on top of AS-IS model to produce TO-BE state. Each item is either an inline migration or a file reference."
+    items:
+      oneOf:
+        - $ref: "migration.schema.yaml"
+        - type: object
+          required: [file]
+          additionalProperties: false
+          properties:
+            file:
+              type: string
+              description: "Relative path to a migration YAML file (e.g., '.migrations/001-add-payment-retry.migration.yaml'). Dot-prefix distinguishes from domain-slice folder names."
+
+  # === Design Plane ===
+  design:
+    type: object
+    description: "What the system is and how it works: domain model, behavior, and quality attributes."
+    additionalProperties: false
+    properties:
+      architecture:
+        $ref: "design/arch.schema.yaml"
+        description: "Bounded contexts, services, contracts, dependencies."
+      concepts:
+        $ref: "design/concepts.schema.yaml"
+        description: "Domain vocabulary, actors, enumerations, associations, state/lifecycle."
+      rules:
+        $ref: "design/rules.schema.yaml"
+        description: "Business rules, invariants, transitions."
+      domain:
+        $ref: "design/domain.schema.yaml"
+        description: "Operations with protocols, payloads, responses."
+      models:
+        $ref: "design/models.schema.yaml"
+        description: "Data shapes (OpenAPI/AsyncAPI compatible)."
+      infrastructure:
+        $ref: "design/infrastructure.schema.yaml"
+        description: "Resources, environments, deployment topology."
+      story:
+        $ref: "design/story.schema.yaml"
+        description: "Domain stories as operation sequences."
+      dynamics:
+        $ref: "design/dynamics.schema.yaml"
+        description: "Concurrency, parallelism, ordering, race conditions."
+      quality:
+        $ref: "design/quality.schema.yaml"
+        description: "Metrics, KPIs, SLOs, SLAs, security, compliance, observability."
+      interactions:
+        $ref: "design/interactions.schema.yaml"
+        description: "UI screens, actions, and navigation with cross-links."
+
+  # === Governance Plane ===
+  governance:
+    type: object
+    description: "Why it exists, what changed, proof it works: strategic intent and quality evidence."
+    additionalProperties: false
+    properties:
+      motivation:
+        $ref: "governance/motivation.schema.yaml"
+        description: "Goals, non-goals, risks, assumptions, trade-offs."
+      capability:
+        $ref: "governance/capability.schema.yaml"
+        description: "Business capability map (hierarchical)."
+      decisions:
+        $ref: "governance/decisions.schema.yaml"
+        description: "Architecture Decision Log (ADR)."
+      tests:
+        $ref: "governance/test-cases.schema.yaml"
+        description: "Test cases validating rules, operations, concepts."
+      organization:
+        $ref: "governance/organization.schema.yaml"
+        description: "Organizational hierarchy (Party > Department > Team) for ownership tracking."
+      roadmap:
+        $ref: "governance/roadmap.schema.yaml"
+        description: "Product roadmap milestones with deliverables and success criteria."
+      value_stream:
+        $ref: "governance/value-stream.schema.yaml"
+        description: "End-to-end value delivery flows crossing bounded contexts and capabilities."
+
+  # === Extensibility ===
+  profiles:
+    type: array
+    description: "Named extension sets for domain-specific needs. Extend without forking core schemas."
+    items:
+      $ref: "#/$defs/profile"
+
+$defs:
+  profile:
+    type: object
+    description: "Domain-specific extension adding schemas or constraints without forking core."
+    additionalProperties: false
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: "Profile name (e.g. 'healthcare', 'fintech', 'e-commerce')."
+      description:
+        type: string
+        description: "What this profile adds or customizes."
+      extends:
+        type: array
+        items:
+          type: string
+        description: "Core schema file names this profile extends."
+      schemas:
+        type: array
+        description: "Additional schema files introduced by this profile."
+        items:
+          type: object
+          additionalProperties: false
+          required:
+            - file
+          properties:
+            file:
+              type: string
+              description: "Schema file path."
+            description:
+              type: string
+              description: "What this schema adds."
+      constraints:
+        type: array
+        items:
+          type: string
+        description: "Additional validation rules this profile enforces (free text)."

@@ -1,0 +1,99 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Roadmap
+description: "Governance Plane: Product roadmap milestones with deliverables, success criteria, and dependencies. Used for PRD timeline section generation."
+type: object
+additionalProperties: false
+required:
+  - version
+  - milestones
+properties:
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version of this roadmap document."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: "Bounded context this roadmap covers."
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default. Milestones inherit unless overridden."
+  milestones:
+    type: array
+    description: "Product milestones ordered by target date."
+    items:
+      $ref: "#/$defs/milestone"
+
+$defs:
+
+  milestone:
+    type: object
+    description: >
+      Product roadmap milestone — a dated target with deliverables and
+      success criteria. Used for PRD timeline section generation.
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - target_date
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/milestone_ref"
+        description: "Unique milestone identifier (MS + 3+ digits)."
+      name:
+        type: string
+        description: "Milestone name (e.g., 'MVP', 'Beta Launch', 'GA')."
+      description:
+        type: string
+        description: "What this milestone achieves and why it matters."
+      target_date:
+        type: string
+        format: date
+        description: "Target delivery date (ISO 8601: YYYY-MM-DD)."
+      status:
+        type: string
+        enum: [planned, in-progress, achieved, deferred, cancelled]
+        description: "Milestone lifecycle status."
+      deliverables:
+        type: array
+        description: "What ships in this milestone — polymorphic refs."
+        items:
+          type: object
+          additionalProperties: false
+          required:
+            - kind
+            - ref
+          properties:
+            kind:
+              type: string
+              enum: [capability, user-story, use-case, operation, migration]
+              description: "Type of deliverable."
+            ref:
+              type: string
+              description: "Typed ID of the deliverable (e.g., CAP001, US003, UC001, CMD010, MIG002)."
+            description:
+              type: string
+              description: "What specifically is being delivered."
+      success_criteria:
+        type: array
+        items:
+          type: string
+        description: "Measurable criteria for milestone completion."
+      dependencies:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/milestone_ref"
+        description: "Milestones that must complete before this one."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Team or department responsible for this milestone."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"

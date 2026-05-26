@@ -1,0 +1,124 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Organization
+description: "Governance Plane: Organizational hierarchy — Party > Department > Team. Defines who owns what in the blueprint. Teams are first-class entities under a party; departments reference teams by ID."
+type: object
+additionalProperties: false
+required:
+  - version
+  - parties
+properties:
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version of this organization document."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: "Bounded context this organization file belongs to."
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default."
+  parties:
+    type: array
+    description: "Organizational parties (companies, business units, or system owners)."
+    items:
+      $ref: "#/$defs/party"
+
+$defs:
+
+  party:
+    type: object
+    description: "An organizational party owning departments and teams. Top level of the org hierarchy."
+    additionalProperties: false
+    required:
+      - id
+      - name
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/party_ref"
+        description: "Unique party identifier (e.g. PRT001 or billing.PRT001)."
+      name:
+        type: string
+        description: "Party name (e.g. company or business unit name)."
+      description:
+        type: string
+        description: "What this party represents in the organization."
+      departments:
+        type: array
+        description: "Departments within this party."
+        items:
+          $ref: "#/$defs/department"
+      teams:
+        type: array
+        description: "Teams belonging to this party. Departments reference these by team_ref."
+        items:
+          $ref: "#/$defs/team"
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  department:
+    type: object
+    description: "An organizational department grouping teams under a party."
+    additionalProperties: false
+    required:
+      - id
+      - name
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/department_ref"
+        description: "Unique department identifier (e.g. DPT001 or billing.DPT001)."
+      name:
+        type: string
+        description: "Department name."
+      description:
+        type: string
+        description: "What this department is responsible for."
+      teams:
+        type: array
+        description: "References to teams in this department (team_ref IDs)."
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/team_ref"
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  team:
+    type: object
+    description: "A team responsible for blueprint entities. Referenced by owned_by across all schemas."
+    additionalProperties: false
+    required:
+      - id
+      - name
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/team_ref"
+        description: "Unique team identifier (e.g. TM001 or billing.TM001)."
+      name:
+        type: string
+        description: "Team name."
+      description:
+        type: string
+        description: "What this team is responsible for."
+      contact:
+        type: object
+        description: "Team contact information."
+        additionalProperties: false
+        properties:
+          email:
+            type: string
+            format: email
+            description: "Team contact email."
+          slack:
+            type: string
+            description: "Slack channel (e.g. #team-backend)."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"

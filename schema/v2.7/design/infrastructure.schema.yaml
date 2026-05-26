@@ -1,0 +1,219 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Infrastructure Resources
+description: "Design Plane: Infrastructure resource definitions and deployment topology. Declares platform resources (databases, queues, storage, services), ownership, per-environment configuration, and service placement across tiers."
+type: object
+additionalProperties: false
+required:
+  - version
+properties:
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version of this resources document."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: "Bounded context this resources file belongs to."
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default. Entities inherit unless overridden."
+  name:
+    type: string
+    description: "Name of this resource group or service collection."
+  description:
+    type: string
+    description: "Purpose and ownership context of these infrastructure resources."
+  environments:
+    type: array
+    items:
+      type: string
+    description: "Declared environment names used across resources (e.g. dev, staging, prod). Validates environment keys in resource configs."
+  resources:
+    type: array
+    description: "Infrastructure resources: databases, queues, caches, storage, external services."
+    items:
+      $ref: "#/$defs/resource"
+  topology:
+    $ref: "#/$defs/deployment_topology"
+    description: "Deployment topology: how services are placed across tiers, regions, and environments."
+
+$defs:
+
+  resource:
+    type: object
+    description: "An infrastructure resource with platform identity and per-environment configuration."
+    additionalProperties: false
+    required:
+      - id
+      - kind
+      - name
+    properties:
+      id:
+        type: string
+        description: "Unique resource identifier (kebab-case). Used in topology tier references."
+      kind:
+        type: string
+        description: "Resource type (e.g. database, queue, storage, cache, api, function, service)."
+      name:
+        type: string
+        description: "Human-readable resource name."
+      summary:
+        type: string
+        description: "One-line summary for listings."
+      description:
+        type: string
+        description: "Detailed description of this resource's purpose and usage context."
+      owner:
+        $ref: "#/$defs/resource_owner"
+        description: "Ownership and responsibility for this resource."
+      platform:
+        type: object
+        description: "Platform metadata. name=provider (azure, aws, gcp, k8s), type=resource-specific type."
+        additionalProperties: true
+        properties:
+          name:
+            type: string
+            description: "Platform name (e.g. azure, aws, gcp, k8s)."
+          type:
+            type: string
+            description: "Platform-specific resource type (e.g. cosmosdb, sqs, gcs, postgres)."
+      environments:
+        type: object
+        description: "Per-environment configuration keyed by environment name. Use ALL for config shared across all environments."
+        additionalProperties:
+          $ref: "#/$defs/environment_config"
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Resource-level ownership override."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+        description: "Open metadata bag for resource-level custom attributes."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  resource_owner:
+    type: object
+    description: "Ownership metadata: vendor, team, and contact information."
+    additionalProperties: true
+    properties:
+      vendor:
+        type: string
+        description: "Technology vendor or cloud provider name."
+      team:
+        type: string
+        description: "Owning team name."
+      email:
+        type: string
+        format: email
+        description: "Team contact email."
+
+  environment_config:
+    type: object
+    description: "Per-environment resource configuration: connection info, parameters, secrets, and tags."
+    additionalProperties: true
+    properties:
+      resource_name:
+        type: string
+        description: "Platform-specific resource name in this environment."
+      resource_uri:
+        type: string
+        description: "URI or connection string for the resource in this environment."
+      host:
+        type: string
+        description: "Hostname or endpoint address."
+      params:
+        type: object
+        description: "Environment-specific parameters."
+        additionalProperties:
+          type: [string, number, boolean]
+      secrets:
+        type: array
+        description: "Secrets required in this environment."
+        items:
+          $ref: "#/$defs/secret_ref"
+      tags:
+        type: array
+        description: "Resource tags for cost attribution and categorization."
+        items:
+          $ref: "#/$defs/tag"
+
+  secret_ref:
+    description: "A secret reference: a plain name string (resolved from default vault) or an object with explicit vault details."
+    oneOf:
+      - type: string
+      - type: object
+        additionalProperties: false
+        required:
+          - name
+        properties:
+          name:
+            type: string
+            description: "Secret name."
+          description:
+            type: string
+            description: "What this secret is used for."
+          secret_name:
+            type: string
+            description: "Name in the vault if different from the logical name."
+          vault:
+            type: string
+            description: "Vault identifier when using a non-default vault."
+
+  tag:
+    type: object
+    description: "A name-value tag for resource categorization and cost attribution."
+    additionalProperties: false
+    properties:
+      name:
+        type: string
+        description: "Tag name."
+      value:
+        type: string
+        description: "Tag value."
+
+  deployment_topology:
+    type: object
+    description: "Deployment topology describing how services are placed across tiers and regions. Enables visualization of runtime architecture and validates placement decisions."
+    additionalProperties: false
+    properties:
+      tiers:
+        type: array
+        description: "Deployment tiers grouping services by infrastructure function (e.g. web-tier, worker-tier, data-tier)."
+        items:
+          $ref: "#/$defs/deployment_tier"
+      constraints:
+        type: array
+        items:
+          type: string
+        description: "Placement constraints expressed as free text (e.g. 'order-api and product-api must be co-located')."
+
+  deployment_tier:
+    type: object
+    description: "A deployment tier grouping related services for a specific infrastructure function."
+    additionalProperties: false
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: "Tier name (e.g. web-tier, worker-tier, data-tier)."
+      description:
+        type: string
+        description: "Purpose of this deployment tier."
+      services:
+        type: array
+        items:
+          type: string
+        description: "Resource IDs or service names deployed in this tier."
+      region:
+        type: string
+        description: "Deployment region (e.g. eu-west-1, us-east-2)."
+      replicas:
+        type: integer
+        description: "Number of replicas for services in this tier."

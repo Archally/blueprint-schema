@@ -1,0 +1,404 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Story
+description: "Design Plane — Layer 4: Domain stories expressing logical operation sequences, actor interactions, and side effects. Ordering here is logical; runtime ordering is in dynamics."
+type: object
+additionalProperties: false
+required:
+  - name
+  - version
+  - stories
+properties:
+  name:
+    type: string
+    description: "Domain or service name these stories belong to."
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version of this story document."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: "Bounded context this story file belongs to."
+  stage:
+    type: string
+    description: "Development stage (e.g. draft, review, approved)."
+  domains:
+    type: object
+    additionalProperties:
+      type: string
+    description: "Domain references used in these stories (name → identifier mapping)."
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default. Entities inherit unless overridden."
+  stories:
+    type: array
+    description: "Domain stories describing how operations flow from trigger to outcome."
+    items:
+      $ref: "#/$defs/story"
+  user_stories:
+    type: array
+    description: "Agile user stories — PRD building blocks capturing user-level goals."
+    items:
+      $ref: "#/$defs/user_story"
+  use_cases:
+    type: array
+    description: "Use cases — scenario-level requirements. Supports functional and journey modes."
+    items:
+      $ref: "#/$defs/use_case"
+
+$defs:
+
+  story:
+    type: object
+    description: "A domain story: named narrative of actor-operation collaboration."
+    additionalProperties: false
+    required:
+      - id
+      - title
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/story_ref"
+        description: "Typed story identifier (STR### pattern)."
+      title:
+        type: string
+        description: "Story title in imperative or actor-goal form."
+      storyUri:
+        type: string
+        description: "Optional URI to the story source (e.g. Jira, Linear, GitHub issue)."
+      status:
+        type: string
+        description: "Story status (e.g. draft, approved, implemented)."
+      description:
+        type: string
+        description: "Narrative description of this story's context and goal."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      initiated_by:
+        type: array
+        description: "Optional list of actor refs that can initiate this story (human, system, or time). Used for Event Storming lane-start actor stickies."
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+      activities:
+        type: array
+        description: "Process activities composing this story. Each activity is an asynchronous phase containing synchronous steps."
+        items:
+          $ref: "#/$defs/story_activity"
+      process:
+        type: object
+        description: "Process metadata when this story represents a business process. Enables BPMN generation. When absent, story is a lightweight interaction sequence."
+        additionalProperties: false
+        properties:
+          id:
+            $ref: "../metamodel.schema.yaml#/$defs/story_process_ref"
+            description: "Unique process identifier (SP001, SP002, etc.)."
+          trigger:
+            type: object
+            description: "Process start event."
+            required: [type]
+            additionalProperties: false
+            properties:
+              type:
+                type: string
+                enum: [message, timer, signal, manual, conditional]
+                description: "BPMN-compatible start event type."
+              operation:
+                $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+                description: "Triggering operation (required for message/signal types)."
+              schedule:
+                type: string
+                description: "Cron expression or ISO 8601 duration (for timer type)."
+              description:
+                type: string
+                description: "Human-readable trigger description."
+          end_states:
+            type: array
+            description: "Process terminal states with their types."
+            items:
+              type: object
+              required: [name, type]
+              additionalProperties: false
+              properties:
+                name:
+                  type: string
+                  description: "End state name."
+                type:
+                  type: string
+                  enum: [complete, error, cancel, terminate]
+                  description: "BPMN-compatible end event type."
+                description:
+                  type: string
+                  description: "End state description."
+          lanes:
+            type: array
+            description: "Swim lane assignments mapping actors to their operations within this process."
+            items:
+              type: object
+              required: [actor]
+              additionalProperties: false
+              properties:
+                actor:
+                  $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+                  description: "Actor responsible for operations in this lane."
+                operations:
+                  type: array
+                  items:
+                    $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+                  description: "Operations assigned to this actor's lane."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Story-level ownership override."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  story_activity:
+    type: object
+    description: "Process activity within a story. Entry point into domain causal chain (produces/reacts_to)."
+    additionalProperties: false
+    required: [id, name, entry_operation]
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/story_activity_ref"
+        description: "Unique activity identifier (SA001, SA002, etc.)."
+      name:
+        type: string
+        description: "Human-readable activity name describing this process phase."
+      description:
+        type: string
+        description: "Detailed description of what this activity accomplishes."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      entry_operation:
+        $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Domain operation where this activity begins. Generator follows causal chain (produces/reacts_to) from here."
+      triggered_by:
+        type: array
+        items:
+          oneOf:
+            - $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+            - $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "What initiates this activity: an actor (for first activity) or an event operation (for reactive activities)."
+      steps:
+        type: array
+        description: "Optional convenience view of operations in this activity — not source of truth. Domain causal links (produces/reacts_to) are authoritative. Validator WARNS if steps contradict causal chain."
+        items:
+          type: object
+          required: [operation_ref]
+          additionalProperties: false
+          properties:
+            operation_ref:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+              description: "Reference to a domain operation."
+            note:
+              type: string
+              description: "Implementation note, human context, or estimated duration for this step."
+      next_activities:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/story_activity_ref"
+        description: "Optional explicit links to subsequent activities. When absent, flow is inferred from domain causal links."
+      path_type:
+        type: string
+        enum: [happy, error, compensation]
+        description: "Process path classification: happy=expected flow, error=exception handling, compensation=rollback/undo."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  # ---------------------------------------------------------------------------
+  # User Story (v2.5)
+  # PRD building block — Agile user story with MoSCoW delivery priority.
+  # ---------------------------------------------------------------------------
+
+  user_story:
+    type: object
+    description: >
+      Agile user story — a PRD building block capturing a user-level goal.
+      Format: As a [actor], I want [goal], so that [benefit].
+    additionalProperties: false
+    required: [id, actor, goal]
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/user_story_ref"
+        description: "Unique user story identifier (US + 3+ digits)."
+      actor:
+        $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        description: "The actor who wants this — the 'As a...' clause."
+      goal:
+        type: string
+        description: "What the actor wants to do — the 'I want...' clause."
+      benefit:
+        type: string
+        description: "Why this matters — the 'So that...' clause."
+      summary:
+        type: string
+        maxLength: 120
+        description: "One-line summary for listings and PRD tables."
+      description:
+        type: string
+        description: "Additional context or acceptance narrative."
+      acceptance_criteria:
+        type: array
+        items:
+          type: string
+        description: "Gherkin-style or plain-language acceptance criteria."
+      delivery_priority:
+        $ref: "../metamodel.schema.yaml#/$defs/delivery_priority"
+      release_target:
+        $ref: "../metamodel.schema.yaml#/$defs/release_target"
+      story_points:
+        type: integer
+        minimum: 1
+        description: "Relative effort estimate for sprint planning."
+      status:
+        type: string
+        enum: [draft, refined, ready, in-progress, done, deferred]
+        description: "User story lifecycle status."
+      use_case:
+        $ref: "../metamodel.schema.yaml#/$defs/use_case_ref"
+        description: "Use case this story belongs to (optional back-pointer)."
+      operations:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Domain operations this story exercises."
+      test_cases:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/test_ref"
+        description: "Test cases validating this story."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  # ---------------------------------------------------------------------------
+  # Use Case (v2.5)
+  # Scenario-level requirement with dual-mode steps: functional (operation)
+  # and journey (screen + emotion + pain_point). Merged UJ capabilities (D2).
+  # ---------------------------------------------------------------------------
+
+  use_case:
+    type: object
+    description: >
+      Use case — a scenario-level requirement describing actor interaction
+      with the system. Serves as both functional specification (steps with
+      operations) and user journey (steps with screens, emotions, pain
+      points). Groups user stories and optionally references implementing
+      stories (STR###).
+    additionalProperties: false
+    required: [id, name, primary_actor]
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/use_case_ref"
+        description: "Unique use case identifier (UC + 3+ digits)."
+      name:
+        type: string
+        description: "Use case name (e.g., 'Place Order')."
+      summary:
+        type: string
+        maxLength: 120
+        description: "One-line summary for listings."
+      description:
+        type: string
+        description: "Detailed use case narrative."
+      primary_actor:
+        $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        description: "The actor who initiates this use case."
+      goal:
+        type: string
+        description: "What the actor is trying to accomplish."
+      preconditions:
+        type: array
+        items:
+          type: string
+        description: "Conditions that must be true before the use case starts."
+      postconditions:
+        type: array
+        items:
+          type: string
+        description: "Conditions that are true after successful completion."
+      main_scenario:
+        type: array
+        description: "Main success scenario as ordered steps."
+        items:
+          type: object
+          additionalProperties: false
+          required: [step, action]
+          properties:
+            step:
+              type: integer
+              minimum: 1
+              description: "Step number in the scenario."
+            action:
+              type: string
+              description: "What happens at this step (plain language)."
+            operation:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+              description: "Domain operation at this step (functional mode)."
+            screen:
+              $ref: "../metamodel.schema.yaml#/$defs/screen_ref"
+              description: "UI screen where this step occurs (journey mode)."
+            emotion:
+              type: string
+              enum: [frustrated, confused, neutral, satisfied, delighted]
+              description: "User emotion at this step (empathy mapping)."
+            pain_point:
+              type: string
+              description: "UX friction or difficulty at this step."
+      extensions:
+        type: array
+        description: "Alternative flows and exception handling."
+        items:
+          type: object
+          additionalProperties: false
+          required: [step, condition, action]
+          properties:
+            step:
+              type: integer
+              minimum: 1
+              description: "Step number where the extension branches."
+            condition:
+              type: string
+              description: "Condition that triggers this extension."
+            action:
+              type: string
+              description: "What happens in the extension path."
+      user_stories:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/user_story_ref"
+        description: "User stories within this use case."
+      stories:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/story_ref"
+        description: "Process flow stories (STR###) implementing this use case."
+      delivery_priority:
+        $ref: "../metamodel.schema.yaml#/$defs/delivery_priority"
+      release_target:
+        $ref: "../metamodel.schema.yaml#/$defs/release_target"
+      status:
+        type: string
+        enum: [draft, refined, ready, in-progress, done, deferred]
+        description: "Use case lifecycle status."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
