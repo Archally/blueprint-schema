@@ -1,0 +1,29 @@
+version: "1.0.0"
+name: "Payments"
+scope: payments
+
+operations:
+  processPayment:
+    id: CMD004
+    kind: command
+    name: "Process Payment"
+    description: "Charge the customer for an order."
+    task_type: automated
+    reacts_to:
+      - operation: EVT002
+        policy: "Process payment when order is submitted"
+    produces:
+      operations: [EVT004, EVT005]
+      mode: one_of
+
+  paymentConfirmed:
+    id: EVT004
+    kind: event
+    name: "Payment Confirmed"
+    description: "Payment was successfully processed."
+
+  paymentFailed:
+    id: EVT005
+    kind: event
+    name: "Payment Failed"
+    description: "Payment authorization was declined."

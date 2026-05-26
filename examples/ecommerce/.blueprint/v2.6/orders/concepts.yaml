@@ -1,0 +1,17 @@
+version: "1.0.0"
+scope: orders
+
+concepts:
+  - id: CN003
+    name: "Order"
+    stereotype: aggregate-root
+    description: "A customer's purchase request with line items and payment status."
+    attributes:
+      orderId:
+        id: CAT003
+        description: "Unique order identifier"
+        example: "ORD-2026-0042"
+      status:
+        id: CAT004
+        description: "Current order lifecycle state"
+        example: "submitted"

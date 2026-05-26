@@ -1,0 +1,34 @@
+version: "1.0.0"
+name: "Catalog"
+scope: catalog
+
+operations:
+  browseProducts:
+    id: QRY001
+    kind: query
+    name: "Browse Products"
+    description: "Search and filter products in the catalog."
+    initiated_by: [ACT001]
+
+  addToCart:
+    id: CMD001
+    kind: command
+    name: "Add to Cart"
+    description: "Add a product to the shopping cart."
+    initiated_by: [ACT001]
+    produces:
+      operations: [EVT001]
+      mode: all
+
+  browseByCategory:
+    id: QRY002
+    kind: query
+    name: "Browse by Category"
+    description: "Filter products by category."
+    initiated_by: [ACT001]
+
+  itemAddedToCart:
+    id: EVT001
+    kind: event
+    name: "Item Added to Cart"
+    description: "A product was added to a customer's cart."

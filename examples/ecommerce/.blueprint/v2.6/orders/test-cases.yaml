@@ -1,0 +1,18 @@
+version: "1.0.0"
+scope: orders
+
+happy_path:
+  - id: TC001
+    name: "Submit order with items"
+    summary: "Order with at least one item submits successfully."
+    validates:
+      rules: [SR001]
+      operations: [CMD002]
+
+edge_cases:
+  - id: EC001
+    name: "Cancel order before shipment"
+    summary: "Order in submitted status can be cancelled."
+    validates:
+      rules: [VR001]
+      operations: [CMD003]

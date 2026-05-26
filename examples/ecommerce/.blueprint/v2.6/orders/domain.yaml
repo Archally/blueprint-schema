@@ -1,0 +1,41 @@
+version: "1.0.0"
+name: "Orders"
+scope: orders
+
+operations:
+  submitOrder:
+    id: CMD002
+    kind: command
+    name: "Submit Order"
+    description: "Place an order for items in the cart."
+    initiated_by: [ACT001]
+    governed_by:
+      - rule: SR001
+    produces:
+      operations: [EVT002]
+      mode: all
+    materializes:
+      - concept: CN003
+        action: create
+
+  orderSubmitted:
+    id: EVT002
+    kind: event
+    name: "Order Submitted"
+    description: "An order was placed and is awaiting payment."
+
+  cancelOrder:
+    id: CMD003
+    kind: command
+    name: "Cancel Order"
+    description: "Cancel an order before it has been shipped."
+    initiated_by: [ACT001]
+    produces:
+      operations: [EVT003]
+      mode: all
+
+  orderCancelled:
+    id: EVT003
+    kind: event
+    name: "Order Cancelled"
+    description: "An order was cancelled by the customer."

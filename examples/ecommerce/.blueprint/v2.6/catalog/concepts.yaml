@@ -1,0 +1,28 @@
+version: "1.0.0"
+scope: catalog
+
+concepts:
+  - id: CN001
+    name: "Product"
+    stereotype: aggregate-root
+    description: "A purchasable item in the store catalog."
+    attributes:
+      sku:
+        id: CAT001
+        description: "Stock keeping unit identifier"
+        example: "WIDGET-001"
+      price:
+        id: CAT002
+        description: "Current selling price"
+        example: "29.99"
+
+  - id: CN002
+    name: "Category"
+    stereotype: entity
+    description: "A grouping of related products."
+
+actors:
+  - id: ACT001
+    name: "Shopper"
+    type: human
+    summary: "Customer browsing and purchasing products"

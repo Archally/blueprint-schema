@@ -1,0 +1,10 @@
+version: "1.0.0"
+scope: catalog
+
+happy_path:
+  - id: TC002
+    name: "Product has category"
+    summary: "Every product is assigned to at least one category."
+    validates:
+      rules: [SR002]
+      concepts: [CN001, CN002]

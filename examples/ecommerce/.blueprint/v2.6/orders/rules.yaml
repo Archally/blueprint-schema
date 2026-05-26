@@ -1,0 +1,16 @@
+version: "1.0.0"
+scope: orders
+
+structural:
+  - id: SR001
+    name: "Order must have items"
+    description: "An order requires at least one line item to be submitted."
+    concepts: [CN003]
+    modality: necessary
+
+validation:
+  - id: VR001
+    name: "Cancel before shipment only"
+    description: "Orders can only be cancelled before they enter shipped status."
+    concepts: [CN003]
+    modality: obligatory

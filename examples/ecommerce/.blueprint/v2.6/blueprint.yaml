@@ -1,0 +1,7 @@
+version: "1.0.0"
+schemaVersion: "2.6.0"
+name: "E-Commerce Platform"
+description: "Online store with product catalog, order management, and payment processing."
+layout:
+  mode: slices
+  slices: [catalog, orders, payments]

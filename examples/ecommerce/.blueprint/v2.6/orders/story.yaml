@@ -1,0 +1,22 @@
+version: "1.0.0"
+name: "Order Stories"
+scope: orders
+
+stories:
+  - id: STR001
+    title: "Customer Places Order"
+    description: "Happy path from cart to confirmed order."
+    activities:
+      - id: SA001
+        name: "Submit Order"
+        entry_operation: CMD002
+        path_type: happy
+
+user_stories:
+  - id: US001
+    actor: ACT001
+    goal: "place an order for products in my cart"
+    benefit: "receive purchased items at my address"
+    delivery_priority: must-have
+    status: draft
+    operations: [CMD002]

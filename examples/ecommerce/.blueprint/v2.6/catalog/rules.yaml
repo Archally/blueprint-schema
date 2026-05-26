@@ -1,0 +1,9 @@
+version: "1.0.0"
+scope: catalog
+
+structural:
+  - id: SR002
+    name: "Product must belong to a category"
+    description: "Every product in the catalog must be assigned to at least one category."
+    concepts: [CN001, CN002]
+    modality: necessary
