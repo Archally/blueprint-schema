@@ -19,8 +19,8 @@ describe('renderCausalChains', () => {
 
   it('uses entity summary as node label when available', () => {
     const result = renderCausalChains([CMD1, EVT1], [PRODUCES]);
-    expect(result).toContain('"Place Order"');
-    expect(result).toContain('"Order Placed"');
+    expect(result).toContain('"CMD001: Place Order"');
+    expect(result).toContain('"EVT001: Order Placed"');
   });
 
   it('returns empty string when no causal relations exist', () => {

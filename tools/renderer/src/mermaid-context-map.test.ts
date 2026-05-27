@@ -6,8 +6,8 @@ describe('renderContextMap', () => {
   it('renders bounded contexts and their relationships', () => {
     const result = renderContextMap([CTX1, CTX2], [CTX_REL]);
     expect(result).toContain('```mermaid');
-    expect(result).toContain('CTX001["Orders Context"]');
-    expect(result).toContain('CTX002["Payments Context"]');
+    expect(result).toContain('"CTX001: Orders Context"');
+    expect(result).toContain('"CTX002: Payments Context"');
     expect(result).toContain('-->|"depends on"|');
   });
 

@@ -1,4 +1,5 @@
 import type { Entity, Relation } from '../../model-builder/dist/model/types.js';
+import { sanitizeId, entityLabel, escapeMermaid } from './mermaid-utils.js';
 
 export function renderEntityGraph(entities: Entity[], relations: Relation[]): string {
   if (entities.length === 0) return '';
@@ -15,7 +16,7 @@ export function renderEntityGraph(entities: Entity[], relations: Relation[]): st
   for (const [layer, group] of layerGroups) {
     lines.push(`    subgraph ${sanitizeId(layer)}["${layer}"]`);
     for (const entity of group) {
-      const label = entity.summary ?? entity.displayId;
+      const label = escapeMermaid(entityLabel(entity));
       lines.push(`        ${sanitizeId(entity.displayId)}["${label}"]`);
     }
     lines.push('    end');
@@ -31,8 +32,4 @@ export function renderEntityGraph(entities: Entity[], relations: Relation[]): st
 
   lines.push('```', '');
   return lines.join('\n');
-}
-
-function sanitizeId(id: string): string {
-  return id.replace(/[^a-zA-Z0-9]/g, '_');
 }

@@ -1,4 +1,5 @@
 import type { Entity, Relation } from '../../model-builder/dist/model/types.js';
+import { sanitizeId, entityLabel, escapeMermaid } from './mermaid-utils.js';
 
 export function renderCausalChains(entities: Entity[], relations: Relation[]): string {
   const causalTypes = new Set(['produces', 'reacts_to', 'initiated_by', 'triggers', 'emits', 'consumes']);
@@ -17,7 +18,7 @@ export function renderCausalChains(entities: Entity[], relations: Relation[]): s
   for (const id of involvedIds) {
     const entity = entityMap.get(id);
     if (!entity) continue;
-    const label = entity.summary ?? entity.displayId;
+    const label = escapeMermaid(entityLabel(entity));
     const shape = getShape(entity.type);
     lines.push(`    ${sanitizeId(entity.displayId)}${shape[0]}"${label}"${shape[1]}`);
   }
@@ -33,10 +34,6 @@ export function renderCausalChains(entities: Entity[], relations: Relation[]): s
 
   lines.push('```', '');
   return lines.join('\n');
-}
-
-function sanitizeId(id: string): string {
-  return id.replace(/[^a-zA-Z0-9]/g, '_');
 }
 
 function getShape(type: string): [string, string] {
