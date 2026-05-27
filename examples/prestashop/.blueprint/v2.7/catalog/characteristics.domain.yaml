@@ -1,0 +1,66 @@
+---
+name: "Characteristics"
+version: "1.0.0"
+scope: catalog
+tags: [characteristics]
+
+operations:
+  addFeature:
+    id: catalog.CMD030
+    kind: command
+    name: "AddFeature"
+    description: "Create a new product feature (e.g. Weight, Material, Battery Life)."
+    delivery_priority: should-have
+    produces:
+      operations: [catalog.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Feature/Command/AddFeatureCommand.php"
+        role: implementation
+
+  addFeatureValue:
+    id: catalog.CMD031
+    kind: command
+    name: "AddFeatureValue"
+    description: "Add a value to an existing feature (e.g. Feature 'Color' -> Value 'Blue')."
+    delivery_priority: should-have
+    produces:
+      operations: [catalog.EVT002]
+      mode: all
+
+  addAttributeGroup:
+    id: catalog.CMD032
+    kind: command
+    name: "AddAttributeGroup"
+    description: "Create a new attribute group for product combinations (e.g. Size, Color)."
+    delivery_priority: must-have
+    produces:
+      operations: [catalog.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Command/AddAttributeGroupCommand.php"
+        role: implementation
+
+  deleteAttributeGroup:
+    id: catalog.CMD033
+    kind: command
+    name: "DeleteAttributeGroup"
+    description: "Remove an attribute group and all its values. Products using it must be updated."
+    delivery_priority: should-have
+    produces:
+      operations: [catalog.EVT002]
+      mode: all
+
+  getAttributeGroups:
+    id: catalog.QRY007
+    kind: query
+    name: "GetAttributeGroups"
+    description: "List all attribute groups with their values."
+    delivery_priority: must-have
+
+  getFeatures:
+    id: catalog.QRY008
+    kind: query
+    name: "GetFeatures"
+    description: "List all features with their values for product form display."
+    delivery_priority: should-have

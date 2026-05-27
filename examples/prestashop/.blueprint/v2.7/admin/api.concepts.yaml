@@ -1,0 +1,85 @@
+---
+version: "1.0.0"
+scope: admin
+tags: [api-management]
+
+concepts:
+  - id: admin.CN005
+    name: "ApiClient"
+    stereotype: aggregate-root
+    description: "An OAuth2 API client for the PrestaShop Admin API. ApiClients have a client ID, secret (rotatable), scopes, lifetime, and enabled/disabled status. Secret management via ForceApiClientSecret and GenerateApiClientSecret commands."
+    tags: [aggregate-root, api]
+    attributes:
+      clientName:
+        id: CAT813
+        description: "Human-readable name for the API client"
+        example: "ERP Integration"
+      clientId:
+        id: CAT814
+        description: "OAuth2 client identifier"
+        example: "erp-sync-client"
+      enabled:
+        id: CAT815
+        description: "Whether the API client is currently active"
+      description:
+        id: CAT816
+        description: "Purpose description for the API client"
+        example: "ERP system synchronization"
+      lifetime:
+        id: CAT817
+        description: "Token lifetime in seconds"
+        example: "3600"
+      scopes:
+        id: CAT818
+        description: "Array of OAuth2 scopes granted to this client"
+        example: "[\"product_read\", \"order_read\"]"
+    code_refs:
+      - path: "src/Core/Domain/ApiClient/Command/AddApiClientCommand.php"
+        role: implementation
+        description: "API client creation with clientName, clientId, enabled, description, lifetime, scopes"
+      - path: "src/Core/Domain/ApiClient/Command/ForceApiClientSecretCommand.php"
+        role: implementation
+        description: "Force-set a specific secret value on an API client"
+      - path: "src/Core/Domain/ApiClient/Command/GenerateApiClientSecretCommand.php"
+        role: implementation
+        description: "Auto-generate a new secret for an API client"
+
+  - id: admin.CN006
+    name: "WebserviceKey"
+    stereotype: aggregate-root
+    description: "A legacy XML-based webservice access key. Webservice keys predate the Admin API (ApiClient) and provide resource-level permissions for the legacy CRUD API. Supports add, edit, delete, and bulk delete operations."
+    tags: [aggregate-root, api, legacy]
+    attributes:
+      key:
+        id: CAT819
+        description: "The webservice access key string"
+      description:
+        id: CAT820
+        description: "Purpose description for the webservice key"
+        example: "Legacy ERP integration"
+      permissions:
+        id: CAT821
+        description: "Resource-level permission matrix (read/write per resource)"
+    code_refs:
+      - path: "src/Core/Domain/Webservice/Command/AddWebserviceKeyCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Webservice/Command/EditWebserviceKeyCommand.php"
+        role: implementation
+
+actors:
+  - id: admin.ACT003
+    name: "ApiIntegrator"
+    type: human
+    description: "Developer or technical partner who configures API clients and webservice keys for third-party system integrations (ERP, CRM, PIM, marketplaces)."
+    personas:
+      - name: "Typical ApiIntegrator"
+        quote: "I need clear scope documentation and reliable secret rotation without downtime."
+        goals: ["Set up API access for integrations", "Rotate secrets safely", "Understand scope permissions"]
+        pain_points: ["Scope naming is inconsistent", "No secret rotation without downtime", "Two API systems (legacy + new) to manage"]
+        behaviors: ["Uses Admin API for new integrations", "Maintains legacy webservice keys for old systems"]
+        tech_savviness: high
+        job_to_be_done: "Configure and maintain API access for third-party system integrations"
+        context: "API integration setup and maintenance"
+        demographics:
+          role: "Integration Developer"
+          industry: "E-commerce / Software"

@@ -1,0 +1,140 @@
+---
+name: "Discount Management"
+version: "1.0.0"
+scope: checkout
+tags: [discount, promotions]
+
+operations:
+  createDiscount:
+    id: checkout.CMD016
+    kind: command
+    name: "CreateDiscount"
+    description: "Create a new discount with conditions, actions, validity period, and usage limits. Supports voucher codes, automatic discounts, free shipping, and BOGO offers."
+    delivery_priority: must-have
+    initiated_by: [checkout.ACT001]
+    governed_by:
+      - rule: checkout.SR002
+      - rule: checkout.VR001
+    produces:
+      operations: [checkout.EVT007]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Discount/Command/AddDiscountCommand.php"
+        role: implementation
+
+  updateDiscount:
+    id: checkout.CMD017
+    kind: command
+    name: "UpdateDiscount"
+    description: "Modify an existing discount's conditions, actions, validity, or usage limits."
+    delivery_priority: must-have
+    initiated_by: [checkout.ACT001]
+    governed_by:
+      - rule: checkout.SR002
+      - rule: checkout.VR001
+    produces:
+      operations: [checkout.EVT008]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Discount/Command/UpdateDiscountCommand.php"
+        role: implementation
+
+  deleteDiscount:
+    id: checkout.CMD018
+    kind: command
+    name: "DeleteDiscount"
+    description: "Delete one or more discounts. Supports single and bulk deletion."
+    delivery_priority: must-have
+    initiated_by: [checkout.ACT001]
+    produces:
+      operations: [checkout.EVT009]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Discount/Command/DeleteDiscountCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Discount/Command/BulkDeleteDiscountsCommand.php"
+        role: implementation
+
+  duplicateDiscount:
+    id: checkout.CMD019
+    kind: command
+    name: "DuplicateDiscount"
+    description: "Create a copy of an existing discount for reuse as a campaign template."
+    delivery_priority: should-have
+    initiated_by: [checkout.ACT001]
+    produces:
+      operations: [checkout.EVT007]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Discount/Command/DuplicateDiscountCommand.php"
+        role: implementation
+
+  bulkUpdateDiscountStatus:
+    id: checkout.CMD020
+    kind: command
+    name: "BulkUpdateDiscountStatus"
+    description: "Enable or disable multiple discounts at once."
+    delivery_priority: should-have
+    initiated_by: [checkout.ACT001]
+    produces:
+      operations: [checkout.EVT008]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Discount/Command/BulkUpdateDiscountsStatusCommand.php"
+        role: implementation
+
+  getDiscountForEditing:
+    id: checkout.QRY005
+    kind: query
+    name: "GetDiscountForEditing"
+    description: "Retrieve full discount configuration for the edit form."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Discount/Query/GetDiscountForEditing.php"
+        role: implementation
+
+  getDiscountTypes:
+    id: checkout.QRY006
+    kind: query
+    name: "GetDiscountTypes"
+    description: "Retrieve available discount type options for form dropdowns."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Discount/Query/GetDiscountTypes.php"
+        role: implementation
+
+  discountCreated:
+    id: checkout.EVT007
+    kind: event
+    name: "DiscountCreated"
+    description: "Emitted when a new discount is created or duplicated."
+
+  discountUpdated:
+    id: checkout.EVT008
+    kind: event
+    name: "DiscountUpdated"
+    description: "Emitted when discount configuration or status changes."
+
+  discountDeleted:
+    id: checkout.EVT009
+    kind: event
+    name: "DiscountDeleted"
+    description: "Emitted when one or more discounts are deleted."
+
+errors:
+  discountNotFound:
+    id: checkout.ERR006
+    name: "DiscountNotFound"
+    description: "Requested discount does not exist."
+    category: validation
+    severity: error
+    http_status: 404
+
+  invalidDiscountConfiguration:
+    id: checkout.ERR007
+    name: "InvalidDiscountConfiguration"
+    description: "Discount configuration violates business rules (e.g., negative reduction, end date before start date, invalid condition combination)."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [checkout.SR002, checkout.VR001]

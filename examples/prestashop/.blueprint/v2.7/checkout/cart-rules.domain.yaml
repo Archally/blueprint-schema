@@ -1,0 +1,60 @@
+---
+name: "Cart Rule Application"
+version: "1.0.0"
+scope: checkout
+tags: [cart, cart-rules, promotions]
+
+operations:
+  applyCartRuleToCart:
+    id: checkout.CMD014
+    kind: command
+    name: "ApplyCartRuleToCart"
+    description: "Apply a cart rule (discount/voucher) to the cart. Validates eligibility conditions before application."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT001]
+    governed_by:
+      - rule: checkout.VR001
+      - rule: checkout.VR002
+      - rule: checkout.VR003
+    produces:
+      operations: [checkout.EVT005]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Cart/Command/AddCartRuleToCartCommand.php"
+        role: implementation
+
+  removeCartRuleFromCart:
+    id: checkout.CMD015
+    kind: command
+    name: "RemoveCartRuleFromCart"
+    description: "Remove a previously applied cart rule from the cart."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT001]
+    produces:
+      operations: [checkout.EVT006]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Cart/Command/RemoveCartRuleFromCartCommand.php"
+        role: implementation
+
+  searchCartRules:
+    id: checkout.QRY004
+    kind: query
+    name: "SearchCartRules"
+    description: "Search available cart rules by keyword. Used to find applicable discounts for a cart session."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/CartRule/Query/SearchCartRules.php"
+        role: implementation
+
+  cartRuleApplied:
+    id: checkout.EVT005
+    kind: event
+    name: "CartRuleApplied"
+    description: "Emitted when a cart rule is successfully applied. Triggers cart total recalculation."
+
+  cartRuleRemoved:
+    id: checkout.EVT006
+    kind: event
+    name: "CartRuleRemoved"
+    description: "Emitted when a cart rule is removed from the cart."

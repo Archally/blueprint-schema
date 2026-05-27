@@ -1,0 +1,279 @@
+---
+name: "Shipment Management"
+version: "1.0.0"
+scope: shipping
+tags: [shipment-management]
+
+operations:
+
+  # --- Shipment Lifecycle ---
+
+  createShipment:
+    id: shipping.CMD011
+    kind: command
+    name: "CreateShipment"
+    description: "Create a new shipment for an order, assigning a carrier and an initial product with quantity. Multiple shipments can exist per order for split delivery."
+    delivery_priority: must-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT009]
+      mode: all
+    governed_by:
+      - rule: shipping.VR006
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Command/CreateShipment.php"
+        role: implementation
+
+  editShipment:
+    id: shipping.CMD012
+    kind: command
+    name: "EditShipment"
+    description: "Update a shipment's tracking number and/or carrier. Cannot be performed on shipments that have already been shipped."
+    delivery_priority: must-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT010]
+      mode: all
+    governed_by:
+      - rule: shipping.VR006
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Command/EditShipment.php"
+        role: implementation
+
+  # --- Product Assignment ---
+
+  addProductToShipment:
+    id: shipping.CMD013
+    kind: command
+    name: "AddProductToShipment"
+    description: "Add a product line with quantity to an existing shipment."
+    delivery_priority: must-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT011]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Command/AddProductToShipment.php"
+        role: implementation
+
+  deleteProductFromShipment:
+    id: shipping.CMD014
+    kind: command
+    name: "DeleteProductFromShipment"
+    description: "Remove a product line from a shipment."
+    delivery_priority: must-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT012]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Command/DeleteProductFromShipment.php"
+        role: implementation
+
+  # --- Split & Merge ---
+
+  splitShipment:
+    id: shipping.CMD015
+    kind: command
+    name: "SplitShipment"
+    description: "Split a shipment into two by extracting specified product quantities into a new shipment with a potentially different carrier. Enables partial fulfillment scenarios."
+    delivery_priority: should-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT013]
+      mode: all
+    governed_by:
+      - rule: shipping.VR007
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Command/SplitShipment.php"
+        role: implementation
+      - path: "src/Core/Domain/Shipment/Service/ShipmentSplitterInterface.php"
+        role: interface
+
+  mergeProductsToShipment:
+    id: shipping.CMD016
+    kind: command
+    name: "MergeProductsToShipment"
+    description: "Merge products from one or more shipments into a target shipment. Consolidates parcels when separate shipping is no longer needed."
+    delivery_priority: should-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT014]
+      mode: all
+    governed_by:
+      - rule: shipping.VR008
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Command/MergeProductsToShipment.php"
+        role: implementation
+      - path: "src/Core/Domain/Shipment/Service/ShipmentMergerInterface.php"
+        role: interface
+
+  # --- Carrier Switch ---
+
+  switchShipmentCarrier:
+    id: shipping.CMD017
+    kind: command
+    name: "SwitchShipmentCarrier"
+    description: "Change the carrier assigned to a shipment. Useful when the original carrier becomes unavailable or a better option is identified."
+    delivery_priority: should-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT015]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Command/SwitchShipmentCarrierCommand.php"
+        role: implementation
+
+  # --- Shipment Events ---
+
+  shipmentCreated:
+    id: shipping.EVT009
+    kind: event
+    name: "ShipmentCreated"
+    description: "A new shipment has been created for an order with initial product assignment."
+
+  shipmentUpdated:
+    id: shipping.EVT010
+    kind: event
+    name: "ShipmentUpdated"
+    description: "A shipment's tracking number or carrier has been updated."
+
+  productAddedToShipment:
+    id: shipping.EVT011
+    kind: event
+    name: "ProductAddedToShipment"
+    description: "A product line has been added to a shipment."
+
+  productRemovedFromShipment:
+    id: shipping.EVT012
+    kind: event
+    name: "ProductRemovedFromShipment"
+    description: "A product line has been removed from a shipment."
+
+  shipmentSplit:
+    id: shipping.EVT013
+    kind: event
+    name: "ShipmentSplit"
+    description: "A shipment has been split — products moved to a new shipment."
+
+  shipmentsMerged:
+    id: shipping.EVT014
+    kind: event
+    name: "ShipmentsMerged"
+    description: "Products from one or more shipments have been merged into a target shipment."
+
+  shipmentCarrierSwitched:
+    id: shipping.EVT015
+    kind: event
+    name: "ShipmentCarrierSwitched"
+    description: "A shipment's assigned carrier has been changed."
+
+  # --- Shipment Queries ---
+
+  getOrderShipments:
+    id: shipping.QRY005
+    kind: query
+    name: "GetOrderShipments"
+    description: "Retrieve all shipments for a given order."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Query/GetOrderShipments.php"
+        role: implementation
+
+  getShipmentForEditing:
+    id: shipping.QRY006
+    kind: query
+    name: "GetShipmentForEditing"
+    description: "Retrieve a single shipment with all editable fields for the edit form."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Query/GetShipmentForEditing.php"
+        role: implementation
+
+  getShipmentForViewing:
+    id: shipping.QRY007
+    kind: query
+    name: "GetShipmentForViewing"
+    description: "Retrieve a shipment's full details for display including products and tracking info."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Query/GetShipmentForViewing.php"
+        role: implementation
+
+  getShipmentProducts:
+    id: shipping.QRY008
+    kind: query
+    name: "GetShipmentProducts"
+    description: "Retrieve the list of products assigned to a specific shipment."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Query/GetShipmentProducts.php"
+        role: implementation
+
+  getShipmentsForOrderDetail:
+    id: shipping.QRY009
+    kind: query
+    name: "GetShipmentsForOrderDetail"
+    description: "Retrieve shipments associated with a specific order detail (line item)."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Query/GetShipmentsForOrderDetail.php"
+        role: implementation
+
+  listAvailableShipments:
+    id: shipping.QRY010
+    kind: query
+    name: "ListAvailableShipments"
+    description: "List shipments available for product assignment or merging."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Query/ListAvailableShipments.php"
+        role: implementation
+
+  listAvailableShipmentsForProduct:
+    id: shipping.QRY011
+    kind: query
+    name: "ListAvailableShipmentsForProduct"
+    description: "List shipments that a specific product can be assigned to."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Query/ListAvailableShipmentsForProduct.php"
+        role: implementation
+
+errors:
+  shipmentNotFound:
+    id: shipping.ERR004
+    name: "ShipmentNotFound"
+    description: "The specified shipment does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Exception/ShipmentNotFoundException.php"
+        role: implementation
+
+  cannotModifyShippedShipment:
+    id: shipping.ERR005
+    name: "CannotModifyShippedShipment"
+    description: "Cannot edit a shipment that has already been shipped. Shipments become immutable after dispatch."
+    category: conflict
+    severity: error
+    http_status: 409
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Exception/CannotEditShipmentShippedException.php"
+        role: implementation
+
+  cannotModifyShipment:
+    id: shipping.ERR006
+    name: "CannotModifyShipment"
+    description: "Shipment cannot be created, saved, or products cannot be merged due to a system or constraint error."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Exception/CannotAddShipmentException.php"
+        role: implementation
+      - path: "src/Core/Domain/Shipment/Exception/CannotSaveShipmentException.php"
+        role: implementation
+      - path: "src/Core/Domain/Shipment/Exception/CannotMergeProductToShipmentException.php"
+        role: implementation

@@ -1,0 +1,145 @@
+---
+version: "1.0.0"
+tags: [shop-and-buy]
+capabilities:
+  # ── Level 1: Core Commerce (Customer-Facing) ─────────────────────────
+  - id: CAP018
+    name: "Search & Discovery"
+    level: 1
+    description: >
+      Ability for customers to find products through full-text search,
+      faceted filters, search aliases, and SEO-driven discovery.
+    goal_refs:
+      - catalog.G001
+    maturity: developing
+    strategic_importance: high
+    delivery_priority: should-have
+    discovery_stage: validated
+    certainty: probable
+    value_stream_refs: [VS001]
+
+  - id: CAP001
+    name: "Order Management"
+    level: 1
+    description: >
+      Ability to create, validate, and fulfill customer orders across all sales
+      channels. Encompasses order placement, state management, cancellation,
+      refund, returns, and credit slips.
+    goal_refs:
+      - orders.G001
+      - orders.G003
+    operations:
+      - orders.CMD001
+      - orders.CMD002
+      - orders.CMD003
+      - orders.QRY001
+    maturity: established
+    strategic_importance: critical
+    delivery_priority: must-have
+    discovery_stage: committed
+    certainty: confirmed
+    value_stream_refs: [VS001, VS002]
+    children:
+      - id: CAP002
+        name: "Cart Calculation"
+        level: 2
+        description: >
+          Accurate computation of cart totals including product prices, quantity
+          discounts, cart rules, tax rules, and shipping costs.
+        goal_refs:
+          - orders.G001
+        maturity: developing
+        strategic_importance: critical
+        delivery_priority: must-have
+        discovery_stage: validated
+        certainty: confirmed
+        value_stream_refs: [VS001]
+
+      - id: CAP003
+        name: "Checkout Flow"
+        level: 2
+        description: >
+          End-to-end checkout: cart review, shipping selection, payment
+          initiation, and order confirmation.
+        goal_refs:
+          - checkout.G001
+          - checkout.G002
+        operations:
+          - checkout.CMD001
+          - checkout.CMD003
+        maturity: developing
+        strategic_importance: critical
+        delivery_priority: must-have
+        discovery_stage: committed
+        certainty: confirmed
+        value_stream_refs: [VS001]
+
+      - id: CAP004
+        name: "Stock Reservation"
+        level: 2
+        description: >
+          Reserve inventory at checkout to prevent over-selling, with automatic
+          release on cart abandonment or order cancellation.
+        goal_refs:
+          - orders.G003
+        maturity: established
+        strategic_importance: high
+        delivery_priority: must-have
+        discovery_stage: committed
+        certainty: confirmed
+        value_stream_refs: [VS001]
+
+  - id: CAP006
+    name: "Customer Notifications"
+    level: 1
+    description: >
+      Ability to send transactional notifications (order confirmation, shipping
+      updates, refund receipts) via email and optional SMS channels.
+    goal_refs:
+      - orders.G001
+    maturity: established
+    strategic_importance: medium
+    delivery_priority: should-have
+    discovery_stage: validated
+    certainty: probable
+    value_stream_refs: [VS001]
+
+  # ── Level 1: Customer Management ────────────────────────────────────
+  - id: CAP007
+    name: "Customer Account Management"
+    level: 1
+    description: >
+      Ability to register, authenticate, and manage customer accounts including
+      personal data, addresses, groups, and customer service interactions.
+    maturity: established
+    strategic_importance: high
+    delivery_priority: must-have
+    discovery_stage: committed
+    certainty: confirmed
+    value_stream_refs: [VS001, VS003]
+    children:
+      - id: CAP008
+        name: "Address Management"
+        level: 2
+        description: >
+          CRUD for customer billing and shipping addresses with country/state
+          validation and format rules.
+        maturity: established
+        strategic_importance: high
+        delivery_priority: must-have
+        discovery_stage: committed
+        certainty: confirmed
+        value_stream_refs: [VS001]
+
+      - id: CAP009
+        name: "Customer Service"
+        level: 2
+        description: >
+          Threaded messaging between customers and merchant support staff,
+          with status tracking and assignment.
+        maturity: developing
+        strategic_importance: medium
+        delivery_priority: should-have
+        discovery_stage: validated
+        certainty: probable
+        value_stream_refs: [VS001]

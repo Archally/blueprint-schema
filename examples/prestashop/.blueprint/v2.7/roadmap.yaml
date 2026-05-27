@@ -1,0 +1,121 @@
+---
+version: "1.0.0"
+milestones:
+  - id: MS001
+    name: "MVP — Cart & Checkout"
+    description: "Minimal viable checkout: cart management, order placement, payment integration."
+    target_date: "2026-06-30"
+    status: in-progress
+    deliverables:
+      - kind: capability
+        ref: CAP001
+        description: "Order Management — place, cancel, refund."
+      - kind: capability
+        ref: CAP003
+        description: "Checkout Flow — cart + payment initiation."
+      - kind: user-story
+        ref: orders.US001
+        description: "Shopper places an order."
+      - kind: user-story
+        ref: checkout.US001
+        description: "Shopper adds product to cart."
+      - kind: operation
+        ref: orders.CMD001
+        description: "PlaceOrder command fully operational."
+    success_criteria:
+      - "Shopper can complete end-to-end purchase in < 3 minutes"
+      - "Order error rate < 0.5% in staging"
+      - "At least 2 payment gateways integrated (Stripe + PayPal)"
+    owned_by:
+      team: TM001
+
+  - id: MS002
+    name: "Catalog v2 — Search & Filters"
+    description: "Elasticsearch-powered search, faceted filters, and bulk product import."
+    target_date: "2026-09-30"
+    status: planned
+    deliverables:
+      - kind: capability
+        ref: CAP005
+        description: "Catalog Management — full CRUD + search."
+      - kind: capability
+        ref: CAP018
+        description: "Search & Discovery — faceted search with ES."
+      - kind: user-story
+        ref: catalog.US001
+        description: "CategoryManager creates a product."
+      - kind: operation
+        ref: catalog.CMD001
+        description: "CreateProduct command with ES indexing."
+    success_criteria:
+      - "Search returns results in < 100ms for 100k product catalog"
+      - "Faceted filters on category, price range, attributes"
+    dependencies: [MS001]
+    owned_by:
+      team: TM002
+
+  - id: MS003
+    name: "Scale — Async Orders & Inventory"
+    description: "Event-driven order processing with async stock reservation for flash-sale volumes."
+    target_date: "2026-12-31"
+    status: planned
+    deliverables:
+      - kind: capability
+        ref: CAP004
+        description: "Stock Reservation — pessimistic locking under concurrency."
+      - kind: operation
+        ref: orders.EVT001
+        description: "OrderPlaced event triggers async downstream."
+    success_criteria:
+      - "Handle 500+ concurrent checkouts without stock over-sell"
+      - "Order processing error rate < 0.1%"
+    dependencies: [MS001, MS002]
+    owned_by:
+      team: TM001
+
+  - id: MS004
+    name: "International & Multi-Store"
+    description: >
+      Multi-currency ordering, zone-based tax rules, multi-language storefront,
+      and multi-store configuration for EU market expansion.
+    target_date: "2027-03-31"
+    status: planned
+    deliverables:
+      - kind: capability
+        ref: CAP011
+        description: "Multi-Currency & Tax — global compliance."
+      - kind: capability
+        ref: CAP012
+        description: "Localization — multi-language support."
+      - kind: capability
+        ref: CAP017
+        description: "Multi-Store Management — shared/independent configs."
+    success_criteria:
+      - "Support 10+ currencies with daily exchange rate updates"
+      - "Tax calculation compliant with EU VAT rules for 5+ countries"
+      - "Multi-store: independent catalog per shop with shared customer base"
+    dependencies: [MS001]
+    owned_by:
+      team: TM006
+
+  - id: MS005
+    name: "API-First & Headless"
+    description: >
+      New Admin API with OAuth2, headless storefront support, and API client management
+      for third-party integrations and composable commerce.
+    target_date: "2027-06-30"
+    status: planned
+    deliverables:
+      - kind: capability
+        ref: CAP016
+        description: "API & Integration Platform — OAuth2 Admin API."
+      - kind: capability
+        ref: CAP014
+        description: "Module Ecosystem — API-compatible module hooks."
+    success_criteria:
+      - "100% of CQRS commands accessible via Admin API"
+      - "OAuth2 token issuance < 200ms p95"
+      - "OpenAPI spec auto-generated and published"
+    dependencies: [MS002, MS003]
+    owned_by:
+      team: TM009

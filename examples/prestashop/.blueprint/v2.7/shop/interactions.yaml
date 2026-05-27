@@ -1,0 +1,63 @@
+---
+version: "1.0.0"
+scope: shop
+
+design_references:
+  design_system: "PrestaShop UIKit (Bootstrap 4)"
+  storybook_url: "https://build.prestashop-project.org/prestashop-ui-kit/"
+  accessibility_standard: WCAG-2.1-AA
+
+screens:
+  - id: shop.SCR001
+    name: "Logos & Favicons"
+    summary: "Logo upload form for header, invoice, mail, and favicon images."
+    uses_models: ["ShopLogos"]
+    motivated_by: [shop.G001]
+
+  - id: shop.SCR002
+    name: "Store Locations"
+    summary: "Grid of physical store locations with status toggles and bulk actions."
+    uses_models: ["StoreList"]
+
+  - id: shop.SCR003
+    name: "Search Engine Referrers"
+    summary: "List of SEO referrer search engines with CRUD controls."
+    uses_models: ["SearchEngineList"]
+    motivated_by: [shop.G003]
+
+  - id: shop.SCR004
+    name: "Search Aliases"
+    summary: "Search term alias management with add, edit, and bulk delete."
+    uses_models: ["AliasList"]
+    motivated_by: [shop.G002]
+
+  - id: shop.SCR005
+    name: "Contact Departments"
+    summary: "Contact Us form department list with add and edit controls."
+    uses_models: ["ContactList"]
+
+actions:
+  - id: shop.UAC001
+    screen: shop.SCR001
+    name: "Upload Logos"
+    description: "Upload header logo, invoice logo, mail logo, or favicon."
+    triggers_operations: [shop.CMD001]
+
+  - id: shop.UAC002
+    screen: shop.SCR002
+    name: "Toggle Store Status"
+    description: "Enable or disable a physical store location."
+    triggers_operations: [shop.CMD003]
+
+  - id: shop.UAC003
+    screen: shop.SCR004
+    name: "Add Search Alias"
+    description: "Create a new search term alias mapping."
+    triggers_operations: [shop.CMD010]
+
+navigation:
+  - id: shop.UNV001
+    from: shop.SCR003
+    to: shop.SCR004
+    condition: "User navigates between Search settings sub-pages"
+    description: "Navigate from SEO referrers to search aliases."

@@ -1,0 +1,269 @@
+---
+version: "1.0.0"
+scope: catalog
+tags: [combination, models]
+
+components:
+  schemas:
+    GenerateCombinationsPayload:
+      x-model-id: MDL007
+      purpose: command-payload
+      description: "Request body for generating product combinations from selected attribute groups and values."
+      represents:
+        - concept: catalog.CN003
+          kind: api
+      type: object
+      required: [productId, attributes]
+      properties:
+        productId:
+          type: integer
+          description: "Product to generate combinations for."
+          example: 42
+        attributes:
+          type: array
+          description: "Attribute group/value pairs to combine."
+          items:
+            type: object
+            properties:
+              attributeGroupId:
+                type: integer
+                description: "Attribute group identifier."
+                example: 1
+              attributeIds:
+                type: array
+                items:
+                  type: integer
+                description: "Selected attribute values from this group."
+                example: [1, 2, 3]
+          example:
+            - attributeGroupId: 1
+              attributeIds: [1, 2, 3]
+            - attributeGroupId: 2
+              attributeIds: [4, 5]
+      code_refs:
+        - path: "src/Core/Domain/Combination/Command/GenerateProductCombinationsCommand.php"
+          role: schema
+
+    UpdateCombinationPayload:
+      x-model-id: MDL008
+      purpose: command-payload
+      description: "Partial update payload for a combination's price impact, stock, reference, EAN, weight."
+      represents:
+        - concept: catalog.CN003
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              reference: CAT019
+              priceImpact: CAT020
+              quantity: CAT021
+              ean13: CAT022
+      type: object
+      required: [combinationId]
+      properties:
+        combinationId:
+          type: integer
+          description: "Combination to update."
+          example: 7
+        reference:
+          type: string
+          description: "SKU reference for this variant."
+          example: "LAPTOP-15-BLK-M"
+        impactOnPrice:
+          type: string
+          description: "Price offset from base product price (decimal)."
+          example: "50.000000"
+        quantity:
+          type: integer
+          description: "Available stock for this variant."
+          example: 25
+        minimalQuantity:
+          type: integer
+          description: "Minimum order quantity."
+          example: 1
+        weight:
+          type: string
+          description: "Weight (decimal, kg)."
+          example: "2.200000"
+        ean13:
+          type: string
+          description: "EAN-13 barcode."
+          example: "5901234123464"
+        isbn:
+          type: string
+          description: "ISBN."
+          example: ""
+        upc:
+          type: string
+          description: "UPC barcode."
+          example: ""
+        mpn:
+          type: string
+          description: "Manufacturer Part Number."
+          example: "MPN-LAP-2026-M"
+        isDefault:
+          type: boolean
+          description: "Whether this is the default combination."
+          example: false
+        lowStockThreshold:
+          type: integer
+          description: "Low stock alert threshold."
+          example: 5
+        lowStockAlertEnabled:
+          type: boolean
+          description: "Whether low stock alert is active."
+          example: true
+        availableDate:
+          type: string
+          format: date
+          description: "Expected availability date."
+          example: "2026-04-01"
+      code_refs:
+        - path: "src/Core/Domain/Combination/Command/UpdateCombinationCommand.php"
+          role: schema
+
+    CombinationResource:
+      x-model-id: MDL009
+      purpose: read-model
+      description: "Full combination representation for editing form."
+      represents:
+        - concept: catalog.CN003
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              combinationId: CAT018
+              reference: CAT019
+              impactOnPrice: CAT020
+              quantity: CAT021
+              ean13: CAT022
+      type: object
+      properties:
+        combinationId:
+          type: integer
+          description: "Unique combination identifier."
+          example: 7
+        productId:
+          type: integer
+          description: "Parent product identifier."
+          example: 42
+        reference:
+          type: string
+          description: "SKU reference."
+          example: "LAPTOP-15-BLK-M"
+        impactOnPrice:
+          type: string
+          description: "Price offset from base."
+          example: "50.000000"
+        impactOnWeight:
+          type: string
+          description: "Weight offset."
+          example: "0.100000"
+        quantity:
+          type: integer
+          description: "Available stock."
+          example: 25
+        minimalQuantity:
+          type: integer
+          description: "Minimum order quantity."
+          example: 1
+        ean13:
+          type: string
+          example: "5901234123464"
+        isbn:
+          type: string
+          example: ""
+        upc:
+          type: string
+          example: ""
+        mpn:
+          type: string
+          example: "MPN-LAP-2026-M"
+        isDefault:
+          type: boolean
+          description: "Default combination flag."
+          example: true
+        lowStockThreshold:
+          type: integer
+          example: 5
+        lowStockAlertEnabled:
+          type: boolean
+          example: true
+        availableDate:
+          type: string
+          format: date
+          example: "2026-04-01"
+        attributes:
+          type: array
+          description: "Attribute values forming this combination."
+          items:
+            type: object
+            properties:
+              attributeGroupId:
+                type: integer
+                example: 1
+              attributeGroupName:
+                type: string
+                example: "Size"
+              attributeId:
+                type: integer
+                example: 2
+              attributeName:
+                type: string
+                example: "M"
+        imageIds:
+          type: array
+          description: "Product images associated with this combination."
+          items:
+            type: integer
+          example: [14, 15]
+      code_refs:
+        - path: "src/Core/Domain/Combination/QueryResult/CombinationForEditing.php"
+          role: schema
+
+    CombinationListItem:
+      x-model-id: MDL010
+      purpose: read-model
+      description: "Lightweight combination summary for paginated lists."
+      represents:
+        - concept: catalog.CN003
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              combinationId: CAT018
+              reference: CAT019
+      type: object
+      properties:
+        combinationId:
+          type: integer
+          description: "Combination identifier."
+          example: 7
+        attributeSummary:
+          type: string
+          description: "Formatted attribute summary (e.g. 'Size: M, Color: Black')."
+          example: "Size: M, Color: Black"
+        reference:
+          type: string
+          description: "SKU reference."
+          example: "LAPTOP-15-BLK-M"
+        impactOnPrice:
+          type: string
+          description: "Price offset."
+          example: "50.000000"
+        finalPrice:
+          type: string
+          description: "Computed final price."
+          example: "1049.990000"
+        quantity:
+          type: integer
+          description: "Available stock."
+          example: 25
+        isDefault:
+          type: boolean
+          description: "Default combination."
+          example: true
+        imageUrl:
+          type: string
+          description: "Combination-specific image URL."
+          example: "/img/p/42/14-small_default.jpg"

@@ -109,5 +109,6 @@
 
   "material-icon-theme.folders.associations": {
     ".blueprint": "sandbox"
-  }
+  },
+  "workbench.colorTheme": "One Dark Flatland Monokai"
 }

@@ -1,0 +1,52 @@
+---
+name: "Returns"
+version: "1.0.0"
+scope: orders
+tags: [returns]
+
+operations:
+  updateOrderReturnState:
+    id: orders.CMD023
+    kind: command
+    name: "UpdateOrderReturnState"
+    description: "Update the state of a merchandise return request. Transitions the return through its lifecycle (confirmation, package receipt, completion, denial)."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT003, orders.ACT004]
+    governed_by:
+      - rule: orders.VR003
+    produces:
+      operations: [orders.EVT010]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/OrderReturn/Command/UpdateOrderReturnStateCommand.php"
+        role: implementation
+
+  # --- Events ---
+
+  returnStateChanged:
+    id: orders.EVT010
+    kind: event
+    name: "ReturnStateChanged"
+    description: "Emitted when a merchandise return transitions to a new state. Triggers customer notification."
+
+  # --- Queries ---
+
+  getCreditSlips:
+    id: orders.QRY004
+    kind: query
+    name: "GetCreditSlips"
+    description: "Retrieve credit slips filtered by date range. Used for accounting reconciliation and customer refund history."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Order/Query/GetCreditSlipIdsByDateRange.php"
+        role: implementation
+
+errors:
+  returnWindowExpired:
+    id: orders.ERR007
+    name: "ReturnWindowExpired"
+    description: "The return request was submitted after the configurable return window (default: 14 days from delivery). EU consumer law mandates minimum 14 days."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [orders.VR003]

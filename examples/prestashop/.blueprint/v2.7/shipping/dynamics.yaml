@@ -1,0 +1,23 @@
+---
+version: "1.0.0"
+scope: shipping
+
+execution:
+  model: event-driven
+  description: "Shipment creation dispatches events for tracking and notification."
+  rationale: "Shipment state changes must notify external tracking providers and trigger customer emails without blocking the warehouse operator's workflow."
+
+race_conditions:
+  - id: shipping.RC001
+    name: "Concurrent shipment product assignment"
+    scenario: "Two operators assign the same order product to different shipments simultaneously."
+    impact: "Product assigned to two shipments, over-shipment."
+    likelihood: very-low
+    mitigation: "Order-product lock during shipment assignment."
+    affects: [shipping.CMD013]
+
+ordering:
+  - id: shipping.ORD001
+    summary: "Shipment must exist before products can be assigned to it."
+    operations: [shipping.CMD013]
+    requires: [shipping.CMD011]

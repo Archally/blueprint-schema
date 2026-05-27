@@ -1,0 +1,215 @@
+---
+version: "1.0.0"
+scope: catalog
+
+goals:
+  - id: catalog.G001
+    statement: "Sub-100ms product search for catalogs up to 500k products"
+    description: >
+      PrestaShop must deliver fast search results regardless of catalog size.
+      Current MySQL LIKE queries degrade at 50k+ products. Elasticsearch
+      provides the required performance headroom.
+    summary: "Fast product search at scale"
+    priority: high
+    measure: "p95 search latency < 100ms for 500k product catalog"
+    discovery_stage: committed
+    certainty: confirmed
+
+  - id: catalog.G002
+    statement: "Support 20+ filterable product attributes for faceted navigation"
+    description: >
+      Shoppers expect to filter by size, color, price range, brand, rating,
+      and custom attributes. PrestaShop must support arbitrary attribute
+      facets in search results.
+    summary: "Rich faceted product filtering"
+    priority: high
+    measure: "Faceted search supports >= 20 attribute dimensions"
+    discovery_stage: validated
+    certainty: probable
+
+  - id: catalog.G003
+    statement: "Product CRUD operations complete in under 500ms for back-office responsiveness"
+    description: >
+      CategoryManagers perform high-volume catalog operations. Every product
+      save, image upload, and combination generation must feel instant.
+    summary: "Responsive catalog back-office"
+    priority: medium
+    measure: "p95 product save < 500ms including image processing"
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: catalog.G004
+    statement: "Support 100% of PrestaShop v9 CQRS catalog operations through Admin API"
+    description: >
+      All 112 catalog CQRS commands must be accessible via the Admin API
+      for headless integrations and third-party tools.
+    summary: "Full catalog API coverage"
+    priority: high
+    measure: "112/112 catalog commands exposed via Admin API"
+    discovery_stage: committed
+    certainty: confirmed
+
+  - id: catalog.G005
+    statement: "Bulk CSV import handles 10,000 products in under 10 minutes"
+    description: >
+      Enterprise merchants need to import large catalogs from ERP systems.
+      The import pipeline must handle 10k rows with validation and
+      error reporting without timing out.
+    summary: "Enterprise-scale bulk import"
+    priority: medium
+    measure: "10k row CSV import completes in < 10 minutes with full validation"
+    discovery_stage: validated
+    certainty: probable
+
+risks:
+  - id: catalog.R001
+    statement: "Elasticsearch index drift after bulk product updates"
+    description: >
+      Bulk CSV imports update MySQL directly. If the ES re-indexing job
+      fails or lags, search results become stale — customers see products
+      that are out of stock or prices that are wrong.
+    summary: "Search index staleness after bulk ops"
+    likelihood: high
+    impact: high
+    mitigation: "Event-driven re-indexing: every product mutation emits ProductUpdated, triggering incremental index update."
+    contingency: "Scheduled full re-index every 6 hours as safety net."
+    status: open
+    owner: orders.ACT002
+    goal_refs:
+      - catalog.G001
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: catalog.R002
+    statement: "Product image storage costs scale linearly with catalog growth"
+    description: >
+      Each product has 3-8 images at multiple resolutions (thumbnail, medium,
+      large, zoom). At 500k products this is 5-20 million image files.
+    summary: "Image storage cost at scale"
+    likelihood: medium
+    impact: medium
+    mitigation: "Use CDN with on-demand image resizing (Cloudflare/imgproxy) instead of pre-generating all sizes."
+    status: open
+    goal_refs:
+      - catalog.G001
+    discovery_stage: exploring
+    certainty: probable
+
+  - id: catalog.R003
+    statement: "Product data inconsistency across multi-store configurations"
+    description: >
+      In multi-store mode, products can have store-specific names, prices,
+      and availability. Incorrect store-product association creates data
+      inconsistency visible to customers.
+    summary: "Multi-store product data drift"
+    likelihood: medium
+    impact: high
+    mitigation: "Store-aware validation on all product write operations."
+    status: identified
+    discovery_stage: exploring
+    certainty: speculative
+
+  - id: catalog.R004
+    statement: "Combination explosion for products with many attribute groups"
+    description: >
+      A product with 5 attribute groups of 10 values each generates 100,000
+      combinations. This causes memory exhaustion during generation and
+      unusable variant pickers in the storefront.
+    summary: "Combinatorial explosion"
+    likelihood: medium
+    impact: high
+    mitigation: "Generation guard: warn when expected combination count exceeds 500; hard limit at 10,000."
+    status: open
+    discovery_stage: validated
+    certainty: confirmed
+
+assumptions:
+  - id: catalog.A001
+    statement: "Elasticsearch cluster can be managed as a shared service across PrestaShop instances"
+    consequence: >
+      If each store needs a dedicated ES instance, hosting costs increase
+      10x and shared-hosting deployment becomes impractical.
+    risk_refs:
+      - catalog.R001
+    discovery_stage: exploring
+    certainty: speculative
+
+  - id: catalog.A002
+    statement: "Elasticsearch is available for stores with >10,000 products"
+    consequence: >
+      Without Elasticsearch, product search falls back to MySQL FULLTEXT
+      or LIKE queries — acceptable for small catalogs but causes severe
+      performance degradation for large catalogs (>10k products, <1s
+      search response target).
+    risk_refs:
+      - catalog.R001
+    discovery_stage: validated
+    certainty: probable
+
+non_goals:
+  - id: catalog.NG001
+    statement: "No built-in B2B tiered/volume pricing engine"
+    reason: >
+      Pricing is per-customer-group with specific prices per product. B2B volume
+      pricing requires contract-based pricing engines beyond this scope — handled
+      by dedicated B2B modules (e.g., Agile B2B).
+    discovery_stage: committed
+    certainty: confirmed
+
+  - id: catalog.NG002
+    statement: "No AI-powered product recommendations in core"
+    reason: >
+      Product recommendations (collaborative filtering, content-based) are
+      handled by third-party modules. Building ML infrastructure in core
+      conflicts with the shared-hosting deployment model.
+    discovery_stage: committed
+    certainty: confirmed
+
+trade_offs:
+  - id: catalog.T001
+    choice: "CQRS migration scope for product domain"
+    selected: "Gradual migration with ObjectModel coexistence"
+    rejected: "Big-bang rewrite of all legacy product models"
+    rationale: >
+      The Product aggregate has ~120 ObjectModel properties. A big-bang rewrite
+      would freeze feature development for months. Gradual migration lets new
+      features use CQRS while legacy code continues working through an adapter
+      layer. ObjectModel coexistence is the pragmatic path.
+    accepted_risk: "Dual read paths (ObjectModel + QueryBus) increase debugging complexity."
+    discovery_stage: committed
+    certainty: confirmed
+
+inquiries:
+  - id: catalog.INQ001
+    statement: "Should PrestaShop support headless catalog access via GraphQL in addition to REST?"
+    summary: "GraphQL for headless catalog"
+    description: >
+      The JavaScript frontend ecosystem increasingly expects GraphQL.
+      Adding a GraphQL layer would enable headless storefronts but
+      increases API surface and maintenance burden.
+    category: strategic
+    goal_refs:
+      - catalog.G004
+    stakeholders:
+      - orders.ACT003
+    blocking: false
+    status: investigating
+    discovery_stage: exploring
+    certainty: speculative
+    tags: [architecture, headless]
+
+  - id: catalog.INQ002
+    statement: "Should product import support asynchronous processing with progress tracking?"
+    summary: "Async bulk import with progress"
+    description: >
+      Current CSV import is synchronous — the HTTP request blocks until
+      completion. For 10k+ row imports, this times out. Async processing
+      with a progress endpoint would solve this.
+    category: technical
+    goal_refs:
+      - catalog.G005
+    blocking: true
+    status: investigating
+    discovery_stage: validated
+    certainty: probable
+    tags: [bulk-import, async]

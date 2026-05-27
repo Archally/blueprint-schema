@@ -1,0 +1,23 @@
+---
+version: "1.0.0"
+scope: modules
+
+kpis:
+  - id: modules.KPI001
+    name: "Module Install Success Rate"
+    target: ">= 99% of module installation operations complete without error"
+    window: "weekly"
+    goal: modules.G001
+
+  - id: modules.KPI002
+    name: "Module Upgrade Success Rate"
+    target: ">= 95% of module upgrades complete successfully preserving configuration"
+    window: "monthly"
+    goal: modules.G002
+
+slos:
+  - id: modules.SLO001
+    name: "Module Lifecycle Operation Latency"
+    target: "p99 < 10s for install/uninstall/upgrade operations"
+    window: "weekly"
+    operations: [modules.CMD001, modules.CMD002, modules.CMD007]

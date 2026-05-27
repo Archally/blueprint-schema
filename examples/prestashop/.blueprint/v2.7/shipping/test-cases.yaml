@@ -1,0 +1,163 @@
+---
+version: "1.0.0"
+scope: shipping
+
+happy_path:
+  - id: shipping.TC001
+    name: "Create carrier with zones and ranges — happy path"
+    summary: "Create a new carrier with valid configuration including zones, ranges, and shipping method."
+    validates:
+      operations: [shipping.CMD001, shipping.EVT001]
+      rules: [shipping.SR001, shipping.VR002]
+    contract:
+      kind: openapi
+      file: dist/shipping-api.openapi.yaml
+    given:
+      description: "Zone 1 (Europe) exists. Shipping method is by_weight. One range defined."
+      state:
+        name: "DHL Express"
+        shippingMethod: 1
+        zones: [1]
+        ranges:
+          - zoneId: 1
+            from: 0
+            to: 10
+            price: 5.99
+    expected_result:
+      status: success
+      code: 200
+
+  - id: shipping.TC002
+    name: "Toggle carrier free shipping — happy path"
+    summary: "Enable free shipping on a carrier, bypassing range-based pricing."
+    validates:
+      operations: [shipping.CMD007, shipping.EVT005]
+      rules: [shipping.VR003]
+    given:
+      description: "Carrier exists with isFree=false, hasAdditionalHandlingFee=false."
+      state:
+        carrierId: 3
+        isFree: false
+        hasAdditionalHandlingFee: false
+    expected_result:
+      status: success
+
+  - id: shipping.TC003
+    name: "Create shipment for order — happy path"
+    summary: "Create a new shipment for an existing order with a valid carrier and product."
+    validates:
+      operations: [shipping.CMD011, shipping.EVT009]
+      rules: [shipping.VR006]
+    given:
+      description: "Order 1001 exists. Carrier 3 is active. Product 42 is in the order with quantity 2."
+      state:
+        orderId: 1001
+        carrierId: 3
+        productId: 42
+        quantity: 2
+    expected_result:
+      status: success
+      code: 200
+
+  - id: shipping.TC004
+    name: "Split shipment — happy path"
+    summary: "Split a shipment, moving some products to a new shipment with a different carrier."
+    validates:
+      operations: [shipping.CMD015, shipping.EVT013]
+      rules: [shipping.VR007]
+    given:
+      description: "Shipment 10 has product A (qty 5) and product B (qty 3). Split product A (qty 2) to new shipment with carrier 5."
+      state:
+        shipmentId: 10
+        orderDetailQuantity:
+          - orderDetailId: 100
+            quantity: 2
+        carrierId: 5
+    expected_result:
+      status: success
+
+edge_cases:
+  - id: shipping.EC001
+    name: "Overlapping ranges rejected"
+    summary: "Attempt to set carrier ranges with overlapping brackets within the same zone."
+    validates:
+      operations: [shipping.CMD008]
+      rules: [shipping.VR004]
+    given:
+      description: "Carrier exists. Two ranges for zone 1: 0-10kg and 5-20kg (overlap at 5-10)."
+      state:
+        ranges:
+          - zoneId: 1
+            from: 0
+            to: 10
+            price: 5.99
+          - zoneId: 1
+            from: 5
+            to: 20
+            price: 8.99
+    expected_result:
+      status: failure
+      code: 422
+
+  - id: shipping.EC002
+    name: "Edit shipped shipment rejected"
+    summary: "Attempt to edit tracking number on a shipment that has already been dispatched."
+    validates:
+      operations: [shipping.CMD012]
+      rules: [shipping.VR006]
+    given:
+      description: "Shipment 15 has status 'shipped'."
+      state:
+        shipmentId: 15
+        shipmentStatus: "shipped"
+        trackingNumber: "NEW-TRACKING-123"
+    expected_result:
+      status: failure
+      code: 409
+
+error_cases:
+  - id: shipping.ER001
+    name: "Carrier without zone rejected"
+    summary: "Attempt to create a carrier with an empty zone list."
+    validates:
+      operations: [shipping.CMD001]
+      rules: [shipping.SR001]
+    given:
+      description: "Carrier creation with zones=[] (empty)."
+      state:
+        name: "Empty Carrier"
+        zones: []
+    expected_result:
+      status: failure
+      code: 422
+
+  - id: shipping.ER002
+    name: "Non-existent shipment"
+    summary: "Attempt to edit a shipment that does not exist."
+    validates:
+      operations: [shipping.CMD012]
+    given:
+      description: "Shipment ID 99999 does not exist."
+      state:
+        shipmentId: 99999
+    expected_result:
+      status: failure
+      code: 404
+
+  - id: shipping.ER003
+    name: "Negative range value rejected"
+    summary: "Attempt to set a range with a negative from value."
+    validates:
+      operations: [shipping.CMD008]
+      rules: [shipping.VR005]
+    given:
+      description: "Range with from=-5 for zone 1."
+      state:
+        ranges:
+          - zoneId: 1
+            from: -5
+            to: 10
+            price: 5.99
+    expected_result:
+      status: failure
+      code: 422

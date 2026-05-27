@@ -1,0 +1,112 @@
+---
+name: "Cart Products"
+version: "1.0.0"
+scope: checkout
+tags: [cart, cart-products]
+
+operations:
+  addProductToCart:
+    id: checkout.CMD009
+    kind: command
+    idempotent: true
+    idempotency_key: "$.body.cartId+$.body.productId+$.body.combinationId"
+    name: "AddProductToCart"
+    description: "Add a product with specified quantity and optional combination to the cart. Creates cart session if none exists."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT001]
+    governed_by:
+      - rule: checkout.SR001
+    produces:
+      operations: [checkout.EVT004]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Cart/Command/AddProductToCartCommand.php"
+        role: implementation
+
+  removeProductFromCart:
+    id: checkout.CMD010
+    kind: command
+    name: "RemoveProductFromCart"
+    description: "Remove a product line from the cart entirely."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT001]
+    produces:
+      operations: [checkout.EVT004]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Cart/Command/RemoveProductFromCartCommand.php"
+        role: implementation
+
+  updateProductQuantityInCart:
+    id: checkout.CMD011
+    kind: command
+    name: "UpdateProductQuantityInCart"
+    description: "Change the quantity of an existing product in the cart."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT001]
+    governed_by:
+      - rule: checkout.SR001
+    produces:
+      operations: [checkout.EVT004]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Cart/Command/UpdateProductQuantityInCartCommand.php"
+        role: implementation
+
+  updateProductPriceInCart:
+    id: checkout.CMD012
+    kind: command
+    name: "UpdateProductPriceInCart"
+    description: "Override the unit price for a product in the cart. Used by back-office for custom pricing."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT004]
+    produces:
+      operations: [checkout.EVT004]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Cart/Command/UpdateProductPriceInCartCommand.php"
+        role: implementation
+
+  addCartCustomization:
+    id: checkout.CMD013
+    kind: command
+    name: "AddCartCustomization"
+    description: "Add product customization data (text fields, file uploads) to a cart item."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT001]
+    produces:
+      operations: [checkout.EVT004]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Cart/Command/AddCustomizationCommand.php"
+        role: implementation
+
+  cartProductsUpdated:
+    id: checkout.EVT004
+    kind: event
+    name: "CartProductsUpdated"
+    description: "Emitted when cart product lines change. Triggers total recalculation and cart rule re-evaluation."
+
+errors:
+  minimalQuantityNotMet:
+    id: checkout.ERR004
+    name: "MinimalQuantityNotMet"
+    description: "Requested quantity is below the product's minimum order quantity."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [checkout.SR001]
+    code_refs:
+      - path: "src/Core/Domain/Cart/Exception/MinimalQuantityException.php"
+        role: implementation
+
+  cartConstraintViolation:
+    id: checkout.ERR005
+    name: "CartConstraintViolation"
+    description: "Cart operation violates a domain constraint (e.g., invalid product reference, stock unavailable)."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Cart/Exception/CartConstraintException.php"
+        role: implementation

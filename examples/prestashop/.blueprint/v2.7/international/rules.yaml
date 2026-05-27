@@ -1,0 +1,69 @@
+---
+version: "1.0.0"
+scope: international
+
+structural:
+  - id: international.SR001
+    name: "Unique ISO currency code per shop"
+    description: "Each currency ISO code must be unique within a shop scope. No two currencies can share the same alpha ISO code in the same shop."
+    modality: necessary
+    concepts: [international.CN001]
+
+validation:
+  - id: international.VR001
+    name: "Currency ISO code format"
+    description: "Currency ISO code must be a valid 3-letter alphabetic code (ISO 4217 for official, any 3 letters for unofficial)."
+    modality: obligatory
+    concepts: [international.CN001]
+    code_refs:
+      - path: "src/Core/Domain/Currency/ValueObject/AlphaIsoCode.php"
+        role: model
+
+  - id: international.VR002
+    name: "Default currency cannot be deleted"
+    description: "The store's default (reference) currency cannot be deleted or disabled. Another currency must be set as default first."
+    modality: prohibited
+    concepts: [international.CN001]
+
+  - id: international.VR003
+    name: "Language ISO code uniqueness"
+    description: "Each language must have a unique ISO 639-1 code within the store."
+    modality: obligatory
+    concepts: [international.CN002]
+
+  - id: international.VR004
+    name: "Default language cannot be deleted"
+    description: "The store's default language cannot be deleted or disabled. Another language must be set as default first."
+    modality: prohibited
+    concepts: [international.CN002]
+
+  - id: international.VR005
+    name: "Country ISO code format"
+    description: "Country ISO code must be a valid 2-letter alphabetic code (ISO 3166-1 alpha-2). Automatically uppercased and truncated to 2 characters."
+    modality: obligatory
+    concepts: [international.CN004]
+    code_refs:
+      - path: "src/Core/Domain/Country/Command/AddCountryCommand.php"
+        role: implementation
+        description: "ISO code uppercased and substr'd to 2 chars in constructor"
+
+  - id: international.VR006
+    name: "Tax rate must be non-negative"
+    description: "Tax rate percentage must be zero or positive. Negative tax rates are not permitted."
+    modality: obligatory
+    concepts: [international.CN007]
+
+  - id: international.VR007
+    name: "Exchange rate must be positive"
+    description: "Exchange rate must be a positive number. Zero or negative exchange rates are rejected."
+    modality: obligatory
+    concepts: [international.CN003]
+    code_refs:
+      - path: "src/Core/Domain/Currency/ValueObject/ExchangeRate.php"
+        role: model
+
+  - id: international.VR008
+    name: "Tax rule binding uniqueness"
+    description: "Within a TaxRulesGroup, no duplicate Tax x Zone x Country/State bindings are allowed. Each geographic combination can have at most one tax rate assignment."
+    modality: obligatory
+    concepts: [international.CN009]

@@ -1,0 +1,173 @@
+---
+name: "Order Admin"
+version: "1.0.0"
+scope: orders
+tags: [order-admin]
+
+operations:
+  # --- OrderState CRUD ---
+
+  addOrderState:
+    id: orders.CMD024
+    kind: command
+    name: "AddOrderState"
+    description: "Create a new order state definition with label, color, email template, and behavioral flags."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT004]
+    code_refs:
+      - path: "src/Core/Domain/OrderState/Command/AddOrderStateCommand.php"
+        role: implementation
+
+  editOrderState:
+    id: orders.CMD025
+    kind: command
+    name: "EditOrderState"
+    description: "Update an existing order state's label, color, or behavioral flags."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT004]
+    code_refs:
+      - path: "src/Core/Domain/OrderState/Command/EditOrderStateCommand.php"
+        role: implementation
+
+  deleteOrderState:
+    id: orders.CMD026
+    kind: command
+    name: "DeleteOrderState"
+    description: "Delete an order state. Fails if any orders are currently in this state."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT004]
+    code_refs:
+      - path: "src/Core/Domain/OrderState/Command/DeleteOrderStateCommand.php"
+        role: implementation
+
+  bulkDeleteOrderState:
+    id: orders.CMD027
+    kind: command
+    name: "BulkDeleteOrderState"
+    description: "Delete multiple order states in a single operation."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT004]
+    code_refs:
+      - path: "src/Core/Domain/OrderState/Command/BulkDeleteOrderStateCommand.php"
+        role: implementation
+
+  # --- OrderMessage CRUD ---
+
+  addOrderMessage:
+    id: orders.CMD028
+    kind: command
+    name: "AddOrderMessage"
+    description: "Create a new predefined message template for merchant-customer communication."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT003]
+    code_refs:
+      - path: "src/Core/Domain/OrderMessage/Command/AddOrderMessageCommand.php"
+        role: implementation
+
+  editOrderMessage:
+    id: orders.CMD029
+    kind: command
+    name: "EditOrderMessage"
+    description: "Update an existing message template's name or body."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT003]
+    code_refs:
+      - path: "src/Core/Domain/OrderMessage/Command/EditOrderMessageCommand.php"
+        role: implementation
+
+  deleteOrderMessage:
+    id: orders.CMD030
+    kind: command
+    name: "DeleteOrderMessage"
+    description: "Delete a predefined message template."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT003]
+    code_refs:
+      - path: "src/Core/Domain/OrderMessage/Command/DeleteOrderMessageCommand.php"
+        role: implementation
+
+  bulkDeleteOrderMessage:
+    id: orders.CMD031
+    kind: command
+    name: "BulkDeleteOrderMessage"
+    description: "Delete multiple predefined message templates in a single operation."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT003]
+    code_refs:
+      - path: "src/Core/Domain/OrderMessage/Command/BulkDeleteOrderMessageCommand.php"
+        role: implementation
+
+  # --- OrderReturnState CRUD ---
+
+  addOrderReturnState:
+    id: orders.CMD032
+    kind: command
+    name: "AddOrderReturnState"
+    description: "Create a new return state definition with label and color."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT004]
+    code_refs:
+      - path: "src/Core/Domain/OrderReturnState/Command/AddOrderReturnStateCommand.php"
+        role: implementation
+
+  editOrderReturnState:
+    id: orders.CMD033
+    kind: command
+    name: "EditOrderReturnState"
+    description: "Update an existing return state's label or color."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT004]
+    code_refs:
+      - path: "src/Core/Domain/OrderReturnState/Command/EditOrderReturnStateCommand.php"
+        role: implementation
+
+  deleteOrderReturnState:
+    id: orders.CMD034
+    kind: command
+    name: "DeleteOrderReturnState"
+    description: "Delete a return state definition."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT004]
+    code_refs:
+      - path: "src/Core/Domain/OrderReturnState/Command/DeleteOrderReturnStateCommand.php"
+        role: implementation
+
+  bulkDeleteOrderReturnState:
+    id: orders.CMD035
+    kind: command
+    name: "BulkDeleteOrderReturnState"
+    description: "Delete multiple return state definitions in a single operation."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT004]
+    code_refs:
+      - path: "src/Core/Domain/OrderReturnState/Command/BulkDeleteOrderReturnStateCommand.php"
+        role: implementation
+
+  # --- CustomerMessage (from Domain/CustomerMessage/ — order-scoped customer messages) ---
+
+  addOrderCustomerMessage:
+    id: orders.CMD036
+    kind: command
+    name: "AddOrderCustomerMessage"
+    description: "Add a customer-initiated message to an order. Distinct from OrderMessage templates — this is an actual message attached to a specific order."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/CustomerMessage/Command/AddOrderCustomerMessageCommand.php"
+        role: implementation
+
+  # --- Queries ---
+
+  getOrderStateForEditing:
+    id: orders.QRY005
+    kind: query
+    name: "GetOrderStateForEditing"
+    description: "Retrieve a single order state definition with all configurable fields for the edit form."
+    delivery_priority: should-have
+
+  getOrderMessageForEditing:
+    id: orders.QRY006
+    kind: query
+    name: "GetOrderMessageForEditing"
+    description: "Retrieve a single order message template for the edit form."
+    delivery_priority: should-have

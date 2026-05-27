@@ -1,0 +1,137 @@
+---
+version: "1.0.0"
+scope: international
+
+goals:
+  - id: international.G001
+    statement: "Accurate multi-currency pricing with fresh exchange rates"
+    description: >
+      Ensure all currencies display correct prices by maintaining fresh
+      exchange rates. Stale rates cause customers to overpay/underpay,
+      eroding trust and profitability.
+    summary: "Accurate multi-currency pricing"
+    priority: high
+    measure: ">= 95% of currencies updated within 24 hours via exchange rate refresh"
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: international.G002
+    statement: "Correct tax calculation for every zone/country combination"
+    description: >
+      Tax rules must produce correct rates for every geographic location
+      to ensure regulatory compliance and prevent customer over/undercharging.
+    summary: "Tax calculation accuracy"
+    priority: critical
+    measure: "100% of configured zone/country combinations produce correct tax rate"
+    discovery_stage: committed
+    certainty: confirmed
+
+  - id: international.G003
+    statement: "Complete localization coverage for target markets"
+    description: >
+      Every target market has its language, currency, and geographic
+      configuration complete — enabling the store to serve international
+      customers without gaps.
+    summary: "Localization completeness"
+    priority: high
+    measure: "100% of target market languages, currencies, and countries configured"
+    discovery_stage: validated
+    certainty: probable
+
+risks:
+  - id: international.R001
+    statement: "Stale exchange rates cause incorrect multi-currency pricing"
+    description: >
+      If exchange rate refresh fails or is not scheduled, customers see
+      outdated prices. For volatile currencies, even 24-hour staleness
+      can mean significant price discrepancy.
+    summary: "Exchange rate staleness"
+    likelihood: medium
+    impact: high
+    mitigation: "RefreshExchangeRates command with external provider integration. Monitor freshness via KPI (exchange_rate_freshness). Alert if any rate > 24h stale."
+    goal_refs:
+      - international.G001
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: international.R002
+    statement: "Tax rule gaps lead to zero-tax or wrong-tax charges"
+    description: >
+      If a zone/country combination has no matching tax rule, the system
+      may apply zero tax (revenue loss, compliance risk) or fall back
+      incorrectly. Complex EU VAT scenarios are especially prone to gaps.
+    summary: "Tax rule coverage gaps"
+    likelihood: medium
+    impact: high
+    mitigation: "Validation rule VR008 prevents duplicate bindings. Tax rules group editing UI should show uncovered zones. Regular audit of tax rule coverage."
+    goal_refs:
+      - international.G002
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: international.R003
+    statement: "Country/zone restructuring breaks shipping and tax configurations"
+    description: >
+      Deleting or reassigning zones can orphan carrier configurations
+      and tax rules that reference those zones. Cascading effects across
+      Shipping and Taxation contexts.
+    summary: "Geographic restructuring cascade"
+    likelihood: low
+    impact: high
+    mitigation: "Zone deletion should check for dependent carriers and tax rules. Cross-context impact analysis before geographic changes."
+    goal_refs:
+      - international.G003
+    discovery_stage: exploring
+    certainty: probable
+
+non_goals:
+  - id: international.NG001
+    statement: "No automatic regulatory compliance monitoring"
+    reason: >
+      Tax rules, GDPR settings, and legal pages are manually configured by
+      the merchant. There is no automated feed for tax rate changes,
+      regulatory updates, or compliance requirement monitoring. Merchants
+      must track regulatory changes themselves or use specialized modules.
+    discovery_stage: committed
+    certainty: confirmed
+
+assumptions:
+  - id: international.A001
+    statement: "Currency exchange rates from ECB or similar free feeds remain available"
+    consequence: >
+      If the ECB feed becomes paid, rate-limited, or discontinued, the
+      automatic exchange rate refresh feature breaks. Merchants would need
+      to manually enter rates or use a paid data provider module.
+    discovery_stage: validated
+    certainty: probable
+
+inquiries:
+  - id: international.INQ001
+    statement: "Should the system support real-time exchange rate feeds with automatic scheduling?"
+    summary: "Automated exchange rate scheduling"
+    description: >
+      Currently exchange rates are refreshed on-demand. Automated daily
+      refresh with configurable providers (ECB, Open Exchange Rates, etc.)
+      would reduce manual work and staleness risk.
+    category: technical
+    goal_refs:
+      - international.G001
+    blocking: false
+    status: investigating
+    discovery_stage: exploring
+    certainty: speculative
+
+  - id: international.INQ002
+    statement: "Should the system support EU VAT MOSS (Mini One Stop Shop) for digital goods?"
+    summary: "EU VAT MOSS support"
+    description: >
+      EU VAT MOSS requires charging VAT based on the customer's country
+      (not the seller's). This requires customer geolocation and dynamic
+      tax rate selection at checkout — beyond the current zone-based model.
+    category: business
+    goal_refs:
+      - international.G002
+    blocking: false
+    status: investigating
+    discovery_stage: exploring
+    certainty: speculative

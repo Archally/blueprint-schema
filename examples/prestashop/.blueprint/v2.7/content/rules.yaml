@@ -1,0 +1,73 @@
+---
+version: "1.0.0"
+scope: content
+
+structural:
+  - id: content.SR001
+    name: "CMS Category Tree Acyclicity"
+    description: "CMS page category tree must not contain cycles. A category's parent cannot be itself or any of its descendants."
+    modality: necessary
+    concepts: [content.CN002]
+    on_violation:
+      action: reject
+
+validation:
+  - id: content.VR001
+    name: "CMS Page Requires Category"
+    description: "A CMS page must be assigned to a valid CMS page category on creation."
+    modality: obligatory
+    concepts: [content.CN001]
+    on_violation:
+      action: reject
+
+  - id: content.VR002
+    name: "Meta Fields No Special Characters"
+    description: "Meta titles and meta descriptions (on CMS pages, categories, and meta entries) must not contain angle brackets or curly braces. Validated by regex: /^[^<>{}]*$/u in AbstractCmsPageCategoryCommand and AbstractMetaCommand."
+    modality: obligatory
+    concepts: [content.CN001, content.CN002, content.CN005]
+    on_violation:
+      action: reject
+
+  - id: content.VR003
+    name: "Category Deletion Requires Empty Subtree"
+    description: "A CMS page category cannot be deleted if it has child categories or assigned CMS pages. Descendants must be reassigned or deleted first."
+    modality: obligatory
+    concepts: [content.CN002]
+    on_violation:
+      action: reject
+
+  - id: content.VR004
+    name: "Theme Activation Exclusivity"
+    description: "Only one theme can be active per shop at any time. Enabling a theme must check that the theme exists and is valid."
+    modality: obligatory
+    concepts: [content.CN003]
+    on_violation:
+      action: reject
+
+  - id: content.VR005
+    name: "Active Theme Cannot Be Deleted"
+    description: "The currently active theme for a shop cannot be deleted. Another theme must be enabled first."
+    modality: prohibited
+    concepts: [content.CN003]
+    on_violation:
+      action: reject
+
+  - id: content.VR006
+    name: "Meta Page Name Uniqueness"
+    description: "Each meta entry must have a unique page name. No two meta entries can map to the same internal page identifier."
+    modality: obligatory
+    concepts: [content.CN005]
+    on_violation:
+      action: reject
+
+transition:
+  - id: content.TR001
+    name: "Theme Enable Deactivates Current"
+    description: "Enabling a theme must deactivate the currently active theme for the shop. This is an automatic side effect — the system ensures exclusivity."
+    concept: content.CN003
+    guard:
+      when: "A different theme is currently active for the shop"
+    from: "active"
+    to: "inactive"
+    on_violation:
+      action: reject

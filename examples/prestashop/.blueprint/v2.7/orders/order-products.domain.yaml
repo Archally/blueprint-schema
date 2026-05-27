@@ -1,0 +1,60 @@
+---
+name: "Order Products"
+version: "1.0.0"
+scope: orders
+tags: [order-products]
+
+operations:
+  addProductToOrder:
+    id: orders.CMD020
+    kind: command
+    name: "AddProductToOrder"
+    description: "Add a new product line to an existing order. Recalculates totals, taxes, and may affect shipping cost."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT003]
+    governed_by:
+      - rule: orders.SR001
+    produces:
+      operations: [orders.EVT009]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Order/Product/Command/AddProductToOrderCommand.php"
+        role: implementation
+
+  removeProductFromOrder:
+    id: orders.CMD021
+    kind: command
+    name: "RemoveProductFromOrder"
+    description: "Remove a product line from an existing order. Recalculates totals. Cannot remove the last line (SR001)."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT003]
+    governed_by:
+      - rule: orders.SR001
+    produces:
+      operations: [orders.EVT009]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Order/Product/Command/DeleteProductFromOrderCommand.php"
+        role: implementation
+
+  updateOrderProduct:
+    id: orders.CMD022
+    kind: command
+    name: "UpdateOrderProduct"
+    description: "Update quantity or price of an existing product line in an order. Recalculates line total and order totals."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT003]
+    produces:
+      operations: [orders.EVT009]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Order/Product/Command/UpdateProductInOrderCommand.php"
+        role: implementation
+
+  # --- Events ---
+
+  orderProductModified:
+    id: orders.EVT009
+    kind: event
+    name: "OrderProductModified"
+    description: "Emitted when a product line is added, removed, or updated in an order. Triggers total recalculation."

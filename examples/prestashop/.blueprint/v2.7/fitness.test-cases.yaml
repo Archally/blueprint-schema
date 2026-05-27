@@ -1,0 +1,87 @@
+---
+version: "1.0.0"
+
+fitness_functions:
+  - id: FF001
+    name: "Every command produces events"
+    description: "Commands should trigger at least one domain event to maintain event-driven traceability."
+    scope: operation
+    assertion: "Every operation with kind=command must have at least one entry in produces.operations."
+    severity: warning
+
+  - id: FF002
+    name: "No orphan events"
+    description: "Events should be produced by at least one command or reacted to by at least one handler."
+    scope: operation
+    assertion: "Every operation with kind=event must appear in at least one produces.operations or reacts_to reference."
+    severity: warning
+
+  - id: FF003
+    name: "All actors have personas"
+    description: "Actors without personas lack empathy grounding for user story and UX design."
+    scope: concept
+    assertion: "Every actor must have at least one entry in personas[]."
+    severity: warning
+
+  - id: FF004
+    name: "Stories have process metadata"
+    description: "Process blocks enable BPMN generation and flow analysis."
+    scope: story
+    assertion: "Every story (STR###) must have a process: block with trigger and at least one end_state."
+    severity: warning
+
+  - id: FF005
+    name: "Capabilities linked to value streams"
+    description: "Capabilities without value stream linkage are disconnected from end-to-end value delivery."
+    scope: cross-cutting
+    assertion: "Every capability (CAP###) must have at least one value_stream_ref."
+    severity: warning
+
+  - id: FF006
+    name: "Goals have KPI coverage"
+    description: "Goals without measurable KPIs cannot be tracked or evaluated."
+    scope: cross-cutting
+    assertion: "Every goal must be referenced by at least one KPI via goal_refs."
+    severity: warning
+
+  - id: FF007
+    name: "Service dependency fan-out limit"
+    description: "Excessive dependencies increase coupling and deployment risk."
+    scope: dependency
+    assertion: "No bounded context may have more than 5 direct dependencies in arch.yaml."
+    severity: warning
+
+  - id: FF008
+    name: "Test coverage per aggregate"
+    description: "Core domain aggregates must have validation coverage."
+    scope: cross-cutting
+    assertion: "Every concept with stereotype=aggregate-root must be validated by at least one test case."
+    severity: warning
+
+  - id: FF009
+    name: "Arch expose refs valid"
+    description: "Service contract references must resolve to actual domain operations."
+    scope: service
+    assertion: "Every operation in expose/call/send/receive blocks must exist as a domain operation key."
+    severity: error
+
+  - id: FF010
+    name: "Transition rules for state machines"
+    description: "State machine enumerations need governing rules to define valid transitions."
+    scope: rule
+    assertion: "Every enumeration with transitions_to must have at least one governing transition or classification rule."
+    severity: warning
+
+  - id: FF011
+    name: "Owned_by coverage"
+    description: "Ownership assignment enables team responsibility tracking."
+    scope: cross-cutting
+    assertion: "Every story file must have owned_by at file or entity level."
+    severity: info
+
+  - id: FF012
+    name: "Process lanes cover story actors"
+    description: "Process swim lanes should reflect the actors declared on the story."
+    scope: story
+    assertion: "Every process lane actor must match the story's initiated_by or an activity's triggered_by."
+    severity: warning

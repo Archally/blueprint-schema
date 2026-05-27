@@ -1,0 +1,137 @@
+---
+version: "1.0.0"
+scope: modules
+
+goals:
+  - id: modules.G001
+    statement: "Reliable module lifecycle management for store extensibility"
+    description: >
+      Provide a predictable, safe module lifecycle (install, enable, disable,
+      upgrade, reset, uninstall) that allows store administrators to extend
+      functionality without risking store stability.
+    summary: "Module lifecycle reliability"
+    priority: high
+    measure: ">= 99% of module install/upgrade operations complete successfully"
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: modules.G002
+    statement: "Safe module upgrade path with version compatibility"
+    description: >
+      Enable modules to be upgraded to newer versions without breaking existing
+      configuration or causing incompatibilities with the PrestaShop core version.
+    summary: "Safe module upgrades"
+    priority: high
+    measure: ">= 95% of module upgrades preserve configuration and functionality"
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: modules.G003
+    statement: "Hook system provides controllable extension points"
+    description: >
+      Hooks serve as the primary extension mechanism. The ability to enable/disable
+      individual hooks gives administrators granular control over which extension
+      points are active.
+    summary: "Controllable hooks"
+    priority: medium
+    measure: "100% of hooks can be independently enabled/disabled"
+    discovery_stage: validated
+    certainty: confirmed
+
+risks:
+  - id: modules.R001
+    statement: "Incompatible module breaks storefront after installation or upgrade"
+    description: >
+      Third-party modules may be incompatible with the current PrestaShop version
+      or conflict with other installed modules, causing errors, broken pages, or
+      data corruption.
+    summary: "Module incompatibility risk"
+    likelihood: high
+    impact: high
+    mitigation: "Quick disable via UpdateModuleStatus. Reset to clean state. Uninstall with deleteFiles option."
+    goal_refs:
+      - modules.G001
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: modules.R002
+    statement: "Security vulnerabilities in third-party modules"
+    description: >
+      Modules uploaded from external sources may contain security vulnerabilities
+      (SQL injection, XSS, remote code execution) that compromise the store.
+    summary: "Module security risk"
+    likelihood: medium
+    impact: high
+    mitigation: "Upload validation, module marketplace review process, ability to quickly uninstall compromised modules."
+    goal_refs:
+      - modules.G001
+    discovery_stage: validated
+    certainty: confirmed
+
+non_goals:
+  - id: modules.NG001
+    statement: "No containerized or sandboxed module isolation"
+    reason: >
+      Modules run in the same PHP process as PrestaShop core. There is no
+      sandbox, container, or permission system isolating module code from
+      core internals. A rogue module can access any class or database table.
+      Isolation would require a fundamentally different extension architecture.
+    discovery_stage: committed
+    certainty: confirmed
+
+assumptions:
+  - id: modules.A001
+    statement: "Third-party modules may hook into any public class or method"
+    consequence: >
+      If the module API is locked down to a defined hook contract only,
+      the entire hook-based extensibility model changes fundamentally.
+      Thousands of existing modules that access internal classes would break.
+    discovery_stage: committed
+    certainty: confirmed
+
+trade_offs:
+  - id: modules.T001
+    choice: "Extension mechanism for module system"
+    selected: "Global hook registry with string-based hook names"
+    rejected: "Typed event dispatcher with interface contracts"
+    rationale: >
+      A typed event dispatcher would provide compile-time safety and IDE
+      autocompletion, but would break every existing module that registers
+      hooks by string name. The hook system is PrestaShop's most fundamental
+      extension point — changing it means breaking the entire module ecosystem.
+    accepted_risk: "String-based hooks are error-prone (typos, missing hooks). No compile-time verification."
+    discovery_stage: committed
+    certainty: confirmed
+
+inquiries:
+  - id: modules.INQ001
+    statement: "Should module-hook position management be modeled as a CQRS operation?"
+    summary: "Hook position management gap"
+    description: >
+      The codebase has no CQRS command for managing module execution order within
+      hooks (UpdateModulePositionInHookCommand does not exist in the domain layer).
+      Position management may be handled in legacy/adapter code. This is a domain
+      gap worth investigating for future domain-driven migration.
+    category: technical
+    goal_refs:
+      - modules.G003
+    blocking: false
+    status: investigating
+    discovery_stage: exploring
+    certainty: speculative
+
+  - id: modules.INQ002
+    statement: "Should module dependency resolution be formalized in the domain layer?"
+    summary: "Module dependency resolution"
+    description: >
+      Module dependencies (one module requiring another) are resolved during
+      installation but the dependency graph is not exposed through CQRS commands
+      or queries. Formalizing this could improve install failure diagnostics and
+      enable dependency-aware bulk operations.
+    category: technical
+    goal_refs:
+      - modules.G001
+    blocking: false
+    status: investigating
+    discovery_stage: exploring
+    certainty: speculative

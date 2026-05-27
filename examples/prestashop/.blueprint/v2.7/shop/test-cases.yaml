@@ -1,0 +1,104 @@
+---
+version: "1.0.0"
+scope: shop
+
+happy_path:
+  - id: shop.TC001
+    name: "Upload store logos"
+    summary: "Uploading valid logo images succeeds and updates store branding."
+    given:
+      description: "Shop exists with default logos."
+      state:
+        shopExists: true
+    expected_result:
+      status: success
+    validates:
+      rules: [shop.VR001]
+      operations: [shop.CMD001, shop.EVT001]
+      concepts: [shop.CN001]
+    contract:
+      kind: openapi
+      file: dist/shop-api.openapi.yaml
+
+  - id: shop.TC002
+    name: "Add search term alias"
+    summary: "Creating a new search term alias mapping succeeds."
+    given:
+      description: "No existing alias for search term 'tshirt'."
+      state:
+        searchTermAvailable: true
+    expected_result:
+      status: success
+    validates:
+      rules: [shop.VR002]
+      operations: [shop.CMD010, shop.EVT007]
+      concepts: [shop.CN004]
+
+  - id: shop.TC003
+    name: "Add SEO search engine referrer"
+    summary: "Registering a new search engine referrer succeeds."
+    given:
+      description: "No search engine with server 'duckduckgo' exists."
+      state:
+        serverAvailable: true
+    expected_result:
+      status: success
+    validates:
+      rules: [shop.VR004]
+      operations: [shop.CMD006, shop.EVT004]
+      concepts: [shop.CN003]
+
+  - id: shop.TC004
+    name: "Rebuild search index"
+    summary: "Triggering a full search index rebuild completes successfully."
+    given:
+      description: "Product catalog has been modified since last index build."
+      state:
+        catalogModified: true
+    expected_result:
+      status: success
+    validates:
+      operations: [shop.CMD014, shop.EVT010]
+      concepts: [shop.CN005]
+
+edge_cases:
+  - id: shop.EC001
+    name: "Rebuild search index while store is live"
+    summary: "Search index rebuild should not disrupt active customer searches."
+    given:
+      description: "Store is live with active customer sessions and ongoing searches."
+      state:
+        storeIsLive: true
+        activeSearches: true
+    expected_result:
+      status: success
+    validates:
+      operations: [shop.CMD014]
+      concepts: [shop.CN005]
+
+error_cases:
+  - id: shop.ER001
+    name: "Upload logo with unsupported extension"
+    summary: "Uploading a logo with an invalid file extension is rejected."
+    given:
+      description: "User attempts to upload a .bmp file as the header logo."
+      state:
+        fileExtension: "bmp"
+    expected_result:
+      status: error
+    validates:
+      rules: [shop.VR001]
+      operations: [shop.CMD001]
+
+  - id: shop.ER002
+    name: "Add alias with empty search term"
+    summary: "Creating an alias with an empty search term is rejected."
+    given:
+      description: "User submits an alias with blank search term."
+      state:
+        searchTerm: ""
+    expected_result:
+      status: error
+    validates:
+      rules: [shop.VR002]
+      operations: [shop.CMD010]

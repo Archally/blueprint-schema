@@ -1,0 +1,120 @@
+---
+version: "1.0.0"
+scope: catalog
+
+structural:
+  - id: catalog.SR001
+    name: "Product must have valid type configuration"
+    description: "A product's type (standard, combinations, pack, virtual) determines which fields are available and required. Standard products cannot have combinations; virtual products must have a downloadable file."
+    logic:
+      when: "product is created or type is changed"
+      then: "product.type IN (standard, combinations, pack, virtual) AND type-specific invariants hold"
+    modality: necessary
+    concepts: [catalog.CN001]
+    code_refs:
+      - path: "src/Core/Domain/Product/ValueObject/ProductType.php"
+        role: validation
+
+  - id: catalog.SR002
+    name: "Category tree maximum depth"
+    description: "Category hierarchy cannot exceed a configurable maximum depth (default: 10 levels). Prevents performance degradation in breadcrumb generation and tree queries."
+    logic:
+      then: "category.depth <= MAX_CATEGORY_DEPTH"
+    modality: necessary
+    concepts: [catalog.CN002]
+    code_refs:
+      - path: "src/Core/Domain/Category/CategorySettings.php"
+        role: implementation
+      - path: "src/Core/Domain/Category/Exception/CategoryConstraintException.php"
+        role: implementation
+
+  - id: catalog.SR003
+    name: "Root category cannot be deleted"
+    description: "The root category (ID=1, ID=2 for home) is required by the system and cannot be deleted."
+    logic:
+      when: "category.delete is attempted"
+      then: "category.id NOT IN system_root_ids"
+    modality: prohibited
+    concepts: [catalog.CN002]
+    code_refs:
+      - path: "src/Core/Domain/Category/Exception/CannotDeleteRootCategoryForShopException.php"
+        role: implementation
+      - path: "src/Adapter/Category/CommandHandler/DeleteCategoryHandler.php"
+        role: implementation
+
+validation:
+  - id: catalog.VR001
+    name: "Product image dimensions"
+    description: "Product images must be at least 800x800 pixels for zoom functionality."
+    logic:
+      when: "image is uploaded for a product"
+      then: "image.width >= 800 AND image.height >= 800"
+    concepts: [catalog.CN004]
+
+  - id: catalog.VR002
+    name: "Product deletion safety check"
+    description: "A product cannot be deleted if it has pending (non-delivered, non-cancelled) orders."
+    logic:
+      when: "product.delete is attempted"
+      then: "product.pendingOrders.count == 0"
+    modality: prohibited
+    concepts: [catalog.CN001]
+    code_refs:
+      - path: "src/Core/Domain/Product/Exception/CannotDeleteProductException.php"
+        role: implementation
+      - path: "src/Adapter/Product/CommandHandler/DeleteProductHandler.php"
+        role: implementation
+
+  - id: catalog.VR003
+    name: "Specific price reduction range"
+    description: "Specific price reduction must be positive and, for percentage type, cannot exceed 100%."
+    logic:
+      when: "specific price is created or updated"
+      then: "reduction > 0 AND (reductionType == 'percentage' IMPLIES reduction <= 100)"
+    modality: necessary
+    concepts: [catalog.CN010]
+    code_refs:
+      - path: "src/Core/Domain/Product/SpecificPrice/Exception/SpecificPriceConstraintException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/SpecificPrice/Command/AddSpecificPriceCommand.php"
+        role: implementation
+
+  - id: catalog.VR004
+    name: "Combination attribute uniqueness"
+    description: "Each combination must have a unique set of attribute values within a product. No two combinations can share the same attribute value combination."
+    logic:
+      when: "combination is generated or created"
+      then: "no other combination for this product has the same attribute value set"
+    modality: necessary
+    concepts: [catalog.CN003]
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/Command/GenerateProductCombinationsCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Combination/Exception/CombinationConstraintException.php"
+        role: implementation
+
+  - id: catalog.VR005
+    name: "Manufacturer name uniqueness"
+    description: "Manufacturer names must be unique across the system."
+    logic:
+      when: "manufacturer is created or renamed"
+      then: "no other manufacturer has the same name"
+    modality: necessary
+    concepts: [catalog.CN008]
+
+classification:
+  - id: catalog.CR001
+    name: "Product lifecycle transitions"
+    description: "Valid product status transitions: draft→active, active→discontinued, discontinued→archived, draft→archived. No backward transitions."
+    logic:
+      when: "product.status changes"
+      then: "transition is in allowed set"
+    concepts: [catalog.CN001]
+
+  - id: catalog.CR002
+    name: "Product type determines combination eligibility"
+    description: "Only products with type 'combinations' can have Combination entities. Standard, pack, and virtual products cannot."
+    logic:
+      when: "combinations are generated for a product"
+      then: "product.type == 'combinations'"
+    concepts: [catalog.CN001, catalog.CN003]

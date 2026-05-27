@@ -1,0 +1,199 @@
+---
+name: "International Stories"
+version: "1.0.0"
+scope: international
+
+stories:
+  - id: international.STR001
+    title: "Multi-Currency Store Setup"
+    description: "A localization admin configures multiple currencies with exchange rates for an international store."
+    process:
+      id: international.SP001
+      trigger:
+        type: message
+        operation: international.CMD001
+        description: "Localization admin adds a new currency."
+      end_states:
+        - name: "Currencies configured"
+          type: complete
+          description: "Currencies added with exchange rates, default currency set."
+        - name: "Configuration failed"
+          type: error
+          description: "Invalid ISO currency code or exchange rate refresh failed."
+      lanes:
+        - actor: international.ACT001
+          operations: [international.CMD001, international.CMD005, international.CMD006]
+    activities:
+      - id: international.SA001
+        name: "Add Currencies"
+        triggered_by: [international.ACT001]
+        entry_operation: international.CMD001
+        path_type: happy
+      - id: international.SA002
+        name: "Refresh Exchange Rates"
+        triggered_by: [international.EVT001]
+        entry_operation: international.CMD005
+      - id: international.SA003
+        name: "Set Default Currency"
+        triggered_by: [international.ACT001]
+        entry_operation: international.CMD006
+
+  - id: international.STR002
+    title: "Tax Rules Configuration"
+    description: "A tax accountant configures zone-based tax rules for EU VAT compliance."
+    process:
+      id: international.SP002
+      trigger:
+        type: message
+        operation: international.CMD023
+        description: "Tax accountant creates a new tax rate."
+      end_states:
+        - name: "Tax rules configured"
+          type: complete
+          description: "Tax rates, rules groups, and zone assignments configured for compliance."
+        - name: "Configuration failed"
+          type: error
+          description: "Duplicate tax rule binding or invalid rate percentage."
+      lanes:
+        - actor: international.ACT002
+          operations: [international.CMD023, international.CMD027, international.CMD028]
+    activities:
+      - id: international.SA004
+        name: "Create Tax Rates"
+        triggered_by: [international.ACT002]
+        entry_operation: international.CMD023
+        path_type: happy
+      - id: international.SA005
+        name: "Create Tax Rules Group"
+        triggered_by: [international.EVT023]
+        entry_operation: international.CMD027
+      - id: international.SA006
+        name: "Configure Tax Rules"
+        triggered_by: [international.EVT027]
+        entry_operation: international.CMD028
+
+user_stories:
+  - id: international.US001
+    actor: international.ACT001
+    goal: "add and configure currencies for an international store"
+    benefit: "customers can browse and pay in their preferred currency"
+    acceptance_criteria:
+      - "Currencies are created with valid ISO codes"
+      - "Exchange rates are set relative to the default currency"
+      - "Currencies appear in storefront currency selector"
+    delivery_priority: must-have
+    operations: [international.CMD001, international.CMD002, international.CMD004]
+    test_cases: [international.TC001]
+
+  - id: international.US002
+    actor: international.ACT001
+    goal: "refresh exchange rates from an external provider"
+    benefit: "customers see accurate prices in their currency without manual updates"
+    acceptance_criteria:
+      - "Exchange rates are updated for all non-reference currencies"
+      - "Refresh can be triggered manually or scheduled"
+    delivery_priority: should-have
+    operations: [international.CMD005]
+    test_cases: [international.TC002]
+
+  - id: international.US003
+    actor: international.ACT001
+    goal: "configure store languages"
+    benefit: "customers can browse the store in their preferred language"
+    acceptance_criteria:
+      - "Languages are created with valid ISO codes and locale"
+      - "RTL languages are properly flagged"
+      - "Default language cannot be deleted"
+    delivery_priority: must-have
+    operations: [international.CMD007, international.CMD008, international.CMD010]
+
+  - id: international.US004
+    actor: international.ACT001
+    goal: "manage geographic zones, countries, and states"
+    benefit: "shipping and tax calculations use correct geographic groupings"
+    acceptance_criteria:
+      - "Zones group countries for shipping/tax"
+      - "Countries are assigned to zones with correct address formats"
+      - "States can override their parent country's zone"
+    delivery_priority: must-have
+    operations: [international.CMD019, international.CMD011, international.CMD014]
+
+  - id: international.US005
+    actor: international.ACT002
+    goal: "configure tax rates and tax rules groups"
+    benefit: "products and shipments are taxed correctly per regional regulations"
+    acceptance_criteria:
+      - "Tax rates are created with valid percentages"
+      - "Tax rules groups bind rates to zones/countries"
+      - "No duplicate bindings within a group"
+    delivery_priority: must-have
+    operations: [international.CMD023, international.CMD027, international.CMD028]
+    test_cases: [international.TC003]
+
+  - id: international.US006
+    actor: international.ACT002
+    goal: "set up EU VAT rules across multiple countries"
+    benefit: "store complies with EU VAT regulations for cross-border sales"
+    acceptance_criteria:
+      - "Each EU country has a tax rule with correct VAT rate"
+      - "Tax rules group covers all EU zones"
+      - "Standard and reduced rates are configurable per country"
+    delivery_priority: must-have
+    operations: [international.CMD023, international.CMD027]
+    test_cases: [international.TC004]
+
+use_cases:
+  - id: international.UC001
+    name: "Configure Multi-Currency Store"
+    primary_actor: international.ACT001
+    preconditions:
+      - "User has back-office international settings permissions"
+    postconditions:
+      - "Multiple currencies are active with current exchange rates"
+    main_scenario:
+      - step: 1
+        action: "Admin adds primary currencies for target markets"
+        operation: international.CMD001
+      - step: 2
+        action: "Admin refreshes exchange rates from external provider"
+        operation: international.CMD005
+      - step: 3
+        action: "Admin verifies exchange rates and adjusts if needed"
+        operation: international.QRY002
+      - step: 4
+        action: "Admin sets the default (reference) currency"
+        operation: international.CMD006
+      - step: 5
+        action: "Admin enables currencies for storefront"
+        operation: international.CMD004
+    extensions:
+      - step: 5
+        condition: "Exchange rate refresh fails"
+        action: "Admin manually sets exchange rates via editCurrency"
+    user_stories: [international.US001, international.US002]
+
+  - id: international.UC002
+    name: "Set Up EU VAT Tax Rules"
+    primary_actor: international.ACT002
+    preconditions:
+      - "EU countries and zones are configured"
+    postconditions:
+      - "Each EU country has correct VAT rate via tax rules"
+    main_scenario:
+      - step: 1
+        action: "Accountant creates tax rate definitions (standard 20%, reduced 5.5%)"
+        operation: international.CMD023
+      - step: 2
+        action: "Accountant creates a tax rules group for EU VAT"
+        operation: international.CMD027
+      - step: 3
+        action: "Accountant assigns tax rates to zones/countries within the group"
+        operation: international.CMD028
+      - step: 4
+        action: "Accountant verifies tax rule coverage for all EU zones"
+        operation: international.QRY010
+    extensions:
+      - step: 3
+        condition: "Country needs different rate than zone default"
+        action: "Accountant adds country-specific override rule"
+    user_stories: [international.US005, international.US006]

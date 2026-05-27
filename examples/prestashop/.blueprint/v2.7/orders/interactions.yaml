@@ -1,0 +1,77 @@
+---
+version: "1.0.0"
+scope: orders
+
+design_references:
+  design_system: "PrestaShop UIKit (Bootstrap 4)"
+  storybook_url: "https://build.prestashop-project.org/prestashop-ui-kit/"
+  accessibility_standard: WCAG-2.1-AA
+
+screens:
+  - id: orders.SCR001
+    name: "Order List"
+    summary: "Back-office order list with search, filters, and bulk actions."
+    description: "Displays paginated order list. Supports filtering by status, date range, customer. Bulk cancel and export actions."
+    stories: [orders.STR001, orders.STR002]
+
+  - id: orders.SCR002
+    name: "Order Detail"
+    summary: "Single order view with line items, payment, shipping, and action buttons."
+    description: "Shows full order detail: line items, totals, payment record, shipping address, status history. Action buttons for cancel, refund, print invoice."
+    stories: [orders.STR002, orders.STR003, orders.STR004]
+
+  - id: orders.SCR003
+    name: "Return Management"
+    summary: "Back-office screen for managing merchandise returns and credit slips."
+    description: "Lists pending and processed returns. Shows return details, associated order, requested products, and status transition controls. Links to credit slip generation."
+    stories: [orders.STR005]
+
+actions:
+  - id: orders.UAC001
+    screen: orders.SCR001
+    name: "Filter Orders"
+    description: "Apply search and filter criteria to the order list."
+    triggers_operations: [orders.QRY001]
+
+  - id: orders.UAC002
+    screen: orders.SCR002
+    name: "Cancel Order"
+    description: "Initiate order cancellation from the detail view."
+    triggers_operations: [orders.CMD002]
+
+  - id: orders.UAC003
+    screen: orders.SCR002
+    name: "Process Refund"
+    description: "Initiate a standard or partial refund from the order detail view."
+    triggers_operations: [orders.CMD003, orders.CMD015]
+
+  - id: orders.UAC004
+    screen: orders.SCR002
+    name: "Generate Invoice"
+    description: "Manually generate an invoice for the order."
+    triggers_operations: [orders.CMD017]
+
+  - id: orders.UAC005
+    screen: orders.SCR002
+    name: "Add Payment"
+    description: "Manually record a payment on the order."
+    triggers_operations: [orders.CMD019]
+
+  - id: orders.UAC006
+    screen: orders.SCR003
+    name: "Update Return Status"
+    description: "Transition a return request to a new state."
+    triggers_operations: [orders.CMD023]
+
+navigation:
+  - id: orders.UNV001
+    from: orders.SCR001
+    to: orders.SCR002
+    condition: "User clicks an order row."
+    description: "Navigate from order list to order detail."
+
+  - id: orders.UNV002
+    from: orders.SCR002
+    to: orders.SCR003
+    condition: "User clicks 'View Return' link on an order with an active return."
+    description: "Navigate from order detail to return management."

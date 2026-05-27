@@ -1,0 +1,293 @@
+---
+name: "Checkout Stories"
+version: "1.0.0"
+scope: checkout
+
+stories:
+  - id: checkout.STR001
+    title: "Shopper cart journey"
+    description: "Shopper adds products to cart, applies voucher, and prepares for checkout."
+    initiated_by: [orders.ACT001]
+    process:
+      id: checkout.SP001
+      trigger:
+        type: message
+        operation: checkout.CMD009
+        description: "Shopper adds first product to cart."
+      end_states:
+        - name: "Cart ready for checkout"
+          type: complete
+          description: "Cart populated with products, voucher applied, delivery configured."
+        - name: "Product unavailable"
+          type: error
+          description: "Product out of stock or cart rule validation failed."
+      lanes:
+        - actor: orders.ACT001
+          operations: [checkout.CMD009, checkout.CMD014, checkout.CMD002]
+    activities:
+      - id: checkout.SA001
+        name: "Add products to cart"
+        entry_operation: checkout.CMD009
+        path_type: happy
+      - id: checkout.SA002
+        name: "Apply voucher code"
+        entry_operation: checkout.CMD014
+        path_type: happy
+      - id: checkout.SA003
+        name: "Configure cart for checkout"
+        entry_operation: checkout.CMD002
+        path_type: happy
+    code_refs:
+      - path: "controllers/front/CartController.php"
+        role: implementation
+        description: "Front-office cart operations controller."
+      - path: "src/PrestaShopBundle/Controller/Admin/Sell/Order/CartController.php"
+        role: implementation
+        description: "Back-office cart management controller."
+
+  - id: checkout.STR002
+    title: "Discount campaign setup"
+    description: "Marketing manager creates and configures a promotional discount campaign."
+    initiated_by: [checkout.ACT001]
+    process:
+      id: checkout.SP002
+      trigger:
+        type: message
+        operation: checkout.CMD016
+        description: "Marketing manager creates a promotional discount."
+      end_states:
+        - name: "Campaign active"
+          type: complete
+          description: "Discount created with conditions and usage limits, optionally duplicated."
+        - name: "Configuration invalid"
+          type: error
+          description: "Invalid discount rules, overlapping conditions, or missing required fields."
+      lanes:
+        - actor: checkout.ACT001
+          operations: [checkout.CMD016, checkout.CMD019]
+    activities:
+      - id: checkout.SA004
+        name: "Create discount"
+        entry_operation: checkout.CMD016
+        path_type: happy
+      - id: checkout.SA005
+        name: "Duplicate for seasonal reuse"
+        entry_operation: checkout.CMD019
+        path_type: happy
+
+user_stories:
+  - id: checkout.US001
+    actor: orders.ACT001
+    goal: "add a product to my cart"
+    benefit: "I can collect items before purchasing them all at once"
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Product added to cart with correct quantity and price"
+      - "Cart total updates immediately"
+      - "Cart badge in header reflects new item count"
+    operations: [checkout.CMD009, checkout.EVT004]
+    test_cases: [checkout.TC001]
+    use_case: checkout.UC001
+
+  - id: checkout.US002
+    actor: orders.ACT001
+    goal: "remove an item from my cart"
+    benefit: "I can change my mind without starting over"
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Item removed from cart"
+      - "Cart total recalculated"
+    operations: [checkout.CMD010, checkout.EVT004]
+
+  - id: checkout.US003
+    actor: orders.ACT001
+    goal: "apply a voucher code to my cart"
+    benefit: "I get the discount I was promised"
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Valid voucher accepted and discount applied"
+      - "Cart total reduced by discount amount"
+      - "Invalid or expired voucher shows clear error message"
+    operations: [checkout.CMD014, checkout.EVT005]
+    test_cases: [checkout.TC002]
+    use_case: checkout.UC003
+
+  - id: checkout.US004
+    actor: checkout.ACT001
+    goal: "create a discount campaign with conditions and usage limits"
+    benefit: "I can drive sales with targeted promotions"
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Discount created with all condition types"
+      - "Usage limits enforced per customer and globally"
+      - "Validity period respected"
+    operations: [checkout.CMD016, checkout.EVT007]
+    test_cases: [checkout.TC003]
+    use_case: checkout.UC004
+
+  - id: checkout.US005
+    actor: checkout.ACT001
+    goal: "duplicate an existing discount as a campaign template"
+    benefit: "I save time when running seasonal campaigns"
+    delivery_priority: should-have
+    status: ready
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "New discount created with same configuration"
+      - "New discount has independent usage counters"
+    operations: [checkout.CMD019, checkout.EVT007]
+
+  - id: checkout.US006
+    actor: checkout.ACT001
+    goal: "configure catalog price rules for wholesale customers"
+    benefit: "B2B customers automatically get volume discounts"
+    delivery_priority: should-have
+    status: draft
+    release_target: "v1.1"
+    acceptance_criteria:
+      - "Price rule applies to matching product selections"
+      - "Quantity threshold correctly triggers reduction"
+    operations: [checkout.CMD021, checkout.EVT010]
+    test_cases: [checkout.TC004]
+
+  - id: checkout.US007
+    actor: orders.ACT004
+    goal: "create and send a pre-built cart to a customer"
+    benefit: "I can assist customers who need help placing orders"
+    delivery_priority: could-have
+    status: draft
+    release_target: "v1.1"
+    acceptance_criteria:
+      - "Cart created with specified products and quantities"
+      - "Cart link emailed to customer"
+    operations: [checkout.CMD001, checkout.CMD008]
+
+use_cases:
+  - id: checkout.UC001
+    name: "Add to Cart"
+    summary: "Shopper adds a product to the shopping cart."
+    primary_actor: orders.ACT001
+    goal: "Add a product to cart for later purchase."
+    preconditions:
+      - "Product is active and in stock"
+    postconditions:
+      - "Cart contains the item with correct quantity"
+      - "CartProductsUpdated event emitted"
+    main_scenario:
+      - step: 1
+        action: "Shopper views product detail page."
+        emotion: neutral
+      - step: 2
+        action: "Shopper selects quantity and clicks 'Add to Cart'."
+        emotion: neutral
+      - step: 3
+        action: "System validates stock availability and adds item."
+        operation: checkout.CMD009
+      - step: 4
+        action: "System confirms item added with updated cart total."
+        operation: checkout.EVT004
+        emotion: satisfied
+    extensions:
+      - step: 3
+        condition: "Product is out of stock."
+        action: "System displays out-of-stock message."
+    user_stories: [checkout.US001]
+    delivery_priority: must-have
+
+  - id: checkout.UC002
+    name: "Prepare Cart for Order"
+    summary: "Back-office operator creates and configures a cart for order creation."
+    primary_actor: orders.ACT004
+    goal: "Prepare a complete cart ready for order creation."
+    preconditions:
+      - "Customer exists in the system"
+    postconditions:
+      - "Cart has products, addresses, and carrier configured"
+    main_scenario:
+      - step: 1
+        action: "Operator creates empty cart for customer."
+        operation: checkout.CMD001
+      - step: 2
+        action: "Operator adds products to the cart."
+        operation: checkout.CMD009
+      - step: 3
+        action: "Operator sets delivery and invoice addresses."
+        operation: checkout.CMD002
+      - step: 4
+        action: "Operator selects shipping carrier."
+        operation: checkout.CMD003
+      - step: 5
+        action: "Cart is ready for order creation."
+        operation: checkout.QRY002
+    user_stories: [checkout.US007]
+    delivery_priority: should-have
+
+  - id: checkout.UC003
+    name: "Apply Promotion to Cart"
+    summary: "Shopper applies a voucher code to receive a discount on their cart."
+    primary_actor: orders.ACT001
+    goal: "Apply a voucher code discount to reduce the cart total."
+    preconditions:
+      - "Cart has at least one item"
+      - "Shopper has a voucher code"
+    postconditions:
+      - "Discount applied to cart"
+      - "Cart total reduced"
+    main_scenario:
+      - step: 1
+        action: "Shopper enters voucher code in cart page."
+        emotion: neutral
+      - step: 2
+        action: "System validates code, date range, minimum amount, and usage limits."
+        operation: checkout.CMD014
+      - step: 3
+        action: "System applies discount and recalculates cart total."
+        operation: checkout.EVT005
+        emotion: delighted
+    extensions:
+      - step: 2
+        condition: "Voucher code is expired."
+        action: "System displays expiration error."
+      - step: 2
+        condition: "Cart total below minimum amount."
+        action: "System displays minimum amount requirement."
+    user_stories: [checkout.US003]
+    delivery_priority: must-have
+
+  - id: checkout.UC004
+    name: "Create Discount Campaign"
+    summary: "Marketing manager creates a promotional discount with conditions and limits."
+    primary_actor: checkout.ACT001
+    goal: "Create a targeted promotional campaign."
+    preconditions:
+      - "Manager has discount management permissions"
+    postconditions:
+      - "Discount created and available for application"
+    main_scenario:
+      - step: 1
+        action: "Manager navigates to discount creation form."
+        emotion: neutral
+      - step: 2
+        action: "Manager configures discount type, reduction, and validity period."
+        emotion: neutral
+      - step: 3
+        action: "Manager sets usage limits and conditions."
+        emotion: neutral
+        pain_point: "Condition combination preview is not available"
+      - step: 4
+        action: "System validates configuration and creates discount."
+        operation: checkout.CMD016
+      - step: 5
+        action: "System confirms discount creation."
+        operation: checkout.EVT007
+        emotion: satisfied
+    user_stories: [checkout.US004]
+    delivery_priority: must-have

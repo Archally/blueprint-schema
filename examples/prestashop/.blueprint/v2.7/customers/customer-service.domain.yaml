@@ -1,0 +1,113 @@
+---
+name: "Customer Service"
+version: "1.0.0"
+scope: customers
+tags: [customer-service, support]
+
+operations:
+  replyToCustomerThread:
+    id: customers.CMD016
+    kind: command
+    name: "ReplyToCustomerThread"
+    description: "Add a reply to an existing customer service thread."
+    delivery_priority: must-have
+    initiated_by: [customers.ACT002]
+    produces:
+      operations: [customers.EVT010]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/CustomerService/Command/ReplyToCustomerThreadCommand.php"
+        role: implementation
+
+  forwardCustomerThread:
+    id: customers.CMD017
+    kind: command
+    name: "ForwardCustomerThread"
+    description: "Forward a service thread to another employee or department for specialized handling."
+    delivery_priority: should-have
+    initiated_by: [customers.ACT002]
+    produces:
+      operations: [customers.EVT011]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/CustomerService/Command/ForwardCustomerThreadCommand.php"
+        role: implementation
+
+  updateCustomerThreadStatus:
+    id: customers.CMD018
+    kind: command
+    name: "UpdateCustomerThreadStatus"
+    description: "Change the status of a customer service thread (open, pending, closed)."
+    delivery_priority: must-have
+    initiated_by: [customers.ACT002]
+    governed_by:
+      - rule: customers.CR001
+    produces:
+      operations: [customers.EVT012]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/CustomerService/Command/UpdateCustomerThreadStatusCommand.php"
+        role: implementation
+
+  deleteCustomerThread:
+    id: customers.CMD019
+    kind: command
+    name: "DeleteCustomerThread"
+    description: "Delete one or more customer service threads. Supports single and bulk deletion."
+    delivery_priority: should-have
+    initiated_by: [customers.ACT002]
+    produces:
+      operations: [customers.EVT012]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/CustomerService/Command/DeleteCustomerThreadCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/CustomerService/Command/BulkDeleteCustomerThreadCommand.php"
+        role: implementation
+
+  getCustomerThreadForViewing:
+    id: customers.QRY011
+    kind: query
+    name: "GetCustomerThreadForViewing"
+    description: "Retrieve a customer service thread with full message history for back-office viewing."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/CustomerService/Query/GetCustomerThreadForViewing.php"
+        role: implementation
+
+  getCustomerServiceSignature:
+    id: customers.QRY012
+    kind: query
+    name: "GetCustomerServiceSignature"
+    description: "Retrieve the configured signature appended to service replies."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/CustomerService/Query/GetCustomerServiceSignature.php"
+        role: implementation
+
+  customerThreadReplied:
+    id: customers.EVT010
+    kind: event
+    name: "CustomerThreadReplied"
+    description: "Emitted when a reply is added to a service thread."
+
+  customerThreadForwarded:
+    id: customers.EVT011
+    kind: event
+    name: "CustomerThreadForwarded"
+    description: "Emitted when a service thread is forwarded to another employee."
+
+  customerThreadStatusUpdated:
+    id: customers.EVT012
+    kind: event
+    name: "CustomerThreadStatusUpdated"
+    description: "Emitted when a service thread status or lifecycle changes."
+
+errors:
+  customerThreadNotFound:
+    id: customers.ERR007
+    name: "CustomerThreadNotFound"
+    description: "Requested customer service thread does not exist."
+    category: not-found
+    severity: error
+    http_status: 404

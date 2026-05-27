@@ -1,0 +1,29 @@
+---
+name: "Image Settings"
+version: "1.0.0"
+scope: catalog
+tags: [image-settings]
+
+operations:
+  addImageType:
+    id: catalog.CMD040
+    kind: command
+    name: "AddImageType"
+    description: "Define a new image type with dimensions (e.g. cart_default 125x125)."
+    delivery_priority: could-have
+    produces:
+      operations: [catalog.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Command/AddImageTypeCommand.php"
+        role: implementation
+
+  deleteImageType:
+    id: catalog.CMD041
+    kind: command
+    name: "DeleteImageType"
+    description: "Remove an image type definition."
+    delivery_priority: could-have
+    produces:
+      operations: [catalog.EVT002]
+      mode: all

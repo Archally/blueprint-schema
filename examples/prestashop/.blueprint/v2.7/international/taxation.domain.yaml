@@ -1,0 +1,230 @@
+---
+name: "Taxation Management"
+version: "1.0.0"
+scope: international
+tags: [taxation]
+
+operations:
+
+  # --- Tax ---
+
+  addTax:
+    id: international.CMD023
+    kind: command
+    name: "AddTax"
+    description: "Create a new tax rate definition with localized name and percentage."
+    delivery_priority: must-have
+    initiated_by: [international.ACT002]
+    produces:
+      operations: [international.EVT023]
+      mode: all
+    governed_by:
+      - rule: international.VR006
+    code_refs:
+      - path: "src/Core/Domain/Tax/Command/AddTaxCommand.php"
+        role: implementation
+
+  editTax:
+    id: international.CMD024
+    kind: command
+    name: "EditTax"
+    description: "Update a tax rate's name, percentage, or status."
+    delivery_priority: must-have
+    initiated_by: [international.ACT002]
+    produces:
+      operations: [international.EVT024]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Tax/Command/EditTaxCommand.php"
+        role: implementation
+
+  deleteTax:
+    id: international.CMD025
+    kind: command
+    name: "DeleteTax"
+    description: "Delete a tax rate. Supports single and bulk deletion."
+    delivery_priority: must-have
+    initiated_by: [international.ACT002]
+    produces:
+      operations: [international.EVT025]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Tax/Command/DeleteTaxCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Tax/Command/BulkDeleteTaxCommand.php"
+        role: implementation
+
+  toggleTaxStatus:
+    id: international.CMD026
+    kind: command
+    name: "ToggleTaxStatus"
+    description: "Enable or disable a tax rate. Supports single and bulk toggle."
+    delivery_priority: should-have
+    initiated_by: [international.ACT002]
+    produces:
+      operations: [international.EVT026]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Tax/Command/ToggleTaxStatusCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Tax/Command/BulkToggleTaxStatusCommand.php"
+        role: implementation
+
+  # --- TaxRulesGroup ---
+
+  addTaxRulesGroup:
+    id: international.CMD027
+    kind: command
+    name: "AddTaxRulesGroup"
+    description: "Create a new tax rules group with name and shop associations. Tax rules (bindings) are added via the group's configuration."
+    delivery_priority: must-have
+    initiated_by: [international.ACT002]
+    produces:
+      operations: [international.EVT027]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/Command/AddTaxRulesGroupCommand.php"
+        role: implementation
+
+  editTaxRulesGroup:
+    id: international.CMD028
+    kind: command
+    name: "EditTaxRulesGroup"
+    description: "Update a tax rules group's name, status, or shop associations."
+    delivery_priority: must-have
+    initiated_by: [international.ACT002]
+    produces:
+      operations: [international.EVT028]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/Command/EditTaxRulesGroupCommand.php"
+        role: implementation
+
+  deleteTaxRulesGroup:
+    id: international.CMD029
+    kind: command
+    name: "DeleteTaxRulesGroup"
+    description: "Delete a tax rules group and its associated tax rules. Supports single and bulk deletion."
+    delivery_priority: must-have
+    initiated_by: [international.ACT002]
+    produces:
+      operations: [international.EVT029]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/Command/DeleteTaxRulesGroupCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/TaxRulesGroup/Command/BulkDeleteTaxRulesGroupCommand.php"
+        role: implementation
+
+  setTaxRulesGroupStatus:
+    id: international.CMD030
+    kind: command
+    name: "SetTaxRulesGroupStatus"
+    description: "Set the enabled/disabled status of a tax rules group. Supports single and bulk operations. Uses 'set' semantics (explicit boolean) rather than 'toggle'."
+    delivery_priority: should-have
+    initiated_by: [international.ACT002]
+    produces:
+      operations: [international.EVT030]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/Command/SetTaxRulesGroupStatusCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/TaxRulesGroup/Command/BulkSetTaxRulesGroupStatusCommand.php"
+        role: implementation
+
+  # --- Events ---
+
+  taxCreated:
+    id: international.EVT023
+    kind: event
+    name: "TaxCreated"
+    description: "A new tax rate has been added."
+
+  taxUpdated:
+    id: international.EVT024
+    kind: event
+    name: "TaxUpdated"
+    description: "A tax rate has been modified."
+
+  taxDeleted:
+    id: international.EVT025
+    kind: event
+    name: "TaxDeleted"
+    description: "One or more tax rates have been deleted."
+
+  taxStatusToggled:
+    id: international.EVT026
+    kind: event
+    name: "TaxStatusToggled"
+    description: "A tax rate's enabled/disabled status has changed."
+
+  taxRulesGroupCreated:
+    id: international.EVT027
+    kind: event
+    name: "TaxRulesGroupCreated"
+    description: "A new tax rules group has been created."
+
+  taxRulesGroupUpdated:
+    id: international.EVT028
+    kind: event
+    name: "TaxRulesGroupUpdated"
+    description: "A tax rules group has been modified."
+
+  taxRulesGroupDeleted:
+    id: international.EVT029
+    kind: event
+    name: "TaxRulesGroupDeleted"
+    description: "One or more tax rules groups have been deleted."
+
+  taxRulesGroupStatusSet:
+    id: international.EVT030
+    kind: event
+    name: "TaxRulesGroupStatusSet"
+    description: "A tax rules group's status has been explicitly set."
+
+  # --- Queries ---
+
+  getTaxForEditing:
+    id: international.QRY009
+    kind: query
+    name: "GetTaxForEditing"
+    description: "Retrieve a tax rate's configuration for the edit form."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Tax/Query/GetTaxForEditing.php"
+        role: implementation
+
+  getTaxRulesGroupForEditing:
+    id: international.QRY010
+    kind: query
+    name: "GetTaxRulesGroupForEditing"
+    description: "Retrieve a tax rules group with all its tax rule bindings for the edit form."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/Query/GetTaxRulesGroupForEditing.php"
+        role: implementation
+
+errors:
+  taxNotFound:
+    id: international.ERR007
+    name: "TaxNotFound"
+    description: "The specified tax rate does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  taxRulesGroupNotFound:
+    id: international.ERR008
+    name: "TaxRulesGroupNotFound"
+    description: "The specified tax rules group does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  taxRulesGroupConstraintViolation:
+    id: international.ERR009
+    name: "TaxRulesGroupConstraintViolation"
+    description: "Tax rules group data violates constraints (invalid shop association)."
+    category: validation
+    severity: error
+    http_status: 422

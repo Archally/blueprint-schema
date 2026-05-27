@@ -1,0 +1,665 @@
+---
+version: "1.0.0"
+scope: customers
+tags: [customers, models]
+
+components:
+  schemas:
+    CreateCustomerPayload:
+      x-model-id: MDL300
+      purpose: command-payload
+      description: "Request body for registering a new customer account with profile, group assignment, and shop association."
+      represents:
+        - concept: customers.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              email: CAT301
+              firstName: CAT302
+              lastName: CAT303
+              isGuest: CAT304
+              isEnabled: CAT305
+              defaultGroupId: CAT307
+      type: object
+      required: [firstName, lastName, email, password, defaultGroupId]
+      properties:
+        firstName:
+          type: string
+          description: "Customer first name."
+          example: "Jean"
+        lastName:
+          type: string
+          description: "Customer last name."
+          example: "Dupont"
+        email:
+          type: string
+          format: email
+          description: "Email address — must be unique per shop."
+          example: "jean.dupont@example.com"
+        password:
+          type: string
+          format: password
+          description: "Plain-text password (hashed server-side)."
+          example: "S3cur3Pa$$w0rd!"
+        defaultGroupId:
+          type: integer
+          description: "Default customer group (determines pricing and display)."
+          example: 3
+        groupIds:
+          type: array
+          items:
+            type: integer
+          description: "Additional group memberships."
+          example: [3, 4]
+        shopId:
+          type: integer
+          description: "Shop to associate the customer with."
+          example: 1
+        genderId:
+          type: integer
+          description: "Title/gender identifier (Mr, Mrs, etc.)."
+          example: 1
+        isEnabled:
+          type: boolean
+          description: "Whether the account is active upon creation."
+          example: true
+        birthday:
+          type: string
+          format: date
+          description: "Customer date of birth."
+          example: "1990-05-15"
+        isGuest:
+          type: boolean
+          description: "Whether this is a guest checkout account."
+          example: false
+      code_refs:
+        - path: "src/Core/Domain/Customer/Command/AddCustomerCommand.php"
+          role: schema
+
+    UpdateCustomerPayload:
+      x-model-id: MDL301
+      purpose: command-payload
+      description: "Request body for updating an existing customer's profile data. All fields except customerId are optional — only provided fields are updated."
+      represents:
+        - concept: customers.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              email: CAT301
+              firstName: CAT302
+              lastName: CAT303
+              isEnabled: CAT305
+              defaultGroupId: CAT307
+      type: object
+      required: [customerId]
+      properties:
+        customerId:
+          type: integer
+          description: "Customer to update."
+          example: 42
+        firstName:
+          type: string
+          description: "Updated first name."
+          example: "Jean-Pierre"
+        lastName:
+          type: string
+          description: "Updated last name."
+          example: "Dupont"
+        email:
+          type: string
+          format: email
+          description: "Updated email address — must remain unique per shop."
+          example: "jp.dupont@example.com"
+        password:
+          type: string
+          format: password
+          description: "New password (hashed server-side). Omit to keep current."
+          example: "N3wPa$$w0rd!"
+        defaultGroupId:
+          type: integer
+          description: "Updated default group."
+          example: 3
+        groupIds:
+          type: array
+          items:
+            type: integer
+          description: "Updated group memberships."
+          example: [3, 5]
+        genderId:
+          type: integer
+          description: "Updated title/gender identifier."
+          example: 2
+        isEnabled:
+          type: boolean
+          description: "Updated active status."
+          example: true
+        birthday:
+          type: string
+          format: date
+          description: "Updated date of birth."
+          example: "1990-05-15"
+        isGuest:
+          type: boolean
+          description: "Updated guest flag."
+          example: false
+        newsletter:
+          type: boolean
+          description: "Updated newsletter subscription preference."
+          example: true
+      code_refs:
+        - path: "src/Core/Domain/Customer/Command/EditCustomerCommand.php"
+          role: schema
+
+    CustomerResource:
+      x-model-id: MDL302
+      purpose: read-model
+      description: "Full customer profile for back-office editing form. Includes identity, group assignments, newsletter preference, and account metadata."
+      represents:
+        - concept: customers.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              customerId: CAT300
+              email: CAT301
+              firstName: CAT302
+              lastName: CAT303
+              isGuest: CAT304
+              active: CAT305
+              newsletter: CAT306
+              defaultGroupId: CAT307
+      type: object
+      properties:
+        customerId:
+          type: integer
+          description: "Unique customer identifier."
+          example: 42
+        firstName:
+          type: string
+          description: "Customer first name."
+          example: "Jean"
+        lastName:
+          type: string
+          description: "Customer last name."
+          example: "Dupont"
+        email:
+          type: string
+          format: email
+          description: "Customer email address."
+          example: "jean.dupont@example.com"
+        birthday:
+          type: string
+          format: date
+          description: "Date of birth."
+          example: "1990-05-15"
+        genderId:
+          type: integer
+          description: "Title/gender identifier."
+          example: 1
+        active:
+          type: boolean
+          description: "Whether the account is enabled."
+          example: true
+        isGuest:
+          type: boolean
+          description: "Whether this is a guest account."
+          example: false
+        newsletter:
+          type: boolean
+          description: "Newsletter subscription opt-in."
+          example: true
+        defaultGroupId:
+          type: integer
+          description: "Default customer group."
+          example: 3
+        groupIds:
+          type: array
+          items:
+            type: integer
+          description: "All group memberships."
+          example: [3, 4]
+        shopId:
+          type: integer
+          description: "Associated shop identifier."
+          example: 1
+        registrationDate:
+          type: string
+          format: date-time
+          description: "Account creation timestamp."
+          example: "2025-11-20T09:15:30+01:00"
+        lastVisit:
+          type: string
+          format: date-time
+          description: "Most recent login or activity timestamp."
+          example: "2026-03-18T16:42:00+01:00"
+        privateNote:
+          type: string
+          description: "Internal note visible only to back-office employees."
+          example: "VIP customer — priority support."
+      code_refs:
+        - path: "src/Core/Domain/Customer/Query/GetCustomerForEditing.php"
+          role: schema
+        - path: "src/Core/Domain/Customer/QueryResult/EditableCustomer.php"
+          role: schema
+
+    CreateAddressPayload:
+      x-model-id: MDL303
+      purpose: command-payload
+      description: "Request body for creating a new customer address for delivery or invoicing."
+      represents:
+        - concept: customers.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              customerId: CAT324
+              alias: CAT317
+              address1: CAT318
+              city: CAT320
+              postcode: CAT321
+              countryId: CAT322
+              phone: CAT323
+      type: object
+      required: [customerId, alias, firstName, lastName, address1, city, postCode, countryId]
+      properties:
+        customerId:
+          type: integer
+          description: "Owning customer identifier."
+          example: 42
+        alias:
+          type: string
+          description: "Short label for the address (e.g., 'Home', 'Office')."
+          example: "Home"
+        firstName:
+          type: string
+          description: "Recipient first name."
+          example: "Jean"
+        lastName:
+          type: string
+          description: "Recipient last name."
+          example: "Dupont"
+        company:
+          type: string
+          description: "Company name (B2B)."
+          example: "Acme SAS"
+        vatNumber:
+          type: string
+          description: "VAT identification number."
+          example: "FR12345678901"
+        address1:
+          type: string
+          description: "Primary address line (street, number)."
+          example: "15 Rue de la Paix"
+        address2:
+          type: string
+          description: "Secondary address line (apartment, suite)."
+          example: "Bât. A, 3ème étage"
+        city:
+          type: string
+          description: "City name."
+          example: "Paris"
+        postCode:
+          type: string
+          description: "Postal/ZIP code."
+          example: "75001"
+        countryId:
+          type: integer
+          description: "Country identifier."
+          example: 8
+        stateId:
+          type: integer
+          description: "State/region identifier (required for some countries)."
+          example: 0
+        phone:
+          type: string
+          description: "Contact phone number."
+          example: "+33 1 42 60 00 00"
+        phoneMobile:
+          type: string
+          description: "Mobile phone number."
+          example: "+33 6 12 34 56 78"
+        dni:
+          type: string
+          description: "National identification number (required in some countries)."
+          example: ""
+        other:
+          type: string
+          description: "Additional address information."
+          example: "Digicode: 4521A"
+      code_refs:
+        - path: "src/Core/Domain/Address/Command/AddCustomerAddressCommand.php"
+          role: schema
+
+    AddressResource:
+      x-model-id: MDL304
+      purpose: read-model
+      description: "Customer address representation for the back-office editing form."
+      represents:
+        - concept: customers.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              addressId: CAT316
+              alias: CAT317
+              address1: CAT318
+              address2: CAT319
+              city: CAT320
+              postcode: CAT321
+              countryId: CAT322
+              phone: CAT323
+              customerId: CAT324
+      type: object
+      properties:
+        addressId:
+          type: integer
+          description: "Unique address identifier."
+          example: 12
+        customerId:
+          type: integer
+          description: "Owning customer identifier."
+          example: 42
+        alias:
+          type: string
+          description: "Short label for the address."
+          example: "Home"
+        firstName:
+          type: string
+          description: "Recipient first name."
+          example: "Jean"
+        lastName:
+          type: string
+          description: "Recipient last name."
+          example: "Dupont"
+        company:
+          type: string
+          description: "Company name."
+          example: "Acme SAS"
+        vatNumber:
+          type: string
+          description: "VAT identification number."
+          example: "FR12345678901"
+        address1:
+          type: string
+          description: "Primary address line."
+          example: "15 Rue de la Paix"
+        address2:
+          type: string
+          description: "Secondary address line."
+          example: "Bât. A, 3ème étage"
+        city:
+          type: string
+          description: "City name."
+          example: "Paris"
+        postcode:
+          type: string
+          description: "Postal/ZIP code."
+          example: "75001"
+        countryId:
+          type: integer
+          description: "Country identifier."
+          example: 8
+        countryName:
+          type: string
+          description: "Country display name."
+          example: "France"
+        stateId:
+          type: integer
+          description: "State/region identifier."
+          example: 0
+        phone:
+          type: string
+          description: "Contact phone number."
+          example: "+33 1 42 60 00 00"
+        phoneMobile:
+          type: string
+          description: "Mobile phone number."
+          example: "+33 6 12 34 56 78"
+        dni:
+          type: string
+          description: "National identification number."
+          example: ""
+        other:
+          type: string
+          description: "Additional address information."
+          example: "Digicode: 4521A"
+      code_refs:
+        - path: "src/Core/Domain/Address/Query/GetCustomerAddressForEditing.php"
+          role: schema
+
+    CustomerListItem:
+      x-model-id: MDL305
+      purpose: read-model
+      description: "Lightweight customer summary for paginated back-office list views."
+      represents:
+        - concept: customers.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              customerId: CAT300
+              email: CAT301
+              firstName: CAT302
+              lastName: CAT303
+              active: CAT305
+              newsletter: CAT306
+      type: object
+      properties:
+        customerId:
+          type: integer
+          description: "Customer identifier."
+          example: 42
+        firstName:
+          type: string
+          description: "Customer first name."
+          example: "Jean"
+        lastName:
+          type: string
+          description: "Customer last name."
+          example: "Dupont"
+        email:
+          type: string
+          format: email
+          description: "Customer email."
+          example: "jean.dupont@example.com"
+        active:
+          type: boolean
+          description: "Whether the account is enabled."
+          example: true
+        newsletter:
+          type: boolean
+          description: "Newsletter subscription status."
+          example: true
+        groupName:
+          type: string
+          description: "Default group display name."
+          example: "Premium"
+        shopName:
+          type: string
+          description: "Associated shop name."
+          example: "PrestaShop Default"
+        registrationDate:
+          type: string
+          format: date-time
+          description: "Account creation date."
+          example: "2025-11-20T09:15:30+01:00"
+        lastVisit:
+          type: string
+          format: date-time
+          description: "Most recent activity."
+          example: "2026-03-18T16:42:00+01:00"
+        totalSpent:
+          type: string
+          description: "Lifetime total spent (decimal)."
+          example: "1549.970000"
+        orderCount:
+          type: integer
+          description: "Total number of orders placed."
+          example: 7
+        country:
+          type: string
+          description: "Country from default address."
+          example: "France"
+        companyName:
+          type: string
+          description: "Company name (B2B)."
+          example: ""
+      code_refs:
+        - path: "src/Core/Domain/Customer/Query/SearchCustomers.php"
+          role: schema
+
+    CustomerGroupResource:
+      x-model-id: MDL306
+      purpose: read-model
+      description: "Customer group configuration for the back-office editing form."
+      represents:
+        - concept: customers.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              groupId: CAT308
+              name: CAT309
+              reductionPercent: CAT310
+              displayPriceTaxExcluded: CAT311
+              showPrice: CAT312
+      type: object
+      properties:
+        groupId:
+          type: integer
+          description: "Unique group identifier."
+          example: 3
+        name:
+          type: object
+          description: "Localized group name keyed by language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Premium"
+            "2": "Premium"
+        reductionPercent:
+          type: number
+          description: "Default discount percentage for group members (0-100)."
+          example: 10.0
+        displayPriceTaxExcluded:
+          type: boolean
+          description: "Whether prices are shown tax-excluded for this group."
+          example: false
+        showPrice:
+          type: boolean
+          description: "Whether prices are visible to this group."
+          example: true
+        shopIds:
+          type: array
+          items:
+            type: integer
+          description: "Shops this group is available in."
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/Customer/Group/Query/GetCustomerGroupForEditing.php"
+          role: schema
+
+    CustomerServiceThread:
+      x-model-id: MDL307
+      purpose: read-model
+      description: "Customer service thread with full message history for back-office viewing."
+      represents:
+        - concept: customers.CN005
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              threadId: CAT325
+              subject: CAT326
+              status: CAT327
+              employeeRef: CAT328
+      type: object
+      properties:
+        threadId:
+          type: integer
+          description: "Unique thread identifier."
+          example: 15
+        customerId:
+          type: integer
+          description: "Customer who initiated the thread."
+          example: 42
+        customerName:
+          type: string
+          description: "Customer full name."
+          example: "Jean Dupont"
+        customerEmail:
+          type: string
+          format: email
+          description: "Customer email address."
+          example: "jean.dupont@example.com"
+        subject:
+          type: string
+          description: "Thread subject line."
+          example: "Question about my order #XKBKNABJK"
+        status:
+          type: string
+          description: "Current thread status (open, pending_customer, pending_employee, closed)."
+          example: "open"
+        employeeId:
+          type: integer
+          description: "Assigned employee identifier."
+          example: 3
+        employeeName:
+          type: string
+          description: "Assigned employee display name."
+          example: "Marie Martin"
+        contactType:
+          type: string
+          description: "Contact category (e.g., 'Customer service', 'Webmaster')."
+          example: "Customer service"
+        orderId:
+          type: integer
+          description: "Related order identifier (if applicable)."
+          example: 4217
+        productId:
+          type: integer
+          description: "Related product identifier (if applicable)."
+          example: 0
+        messages:
+          type: array
+          description: "Thread message history."
+          items:
+            type: object
+            properties:
+              messageId:
+                type: integer
+                example: 101
+              message:
+                type: string
+                example: "Hello, I have a question about the shipping delay for my order."
+              employeeId:
+                type: integer
+                example: 0
+              customerName:
+                type: string
+                example: "Jean Dupont"
+              employeeName:
+                type: string
+                example: ""
+              dateAdd:
+                type: string
+                format: date-time
+                example: "2026-03-17T10:30:00+01:00"
+              isEmployee:
+                type: boolean
+                example: false
+        createdAt:
+          type: string
+          format: date-time
+          description: "Thread creation timestamp."
+          example: "2026-03-17T10:30:00+01:00"
+        updatedAt:
+          type: string
+          format: date-time
+          description: "Last activity timestamp."
+          example: "2026-03-18T14:15:00+01:00"
+      code_refs:
+        - path: "src/Core/Domain/CustomerService/Query/GetCustomerThreadForViewing.php"
+          role: schema

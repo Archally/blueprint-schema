@@ -1,0 +1,51 @@
+---
+version: "1.0.0"
+scope: orders
+tags: [returns]
+
+concepts:
+  - id: orders.CN007
+    name: "OrderReturn"
+    description: "A merchandise return request initiated by a customer or merchant. Tracks return status, affected products, and links to generated credit slips. Managed as a standalone aggregate with its own lifecycle."
+    stereotype: aggregate-root
+    states: [waiting-for-confirmation, waiting-for-package, package-received, return-completed, return-denied]
+    initial_state: waiting-for-confirmation
+    terminal_states: [return-completed, return-denied]
+    code_refs:
+      - path: "src/Core/Domain/OrderReturn/"
+        role: model
+        description: "OrderReturn domain aggregate directory"
+      - path: "classes/order/OrderReturn.php"
+        role: implementation
+
+  - id: orders.CN008
+    name: "OrderReturnState"
+    description: "Defines the possible states in the return lifecycle. Admin-configurable — merchants can add custom return states with labels and colors per language."
+    stereotype: value-object
+    code_refs:
+      - path: "src/Core/Domain/OrderReturnState/"
+        role: model
+      - path: "classes/order/OrderReturnState.php"
+        role: implementation
+
+  - id: orders.CN009
+    name: "CreditSlip"
+    description: "A financial document recording a refund or credit issued to a customer. Created as a side effect of IssuePartialRefund or IssueStandardRefund commands — has no commands of its own. Query-only read model."
+    stereotype: read-model
+    attributes:
+      creditSlipId:
+        id: CAT130
+        description: "Unique credit slip identifier."
+      amount:
+        id: CAT131
+        description: "Total credited amount including tax."
+      dateAdd:
+        id: CAT132
+        description: "Timestamp when the credit slip was generated."
+    relationships:
+      - predicate: derived-from
+        object: orders.CN002
+        description: "Credit slips are derived from refund operations on an order."
+    code_refs:
+      - path: "classes/order/OrderSlip.php"
+        role: implementation

@@ -1,0 +1,175 @@
+---
+name: "Module Stories"
+version: "1.0.0"
+scope: modules
+
+stories:
+  - id: modules.STR001
+    title: "Module Installation & Activation"
+    description: "A store admin uploads, installs, and activates a module to extend storefront functionality."
+    process:
+      id: modules.SP001
+      trigger:
+        type: message
+        operation: modules.CMD008
+        description: "Module developer uploads a module package."
+      end_states:
+        - name: "Module active"
+          type: complete
+          description: "Module uploaded, installed, hooks registered, and verified active."
+        - name: "Installation failed"
+          type: error
+          description: "Module already installed, dependency conflict, or compatibility failure."
+      lanes:
+        - actor: modules.ACT002
+          operations: [modules.CMD008]
+        - actor: modules.ACT001
+          operations: [modules.CMD001, modules.QRY001]
+    activities:
+      - id: modules.SA001
+        name: "Upload Module"
+        triggered_by: [modules.ACT002]
+        entry_operation: modules.CMD008
+        path_type: happy
+      - id: modules.SA002
+        name: "Install Module"
+        triggered_by: [modules.EVT006]
+        entry_operation: modules.CMD001
+      - id: modules.SA003
+        name: "Verify Module"
+        triggered_by: [modules.EVT001]
+        entry_operation: modules.QRY001
+    code_refs:
+      - path: "src/PrestaShopBundle/Controller/Admin/Improve/ModuleController.php"
+        role: implementation
+        description: "Module lifecycle management controller."
+
+  - id: modules.STR002
+    title: "Module Troubleshooting"
+    description: "A store admin disables or resets a problematic module to restore store stability."
+    process:
+      id: modules.SP002
+      trigger:
+        type: manual
+        operation: modules.CMD003
+        description: "Store admin disables a problematic module to restore stability."
+      end_states:
+        - name: "Module stabilized"
+          type: complete
+          description: "Module disabled and/or reset, store stability restored."
+        - name: "Reset failed"
+          type: error
+          description: "Module reset fails, requiring full uninstallation."
+      lanes:
+        - actor: modules.ACT001
+          operations: [modules.CMD003, modules.CMD006]
+    activities:
+      - id: modules.SA004
+        name: "Disable Module"
+        triggered_by: [modules.ACT001]
+        entry_operation: modules.CMD003
+        path_type: happy
+      - id: modules.SA005
+        name: "Reset Module"
+        triggered_by: [modules.ACT001]
+        entry_operation: modules.CMD006
+        path_type: happy
+
+user_stories:
+  - id: modules.US001
+    actor: modules.ACT001
+    goal: "install a new module to extend store functionality"
+    benefit: "the storefront gains new features without custom development"
+    acceptance_criteria:
+      - "Module is uploaded from package source"
+      - "Module installs successfully with hook registrations"
+      - "Module appears as installed and enabled in module list"
+    delivery_priority: must-have
+    operations: [modules.CMD008, modules.CMD001]
+    test_cases: [modules.TC001]
+
+  - id: modules.US002
+    actor: modules.ACT001
+    goal: "disable a problematic module quickly without uninstalling"
+    benefit: "store stability is restored while preserving module configuration for later re-enable"
+    acceptance_criteria:
+      - "Module status changes to disabled"
+      - "Module hooks stop executing"
+      - "Module can be re-enabled without reinstallation"
+    delivery_priority: must-have
+    operations: [modules.CMD003]
+    test_cases: [modules.TC002]
+
+  - id: modules.US003
+    actor: modules.ACT001
+    goal: "upgrade installed modules to their latest versions"
+    benefit: "the store benefits from bug fixes, security patches, and new features"
+    acceptance_criteria:
+      - "Module is upgraded to the latest available version"
+      - "Module configuration is preserved after upgrade"
+      - "Module remains enabled after successful upgrade"
+    delivery_priority: must-have
+    operations: [modules.CMD007]
+    test_cases: [modules.TC003]
+
+  - id: modules.US004
+    actor: modules.ACT001
+    goal: "manage hook activation to control extension points"
+    benefit: "specific extension points can be disabled without uninstalling modules"
+    acceptance_criteria:
+      - "Hook status toggles between active and inactive"
+      - "Disabled hooks prevent module callback execution"
+    delivery_priority: should-have
+    operations: [modules.CMD009]
+    test_cases: [modules.TC004]
+
+use_cases:
+  - id: modules.UC001
+    name: "Install Module"
+    primary_actor: modules.ACT001
+    main_scenario:
+      - step: 1
+        action: "Developer uploads module package"
+        operation: modules.CMD008
+      - step: 2
+        action: "System validates and extracts module files"
+      - step: 3
+        action: "Admin triggers module installation"
+        operation: modules.CMD001
+      - step: 4
+        action: "System resolves dependencies and registers hooks"
+      - step: 5
+        action: "Admin verifies module is installed and enabled"
+        operation: modules.QRY001
+    extensions:
+      - step: 3
+        condition: "Module is already installed"
+        action: "Show AlreadyInstalledModule error"
+      - step: 4
+        condition: "Installation fails (dependency or compatibility)"
+        action: "Show CannotInstallModule error, module remains not_installed"
+    user_stories: [modules.US001]
+
+  - id: modules.UC002
+    name: "Troubleshoot Module"
+    primary_actor: modules.ACT001
+    main_scenario:
+      - step: 1
+        action: "Admin identifies problematic module"
+        operation: modules.QRY001
+      - step: 2
+        action: "Admin disables the module"
+        operation: modules.CMD003
+      - step: 3
+        action: "Admin verifies store stability restored"
+      - step: 4
+        action: "Admin resets the module to clean state"
+        operation: modules.CMD006
+      - step: 5
+        action: "Admin re-enables the module"
+        operation: modules.CMD003
+    extensions:
+      - step: 4
+        condition: "Reset fails"
+        action: "Admin uninstalls the module entirely"
+    user_stories: [modules.US002]

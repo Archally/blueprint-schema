@@ -1,0 +1,398 @@
+---
+version: "1.0.0"
+scope: admin
+tags: [admin, models]
+
+components:
+  schemas:
+    CreateEmployeePayload:
+      x-model-id: MDL800
+      purpose: command-payload
+      description: "Request body for creating a new back-office employee with profile-based RBAC and multi-store shop association."
+      represents:
+        - concept: admin.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              firstName: CAT800
+              lastName: CAT801
+              email: CAT802
+              active: CAT803
+              profileId: CAT804
+              defaultPageId: CAT805
+              languageId: CAT806
+              associatedShopIds: CAT807
+      type: object
+      required: [firstName, lastName, email, password, profileId, languageId, active]
+      properties:
+        firstName:
+          type: string
+          description: "Employee first name (validated via FirstName value object)."
+          example: "John"
+        lastName:
+          type: string
+          description: "Employee last name (validated via LastName value object)."
+          example: "Smith"
+        email:
+          type: string
+          format: email
+          description: "Employee email address — must be unique across all employees."
+          example: "john.smith@store.com"
+        password:
+          type: string
+          description: "Employee password (must meet configurable strength policy: minLength, maxLength, minScore)."
+          example: "Str0ng!Pass#2026"
+        defaultPageId:
+          type: integer
+          description: "Admin page ID shown after login."
+          example: 1
+        profileId:
+          type: integer
+          description: "Access control profile ID to assign (determines RBAC permissions)."
+          example: 1
+        languageId:
+          type: integer
+          description: "Back-office language preference ID."
+          example: 1
+        active:
+          type: boolean
+          description: "Whether the employee account is enabled at creation."
+          example: true
+        associatedShopIds:
+          type: array
+          description: "Shop IDs this employee can access in multi-store setups."
+          items:
+            type: integer
+          example: [1, 2]
+      code_refs:
+        - path: "src/Core/Domain/Employee/Command/AddEmployeeCommand.php"
+          role: schema
+
+    EmployeeResource:
+      x-model-id: MDL801
+      purpose: read-model
+      description: "Employee details for the back-office edit form. Includes profile assignment, language, default page, and multi-store shop association."
+      represents:
+        - concept: admin.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              firstName: CAT800
+              lastName: CAT801
+              email: CAT802
+              active: CAT803
+              profileId: CAT804
+              defaultPageId: CAT805
+              languageId: CAT806
+              associatedShopIds: CAT807
+      type: object
+      properties:
+        employeeId:
+          type: integer
+          description: "Unique employee identifier."
+          example: 42
+        firstName:
+          type: string
+          description: "Employee first name."
+          example: "John"
+        lastName:
+          type: string
+          description: "Employee last name."
+          example: "Smith"
+        email:
+          type: string
+          format: email
+          description: "Employee email address."
+          example: "john.smith@store.com"
+        active:
+          type: boolean
+          description: "Whether the employee account is currently enabled."
+          example: true
+        profileId:
+          type: integer
+          description: "Assigned access control profile ID."
+          example: 1
+        profileName:
+          type: string
+          description: "Display name of the assigned profile."
+          example: "SuperAdmin"
+        defaultPageId:
+          type: integer
+          description: "Admin page shown after login."
+          example: 1
+        languageId:
+          type: integer
+          description: "Back-office language preference ID."
+          example: 1
+        associatedShopIds:
+          type: array
+          description: "Shop IDs this employee can access."
+          items:
+            type: integer
+          example: [1, 2]
+        avatarUrl:
+          type: string
+          description: "Employee avatar image URL."
+          example: "/img/pr/default.jpg"
+      code_refs:
+        - path: "src/Core/Domain/Employee/Query/GetEmployeeForEditing.php"
+          role: schema
+          description: "GetEmployeeForEditing query result — populates the employee edit form"
+
+    CreateProfilePayload:
+      x-model-id: MDL802
+      purpose: command-payload
+      description: "Request body for creating a new RBAC access control profile with localized names."
+      represents:
+        - concept: admin.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              localizedNames: CAT808
+      type: object
+      required: [localizedNames]
+      properties:
+        localizedNames:
+          type: object
+          description: "Profile name per language ID (key = language ID, value = localized name)."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Catalog Manager"
+            "2": "Gestionnaire de catalogue"
+      code_refs:
+        - path: "src/Core/Domain/Profile/Command/AddProfileCommand.php"
+          role: schema
+
+    ProfileResource:
+      x-model-id: MDL803
+      purpose: read-model
+      description: "Profile details for the back-office edit form. Includes localized names and the profile identifier."
+      represents:
+        - concept: admin.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              localizedNames: CAT808
+      type: object
+      properties:
+        profileId:
+          type: integer
+          description: "Unique profile identifier."
+          example: 4
+        localizedNames:
+          type: object
+          description: "Profile name per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Catalog Manager"
+            "2": "Gestionnaire de catalogue"
+      code_refs:
+        - path: "src/Core/Domain/Profile/Query/GetProfileForEditing.php"
+          role: schema
+          description: "GetProfileForEditing query result — populates the profile edit form"
+
+    CreateApiClientPayload:
+      x-model-id: MDL804
+      purpose: command-payload
+      description: "Request body for registering a new OAuth2 API client for the PrestaShop Admin API."
+      represents:
+        - concept: admin.CN005
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              clientId: CAT814
+              clientName: CAT813
+              description: CAT816
+              enabled: CAT815
+              lifetime: CAT817
+              scopes: CAT818
+      type: object
+      required: [clientId, clientName, enabled, lifetime, scopes]
+      properties:
+        clientId:
+          type: string
+          description: "OAuth2 client identifier — unique across all API clients."
+          example: "erp-sync-client"
+        clientName:
+          type: string
+          description: "Human-readable name for the API client."
+          example: "ERP Integration"
+        description:
+          type: string
+          description: "Purpose description for the API client."
+          example: "ERP system synchronization for orders and inventory"
+        enabled:
+          type: boolean
+          description: "Whether the API client is active and can request tokens."
+          example: true
+        lifetime:
+          type: integer
+          description: "Access token lifetime in seconds."
+          example: 3600
+        scopes:
+          type: array
+          description: "OAuth2 scopes granted to this client."
+          items:
+            type: string
+          example: ["product_read", "order_read", "order_write"]
+      code_refs:
+        - path: "src/Core/Domain/ApiClient/Command/AddApiClientCommand.php"
+          role: schema
+
+    ApiClientResource:
+      x-model-id: MDL805
+      purpose: read-model
+      description: "API client details for the back-office edit form. One of only 2 Admin API resources exposed in core — the other is the ApiClient list endpoint."
+      represents:
+        - concept: admin.CN005
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              clientId: CAT814
+              clientName: CAT813
+              description: CAT816
+              enabled: CAT815
+              lifetime: CAT817
+              scopes: CAT818
+      type: object
+      properties:
+        apiClientId:
+          type: integer
+          description: "Internal API client identifier."
+          example: 1
+        clientId:
+          type: string
+          description: "OAuth2 client identifier."
+          example: "erp-sync-client"
+        clientName:
+          type: string
+          description: "Human-readable name."
+          example: "ERP Integration"
+        description:
+          type: string
+          description: "Purpose description."
+          example: "ERP system synchronization for orders and inventory"
+        enabled:
+          type: boolean
+          description: "Whether the API client is currently active."
+          example: true
+        lifetime:
+          type: integer
+          description: "Access token lifetime in seconds."
+          example: 3600
+        scopes:
+          type: array
+          description: "Granted OAuth2 scopes."
+          items:
+            type: string
+          example: ["product_read", "order_read", "order_write"]
+        externalIssuer:
+          type: string
+          description: "External OAuth issuer URL (null for internal clients)."
+          example: null
+      code_refs:
+        - path: "src/Core/Domain/ApiClient/Query/GetApiClientForEditing.php"
+          role: schema
+          description: "GetApiClientForEditing query result — populates the API client edit form"
+
+    CreateWebserviceKeyPayload:
+      x-model-id: MDL806
+      purpose: command-payload
+      description: "Request body for creating a legacy XML webservice access key with resource-level permissions."
+      represents:
+        - concept: admin.CN006
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              key: CAT819
+              description: CAT820
+              permissions: CAT821
+      type: object
+      required: [key, description]
+      properties:
+        key:
+          type: string
+          description: "The webservice access key string (typically 32 hex characters)."
+          example: "ABCDEF1234567890ABCDEF1234567890"
+        description:
+          type: string
+          description: "Purpose description for the webservice key."
+          example: "Legacy ERP integration — read-only product access"
+        permissions:
+          type: object
+          description: "Resource-level permission matrix — keys are resource names, values are permission arrays."
+          additionalProperties:
+            type: array
+            items:
+              type: string
+              enum: [GET, POST, PUT, DELETE, HEAD]
+          example:
+            products: ["GET", "HEAD"]
+            orders: ["GET", "POST", "PUT", "HEAD"]
+        associatedShopIds:
+          type: array
+          description: "Shop IDs this webservice key is valid for."
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/Webservice/Command/AddWebserviceKeyCommand.php"
+          role: schema
+
+    WebserviceKeyResource:
+      x-model-id: MDL807
+      purpose: read-model
+      description: "Webservice key details for the back-office edit form. Legacy XML API access configuration."
+      represents:
+        - concept: admin.CN006
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              key: CAT819
+              description: CAT820
+              permissions: CAT821
+      type: object
+      properties:
+        webserviceKeyId:
+          type: integer
+          description: "Unique webservice key identifier."
+          example: 1
+        key:
+          type: string
+          description: "The webservice access key string."
+          example: "ABCDEF1234567890ABCDEF1234567890"
+        description:
+          type: string
+          description: "Purpose description."
+          example: "Legacy ERP integration — read-only product access"
+        permissions:
+          type: object
+          description: "Resource-level permission matrix."
+          additionalProperties:
+            type: array
+            items:
+              type: string
+              enum: [GET, POST, PUT, DELETE, HEAD]
+          example:
+            products: ["GET", "HEAD"]
+            orders: ["GET", "POST", "PUT", "HEAD"]
+        associatedShopIds:
+          type: array
+          description: "Shop IDs this key is valid for."
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/Webservice/Query/GetWebserviceKeyForEditing.php"
+          role: schema
+          description: "GetWebserviceKeyForEditing query result — populates the webservice key edit form"

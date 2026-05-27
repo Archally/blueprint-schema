@@ -1,0 +1,185 @@
+---
+version: "1.0.0"
+scope: catalog
+tags: [characteristics, models]
+
+components:
+  schemas:
+    CreateAttributeGroupPayload:
+      x-model-id: MDL015
+      purpose: command-payload
+      description: "Request body for creating a new attribute group for product combinations."
+      represents:
+        - concept: catalog.CN005
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              localizedNames: CAT014
+              groupType: CAT015
+      type: object
+      required: [localizedNames, groupType]
+      properties:
+        localizedNames:
+          type: object
+          description: "Attribute group name per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Size"
+            "2": "Taille"
+        localizedPublicNames:
+          type: object
+          description: "Public-facing name per language (may differ from admin name)."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Size"
+            "2": "Taille"
+        groupType:
+          type: string
+          description: "Display type for this attribute group."
+          enum: [select, radio, color]
+          example: "select"
+        associatedShopIds:
+          type: array
+          description: "Shops where this group is available."
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/AttributeGroup/Command/AddAttributeGroupCommand.php"
+          role: schema
+
+    AttributeGroupResource:
+      x-model-id: MDL016
+      purpose: read-model
+      description: "Full attribute group with its values for editing."
+      represents:
+        - concept: catalog.CN005
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              attributeGroupId: CAT013
+              localizedNames: CAT014
+              groupType: CAT015
+      type: object
+      properties:
+        attributeGroupId:
+          type: integer
+          description: "Unique attribute group identifier."
+          example: 1
+        localizedNames:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "Size"
+        localizedPublicNames:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "Size"
+        groupType:
+          type: string
+          enum: [select, radio, color]
+          example: "select"
+        attributes:
+          type: array
+          description: "Attribute values belonging to this group."
+          items:
+            type: object
+            properties:
+              attributeId:
+                type: integer
+                example: 1
+              localizedNames:
+                type: object
+                additionalProperties:
+                  type: string
+                example:
+                  "1": "S"
+              color:
+                type: string
+                description: "Color hex code (only for color-type groups)."
+                example: ""
+              position:
+                type: integer
+                example: 0
+
+    CreateFeaturePayload:
+      x-model-id: MDL017
+      purpose: command-payload
+      description: "Request body for creating a new product feature."
+      represents:
+        - concept: catalog.CN006
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              localizedNames: CAT017
+      type: object
+      required: [localizedNames]
+      properties:
+        localizedNames:
+          type: object
+          description: "Feature name per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Weight"
+            "2": "Poids"
+        associatedShopIds:
+          type: array
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/Feature/Command/AddFeatureCommand.php"
+          role: schema
+
+    FeatureResource:
+      x-model-id: MDL018
+      purpose: read-model
+      description: "Full feature with its values for product form display."
+      represents:
+        - concept: catalog.CN006
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              featureId: CAT016
+              localizedNames: CAT017
+      type: object
+      properties:
+        featureId:
+          type: integer
+          description: "Unique feature identifier."
+          example: 3
+        localizedNames:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "Weight"
+        values:
+          type: array
+          description: "Feature values."
+          items:
+            type: object
+            properties:
+              featureValueId:
+                type: integer
+                example: 12
+              localizedValues:
+                type: object
+                additionalProperties:
+                  type: string
+                example:
+                  "1": "2.1 kg"
+              isCustom:
+                type: boolean
+                description: "Whether this is a custom (per-product) value."
+                example: false

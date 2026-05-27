@@ -1,0 +1,55 @@
+---
+version: "1.0.0"
+scope: customers
+
+kpis:
+  - id: customers.KPI001
+    name: "Registration Success Rate"
+    target: ">= 15% of registration page visitors complete account creation"
+    window: "monthly"
+    goal: customers.G001
+    thresholds:
+      warning: "10%"
+      critical: "5%"
+
+  - id: customers.KPI002
+    name: "Address Validation Pass Rate"
+    target: ">= 95% of addresses pass validation on first submission"
+    window: "weekly"
+    goal: customers.G002
+    thresholds:
+      warning: "90%"
+      critical: "85%"
+
+  - id: customers.KPI003
+    name: "Guest-to-Customer Conversion Rate"
+    target: ">= 20% of guest orders result in account registration"
+    window: "monthly"
+    goal: customers.G001
+
+slos:
+  - id: customers.SLO001
+    name: "Customer Service First Response Time"
+    target: "90% of threads receive first reply within 4 business hours"
+    window: "weekly"
+    operations: [customers.CMD016]
+    error_budget: "10% of threads may exceed 4-hour SLA"
+
+  - id: customers.SLO002
+    name: "Registration API Latency"
+    target: "p99 < 1s for account creation"
+    window: "weekly"
+    operations: [customers.CMD001]
+
+security:
+  - id: customers.SEC001
+    name: "PII Encryption at Rest"
+    type: data-protection
+    requirement: "Customer PII (email, phone, addresses) must be encrypted at rest using AES-256. Decryption keys stored separately from data."
+    operations: [customers.CMD001, customers.CMD002, customers.CMD012]
+
+compliance:
+  - id: customers.CMP001
+    name: "GDPR Data Subject Rights"
+    regulation: "GDPR"
+    requirement: "Support right to access (data export), right to erasure (account deletion with anonymization), and right to rectification (profile editing). Deletion requests processed within 30 days."

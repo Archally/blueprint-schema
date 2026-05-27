@@ -1,0 +1,239 @@
+---
+version: "1.0.0"
+scope: catalog
+tags: [product]
+
+concepts:
+  - id: catalog.CN001
+    name: "Product"
+    description: "A sellable item in the PrestaShop catalog with name, description, price, and attributes. The largest aggregate in the codebase with 51 CQRS commands across 7 semantic clusters."
+    stereotype: aggregate-root
+    states: [draft, active, discontinued, archived]
+    initial_state: draft
+    terminal_states: [archived]
+    attributes:
+      productId:
+        id: CAT001
+        description: "Unique product identifier"
+        example: "42"
+      name:
+        id: CAT002
+        description: "Product name (multi-language)"
+        example: "Classic Laptop 15-inch"
+      description:
+        id: CAT003
+        description: "Detailed product description (multi-language, HTML)"
+      price:
+        id: CAT004
+        description: "Base price excluding tax"
+        example: "999.99"
+      status:
+        id: CAT005
+        description: "Lifecycle state"
+        example: "active"
+      productType:
+        id: CAT006
+        description: "Product type: standard, pack, virtual, combinations"
+        example: "combinations"
+      reference:
+        id: CAT007
+        description: "Internal reference (merchant's SKU)"
+        example: "LAPTOP-15-BLK"
+    code_refs:
+      - path: "src/Core/Domain/Product/"
+        role: model
+        description: "Product domain aggregate root directory"
+      - path: "https://github.com/PrestaShop/docs/blob/9.x/development/architecture/domain/references/product/_index.md"
+        role: documentation
+    tags: [aggregate-root, core-domain]
+
+  - id: catalog.CN003
+    name: "Combination"
+    description: "A product variant defined by specific attribute values (e.g. Size:M + Color:Red). Has own identity (CombinationId), own stock, price offset, and EAN. Dual presence: top-level aggregate at src/Core/Domain/Combination/ plus junction commands under Product/Combination/."
+    stereotype: aggregate-root
+    attributes:
+      combinationId:
+        id: CAT018
+        description: "Unique combination identifier"
+      reference:
+        id: CAT019
+        description: "SKU reference for this variant"
+      priceImpact:
+        id: CAT020
+        description: "Price offset from base product price"
+      quantity:
+        id: CAT021
+        description: "Available stock for this variant"
+      ean13:
+        id: CAT022
+        description: "EAN-13 barcode"
+    relationships:
+      - predicate: part-of
+        object: catalog.CN001
+        cardinality: "0..*"
+        description: "A product has zero or more combinations."
+    code_refs:
+      - path: "src/Core/Domain/Combination/"
+        role: model
+        description: "Combination domain — child aggregate with own identity"
+    tags: [aggregate-root]
+
+  - id: catalog.CN004
+    name: "ProductImage"
+    description: "Media asset associated with a product — main image, gallery images, or combination-specific images."
+    stereotype: value-object
+    attributes:
+      imageId:
+        id: CAT027
+        description: "Unique image identifier"
+      position:
+        id: CAT028
+        description: "Display order within product gallery"
+      isCover:
+        id: CAT029
+        description: "Whether this is the main product image"
+    relationships:
+      - predicate: part-of
+        object: catalog.CN001
+        cardinality: "0..*"
+    code_refs:
+      - path: "src/Core/Domain/Product/Image/"
+        role: model
+    tags: [value-object, within:catalog.CN001]
+
+  - id: catalog.CN010
+    name: "SpecificPrice"
+    description: "A pricing rule override for a specific product, customer group, time range, or quantity threshold."
+    stereotype: value-object
+    attributes:
+      specificPriceId:
+        id: CAT030
+        description: "Unique specific price identifier"
+      reduction:
+        id: CAT031
+        description: "Discount amount or percentage"
+      reductionType:
+        id: CAT032
+        description: "Type of reduction: amount or percentage"
+      fromQuantity:
+        id: CAT033
+        description: "Minimum quantity for this price to apply"
+    code_refs:
+      - path: "src/Core/Domain/Product/SpecificPrice/"
+        role: model
+    tags: [value-object, pricing]
+
+  - id: catalog.CN013
+    name: "VirtualProductFile"
+    description: "A downloadable file for virtual products (e.g. software license, digital media)."
+    stereotype: value-object
+    tags: [value-object, within:catalog.CN001]
+
+  - id: catalog.CN012
+    name: "Tag"
+    description: "A free-form keyword tag on a product for search enhancement. Tags are per-language."
+    stereotype: value-object
+    code_refs:
+      - path: "src/Core/Domain/Tag/"
+        role: model
+    tags: [value-object]
+
+  - id: catalog.CN011
+    name: "Attachment"
+    description: "A downloadable file associated with a product (manual, datasheet, certificate)."
+    stereotype: value-object
+    code_refs:
+      - path: "src/Core/Domain/Attachment/"
+        role: model
+    tags: [value-object]
+
+actors:
+  - id: catalog.ACT001
+    name: "CategoryManager"
+    type: human
+    description: "Content specialist managing product taxonomy, catalog organization, and bulk imports."
+    summary: "Merchandising and catalog curation."
+    responsibilities:
+      - "Organize category hierarchy"
+      - "Bulk import/export product data"
+      - "Ensure product descriptions meet quality standards"
+      - "Manage seasonal product visibility"
+    personas:
+      - name: "Typical CategoryManager"
+        quote: "I spend hours fixing CSV import errors — give me a tool that validates before importing."
+        goals:
+          - "Import 1000 products in under 5 minutes"
+          - "Maintain consistent category hierarchy across 10+ languages"
+          - "Ensure every product has at least one image"
+        pain_points:
+          - "CSV import fails silently — missing SKUs not reported until customers complain"
+          - "Category hierarchy sync between back-office and Elasticsearch is unreliable"
+          - "No bulk image upload — one product at a time"
+        behaviors:
+          - "Works in bulk — processes 100+ products per session"
+          - "Uses CSV templates for product data"
+          - "Reviews catalog completeness weekly"
+        tech_savviness: medium
+        job_to_be_done: "Curate a complete, well-organized product catalog efficiently at scale."
+        demographics:
+          role: "Merchandising Specialist"
+          industry: "Retail / E-commerce"
+          team_size: "2-5"
+
+enumerations:
+  - id: catalog.EN001
+    name: "ProductStatus"
+    description: "Lifecycle states of a catalog product."
+    values:
+      - name: draft
+        description: "Product created but not yet visible to customers."
+      - name: active
+        description: "Product is live and purchasable."
+      - name: discontinued
+        description: "Product no longer sold but still visible for SEO."
+      - name: archived
+        description: "Product removed from all views."
+
+  - id: catalog.EN002
+    name: "ProductType"
+    description: "Product structural type."
+    values:
+      - name: standard
+        description: "Simple product without variants."
+      - name: combinations
+        description: "Product with multiple variants (size, color)."
+      - name: pack
+        description: "Bundle of multiple products."
+      - name: virtual
+        description: "Digital/downloadable product."
+
+  - id: catalog.EN003
+    name: "ReductionType"
+    description: "Type of price reduction for specific prices."
+    values:
+      - name: amount
+        description: "Fixed amount discount."
+      - name: percentage
+        description: "Percentage discount."
+
+associations:
+  - id: catalog.AS001
+    predicate: maps-to
+    subject: catalog.CN001
+    object: catalog.CN002
+    cardinality: "*:*"
+    description: "Products are assigned to multiple categories. One is the default."
+
+  - id: catalog.AS002
+    predicate: depends-on
+    subject: catalog.CN001
+    object: catalog.CN008
+    cardinality: "*:1"
+    description: "A product is manufactured by one manufacturer (brand)."
+
+  - id: catalog.AS003
+    predicate: uses
+    subject: catalog.CN001
+    object: catalog.CN009
+    cardinality: "*:*"
+    description: "A product can have multiple suppliers with per-supplier pricing."

@@ -1,0 +1,261 @@
+---
+name: "Customer Stories"
+version: "1.0.0"
+scope: customers
+
+stories:
+  - id: customers.STR001
+    title: "Customer account lifecycle"
+    description: "Customer registers, manages profile, and eventually exercises GDPR rights."
+    initiated_by: [customers.ACT001]
+    process:
+      id: customers.SP001
+      trigger:
+        type: message
+        operation: customers.CMD001
+        description: "Customer registers a new account."
+      end_states:
+        - name: "Account lifecycle complete"
+          type: complete
+          description: "Account created, addresses managed, GDPR data deletion exercised."
+        - name: "Registration failed"
+          type: error
+          description: "Duplicate email or password policy violation."
+      lanes:
+        - actor: customers.ACT001
+          operations: [customers.CMD001, customers.CMD012, customers.CMD003]
+    activities:
+      - id: customers.SA001
+        name: "Register account"
+        entry_operation: customers.CMD001
+        path_type: happy
+      - id: customers.SA002
+        name: "Manage addresses"
+        entry_operation: customers.CMD012
+        path_type: happy
+      - id: customers.SA003
+        name: "Request data deletion"
+        entry_operation: customers.CMD003
+        path_type: happy
+    code_refs:
+      - path: "src/PrestaShopBundle/Controller/Admin/Sell/Customer/CustomerController.php"
+        role: implementation
+        description: "Customer account management controller."
+      - path: "controllers/front/RegistrationController.php"
+        role: implementation
+        description: "Front-office customer registration."
+
+  - id: customers.STR002
+    title: "Customer service interaction"
+    description: "Customer submits inquiry, agent responds and resolves."
+    initiated_by: [customers.ACT002]
+    process:
+      id: customers.SP002
+      trigger:
+        type: message
+        operation: customers.CMD016
+        description: "Support agent replies to a customer service thread."
+      end_states:
+        - name: "Inquiry resolved"
+          type: complete
+          description: "Reply sent, thread resolved or forwarded to specialist."
+        - name: "Thread not found"
+          type: error
+          description: "Service thread does not exist or is already closed."
+      lanes:
+        - actor: customers.ACT002
+          operations: [customers.CMD016, customers.CMD017]
+    activities:
+      - id: customers.SA004
+        name: "Reply to thread"
+        entry_operation: customers.CMD016
+        path_type: happy
+      - id: customers.SA005
+        name: "Forward to specialist"
+        entry_operation: customers.CMD017
+        path_type: happy
+
+user_stories:
+  - id: customers.US001
+    actor: customers.ACT001
+    goal: "register a customer account"
+    benefit: "I can track orders, save addresses, and receive personalized offers"
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Account created with valid email and password"
+      - "Welcome email sent"
+      - "Customer assigned to default group"
+    operations: [customers.CMD001, customers.EVT001]
+    test_cases: [customers.TC001]
+    use_case: customers.UC001
+
+  - id: customers.US002
+    actor: customers.ACT001
+    goal: "add and manage my delivery addresses"
+    benefit: "I can ship to multiple locations without re-entering data"
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Address saved with all required fields for my country"
+      - "Can set a default address"
+      - "Can edit or delete existing addresses"
+    operations: [customers.CMD012, customers.CMD013, customers.CMD014]
+    test_cases: [customers.TC002]
+    use_case: customers.UC002
+
+  - id: customers.US003
+    actor: orders.ACT004
+    goal: "convert a guest account to a registered customer"
+    benefit: "the customer gains full account features after a guest checkout"
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Guest account converted with existing email"
+      - "Order history preserved"
+      - "Customer can now log in"
+    operations: [customers.CMD008, customers.EVT004]
+    test_cases: [customers.TC003]
+
+  - id: customers.US004
+    actor: customers.ACT002
+    goal: "reply to a customer service thread"
+    benefit: "the customer gets a timely response to their inquiry"
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Reply added to thread"
+      - "Customer notified by email"
+      - "Thread status updated"
+    operations: [customers.CMD016, customers.EVT010]
+    test_cases: [customers.TC004]
+    use_case: customers.UC003
+
+  - id: customers.US005
+    actor: orders.ACT004
+    goal: "set up a B2B customer group with wholesale pricing"
+    benefit: "business customers automatically get volume discounts"
+    delivery_priority: should-have
+    status: draft
+    release_target: "v1.1"
+    acceptance_criteria:
+      - "Group created with discount percentage"
+      - "Price display set to tax-excluded"
+      - "Customers assignable to the group"
+    operations: [customers.CMD009, customers.EVT005]
+
+  - id: customers.US006
+    actor: customers.ACT001
+    goal: "request deletion of my personal data"
+    benefit: "I exercise my GDPR right to be forgotten"
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Personal data anonymized within 30 days"
+      - "Order records retained with anonymized reference"
+      - "Confirmation email sent"
+    operations: [customers.CMD003, customers.EVT003]
+
+use_cases:
+  - id: customers.UC001
+    name: "Register Customer Account"
+    summary: "New customer creates an account with email, password, and basic profile."
+    primary_actor: customers.ACT001
+    goal: "Create a registered customer account."
+    preconditions:
+      - "Email not already used by another customer in this shop"
+    postconditions:
+      - "Customer account created and active"
+      - "CustomerCreated event emitted"
+    main_scenario:
+      - step: 1
+        action: "Customer navigates to registration page."
+        emotion: neutral
+      - step: 2
+        action: "Customer fills in name, email, and password."
+        emotion: neutral
+        pain_point: "Too many required fields for a simple registration"
+      - step: 3
+        action: "System validates email uniqueness and password strength."
+        operation: customers.CMD001
+      - step: 4
+        action: "System creates account and sends welcome email."
+        operation: customers.EVT001
+        emotion: satisfied
+    extensions:
+      - step: 3
+        condition: "Email already exists."
+        action: "System displays duplicate email error."
+    user_stories: [customers.US001]
+    delivery_priority: must-have
+
+  - id: customers.UC002
+    name: "Manage Customer Addresses"
+    summary: "Customer adds, edits, or deletes delivery and invoice addresses."
+    primary_actor: customers.ACT001
+    goal: "Maintain a set of addresses for ordering."
+    preconditions:
+      - "Customer is logged in"
+    postconditions:
+      - "Address book updated"
+    main_scenario:
+      - step: 1
+        action: "Customer navigates to address management page."
+        emotion: neutral
+      - step: 2
+        action: "Customer clicks 'Add new address'."
+        emotion: neutral
+      - step: 3
+        action: "Customer fills in address fields (required fields vary by country)."
+        emotion: neutral
+        pain_point: "Country-specific required fields are not obvious before selecting country"
+      - step: 4
+        action: "System validates address and saves."
+        operation: customers.CMD012
+      - step: 5
+        action: "System confirms address saved."
+        operation: customers.EVT007
+        emotion: satisfied
+    extensions:
+      - step: 4
+        condition: "Missing required fields for selected country."
+        action: "System highlights missing fields with country-specific error messages."
+    user_stories: [customers.US002]
+    delivery_priority: must-have
+
+  - id: customers.UC003
+    name: "Handle Customer Service Request"
+    summary: "Agent views customer thread, replies, and resolves the issue."
+    primary_actor: customers.ACT002
+    goal: "Resolve a customer inquiry through the service thread."
+    preconditions:
+      - "Thread exists with status open or pending"
+    postconditions:
+      - "Reply sent to customer"
+      - "Thread status updated"
+    main_scenario:
+      - step: 1
+        action: "Agent opens the customer service thread."
+        operation: customers.QRY011
+        emotion: neutral
+      - step: 2
+        action: "Agent reviews customer history and thread context."
+        emotion: neutral
+      - step: 3
+        action: "Agent composes and sends reply."
+        operation: customers.CMD016
+      - step: 4
+        action: "Agent updates thread status to resolved."
+        operation: customers.CMD018
+        emotion: satisfied
+    extensions:
+      - step: 3
+        condition: "Issue requires specialist knowledge."
+        action: "Agent forwards thread to another employee."
+    user_stories: [customers.US004]
+    delivery_priority: must-have

@@ -1,0 +1,51 @@
+---
+version: "1.0.0"
+scope: customers
+tags: [address]
+
+concepts:
+  - id: customers.CN004
+    name: "Address"
+    description: "Physical address associated with a customer for delivery or invoicing. Address is a polymorphic aggregate in PrestaShop — also used by Manufacturers (catalog), Carts (checkout), and Orders (orders). Only customer-scoped operations are modeled here."
+    stereotype: aggregate-root
+    attributes:
+      addressId:
+        id: CAT316
+        description: "Unique address identifier"
+      alias:
+        id: CAT317
+        description: "Short label for the address (e.g., 'Home', 'Office')"
+      address1:
+        id: CAT318
+        description: "Primary address line (street, number)"
+      address2:
+        id: CAT319
+        description: "Secondary address line (apartment, suite)"
+      city:
+        id: CAT320
+        description: "City name"
+      postcode:
+        id: CAT321
+        description: "Postal/ZIP code"
+      countryRef:
+        id: CAT322
+        description: "Reference to the country (international context)"
+      phone:
+        id: CAT323
+        description: "Contact phone number"
+      customerId:
+        id: CAT324
+        description: "Reference to the owning customer"
+    code_refs:
+      - path: "src/Core/Domain/Address/Command/AddCustomerAddressCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Address/AddressSettings.php"
+        role: configuration
+
+associations:
+  - id: customers.AS002
+    subject: customers.CN001
+    predicate: depends-on
+    object: customers.CN004
+    cardinality: "1..*"
+    description: "A customer has one or more addresses for delivery and invoicing."

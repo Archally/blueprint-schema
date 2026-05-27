@@ -1,0 +1,17 @@
+---
+version: "1.0.0"
+scope: admin
+
+execution:
+  model: sequential
+  description: "Employee and security operations are low-frequency administrative tasks."
+  rationale: "Employee management is infrequent; serialization avoids permission conflicts."
+
+race_conditions:
+  - id: admin.RC001
+    name: "Concurrent employee profile edit"
+    scenario: "Two administrators edit the same employee's profile simultaneously."
+    impact: "One set of changes silently overwritten."
+    likelihood: very-low
+    mitigation: "Optimistic locking on employee version field."
+    affects: [admin.CMD002]

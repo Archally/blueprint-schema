@@ -1,0 +1,124 @@
+---
+name: "Customer Address"
+version: "1.0.0"
+scope: customers
+tags: [address]
+
+operations:
+  addCustomerAddress:
+    id: customers.CMD012
+    kind: command
+    name: "AddCustomerAddress"
+    description: "Create a new address for a customer with alias, street, city, postcode, country, and phone."
+    delivery_priority: must-have
+    initiated_by: [customers.ACT001, orders.ACT004]
+    governed_by:
+      - rule: customers.VR005
+    produces:
+      operations: [customers.EVT007]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Address/Command/AddCustomerAddressCommand.php"
+        role: implementation
+
+  editCustomerAddress:
+    id: customers.CMD013
+    kind: command
+    name: "EditCustomerAddress"
+    description: "Update an existing customer address."
+    delivery_priority: must-have
+    initiated_by: [customers.ACT001, orders.ACT004]
+    governed_by:
+      - rule: customers.VR005
+    produces:
+      operations: [customers.EVT008]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Address/Command/EditCustomerAddressCommand.php"
+        role: implementation
+
+  deleteAddress:
+    id: customers.CMD014
+    kind: command
+    name: "DeleteAddress"
+    description: "Delete one or more addresses. Supports single and bulk deletion."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT004]
+    produces:
+      operations: [customers.EVT009]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Address/Command/DeleteAddressCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Address/Command/BulkDeleteAddressCommand.php"
+        role: implementation
+
+  setRequiredFieldsForAddress:
+    id: customers.CMD015
+    kind: command
+    name: "SetRequiredFieldsForAddress"
+    description: "Configure which address fields are mandatory. Applies globally — affects customer, cart, and order addresses."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT004]
+    produces:
+      operations: [customers.EVT008]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Address/Command/SetRequiredFieldsForAddressCommand.php"
+        role: implementation
+
+  getCustomerAddressForEditing:
+    id: customers.QRY009
+    kind: query
+    name: "GetCustomerAddressForEditing"
+    description: "Retrieve a customer address for the edit form."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Address/Query/GetCustomerAddressForEditing.php"
+        role: implementation
+
+  getRequiredFieldsForAddress:
+    id: customers.QRY010
+    kind: query
+    name: "GetRequiredFieldsForAddress"
+    description: "Retrieve the list of mandatory address fields."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Address/Query/GetRequiredFieldsForAddress.php"
+        role: implementation
+
+  addressCreated:
+    id: customers.EVT007
+    kind: event
+    name: "AddressCreated"
+    description: "Emitted when a new customer address is created."
+
+  addressUpdated:
+    id: customers.EVT008
+    kind: event
+    name: "AddressUpdated"
+    description: "Emitted when an address or address configuration changes."
+
+  addressDeleted:
+    id: customers.EVT009
+    kind: event
+    name: "AddressDeleted"
+    description: "Emitted when one or more addresses are deleted."
+
+errors:
+  addressNotFound:
+    id: customers.ERR005
+    name: "AddressNotFound"
+    description: "Requested address does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  invalidAddressData:
+    id: customers.ERR006
+    name: "InvalidAddressData"
+    description: "Address data fails validation (missing required fields for the selected country)."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [customers.VR005]

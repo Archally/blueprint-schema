@@ -1,0 +1,107 @@
+---
+name: "SEO Metadata"
+version: "1.0.0"
+scope: content
+tags: [seo]
+
+operations:
+
+  # --- Meta Lifecycle ---
+
+  addMeta:
+    id: content.CMD019
+    kind: command
+    name: "AddMeta"
+    description: "Create a new SEO metadata entry for a page type. The page name identifies the internal route (e.g., 'category', 'product', 'cms'). Localized page titles, meta descriptions, and URL rewrites are optional."
+    delivery_priority: must-have
+    initiated_by: [content.ACT001]
+    produces:
+      operations: [content.EVT015]
+      mode: all
+    governed_by:
+      - rule: content.VR006
+      - rule: content.VR002
+    code_refs:
+      - path: "src/Core/Domain/Meta/Command/AddMetaCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Meta/CommandHandler/AddMetaHandler.php"
+        role: implementation
+
+  editMeta:
+    id: content.CMD020
+    kind: command
+    name: "EditMeta"
+    description: "Update an existing SEO metadata entry. All fields are optional via setters."
+    delivery_priority: must-have
+    initiated_by: [content.ACT001]
+    produces:
+      operations: [content.EVT016]
+      mode: all
+    governed_by:
+      - rule: content.VR006
+      - rule: content.VR002
+    code_refs:
+      - path: "src/Core/Domain/Meta/Command/EditMetaCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Meta/CommandHandler/EditMetaHandler.php"
+        role: implementation
+
+  # --- Meta Events ---
+
+  metaCreated:
+    id: content.EVT015
+    kind: event
+    name: "MetaCreated"
+    description: "A new SEO metadata entry has been created."
+
+  metaUpdated:
+    id: content.EVT016
+    kind: event
+    name: "MetaUpdated"
+    description: "An existing SEO metadata entry has been modified."
+
+  # --- Meta Queries ---
+
+  getMetaForEditing:
+    id: content.QRY007
+    kind: query
+    name: "GetMetaForEditing"
+    description: "Retrieve a single meta entry with all editable fields for the edit form."
+    delivery_priority: must-have
+    initiated_by: [content.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/Meta/Query/GetMetaForEditing.php"
+        role: implementation
+      - path: "src/Core/Domain/Meta/QueryResult/EditableMeta.php"
+        role: model
+
+  getPagesForLayoutCustomization:
+    id: content.QRY008
+    kind: query
+    name: "GetPagesForLayoutCustomization"
+    description: "Get available pages for theme layout customization. Used in theme configuration to map layouts to page types."
+    delivery_priority: should-have
+    initiated_by: [content.ACT002]
+    code_refs:
+      - path: "src/Core/Domain/Meta/Query/GetPagesForLayoutCustomization.php"
+        role: implementation
+      - path: "src/Core/Domain/Meta/QueryResult/LayoutCustomizationPage.php"
+        role: model
+
+errors:
+  metaNotFound:
+    id: content.ERR007
+    name: "MetaNotFound"
+    description: "The specified meta entry does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  duplicateMetaPageName:
+    id: content.ERR008
+    name: "DuplicateMetaPageName"
+    description: "A meta entry with this page name already exists. Page names must be unique."
+    category: conflict
+    severity: error
+    http_status: 409
+    related_rules: [content.VR006]

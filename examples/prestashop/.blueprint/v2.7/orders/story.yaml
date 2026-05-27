@@ -1,0 +1,448 @@
+---
+name: "Order Stories"
+version: "1.0.0"
+scope: orders
+
+stories:
+  - id: orders.STR001
+    title: "Place an order"
+    description: "End-to-end flow from cart to confirmed order."
+    initiated_by: [orders.ACT001]
+    process:
+      id: orders.SP001
+      trigger:
+        type: message
+        operation: orders.CMD001
+        description: "Customer submits order from checkout."
+      end_states:
+        - name: "Order placed"
+          type: complete
+          description: "Order created with payment recorded and stock reserved."
+        - name: "Order rejected"
+          type: error
+          description: "Validation failure — insufficient stock, invalid address, or payment declined."
+      lanes:
+        - actor: orders.ACT001
+          operations: [orders.CMD001]
+    activities:
+      - id: orders.SA001
+        name: "Submit order"
+        entry_operation: orders.CMD001
+        steps:
+          - operation_ref: orders.CMD001
+            note: "Validate cart and create order."
+          - operation_ref: orders.EVT001
+            note: "OrderPlaced event emitted."
+    code_refs:
+      - path: "src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php"
+        role: implementation
+        description: "Back-office order management controller."
+      - path: "controllers/front/OrderController.php"
+        role: implementation
+        description: "Front-office order placement controller."
+
+  - id: orders.STR002
+    title: "Cancel and refund"
+    description: "Merchant or customer cancels an order and triggers refund."
+    initiated_by: [orders.ACT003, orders.ACT004]
+    process:
+      id: orders.SP002
+      trigger:
+        type: message
+        operation: orders.CMD002
+        description: "Merchant or administrator initiates order cancellation."
+      end_states:
+        - name: "Order cancelled and refunded"
+          type: complete
+          description: "Order cancelled, stock released, refund processed, credit slip generated."
+        - name: "Cancellation rejected"
+          type: error
+          description: "Order is in a non-cancellable state (already shipped or delivered)."
+      lanes:
+        - actor: orders.ACT003
+          operations: [orders.CMD002, orders.CMD003]
+        - actor: orders.ACT004
+          operations: [orders.CMD002, orders.CMD003]
+    activities:
+      - id: orders.SA002
+        name: "Cancel order"
+        entry_operation: orders.CMD002
+        steps:
+          - operation_ref: orders.CMD002
+            note: "Cancel order, release stock."
+          - operation_ref: orders.EVT002
+            note: "OrderCancelled event emitted."
+      - id: orders.SA003
+        name: "Process refund"
+        entry_operation: orders.CMD003
+        steps:
+          - operation_ref: orders.CMD003
+            note: "Initiate full refund via payment gateway."
+          - operation_ref: orders.EVT003
+            note: "OrderRefunded event emitted."
+          - operation_ref: orders.EVT006
+            note: "CreditSlipGenerated event emitted."
+    code_refs:
+      - path: "src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php"
+        role: implementation
+        description: "Order cancellation and refund actions."
+
+  - id: orders.STR003
+    title: "Manage order products"
+    description: "Merchant modifies order contents — adding, removing, or updating product lines."
+    initiated_by: [orders.ACT003]
+    process:
+      id: orders.SP003
+      trigger:
+        type: message
+        operation: orders.CMD020
+        description: "Merchant modifies order product lines from back-office."
+      end_states:
+        - name: "Products modified"
+          type: complete
+          description: "Order lines updated, totals recalculated."
+        - name: "Modification rejected"
+          type: error
+          description: "Invalid product, insufficient stock, or order in non-editable state."
+      lanes:
+        - actor: orders.ACT003
+          operations: [orders.CMD020]
+    activities:
+      - id: orders.SA004
+        name: "Modify order products"
+        entry_operation: orders.CMD020
+        steps:
+          - operation_ref: orders.CMD020
+            note: "Add product to order."
+          - operation_ref: orders.EVT009
+            note: "OrderProductModified event emitted, totals recalculated."
+
+  - id: orders.STR004
+    title: "Generate invoice and record payment"
+    description: "Merchant generates an invoice for a paid order and records a manual payment."
+    initiated_by: [orders.ACT003]
+    process:
+      id: orders.SP004
+      trigger:
+        type: message
+        operation: orders.CMD017
+        description: "Merchant generates invoice for a paid order."
+      end_states:
+        - name: "Invoice generated and payment recorded"
+          type: complete
+          description: "Invoice created with sequential number, manual payment recorded."
+        - name: "Invoice generation failed"
+          type: error
+          description: "Order not in invoiceable state or duplicate invoice attempt."
+      lanes:
+        - actor: orders.ACT003
+          operations: [orders.CMD017, orders.CMD019]
+    activities:
+      - id: orders.SA005
+        name: "Generate invoice"
+        entry_operation: orders.CMD017
+        steps:
+          - operation_ref: orders.CMD017
+            note: "Generate invoice for the order."
+          - operation_ref: orders.EVT007
+            note: "InvoiceGenerated event emitted."
+      - id: orders.SA006
+        name: "Record payment"
+        entry_operation: orders.CMD019
+        steps:
+          - operation_ref: orders.CMD019
+            note: "Manually add payment record."
+          - operation_ref: orders.EVT008
+            note: "PaymentAdded event emitted."
+
+  - id: orders.STR005
+    title: "Process return and credit slip"
+    description: "Administrator processes a customer return, updates the return state, and issues a credit slip."
+    initiated_by: [orders.ACT004]
+    process:
+      id: orders.SP005
+      trigger:
+        type: message
+        operation: orders.CMD023
+        description: "Administrator processes customer return from back-office."
+      end_states:
+        - name: "Return processed"
+          type: complete
+          description: "Return state updated, refund processed, credit slip generated."
+        - name: "Refund rejected"
+          type: error
+          description: "Refund amount exceeds order total or return window expired."
+      lanes:
+        - actor: orders.ACT004
+          operations: [orders.CMD023, orders.CMD016]
+    activities:
+      - id: orders.SA007
+        name: "Update return state"
+        entry_operation: orders.CMD023
+        steps:
+          - operation_ref: orders.CMD023
+            note: "Update return state to package-received."
+          - operation_ref: orders.EVT010
+            note: "ReturnStateChanged event emitted."
+      - id: orders.SA008
+        name: "Issue refund for return"
+        entry_operation: orders.CMD016
+        steps:
+          - operation_ref: orders.CMD016
+            note: "Issue return product refund."
+          - operation_ref: orders.EVT003
+            note: "OrderRefunded event emitted."
+          - operation_ref: orders.EVT006
+            note: "CreditSlipGenerated event emitted."
+    code_refs:
+      - path: "src/PrestaShopBundle/Controller/Admin/Sell/Order/CreditSlipController.php"
+        role: implementation
+        description: "Credit slip management controller."
+      - path: "controllers/front/OrderReturnController.php"
+        role: implementation
+        description: "Front-office return request controller."
+
+user_stories:
+  - id: orders.US001
+    actor: orders.ACT001
+    goal: "Place an order for products in my cart"
+    benefit: "I receive the products I want delivered to my address."
+    summary: "Shopper places an order."
+    delivery_priority: must-have
+    status: ready
+    story_points: 8
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Order is created with all cart line items"
+      - "Payment is captured via selected gateway"
+      - "Confirmation email sent within 30 seconds"
+      - "Stock is reserved for ordered quantities"
+    operations: [orders.CMD001, orders.EVT001]
+    test_cases: [orders.TC001]
+    use_case: orders.UC001
+
+  - id: orders.US002
+    actor: orders.ACT003
+    goal: "Cancel a customer's order before shipment"
+    benefit: "Stock is released and customer is not charged for unwanted items."
+    summary: "Merchant cancels an order."
+    delivery_priority: must-have
+    status: ready
+    story_points: 5
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Order transitions to cancelled status"
+      - "Reserved stock is released"
+      - "Payment reversal is initiated"
+    operations: [orders.CMD002, orders.EVT002]
+    test_cases: [orders.TC002]
+    use_case: orders.UC002
+
+  - id: orders.US003
+    actor: orders.ACT004
+    goal: "Process a refund for a returned order"
+    benefit: "Customer receives their money back and the return is recorded."
+    summary: "Administrator processes refund."
+    delivery_priority: must-have
+    status: refined
+    story_points: 5
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Refund amount matches order total or partial amount"
+      - "Payment gateway confirms refund processing"
+      - "Customer receives refund confirmation email"
+      - "Credit slip is generated"
+    operations: [orders.CMD003, orders.EVT003, orders.EVT006]
+
+  - id: orders.US004
+    actor: orders.ACT003
+    goal: "View order history with filters"
+    benefit: "I can monitor store performance and find specific orders quickly."
+    summary: "Merchant views order history."
+    delivery_priority: should-have
+    status: draft
+    story_points: 3
+    release_target: "v1.1"
+    acceptance_criteria:
+      - "Orders filterable by status, date range, and customer"
+      - "Results paginated with 50 orders per page"
+      - "Response time < 500ms for stores with 100k+ orders"
+    operations: [orders.QRY001]
+
+  - id: orders.US005
+    actor: orders.ACT003
+    goal: "Generate an invoice for a paid order"
+    benefit: "I have a compliant fiscal document for tax reporting and customer records."
+    summary: "Merchant generates invoice."
+    delivery_priority: must-have
+    status: refined
+    story_points: 3
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Invoice is generated with sequential number"
+      - "Invoice includes all line items, taxes, and totals"
+      - "Invoice PDF is downloadable from the order detail screen"
+    operations: [orders.CMD017, orders.EVT007]
+    test_cases: [orders.TC003]
+
+  - id: orders.US006
+    actor: orders.ACT003
+    goal: "Manually add a payment to an order"
+    benefit: "I can record offline payments (bank transfer, check) to complete order processing."
+    summary: "Merchant records offline payment."
+    delivery_priority: must-have
+    status: refined
+    story_points: 3
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Payment amount and method are recorded"
+      - "Order status can transition to payment-accepted"
+      - "Payment appears in the order's payment history"
+    operations: [orders.CMD019, orders.EVT008]
+    test_cases: [orders.TC004]
+
+use_cases:
+  - id: orders.UC001
+    name: "Place Order"
+    summary: "Shopper completes checkout and creates an order."
+    primary_actor: orders.ACT001
+    goal: "Successfully place an order for cart contents."
+    preconditions:
+      - "Cart contains at least one item"
+      - "Shopper has selected a shipping method"
+    postconditions:
+      - "Order is created in initial status"
+      - "OrderPlaced event is emitted"
+    main_scenario:
+      - step: 1
+        action: "Shopper reviews cart contents and totals."
+        emotion: neutral
+      - step: 2
+        action: "Shopper enters shipping address."
+        emotion: neutral
+      - step: 3
+        action: "System validates stock availability."
+        operation: orders.CMD001
+      - step: 4
+        action: "Shopper selects payment method and confirms."
+        emotion: satisfied
+      - step: 5
+        action: "System creates order and emits OrderPlaced."
+        operation: orders.EVT001
+        emotion: delighted
+    extensions:
+      - step: 3
+        condition: "Insufficient stock for one or more items."
+        action: "System displays stock error and suggests alternatives."
+      - step: 4
+        condition: "Payment declined by gateway."
+        action: "System displays payment error and asks to retry or choose another method."
+    user_stories: [orders.US001]
+    delivery_priority: must-have
+    status: ready
+
+  - id: orders.UC002
+    name: "Cancel Order"
+    summary: "Merchant cancels an unshipped order."
+    primary_actor: orders.ACT003
+    goal: "Cancel an order and release all reserved resources."
+    preconditions:
+      - "Order exists and is not yet shipped"
+    postconditions:
+      - "Order status is cancelled"
+      - "Stock reservations released"
+      - "Payment reversal initiated"
+    main_scenario:
+      - step: 1
+        action: "Merchant searches for the order in back-office."
+        emotion: neutral
+      - step: 2
+        action: "Merchant selects cancel action."
+        emotion: neutral
+      - step: 3
+        action: "System validates order is cancellable."
+        operation: orders.CMD002
+      - step: 4
+        action: "System confirms cancellation and emits event."
+        operation: orders.EVT002
+        emotion: satisfied
+    extensions:
+      - step: 3
+        condition: "Order is already shipped."
+        action: "System rejects cancellation and suggests return workflow instead."
+    user_stories: [orders.US002]
+    delivery_priority: must-have
+
+  - id: orders.UC003
+    name: "View Order History"
+    summary: "Merchant reviews filtered order history for business insights."
+    primary_actor: orders.ACT003
+    goal: "Find and review specific orders efficiently."
+    preconditions:
+      - "Merchant is authenticated with back-office access"
+    postconditions:
+      - "Order list displayed with applied filters"
+    main_scenario:
+      - step: 1
+        action: "Merchant navigates to order list screen."
+        emotion: neutral
+      - step: 2
+        action: "Merchant applies date range and status filters."
+        emotion: neutral
+      - step: 3
+        action: "System queries order history."
+        operation: orders.QRY001
+      - step: 4
+        action: "System displays paginated results."
+        emotion: satisfied
+      - step: 5
+        action: "Merchant clicks an order to view details."
+        emotion: satisfied
+    extensions:
+      - step: 3
+        condition: "No orders match the filter criteria."
+        action: "System displays empty state with suggestion to broaden filters."
+    user_stories: [orders.US004]
+    delivery_priority: should-have
+
+  - id: orders.UC004
+    name: "Process Return and Credit Slip"
+    summary: "Administrator processes a merchandise return and generates a credit slip."
+    primary_actor: orders.ACT004
+    goal: "Complete the return workflow from confirmation to refund."
+    preconditions:
+      - "Order has been delivered"
+      - "Return request submitted within eligibility window"
+    postconditions:
+      - "Return state updated to completed"
+      - "Credit slip generated"
+      - "Customer notified of refund"
+    main_scenario:
+      - step: 1
+        action: "Administrator finds the return request in back-office."
+        emotion: neutral
+      - step: 2
+        action: "Administrator confirms the return and marks package received."
+        operation: orders.CMD023
+      - step: 3
+        action: "System transitions return to package-received state."
+        operation: orders.EVT010
+        emotion: neutral
+      - step: 4
+        action: "Administrator issues refund for returned products."
+        operation: orders.CMD016
+      - step: 5
+        action: "System generates credit slip and processes refund."
+        operation: orders.EVT006
+        emotion: satisfied
+    extensions:
+      - step: 2
+        condition: "Return window has expired."
+        action: "System rejects the return and displays eligibility error."
+      - step: 4
+        condition: "Refund amount exceeds remaining refundable total."
+        action: "System rejects with RefundExceedsTotal error."
+    user_stories: [orders.US003]
+    stories: [orders.STR005]
+    delivery_priority: must-have
+    status: refined

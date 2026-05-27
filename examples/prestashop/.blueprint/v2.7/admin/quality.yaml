@@ -1,0 +1,23 @@
+---
+version: "1.0.0"
+scope: admin
+
+kpis:
+  - id: admin.KPI001
+    name: "Failed Login Rate"
+    target: "< 5% of all employee login attempts fail due to invalid credentials or disabled accounts"
+    window: "daily"
+    goal: admin.G001
+
+  - id: admin.KPI002
+    name: "API Client Uptime"
+    target: ">= 99.9% of API client authentication requests succeed"
+    window: "monthly"
+    goal: admin.G002
+
+slos:
+  - id: admin.SLO001
+    name: "Authentication Latency SLO"
+    target: "P95 < 200ms for API client token validation"
+    window: "weekly"
+    operations: [admin.CMD021, admin.CMD024]

@@ -1,0 +1,26 @@
+---
+version: "1.0.0"
+scope: international
+
+execution:
+  model: sequential
+  description: "Currency, tax, and localization operations are administrative with no concurrent processing."
+  rationale: "Low-frequency admin operations with no real-time concurrency pressure."
+
+race_conditions:
+  - id: international.RC001
+    name: "Exchange rate update during order"
+    scenario: "Exchange rates refresh via external provider while a customer is mid-checkout, causing price to change between cart display and order placement."
+    impact: "Customer charged a different amount than displayed at checkout."
+    likelihood: low
+    mitigation: "Snapshot exchange rate at cart creation time; order uses snapshotted rate, not live rate."
+    affects: [international.CMD005]
+
+parallelism:
+  - id: international.PAR001
+    name: "Bulk exchange rate refresh"
+    operations: [international.CMD005]
+    relationship: embarrassingly-parallel
+    benefit: "Multiple currency rates fetched from external API concurrently."
+    complexity: low
+    implemented: false

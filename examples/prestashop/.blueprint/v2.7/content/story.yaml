@@ -1,0 +1,204 @@
+---
+name: "Content Stories"
+version: "1.0.0"
+scope: content
+
+stories:
+  - id: content.STR001
+    title: "CMS Page Publishing"
+    description: "A content manager creates a CMS page, assigns it to a category, configures SEO metadata, and publishes it on the storefront."
+    process:
+      id: content.SP001
+      trigger:
+        type: message
+        operation: content.CMD001
+        description: "Content manager creates a new CMS page."
+      end_states:
+        - name: "Page published"
+          type: complete
+          description: "CMS page created, SEO metadata configured, page visible on storefront."
+        - name: "Publishing failed"
+          type: error
+          description: "Category not found or SEO metadata validation failure."
+      lanes:
+        - actor: content.ACT001
+          operations: [content.CMD001, content.CMD019, content.QRY001]
+    activities:
+      - id: content.SA001
+        name: "Create CMS Page"
+        triggered_by: [content.ACT001]
+        entry_operation: content.CMD001
+        path_type: happy
+      - id: content.SA002
+        name: "Configure SEO Metadata"
+        triggered_by: [content.EVT001]
+        entry_operation: content.CMD019
+      - id: content.SA003
+        name: "Verify Page Display"
+        triggered_by: [content.EVT015]
+        entry_operation: content.QRY001
+    code_refs:
+      - path: "src/PrestaShopBundle/Controller/Admin/Improve/Design/CmsPageController.php"
+        role: implementation
+        description: "CMS page creation and management controller."
+
+  - id: content.STR002
+    title: "Theme Activation"
+    description: "A store designer imports a new theme, enables it for the storefront, and optionally adapts it for RTL languages."
+    process:
+      id: content.SP002
+      trigger:
+        type: message
+        operation: content.CMD013
+        description: "Store designer imports a new theme."
+      end_states:
+        - name: "Theme activated"
+          type: complete
+          description: "Theme imported, enabled, and optionally adapted for RTL."
+        - name: "Activation failed"
+          type: error
+          description: "Theme archive invalid, incompatible, or missing required templates."
+      lanes:
+        - actor: content.ACT002
+          operations: [content.CMD013, content.CMD014, content.CMD017]
+    activities:
+      - id: content.SA004
+        name: "Import Theme"
+        triggered_by: [content.ACT002]
+        entry_operation: content.CMD013
+        path_type: happy
+      - id: content.SA005
+        name: "Enable Theme"
+        triggered_by: [content.EVT009]
+        entry_operation: content.CMD014
+      - id: content.SA006
+        name: "Adapt for RTL"
+        triggered_by: [content.EVT010]
+        entry_operation: content.CMD017
+        path_type: happy
+
+user_stories:
+  - id: content.US001
+    actor: content.ACT001
+    goal: "create and publish a CMS page with SEO metadata"
+    benefit: "customers find relevant content through search engines and internal navigation"
+    acceptance_criteria:
+      - "CMS page is created with title, content, and category assignment"
+      - "SEO meta title and description are configured"
+      - "Friendly URL is set for each language"
+      - "Page is displayed on the storefront"
+    delivery_priority: must-have
+    operations: [content.CMD001, content.CMD002, content.CMD005]
+    test_cases: [content.TC001]
+
+  - id: content.US002
+    actor: content.ACT001
+    goal: "organize CMS pages into a hierarchical category structure"
+    benefit: "customers can navigate content through logical category trees"
+    acceptance_criteria:
+      - "Category is created with parent assignment"
+      - "Category hierarchy renders correctly in breadcrumbs"
+      - "Pages are assigned to appropriate categories"
+    delivery_priority: must-have
+    operations: [content.CMD007, content.CMD008]
+    test_cases: [content.TC002]
+
+  - id: content.US003
+    actor: content.ACT002
+    goal: "import and activate a new storefront theme"
+    benefit: "the storefront reflects the desired brand appearance"
+    acceptance_criteria:
+      - "Theme is imported from archive/URL/FTP"
+      - "Theme is enabled for the shop"
+      - "Previously active theme is deactivated"
+      - "Storefront displays the new theme"
+    delivery_priority: must-have
+    operations: [content.CMD013, content.CMD014]
+    test_cases: [content.TC003]
+
+  - id: content.US004
+    actor: content.ACT001
+    goal: "configure SEO metadata for all page types"
+    benefit: "search engines correctly index and rank all storefront pages"
+    acceptance_criteria:
+      - "Meta entry created for each page type"
+      - "Page titles and descriptions configured per language"
+      - "URL rewrites set for SEO-friendly URLs"
+    delivery_priority: must-have
+    operations: [content.CMD019, content.CMD020]
+    test_cases: [content.TC004]
+
+  - id: content.US005
+    actor: content.ACT002
+    goal: "reset theme layouts after a major theme update"
+    benefit: "layout customizations that conflict with updated theme are reverted to safe defaults"
+    acceptance_criteria:
+      - "All page layouts reset to theme defaults"
+      - "Storefront renders correctly after reset"
+    delivery_priority: should-have
+    operations: [content.CMD016]
+    test_cases: [content.TC005]
+
+  - id: content.US006
+    actor: content.ACT002
+    goal: "generate email templates for a theme in a specific language"
+    benefit: "transactional emails match the storefront theme's visual style"
+    acceptance_criteria:
+      - "Mail templates generated for selected theme and language"
+      - "Existing templates optionally overwritten"
+    delivery_priority: should-have
+    operations: [content.CMD018]
+
+use_cases:
+  - id: content.UC001
+    name: "Publish CMS Page"
+    primary_actor: content.ACT001
+    main_scenario:
+      - step: 1
+        action: "Content manager navigates to CMS page list"
+      - step: 2
+        action: "Content manager clicks 'Add new page'"
+      - step: 3
+        action: "Content manager fills in title, content, and selects category"
+        operation: content.CMD001
+      - step: 4
+        action: "System creates the page and assigns it to the category"
+      - step: 5
+        action: "Content manager configures SEO meta title and description"
+        operation: content.CMD002
+      - step: 6
+        action: "Content manager enables the page for display"
+        operation: content.CMD005
+    extensions:
+      - step: 3
+        condition: "Selected category does not exist"
+        action: "Show category not found error"
+    user_stories: [content.US001]
+
+  - id: content.UC002
+    name: "Switch Store Theme"
+    primary_actor: content.ACT002
+    main_scenario:
+      - step: 1
+        action: "Store designer navigates to theme management"
+      - step: 2
+        action: "Store designer imports new theme from archive"
+        operation: content.CMD013
+      - step: 3
+        action: "System validates and installs the theme"
+      - step: 4
+        action: "Store designer enables the new theme"
+        operation: content.CMD014
+      - step: 5
+        action: "System deactivates previous theme and activates new one"
+      - step: 6
+        action: "Store designer generates email templates for the new theme"
+        operation: content.CMD018
+    extensions:
+      - step: 2
+        condition: "Theme archive is invalid or incompatible"
+        action: "Show import error with details"
+      - step: 4
+        condition: "Theme requires RTL adaptation"
+        action: "Store designer runs RTL adaptation first"
+    user_stories: [content.US003]

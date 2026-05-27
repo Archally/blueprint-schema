@@ -1,0 +1,130 @@
+---
+version: "1.0.0"
+scope: content
+tags: [cms]
+
+concepts:
+  - id: content.CN001
+    name: "CmsPage"
+    stereotype: aggregate-root
+    description: "A content management page with localized title, body, SEO metadata, and friendly URL. CMS pages are assigned to categories and can be toggled visible/hidden on the storefront."
+    tags: [aggregate-root, core-domain]
+    attributes:
+      localizedTitle:
+        id: CAT600
+        description: "Page title per language"
+        example: "About Us"
+      localizedContent:
+        id: CAT601
+        description: "HTML content body per language"
+        example: "<p>Welcome to our store...</p>"
+      localizedMetaTitle:
+        id: CAT602
+        description: "SEO meta title per language"
+        example: "About Us | My Store"
+      localizedMetaDescription:
+        id: CAT603
+        description: "SEO meta description per language"
+        example: "Learn about our company history and values"
+      localizedFriendlyUrl:
+        id: CAT604
+        description: "URL slug per language"
+        example: "about-us"
+      indexedForSearch:
+        id: CAT605
+        description: "Whether page appears in internal search results"
+      displayed:
+        id: CAT606
+        description: "Whether page is visible on the front office"
+      categoryRef:
+        id: CAT607
+        description: "Reference to the CMS page category this page belongs to"
+    code_refs:
+      - path: "src/Core/Domain/CmsPage/Command/AddCmsPageCommand.php"
+        role: implementation
+        description: "Full attribute set visible in constructor"
+      - path: "src/Core/Domain/CmsPage/ValueObject/CmsPageId.php"
+        role: model
+
+  - id: content.CN002
+    name: "CmsPageCategory"
+    stereotype: aggregate-root
+    description: "A hierarchical category for organizing CMS pages. Categories form a tree via parent references. Supports localized name, description, SEO metadata, and friendly URL. No dedicated move/reorder command exists — hierarchy changes are made through parent reassignment on edit."
+    tags: [aggregate-root, core-domain]
+    attributes:
+      localizedName:
+        id: CAT608
+        description: "Category display name per language"
+        example: "Legal Information"
+      localizedFriendlyUrl:
+        id: CAT609
+        description: "URL slug per language"
+        example: "legal"
+      parentId:
+        id: CAT610
+        description: "Reference to parent category (tree hierarchy). Root categories have no parent."
+        example: "1"
+      isDisplayed:
+        id: CAT611
+        description: "Whether category is visible on the front office"
+      localizedDescription:
+        id: CAT612
+        description: "Category description per language"
+      localizedMetaTitle:
+        id: CAT613
+        description: "SEO meta title per language"
+      localizedMetaDescription:
+        id: CAT614
+        description: "SEO meta description per language"
+      shopAssociation:
+        id: CAT615
+        description: "List of shop IDs this category is associated with (multi-store)"
+    code_refs:
+      - path: "src/Core/Domain/CmsPageCategory/Command/AddCmsPageCategoryCommand.php"
+        role: implementation
+        description: "Full attribute set visible in constructor + setters"
+      - path: "src/Core/Domain/CmsPageCategory/ValueObject/CmsPageCategoryId.php"
+        role: model
+
+actors:
+  - id: content.ACT001
+    name: "ContentManager"
+    type: human
+    description: "Back-office operator responsible for creating and managing CMS pages, organizing content categories, and ensuring content quality and SEO optimization."
+    personas:
+      - name: "Typical ContentManager"
+        quote: "I need to publish and organize content quickly so customers find the information they need."
+        goals: ["Publish CMS pages efficiently", "Organize content in logical categories", "Optimize page SEO metadata"]
+        pain_points: ["Managing deep category hierarchies", "Keeping SEO metadata up to date across languages", "Bulk content operations across multi-store"]
+        behaviors: ["Creates content pages for legal, marketing, and informational purposes", "Organizes categories seasonally or by topic"]
+        tech_savviness: medium
+        job_to_be_done: "Ensure the storefront has well-organized, discoverable content pages"
+        context: "Back-office content management"
+        demographics:
+          role: "Content Editor"
+          industry: "E-commerce"
+
+enumerations:
+  - id: content.EN001
+    name: "CmsPageStatus"
+    description: "Display status of a CMS page on the storefront."
+    values:
+      - name: displayed
+        description: "Page is visible on the front office"
+      - name: hidden
+        description: "Page exists but is not shown on the front office"
+
+associations:
+  - id: content.AS001
+    subject: content.CN001
+    predicate: depends-on
+    object: content.CN002
+    cardinality: "1"
+    description: "Each CMS page belongs to exactly one CMS page category."
+
+  - id: content.AS002
+    subject: content.CN002
+    predicate: depends-on
+    object: content.CN002
+    cardinality: "0..1"
+    description: "A CMS page category optionally references a parent category (self-referential tree hierarchy)."

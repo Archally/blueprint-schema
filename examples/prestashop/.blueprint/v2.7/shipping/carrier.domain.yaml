@@ -1,0 +1,314 @@
+---
+name: "Carrier Management"
+version: "1.0.0"
+scope: shipping
+tags: [carrier-management]
+
+operations:
+
+  # --- Carrier Lifecycle ---
+
+  addCarrier:
+    id: shipping.CMD001
+    kind: command
+    name: "AddCarrier"
+    description: "Create a new carrier with name, delay, shipping method, zones, ranges, dimensional constraints, and shop associations. Zones are required — at least one zone must be assigned."
+    delivery_priority: must-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT001]
+      mode: all
+    governed_by:
+      - rule: shipping.SR001
+      - rule: shipping.VR001
+      - rule: shipping.VR002
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Command/AddCarrierCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Carrier/CommandHandler/AddCarrierHandler.php"
+        role: implementation
+
+  editCarrier:
+    id: shipping.CMD002
+    kind: command
+    name: "EditCarrier"
+    description: "Update an existing carrier's configuration. In PrestaShop, carrier edits create a new version (new CarrierId) while preserving the CarrierReferenceId for historical tracking."
+    delivery_priority: must-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT002]
+      mode: all
+    governed_by:
+      - rule: shipping.VR001
+      - rule: shipping.VR002
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Command/EditCarrierCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Carrier/CommandHandler/EditCarrierHandler.php"
+        role: implementation
+
+  deleteCarrier:
+    id: shipping.CMD003
+    kind: command
+    name: "DeleteCarrier"
+    description: "Soft-delete a carrier. The carrier becomes inactive and unavailable for new orders but historical order references remain intact."
+    delivery_priority: must-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT003]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Command/DeleteCarrierCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Carrier/CommandHandler/DeleteCarrierHandler.php"
+        role: implementation
+
+  bulkDeleteCarrier:
+    id: shipping.CMD004
+    kind: command
+    name: "BulkDeleteCarrier"
+    description: "Delete multiple carriers in a single batch operation."
+    delivery_priority: could-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT003]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Command/BulkDeleteCarrierCommand.php"
+        role: implementation
+
+  # --- Carrier Status Toggles ---
+
+  toggleCarrierStatus:
+    id: shipping.CMD005
+    kind: command
+    name: "ToggleCarrierStatus"
+    description: "Enable or disable a carrier. Disabled carriers are not available for selection during checkout."
+    delivery_priority: must-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT004]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Command/ToggleCarrierStatusCommand.php"
+        role: implementation
+
+  bulkToggleCarrierStatus:
+    id: shipping.CMD006
+    kind: command
+    name: "BulkToggleCarrierStatus"
+    description: "Enable or disable multiple carriers in a single batch operation."
+    delivery_priority: could-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT004]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Command/BulkToggleCarrierStatusCommand.php"
+        role: implementation
+
+  toggleCarrierIsFree:
+    id: shipping.CMD007
+    kind: command
+    name: "ToggleCarrierIsFree"
+    description: "Toggle whether a carrier provides free shipping regardless of range configuration. When enabled, range-based pricing is bypassed."
+    delivery_priority: should-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT005]
+      mode: all
+    governed_by:
+      - rule: shipping.VR003
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Command/ToggleCarrierIsFreeCommand.php"
+        role: implementation
+
+  # --- Range & Zone Management ---
+
+  setCarrierRanges:
+    id: shipping.CMD008
+    kind: command
+    name: "SetCarrierRanges"
+    description: "Replace all shipping cost ranges for a carrier atomically. Each range defines a price for a zone+weight/price bracket combination. Ranges must not overlap within the same zone."
+    delivery_priority: must-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT006]
+      mode: all
+    governed_by:
+      - rule: shipping.VR004
+      - rule: shipping.VR005
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Command/SetCarrierRangesCommand.php"
+        role: implementation
+
+  setCarrierZones:
+    id: shipping.CMD009
+    kind: command
+    name: "SetCarrierZones"
+    description: "Assign delivery zones to a carrier. Modeled as a distinct blueprint operation for DDD expressiveness — in the codebase, zone assignment is embedded within AddCarrier/EditCarrier commands."
+    delivery_priority: must-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT007]
+      mode: all
+    governed_by:
+      - rule: shipping.SR001
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Command/AddCarrierCommand.php"
+        role: implementation
+        description: "Zone assignment embedded in carrier creation (zones parameter)"
+      - path: "src/Core/Domain/Carrier/Command/EditCarrierCommand.php"
+        role: implementation
+        description: "Zone reassignment embedded in carrier edit"
+
+  # --- Tax Configuration ---
+
+  setCarrierTaxRuleGroup:
+    id: shipping.CMD010
+    kind: command
+    name: "SetCarrierTaxRuleGroup"
+    description: "Assign a tax rule group to a carrier for shipping cost tax calculation. Links to the International context's tax system."
+    delivery_priority: should-have
+    initiated_by: [shipping.ACT001]
+    produces:
+      operations: [shipping.EVT008]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Command/SetCarrierTaxRuleGroupCommand.php"
+        role: implementation
+
+  # --- Carrier Events ---
+
+  carrierCreated:
+    id: shipping.EVT001
+    kind: event
+    name: "CarrierCreated"
+    description: "A new carrier has been created with initial zone and range configuration."
+
+  carrierUpdated:
+    id: shipping.EVT002
+    kind: event
+    name: "CarrierUpdated"
+    description: "A carrier's configuration has been modified. A new carrier version may have been created internally."
+
+  carrierDeleted:
+    id: shipping.EVT003
+    kind: event
+    name: "CarrierDeleted"
+    description: "One or more carriers have been soft-deleted."
+
+  carrierStatusToggled:
+    id: shipping.EVT004
+    kind: event
+    name: "CarrierStatusToggled"
+    description: "A carrier's active/inactive status has changed."
+
+  carrierIsFreeToggled:
+    id: shipping.EVT005
+    kind: event
+    name: "CarrierIsFreeToggled"
+    description: "A carrier's free shipping flag has been toggled."
+
+  carrierRangesUpdated:
+    id: shipping.EVT006
+    kind: event
+    name: "CarrierRangesUpdated"
+    description: "A carrier's shipping cost ranges have been replaced."
+
+  carrierZonesUpdated:
+    id: shipping.EVT007
+    kind: event
+    name: "CarrierZonesUpdated"
+    description: "A carrier's zone assignments have changed."
+
+  carrierTaxRuleGroupUpdated:
+    id: shipping.EVT008
+    kind: event
+    name: "CarrierTaxRuleGroupUpdated"
+    description: "A carrier's tax rule group binding has been updated."
+
+  # --- Carrier Queries ---
+
+  getCarrierForEditing:
+    id: shipping.QRY001
+    kind: query
+    name: "GetCarrierForEditing"
+    description: "Retrieve full carrier configuration for the edit form including ranges, zones, and dimensional constraints."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Query/GetCarrierForEditing.php"
+        role: implementation
+
+  getCarrierRanges:
+    id: shipping.QRY002
+    kind: query
+    name: "GetCarrierRanges"
+    description: "Retrieve all shipping cost ranges for a carrier, organized by zone and bracket."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Query/GetCarrierRanges.php"
+        role: implementation
+
+  getAvailableCarriers:
+    id: shipping.QRY003
+    kind: query
+    name: "GetAvailableCarriers"
+    description: "List carriers available for a given context (checkout, shipment assignment). Filters by active status, zone, and weight/price applicability."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Query/GetAvailableCarriers.php"
+        role: implementation
+
+  getCarriersForProduct:
+    id: shipping.QRY004
+    kind: query
+    name: "GetCarriersForProduct"
+    description: "Retrieve carriers that can ship a specific product based on dimensional and weight constraints."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Query/GetCarriersForProduct.php"
+        role: implementation
+
+errors:
+  carrierNotFound:
+    id: shipping.ERR001
+    name: "CarrierNotFound"
+    description: "The specified carrier does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Exception/CarrierNotFoundException.php"
+        role: implementation
+
+  carrierConstraintViolation:
+    id: shipping.ERR002
+    name: "CarrierConstraintViolation"
+    description: "Carrier data violates one or more constraints (invalid name, grade, shipping method, range behavior, overlapping ranges, missing zones, negative ranges, etc.)."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Exception/CarrierConstraintException.php"
+        role: implementation
+        description: "22 constraint error codes covering all carrier field validations"
+
+  cannotModifyCarrier:
+    id: shipping.ERR003
+    name: "CannotModifyCarrier"
+    description: "Carrier cannot be added, updated, deleted, or toggled due to a system or persistence error."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Exception/CannotAddCarrierException.php"
+        role: implementation
+      - path: "src/Core/Domain/Carrier/Exception/CannotUpdateCarrierException.php"
+        role: implementation
+      - path: "src/Core/Domain/Carrier/Exception/CannotDeleteCarrierException.php"
+        role: implementation
+      - path: "src/Core/Domain/Carrier/Exception/CannotToggleCarrierStatusException.php"
+        role: implementation
+      - path: "src/Core/Domain/Carrier/Exception/CannotToggleCarrierIsFreeStatusException.php"
+        role: implementation

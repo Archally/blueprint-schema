@@ -1,0 +1,23 @@
+---
+version: "1.0.0"
+scope: shop
+
+kpis:
+  - id: shop.KPI001
+    name: "Search Index Freshness"
+    target: "Search index rebuilt within 1 hour of significant catalog changes"
+    window: "daily"
+    goal: shop.G002
+
+  - id: shop.KPI002
+    name: "Search Alias Coverage"
+    target: ">= 80% of top 100 customer search terms have configured aliases"
+    window: "monthly"
+    goal: shop.G002
+
+slos:
+  - id: shop.SLO001
+    name: "Search Indexation Latency"
+    target: "p95 < 30s for full search index rebuild"
+    window: "weekly"
+    operations: [shop.CMD014]

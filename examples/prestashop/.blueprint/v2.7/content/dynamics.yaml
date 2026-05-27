@@ -1,0 +1,14 @@
+---
+version: "1.0.0"
+scope: content
+
+execution:
+  model: sequential
+  description: "CMS page and theme operations are back-office administrative tasks executed one at a time."
+  rationale: "Low-volume content management with no concurrency requirements."
+
+ordering:
+  - id: content.ORD001
+    summary: "CMS page must be created before SEO metadata can be configured."
+    operations: [content.CMD019]
+    requires: [content.CMD001]

@@ -1,0 +1,83 @@
+---
+name: "Customer Group"
+version: "1.0.0"
+scope: customers
+tags: [customer-group]
+
+operations:
+  addCustomerGroup:
+    id: customers.CMD009
+    kind: command
+    name: "AddCustomerGroup"
+    description: "Create a new customer group with name, discount percentage, price display, and shop assignment."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT004]
+    governed_by:
+      - rule: customers.VR004
+    produces:
+      operations: [customers.EVT005]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Customer/Group/Command/AddCustomerGroupCommand.php"
+        role: implementation
+
+  editCustomerGroup:
+    id: customers.CMD010
+    kind: command
+    name: "EditCustomerGroup"
+    description: "Update an existing customer group's name, discount, or display settings."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT004]
+    governed_by:
+      - rule: customers.VR004
+    produces:
+      operations: [customers.EVT006]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Customer/Group/Command/EditCustomerGroupCommand.php"
+        role: implementation
+
+  deleteCustomerGroup:
+    id: customers.CMD011
+    kind: command
+    name: "DeleteCustomerGroup"
+    description: "Delete a customer group. Customers in the group revert to the default group."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT004]
+    produces:
+      operations: [customers.EVT005]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Customer/Group/Command/DeleteCustomerGroupCommand.php"
+        role: implementation
+
+  getCustomerGroupForEditing:
+    id: customers.QRY008
+    kind: query
+    name: "GetCustomerGroupForEditing"
+    description: "Retrieve customer group configuration for the edit form."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Customer/Group/Query/GetCustomerGroupForEditing.php"
+        role: implementation
+
+  customerGroupCreated:
+    id: customers.EVT005
+    kind: event
+    name: "CustomerGroupCreated"
+    description: "Emitted when a customer group is created or deleted."
+
+  customerGroupUpdated:
+    id: customers.EVT006
+    kind: event
+    name: "CustomerGroupUpdated"
+    description: "Emitted when a customer group's settings are modified."
+
+errors:
+  customerGroupNotFound:
+    id: customers.ERR004
+    name: "CustomerGroupNotFound"
+    description: "Requested customer group does not exist."
+    category: not-found
+    severity: error
+    http_status: 404

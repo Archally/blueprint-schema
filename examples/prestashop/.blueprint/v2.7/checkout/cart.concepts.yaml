@@ -1,0 +1,121 @@
+---
+version: "1.0.0"
+scope: checkout
+tags: [cart, cart-lifecycle]
+
+concepts:
+  - id: checkout.CN001
+    name: "CartSession"
+    description: "Server-side cart session holding product selections, quantities, applied cart rules, and computed totals."
+    stereotype: aggregate-root
+    states: [empty, active, checkout-started, completed, abandoned]
+    initial_state: empty
+    terminal_states: [completed, abandoned]
+    attributes:
+      cartId:
+        id: CAT200
+        description: "Unique cart identifier"
+      customerId:
+        id: CAT201
+        description: "Reference to the customer who owns this cart"
+      totalProducts:
+        id: CAT202
+        description: "Sum of product line totals excluding tax"
+      totalDiscounts:
+        id: CAT203
+        description: "Sum of all applied discount reductions"
+      totalShipping:
+        id: CAT204
+        description: "Shipping cost for the selected carrier"
+      currencyId:
+        id: CAT205
+        description: "Currency used for all cart calculations"
+      carrierId:
+        id: CAT206
+        description: "Selected shipping carrier reference"
+    code_refs:
+      - path: "src/Core/Domain/Cart/ValueObject/CartId.php"
+        role: model
+      - path: "src/Core/Domain/Cart/CartStatus.php"
+        role: model
+
+  - id: checkout.CN002
+    name: "CartItem"
+    description: "A single product selection in the cart — product reference, variant, quantity, and computed price."
+    stereotype: entity
+    attributes:
+      productId:
+        id: CAT207
+        description: "Reference to the catalog product"
+      combinationId:
+        id: CAT208
+        description: "Reference to the product variant (combination)"
+      quantity:
+        id: CAT209
+        description: "Number of units in the cart"
+      unitPrice:
+        id: CAT210
+        description: "Unit price at time of addition"
+    code_refs:
+      - path: "src/Core/Domain/Cart/Command/AddProductToCartCommand.php"
+        role: implementation
+
+  - id: checkout.CN003
+    name: "CartRule"
+    description: "Query-only read model representing an available promotion rule. Managed via the Discount aggregate; applied to carts via cart rule application commands."
+    stereotype: value-object
+    attributes:
+      cartRuleId:
+        id: CAT211
+        description: "Legacy cart rule identifier (maps to Discount in v9 CQRS)"
+      code:
+        id: CAT212
+        description: "Voucher code for manual application"
+    code_refs:
+      - path: "src/Core/Domain/CartRule/ValueObject/CartRuleId.php"
+        role: model
+      - path: "src/Core/Domain/CartRule/Query/SearchCartRules.php"
+        role: implementation
+
+enumerations:
+  - id: checkout.EN001
+    name: "CartStatus"
+    description: "Cart lifecycle states."
+    values:
+      - name: empty
+        description: "Cart has no items."
+      - name: active
+        description: "Cart has items, shopper is browsing."
+      - name: checkout-started
+        description: "Shopper initiated checkout flow."
+      - name: completed
+        description: "Order placed from this cart."
+      - name: abandoned
+        description: "Cart inactive for > 30 days."
+
+  - id: checkout.EN002
+    name: "CartAddressType"
+    description: "Types of addresses associated with a cart."
+    values:
+      - name: delivery
+        description: "Shipping destination address."
+      - name: invoice
+        description: "Billing address for invoice generation."
+    code_refs:
+      - path: "src/Core/Domain/Cart/CartAddressType.php"
+        role: model
+
+associations:
+  - id: checkout.AS001
+    subject: checkout.CN001
+    predicate: depends-on
+    object: checkout.CN002
+    cardinality: "0..*"
+    description: "Cart total depends on its cart items (quantities and prices)."
+
+  - id: checkout.AS002
+    subject: checkout.CN001
+    predicate: uses
+    object: checkout.CN003
+    cardinality: "0..*"
+    description: "A cart can have zero or more cart rules applied."

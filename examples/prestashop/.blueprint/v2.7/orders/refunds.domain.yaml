@@ -1,0 +1,107 @@
+---
+name: "Refunds"
+version: "1.0.0"
+scope: orders
+tags: [refunds]
+
+operations:
+  issueStandardRefund:
+    id: orders.CMD003
+    kind: command
+    name: "IssueStandardRefund"
+    description: "Process a full refund for an order. Generates a credit slip and optionally re-stocks returned products."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT003, orders.ACT004]
+    governed_by:
+      - rule: orders.VR002
+    produces:
+      operations: [orders.EVT003, orders.EVT006]
+      mode: all
+    materializes:
+      - concept: orders.CN009
+        action: create
+        description: "Generates credit slip document for the refunded amount."
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/IssueStandardRefundCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/CommandHandler/IssueStandardRefundHandler.php"
+        role: implementation
+
+  issuePartialRefund:
+    id: orders.CMD015
+    kind: command
+    idempotent: true
+    idempotency_key: "$.body.orderId+$.body.orderDetailId"
+    name: "IssuePartialRefund"
+    description: "Process a partial refund for specific order lines or a custom amount. Generates a credit slip with the partial amount."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT003, orders.ACT004]
+    governed_by:
+      - rule: orders.VR002
+      - rule: orders.VR004
+    produces:
+      operations: [orders.EVT003, orders.EVT006]
+      mode: all
+    materializes:
+      - concept: orders.CN009
+        action: create
+        description: "Generates credit slip document for the partial refund amount."
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/IssuePartialRefundCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/CommandHandler/IssuePartialRefundHandler.php"
+        role: implementation
+
+  issueReturnProduct:
+    id: orders.CMD016
+    kind: command
+    name: "IssueReturnProduct"
+    description: "Process a product return with refund. Combines the return tracking with credit slip generation in a single operation."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT003, orders.ACT004]
+    governed_by:
+      - rule: orders.VR003
+    produces:
+      operations: [orders.EVT003, orders.EVT006]
+      mode: all
+    materializes:
+      - concept: orders.CN009
+        action: create
+        description: "Generates credit slip document for the returned product refund."
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/IssueReturnProductCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/CommandHandler/IssueReturnProductHandler.php"
+        role: implementation
+
+  # --- Events ---
+
+  orderRefunded:
+    id: orders.EVT003
+    kind: event
+    name: "OrderRefunded"
+    description: "Emitted after a refund (standard, partial, or return) is processed by the payment gateway."
+
+  creditSlipGenerated:
+    id: orders.EVT006
+    kind: event
+    name: "CreditSlipGenerated"
+    description: "Emitted when a credit slip document is created as a side effect of a refund operation."
+
+errors:
+  refundExceedsTotal:
+    id: orders.ERR005
+    name: "RefundExceedsTotal"
+    description: "Requested refund amount exceeds the order's paid total or the remaining refundable amount."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [orders.VR002]
+
+  insufficientStock:
+    id: orders.ERR001
+    name: "InsufficientStock"
+    description: "One or more order lines exceed available stock quantity. Applies to re-stocking during return processing."
+    category: validation
+    severity: error
+    http_status: 409

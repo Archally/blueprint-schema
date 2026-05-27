@@ -1,0 +1,136 @@
+---
+version: "1.0.0"
+scope: orders
+
+structural:
+  - id: orders.SR001
+    name: "Order must have at least one line"
+    description: "An order cannot be created with zero line items. Removing the last line item is prohibited."
+    logic:
+      then: "order.lines.count >= 1"
+    modality: necessary
+    concepts: [orders.CN002, orders.CN003]
+    code_refs:
+      - path: "src/Core/Domain/Order/OrderConstraints.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Exception/InvalidProductQuantityException.php"
+        role: implementation
+
+  - id: orders.SR002
+    name: "Invoice requires paid status"
+    description: "An invoice can only be generated for an order that has at least one payment-accepted status in its history. Prevents premature invoice issuance."
+    logic:
+      when: "generateInvoice is requested"
+      then: "order.statusHistory contains payment-accepted"
+    modality: obligatory
+    concepts: [orders.CN002, orders.CN006]
+    code_refs:
+      - path: "src/Core/Domain/Order/Invoice/Command/GenerateInvoiceCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Invoice/Exception/InvoiceException.php"
+        role: implementation
+
+classification:
+  - id: orders.CR001
+    name: "Order status transitions"
+    description: "Defines valid state transitions for the order lifecycle. Enforced at the aggregate root level before persisting state changes."
+    logic:
+      when: "order.status changes"
+      then: "new status must be in allowed transitions from current status"
+    concepts: [orders.CN002]
+    rationale: >
+      Prevents invalid transitions like refunded-to-processing. The state machine
+      is defined by the OrderState entity configuration and enforced by the
+      UpdateOrderStatus command handler.
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/UpdateOrderStatusCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Exception/InvalidOrderStateException.php"
+        role: implementation
+
+validation:
+  - id: orders.VR001
+    name: "Shipping address required for physical products"
+    description: "Orders containing physical (non-digital) products must have a valid shipping address."
+    logic:
+      when: "order contains physical products"
+      then: "order.shippingAddress must be present and valid"
+    concepts: [orders.CN002, orders.CN004]
+
+  - id: orders.VR002
+    name: "Payment amount must not exceed order total"
+    description: "The total of all payments and refunds must not result in a negative balance or exceed the order total."
+    logic:
+      when: "payment or refund is processed"
+      then: "sum(payments) - sum(refunds) >= 0 AND sum(payments) <= order.totalPaidTaxIncl"
+    modality: obligatory
+    concepts: [orders.CN002, orders.CN005]
+    code_refs:
+      - path: "src/Core/Domain/Order/Payment/Command/AddPaymentCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Exception/NegativePaymentAmountException.php"
+        role: implementation
+
+  - id: orders.VR003
+    name: "Return eligibility window"
+    description: "A return request must be submitted within the configurable return window (default 14 days) from the delivery date. EU consumer law mandates a minimum 14-day window."
+    logic:
+      when: "return request is submitted"
+      then: "currentDate - order.deliveryDate <= returnWindowDays"
+    modality: obligatory
+    concepts: [orders.CN002, orders.CN007]
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/IssueReturnProductCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Exception/ReturnProductDisabledException.php"
+        role: implementation
+
+  - id: orders.VR004
+    name: "Partial refund constraints"
+    description: "A partial refund amount must be positive and cannot exceed the remaining refundable amount (order total minus previously refunded amounts)."
+    logic:
+      when: "partial refund is requested"
+      then: "0 < refundAmount <= (order.totalPaid - sum(previousRefunds))"
+    modality: obligatory
+    concepts: [orders.CN002, orders.CN009]
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/IssuePartialRefundCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Exception/InvalidRefundException.php"
+        role: implementation
+
+equivalence:
+  - id: orders.EQ001
+    name: "Order total equals sum of line totals"
+    description: "The order total must equal the sum of all line totals plus shipping minus discounts."
+    logic:
+      then: "order.total == sum(lines.total) + shipping - discount"
+    modality: necessary
+    concepts: [orders.CN002, orders.CN003]
+
+derivation:
+  - id: orders.DR001
+    name: "Estimated delivery from shipping method"
+    description: "Estimated delivery date is derived from the selected shipping method's base transit time plus processing time."
+    logic:
+      then: "estimatedDelivery = orderDate + processingDays + transitDays"
+    concepts: [orders.CN002]
+
+transition:
+  - id: orders.TR001
+    name: "Order state machine transitions"
+    concept: orders.CN002
+    from: "payment-accepted"
+    to: "processing"
+    description: "Orders with accepted payment transition to processing when the merchant begins fulfillment."
+    guard:
+      when: "order.paymentStatus == accepted"
+    modality: obligatory
+    rationale: >
+      This is the primary happy-path transition. PrestaShop allows customization
+      of the state machine, but this transition is the most common default flow.
+    code_refs:
+      - path: "src/Adapter/Order/CommandHandler/UpdateOrderStatusHandler.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Exception/ChangeOrderStatusException.php"
+        role: implementation

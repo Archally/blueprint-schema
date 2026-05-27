@@ -1,0 +1,95 @@
+---
+version: "1.0.0"
+scope: shipping
+
+structural:
+  - id: shipping.SR001
+    name: "Carrier requires at least one zone"
+    description: "A carrier must be assigned to at least one shipping zone. Carriers without zones cannot calculate shipping costs and are rejected at creation time."
+    modality: necessary
+    concepts: [shipping.CN001]
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Command/AddCarrierCommand.php"
+        role: implementation
+        description: "assertCarrierHasAtLeastOneZone() in constructor"
+
+validation:
+  - id: shipping.VR001
+    name: "Carrier name constraints"
+    description: "Carrier name must be a non-empty string within system-defined length limits."
+    modality: obligatory
+    concepts: [shipping.CN001]
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Exception/CarrierConstraintException.php"
+        role: implementation
+        description: "INVALID_NAME error code"
+
+  - id: shipping.VR002
+    name: "Shipping method must be valid"
+    description: "Shipping method must be one of the defined values: by_weight (1) or by_price (2). Invalid values are rejected."
+    modality: obligatory
+    concepts: [shipping.CN001]
+    code_refs:
+      - path: "src/Core/Domain/Carrier/ValueObject/ShippingMethod.php"
+        role: implementation
+
+  - id: shipping.VR003
+    name: "Free shipping disables additional handling fee"
+    description: "When a carrier is marked as free, additional handling fee configuration is contradictory. The system rejects this combination."
+    modality: obligatory
+    concepts: [shipping.CN001]
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Exception/CarrierConstraintException.php"
+        role: implementation
+        description: "INVALID_HAS_ADDITIONAL_HANDLING_FEE_WITH_FREE_SHIPPING"
+
+  - id: shipping.VR004
+    name: "Ranges must not overlap within a zone"
+    description: "For a given carrier and zone, weight/price ranges must not overlap. Each bracket must have a unique non-overlapping from-to interval."
+    modality: obligatory
+    concepts: [shipping.CN002]
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Exception/CarrierConstraintException.php"
+        role: implementation
+        description: "INVALID_RANGES_OVERLAPPING"
+
+  - id: shipping.VR005
+    name: "Range values must be non-negative"
+    description: "Range from/to values and prices must be zero or positive. Negative range values are rejected."
+    modality: obligatory
+    concepts: [shipping.CN002]
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Exception/CarrierConstraintException.php"
+        role: implementation
+        description: "INVALID_RANGE_NEGATIVE"
+
+  - id: shipping.VR006
+    name: "Shipment requires valid order and carrier"
+    description: "A shipment can only be created or edited for an existing order with a valid, active carrier. The product and quantity must reference a valid order line."
+    modality: obligatory
+    concepts: [shipping.CN004]
+
+  - id: shipping.VR007
+    name: "Split shipment requires valid quantities"
+    description: "When splitting a shipment, the specified product quantities must not exceed available quantities in the source shipment."
+    modality: obligatory
+    concepts: [shipping.CN004]
+
+  - id: shipping.VR008
+    name: "Merge requires compatible shipments"
+    description: "Products can only be merged into a shipment belonging to the same order. Cross-order merging is not permitted."
+    modality: obligatory
+    concepts: [shipping.CN004]
+
+transition:
+  - id: shipping.TR001
+    name: "Shipped shipment becomes immutable"
+    concept: shipping.CN004
+    from: "pending"
+    to: "shipped"
+    guard:
+      when: "shipment has been dispatched to carrier"
+    description: "Once shipped, a shipment cannot be edited, split, or have products added/removed."
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Exception/CannotEditShipmentShippedException.php"
+        role: implementation

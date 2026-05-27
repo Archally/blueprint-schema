@@ -1,0 +1,199 @@
+---
+name: "Cart Core"
+version: "1.0.0"
+scope: checkout
+tags: [cart, cart-lifecycle]
+
+operations:
+  createCart:
+    id: checkout.CMD001
+    kind: command
+    name: "CreateCart"
+    description: "Create an empty cart session for a customer. Used by back-office for assisted sales."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT004]
+    produces:
+      operations: [checkout.EVT001]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Cart/Command/CreateEmptyCustomerCartCommand.php"
+        role: implementation
+
+  updateCartAddresses:
+    id: checkout.CMD002
+    kind: command
+    name: "UpdateCartAddresses"
+    description: "Set or change the delivery and invoice addresses on a cart."
+    delivery_priority: must-have
+    produces:
+      operations: [checkout.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Cart/Command/UpdateCartAddressesCommand.php"
+        role: implementation
+
+  updateCartCarrier:
+    id: checkout.CMD003
+    kind: command
+    name: "UpdateCartCarrier"
+    description: "Select or change the shipping carrier for the cart."
+    delivery_priority: must-have
+    produces:
+      operations: [checkout.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Cart/Command/UpdateCartCarrierCommand.php"
+        role: implementation
+
+  updateCartDeliverySettings:
+    id: checkout.CMD004
+    kind: command
+    name: "UpdateCartDeliverySettings"
+    description: "Configure gift wrapping, recycled packaging, and delivery message options."
+    delivery_priority: should-have
+    produces:
+      operations: [checkout.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Cart/Command/UpdateCartDeliverySettingsCommand.php"
+        role: implementation
+
+  updateCartCurrency:
+    id: checkout.CMD005
+    kind: command
+    name: "UpdateCartCurrency"
+    description: "Change the currency used for cart price calculations."
+    delivery_priority: should-have
+    produces:
+      operations: [checkout.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Cart/Command/UpdateCartCurrencyCommand.php"
+        role: implementation
+
+  updateCartLanguage:
+    id: checkout.CMD006
+    kind: command
+    name: "UpdateCartLanguage"
+    description: "Change the language context for cart display and communications."
+    delivery_priority: could-have
+    produces:
+      operations: [checkout.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Cart/Command/UpdateCartLanguageCommand.php"
+        role: implementation
+
+  deleteCart:
+    id: checkout.CMD007
+    kind: command
+    name: "DeleteCart"
+    description: "Delete a cart session. Carts linked to completed orders cannot be deleted. Supports single and bulk deletion."
+    delivery_priority: should-have
+    governed_by:
+      - rule: checkout.VR005
+    produces:
+      operations: [checkout.EVT003]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Cart/Command/DeleteCartCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Cart/Command/BulkDeleteCartCommand.php"
+        role: implementation
+
+  sendCartToCustomer:
+    id: checkout.CMD008
+    kind: command
+    name: "SendCartToCustomer"
+    description: "Email a pre-built cart link to a customer for assisted sales."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT004]
+    produces:
+      operations: [checkout.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Cart/Command/SendCartToCustomerCommand.php"
+        role: implementation
+
+  cartCreated:
+    id: checkout.EVT001
+    kind: event
+    name: "CartCreated"
+    description: "Emitted when a new cart session is created."
+
+  cartSettingsUpdated:
+    id: checkout.EVT002
+    kind: event
+    name: "CartSettingsUpdated"
+    description: "Emitted when cart configuration changes (addresses, carrier, currency, language, delivery settings)."
+
+  cartDeleted:
+    id: checkout.EVT003
+    kind: event
+    name: "CartDeleted"
+    description: "Emitted when a cart session is permanently deleted."
+
+  getCartForViewing:
+    id: checkout.QRY001
+    kind: query
+    name: "GetCartForViewing"
+    description: "Retrieve cart details for back-office viewing including products, totals, applied rules, and customer info."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Cart/Query/GetCartForViewing.php"
+        role: implementation
+
+  getCartForOrderCreation:
+    id: checkout.QRY002
+    kind: query
+    name: "GetCartForOrderCreation"
+    description: "Retrieve cart data structured for order creation — includes computed totals, addresses, and carrier selection."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Cart/Query/GetCartForOrderCreation.php"
+        role: implementation
+
+  getLastEmptyCustomerCart:
+    id: checkout.QRY003
+    kind: query
+    name: "GetLastEmptyCustomerCart"
+    description: "Find the most recent empty cart for a customer to reuse existing sessions."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Cart/Query/GetLastEmptyCustomerCart.php"
+        role: implementation
+
+errors:
+  cartNotFound:
+    id: checkout.ERR001
+    name: "CartNotFound"
+    description: "Requested cart session does not exist."
+    category: validation
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Cart/Exception/CartNotFoundException.php"
+        role: implementation
+
+  cannotDeleteOrderedCart:
+    id: checkout.ERR002
+    name: "CannotDeleteOrderedCart"
+    description: "Cannot delete a cart that has been converted to an order."
+    category: conflict
+    severity: error
+    http_status: 409
+    related_rules: [checkout.VR005]
+    code_refs:
+      - path: "src/Core/Domain/Cart/Exception/CannotDeleteOrderedCartException.php"
+        role: implementation
+
+  cannotUpdateCart:
+    id: checkout.ERR003
+    name: "CannotUpdateCart"
+    description: "Cart modification failed due to constraint violation."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Cart/Exception/CannotUpdateCartException.php"
+        role: implementation

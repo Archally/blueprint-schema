@@ -1,0 +1,474 @@
+---
+name: "Identity & Access"
+version: "1.0.0"
+scope: admin
+tags: [identity-access]
+
+operations:
+
+  # ── Employee (8 CMD + 2 QRY) ──
+
+  addEmployee:
+    id: admin.CMD001
+    kind: command
+    name: "AddEmployee"
+    description: "Create a new back-office employee with profile assignment, password policy, and multi-store shop association."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT001]
+      mode: all
+    governed_by:
+      - rule: admin.VR001
+      - rule: admin.VR002
+    code_refs:
+      - path: "src/Core/Domain/Employee/Command/AddEmployeeCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Employee/CommandHandler/AddEmployeeHandler.php"
+        role: implementation
+
+  employeeAdded:
+    id: admin.EVT001
+    kind: event
+    name: "EmployeeAdded"
+    description: "Employee account created with profile and shop association."
+
+  editEmployee:
+    id: admin.CMD002
+    kind: command
+    name: "EditEmployee"
+    description: "Update an existing employee's details including profile reassignment, language, default page, and shop association."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT002]
+      mode: all
+    governed_by:
+      - rule: admin.VR001
+    code_refs:
+      - path: "src/Core/Domain/Employee/Command/EditEmployeeCommand.php"
+        role: implementation
+
+  employeeEdited:
+    id: admin.EVT002
+    kind: event
+    name: "EmployeeEdited"
+    description: "Employee details updated."
+
+  deleteEmployee:
+    id: admin.CMD003
+    kind: command
+    name: "DeleteEmployee"
+    description: "Remove an employee from the system."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT003]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Employee/Command/DeleteEmployeeCommand.php"
+        role: implementation
+
+  employeeDeleted:
+    id: admin.EVT003
+    kind: event
+    name: "EmployeeDeleted"
+    description: "Employee account removed."
+
+  toggleEmployeeStatus:
+    id: admin.CMD004
+    kind: command
+    name: "ToggleEmployeeStatus"
+    description: "Toggle an employee's active/inactive status."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT004]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Employee/Command/ToggleEmployeeStatusCommand.php"
+        role: implementation
+
+  employeeStatusToggled:
+    id: admin.EVT004
+    kind: event
+    name: "EmployeeStatusToggled"
+    description: "Employee active status changed."
+
+  bulkUpdateEmployeeStatus:
+    id: admin.CMD005
+    kind: command
+    name: "BulkUpdateEmployeeStatus"
+    description: "Enable or disable multiple employees at once."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT004]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Employee/Command/BulkUpdateEmployeeStatusCommand.php"
+        role: implementation
+
+  bulkDeleteEmployee:
+    id: admin.CMD006
+    kind: command
+    name: "BulkDeleteEmployee"
+    description: "Delete multiple employees at once."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT003]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Employee/Command/BulkDeleteEmployeeCommand.php"
+        role: implementation
+
+  sendPasswordResetEmail:
+    id: admin.CMD007
+    kind: command
+    name: "SendPasswordResetEmail"
+    description: "Send a password reset email to an employee."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT005]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Employee/Command/SendEmployeePasswordResetEmailCommand.php"
+        role: implementation
+
+  passwordResetEmailSent:
+    id: admin.EVT005
+    kind: event
+    name: "PasswordResetEmailSent"
+    description: "Password reset email dispatched to employee."
+
+  resetEmployeePassword:
+    id: admin.CMD008
+    kind: command
+    name: "ResetEmployeePassword"
+    description: "Reset an employee's password using a reset token."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT002]
+    produces:
+      operations: [admin.EVT006]
+      mode: all
+    governed_by:
+      - rule: admin.VR002
+    code_refs:
+      - path: "src/Core/Domain/Employee/Command/ResetEmployeePasswordCommand.php"
+        role: implementation
+
+  employeePasswordReset:
+    id: admin.EVT006
+    kind: event
+    name: "EmployeePasswordReset"
+    description: "Employee password changed via reset flow."
+
+  getEmployeeForEditing:
+    id: admin.QRY001
+    kind: query
+    name: "GetEmployeeForEditing"
+    description: "Retrieve employee details for the edit form."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Employee/Query/GetEmployeeForEditing.php"
+        role: implementation
+
+  getEmployeeEmailById:
+    id: admin.QRY002
+    kind: query
+    name: "GetEmployeeEmailById"
+    description: "Retrieve an employee's email address by ID."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Employee/Query/GetEmployeeEmailById.php"
+        role: implementation
+
+  # ── Profile (4 CMD + 1 QRY) ──
+
+  addProfile:
+    id: admin.CMD009
+    kind: command
+    name: "AddProfile"
+    description: "Create a new access control profile with localized name."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT007]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Profile/Command/AddProfileCommand.php"
+        role: implementation
+
+  profileAdded:
+    id: admin.EVT007
+    kind: event
+    name: "ProfileAdded"
+    description: "New access control profile created."
+
+  editProfile:
+    id: admin.CMD010
+    kind: command
+    name: "EditProfile"
+    description: "Update a profile's localized name."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT008]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Profile/Command/EditProfileCommand.php"
+        role: implementation
+
+  profileEdited:
+    id: admin.EVT008
+    kind: event
+    name: "ProfileEdited"
+    description: "Profile name updated."
+
+  deleteProfile:
+    id: admin.CMD011
+    kind: command
+    name: "DeleteProfile"
+    description: "Remove an access control profile. Employees assigned to this profile must be reassigned first."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT009]
+      mode: all
+    governed_by:
+      - rule: admin.VR003
+    code_refs:
+      - path: "src/Core/Domain/Profile/Command/DeleteProfileCommand.php"
+        role: implementation
+
+  profileDeleted:
+    id: admin.EVT009
+    kind: event
+    name: "ProfileDeleted"
+    description: "Access control profile removed."
+
+  bulkDeleteProfile:
+    id: admin.CMD012
+    kind: command
+    name: "BulkDeleteProfile"
+    description: "Delete multiple profiles at once."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT009]
+      mode: all
+    governed_by:
+      - rule: admin.VR003
+    code_refs:
+      - path: "src/Core/Domain/Profile/Command/BulkDeleteProfileCommand.php"
+        role: implementation
+
+  getProfileForEditing:
+    id: admin.QRY003
+    kind: query
+    name: "GetProfileForEditing"
+    description: "Retrieve profile details for the edit form."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Profile/Query/GetProfileForEditing.php"
+        role: implementation
+
+  # ── Permission (2 CMD + 1 QRY) ──
+
+  updateTabPermissions:
+    id: admin.CMD013
+    kind: command
+    name: "UpdateTabPermissions"
+    description: "Update the tab-level permission matrix (view/add/edit/delete) for a profile."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT010]
+      mode: all
+    governed_by:
+      - rule: admin.VR004
+    code_refs:
+      - path: "src/Core/Domain/Profile/Permission/Command/UpdateTabPermissionsCommand.php"
+        role: implementation
+
+  tabPermissionsUpdated:
+    id: admin.EVT010
+    kind: event
+    name: "TabPermissionsUpdated"
+    description: "Tab-level permissions changed for a profile."
+
+  updateModulePermissions:
+    id: admin.CMD014
+    kind: command
+    name: "UpdateModulePermissions"
+    description: "Update the module-level permission matrix for a profile."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT011]
+      mode: all
+    governed_by:
+      - rule: admin.VR004
+    code_refs:
+      - path: "src/Core/Domain/Profile/Permission/Command/UpdateModulePermissionsCommand.php"
+        role: implementation
+
+  modulePermissionsUpdated:
+    id: admin.EVT011
+    kind: event
+    name: "ModulePermissionsUpdated"
+    description: "Module-level permissions changed for a profile."
+
+  getPermissionsForConfiguration:
+    id: admin.QRY004
+    kind: query
+    name: "GetPermissionsForConfiguration"
+    description: "Retrieve the full permissions matrix for a profile to populate the configuration screen."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Profile/Permission/Query/GetPermissionsForConfiguration.php"
+        role: implementation
+
+  # ── Security (6 CMD) ──
+
+  deleteEmployeeSession:
+    id: admin.CMD015
+    kind: command
+    name: "DeleteEmployeeSession"
+    description: "Terminate a specific employee session."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT012]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Security/Command/DeleteEmployeeSessionCommand.php"
+        role: implementation
+
+  employeeSessionDeleted:
+    id: admin.EVT012
+    kind: event
+    name: "EmployeeSessionDeleted"
+    description: "Employee session terminated."
+
+  deleteCustomerSession:
+    id: admin.CMD016
+    kind: command
+    name: "DeleteCustomerSession"
+    description: "Terminate a specific customer session. Managed in admin context because session security policies change together with employee sessions (change-together heuristic)."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT013]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Security/Command/DeleteCustomerSessionCommand.php"
+        role: implementation
+
+  customerSessionDeleted:
+    id: admin.EVT013
+    kind: event
+    name: "CustomerSessionDeleted"
+    description: "Customer session terminated."
+
+  bulkDeleteEmployeeSessions:
+    id: admin.CMD017
+    kind: command
+    name: "BulkDeleteEmployeeSessions"
+    description: "Terminate multiple employee sessions at once."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT012]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Security/Command/BulkDeleteEmployeeSessionsCommand.php"
+        role: implementation
+
+  bulkDeleteCustomerSessions:
+    id: admin.CMD018
+    kind: command
+    name: "BulkDeleteCustomerSessions"
+    description: "Terminate multiple customer sessions at once."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT013]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Security/Command/BulkDeleteCustomerSessionsCommand.php"
+        role: implementation
+
+  clearOutdatedEmployeeSessions:
+    id: admin.CMD019
+    kind: command
+    name: "ClearOutdatedEmployeeSessions"
+    description: "Automatically clear expired employee sessions."
+    delivery_priority: must-have
+    task_type: automated
+    produces:
+      operations: [admin.EVT012]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Security/Command/ClearOutdatedEmployeeSessionCommand.php"
+        role: implementation
+
+  clearOutdatedCustomerSessions:
+    id: admin.CMD020
+    kind: command
+    name: "ClearOutdatedCustomerSessions"
+    description: "Automatically clear expired customer sessions."
+    delivery_priority: must-have
+    task_type: automated
+    produces:
+      operations: [admin.EVT013]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Security/Command/ClearOutdatedCustomerSessionCommand.php"
+        role: implementation
+
+errors:
+  employeeNotFound:
+    id: admin.ERR001
+    name: "EmployeeNotFound"
+    description: "The specified employee ID does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  profileNotFound:
+    id: admin.ERR002
+    name: "ProfileNotFound"
+    description: "The specified profile ID does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  profileInUse:
+    id: admin.ERR003
+    name: "ProfileInUse"
+    description: "Cannot delete a profile that has employees assigned to it."
+    category: conflict
+    severity: error
+    http_status: 409
+    related_rules: [admin.VR003]
+
+  employeeEmailNotUnique:
+    id: admin.ERR004
+    name: "EmployeeEmailNotUnique"
+    description: "An employee with this email address already exists."
+    category: validation
+    severity: error
+    http_status: 409
+    related_rules: [admin.VR001]
+
+  passwordPolicyViolation:
+    id: admin.ERR005
+    name: "PasswordPolicyViolation"
+    description: "The provided password does not meet the configured strength policy."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [admin.VR002]

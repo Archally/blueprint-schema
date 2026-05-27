@@ -1,0 +1,174 @@
+---
+name: "Theme & Mail Templates"
+version: "1.0.0"
+scope: content
+tags: [theme]
+
+operations:
+
+  # --- Theme Operations ---
+
+  importTheme:
+    id: content.CMD013
+    kind: command
+    name: "ImportTheme"
+    description: "Import a theme from an archive upload, web URL, or FTP path. Uses ThemeImportSource polymorphic value object to determine source type."
+    delivery_priority: must-have
+    initiated_by: [content.ACT002]
+    produces:
+      operations: [content.EVT009]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Theme/Command/ImportThemeCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Theme/CommandHandler/ImportThemeHandler.php"
+        role: implementation
+
+  enableTheme:
+    id: content.CMD014
+    kind: command
+    name: "EnableTheme"
+    description: "Activate a front-office theme for the current shop context. Only one theme can be active per shop — enabling a theme implicitly deactivates the current one."
+    delivery_priority: must-have
+    initiated_by: [content.ACT002]
+    produces:
+      operations: [content.EVT010]
+      mode: all
+    governed_by:
+      - rule: content.VR004
+      - rule: content.TR001
+    code_refs:
+      - path: "src/Core/Domain/Theme/Command/EnableThemeCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Theme/CommandHandler/EnableThemeHandler.php"
+        role: implementation
+
+  deleteTheme:
+    id: content.CMD015
+    kind: command
+    name: "DeleteTheme"
+    description: "Delete a theme from the system. The currently active theme cannot be deleted."
+    delivery_priority: must-have
+    initiated_by: [content.ACT002]
+    produces:
+      operations: [content.EVT011]
+      mode: all
+    governed_by:
+      - rule: content.VR005
+    code_refs:
+      - path: "src/Core/Domain/Theme/Command/DeleteThemeCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Theme/CommandHandler/DeleteThemeHandler.php"
+        role: implementation
+
+  resetThemeLayouts:
+    id: content.CMD016
+    kind: command
+    name: "ResetThemeLayouts"
+    description: "Reset all page layouts for a theme back to their defaults. Used after theme updates or when layout customizations need to be reverted."
+    delivery_priority: should-have
+    initiated_by: [content.ACT002]
+    produces:
+      operations: [content.EVT012]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Theme/Command/ResetThemeLayoutsCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Theme/CommandHandler/ResetThemeLayoutsHandler.php"
+        role: implementation
+
+  adaptThemeToRtl:
+    id: content.CMD017
+    kind: command
+    name: "AdaptThemeToRtlLanguages"
+    description: "Generate RTL (Right-to-Left) CSS adaptations for a theme. Required when the store serves RTL languages (Arabic, Hebrew, etc.)."
+    delivery_priority: should-have
+    initiated_by: [content.ACT002]
+    produces:
+      operations: [content.EVT013]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Theme/Command/AdaptThemeToRTLLanguagesCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Theme/CommandHandler/AdaptThemeToRTLLanguagesHandler.php"
+        role: implementation
+
+  generateMailTemplates:
+    id: content.CMD018
+    kind: command
+    name: "GenerateThemeMailTemplates"
+    description: "Generate email templates for a given theme and language. Service operation — not a CRUD lifecycle command. Can optionally overwrite existing templates and specify custom output folders for core and module emails."
+    delivery_priority: should-have
+    initiated_by: [content.ACT002]
+    produces:
+      operations: [content.EVT014]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/MailTemplate/Command/GenerateThemeMailTemplatesCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/MailTemplate/CommandHandler/GenerateThemeMailTemplatesHandler.php"
+        role: implementation
+
+  # --- Theme Events ---
+
+  themeImported:
+    id: content.EVT009
+    kind: event
+    name: "ThemeImported"
+    description: "A new theme has been imported into the system."
+
+  themeEnabled:
+    id: content.EVT010
+    kind: event
+    name: "ThemeEnabled"
+    description: "A theme has been activated for the current shop. The previously active theme was deactivated."
+
+  themeDeleted:
+    id: content.EVT011
+    kind: event
+    name: "ThemeDeleted"
+    description: "A theme has been deleted from the system."
+
+  themeLayoutsReset:
+    id: content.EVT012
+    kind: event
+    name: "ThemeLayoutsReset"
+    description: "A theme's page layouts have been reset to defaults."
+
+  themeAdaptedToRtl:
+    id: content.EVT013
+    kind: event
+    name: "ThemeAdaptedToRtl"
+    description: "A theme has been adapted with RTL CSS for right-to-left language support."
+
+  mailTemplatesGenerated:
+    id: content.EVT014
+    kind: event
+    name: "MailTemplatesGenerated"
+    description: "Email templates have been generated for a specific theme and language."
+
+errors:
+  themeNotFound:
+    id: content.ERR004
+    name: "ThemeNotFound"
+    description: "The specified theme does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  themeImportFailed:
+    id: content.ERR005
+    name: "ThemeImportFailed"
+    description: "Theme import failed — invalid archive, unreachable URL, or incompatible theme package."
+    category: external
+    severity: error
+    http_status: 422
+
+  cannotDeleteActiveTheme:
+    id: content.ERR006
+    name: "CannotDeleteActiveTheme"
+    description: "Cannot delete the currently active theme. Another theme must be enabled first."
+    category: conflict
+    severity: error
+    http_status: 409
+    related_rules: [content.VR005]

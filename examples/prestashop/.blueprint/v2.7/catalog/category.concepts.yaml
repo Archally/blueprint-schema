@@ -1,0 +1,31 @@
+---
+version: "1.0.0"
+scope: catalog
+tags: [category]
+
+concepts:
+  - id: catalog.CN002
+    name: "Category"
+    description: "Hierarchical grouping of products. Categories form a nested tree. Products can belong to multiple categories."
+    stereotype: aggregate-root
+    attributes:
+      categoryId:
+        id: CAT008
+        description: "Unique category identifier"
+      name:
+        id: CAT009
+        description: "Category name (multi-language)"
+      parentId:
+        id: CAT010
+        description: "Parent category ID (null for root)"
+      depth:
+        id: CAT011
+        description: "Depth in the category tree (0 = root)"
+      active:
+        id: CAT012
+        description: "Whether the category is visible to shoppers"
+    code_refs:
+      - path: "src/Core/Domain/Category/"
+        role: model
+        description: "Category domain aggregate"
+    tags: [aggregate-root]

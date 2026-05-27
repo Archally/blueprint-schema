@@ -1,0 +1,169 @@
+---
+version: "1.0.0"
+scope: customers
+tags: [customer, account-management]
+
+concepts:
+  - id: customers.CN001
+    name: "Customer"
+    description: "Registered customer account with profile, authentication, group membership, and newsletter preferences. Guests are customers with is_guest flag set."
+    stereotype: aggregate-root
+    states: [active, inactive, guest]
+    initial_state: active
+    attributes:
+      customerId:
+        id: CAT300
+        description: "Unique customer identifier"
+      email:
+        id: CAT301
+        description: "Email address — unique per shop, used for authentication"
+      firstName:
+        id: CAT302
+        description: "Customer first name"
+      lastName:
+        id: CAT303
+        description: "Customer last name"
+      isGuest:
+        id: CAT304
+        description: "Whether this is a guest account (no password, checkout-only)"
+      active:
+        id: CAT305
+        description: "Whether the account is enabled"
+      newsletter:
+        id: CAT306
+        description: "Newsletter subscription opt-in status"
+      defaultGroupId:
+        id: CAT307
+        description: "Reference to the customer's default group (determines pricing and display)"
+    code_refs:
+      - path: "src/Core/Domain/Customer/Command/AddCustomerCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Customer/Command/EditCustomerCommand.php"
+        role: implementation
+
+  - id: customers.CN002
+    name: "CustomerGroup"
+    description: "Customer classification group that defines discount percentage, price display method (tax inclusive/exclusive), and shop visibility. Groups are managed independently but assigned to customers."
+    stereotype: entity
+    attributes:
+      groupId:
+        id: CAT308
+        description: "Unique group identifier"
+      name:
+        id: CAT309
+        description: "Localized group display name"
+      reductionPercent:
+        id: CAT310
+        description: "Default discount percentage for group members (0-100)"
+      displayPriceTaxExcluded:
+        id: CAT311
+        description: "Whether prices are shown tax-excluded for this group"
+      showPrice:
+        id: CAT312
+        description: "Whether prices are visible to this group"
+    code_refs:
+      - path: "src/Core/Domain/Customer/Group/Command/AddCustomerGroupCommand.php"
+        role: implementation
+
+  - id: customers.CN003
+    name: "Title"
+    description: "Reference data for customer salutation (Mr, Mrs, Ms, etc.). Configurable with gender association and image."
+    stereotype: value-object
+    attributes:
+      titleId:
+        id: CAT313
+        description: "Unique title identifier"
+      name:
+        id: CAT314
+        description: "Localized title label"
+      gender:
+        id: CAT315
+        description: "Associated gender type"
+    code_refs:
+      - path: "src/Core/Domain/Title/Command/AddTitleCommand.php"
+        role: implementation
+
+actors:
+  - id: customers.ACT001
+    name: "Customer"
+    type: human
+    description: "Registered customer managing their account profile, addresses, and privacy settings. Distinct from the ordering perspective (orders.ACT001 Shopper) — same person, different bounded context."
+    responsibilities:
+      - "Register and manage account profile"
+      - "Add and update delivery/invoice addresses"
+      - "Manage newsletter subscription"
+      - "Request personal data export or deletion (GDPR)"
+      - "Submit customer service inquiries"
+    personas:
+      - name: "Typical Customer"
+        quote: "I want to manage my account without calling support for every change."
+        goals:
+          - "Update my profile and addresses quickly"
+          - "Control what data the shop has about me"
+          - "Get help when I need it via customer service"
+        pain_points:
+          - "Address forms are too long for my country"
+          - "Cannot find where to delete my account"
+          - "Password reset flow sends too many emails"
+        behaviors:
+          - "Updates addresses mainly before checkout"
+          - "Rarely visits account settings unless something breaks"
+          - "Expects GDPR data export within 24 hours"
+        tech_savviness: medium
+        job_to_be_done: "Maintain my shop account with minimal effort and full control over my data"
+
+  - id: customers.ACT002
+    name: "CustomerServiceAgent"
+    type: human
+    description: "Back-office employee handling customer support threads, replying to inquiries, and forwarding threads to specialists."
+    responsibilities:
+      - "View and reply to customer service threads"
+      - "Forward threads to appropriate employees"
+      - "Update thread status (open, closed, pending)"
+      - "Use predefined message templates"
+    personas:
+      - name: "Typical CustomerServiceAgent"
+        quote: "I need to see the customer's order history right next to their message."
+        goals:
+          - "Resolve customer inquiries quickly"
+          - "Access full customer context (orders, addresses) in one screen"
+          - "Track response time metrics"
+        pain_points:
+          - "No unified view of customer history alongside service thread"
+          - "Cannot merge duplicate threads from same customer"
+          - "Manual forwarding is error-prone"
+        behaviors:
+          - "Handles 30-50 threads per day"
+          - "Uses keyboard shortcuts for quick replies"
+          - "Escalates complex issues to specific teams"
+        tech_savviness: high
+        job_to_be_done: "Resolve customer inquiries efficiently with full context visibility"
+
+enumerations:
+  - id: customers.EN001
+    name: "Gender"
+    description: "Gender types associated with titles."
+    values:
+      - name: male
+        description: "Male gender."
+      - name: female
+        description: "Female gender."
+      - name: neutral
+        description: "Gender-neutral or unspecified."
+
+  - id: customers.EN002
+    name: "PriceDisplayMethod"
+    description: "How prices are shown to customers in a group."
+    values:
+      - name: tax-included
+        description: "Prices shown with tax included."
+      - name: tax-excluded
+        description: "Prices shown without tax."
+
+associations:
+  - id: customers.AS001
+    subject: customers.CN001
+    predicate: depends-on
+    object: customers.CN002
+    cardinality: "*..*"
+    description: "Customers are assigned to groups that determine their pricing and discount level."

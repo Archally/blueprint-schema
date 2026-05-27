@@ -1,0 +1,99 @@
+---
+version: "1.0.0"
+parties:
+  - id: PRT001
+    name: "PrestaShop SA"
+    description: "Open-source e-commerce platform company headquartered in Paris, France."
+    departments:
+      - id: DPT001
+        name: "Engineering"
+        description: "Core platform development, CQRS domain layer, Symfony framework."
+        teams: [TM001, TM002, TM003, TM004, TM005, TM006, TM010]
+      - id: DPT002
+        name: "Product & Design"
+        description: "Product management, UX design, content strategy, and theme ecosystem."
+        teams: [TM007]
+      - id: DPT003
+        name: "Platform & Ecosystem"
+        description: "Module marketplace, developer relations, API platform, and security."
+        teams: [TM008, TM009]
+    teams:
+      - id: TM001
+        name: "Order Platform Team"
+        description: "Owns order lifecycle, fulfillment, invoicing, returns, and credit slips."
+        contact:
+          email: orders@prestashop.example
+          slack: "#team-orders"
+        tags: [core, orders]
+
+      - id: TM002
+        name: "Catalog Team"
+        description: "Owns product catalog, categories, combinations, search indexing, and media."
+        contact:
+          email: catalog@prestashop.example
+          slack: "#team-catalog"
+        tags: [core, catalog]
+
+      - id: TM003
+        name: "Checkout & Payments Team"
+        description: "Owns cart, checkout flow, cart rules, promotions, and payment gateway integration."
+        contact:
+          email: checkout@prestashop.example
+          slack: "#team-checkout"
+        tags: [core, checkout, payments]
+
+      - id: TM004
+        name: "Customer Experience Team"
+        description: "Owns customer accounts, addresses, customer service messaging, and customer groups."
+        contact:
+          email: customers@prestashop.example
+          slack: "#team-customers"
+        tags: [support, customers]
+
+      - id: TM005
+        name: "Logistics Team"
+        description: "Owns carrier configuration, shipping cost calculation, and shipment tracking."
+        contact:
+          email: shipping@prestashop.example
+          slack: "#team-shipping"
+        tags: [support, shipping]
+
+      - id: TM006
+        name: "International & Localization Team"
+        description: "Owns currencies, taxes, countries, zones, languages, and locale formatting."
+        contact:
+          email: international@prestashop.example
+          slack: "#team-i18n"
+        tags: [support, international, localization]
+
+      - id: TM007
+        name: "Content & Design Team"
+        description: "Owns CMS pages, themes, email templates, SEO meta, and design system."
+        contact:
+          email: content@prestashop.example
+          slack: "#team-content"
+        tags: [support, content, design]
+
+      - id: TM008
+        name: "Module Ecosystem Team"
+        description: "Owns module lifecycle, hook system, marketplace integration, and developer docs."
+        contact:
+          email: modules@prestashop.example
+          slack: "#team-modules"
+        tags: [generic, modules, ecosystem]
+
+      - id: TM009
+        name: "Platform Security Team"
+        description: "Owns employee management, access control, API clients, webservice, and audit logging."
+        contact:
+          email: security@prestashop.example
+          slack: "#team-security"
+        tags: [generic, admin, security]
+
+      - id: TM010
+        name: "Core Platform Team"
+        description: "Owns multi-store configuration, shop settings, search, contacts, and infrastructure."
+        contact:
+          email: platform@prestashop.example
+          slack: "#team-platform"
+        tags: [generic, shop, platform]

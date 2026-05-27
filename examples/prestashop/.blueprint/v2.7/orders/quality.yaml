@@ -1,0 +1,108 @@
+---
+version: "1.0.0"
+scope: orders
+
+metrics:
+  - id: orders.MT001
+    name: "Order Processing Latency"
+    type: latency
+    unit: "ms"
+    measures:
+      operations: [orders.CMD001]
+    collection:
+      method: automated
+      source: "Application metrics (Prometheus)"
+      frequency: continuous
+
+  - id: orders.MT002
+    name: "Refund Processing Time"
+    type: latency
+    unit: "ms"
+    measures:
+      operations: [orders.CMD003, orders.CMD015, orders.CMD016]
+    collection:
+      method: automated
+      source: "Application metrics (Prometheus)"
+      frequency: continuous
+
+kpis:
+  - id: KPI001
+    name: "Order Error Rate"
+    metric: orders.MT001
+    target: "< 0.1% of orders result in processing errors"
+    window: "monthly"
+    goal: orders.G003
+    thresholds:
+      warning: "0.5%"
+      critical: "1.0%"
+
+  - id: KPI002
+    name: "Checkout-to-Confirmation Time"
+    target: "p95 < 3 seconds from checkout click to order confirmation"
+    window: "weekly"
+    goal: orders.G001
+    thresholds:
+      warning: "5s"
+      critical: "10s"
+
+  - id: KPI003
+    name: "Invoice Generation Compliance Rate"
+    target: "100% of paid orders have a compliant invoice within 24h"
+    window: "monthly"
+    goal: orders.G004
+    thresholds:
+      warning: "99%"
+      critical: "95%"
+
+slos:
+  - id: SLO001
+    name: "Order API Availability"
+    target: "99.9% uptime"
+    window: "monthly"
+    operations: [orders.CMD001, orders.QRY001]
+    error_budget: "43.8 minutes per month"
+    breach:
+      action: "Page on-call engineer and freeze non-critical deployments."
+      notification: "#team-orders Slack channel"
+
+  - id: SLO002
+    name: "Order Query Response Time"
+    target: "p99 < 500ms"
+    window: "weekly"
+    operations: [orders.QRY001]
+
+  - id: SLO003
+    name: "Refund Processing SLO"
+    target: "p95 < 5 seconds end-to-end"
+    window: "monthly"
+    operations: [orders.CMD003, orders.CMD015]
+    error_budget: "5% of refund operations may exceed target"
+
+security:
+  - id: orders.SEC001
+    name: "Order Data Access Control"
+    type: authorization
+    requirement: "Customers can only view their own orders. Merchants see orders for their store. Admins see all."
+    operations: [orders.QRY001, orders.QRY002, orders.QRY003]
+
+  - id: orders.SEC002
+    name: "Refund Authorization"
+    type: authorization
+    requirement: "Only users with Employee profile permission 'AdminOrders' can issue refunds. Two-factor authentication required for refunds exceeding EUR 500."
+    operations: [orders.CMD003, orders.CMD015, orders.CMD016]
+
+compliance:
+  - id: orders.CMP001
+    name: "GDPR Order Data Retention"
+    regulation: "GDPR Article 17 — Right to Erasure"
+    requirement: "Customer order data must be anonymizable upon request. Retention period for completed orders is 7 years (tax compliance)."
+    concepts: [orders.CN002, orders.CN004]
+    retention:
+      period: "7 years"
+      action: anonymize
+
+  - id: orders.CMP002
+    name: "EU Consumer Rights — 14-day Return Window"
+    regulation: "EU Consumer Rights Directive 2011/83/EU"
+    requirement: "All EU orders must allow returns within a minimum of 14 days from delivery. Merchants may offer longer windows."
+    concepts: [orders.CN002, orders.CN007]

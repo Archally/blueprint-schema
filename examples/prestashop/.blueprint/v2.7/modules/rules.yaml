@@ -1,0 +1,62 @@
+---
+version: "1.0.0"
+scope: modules
+
+structural:
+  - id: modules.SR001
+    name: "Module Must Be Installed for Lifecycle Operations"
+    description: "Uninstall, status change, reset, and upgrade operations require the module to be in an installed state (installed=true). Operating on a non-installed module raises ModuleNotInstalledException."
+    modality: necessary
+    concepts: [modules.CN001]
+    code_refs:
+      - path: "src/Core/Domain/Module/Exception/ModuleNotInstalledException.php"
+        role: implementation
+
+validation:
+  - id: modules.VR001
+    name: "Module Technical Name Non-Empty"
+    description: "Module technical name must be a non-empty string. Validated by ModuleTechnicalName value object constructor."
+    modality: obligatory
+    concepts: [modules.CN001]
+    code_refs:
+      - path: "src/Core/Domain/Module/ValueObject/ModuleTechnicalName.php"
+        role: implementation
+      - path: "src/Core/Domain/Module/Exception/ModuleConstraintException.php"
+        role: implementation
+        description: "EMPTY_TECHNICAL_NAME error code"
+
+  - id: modules.VR002
+    name: "Reset Requires Installed Module"
+    description: "Module reset (uninstall+reinstall) requires the module to be currently installed. CannotResetModuleException with NOT_INSTALLED code is thrown otherwise."
+    modality: obligatory
+    concepts: [modules.CN001]
+    code_refs:
+      - path: "src/Core/Domain/Module/Exception/CannotResetModuleException.php"
+        role: implementation
+        description: "NOT_INSTALLED constant"
+
+  - id: modules.VR003
+    name: "Upgrade Requires Installed Module with Available Update"
+    description: "Module upgrade requires the module to be installed and a newer version to be available. ModuleAlreadyUpToDateException is thrown if no update exists."
+    modality: obligatory
+    concepts: [modules.CN001]
+    code_refs:
+      - path: "src/Core/Domain/Module/Exception/ModuleAlreadyUpToDateException.php"
+        role: implementation
+
+transition:
+  - id: modules.TR001
+    name: "Module Lifecycle State Machine"
+    description: "Module lifecycle follows a 3-state machine derived from (installed, enabled) booleans. Valid transitions: not_installed→installed_enabled (install), installed_enabled↔installed_disabled (updateStatus), installed_*→not_installed (uninstall), installed_*→installed_enabled (reset). The state installed_disabled cannot be reached directly from not_installed."
+    concept: modules.CN001
+    guard:
+      when: "Module lifecycle operation is invoked"
+    from: "not_installed"
+    to: "installed_enabled"
+    code_refs:
+      - path: "src/Core/Domain/Module/Command/InstallModuleCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Module/Command/UpdateModuleStatusCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Module/Command/UninstallModuleCommand.php"
+        role: implementation

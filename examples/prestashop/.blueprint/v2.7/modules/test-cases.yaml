@@ -1,0 +1,135 @@
+---
+version: "1.0.0"
+scope: modules
+
+happy_path:
+  - id: modules.TC001
+    name: "Install module — happy path"
+    summary: "Verify that a module can be installed by technical name and transitions to installed_enabled state."
+    validates:
+      operations: [modules.CMD001, modules.EVT001]
+      rules: [modules.VR001]
+      concepts: [modules.CN001]
+    contract:
+      kind: openapi
+      file: dist/modules-api.openapi.yaml
+    given:
+      description: "Module 'ps_emailsubscription' exists but is not installed."
+      state:
+        technicalName: "ps_emailsubscription"
+        installed: false
+    expected_result:
+      status: success
+
+  - id: modules.TC002
+    name: "Disable and re-enable module — happy path"
+    summary: "Verify that a module can be disabled and re-enabled without losing configuration."
+    validates:
+      operations: [modules.CMD003, modules.EVT003]
+      rules: [modules.SR001]
+      concepts: [modules.CN001]
+    given:
+      description: "Module 'ps_emailsubscription' is installed and enabled."
+      state:
+        technicalName: "ps_emailsubscription"
+        installed: true
+        enabled: true
+    expected_result:
+      status: success
+
+  - id: modules.TC003
+    name: "Upgrade module — happy path"
+    summary: "Verify that an installed module can be upgraded to a newer version."
+    validates:
+      operations: [modules.CMD007, modules.EVT005]
+      rules: [modules.VR003]
+      concepts: [modules.CN001]
+    given:
+      description: "Module is installed at version 2.7.0, version 2.8.1 is available."
+      state:
+        technicalName: "ps_emailsubscription"
+        installedVersion: "2.7.0"
+        availableVersion: "2.8.1"
+    expected_result:
+      status: success
+
+  - id: modules.TC004
+    name: "Toggle hook status — happy path"
+    summary: "Verify that a hook can be disabled and re-enabled."
+    validates:
+      operations: [modules.CMD009, modules.EVT007]
+      concepts: [modules.CN002]
+    given:
+      description: "Hook 'displayHeader' is active."
+      state:
+        hookId: 1
+        active: true
+    expected_result:
+      status: success
+
+edge_cases:
+  - id: modules.EC001
+    name: "Reset module preserves data"
+    summary: "Verify that resetting a module with keepData=true preserves configuration."
+    validates:
+      operations: [modules.CMD006, modules.EVT004]
+      rules: [modules.VR002]
+      concepts: [modules.CN001]
+    given:
+      description: "Module is installed with custom configuration. keepData=true."
+      state:
+        technicalName: "ps_emailsubscription"
+        installed: true
+        keepData: true
+    expected_result:
+      status: success
+
+  - id: modules.EC002
+    name: "Upgrade already up-to-date module is rejected"
+    summary: "Verify that upgrading a module already at latest version raises ModuleAlreadyUpToDate."
+    validates:
+      operations: [modules.CMD007]
+      rules: [modules.VR003]
+      concepts: [modules.CN001]
+    given:
+      description: "Module is installed at version 2.8.1, no newer version available."
+      state:
+        technicalName: "ps_emailsubscription"
+        installedVersion: "2.8.1"
+        availableVersion: "2.8.1"
+    expected_result:
+      status: failure
+      code: 409
+
+error_cases:
+  - id: modules.ER001
+    name: "Install already-installed module is rejected"
+    summary: "Verify that installing a module that is already installed raises AlreadyInstalledModule."
+    validates:
+      operations: [modules.CMD001]
+      concepts: [modules.CN001]
+    given:
+      description: "Module 'ps_emailsubscription' is already installed."
+      state:
+        technicalName: "ps_emailsubscription"
+        installed: true
+    expected_result:
+      status: failure
+      code: 409
+
+  - id: modules.ER002
+    name: "Status change on non-installed module is rejected"
+    summary: "Verify that enabling/disabling a non-installed module raises ModuleNotInstalled."
+    validates:
+      operations: [modules.CMD003]
+      rules: [modules.SR001]
+      concepts: [modules.CN001]
+    given:
+      description: "Module 'ps_emailsubscription' is not installed."
+      state:
+        technicalName: "ps_emailsubscription"
+        installed: false
+        enabled: true
+    expected_result:
+      status: failure
+      code: 422

@@ -1,0 +1,95 @@
+---
+version: "1.0.0"
+scope: admin
+
+design_references:
+  design_system: "PrestaShop UIKit (Bootstrap 4)"
+  storybook_url: "https://build.prestashop-project.org/prestashop-ui-kit/"
+  accessibility_standard: WCAG-2.1-AA
+
+screens:
+  - id: admin.SCR001
+    name: "Employee List"
+    summary: "Grid of employees with status, profile, email, and bulk action controls."
+    uses_models: ["EmployeeList"]
+    motivated_by: [admin.G001]
+
+  - id: admin.SCR002
+    name: "Employee Form"
+    summary: "Employee creation/edit form with profile selection and shop association."
+    uses_models: ["EmployeeForm"]
+    stories: [admin.STR001]
+
+  - id: admin.SCR003
+    name: "Profile Permissions"
+    summary: "Permission matrix editor for tab and module access per profile."
+    uses_models: ["PermissionMatrix"]
+    motivated_by: [admin.G001]
+
+  - id: admin.SCR004
+    name: "API Client Management"
+    summary: "API client list with create, edit, delete, and secret rotation controls."
+    uses_models: ["ApiClientList"]
+    motivated_by: [admin.G002]
+
+  - id: admin.SCR005
+    name: "Session Management"
+    summary: "Active session list with delete and bulk cleanup controls."
+    uses_models: ["SessionList"]
+    motivated_by: [admin.G003]
+
+  - id: admin.SCR006
+    name: "SQL Manager"
+    summary: "Saved SQL query list with add, edit, execute, and export controls."
+    uses_models: ["SqlRequestList"]
+    motivated_by: [admin.G004]
+
+actions:
+  - id: admin.UAC001
+    screen: admin.SCR001
+    name: "Add Employee"
+    description: "Navigate to employee creation form."
+    triggers_operations: [admin.CMD001]
+
+  - id: admin.UAC002
+    screen: admin.SCR001
+    name: "Toggle Employee Status"
+    description: "Enable or disable an employee from the list."
+    triggers_operations: [admin.CMD004]
+
+  - id: admin.UAC003
+    screen: admin.SCR003
+    name: "Save Tab Permissions"
+    description: "Save changes to the tab permission matrix."
+    triggers_operations: [admin.CMD013]
+
+  - id: admin.UAC004
+    screen: admin.SCR004
+    name: "Rotate API Secret"
+    description: "Generate or force a new secret for the selected API client."
+    triggers_operations: [admin.CMD024]
+
+  - id: admin.UAC005
+    screen: admin.SCR005
+    name: "Clear Outdated Sessions"
+    description: "Trigger automated cleanup of expired sessions."
+    triggers_operations: [admin.CMD019, admin.CMD020]
+
+  - id: admin.UAC006
+    screen: admin.SCR006
+    name: "Execute SQL Query"
+    description: "Run a saved SQL query and display results."
+    triggers_operations: [admin.QRY008]
+
+navigation:
+  - id: admin.UNV001
+    from: admin.SCR001
+    to: admin.SCR002
+    condition: "User clicks 'Add Employee' or selects employee row"
+    description: "Navigate to employee creation or edit form."
+
+  - id: admin.UNV002
+    from: admin.SCR001
+    to: admin.SCR003
+    condition: "User clicks 'Manage Permissions' on a profile"
+    description: "Navigate to permission matrix editor."

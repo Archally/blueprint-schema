@@ -1,0 +1,94 @@
+---
+version: "1.0.0"
+scope: content
+
+design_references:
+  design_system: "PrestaShop UIKit (Bootstrap 4)"
+  storybook_url: "https://build.prestashop-project.org/prestashop-ui-kit/"
+  accessibility_standard: WCAG-2.1-AA
+
+screens:
+  - id: content.SCR001
+    name: "CMS Page List"
+    summary: "Paginated grid of CMS pages with title, category, status, and bulk action controls."
+    uses_models: ["CmsPageList"]
+    motivated_by: [content.G001]
+
+  - id: content.SCR002
+    name: "CMS Page Editor"
+    summary: "CMS page add/edit form with localized title, content editor, SEO metadata, category selector, and display toggle."
+    uses_models: ["EditableCmsPage"]
+    stories: [content.STR001]
+
+  - id: content.SCR003
+    name: "CMS Category List"
+    summary: "Tree view of CMS page categories with breadcrumb navigation, status, and bulk actions."
+    uses_models: ["CmsPageCategoryList"]
+    motivated_by: [content.G001]
+
+  - id: content.SCR004
+    name: "CMS Category Editor"
+    summary: "CMS page category add/edit form with localized name, parent selector, SEO metadata, and display toggle."
+    uses_models: ["EditableCmsPageCategory"]
+
+  - id: content.SCR005
+    name: "Theme Management"
+    summary: "Theme list with active indicator, import controls, and theme action buttons (enable, delete, reset, RTL)."
+    uses_models: ["ThemeList"]
+    motivated_by: [content.G003]
+
+  - id: content.SCR006
+    name: "SEO & URL Configuration"
+    summary: "Meta entry list with page name, URL rewrite, and localized title/description management."
+    uses_models: ["MetaList", "EditableMeta"]
+    motivated_by: [content.G002]
+
+actions:
+  - id: content.UAC001
+    screen: content.SCR001
+    name: "Add CMS Page"
+    description: "Open CMS page creation form."
+    triggers_operations: [content.CMD001]
+
+  - id: content.UAC002
+    screen: content.SCR001
+    name: "Bulk Toggle CMS Page Status"
+    description: "Enable or disable selected CMS pages."
+    triggers_operations: [content.CMD006]
+
+  - id: content.UAC003
+    screen: content.SCR003
+    name: "Add CMS Category"
+    description: "Open CMS page category creation form."
+    triggers_operations: [content.CMD007]
+
+  - id: content.UAC004
+    screen: content.SCR005
+    name: "Import Theme"
+    description: "Open theme import dialog for archive/URL/FTP source."
+    triggers_operations: [content.CMD013]
+
+  - id: content.UAC005
+    screen: content.SCR005
+    name: "Enable Theme"
+    description: "Activate selected theme for the current shop."
+    triggers_operations: [content.CMD014]
+
+  - id: content.UAC006
+    screen: content.SCR006
+    name: "Add Meta Entry"
+    description: "Open meta entry creation form for a page type."
+    triggers_operations: [content.CMD019]
+
+navigation:
+  - id: content.UNV001
+    from: content.SCR001
+    to: content.SCR002
+    condition: "User clicks CMS page row or 'Add CMS Page' button"
+    description: "Navigate to CMS page editor."
+
+  - id: content.UNV002
+    from: content.SCR003
+    to: content.SCR004
+    condition: "User clicks category row or 'Add Category' button"
+    description: "Navigate to CMS category editor."

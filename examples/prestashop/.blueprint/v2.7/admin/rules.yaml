@@ -1,0 +1,78 @@
+---
+version: "1.0.0"
+scope: admin
+tags: [identity-access, security]
+
+validation:
+  - id: admin.VR001
+    name: "Employee email uniqueness"
+    description: "No two employees can share the same email address."
+    concepts: [admin.CN001]
+    modality: necessary
+    logic:
+      when: "Employee is added or email is edited"
+      then: "Email must not already be assigned to another employee"
+    on_violation:
+      action: reject
+
+  - id: admin.VR002
+    name: "Password strength policy"
+    description: "Employee passwords must meet configurable strength requirements: minimum length, maximum length, and minimum zxcvbn score."
+    concepts: [admin.CN001]
+    modality: obligatory
+    logic:
+      when: "Employee password is set or reset"
+      then: "Password must satisfy minLength, maxLength, and minScore thresholds"
+    on_violation:
+      action: reject
+
+  - id: admin.VR003
+    name: "Profile deletion requires no assigned employees"
+    description: "A profile cannot be deleted if any employees are still assigned to it."
+    concepts: [admin.CN002]
+    modality: necessary
+    logic:
+      when: "Profile deletion is requested"
+      then: "No employee must reference this profile"
+    on_violation:
+      action: reject
+
+  - id: admin.VR004
+    name: "Permission matrix consistency"
+    description: "Tab and module permissions must reference valid tabs and modules. Permission levels must be from the allowed set (view, add, edit, delete)."
+    concepts: [admin.CN003]
+    modality: obligatory
+    logic:
+      when: "Tab or module permissions are updated"
+      then: "All referenced tab/module identifiers must exist and permission levels must be valid"
+    on_violation:
+      action: reject
+
+  - id: admin.VR005
+    name: "API client scope validation"
+    description: "All scopes provided to an API client must be non-empty strings. The AddApiClientCommand constructor validates this at creation time."
+    concepts: [admin.CN005]
+    modality: obligatory
+    logic:
+      when: "API client is created or edited with scopes"
+      then: "Each scope must be a non-empty string"
+    on_violation:
+      action: reject
+
+  - id: admin.VR006
+    name: "SQL query safety guard"
+    description: "SQL queries executed through SqlManagement must be read-only SELECT statements. Write operations (INSERT, UPDATE, DELETE) and schema modifications (DROP, ALTER) are forbidden."
+    concepts: [admin.CN007]
+    modality: prohibited
+    logic:
+      when: "SQL query is added, edited, or executed"
+      then: "Query must not contain forbidden SQL keywords for write or schema modification operations"
+    on_violation:
+      action: reject
+
+structural:
+  - id: admin.SR001
+    name: "Employee requires profile assignment"
+    description: "Every employee must be assigned to exactly one profile. The profileId is a required parameter in both AddEmployeeCommand and EditEmployeeCommand."
+    concepts: [admin.CN001, admin.CN002]
+    modality: necessary

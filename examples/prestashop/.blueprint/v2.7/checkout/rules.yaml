@@ -1,0 +1,164 @@
+---
+version: "1.0.0"
+scope: checkout
+
+structural:
+  - id: checkout.SR001
+    name: "Cart item quantity must be positive"
+    description: "Every product added to or updated in the cart must have quantity >= 1."
+    logic:
+      then: "cartItem.quantity >= 1"
+    modality: necessary
+    concepts: [checkout.CN002]
+    code_refs:
+      - path: "src/Core/Domain/Cart/Exception/MinimalQuantityException.php"
+        role: validation
+
+  - id: checkout.SR002
+    name: "Discount reduction value must be valid"
+    description: "Percentage reductions must be 0-100. Amount reductions must be positive. At least one action (reduction or free shipping) must be configured."
+    logic:
+      when: "discount is created or updated"
+      then: "(reductionType == 'percentage' AND 0 < reductionValue <= 100) OR (reductionType == 'amount' AND reductionValue > 0) OR freeShipping == true"
+    modality: necessary
+    concepts: [checkout.CN004]
+    code_refs:
+      - path: "src/Core/Domain/Discount/Exception/DiscountConstraintException.php"
+        role: implementation
+      - path: "src/Core/Domain/Discount/ValueObject/DiscountType.php"
+        role: implementation
+
+validation:
+  - id: checkout.VR001
+    name: "Discount date range validity"
+    description: "Start date must be before end date. Discount cannot be applied outside its validity period."
+    logic:
+      when: "discount is created, updated, or applied to cart"
+      then: "dateFrom < dateTo AND current_date BETWEEN dateFrom AND dateTo"
+    modality: obligatory
+    concepts: [checkout.CN004]
+    code_refs:
+      - path: "src/Core/Domain/CartRule/Exception/CartRuleValidityException.php"
+        role: implementation
+      - path: "src/Core/Domain/Discount/Exception/DiscountConstraintException.php"
+        role: implementation
+
+  - id: checkout.VR002
+    name: "Discount minimum order amount"
+    description: "Cart total must meet or exceed the discount's minimum amount before it can be applied."
+    logic:
+      when: "cart rule is applied to cart"
+      then: "cart.totalProducts >= discount.minimumAmount"
+    modality: obligatory
+    concepts: [checkout.CN001, checkout.CN004]
+    code_refs:
+      - path: "src/Core/Domain/Discount/ValueObject/MinimumAmount.php"
+        role: implementation
+      - path: "src/Core/Domain/CartRule/Exception/CartRuleConstraintException.php"
+        role: implementation
+
+  - id: checkout.VR003
+    name: "Discount usage limit enforcement"
+    description: "Application count must not exceed global totalQuantity or per-customer quantityPerUser limit."
+    logic:
+      when: "cart rule is applied to cart"
+      then: "globalUsageCount < totalQuantity AND customerUsageCount < quantityPerUser"
+    modality: obligatory
+    concepts: [checkout.CN004]
+    code_refs:
+      - path: "src/Core/Domain/CartRule/Exception/CartRuleConstraintException.php"
+        role: implementation
+      - path: "src/Core/Domain/Discount/Exception/DiscountConstraintException.php"
+        role: implementation
+
+  - id: checkout.VR004
+    name: "Catalog price rule quantity threshold"
+    description: "Catalog price rule only applies when the ordered quantity meets or exceeds fromQuantity."
+    logic:
+      when: "product price is calculated"
+      then: "orderedQuantity >= catalogPriceRule.fromQuantity"
+    modality: obligatory
+    concepts: [checkout.CN006]
+
+  - id: checkout.VR005
+    name: "Cannot delete ordered cart"
+    description: "A cart that has been converted into an order cannot be deleted."
+    logic:
+      when: "cart deletion is requested"
+      then: "cart.status != 'completed'"
+    modality: prohibited
+    concepts: [checkout.CN001]
+    code_refs:
+      - path: "src/Core/Domain/Cart/Exception/CannotDeleteOrderedCartException.php"
+        role: validation
+
+classification:
+  - id: checkout.CR001
+    name: "Cart status transitions"
+    description: "Valid transitions: empty->active (product added), active->checkout-started (checkout initiated), checkout-started->completed (order placed), active->abandoned (timeout), checkout-started->abandoned (timeout)."
+    logic:
+      when: "cart.status changes"
+      then: "transition must follow allowed paths"
+    concepts: [checkout.CN001]
+
+  - id: checkout.CR002
+    name: "Discount stacking priority"
+    description: "When multiple discounts apply, they are evaluated in priority order (lower number first). Stacking behavior follows combination flags on each discount."
+    logic:
+      when: "multiple discounts are eligible for a cart"
+      then: "apply in priority order; respect combination flags"
+    concepts: [checkout.CN004]
+
+transition:
+  - id: checkout.TR001
+    name: "Empty to active on product addition"
+    concept: checkout.CN001
+    from: "empty"
+    to: "active"
+    guard:
+      when: "product is added to cart"
+    description: "Cart becomes active when the first product is added."
+
+  - id: checkout.TR002
+    name: "Active to checkout-started on checkout initiation"
+    concept: checkout.CN001
+    from: "active"
+    to: "checkout-started"
+    guard:
+      when: "shopper initiates checkout flow"
+    description: "Cart enters checkout when shopper begins the checkout process."
+
+  - id: checkout.TR003
+    name: "Checkout-started to completed on order placement"
+    concept: checkout.CN001
+    from: "checkout-started"
+    to: "completed"
+    guard:
+      when: "order is successfully created from this cart"
+    description: "Cart is completed when the order is placed."
+
+  - id: checkout.TR004
+    name: "Active to abandoned on timeout"
+    concept: checkout.CN001
+    from: "active"
+    to: "abandoned"
+    guard:
+      when: "cart inactive for > 30 days"
+    description: "Cart is abandoned after prolonged inactivity."
+
+  - id: checkout.TR005
+    name: "Checkout-started to abandoned on timeout"
+    concept: checkout.CN001
+    from: "checkout-started"
+    to: "abandoned"
+    guard:
+      when: "checkout inactive for > 30 days"
+    description: "Incomplete checkout abandoned after prolonged inactivity."
+
+derivation:
+  - id: checkout.DR001
+    name: "Cart total derivation"
+    description: "Cart total is derived from sum of product line totals minus applied discount reductions plus shipping cost."
+    logic:
+      then: "cart.total = SUM(cartItem.quantity * cartItem.unitPrice) - cart.totalDiscounts + cart.totalShipping"
+    concepts: [checkout.CN001, checkout.CN002]

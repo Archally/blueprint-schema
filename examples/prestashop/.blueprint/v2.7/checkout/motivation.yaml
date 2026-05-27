@@ -1,0 +1,158 @@
+---
+version: "1.0.0"
+scope: checkout
+
+goals:
+  - id: checkout.G001
+    statement: "Cart-to-order conversion rate above 3.5%"
+    description: >
+      E-commerce average conversion is 2-3%. PrestaShop's checkout must reduce
+      friction through minimal steps, guest checkout, and transparent pricing.
+    summary: "Above-average checkout conversion rate"
+    priority: critical
+    measure: "Monthly cart-to-order conversion rate >= 3.5%"
+    discovery_stage: committed
+    certainty: probable
+
+  - id: checkout.G002
+    statement: "Promotion ROI tracking with attribution"
+    description: >
+      Marketing managers need to measure the revenue impact of each discount
+      campaign against its cost (margin erosion). Without attribution, promotion
+      spend is a black box.
+    summary: "Measurable promotion campaign effectiveness"
+    priority: high
+    measure: "Each discount campaign has attributable revenue and margin impact"
+    discovery_stage: exploring
+    certainty: probable
+
+  - id: checkout.G003
+    statement: "Sub-second cart rule evaluation under load"
+    description: >
+      Cart rule evaluation is the primary performance bottleneck during sales
+      events. With complex condition combinations and multiple active rules,
+      evaluation must complete within acceptable latency.
+    summary: "Fast cart rule evaluation"
+    priority: high
+    measure: "Cart rule evaluation p99 < 500ms with 50+ active rules"
+    discovery_stage: validated
+    certainty: confirmed
+
+risks:
+  - id: checkout.R001
+    statement: "Cart abandonment spike during flash sales"
+    description: >
+      High-traffic flash sales cause checkout latency spikes. When add-to-cart
+      takes > 2 seconds, shoppers abandon. Monolithic CartRule evaluation is
+      the primary bottleneck.
+    summary: "Flash sale checkout latency"
+    likelihood: high
+    impact: critical
+    mitigation: "Cache computed cart rule results per session with 60-second TTL. Pre-warm cache for announced sales."
+    contingency: "Disable non-essential cart rules during flash sales via feature flag."
+    goal_refs:
+      - checkout.G001
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: checkout.R002
+    statement: "Discount stacking abuse leading to negative order totals"
+    description: >
+      Complex stacking of percentage and amount discounts can theoretically
+      reduce cart totals below zero. Malicious users may exploit condition
+      combinations to extract value.
+    summary: "Discount stacking exploitation"
+    likelihood: medium
+    impact: high
+    mitigation: "Enforce cart total floor at zero. Log and flag unusual discount combinations for review."
+    goal_refs:
+      - checkout.G002
+    discovery_stage: exploring
+    certainty: probable
+
+  - id: checkout.R003
+    statement: "Cart rule evaluation performance degrades with complex conditions"
+    description: >
+      Each cart rule can have multiple condition groups (customer groups, product
+      groups, date ranges, minimum amounts). With 50+ active rules, evaluation
+      becomes O(n*m) where m is condition complexity.
+    summary: "Cart rule evaluation scalability"
+    likelihood: high
+    impact: high
+    mitigation: "Index cart rules by activation criteria. Short-circuit evaluation on first failing condition."
+    goal_refs:
+      - checkout.G003
+    discovery_stage: validated
+    certainty: confirmed
+
+trade_offs:
+  - id: checkout.T001
+    choice: "Guest checkout vs mandatory account creation"
+    selected: "Guest checkout with optional account creation post-purchase"
+    rejected: "Mandatory account creation before checkout"
+    rationale: >
+      Mandatory registration adds a full step and causes 23% drop-off (Baymard
+      Institute). Guest checkout with post-purchase account prompt preserves
+      conversion while still offering registration.
+    accepted_risk: "Guest orders cannot be tracked in customer account until post-purchase registration."
+    discovery_stage: committed
+    certainty: confirmed
+
+non_goals:
+  - id: checkout.NG001
+    statement: "No cryptocurrency or BNPL payment processing in core"
+    reason: >
+      All payment methods are module-based. Core provides the PaymentModule
+      interface; specific payment methods (crypto, BNPL, credit card) are
+      implemented as installable modules. This preserves core stability
+      and lets payment providers iterate independently.
+    discovery_stage: committed
+    certainty: confirmed
+
+assumptions:
+  - id: checkout.A001
+    statement: "Payment module authors follow the PaymentModule interface contract"
+    consequence: >
+      If payment modules bypass the PaymentModule interface and manipulate
+      cart/order state directly, the cart-to-order flow cannot guarantee
+      transactional consistency or proper event emission.
+    risk_refs:
+      - checkout.R001
+    discovery_stage: validated
+    certainty: probable
+
+inquiries:
+  - id: checkout.INQ001
+    statement: "Should cart rule evaluation move to a dedicated microservice for independent scaling?"
+    summary: "Cart rule evaluation architecture"
+    description: >
+      Cart rules are evaluated on every cart change. With complex conditions
+      and high traffic, this is the primary bottleneck. A dedicated service
+      could scale independently and cache aggressively.
+    category: technical
+    goal_refs:
+      - checkout.G003
+    risk_refs:
+      - checkout.R003
+    blocking: false
+    due_date: "2026-05-01"
+    status: investigating
+    discovery_stage: exploring
+    certainty: speculative
+    tags: [architecture, performance]
+
+  - id: checkout.INQ002
+    statement: "Should headless cart API support server-sent events for real-time cart updates?"
+    summary: "Headless cart real-time updates"
+    description: >
+      In headless deployments, the frontend needs to reflect cart changes in
+      real-time (e.g., when a cart rule auto-applies or expires). SSE or
+      WebSocket push would eliminate polling.
+    category: technical
+    goal_refs:
+      - checkout.G001
+    blocking: false
+    status: investigating
+    discovery_stage: exploring
+    certainty: speculative
+    tags: [api, headless]

@@ -1,0 +1,213 @@
+---
+name: "Shipping Stories"
+version: "1.0.0"
+scope: shipping
+
+stories:
+  - id: shipping.STR001
+    title: "Carrier Configuration"
+    description: "A shipping manager configures a new carrier with delivery zones, cost ranges, and dimensional constraints."
+    process:
+      id: shipping.SP001
+      trigger:
+        type: message
+        operation: shipping.CMD001
+        description: "Shipping manager creates a new carrier."
+      end_states:
+        - name: "Carrier configured"
+          type: complete
+          description: "Carrier created with zones, shipping ranges, and tax rules."
+        - name: "Configuration failed"
+          type: error
+          description: "Missing delivery zones or overlapping shipping ranges."
+      lanes:
+        - actor: shipping.ACT001
+          operations: [shipping.CMD001, shipping.CMD008, shipping.CMD010]
+    activities:
+      - id: shipping.SA001
+        name: "Create Carrier"
+        triggered_by: [shipping.ACT001]
+        entry_operation: shipping.CMD001
+        path_type: happy
+      - id: shipping.SA002
+        name: "Set Shipping Ranges"
+        triggered_by: [shipping.EVT001]
+        entry_operation: shipping.CMD008
+      - id: shipping.SA003
+        name: "Assign Tax Rule"
+        triggered_by: [shipping.EVT006]
+        entry_operation: shipping.CMD010
+    code_refs:
+      - path: "src/PrestaShopBundle/Controller/Admin/Improve/Shipping/CarrierController.php"
+        role: implementation
+        description: "Carrier configuration controller."
+
+  - id: shipping.STR002
+    title: "Order Shipment Fulfillment"
+    description: "A shipping manager creates shipments from orders, assigns products, and manages split/merge scenarios."
+    process:
+      id: shipping.SP002
+      trigger:
+        type: message
+        operation: shipping.CMD011
+        description: "Shipping manager creates a shipment for an order."
+      end_states:
+        - name: "Shipment fulfilled"
+          type: complete
+          description: "All order products assigned to shipments with carriers and tracking."
+        - name: "Fulfillment failed"
+          type: error
+          description: "Order not in fulfillment-ready state or carrier assignment invalid."
+      lanes:
+        - actor: shipping.ACT001
+          operations: [shipping.CMD011, shipping.CMD013, shipping.CMD015]
+    activities:
+      - id: shipping.SA004
+        name: "Create Shipment"
+        triggered_by: [shipping.ACT001]
+        entry_operation: shipping.CMD011
+        path_type: happy
+      - id: shipping.SA005
+        name: "Add Products to Shipment"
+        triggered_by: [shipping.EVT009]
+        entry_operation: shipping.CMD013
+      - id: shipping.SA006
+        name: "Split Shipment"
+        triggered_by: [shipping.ACT001]
+        entry_operation: shipping.CMD015
+        path_type: happy
+
+user_stories:
+  - id: shipping.US001
+    actor: shipping.ACT001
+    goal: "create a new carrier with zone and range configuration"
+    benefit: "customers see accurate shipping options during checkout"
+    acceptance_criteria:
+      - "Carrier is created with at least one zone"
+      - "Shipping method (weight/price) is configured"
+      - "Cost ranges are set for each zone"
+      - "Carrier appears in available carrier list"
+    delivery_priority: must-have
+    operations: [shipping.CMD001, shipping.CMD008, shipping.CMD009]
+    test_cases: [shipping.TC001]
+
+  - id: shipping.US002
+    actor: shipping.ACT001
+    goal: "enable or disable carriers"
+    benefit: "control which carriers are available during checkout without deleting configuration"
+    acceptance_criteria:
+      - "Active carriers appear in checkout carrier selection"
+      - "Disabled carriers are hidden from checkout"
+      - "Bulk enable/disable is supported"
+    delivery_priority: must-have
+    operations: [shipping.CMD005, shipping.CMD006]
+
+  - id: shipping.US003
+    actor: shipping.ACT001
+    goal: "configure free shipping for a carrier"
+    benefit: "offer promotional free shipping without modifying range configuration"
+    acceptance_criteria:
+      - "Free shipping toggle bypasses range-based pricing"
+      - "Additional handling fee is disabled when free shipping is active"
+    delivery_priority: should-have
+    operations: [shipping.CMD007]
+    test_cases: [shipping.TC002]
+
+  - id: shipping.US004
+    actor: shipping.ACT001
+    goal: "create a shipment for an order and assign products"
+    benefit: "begin the fulfillment process by grouping order products into physical parcels"
+    acceptance_criteria:
+      - "Shipment is linked to the order and carrier"
+      - "Products with quantities are assigned to the shipment"
+      - "Tracking number can be set"
+    delivery_priority: must-have
+    operations: [shipping.CMD011, shipping.CMD013, shipping.CMD012]
+    test_cases: [shipping.TC003]
+
+  - id: shipping.US005
+    actor: shipping.ACT001
+    goal: "split a shipment into multiple parcels"
+    benefit: "handle partial fulfillment when not all products can ship together"
+    acceptance_criteria:
+      - "Selected products/quantities are moved to a new shipment"
+      - "New shipment can have a different carrier"
+      - "Original shipment retains remaining products"
+    delivery_priority: should-have
+    operations: [shipping.CMD015]
+    test_cases: [shipping.TC004]
+
+  - id: shipping.US006
+    actor: shipping.ACT001
+    goal: "merge products from multiple shipments into one"
+    benefit: "consolidate parcels when separate shipping is no longer needed, reducing shipping costs"
+    acceptance_criteria:
+      - "Products are consolidated into target shipment"
+      - "Source shipments are updated or removed"
+      - "Only shipments from the same order can be merged"
+    delivery_priority: should-have
+    operations: [shipping.CMD016]
+
+use_cases:
+  - id: shipping.UC001
+    name: "Configure Carrier"
+    primary_actor: shipping.ACT001
+    preconditions:
+      - "User has back-office shipping management permissions"
+    postconditions:
+      - "Carrier is active and available for checkout selection"
+    main_scenario:
+      - step: 1
+        action: "Manager opens carrier creation form"
+        operation: shipping.QRY001
+      - step: 2
+        action: "Manager enters carrier details (name, delay, shipping method, dimensions)"
+      - step: 3
+        action: "Manager assigns delivery zones"
+        operation: shipping.CMD009
+      - step: 4
+        action: "Manager configures cost ranges per zone"
+        operation: shipping.CMD008
+      - step: 5
+        action: "Manager optionally assigns tax rule group"
+        operation: shipping.CMD010
+      - step: 6
+        action: "System creates carrier with all configuration"
+        operation: shipping.CMD001
+    extensions:
+      - step: 3
+        condition: "No zones selected"
+        action: "System rejects — carrier requires at least one zone"
+      - step: 4
+        condition: "Ranges overlap within a zone"
+        action: "System rejects with overlap validation error"
+    user_stories: [shipping.US001, shipping.US003]
+
+  - id: shipping.UC002
+    name: "Manage Order Shipments"
+    primary_actor: shipping.ACT001
+    preconditions:
+      - "Order exists in fulfillment-ready state"
+    postconditions:
+      - "All order products are assigned to shipments with carriers"
+    main_scenario:
+      - step: 1
+        action: "Manager views order shipments"
+        operation: shipping.QRY005
+      - step: 2
+        action: "Manager creates shipment with initial product"
+        operation: shipping.CMD011
+      - step: 3
+        action: "Manager adds remaining products to shipment"
+        operation: shipping.CMD013
+      - step: 4
+        action: "Manager sets tracking number"
+        operation: shipping.CMD012
+    extensions:
+      - step: 3
+        condition: "Products require different carriers"
+        action: "Manager splits shipment or creates additional shipment"
+      - step: 4
+        condition: "Shipment already shipped"
+        action: "System rejects edit — shipped shipments are immutable"
+    user_stories: [shipping.US004, shipping.US005, shipping.US006]

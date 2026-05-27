@@ -1,0 +1,37 @@
+---
+version: "1.0.0"
+scope: catalog
+tags: [supply-chain]
+
+concepts:
+  - id: catalog.CN008
+    name: "Manufacturer"
+    description: "The brand or manufacturer of a product. Products reference a single manufacturer."
+    stereotype: entity
+    attributes:
+      manufacturerId:
+        id: CAT023
+        description: "Unique manufacturer identifier"
+      name:
+        id: CAT024
+        description: "Manufacturer/brand name"
+    code_refs:
+      - path: "src/Core/Domain/Manufacturer/"
+        role: model
+    tags: [entity]
+
+  - id: catalog.CN009
+    name: "Supplier"
+    description: "External supplier who provides products. Products can have multiple suppliers with per-supplier pricing."
+    stereotype: entity
+    attributes:
+      supplierId:
+        id: CAT025
+        description: "Unique supplier identifier"
+      name:
+        id: CAT026
+        description: "Supplier company name"
+    code_refs:
+      - path: "src/Core/Domain/Supplier/"
+        role: model
+    tags: [entity]

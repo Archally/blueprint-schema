@@ -1,0 +1,196 @@
+---
+name: "Currency Management"
+version: "1.0.0"
+scope: international
+tags: [localization, currency]
+
+operations:
+
+  addCurrency:
+    id: international.CMD001
+    kind: command
+    name: "AddCurrency"
+    description: "Create a new currency with ISO code, exchange rate, precision, and localized names/symbols. Supports both official (CLDR-backed) and unofficial (custom) currencies via separate command variants sharing the same aggregate."
+    delivery_priority: must-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT001]
+      mode: all
+    governed_by:
+      - rule: international.VR001
+    code_refs:
+      - path: "src/Core/Domain/Currency/Command/AddCurrencyCommand.php"
+        role: implementation
+        description: "Official currency — ISO code validated against CLDR"
+      - path: "src/Core/Domain/Currency/Command/AddUnofficialCurrencyCommand.php"
+        role: implementation
+        description: "Unofficial currency — custom ISO code allowed"
+      - path: "src/Core/Domain/Currency/Command/AbstractAddCurrencyCommand.php"
+        role: implementation
+        description: "Shared attribute definitions"
+
+  editCurrency:
+    id: international.CMD002
+    kind: command
+    name: "EditCurrency"
+    description: "Update an existing currency's exchange rate, precision, names, symbols, or status."
+    delivery_priority: must-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Currency/Command/EditCurrencyCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Currency/Command/EditUnofficialCurrencyCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Currency/Command/AbstractEditCurrencyCommand.php"
+        role: implementation
+
+  deleteCurrency:
+    id: international.CMD003
+    kind: command
+    name: "DeleteCurrency"
+    description: "Delete a currency. The default (reference) currency cannot be deleted."
+    delivery_priority: must-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT003]
+      mode: all
+    governed_by:
+      - rule: international.VR002
+    code_refs:
+      - path: "src/Core/Domain/Currency/Command/DeleteCurrencyCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Currency/Command/BulkDeleteCurrenciesCommand.php"
+        role: implementation
+
+  toggleCurrencyStatus:
+    id: international.CMD004
+    kind: command
+    name: "ToggleCurrencyStatus"
+    description: "Enable or disable a currency. Disabled currencies are not available in storefront currency selectors."
+    delivery_priority: must-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT004]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Currency/Command/ToggleCurrencyStatusCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Currency/Command/BulkToggleCurrenciesStatusCommand.php"
+        role: implementation
+
+  refreshExchangeRates:
+    id: international.CMD005
+    kind: command
+    name: "RefreshExchangeRates"
+    description: "Fetch current exchange rates from an external provider and update all non-reference currencies. Depends on configured exchange rate service."
+    delivery_priority: should-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT005]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Currency/Command/RefreshExchangeRatesCommand.php"
+        role: implementation
+
+  setDefaultCurrency:
+    id: international.CMD006
+    kind: command
+    name: "SetDefaultCurrency"
+    description: "Designate a currency as the store's default (reference) currency. All exchange rates are relative to this currency. Modeled as a virtual operation — in code, default currency is managed through shop configuration."
+    delivery_priority: must-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT006]
+      mode: all
+    governed_by:
+      - rule: international.VR002
+
+  # --- Events ---
+
+  currencyCreated:
+    id: international.EVT001
+    kind: event
+    name: "CurrencyCreated"
+    description: "A new currency has been added (official or unofficial)."
+
+  currencyUpdated:
+    id: international.EVT002
+    kind: event
+    name: "CurrencyUpdated"
+    description: "A currency's configuration has been modified."
+
+  currencyDeleted:
+    id: international.EVT003
+    kind: event
+    name: "CurrencyDeleted"
+    description: "One or more currencies have been deleted."
+
+  currencyStatusToggled:
+    id: international.EVT004
+    kind: event
+    name: "CurrencyStatusToggled"
+    description: "A currency's enabled/disabled status has changed."
+
+  exchangeRatesRefreshed:
+    id: international.EVT005
+    kind: event
+    name: "ExchangeRatesRefreshed"
+    description: "Exchange rates have been refreshed from an external provider."
+
+  defaultCurrencyChanged:
+    id: international.EVT006
+    kind: event
+    name: "DefaultCurrencyChanged"
+    description: "The store's default (reference) currency has been changed."
+
+  # --- Queries ---
+
+  getCurrencyForEditing:
+    id: international.QRY001
+    kind: query
+    name: "GetCurrencyForEditing"
+    description: "Retrieve a currency's full configuration for the edit form."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Currency/Query/GetCurrencyForEditing.php"
+        role: implementation
+
+  getCurrencyExchangeRate:
+    id: international.QRY002
+    kind: query
+    name: "GetCurrencyExchangeRate"
+    description: "Retrieve the current exchange rate for a specific currency."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Currency/Query/GetCurrencyExchangeRate.php"
+        role: implementation
+
+  getReferenceCurrency:
+    id: international.QRY003
+    kind: query
+    name: "GetReferenceCurrency"
+    description: "Retrieve the store's default (reference) currency."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Currency/Query/GetReferenceCurrency.php"
+        role: implementation
+
+errors:
+  currencyNotFound:
+    id: international.ERR001
+    name: "CurrencyNotFound"
+    description: "The specified currency does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  currencyConstraintViolation:
+    id: international.ERR002
+    name: "CurrencyConstraintViolation"
+    description: "Currency data violates constraints (empty name, empty symbol, invalid ISO code, invalid exchange rate, invalid precision)."
+    category: validation
+    severity: error
+    http_status: 422

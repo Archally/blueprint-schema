@@ -1,0 +1,81 @@
+---
+version: "1.0.0"
+scope: international
+
+design_references:
+  design_system: "PrestaShop UIKit (Bootstrap 4)"
+  storybook_url: "https://build.prestashop-project.org/prestashop-ui-kit/"
+  accessibility_standard: WCAG-2.1-AA
+
+screens:
+  - id: international.SCR001
+    name: "Currency List"
+    summary: "Paginated list of currencies with ISO code, exchange rate, status, and bulk actions."
+    uses_models: ["CurrencyList"]
+    motivated_by: [international.G001]
+
+  - id: international.SCR002
+    name: "Currency Configuration"
+    summary: "Currency add/edit form with ISO code, exchange rate, precision, localized names/symbols."
+    uses_models: ["CurrencyForEditing"]
+    stories: [international.STR001]
+
+  - id: international.SCR003
+    name: "Language List"
+    summary: "Paginated list of languages with ISO code, locale, RTL flag, and status."
+    uses_models: ["LanguageList"]
+    motivated_by: [international.G003]
+
+  - id: international.SCR004
+    name: "Zone List"
+    summary: "List of geographic zones with status and assigned country/state counts."
+    uses_models: ["ZoneList"]
+
+  - id: international.SCR005
+    name: "Country List"
+    summary: "Paginated list of countries with ISO code, zone assignment, and status."
+    uses_models: ["CountryList"]
+
+  - id: international.SCR006
+    name: "Tax Rules Group Configuration"
+    summary: "Tax rules group edit form with matrix of zone/country tax rule bindings."
+    uses_models: ["TaxRulesGroupForEditing"]
+    stories: [international.STR002]
+
+actions:
+  - id: international.UAC001
+    screen: international.SCR001
+    name: "Add Currency"
+    description: "Open currency creation form."
+    triggers_operations: [international.CMD001]
+
+  - id: international.UAC002
+    screen: international.SCR001
+    name: "Refresh Exchange Rates"
+    description: "Trigger exchange rate refresh from external provider."
+    triggers_operations: [international.CMD005]
+
+  - id: international.UAC003
+    screen: international.SCR006
+    name: "Save Tax Rules Group"
+    description: "Save tax rules group with all zone/country bindings."
+    triggers_operations: [international.CMD027, international.CMD028]
+
+  - id: international.UAC004
+    screen: international.SCR005
+    name: "Add Country"
+    description: "Open country creation form."
+    triggers_operations: [international.CMD011]
+
+navigation:
+  - id: international.UNV001
+    from: international.SCR001
+    to: international.SCR002
+    condition: "User clicks currency row or 'Add Currency' button"
+    description: "Navigate to currency configuration."
+
+  - id: international.UNV002
+    from: international.SCR005
+    to: international.SCR004
+    condition: "User clicks zone filter or zone column link"
+    description: "Navigate to zone list filtered by country selection."

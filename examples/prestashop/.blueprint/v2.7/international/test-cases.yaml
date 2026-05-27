@@ -1,0 +1,145 @@
+---
+version: "1.0.0"
+scope: international
+
+happy_path:
+  - id: international.TC001
+    name: "Add official currency — happy path"
+    summary: "Create a new official currency with valid ISO code and exchange rate."
+    validates:
+      operations: [international.CMD001, international.EVT001]
+      rules: [international.VR001, international.SR001]
+    contract:
+      kind: openapi
+      file: dist/international-api.openapi.yaml
+    given:
+      description: "ISO code 'GBP' not yet in store. Exchange rate 0.85."
+      state:
+        isoCode: "GBP"
+        exchangeRate: 0.85
+        isEnabled: true
+    expected_result:
+      status: success
+      code: 200
+
+  - id: international.TC002
+    name: "Refresh exchange rates — happy path"
+    summary: "Refresh all exchange rates from external provider."
+    validates:
+      operations: [international.CMD005, international.EVT005]
+    given:
+      description: "Store has 3 active currencies. External provider is available."
+      state:
+        activeCurrencies: 3
+    expected_result:
+      status: success
+
+  - id: international.TC003
+    name: "Create tax rules group with rules — happy path"
+    summary: "Create a tax rules group and assign a tax rate to a zone."
+    validates:
+      operations: [international.CMD027, international.EVT027]
+      rules: [international.VR008]
+    given:
+      description: "Tax rate 'VAT 20%' exists. Zone 'Europe' exists."
+      state:
+        groupName: "EU VAT Standard"
+        taxId: 1
+        zoneId: 1
+    expected_result:
+      status: success
+      code: 200
+
+  - id: international.TC004
+    name: "Configure EU VAT across countries — happy path"
+    summary: "Set up different VAT rates per EU country within a tax rules group."
+    validates:
+      operations: [international.CMD023, international.CMD027, international.CMD028]
+      rules: [international.VR006]
+    given:
+      description: "EU zone exists. France (20%), Germany (19%), Ireland (23%) rates needed."
+      state:
+        taxRates:
+          - name: "FR VAT 20%"
+            rate: 20.0
+          - name: "DE VAT 19%"
+            rate: 19.0
+          - name: "IE VAT 23%"
+            rate: 23.0
+    expected_result:
+      status: success
+
+edge_cases:
+  - id: international.EC001
+    name: "Delete default currency rejected"
+    summary: "Attempt to delete the store's default (reference) currency."
+    validates:
+      operations: [international.CMD003]
+      rules: [international.VR002]
+    given:
+      description: "EUR is the default currency."
+      state:
+        isoCode: "EUR"
+        isDefault: true
+    expected_result:
+      status: failure
+      code: 422
+
+  - id: international.EC002
+    name: "Duplicate tax rule binding rejected"
+    summary: "Attempt to add a second tax rule for the same zone+country in a group."
+    validates:
+      operations: [international.CMD028]
+      rules: [international.VR008]
+    given:
+      description: "Tax rule for Tax 1 + Zone 1 + Country FR already exists in group."
+      state:
+        taxId: 1
+        zoneId: 1
+        countryIso: "FR"
+    expected_result:
+      status: failure
+      code: 422
+
+error_cases:
+  - id: international.ER001
+    name: "Invalid currency ISO code"
+    summary: "Attempt to create a currency with an invalid (non-3-letter) ISO code."
+    validates:
+      operations: [international.CMD001]
+      rules: [international.VR001]
+    given:
+      description: "ISO code 'EURO' is 4 characters."
+      state:
+        isoCode: "EURO"
+    expected_result:
+      status: failure
+      code: 422
+
+  - id: international.ER002
+    name: "Negative tax rate rejected"
+    summary: "Attempt to create a tax rate with a negative percentage."
+    validates:
+      operations: [international.CMD023]
+      rules: [international.VR006]
+    given:
+      description: "Tax rate -5%."
+      state:
+        rate: -5.0
+    expected_result:
+      status: failure
+      code: 422
+
+  - id: international.ER003
+    name: "Non-existent zone for country"
+    summary: "Attempt to assign a country to a zone that does not exist."
+    validates:
+      operations: [international.CMD011]
+    given:
+      description: "Zone ID 99999 does not exist."
+      state:
+        isoCode: "XX"
+        zoneId: 99999
+    expected_result:
+      status: failure
+      code: 404

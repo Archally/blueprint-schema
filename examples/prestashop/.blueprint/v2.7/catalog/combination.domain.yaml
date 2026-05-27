@@ -1,0 +1,91 @@
+---
+name: "Combination"
+version: "1.0.0"
+scope: catalog
+tags: [combination]
+
+operations:
+  generateCombinations:
+    id: catalog.CMD011
+    kind: command
+    name: "GenerateCombinations"
+    description: "Generate all possible attribute combinations for a product based on selected attribute groups and values."
+    delivery_priority: must-have
+    produces:
+      operations: [catalog.EVT004]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Combination/Command/GenerateProductCombinationsCommand.php"
+        role: implementation
+
+  updateCombination:
+    id: catalog.CMD012
+    kind: command
+    name: "UpdateCombination"
+    description: "Update a combination's price impact, stock, reference, EAN, weight."
+    delivery_priority: must-have
+    produces:
+      operations: [catalog.EVT005]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Combination/Command/UpdateCombinationCommand.php"
+        role: implementation
+
+  deleteCombination:
+    id: catalog.CMD013
+    kind: command
+    name: "DeleteCombination"
+    description: "Remove a specific combination from a product."
+    delivery_priority: must-have
+    produces:
+      operations: [catalog.EVT005]
+      mode: all
+
+  bulkDeleteCombinations:
+    id: catalog.CMD014
+    kind: command
+    name: "BulkDeleteCombinations"
+    description: "Delete multiple combinations at once."
+    delivery_priority: should-have
+    produces:
+      operations: [catalog.EVT005]
+      mode: all
+
+  setCombinationDefaultSupplier:
+    id: catalog.CMD015
+    kind: command
+    name: "SetCombinationDefaultSupplier"
+    description: "Set the default supplier for a specific combination."
+    delivery_priority: could-have
+    produces:
+      operations: [catalog.EVT005]
+      mode: all
+
+  getCombinationsList:
+    id: catalog.QRY003
+    kind: query
+    name: "GetCombinationsList"
+    description: "List all combinations for a product with pagination and filtering."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Combination/Query/GetCombinationListQuery.php"
+        role: implementation
+
+  getCombinationForEditing:
+    id: catalog.QRY004
+    kind: query
+    name: "GetCombinationForEditing"
+    description: "Get full combination data for the edit form."
+    delivery_priority: must-have
+
+  combinationGenerated:
+    id: catalog.EVT004
+    kind: event
+    name: "CombinationGenerated"
+    description: "Emitted when combinations are generated for a product."
+
+  combinationUpdated:
+    id: catalog.EVT005
+    kind: event
+    name: "CombinationUpdated"
+    description: "Emitted when a combination is modified or deleted."

@@ -464,7 +464,20 @@ Blueprint Schema is the open foundation of the [Archally](https://archally.pro) 
 
 **For AI-augmented teams:** Archally MCP servers expose blueprint models as structured grounding for AI agents — deterministic graph queries against a validated domain model, not retrieval over unstructured documents. Agents get typed entities, traced relationships, and governance constraints at inference time. The same model that serves human understanding serves machine reasoning.
 
-**Commercial tools** that consume this schema include graph viewers for interactive exploration, specification generators (OpenAPI, AsyncAPI, PRD, Arazzo), and MCP servers for Claude, Cursor, and other AI-powered development environments. The schema itself is Apache 2.0-licensed and can be used independently of Archally tooling.
+The schema itself is Apache 2.0-licensed and can be used independently of Archally tooling.
+
+### Archally Pro
+
+Commercial tools that consume this schema — available at [archally.pro](https://archally.pro):
+
+| Category | Capabilities |
+|----------|-------------|
+| **Interactive Viewers** | Entity graph with force-directed layout, node search, layer filtering, and relation inspector. Causal chain explorer with animated event flow and impact highlighting. Bounded Context Canvas. |
+| **Specification Generators** | OpenAPI 3.1, AsyncAPI 2.6, Arazzo 1.0 — generated from blueprint operations, models, and contracts. Always in sync with the model. |
+| **PRD & Documentation** | Product Requirements Documents, Event Storming boards, architecture decision exports — generated from governance and story layers. |
+| **MCP Servers** | Structured grounding for Claude, Cursor, and other AI agents. Deterministic graph queries against validated domain models at inference time. |
+| **Blueprint CLI** | Query, mutate, validate, and migrate blueprint models from the terminal. Impact analysis, coverage checks, migration lifecycle management. |
+| **Schema Update Automation** | Tracked migrations with dry-run, rollback, variant comparison, and dependency resolution across schema versions. |
 
 ## Contributing
 

@@ -1,0 +1,318 @@
+---
+name: "Catalog Stories"
+version: "1.0.0"
+scope: catalog
+
+stories:
+  - id: catalog.STR001
+    title: "Add a product to catalog"
+    description: "CategoryManager creates a new product with combinations and images."
+    initiated_by: [catalog.ACT001]
+    process:
+      id: catalog.SP001
+      trigger:
+        type: message
+        operation: catalog.CMD001
+        description: "CategoryManager creates a new product in back-office."
+      end_states:
+        - name: "Product created"
+          type: complete
+          description: "Product created in draft status, search index updated."
+        - name: "Creation failed"
+          type: error
+          description: "Validation failure — missing required fields or duplicate reference."
+      lanes:
+        - actor: catalog.ACT001
+          operations: [catalog.CMD001]
+    activities:
+      - id: catalog.SA001
+        name: "Create product"
+        entry_operation: catalog.CMD001
+        steps:
+          - operation_ref: catalog.CMD001
+            note: "Create product with basic data."
+          - operation_ref: catalog.EVT001
+            note: "ProductCreated triggers ES indexing."
+    code_refs:
+      - path: "src/PrestaShopBundle/Controller/Admin/Sell/Catalog/Product/ProductController.php"
+        role: implementation
+        description: "Product creation and management controller."
+
+  - id: catalog.STR002
+    title: "Manage product variants"
+    description: "CategoryManager generates and configures product combinations (variants)."
+    initiated_by: [catalog.ACT001]
+    process:
+      id: catalog.SP002
+      trigger:
+        type: message
+        operation: catalog.CMD011
+        description: "CategoryManager generates combinations for a product."
+      end_states:
+        - name: "Combinations generated"
+          type: complete
+          description: "All attribute value permutations created with default stock and pricing."
+        - name: "Generation failed"
+          type: error
+          description: "Product type is not 'combinations' or no attribute values selected."
+      lanes:
+        - actor: catalog.ACT001
+          operations: [catalog.CMD011]
+    activities:
+      - id: catalog.SA002
+        name: "Generate combinations"
+        entry_operation: catalog.CMD011
+        steps:
+          - operation_ref: catalog.CMD011
+            note: "Generate combinations from selected attributes."
+          - operation_ref: catalog.EVT004
+            note: "CombinationGenerated event."
+
+  - id: catalog.STR003
+    title: "Organize category hierarchy"
+    description: "CategoryManager creates and organizes the category tree structure."
+    initiated_by: [catalog.ACT001]
+    process:
+      id: catalog.SP003
+      trigger:
+        type: message
+        operation: catalog.CMD025
+        description: "CategoryManager creates a category in the tree."
+      end_states:
+        - name: "Category created"
+          type: complete
+          description: "Category added to hierarchy with parent assignment."
+        - name: "Creation failed"
+          type: error
+          description: "Parent category not found or circular reference detected."
+      lanes:
+        - actor: catalog.ACT001
+          operations: [catalog.CMD025]
+    activities:
+      - id: catalog.SA003
+        name: "Build category tree"
+        entry_operation: catalog.CMD025
+        steps:
+          - operation_ref: catalog.CMD025
+            note: "Create category in the tree."
+          - operation_ref: catalog.EVT009
+            note: "CategoryCreated event."
+
+user_stories:
+  - id: catalog.US001
+    actor: catalog.ACT001
+    goal: "Create a new product in the catalog"
+    benefit: "The product becomes available for shoppers to find and purchase."
+    summary: "CategoryManager creates a product."
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Product is created with name, description, price, and type"
+      - "Product appears in search results within 5 seconds"
+      - "Product status defaults to 'draft'"
+    operations: [catalog.CMD001, catalog.EVT001]
+    test_cases: [catalog.TC001]
+    use_case: catalog.UC001
+
+  - id: catalog.US002
+    actor: catalog.ACT001
+    goal: "Bulk import products from CSV"
+    benefit: "I can add hundreds of products at once instead of creating them one by one."
+    summary: "CategoryManager bulk imports products."
+    delivery_priority: should-have
+    status: refined
+    release_target: "v1.1"
+    acceptance_criteria:
+      - "CSV with 1000 rows imports in under 5 minutes"
+      - "Invalid rows are reported with line numbers"
+      - "Valid rows are committed even if some fail"
+
+  - id: catalog.US003
+    actor: orders.ACT001
+    goal: "Search for products by keyword with filters"
+    benefit: "I can find exactly what I need without browsing the entire catalog."
+    summary: "Shopper searches the catalog."
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Results returned in under 100ms"
+      - "Facets show available filter options (category, price, brand)"
+      - "Typo tolerance catches common misspellings"
+    operations: [catalog.QRY001]
+    use_case: catalog.UC002
+
+  - id: catalog.US004
+    actor: catalog.ACT001
+    goal: "Generate product combinations from attribute groups"
+    benefit: "I can create all size/color variants automatically instead of adding them one by one."
+    summary: "CategoryManager generates combinations for a product."
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "All possible attribute value combinations are generated"
+      - "Each combination gets default stock 0 and no price impact"
+      - "Duplicate combinations are prevented"
+    operations: [catalog.CMD011, catalog.EVT004]
+    test_cases: [catalog.TC003]
+    use_case: catalog.UC003
+
+  - id: catalog.US005
+    actor: catalog.ACT001
+    goal: "Organize products into categories"
+    benefit: "Shoppers can navigate the catalog through a logical category hierarchy."
+    summary: "CategoryManager manages category tree."
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Category tree supports nesting up to 10 levels"
+      - "Products can belong to multiple categories"
+      - "One category is designated as default for breadcrumb display"
+    operations: [catalog.CMD025, catalog.CMD009]
+
+  - id: catalog.US006
+    actor: catalog.ACT001
+    goal: "Set specific prices for promotions and bulk discounts"
+    benefit: "I can offer discounts by customer group, quantity, or time period."
+    summary: "CategoryManager manages product pricing rules."
+    delivery_priority: must-have
+    status: refined
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Specific price applies by percentage or fixed amount"
+      - "Price rules can be scoped to customer group, quantity threshold, or date range"
+      - "Multiple rules can coexist without conflict"
+    operations: [catalog.CMD021, catalog.CMD022, catalog.CMD023]
+
+  - id: catalog.US007
+    actor: catalog.ACT001
+    goal: "Upload and manage product images"
+    benefit: "Products have high-quality visual representation for shoppers."
+    summary: "CategoryManager manages product gallery."
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Images are processed into multiple sizes (thumbnail, medium, large, zoom)"
+      - "Images can be reordered and one marked as cover"
+      - "Minimum image dimensions enforced (800x800)"
+    operations: [catalog.CMD016, catalog.CMD017, catalog.CMD018]
+
+  - id: catalog.US008
+    actor: orders.ACT003
+    goal: "View full product details including combinations and pricing"
+    benefit: "I can review product data before placing wholesale orders."
+    summary: "Merchant reviews product detail."
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    acceptance_criteria:
+      - "Product detail includes all combinations with stock and price"
+      - "Specific prices visible when applicable"
+      - "Feature values displayed"
+    operations: [catalog.QRY002]
+
+use_cases:
+  - id: catalog.UC001
+    name: "Create Product"
+    summary: "CategoryManager adds a new product to the catalog."
+    primary_actor: catalog.ACT001
+    goal: "Create a fully-specified product ready for activation."
+    preconditions:
+      - "CategoryManager is authenticated with catalog management role"
+    postconditions:
+      - "Product exists in database with 'draft' status"
+      - "ES index updated via ProductCreated event"
+    main_scenario:
+      - step: 1
+        action: "CategoryManager navigates to catalog management."
+        emotion: neutral
+      - step: 2
+        action: "CategoryManager fills in product name, description, and base price."
+        emotion: neutral
+      - step: 3
+        action: "CategoryManager selects product type (standard, combinations, pack, virtual)."
+        emotion: neutral
+      - step: 4
+        action: "System validates product data."
+        operation: catalog.CMD001
+      - step: 5
+        action: "System creates product and triggers indexing."
+        operation: catalog.EVT001
+        emotion: satisfied
+    extensions:
+      - step: 4
+        condition: "Required field missing."
+        action: "System displays validation error."
+    user_stories: [catalog.US001]
+    delivery_priority: must-have
+
+  - id: catalog.UC002
+    name: "Search Products"
+    summary: "Shopper searches the catalog with keywords and filters."
+    primary_actor: orders.ACT001
+    goal: "Find relevant products quickly."
+    preconditions:
+      - "Catalog contains at least one active product"
+    postconditions:
+      - "Search results displayed with facets"
+    main_scenario:
+      - step: 1
+        action: "Shopper types search query in search bar."
+        emotion: neutral
+      - step: 2
+        action: "System sends query to Elasticsearch."
+        operation: catalog.QRY001
+      - step: 3
+        action: "System displays results with faceted filters."
+        emotion: satisfied
+      - step: 4
+        action: "Shopper applies category and price range filters."
+        emotion: satisfied
+      - step: 5
+        action: "Shopper clicks a product to view detail."
+        operation: catalog.QRY002
+        emotion: delighted
+    extensions:
+      - step: 2
+        condition: "No results match the query."
+        action: "System suggests alternative spellings and related categories."
+    user_stories: [catalog.US003]
+    delivery_priority: must-have
+
+  - id: catalog.UC003
+    name: "Manage Product Variants"
+    summary: "CategoryManager generates combinations and configures variant details."
+    primary_actor: catalog.ACT001
+    goal: "Create and configure all product variants for a combinations-type product."
+    preconditions:
+      - "Product exists with type 'combinations'"
+      - "At least one attribute group with values exists"
+    postconditions:
+      - "Combinations generated with default stock and pricing"
+    main_scenario:
+      - step: 1
+        action: "CategoryManager opens product's combinations tab."
+        emotion: neutral
+      - step: 2
+        action: "CategoryManager selects attribute groups and values to combine."
+        emotion: neutral
+      - step: 3
+        action: "System generates all attribute value permutations."
+        operation: catalog.CMD011
+        emotion: satisfied
+      - step: 4
+        action: "CategoryManager adjusts price impact and stock per combination."
+        operation: catalog.CMD012
+      - step: 5
+        action: "System confirms combinations saved."
+        emotion: satisfied
+    extensions:
+      - step: 3
+        condition: "Product type is not 'combinations'."
+        action: "System displays error: invalid product type."
+    user_stories: [catalog.US004]
+    delivery_priority: must-have

@@ -1,0 +1,14 @@
+---
+version: "1.0.0"
+scope: catalog
+tags: [image-settings]
+
+concepts:
+  - id: catalog.CN014
+    name: "ImageSettings"
+    description: "Configuration for image type dimensions used across the catalog (thumbnail, medium, large, zoom)."
+    stereotype: entity
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/"
+        role: model
+    tags: [entity, configuration]

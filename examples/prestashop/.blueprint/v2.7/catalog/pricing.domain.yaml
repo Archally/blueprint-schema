@@ -1,0 +1,66 @@
+---
+name: "Pricing"
+version: "1.0.0"
+scope: catalog
+tags: [pricing]
+
+operations:
+  addSpecificPrice:
+    id: catalog.CMD021
+    kind: command
+    name: "AddSpecificPrice"
+    description: "Create a price override rule for a product (discount by amount or percentage, for specific customer group, quantity, or date range)."
+    delivery_priority: must-have
+    governed_by:
+      - rule: catalog.VR003
+    produces:
+      operations: [catalog.EVT007]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Product/SpecificPrice/Command/AddSpecificPriceCommand.php"
+        role: implementation
+
+  editSpecificPrice:
+    id: catalog.CMD022
+    kind: command
+    name: "EditSpecificPrice"
+    description: "Modify an existing specific price rule."
+    delivery_priority: must-have
+    produces:
+      operations: [catalog.EVT007]
+      mode: all
+
+  deleteSpecificPrice:
+    id: catalog.CMD023
+    kind: command
+    name: "DeleteSpecificPrice"
+    description: "Remove a specific price rule from a product."
+    delivery_priority: must-have
+    produces:
+      operations: [catalog.EVT007]
+      mode: all
+
+  setProductCustomizationFields:
+    id: catalog.CMD024
+    kind: command
+    name: "SetProductCustomizationFields"
+    description: "Define customization fields for a product (text or file upload fields that customers fill in)."
+    delivery_priority: could-have
+    produces:
+      operations: [catalog.EVT002]
+      mode: all
+
+  specificPriceChanged:
+    id: catalog.EVT007
+    kind: event
+    name: "SpecificPriceChanged"
+    description: "Emitted when a specific price rule is added, modified, or removed."
+
+errors:
+  specificPriceConflict:
+    id: catalog.ERR007
+    name: "SpecificPriceConflict"
+    description: "A specific price with the same conditions (customer group, quantity, date range) already exists."
+    category: conflict
+    severity: error
+    http_status: 409

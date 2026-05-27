@@ -1,0 +1,332 @@
+---
+name: "Geography Management"
+version: "1.0.0"
+scope: international
+tags: [geography]
+
+operations:
+
+  # --- Country ---
+
+  addCountry:
+    id: international.CMD011
+    kind: command
+    name: "AddCountry"
+    description: "Create a new country with ISO code, zone assignment, address format, zip code configuration, and tax display settings."
+    delivery_priority: must-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT011]
+      mode: all
+    governed_by:
+      - rule: international.VR005
+    code_refs:
+      - path: "src/Core/Domain/Country/Command/AddCountryCommand.php"
+        role: implementation
+
+  editCountry:
+    id: international.CMD012
+    kind: command
+    name: "EditCountry"
+    description: "Update a country's zone assignment, address format, zip code settings, or status."
+    delivery_priority: must-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT012]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Country/Command/EditCountryCommand.php"
+        role: implementation
+
+  deleteCountry:
+    id: international.CMD013
+    kind: command
+    name: "DeleteCountry"
+    description: "Delete a country definition."
+    delivery_priority: should-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT013]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Country/Command/DeleteCountryCommand.php"
+        role: implementation
+
+  # --- State ---
+
+  addState:
+    id: international.CMD014
+    kind: command
+    name: "AddState"
+    description: "Create a new state/province/region within a country with its own zone assignment."
+    delivery_priority: must-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT014]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/State/Command/AddStateCommand.php"
+        role: implementation
+
+  editState:
+    id: international.CMD015
+    kind: command
+    name: "EditState"
+    description: "Update a state's name, ISO code, country, zone, or status."
+    delivery_priority: must-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT015]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/State/Command/EditStateCommand.php"
+        role: implementation
+
+  deleteState:
+    id: international.CMD016
+    kind: command
+    name: "DeleteState"
+    description: "Delete a state definition. Supports single and bulk deletion."
+    delivery_priority: should-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT016]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/State/Command/DeleteStateCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/State/Command/BulkDeleteStateCommand.php"
+        role: implementation
+
+  toggleStateStatus:
+    id: international.CMD017
+    kind: command
+    name: "ToggleStateStatus"
+    description: "Enable or disable a state. Supports single and bulk toggle."
+    delivery_priority: should-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT017]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/State/Command/ToggleStateStatusCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/State/Command/BulkToggleStateStatusCommand.php"
+        role: implementation
+
+  bulkUpdateStateZone:
+    id: international.CMD018
+    kind: command
+    name: "BulkUpdateStateZone"
+    description: "Reassign multiple states to a different zone in a single operation. Enables bulk geographic restructuring."
+    delivery_priority: could-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT018]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/State/Command/BulkUpdateStateZoneCommand.php"
+        role: implementation
+
+  # --- Zone ---
+
+  addZone:
+    id: international.CMD019
+    kind: command
+    name: "AddZone"
+    description: "Create a new geographic zone for grouping countries/states."
+    delivery_priority: must-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT019]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Zone/Command/AddZoneCommand.php"
+        role: implementation
+
+  editZone:
+    id: international.CMD020
+    kind: command
+    name: "EditZone"
+    description: "Update a zone's name or status."
+    delivery_priority: must-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT020]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Zone/Command/EditZoneCommand.php"
+        role: implementation
+
+  deleteZone:
+    id: international.CMD021
+    kind: command
+    name: "DeleteZone"
+    description: "Delete a zone. Supports single and bulk deletion."
+    delivery_priority: should-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT021]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Zone/Command/DeleteZoneCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Zone/Command/BulkDeleteZoneCommand.php"
+        role: implementation
+
+  toggleZoneStatus:
+    id: international.CMD022
+    kind: command
+    name: "ToggleZoneStatus"
+    description: "Enable or disable a zone. Supports single and bulk toggle."
+    delivery_priority: should-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT022]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Zone/Command/ToggleZoneStatusCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Zone/Command/BulkToggleZoneStatusCommand.php"
+        role: implementation
+
+  # --- Events ---
+
+  countryCreated:
+    id: international.EVT011
+    kind: event
+    name: "CountryCreated"
+    description: "A new country has been added."
+
+  countryUpdated:
+    id: international.EVT012
+    kind: event
+    name: "CountryUpdated"
+    description: "A country's configuration has been modified."
+
+  countryDeleted:
+    id: international.EVT013
+    kind: event
+    name: "CountryDeleted"
+    description: "A country has been deleted."
+
+  stateCreated:
+    id: international.EVT014
+    kind: event
+    name: "StateCreated"
+    description: "A new state has been added."
+
+  stateUpdated:
+    id: international.EVT015
+    kind: event
+    name: "StateUpdated"
+    description: "A state's configuration has been modified."
+
+  stateDeleted:
+    id: international.EVT016
+    kind: event
+    name: "StateDeleted"
+    description: "One or more states have been deleted."
+
+  stateStatusToggled:
+    id: international.EVT017
+    kind: event
+    name: "StateStatusToggled"
+    description: "A state's enabled/disabled status has changed."
+
+  stateZonesBulkUpdated:
+    id: international.EVT018
+    kind: event
+    name: "StateZonesBulkUpdated"
+    description: "Multiple states have been reassigned to a different zone."
+
+  zoneCreated:
+    id: international.EVT019
+    kind: event
+    name: "ZoneCreated"
+    description: "A new zone has been added."
+
+  zoneUpdated:
+    id: international.EVT020
+    kind: event
+    name: "ZoneUpdated"
+    description: "A zone's configuration has been modified."
+
+  zoneDeleted:
+    id: international.EVT021
+    kind: event
+    name: "ZoneDeleted"
+    description: "One or more zones have been deleted."
+
+  zoneStatusToggled:
+    id: international.EVT022
+    kind: event
+    name: "ZoneStatusToggled"
+    description: "A zone's enabled/disabled status has changed."
+
+  # --- Queries ---
+
+  getCountryForEditing:
+    id: international.QRY005
+    kind: query
+    name: "GetCountryForEditing"
+    description: "Retrieve a country's full configuration for the edit form."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Country/Query/GetCountryForEditing.php"
+        role: implementation
+
+  getCountryRequiredFields:
+    id: international.QRY006
+    kind: query
+    name: "GetCountryRequiredFields"
+    description: "Retrieve which address fields are required for a specific country."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Country/Query/GetCountryRequiredFields.php"
+        role: implementation
+
+  getStateForEditing:
+    id: international.QRY007
+    kind: query
+    name: "GetStateForEditing"
+    description: "Retrieve a state's configuration for the edit form."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/State/Query/GetStateForEditing.php"
+        role: implementation
+
+  getZoneForEditing:
+    id: international.QRY008
+    kind: query
+    name: "GetZoneForEditing"
+    description: "Retrieve a zone's configuration for the edit form."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Zone/Query/GetZoneForEditing.php"
+        role: implementation
+
+errors:
+  countryNotFound:
+    id: international.ERR004
+    name: "CountryNotFound"
+    description: "The specified country does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  stateNotFound:
+    id: international.ERR005
+    name: "StateNotFound"
+    description: "The specified state does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  zoneNotFound:
+    id: international.ERR006
+    name: "ZoneNotFound"
+    description: "The specified zone does not exist."
+    category: not-found
+    severity: error
+    http_status: 404

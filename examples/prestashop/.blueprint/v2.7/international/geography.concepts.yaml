@@ -1,0 +1,127 @@
+---
+version: "1.0.0"
+scope: international
+tags: [geography]
+
+concepts:
+  - id: international.CN004
+    name: "Country"
+    stereotype: aggregate-root
+    description: "A country with ISO code, zone assignment, address format, zip code requirements, and tax display settings. Countries are the primary geographic unit for shipping, taxation, and address validation."
+    tags: [aggregate-root, geography]
+    attributes:
+      isoCode:
+        id: CAT514
+        description: "ISO 3166-1 alpha-2 country code"
+        example: "FR"
+      localizedNames:
+        id: CAT515
+        description: "Country display name per language"
+        example: "France"
+      callPrefix:
+        id: CAT516
+        description: "International dialing prefix"
+        example: "33"
+      zoneId:
+        id: CAT517
+        description: "Reference to the geographic zone this country belongs to"
+        example: "1"
+      needZipCode:
+        id: CAT518
+        description: "Whether addresses in this country require a postal/zip code"
+        example: "true"
+      zipCodeFormat:
+        id: CAT519
+        description: "Regex-like format pattern for zip code validation"
+        example: "NNNNN"
+      addressFormat:
+        id: CAT520
+        description: "Address line format template for this country"
+      containsStates:
+        id: CAT521
+        description: "Whether this country has states/provinces/regions"
+        example: "false"
+      needIdNumber:
+        id: CAT522
+        description: "Whether customers need an identification number (e.g., DNI in Spain)"
+      displayTaxLabel:
+        id: CAT523
+        description: "Whether to show tax-inclusive/exclusive labels for this country"
+      enabled:
+        id: CAT524
+        description: "Whether this country is active for store operations"
+    code_refs:
+      - path: "src/Core/Domain/Country/Command/AddCountryCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Country/ValueObject/CountryZipCodeFormat.php"
+        role: model
+
+  - id: international.CN005
+    name: "State"
+    stereotype: aggregate-root
+    description: "A state, province, or region within a country. States have their own zone assignment for granular shipping/tax configuration."
+    tags: [aggregate-root, geography]
+    attributes:
+      name:
+        id: CAT525
+        description: "State display name"
+        example: "California"
+      isoCode:
+        id: CAT526
+        description: "State/region ISO code"
+        example: "CA"
+      countryId:
+        id: CAT527
+        description: "Reference to the parent country"
+      zoneId:
+        id: CAT528
+        description: "Reference to the geographic zone (may differ from country's zone)"
+      enabled:
+        id: CAT529
+        description: "Whether this state is active"
+    code_refs:
+      - path: "src/Core/Domain/State/Command/AddStateCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/State/Command/EditStateCommand.php"
+        role: implementation
+
+  - id: international.CN006
+    name: "Zone"
+    stereotype: aggregate-root
+    description: "A geographic zone grouping countries and states for shipping cost calculation and tax rule assignment. Zones are the bridge between Geography and Shipping/Taxation contexts."
+    tags: [aggregate-root, geography]
+    attributes:
+      name:
+        id: CAT530
+        description: "Zone display name"
+        example: "Europe"
+      enabled:
+        id: CAT531
+        description: "Whether this zone is active"
+    code_refs:
+      - path: "src/Core/Domain/Zone/Command/AddZoneCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Zone/Command/EditZoneCommand.php"
+        role: implementation
+
+associations:
+  - id: international.AS002
+    subject: international.CN004
+    predicate: depends-on
+    object: international.CN006
+    cardinality: "1"
+    description: "Each country is assigned to exactly one zone."
+
+  - id: international.AS003
+    subject: international.CN005
+    predicate: depends-on
+    object: international.CN004
+    cardinality: "1"
+    description: "Each state belongs to exactly one country."
+
+  - id: international.AS004
+    subject: international.CN005
+    predicate: depends-on
+    object: international.CN006
+    cardinality: "1"
+    description: "Each state is assigned to a zone (may differ from its parent country's zone for granular tax/shipping)."

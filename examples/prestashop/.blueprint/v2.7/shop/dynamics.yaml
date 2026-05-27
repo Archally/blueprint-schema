@@ -1,0 +1,8 @@
+---
+version: "1.0.0"
+scope: shop
+
+execution:
+  model: sequential
+  description: "Shop configuration and branding operations are low-frequency admin tasks."
+  rationale: "Store setup is a one-time or infrequent activity with no concurrency concerns."

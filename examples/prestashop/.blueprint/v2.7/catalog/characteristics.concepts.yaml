@@ -1,0 +1,56 @@
+---
+version: "1.0.0"
+scope: catalog
+tags: [characteristics]
+
+concepts:
+  - id: catalog.CN005
+    name: "AttributeGroup"
+    description: "A group of product variant attributes (e.g. Size, Color). Attribute groups define the axes of product combinations."
+    stereotype: aggregate-root
+    attributes:
+      attributeGroupId:
+        id: CAT013
+        description: "Unique attribute group identifier"
+      name:
+        id: CAT014
+        description: "Group name (e.g. 'Size', 'Color')"
+      groupType:
+        id: CAT015
+        description: "Display type: select, radio, color"
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/"
+        role: model
+    tags: [aggregate-root]
+
+  - id: catalog.CN006
+    name: "Feature"
+    description: "A product characteristic for informational display (not variant-generating). E.g. weight, material, screen size."
+    stereotype: entity
+    attributes:
+      featureId:
+        id: CAT016
+        description: "Unique feature identifier"
+      name:
+        id: CAT017
+        description: "Feature name (e.g. 'Weight', 'Material')"
+    code_refs:
+      - path: "src/Core/Domain/Feature/"
+        role: model
+    tags: [entity]
+
+  - id: catalog.CN007
+    name: "FeatureValue"
+    description: "A specific value for a product feature (e.g. Feature 'Weight' -> FeatureValue '2.5kg')."
+    stereotype: value-object
+    attributes:
+      featureValueId:
+        id: CAT034
+        description: "Unique feature value identifier"
+      value:
+        id: CAT035
+        description: "The feature value text"
+    code_refs:
+      - path: "src/Core/Domain/Feature/"
+        role: model
+    tags: [value-object]

@@ -1,0 +1,107 @@
+---
+name: "Category"
+version: "1.0.0"
+scope: catalog
+tags: [category]
+
+operations:
+  addCategory:
+    id: catalog.CMD025
+    kind: command
+    name: "AddCategory"
+    description: "Create a new category within the category tree."
+    delivery_priority: must-have
+    governed_by:
+      - rule: catalog.SR002
+    produces:
+      operations: [catalog.EVT009]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Category/Command/AddCategoryCommand.php"
+        role: implementation
+
+  editCategory:
+    id: catalog.CMD026
+    kind: command
+    name: "EditCategory"
+    description: "Update category name, description, image, SEO metadata."
+    delivery_priority: must-have
+    produces:
+      operations: [catalog.EVT010]
+      mode: all
+
+  deleteCategory:
+    id: catalog.CMD027
+    kind: command
+    name: "DeleteCategory"
+    description: "Delete a category. Children can be moved to parent or deleted."
+    delivery_priority: must-have
+    governed_by:
+      - rule: catalog.SR003
+    produces:
+      operations: [catalog.EVT010]
+      mode: all
+
+  updateCategoryPosition:
+    id: catalog.CMD028
+    kind: command
+    name: "UpdateCategoryPosition"
+    description: "Move a category within the tree (change parent or sibling order)."
+    delivery_priority: should-have
+    produces:
+      operations: [catalog.EVT010]
+      mode: all
+
+  toggleCategoryStatus:
+    id: catalog.CMD029
+    kind: command
+    name: "ToggleCategoryStatus"
+    description: "Enable or disable a category (affects visibility of all products in it)."
+    delivery_priority: must-have
+    produces:
+      operations: [catalog.EVT010]
+      mode: all
+
+  getCategoryTree:
+    id: catalog.QRY005
+    kind: query
+    name: "GetCategoryTree"
+    description: "Retrieve the full category hierarchy as a tree structure."
+    delivery_priority: must-have
+
+  getCategoryProducts:
+    id: catalog.QRY006
+    kind: query
+    name: "GetCategoryProducts"
+    description: "List products assigned to a specific category with pagination."
+    delivery_priority: must-have
+
+  categoryCreated:
+    id: catalog.EVT009
+    kind: event
+    name: "CategoryCreated"
+    description: "Emitted when a new category is added to the tree."
+
+  categoryUpdated:
+    id: catalog.EVT010
+    kind: event
+    name: "CategoryUpdated"
+    description: "Emitted when a category is modified, moved, toggled, or deleted."
+
+errors:
+  categoryNotFound:
+    id: catalog.ERR004
+    name: "CategoryNotFound"
+    description: "No category exists with the given ID."
+    category: not-found
+    severity: warning
+    http_status: 404
+
+  categoryTreeDepthExceeded:
+    id: catalog.ERR005
+    name: "CategoryTreeDepthExceeded"
+    description: "Cannot nest category deeper than the maximum allowed depth."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [catalog.SR002]

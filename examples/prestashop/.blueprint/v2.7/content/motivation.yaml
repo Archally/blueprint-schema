@@ -1,0 +1,125 @@
+---
+version: "1.0.0"
+scope: content
+
+goals:
+  - id: content.G001
+    statement: "Efficient content management for storefront pages"
+    description: >
+      Enable content managers to create, organize, and publish CMS pages
+      and categories efficiently. Well-structured content improves customer
+      navigation and reduces support inquiries.
+    summary: "CMS content management efficiency"
+    priority: high
+    measure: ">= 90% of CMS pages have all required fields populated (title, content, category, meta)"
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: content.G002
+    statement: "SEO-optimized storefront pages with proper metadata"
+    description: >
+      Ensure all storefront page types have configured SEO metadata (titles,
+      descriptions, URL rewrites) to maximize search engine visibility and
+      organic traffic.
+    summary: "SEO metadata coverage"
+    priority: high
+    measure: ">= 95% of page types have meta entries with titles and descriptions configured"
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: content.G003
+    statement: "Consistent brand presentation through theme management"
+    description: >
+      Provide reliable theme import, activation, and management so the
+      storefront maintains consistent brand appearance across all shops.
+      Theme switching must be safe and reversible.
+    summary: "Brand consistency via themes"
+    priority: medium
+    measure: "Theme activation completes without error in >= 99% of operations"
+    discovery_stage: validated
+    certainty: confirmed
+
+risks:
+  - id: content.R001
+    statement: "Broken URLs after meta page name or URL rewrite changes"
+    description: >
+      Modifying meta entries can break existing bookmarks, external links,
+      and search engine index entries. URL changes without redirects cause
+      404 errors and SEO ranking drops.
+    summary: "SEO URL breakage risk"
+    likelihood: medium
+    impact: high
+    mitigation: "URL rewrite changes should trigger redirect rules. Meta page name uniqueness enforced by VR006."
+    goal_refs:
+      - content.G002
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: content.R002
+    statement: "Theme incompatibility after PrestaShop upgrade"
+    description: >
+      Theme updates may lag behind core PrestaShop upgrades, causing visual
+      defects, broken layouts, or missing functionality on the storefront.
+    summary: "Theme upgrade incompatibility"
+    likelihood: medium
+    impact: high
+    mitigation: "Test themes in staging before production. ResetThemeLayouts available as recovery option."
+    goal_refs:
+      - content.G003
+    discovery_stage: exploring
+    certainty: probable
+
+  - id: content.R003
+    statement: "CMS category hierarchy corruption from parallel edits"
+    description: >
+      Concurrent category parent reassignments could theoretically create
+      orphaned branches or cycles if not properly guarded at the database level.
+    summary: "Category tree corruption"
+    likelihood: low
+    impact: high
+    mitigation: "Structural rule SR001 prevents cycles. Database-level constraints enforce tree integrity."
+    goal_refs:
+      - content.G001
+    discovery_stage: validated
+    certainty: confirmed
+
+non_goals:
+  - id: content.NG001
+    statement: "No visual page builder or WYSIWYG block editor in core"
+    reason: >
+      CMS pages use plain HTML text fields with TinyMCE. There is no block
+      editor, drag-and-drop page builder, or component-based layout system
+      in core CMS. Advanced page building is handled by modules (e.g.,
+      Creative Elements, Starter Theme page builder).
+    discovery_stage: committed
+    certainty: confirmed
+
+trade_offs:
+  - id: content.T001
+    choice: "Template engine during Smarty-to-Twig migration"
+    selected: "Smarty + Twig dual support during migration period"
+    rejected: "Twig-only (would break all existing themes)"
+    rationale: >
+      Hundreds of third-party themes and template overrides use Smarty syntax.
+      A Twig-only mandate would invalidate the entire theme ecosystem overnight.
+      Dual support lets theme developers migrate gradually while new themes
+      use Twig exclusively.
+    accepted_risk: "Two template engines maintained in parallel; developer confusion about which to use."
+    discovery_stage: committed
+    certainty: confirmed
+
+inquiries:
+  - id: content.INQ001
+    statement: "Should a headless CMS API be exposed for decoupled frontend architectures?"
+    summary: "Headless CMS API"
+    description: >
+      Modern storefronts increasingly use decoupled/headless architectures.
+      Exposing CMS content via a dedicated API (beyond the existing admin API)
+      could support PWA, mobile apps, and multi-channel content delivery.
+    category: technical
+    goal_refs:
+      - content.G001
+    blocking: false
+    status: investigating
+    discovery_stage: exploring
+    certainty: speculative

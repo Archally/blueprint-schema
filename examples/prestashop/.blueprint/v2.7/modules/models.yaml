@@ -1,0 +1,145 @@
+---
+version: "1.0.0"
+scope: modules
+tags: [modules, models]
+
+components:
+  schemas:
+    ModuleResource:
+      x-model-id: MDL700
+      purpose: read-model
+      description: "Module representation for back-office listing and management. Exposes identity, version, lifecycle state, and configuration access."
+      represents:
+        - concept: modules.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              technicalName: CAT700
+              version: CAT701
+              isInstalled: CAT704
+              isEnabled: CAT703
+      type: object
+      properties:
+        moduleId:
+          type: integer
+          description: "Unique module identifier."
+          example: 42
+        technicalName:
+          type: string
+          description: "Unique module technical name."
+          example: "ps_emailsubscription"
+        displayName:
+          type: string
+          description: "Human-readable module name."
+          example: "Email subscription"
+        description:
+          type: string
+          description: "Module purpose description."
+          example: "Adds a newsletter subscription form to the storefront and manages subscriber emails."
+        version:
+          type: string
+          description: "Current available module version."
+          example: "2.8.1"
+        author:
+          type: string
+          description: "Module author or publisher."
+          example: "PrestaShop"
+        isInstalled:
+          type: boolean
+          description: "Whether the module is installed."
+          example: true
+        isEnabled:
+          type: boolean
+          description: "Whether the module is currently active (only meaningful when installed)."
+          example: true
+        logoUrl:
+          type: string
+          description: "Module logo image URL."
+          example: "/modules/ps_emailsubscription/logo.png"
+        configurationUrl:
+          type: string
+          description: "URL to the module's configuration page (null if not installed or no configuration)."
+          example: "/admin/module/configure/ps_emailsubscription"
+      code_refs:
+        - path: "src/Core/Domain/Module/Query/GetModuleInfos.php"
+          role: schema
+        - path: "src/Core/Domain/Module/QueryResult/ModuleInfos.php"
+          role: model
+
+    UploadModulePayload:
+      x-model-id: MDL701
+      purpose: command-payload
+      description: "Request body for uploading a module package. The source is a file path or URL pointing to the module archive (zip)."
+      represents:
+        - concept: modules.CN001
+          kind: api
+      type: object
+      required: [source]
+      properties:
+        source:
+          type: string
+          description: "Module package source — file path to a zip archive or download URL."
+          example: "/tmp/ps_emailsubscription-2.8.1.zip"
+      code_refs:
+        - path: "src/Core/Domain/Module/Command/UploadModuleCommand.php"
+          role: schema
+
+    HookStatusResource:
+      x-model-id: MDL702
+      purpose: read-model
+      description: "Hook representation for back-office management. Exposes hook identity, status, and registered module positions."
+      represents:
+        - concept: modules.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              hookId: CAT705
+              hookName: CAT705
+              active: CAT708
+      type: object
+      properties:
+        hookId:
+          type: integer
+          description: "Unique hook identifier."
+          example: 15
+        hookName:
+          type: string
+          description: "Hook identifier name."
+          example: "displayHeader"
+        title:
+          type: string
+          description: "Human-readable hook title."
+          example: "Display Header"
+        description:
+          type: string
+          description: "Hook purpose description."
+          example: "Allows modules to add content to the page header"
+        active:
+          type: boolean
+          description: "Whether this hook is currently active."
+          example: true
+        modules:
+          type: array
+          description: "Modules registered to this hook, ordered by position."
+          items:
+            type: object
+            properties:
+              moduleId:
+                type: integer
+                description: "Module identifier."
+                example: 42
+              technicalName:
+                type: string
+                description: "Module technical name."
+                example: "ps_emailsubscription"
+              position:
+                type: integer
+                description: "Module execution order on this hook."
+                example: 1
+      code_refs:
+        - path: "src/Core/Domain/Hook/Query/GetHook.php"
+          role: schema
+        - path: "src/Core/Domain/Hook/QueryResult/Hook.php"
+          role: model

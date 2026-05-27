@@ -1,0 +1,70 @@
+---
+name: "Media"
+version: "1.0.0"
+scope: catalog
+tags: [media]
+
+operations:
+  addProductImage:
+    id: catalog.CMD016
+    kind: command
+    name: "AddProductImage"
+    description: "Upload and associate an image with a product. Image is processed into multiple sizes."
+    delivery_priority: must-have
+    governed_by:
+      - rule: catalog.VR001
+    produces:
+      operations: [catalog.EVT006]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Product/Image/Command/AddProductImageCommand.php"
+        role: implementation
+
+  deleteProductImage:
+    id: catalog.CMD017
+    kind: command
+    name: "DeleteProductImage"
+    description: "Remove an image from a product and delete all generated sizes."
+    delivery_priority: must-have
+    produces:
+      operations: [catalog.EVT006]
+      mode: all
+
+  setProductImagePosition:
+    id: catalog.CMD018
+    kind: command
+    name: "SetProductImagePosition"
+    description: "Reorder product images by setting the display position."
+    delivery_priority: should-have
+    produces:
+      operations: [catalog.EVT002]
+      mode: all
+
+  manageAttachment:
+    id: catalog.CMD019
+    kind: command
+    name: "ManageAttachment"
+    description: "Add, update, or remove a downloadable attachment from a product."
+    delivery_priority: could-have
+    produces:
+      operations: [catalog.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Command/"
+        role: implementation
+
+  setVirtualProductFile:
+    id: catalog.CMD020
+    kind: command
+    name: "SetVirtualProductFile"
+    description: "Upload the downloadable file for a virtual product."
+    delivery_priority: should-have
+    produces:
+      operations: [catalog.EVT002]
+      mode: all
+
+  productImageChanged:
+    id: catalog.EVT006
+    kind: event
+    name: "ProductImageChanged"
+    description: "Emitted when product images are added, removed, or reordered."

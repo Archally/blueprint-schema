@@ -1,0 +1,141 @@
+---
+version: "1.0.0"
+scope: orders
+
+happy_path:
+  - id: orders.TC001
+    name: "Place order — happy path"
+    summary: "Valid cart, sufficient stock, payment succeeds."
+    validates:
+      operations: [orders.CMD001, orders.EVT001]
+      rules: [orders.SR001, orders.VR001]
+    contract:
+      kind: openapi
+      file: dist/orders-api.openapi.yaml
+    given:
+      description: "Cart with 2 items, both in stock. Shipping address provided."
+      state:
+        cartItems: 2
+        stockAvailable: true
+        shippingAddress: "valid"
+    expected_result:
+      status: success
+      code: 201
+
+  - id: orders.TC002
+    name: "Cancel order — happy path"
+    summary: "Order in payment-accepted status, not yet shipped."
+    validates:
+      operations: [orders.CMD002, orders.EVT002]
+      rules: [orders.CR001]
+    given:
+      description: "Existing order in payment-accepted status."
+      state:
+        orderStatus: "payment-accepted"
+    expected_result:
+      status: success
+
+  - id: orders.TC003
+    name: "Generate invoice — happy path"
+    summary: "Order with payment-accepted status, no existing invoice."
+    validates:
+      operations: [orders.CMD017, orders.EVT007]
+      rules: [orders.SR002]
+    given:
+      description: "Order in payment-accepted status with no existing invoice."
+      state:
+        orderStatus: "payment-accepted"
+        existingInvoice: false
+    expected_result:
+      status: success
+      code: 201
+
+  - id: orders.TC004
+    name: "Add payment — happy path"
+    summary: "Manually add a bank transfer payment to an order."
+    validates:
+      operations: [orders.CMD019, orders.EVT008]
+      rules: [orders.VR002]
+    given:
+      description: "Order awaiting wire payment. Payment amount matches order total."
+      state:
+        orderStatus: "awaiting-wire-payment"
+        paymentAmount: 129.99
+        orderTotal: 129.99
+    expected_result:
+      status: success
+
+edge_cases:
+  - id: orders.EC001
+    name: "Place order — insufficient stock"
+    summary: "Cart item exceeds available stock during checkout."
+    validates:
+      operations: [orders.CMD001]
+      rules: [orders.SR001]
+    given:
+      description: "Cart with 5 units of a product; only 2 in stock."
+      state:
+        requestedQty: 5
+        availableQty: 2
+    expected_result:
+      status: failure
+      code: 409
+
+  - id: orders.EC002
+    name: "Partial refund — maximum refundable amount"
+    summary: "Partial refund for the exact remaining refundable amount after a previous partial refund."
+    validates:
+      operations: [orders.CMD015]
+      rules: [orders.VR004]
+    given:
+      description: "Order with total 100.00, previous partial refund of 30.00. Requesting refund of 70.00."
+      state:
+        orderTotal: 100.00
+        previousRefunds: 30.00
+        requestedRefund: 70.00
+    expected_result:
+      status: success
+
+error_cases:
+  - id: orders.ER001
+    name: "Place order — payment gateway timeout"
+    summary: "Payment gateway does not respond within SLA timeout."
+    validates:
+      operations: [orders.CMD001]
+    given:
+      description: "Valid cart, stock available, but payment gateway times out after 30 seconds."
+      state:
+        gatewayResponse: "timeout"
+    expected_result:
+      status: error
+      code: 504
+
+  - id: orders.ER002
+    name: "Return after window — eligibility expired"
+    summary: "Customer attempts to return an order after the 14-day return window."
+    validates:
+      operations: [orders.CMD016]
+      rules: [orders.VR003]
+    given:
+      description: "Order delivered 21 days ago. Return window is 14 days."
+      state:
+        daysSinceDelivery: 21
+        returnWindowDays: 14
+    expected_result:
+      status: failure
+      code: 422
+
+  - id: orders.ER003
+    name: "Invalid state transition — refunded to processing"
+    summary: "Attempt to transition a refunded order back to processing."
+    validates:
+      operations: [orders.CMD004]
+      rules: [orders.CR001]
+    given:
+      description: "Order in refunded state. Merchant attempts to change status to processing."
+      state:
+        currentStatus: "refunded"
+        targetStatus: "processing"
+    expected_result:
+      status: failure
+      code: 422

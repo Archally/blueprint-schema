@@ -1,0 +1,139 @@
+---
+version: "1.0.0"
+scope: catalog
+tags: [supply-chain, models]
+
+components:
+  schemas:
+    CreateManufacturerPayload:
+      x-model-id: MDL020
+      purpose: command-payload
+      description: "Request body for registering a new manufacturer/brand."
+      represents:
+        - concept: catalog.CN008
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              name: CAT024
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: "Manufacturer / brand name."
+          example: "Lenovo"
+        localizedDescriptions:
+          type: object
+          description: "Description per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Chinese multinational technology company."
+        localizedShortDescriptions:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "PC manufacturer"
+        localizedMetaTitles:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "Lenovo Products"
+        localizedMetaDescriptions:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "Browse all Lenovo products."
+        active:
+          type: boolean
+          description: "Whether manufacturer is visible on storefront."
+          example: true
+        associatedShopIds:
+          type: array
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/Manufacturer/Command/AddManufacturerCommand.php"
+          role: schema
+
+    CreateSupplierPayload:
+      x-model-id: MDL021
+      purpose: command-payload
+      description: "Request body for registering a new product supplier."
+      represents:
+        - concept: catalog.CN009
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              name: CAT026
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: "Supplier company name."
+          example: "TechParts Distribution"
+        localizedDescriptions:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "Wholesale distributor of laptop components."
+        localizedMetaTitles:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "TechParts - Supplier"
+        localizedMetaDescriptions:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "Products from TechParts Distribution."
+        phone:
+          type: string
+          description: "Supplier phone number."
+          example: "+33 1 42 00 00 00"
+        address:
+          type: string
+          description: "Supplier street address."
+          example: "123 Rue de la Paix"
+        address2:
+          type: string
+          description: "Second address line."
+          example: "Bâtiment A"
+        postCode:
+          type: string
+          description: "Postal code."
+          example: "75001"
+        city:
+          type: string
+          description: "City."
+          example: "Paris"
+        countryId:
+          type: integer
+          description: "Country identifier."
+          example: 8
+        stateId:
+          type: integer
+          description: "State/region identifier (0 if not applicable)."
+          example: 0
+        active:
+          type: boolean
+          description: "Whether supplier is active."
+          example: true
+        associatedShopIds:
+          type: array
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/Supplier/Command/AddSupplierCommand.php"
+          role: schema

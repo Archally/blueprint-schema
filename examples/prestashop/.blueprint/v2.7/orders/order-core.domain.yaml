@@ -1,0 +1,267 @@
+---
+name: "Order Core"
+version: "1.0.0"
+scope: orders
+tags: [order-core]
+
+operations:
+  placeOrder:
+    id: orders.CMD001
+    kind: command
+    idempotent: true
+    idempotency_key: "$.body.cartId"
+    correlation_id:
+      location: "$.body.orderId"
+      description: "Order identifier for end-to-end tracing across payment, shipping, and fulfillment."
+    name: "PlaceOrder"
+    description: "Create a new order from a validated cart. Validates stock, calculates totals, snapshots addresses, and initiates payment capture."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT001]
+    governed_by:
+      - rule: orders.SR001
+      - rule: orders.VR001
+    produces:
+      operations: [orders.EVT001]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/AddOrderFromBackOfficeCommand.php"
+        role: implementation
+        description: "Back-office order creation command"
+      - path: "src/Core/Domain/Order/CommandHandler/AddOrderFromBackOfficeHandler.php"
+        role: implementation
+
+  updateOrderStatus:
+    id: orders.CMD004
+    kind: command
+    correlation_id:
+      location: "$.body.orderId"
+      description: "Order identifier linking status transitions to the originating order."
+    name: "UpdateOrderStatus"
+    description: "Transition an order to a new state. Validates the transition against the state machine and triggers side effects (email, stock release, invoice generation)."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT003, orders.ACT004]
+    governed_by:
+      - rule: orders.CR001
+      - rule: orders.TR001
+    produces:
+      operations: [orders.EVT005]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/UpdateOrderStatusCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/CommandHandler/UpdateOrderStatusHandler.php"
+        role: implementation
+
+  cancelOrder:
+    id: orders.CMD002
+    kind: command
+    name: "CancelOrder"
+    description: "Cancel an order before shipment. Releases reserved stock and initiates payment reversal if payment was captured."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT003, orders.ACT004]
+    governed_by:
+      - rule: orders.CR001
+    produces:
+      operations: [orders.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/CancelOrderProductCommand.php"
+        role: implementation
+
+  bulkChangeOrderStatus:
+    id: orders.CMD005
+    kind: command
+    name: "BulkChangeOrderStatus"
+    description: "Change the status of multiple orders in a single batch operation. Used by merchants during daily order processing."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT003]
+    governed_by:
+      - rule: orders.CR001
+    produces:
+      operations: [orders.EVT005]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/BulkChangeOrderStatusCommand.php"
+        role: implementation
+
+  duplicateOrderCart:
+    id: orders.CMD006
+    kind: command
+    name: "DuplicateOrderCart"
+    description: "Create a new cart pre-populated with the contents of an existing order. Used when a customer wants to reorder or when a merchant creates a similar order."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT003]
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/DuplicateOrderCartCommand.php"
+        role: implementation
+
+  changeOrderCurrency:
+    id: orders.CMD007
+    kind: command
+    name: "ChangeOrderCurrency"
+    description: "Change the currency of an existing order. Recalculates all amounts using the current exchange rate."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT003]
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/ChangeOrderCurrencyCommand.php"
+        role: implementation
+
+  changeDeliveryAddress:
+    id: orders.CMD008
+    kind: command
+    name: "ChangeDeliveryAddress"
+    description: "Update the delivery address on an order before shipment. Recalculates shipping cost and tax if the country or zone changes."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT003, orders.ACT004]
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/ChangeOrderDeliveryAddressCommand.php"
+        role: implementation
+
+  changeInvoiceAddress:
+    id: orders.CMD009
+    kind: command
+    name: "ChangeInvoiceAddress"
+    description: "Update the invoice/billing address on an order. May trigger invoice regeneration."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT003, orders.ACT004]
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/ChangeOrderInvoiceAddressCommand.php"
+        role: implementation
+
+  addCartRule:
+    id: orders.CMD010
+    kind: command
+    name: "AddCartRule"
+    description: "Apply a discount cart rule to an existing order. Recalculates order totals."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT003]
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/AddCartRuleToOrderCommand.php"
+        role: implementation
+
+  removeCartRule:
+    id: orders.CMD011
+    kind: command
+    name: "RemoveCartRule"
+    description: "Remove a previously applied cart rule from an order. Recalculates order totals."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT003]
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/DeleteCartRuleFromOrderCommand.php"
+        role: implementation
+
+  setInternalNote:
+    id: orders.CMD012
+    kind: command
+    name: "SetInternalNote"
+    description: "Add or update an internal note on an order visible only to back-office users. Not sent to the customer."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT003, orders.ACT004]
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/SetInternalOrderNoteCommand.php"
+        role: implementation
+
+  resendOrderEmail:
+    id: orders.CMD013
+    kind: command
+    name: "ResendOrderEmail"
+    description: "Re-send the order confirmation or status update email to the customer."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT003, orders.ACT004]
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/ResendOrderEmailCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Command/SendProcessOrderEmailCommand.php"
+        role: implementation
+
+  updateShippingDetails:
+    id: orders.CMD014
+    kind: command
+    name: "UpdateShippingDetails"
+    description: "Update shipping details — tracking number, carrier, and shipping cost — on an order."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT003]
+    produces:
+      operations: [orders.EVT004]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Order/Command/UpdateOrderShippingDetailsCommand.php"
+        role: implementation
+
+  # --- Events ---
+
+  orderPlaced:
+    id: orders.EVT001
+    kind: event
+    name: "OrderPlaced"
+    description: "Emitted after successful order creation. Triggers stock reservation, payment capture, and confirmation notification."
+
+  orderCancelled:
+    id: orders.EVT002
+    kind: event
+    name: "OrderCancelled"
+    description: "Emitted when an order is cancelled. Triggers stock release and payment reversal."
+
+  orderShipped:
+    id: orders.EVT004
+    kind: event
+    name: "OrderShipped"
+    description: "Emitted when shipping details are confirmed. Includes tracking number and carrier information."
+
+  orderStatusChanged:
+    id: orders.EVT005
+    kind: event
+    name: "OrderStatusChanged"
+    description: "Emitted on any order state transition. Carries previous and new state. Triggers email notifications per OrderState configuration."
+
+  # --- Queries ---
+
+  getOrderForViewing:
+    id: orders.QRY001
+    kind: query
+    name: "GetOrderForViewing"
+    description: "Retrieve comprehensive order data for back-office viewing — line items, payments, invoices, status history, messages, and shipping details."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Order/Query/GetOrderForViewing.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/QueryHandler/GetOrderForViewingHandler.php"
+        role: implementation
+
+  getOrderPreview:
+    id: orders.QRY002
+    kind: query
+    name: "GetOrderPreview"
+    description: "Retrieve lightweight order preview for list views — summary data without full detail."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Order/Query/GetOrderPreview.php"
+        role: implementation
+
+  getOrderProducts:
+    id: orders.QRY003
+    kind: query
+    name: "GetOrderProducts"
+    description: "Retrieve the product list for a specific order with pricing, quantities, and customization details."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Order/Query/GetOrderProductsForViewing.php"
+        role: implementation
+
+errors:
+  orderNotFound:
+    id: orders.ERR003
+    name: "OrderNotFound"
+    description: "No order exists with the given ID for the requesting customer or merchant."
+    category: not-found
+    severity: warning
+    http_status: 404
+
+  invalidStateTransition:
+    id: orders.ERR004
+    name: "InvalidStateTransition"
+    description: "Attempted order state transition is not allowed by the state machine (e.g. refunded to processing)."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [orders.CR001]

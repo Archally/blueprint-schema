@@ -1,0 +1,148 @@
+---
+version: "1.0.0"
+scope: admin
+
+goals:
+  - id: admin.G001
+    statement: "Secure role-based access control for all back-office users"
+    description: >
+      Ensure every back-office user has precisely the permissions required for
+      their role — no more, no less. Profile-based RBAC with tab and module
+      permission matrices.
+    summary: "Secure RBAC"
+    priority: high
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: admin.G002
+    statement: "API-first integration enablement through scoped OAuth2 clients"
+    description: >
+      Enable third-party systems to integrate securely through scoped OAuth2
+      API clients with rotatable secrets and configurable token lifetimes.
+    summary: "API-first integration"
+    priority: high
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: admin.G003
+    statement: "Session security and incident response capability"
+    description: >
+      Enable administrators to terminate compromised sessions immediately
+      and automatically clear outdated sessions for both employees and customers.
+    summary: "Session security"
+    priority: high
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: admin.G004
+    statement: "Self-service reporting via saved SQL queries"
+    description: >
+      Allow administrators to create and execute custom SQL queries for data
+      extraction without requiring direct database access, with safety guards
+      preventing write operations.
+    summary: "SQL self-service"
+    priority: medium
+    discovery_stage: validated
+    certainty: confirmed
+
+risks:
+  - id: admin.R001
+    statement: "Privilege escalation via profile misconfiguration"
+    description: >
+      Incorrect permission matrix configuration could grant employees access
+      to sensitive operations they should not have.
+    summary: "Privilege escalation risk"
+    likelihood: medium
+    impact: high
+    mitigation: "Permission matrix validation rule (VR004) ensures consistency. UI should preview effective permissions before saving."
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: admin.R002
+    statement: "SQL injection via SqlManagement feature"
+    description: >
+      Malicious SQL queries could modify or destroy database data if the
+      safety guard is bypassed.
+    summary: "SQL injection risk"
+    likelihood: low
+    impact: high
+    mitigation: "SQL safety guard rule (VR006) blocks write operations and schema modifications. Query execution uses read-only connection."
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: admin.R003
+    statement: "API client secret leakage allowing unauthorized access"
+    description: >
+      Exposed API client secrets could allow unauthorized access to the Admin
+      API from malicious third parties.
+    summary: "Secret leakage risk"
+    likelihood: medium
+    impact: high
+    mitigation: "Secret rotation command (CMD024) enables immediate rotation. Secrets should never be displayed after initial generation."
+    discovery_stage: validated
+    certainty: confirmed
+
+non_goals:
+  - id: admin.NG001
+    statement: "No LDAP/Active Directory integration for employee authentication"
+    reason: >
+      Employee authentication uses database-stored credentials only. Enterprise
+      directory integration (LDAP, AD, OIDC) is not part of core — would require
+      authentication provider abstraction that doesn't exist in the current architecture.
+    discovery_stage: committed
+    certainty: confirmed
+
+assumptions:
+  - id: admin.A001
+    statement: "PHP 8.1+ is the minimum supported runtime"
+    consequence: >
+      If PHP 7.4 support is reintroduced, typed properties, enums, fibers,
+      and readonly classes used throughout the CQRS domain layer become
+      unusable — requiring significant codebase regression.
+    discovery_stage: committed
+    certainty: confirmed
+
+trade_offs:
+  - id: admin.T001
+    choice: "Admin API authentication model"
+    selected: "OAuth2 for new Admin API + legacy webservice keys for backward compatibility"
+    rejected: "OAuth2-only (would break all existing API integrations)"
+    rationale: >
+      Existing integrations rely on webservice key authentication. An OAuth2-only
+      mandate would break all current API consumers (ERP connectors, POS systems,
+      marketplace bridges). Dual auth lets new integrations use OAuth2 while
+      legacy integrations continue working.
+    accepted_risk: "Two authentication systems to maintain; security audit surface doubled."
+    discovery_stage: committed
+    certainty: confirmed
+
+inquiries:
+  - id: admin.INQ001
+    statement: "Should the Admin API implement rate limiting per API client?"
+    summary: "API rate limiting gap"
+    description: >
+      The CQRS domain layer has no rate limiting concept for API clients.
+      Rate limiting is likely handled at infrastructure level (reverse proxy,
+      API gateway) but is not modeled in the domain. Worth investigating for
+      domain-level enforcement.
+    category: technical
+    goal_refs:
+      - admin.G002
+    blocking: false
+    status: investigating
+    discovery_stage: exploring
+    certainty: speculative
+
+  - id: admin.INQ002
+    statement: "Should legacy Configuration management be migrated to the CQRS domain layer?"
+    summary: "Legacy configuration CQRS gap"
+    description: >
+      Only SwitchDebugMode exists in the CQRS layer. The vast majority of store
+      configuration is managed by the legacy Configuration class (PS_SHOP_NAME,
+      PS_CURRENCY_DEFAULT, etc.) outside the domain architecture. This represents
+      a significant domain gap for configuration management.
+    category: technical
+    blocking: false
+    status: investigating
+    discovery_stage: exploring
+    certainty: speculative

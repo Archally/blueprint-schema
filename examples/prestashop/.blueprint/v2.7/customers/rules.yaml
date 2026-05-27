@@ -1,0 +1,124 @@
+---
+version: "1.0.0"
+scope: customers
+
+structural:
+  - id: customers.SR001
+    name: "One customer account per email per shop"
+    description: "Each email address can only be associated with one active customer account within the same shop scope."
+    logic:
+      then: "UNIQUE(customer.email, customer.shop_id)"
+    modality: necessary
+    concepts: [customers.CN001]
+    code_refs:
+      - path: "src/Core/Domain/Customer/Exception/DuplicateCustomerEmailException.php"
+        role: implementation
+      - path: "src/Adapter/Customer/CommandHandler/AddCustomerHandler.php"
+        role: implementation
+
+validation:
+  - id: customers.VR001
+    name: "Customer email must be valid"
+    description: "Customer email must be a valid email format and unique within the shop."
+    logic:
+      when: "customer is created or email is updated"
+      then: "email matches RFC 5322 format AND no other active customer has same email in shop"
+    modality: obligatory
+    concepts: [customers.CN001]
+
+  - id: customers.VR002
+    name: "Password policy"
+    description: "Customer password must meet minimum security requirements. Configurable minimum length (default 8)."
+    logic:
+      when: "customer is created or password is changed"
+      then: "password.length >= configured_minimum"
+    modality: obligatory
+    concepts: [customers.CN001]
+    code_refs:
+      - path: "src/Core/Domain/Customer/ValueObject/Password.php"
+        role: implementation
+      - path: "src/Core/Security/PasswordPolicyConfiguration.php"
+        role: implementation
+
+  - id: customers.VR003
+    name: "Guest conversion prerequisites"
+    description: "Guest account must have a valid email before conversion to registered customer."
+    logic:
+      when: "guest is converted to customer"
+      then: "guest.email is valid AND guest.email not used by existing customer"
+    modality: obligatory
+    concepts: [customers.CN001]
+    code_refs:
+      - path: "src/Core/Domain/Customer/Command/TransformGuestToCustomerCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Customer/Exception/CustomerTransformationException.php"
+        role: implementation
+
+  - id: customers.VR004
+    name: "Customer group discount range"
+    description: "Group reduction percentage must be between 0 and 100 inclusive."
+    logic:
+      when: "customer group is created or edited"
+      then: "0 <= reductionPercent <= 100"
+    modality: necessary
+    concepts: [customers.CN002]
+
+  - id: customers.VR005
+    name: "Address required fields per country"
+    description: "Address validation enforces country-specific required fields. Required fields are configurable globally and may vary by country zone."
+    logic:
+      when: "address is created or edited"
+      then: "all globally required fields AND all country-required fields are present"
+    modality: obligatory
+    concepts: [customers.CN004]
+    code_refs:
+      - path: "src/Core/Domain/Address/Exception/AddressConstraintException.php"
+        role: implementation
+      - path: "src/Core/Domain/Address/Configuration/AddressConstraint.php"
+        role: implementation
+
+  - id: customers.VR006
+    name: "GDPR right to erasure"
+    description: "Customer data must be deletable upon request within 30 days per GDPR Article 17. Deletion anonymizes personal data but retains order records for legal compliance."
+    logic:
+      when: "customer requests data deletion"
+      then: "personal data anonymized within 30 days; order records retained with anonymized customer reference"
+    modality: obligatory
+    concepts: [customers.CN001, customers.CN004]
+
+classification:
+  - id: customers.CR001
+    name: "Customer service thread status transitions"
+    description: "Valid transitions: open->pending_customer (reply sent), open->pending_employee (awaiting internal), pending_customer->open (customer replied), pending_employee->open (employee replied), any->closed (resolution)."
+    logic:
+      when: "thread status changes"
+      then: "transition follows allowed paths"
+    concepts: [customers.CN005]
+
+transition:
+  - id: customers.TR001
+    name: "Guest to active on conversion"
+    concept: customers.CN001
+    from: "guest"
+    to: "active"
+    guard:
+      when: "guest account is converted via TransformGuestToCustomer"
+    description: "Guest accounts become active registered customers after conversion."
+
+  - id: customers.TR002
+    name: "Active to inactive on disable"
+    concept: customers.CN001
+    from: "active"
+    to: "inactive"
+    guard:
+      when: "customer account is disabled"
+    description: "Customer account deactivated by administrator."
+
+  - id: customers.TR003
+    name: "Inactive to active on enable"
+    concept: customers.CN001
+    from: "inactive"
+    to: "active"
+    guard:
+      when: "customer account is re-enabled"
+    description: "Customer account reactivated by administrator."

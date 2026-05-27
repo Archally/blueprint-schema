@@ -1,0 +1,275 @@
+---
+version: "1.0.0"
+scope: orders
+
+goals:
+  - id: orders.G001
+    statement: "Achieve sub-second cart-to-checkout transition"
+    description: >
+      Shoppers abandon carts when checkout is slow. PrestaShop must render the
+      checkout page within 1 second of clicking "Proceed to checkout" under
+      typical catalog sizes (50k+ products).
+    summary: "Sub-second checkout transition"
+    priority: critical
+    measure: "p95 cart-to-checkout render < 1 000 ms"
+    discovery_stage: validated
+    certainty: confirmed
+    tags: [performance, checkout]
+
+  - id: orders.G002
+    statement: "Support multi-currency ordering for EU market expansion"
+    description: >
+      PrestaShop must allow customers to view prices and complete orders in their
+      local currency (EUR, GBP, PLN, CZK, SEK) with automatic exchange-rate updates.
+    summary: "Multi-currency order support"
+    priority: high
+    measure: "Orders completed in >= 5 currencies per month"
+    discovery_stage: committed
+    certainty: probable
+    tags: [i18n, payments]
+
+  - id: orders.G003
+    statement: "Reduce order processing error rate below 0.1%"
+    description: >
+      Current error rate in order state transitions (payment capture, stock
+      reservation, shipping label generation) is ~0.8%. Target is < 0.1% to
+      meet enterprise SLA requirements.
+    summary: "Order error rate < 0.1%"
+    priority: high
+    measure: "Monthly order error rate < 0.1%"
+    discovery_stage: exploring
+    certainty: speculative
+    tags: [reliability, operations]
+
+  - id: orders.G004
+    statement: "Ensure invoice compliance with EU VAT regulations"
+    description: >
+      Every paid order must produce a fiscally compliant invoice with sequential
+      numbering, correct VAT breakdown per rate, and proper seller/buyer
+      identification. Required for multi-country EU merchant operations.
+    summary: "EU VAT invoice compliance"
+    priority: high
+    measure: "100% of paid orders have compliant invoices within 24h"
+    discovery_stage: committed
+    certainty: confirmed
+    tags: [compliance, invoicing]
+
+non_goals:
+  - id: orders.NG001
+    statement: "PrestaShop will not implement its own payment gateway"
+    reason: >
+      Payment processing is handled by third-party modules (Stripe, PayPal,
+      Mollie). Building a proprietary gateway would require PCI DSS Level 1
+      compliance — cost and liability outweigh benefits.
+    discovery_stage: committed
+    certainty: confirmed
+
+  - id: orders.NG002
+    statement: "No real-time inventory sync with physical POS"
+    reason: >
+      Physical point-of-sale integration is handled by dedicated ERP connectors.
+      Real-time sync would require WebSocket infrastructure that conflicts with
+      PrestaShop's shared-hosting deployment model.
+    discovery_stage: validated
+    certainty: probable
+
+risks:
+  - id: orders.R001
+    statement: "Cart calculation divergence between front-office and back-office"
+    description: >
+      PrestaShop's dual calculation paths (Smarty templates in FO vs PHP in BO)
+      can produce different totals when cart rules, specific prices, and tax
+      rules interact. This is a known long-standing issue in the codebase.
+    summary: "FO/BO cart total mismatch"
+    likelihood: high
+    impact: high
+    mitigation: "Unify calculation through a single CartCalculator service invoked by both FO and BO."
+    contingency: "Add reconciliation check at checkout that flags mismatches before payment capture."
+    owner: orders.ACT002
+    status: identified
+    review_date: "2026-06-01"
+    goal_refs:
+      - orders.G001
+      - orders.G003
+    discovery_stage: validated
+    certainty: confirmed
+    tags: [technical-debt, critical-path]
+
+  - id: orders.R002
+    statement: "Exchange rate staleness causes pricing disputes"
+    description: >
+      If exchange rates are cached too long, customers may see a price at browse
+      time that differs from the amount charged at checkout. EU consumer law
+      requires the displayed price to be the charged price.
+    summary: "Stale exchange rates"
+    likelihood: medium
+    impact: high
+    mitigation: "Refresh exchange rates every 15 minutes via ECB feed; lock rate at cart creation."
+    goal_refs:
+      - orders.G002
+    discovery_stage: exploring
+    certainty: probable
+    tags: [legal, i18n]
+
+  - id: orders.R003
+    statement: "Stock over-sell during flash sales"
+    description: >
+      Under high concurrency, PrestaShop's stock decrement (UPDATE SET quantity =
+      quantity - :qty) can race if the PHP process reads stale quantity before
+      the decrement. Flash sales with limited stock are the primary trigger.
+    summary: "Concurrent stock over-sell"
+    likelihood: medium
+    impact: critical
+    mitigation: "Use database-level pessimistic locking (SELECT FOR UPDATE) on stock decrement path."
+    contingency: "Automated back-order workflow with customer notification within 1 hour."
+    status: open
+    goal_refs:
+      - orders.G003
+    discovery_stage: validated
+    certainty: confirmed
+    tags: [concurrency, reliability]
+
+  - id: orders.R004
+    statement: "State machine inconsistency from custom order states"
+    description: >
+      Merchants can add custom order states via the admin CRUD. If a custom state
+      is added without defining valid transitions, orders can enter dead-end states
+      with no possible next transition. The UI does not enforce transition
+      completeness.
+    summary: "Custom order state dead-end risk"
+    likelihood: medium
+    impact: high
+    mitigation: "Add transition validation in AddOrderState that warns when a new state has no outgoing transitions."
+    contingency: "Admin tool to force-transition orders stuck in dead-end states."
+    owner: orders.ACT002
+    status: identified
+    goal_refs:
+      - orders.G003
+    discovery_stage: exploring
+    certainty: probable
+    tags: [state-machine, admin]
+
+assumptions:
+  - id: orders.A001
+    statement: "PrestaShop will continue to support shared hosting (no container-only requirement)"
+    consequence: >
+      If PrestaShop drops shared-hosting support, the multi-currency cron-based
+      rate refresh and file-based caching strategies become unnecessary — we could
+      use Redis pub/sub and container sidecars instead.
+    risk_refs:
+      - orders.R002
+    discovery_stage: committed
+    certainty: probable
+
+  - id: orders.A002
+    statement: "Stripe and PayPal modules will adopt the new Cart Price API within 6 months"
+    consequence: >
+      If payment modules don't adopt the new API, the dual calculation path
+      (R001) cannot be fully eliminated — the old path must remain for backward
+      compatibility, defeating the mitigation.
+    risk_refs:
+      - orders.R001
+    discovery_stage: exploring
+    certainty: speculative
+
+  - id: orders.A003
+    statement: "EU VAT rates will not change more than twice per year"
+    consequence: >
+      More frequent changes would require a dynamic tax-rule engine rather than
+      the current admin-configured rate tables. The current approach would lag
+      behind regulatory changes.
+    discovery_stage: validated
+    certainty: probable
+
+trade_offs:
+  - id: orders.T001
+    choice: "Cart calculation unification vs backward compatibility with existing modules"
+    selected: "New CartCalculator service with adapter layer for legacy modules"
+    rejected: "Big-bang rewrite of all calculation paths"
+    rationale: >
+      A big-bang rewrite would break hundreds of third-party modules that hook
+      into the current calculation pipeline. The adapter approach preserves
+      compatibility while funneling all paths through a single source of truth.
+    accepted_risk: "Adapter overhead adds ~5ms per cart recalculation (acceptable given G001 budget)."
+    discovery_stage: committed
+    certainty: confirmed
+
+  - id: orders.T002
+    choice: "Pessimistic locking vs optimistic locking for stock reservation"
+    selected: "Pessimistic locking (SELECT FOR UPDATE) on critical stock path"
+    rejected: "Optimistic locking with retry loop"
+    rationale: >
+      Optimistic locking under flash-sale concurrency causes retry storms that
+      amplify database load. Pessimistic locking serializes the critical section
+      but keeps the lock duration under 10ms per order line.
+    accepted_risk: "Slight throughput reduction under extreme concurrency (> 500 concurrent checkouts)."
+    discovery_stage: validated
+    certainty: confirmed
+
+inquiries:
+  - id: orders.INQ001
+    statement: "Should PrestaShop migrate cart rules to a dedicated rules engine?"
+    summary: "Cart rules engine migration feasibility"
+    description: >
+      PrestaShop's cart rules (discounts, free shipping, BOGO) are implemented
+      as a monolithic CartRule class with 30+ conditions. A rules engine (e.g.,
+      Drools-style DSL or a PHP equivalent) could improve maintainability but
+      adds operational complexity.
+    category: technical
+    goal_refs:
+      - orders.G001
+      - orders.G003
+    risk_refs:
+      - orders.R001
+    stakeholders:
+      - orders.ACT001
+      - orders.ACT002
+    owner: orders.ACT002
+    blocking: false
+    status: investigating
+    discovery_stage: exploring
+    certainty: speculative
+    tags: [architecture, cart-rules]
+
+  - id: orders.INQ002
+    statement: "What is the legal requirement for exchange rate display accuracy in each target EU market?"
+    summary: "EU exchange rate display regulation"
+    description: >
+      Different EU member states may have different interpretations of the
+      Consumer Rights Directive regarding displayed vs charged price tolerance.
+      Need legal review per jurisdiction before committing to a refresh interval.
+    category: legal
+    goal_refs:
+      - orders.G002
+    risk_refs:
+      - orders.R002
+    stakeholders:
+      - orders.ACT001
+    blocking: true
+    due_date: "2026-04-15"
+    status: open
+    discovery_stage: hypothesis
+    certainty: speculative
+    tags: [legal, i18n, blocking]
+
+  - id: orders.INQ003
+    statement: "Can we achieve sub-second checkout with the current Smarty template engine, or must we migrate to Twig?"
+    summary: "Smarty vs Twig performance for checkout"
+    description: >
+      PrestaShop's migration from Smarty to Twig is partial. The checkout flow
+      still uses Smarty in many themes. If Smarty is the bottleneck for G001,
+      the migration scope expands significantly.
+    category: feasibility
+    goal_refs:
+      - orders.G001
+    owner: orders.ACT002
+    blocking: false
+    resolved: true
+    resolution: >
+      Benchmark on PrestaShop 8.x shows Smarty checkout renders in 180ms vs
+      Twig at 140ms. The 40ms difference is not the bottleneck — database
+      queries and cart recalculation dominate. No Twig migration needed for G001.
+    status: resolved
+    discovery_stage: validated
+    certainty: confirmed
+    tags: [performance, frontend]

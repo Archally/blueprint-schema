@@ -1,0 +1,54 @@
+---
+version: "1.0.0"
+scope: orders
+tags: [order-admin]
+
+concepts:
+  - id: orders.CN010
+    name: "OrderState"
+    description: "Admin-configurable order state definition. Defines the label, color, template email, and behavioral flags (e.g. logable, send_email, paid, shipped, delivery) for each order lifecycle state. CRUD-managed by administrators."
+    stereotype: entity
+    attributes:
+      orderStateId:
+        id: CAT133
+        description: "Unique order state identifier."
+      name:
+        id: CAT134
+        description: "State label (multi-language)."
+        example: "Payment accepted"
+      color:
+        id: CAT135
+        description: "Hex color code for back-office display."
+        example: "#32CD32"
+      logable:
+        id: CAT136
+        description: "Whether orders in this state count in stats."
+      sendEmail:
+        id: CAT137
+        description: "Whether transitioning to this state triggers an email."
+    code_refs:
+      - path: "src/Core/Domain/OrderState/"
+        role: model
+        description: "OrderState domain aggregate directory"
+      - path: "classes/order/OrderState.php"
+        role: implementation
+
+  - id: orders.CN011
+    name: "OrderMessage"
+    description: "Predefined message template for customer-merchant communication. Merchants create reusable message templates that can be attached to orders for common responses (e.g. delay notice, shipping update)."
+    stereotype: entity
+    attributes:
+      orderMessageId:
+        id: CAT138
+        description: "Unique order message identifier."
+      messageName:
+        id: CAT139
+        description: "Template name for back-office selection."
+        example: "Shipping delay notice"
+      messageBody:
+        id: CAT140
+        description: "Message content (multi-language)."
+    code_refs:
+      - path: "src/Core/Domain/OrderMessage/"
+        role: model
+        description: "OrderMessage domain aggregate directory"

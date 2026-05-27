@@ -1,0 +1,174 @@
+---
+version: "1.0.0"
+scope: shipping
+tags: [carrier-management]
+
+concepts:
+  - id: shipping.CN001
+    name: "Carrier"
+    stereotype: aggregate-root
+    description: "A shipping provider configuration defining delivery methods, zones, cost ranges, and dimensional constraints. Carriers are versioned internally via CarrierReferenceId — edits create new versions rather than mutating existing records."
+    tags: [aggregate-root, core-domain]
+    attributes:
+      name:
+        id: CAT400
+        description: "Carrier display name"
+        example: "DHL Express"
+      localizedDelay:
+        id: CAT401
+        description: "Estimated delivery time text per language"
+        example: "2-3 business days"
+      grade:
+        id: CAT402
+        description: "Speed/quality grade (0-9, higher = faster)"
+        example: "5"
+      trackingUrl:
+        id: CAT403
+        description: "URL template for parcel tracking with @ placeholder for tracking number"
+        example: "https://track.dhl.com/@"
+      active:
+        id: CAT404
+        description: "Whether this carrier is currently available for selection"
+        example: "true"
+      isFree:
+        id: CAT405
+        description: "Whether shipping is always free regardless of ranges"
+        example: "false"
+      shippingMethod:
+        id: CAT406
+        description: "Cost calculation method — by weight or by price"
+        example: "by_weight"
+      rangeBehavior:
+        id: CAT407
+        description: "Behavior when order exceeds maximum range — use highest range or disable carrier"
+        example: "use_highest_range"
+      hasAdditionalHandlingFee:
+        id: CAT408
+        description: "Whether extra handling fee is applied on top of range-based cost"
+        example: "false"
+      maxWidth:
+        id: CAT409
+        description: "Maximum package width in default unit (0 = no limit)"
+        example: "150"
+      maxHeight:
+        id: CAT410
+        description: "Maximum package height in default unit (0 = no limit)"
+        example: "80"
+      maxDepth:
+        id: CAT411
+        description: "Maximum package depth in default unit (0 = no limit)"
+        example: "80"
+      maxWeight:
+        id: CAT412
+        description: "Maximum package weight in default unit (0 = no limit)"
+        example: "30.0"
+      position:
+        id: CAT413
+        description: "Display order position in carrier selection lists"
+        example: "1"
+      logoPathName:
+        id: CAT414
+        description: "File path to carrier logo image"
+        example: "dhl_express.jpg"
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Command/AddCarrierCommand.php"
+        role: implementation
+        description: "Full attribute set visible in constructor"
+      - path: "src/Core/Domain/Carrier/ValueObject/CarrierId.php"
+        role: model
+      - path: "src/Core/Domain/Carrier/ValueObject/CarrierReferenceId.php"
+        role: model
+        description: "Versioning identity — stable across carrier edits"
+
+  - id: shipping.CN002
+    name: "ShippingRange"
+    stereotype: value-object
+    description: "A cost range defining shipping price for a zone within a weight or price bracket. Ranges are managed as a collection — SetCarrierRanges replaces all ranges atomically."
+    tags: [value-object, within:shipping.CN001]
+    attributes:
+      zoneId:
+        id: CAT415
+        description: "Zone this range applies to"
+      rangeFrom:
+        id: CAT416
+        description: "Lower bound of the weight/price bracket"
+        example: "0"
+      rangeTo:
+        id: CAT417
+        description: "Upper bound of the weight/price bracket"
+        example: "10.0"
+      price:
+        id: CAT418
+        description: "Shipping cost for this zone+bracket combination"
+        example: "5.99"
+    code_refs:
+      - path: "src/Core/Domain/Carrier/ValueObject/CarrierRangeZone.php"
+        role: model
+      - path: "src/Core/Domain/Carrier/ValueObject/CarrierRangePrice.php"
+        role: model
+      - path: "src/Core/Domain/Carrier/ValueObject/CarrierRangesCollection.php"
+        role: model
+
+  - id: shipping.CN003
+    name: "CarrierTaxRuleGroup"
+    stereotype: value-object
+    description: "Tax rule group binding for a carrier. Links the carrier to the international context's tax system to calculate tax on shipping costs."
+    tags: [value-object, within:shipping.CN001]
+    attributes:
+      taxRuleGroupId:
+        id: CAT419
+        description: "Reference to tax rule group in International context"
+    code_refs:
+      - path: "src/Core/Domain/Carrier/Command/SetCarrierTaxRuleGroupCommand.php"
+        role: implementation
+
+actors:
+  - id: shipping.ACT001
+    name: "ShippingManager"
+    type: human
+    description: "Back-office operator responsible for configuring carriers, shipping zones, cost ranges, and managing order shipments."
+    personas:
+      - name: "Typical ShippingManager"
+        quote: "I need to set up carriers correctly so customers see accurate shipping costs and orders get shipped on time."
+        goals: ["Configure carriers with correct zones and ranges", "Manage shipments efficiently", "Ensure shipping cost accuracy"]
+        pain_points: ["Complex range/zone matrix configuration", "Tracking multiple carriers across zones", "Handling split shipments"]
+        behaviors: ["Configures carriers during setup, adjusts ranges seasonally", "Manages shipments daily as orders flow in"]
+        tech_savviness: high
+        job_to_be_done: "Ensure every order has an available, correctly priced carrier and is shipped reliably"
+        context: "Back-office logistics management"
+        demographics:
+          role: "Logistics Administrator"
+          industry: "E-commerce"
+
+enumerations:
+  - id: shipping.EN001
+    name: "ShippingMethod"
+    description: "Determines how shipping cost is calculated for a carrier."
+    values:
+      - name: by_weight
+        description: "Calculate cost based on total order weight"
+      - name: by_price
+        description: "Calculate cost based on total order price"
+    code_refs:
+      - path: "src/Core/Domain/Carrier/ValueObject/ShippingMethod.php"
+        role: model
+
+  - id: shipping.EN002
+    name: "OutOfRangeBehavior"
+    description: "Defines carrier behavior when order weight/price exceeds configured range maximums."
+    values:
+      - name: use_highest_range
+        description: "Apply the price from the highest defined range"
+      - name: disabled
+        description: "Hide the carrier — it becomes unavailable for selection"
+    code_refs:
+      - path: "src/Core/Domain/Carrier/ValueObject/OutOfRangeBehavior.php"
+        role: model
+
+associations:
+  - id: shipping.AS001
+    subject: shipping.CN001
+    predicate: depends-on
+    object: shipping.CN002
+    cardinality: "0..*"
+    description: "A carrier has zero or more shipping cost ranges (one per zone+bracket)."

@@ -1,0 +1,71 @@
+---
+version: "1.0.0"
+scope: customers
+
+design_references:
+  design_system: "PrestaShop UIKit (Bootstrap 4)"
+  storybook_url: "https://build.prestashop-project.org/prestashop-ui-kit/"
+  accessibility_standard: WCAG-2.1-AA
+
+screens:
+  - id: customers.SCR001
+    name: "Customer List"
+    summary: "Paginated list of customer accounts with search, filter by group, and bulk enable/disable/delete actions."
+    uses_models: ["CustomerList"]
+    motivated_by: [customers.G001]
+
+  - id: customers.SCR002
+    name: "Customer Detail"
+    summary: "Full customer profile with personal info, addresses, order history, carts, and group assignment."
+    uses_models: ["CustomerForViewing"]
+    stories: [customers.STR001]
+
+  - id: customers.SCR003
+    name: "Customer Service Thread"
+    summary: "Service thread view with message history, customer context, and reply form."
+    uses_models: ["CustomerThreadForViewing"]
+    stories: [customers.STR002]
+
+  - id: customers.SCR004
+    name: "Address Edit"
+    summary: "Address creation/edit form with country-specific required field indicators."
+    uses_models: ["CustomerAddressForEditing"]
+    motivated_by: [customers.G002]
+
+actions:
+  - id: customers.UAC001
+    screen: customers.SCR001
+    name: "Add Customer"
+    description: "Navigate to customer creation form."
+    triggers_operations: [customers.CMD001]
+
+  - id: customers.UAC002
+    screen: customers.SCR002
+    name: "Edit Customer"
+    description: "Open customer profile for editing."
+    triggers_operations: [customers.CMD002]
+
+  - id: customers.UAC003
+    screen: customers.SCR003
+    name: "Reply to Thread"
+    description: "Send reply to customer service thread."
+    triggers_operations: [customers.CMD016]
+
+  - id: customers.UAC004
+    screen: customers.SCR001
+    name: "Bulk Enable/Disable"
+    description: "Enable or disable selected customers in bulk."
+    triggers_operations: [customers.CMD004, customers.CMD005]
+
+navigation:
+  - id: customers.UNV001
+    from: customers.SCR001
+    to: customers.SCR002
+    condition: "User clicks customer row"
+    description: "Navigate to customer detail."
+
+  - id: customers.UNV002
+    from: customers.SCR002
+    to: customers.SCR004
+    condition: "User clicks 'Add Address' or address row"
+    description: "Navigate to address form."

@@ -32,7 +32,10 @@
   "scripts": {
     "validate": "node tools/validator/src/cli.mjs",
     "validate:examples": "node tools/validator/src/cli.mjs examples/ecommerce/.blueprint/v2.6 --schemas schema/v2.6",
-    "build": "tsc -p tools/model-builder/tsconfig.json && tsc -p tools/semantic-checker/tsconfig.json && tsc -p tools/schema-update/tsconfig.json",
+    "build": "tsc -p tools/model-builder/tsconfig.json && tsc -p tools/semantic-checker/tsconfig.json && tsc -p tools/schema-update/tsconfig.json && tsc -p tools/renderer/tsconfig.json",
+    "render": "node tools/renderer/dist/cli.js",
+    "render:ecommerce": "node tools/renderer/dist/cli.js examples/ecommerce/.blueprint/v2.6 -o examples/ecommerce/.blueprint/v2.6/.specs/overview.md -t E-Commerce",
+    "render:prestashop": "node tools/renderer/dist/cli.js examples/prestashop/.blueprint/v2.7 -o examples/prestashop/.blueprint/v2.7/.specs/overview.md -t PrestaShop-v9",
     "check": "node tools/semantic-checker/dist/cli.js",
     "check:examples": "node tools/semantic-checker/dist/cli.js examples/ecommerce/.blueprint/v2.6",
     "test": "vitest run --config tools/model-builder/vitest.config.ts",
@@ -42,7 +45,8 @@
     "blueprint-validate": "tools/validator/src/cli.mjs",
     "blueprint-model": "tools/model-builder/dist/cli.js",
     "blueprint-check": "tools/semantic-checker/dist/cli.js",
-    "blueprint-schema-update": "tools/schema-update/dist/cli.js"
+    "blueprint-schema-update": "tools/schema-update/dist/cli.js",
+    "blueprint-render": "tools/renderer/dist/cli.js"
   },
   "dependencies": {
     "ajv": "^8.17.0",

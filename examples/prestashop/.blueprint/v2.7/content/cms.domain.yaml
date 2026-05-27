@@ -1,0 +1,366 @@
+---
+name: "CMS Content Management"
+version: "1.0.0"
+scope: content
+tags: [cms]
+
+operations:
+
+  # --- CmsPage Lifecycle ---
+
+  addCmsPage:
+    id: content.CMD001
+    kind: command
+    name: "AddCmsPage"
+    description: "Create a new CMS page with localized title, content, SEO metadata, friendly URL, and category assignment. All localized fields accept per-language values."
+    delivery_priority: must-have
+    initiated_by: [content.ACT001]
+    produces:
+      operations: [content.EVT001]
+      mode: all
+    governed_by:
+      - rule: content.VR001
+      - rule: content.VR002
+    code_refs:
+      - path: "src/Core/Domain/CmsPage/Command/AddCmsPageCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/CmsPage/CommandHandler/AddCmsPageHandler.php"
+        role: implementation
+
+  editCmsPage:
+    id: content.CMD002
+    kind: command
+    name: "EditCmsPage"
+    description: "Update an existing CMS page. All fields are optional via fluent setters — only changed fields need to be provided."
+    delivery_priority: must-have
+    initiated_by: [content.ACT001]
+    produces:
+      operations: [content.EVT002]
+      mode: all
+    governed_by:
+      - rule: content.VR002
+    code_refs:
+      - path: "src/Core/Domain/CmsPage/Command/EditCmsPageCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/CmsPage/CommandHandler/EditCmsPageHandler.php"
+        role: implementation
+
+  deleteCmsPage:
+    id: content.CMD003
+    kind: command
+    name: "DeleteCmsPage"
+    description: "Delete a single CMS page."
+    delivery_priority: must-have
+    initiated_by: [content.ACT001]
+    produces:
+      operations: [content.EVT003]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/CmsPage/Command/DeleteCmsPageCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/CmsPage/CommandHandler/DeleteCmsPageHandler.php"
+        role: implementation
+
+  bulkDeleteCmsPage:
+    id: content.CMD004
+    kind: command
+    name: "BulkDeleteCmsPage"
+    description: "Delete multiple CMS pages in a single batch operation."
+    delivery_priority: could-have
+    initiated_by: [content.ACT001]
+    produces:
+      operations: [content.EVT003]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/CmsPage/Command/BulkDeleteCmsPageCommand.php"
+        role: implementation
+
+  toggleCmsPageStatus:
+    id: content.CMD005
+    kind: command
+    name: "ToggleCmsPageStatus"
+    description: "Toggle a single CMS page's displayed/hidden status."
+    delivery_priority: must-have
+    initiated_by: [content.ACT001]
+    produces:
+      operations: [content.EVT004]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/CmsPage/Command/ToggleCmsPageStatusCommand.php"
+        role: implementation
+
+  bulkSetCmsPageStatus:
+    id: content.CMD006
+    kind: command
+    name: "BulkSetCmsPageStatus"
+    description: "Enable or disable multiple CMS pages. Virtual command combining BulkEnableCmsPage and BulkDisableCmsPage — in code these are separate commands but share the same semantic: set status on a collection."
+    delivery_priority: could-have
+    initiated_by: [content.ACT001]
+    produces:
+      operations: [content.EVT004]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/CmsPage/Command/BulkEnableCmsPageCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/CmsPage/Command/BulkDisableCmsPageCommand.php"
+        role: implementation
+
+  # --- CmsPage Events ---
+
+  cmsPageCreated:
+    id: content.EVT001
+    kind: event
+    name: "CmsPageCreated"
+    description: "A new CMS page has been created and assigned to a category."
+
+  cmsPageUpdated:
+    id: content.EVT002
+    kind: event
+    name: "CmsPageUpdated"
+    description: "An existing CMS page has been modified."
+
+  cmsPageDeleted:
+    id: content.EVT003
+    kind: event
+    name: "CmsPageDeleted"
+    description: "A CMS page has been deleted."
+
+  cmsPageStatusToggled:
+    id: content.EVT004
+    kind: event
+    name: "CmsPageStatusToggled"
+    description: "A CMS page's displayed/hidden status has been changed."
+
+  # --- CmsPage Queries ---
+
+  getCmsPageForEditing:
+    id: content.QRY001
+    kind: query
+    name: "GetCmsPageForEditing"
+    description: "Retrieve a single CMS page with all editable fields for the edit form."
+    delivery_priority: must-have
+    initiated_by: [content.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/CmsPage/Query/GetCmsPageForEditing.php"
+        role: implementation
+      - path: "src/Core/Domain/CmsPage/QueryResult/EditableCmsPage.php"
+        role: model
+
+  getCmsCategoryIdForRedirection:
+    id: content.QRY002
+    kind: query
+    name: "GetCmsCategoryIdForRedirection"
+    description: "Get the category ID for redirect after a CMS page action (e.g., after delete, redirect to the page's category listing)."
+    delivery_priority: should-have
+    initiated_by: [content.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/CmsPage/Query/GetCmsCategoryIdForRedirection.php"
+        role: implementation
+
+  # --- CmsPageCategory Lifecycle ---
+
+  addCmsPageCategory:
+    id: content.CMD007
+    kind: command
+    name: "AddCmsPageCategory"
+    description: "Create a new CMS page category with localized name, description, SEO metadata, friendly URL, parent assignment, and shop association. Parent ID is required — root-level categories reference the system root."
+    delivery_priority: must-have
+    initiated_by: [content.ACT001]
+    produces:
+      operations: [content.EVT005]
+      mode: all
+    governed_by:
+      - rule: content.SR001
+      - rule: content.VR002
+    code_refs:
+      - path: "src/Core/Domain/CmsPageCategory/Command/AddCmsPageCategoryCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/CmsPageCategory/CommandHandler/AddCmsPageCategoryHandler.php"
+        role: implementation
+
+  editCmsPageCategory:
+    id: content.CMD008
+    kind: command
+    name: "EditCmsPageCategory"
+    description: "Update an existing CMS page category. Includes parent reassignment (hierarchy changes) — setting a new parentId moves the category in the tree. All fields optional via setters."
+    delivery_priority: must-have
+    initiated_by: [content.ACT001]
+    produces:
+      operations: [content.EVT006]
+      mode: all
+    governed_by:
+      - rule: content.SR001
+      - rule: content.VR002
+    code_refs:
+      - path: "src/Core/Domain/CmsPageCategory/Command/EditCmsPageCategoryCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/CmsPageCategory/CommandHandler/EditCmsPageCategoryHandler.php"
+        role: implementation
+
+  deleteCmsPageCategory:
+    id: content.CMD009
+    kind: command
+    name: "DeleteCmsPageCategory"
+    description: "Delete a single CMS page category."
+    delivery_priority: must-have
+    initiated_by: [content.ACT001]
+    produces:
+      operations: [content.EVT007]
+      mode: all
+    governed_by:
+      - rule: content.VR003
+    code_refs:
+      - path: "src/Core/Domain/CmsPageCategory/Command/DeleteCmsPageCategoryCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/CmsPageCategory/CommandHandler/DeleteCmsPageCategoryHandler.php"
+        role: implementation
+
+  bulkDeleteCmsPageCategory:
+    id: content.CMD010
+    kind: command
+    name: "BulkDeleteCmsPageCategory"
+    description: "Delete multiple CMS page categories in a single batch operation."
+    delivery_priority: could-have
+    initiated_by: [content.ACT001]
+    produces:
+      operations: [content.EVT007]
+      mode: all
+    governed_by:
+      - rule: content.VR003
+    code_refs:
+      - path: "src/Core/Domain/CmsPageCategory/Command/BulkDeleteCmsPageCategoryCommand.php"
+        role: implementation
+
+  toggleCmsPageCategoryStatus:
+    id: content.CMD011
+    kind: command
+    name: "ToggleCmsPageCategoryStatus"
+    description: "Toggle a single CMS page category's displayed/hidden status."
+    delivery_priority: must-have
+    initiated_by: [content.ACT001]
+    produces:
+      operations: [content.EVT008]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/CmsPageCategory/Command/ToggleCmsPageCategoryStatusCommand.php"
+        role: implementation
+
+  bulkSetCmsPageCategoryStatus:
+    id: content.CMD012
+    kind: command
+    name: "BulkSetCmsPageCategoryStatus"
+    description: "Enable or disable multiple CMS page categories. Virtual command combining BulkEnableCmsPageCategory and BulkDisableCmsPageCategory."
+    delivery_priority: could-have
+    initiated_by: [content.ACT001]
+    produces:
+      operations: [content.EVT008]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/CmsPageCategory/Command/BulkEnableCmsPageCategoryCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/CmsPageCategory/Command/BulkDisableCmsPageCategoryCommand.php"
+        role: implementation
+
+  # --- CmsPageCategory Events ---
+
+  cmsPageCategoryCreated:
+    id: content.EVT005
+    kind: event
+    name: "CmsPageCategoryCreated"
+    description: "A new CMS page category has been created in the hierarchy."
+
+  cmsPageCategoryUpdated:
+    id: content.EVT006
+    kind: event
+    name: "CmsPageCategoryUpdated"
+    description: "An existing CMS page category has been modified (including possible parent reassignment)."
+
+  cmsPageCategoryDeleted:
+    id: content.EVT007
+    kind: event
+    name: "CmsPageCategoryDeleted"
+    description: "A CMS page category has been deleted."
+
+  cmsPageCategoryStatusToggled:
+    id: content.EVT008
+    kind: event
+    name: "CmsPageCategoryStatusToggled"
+    description: "A CMS page category's displayed/hidden status has been changed."
+
+  # --- CmsPageCategory Queries ---
+
+  getCmsPageCategoryForEditing:
+    id: content.QRY003
+    kind: query
+    name: "GetCmsPageCategoryForEditing"
+    description: "Retrieve a single CMS page category with all editable fields for the edit form."
+    delivery_priority: must-have
+    initiated_by: [content.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/CmsPageCategory/Query/GetCmsPageCategoryForEditing.php"
+        role: implementation
+      - path: "src/Core/Domain/CmsPageCategory/QueryResult/EditableCmsPageCategory.php"
+        role: model
+
+  getCmsPageCategoriesForBreadcrumb:
+    id: content.QRY004
+    kind: query
+    name: "GetCmsPageCategoriesForBreadcrumb"
+    description: "Retrieve the category ancestry chain for rendering breadcrumb navigation. Returns ordered list of parent categories from root to current."
+    delivery_priority: should-have
+    initiated_by: [content.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/CmsPageCategory/Query/GetCmsPageCategoriesForBreadcrumb.php"
+        role: implementation
+      - path: "src/Core/Domain/CmsPageCategory/QueryResult/Breadcrumb.php"
+        role: model
+      - path: "src/Core/Domain/CmsPageCategory/QueryResult/BreadcrumbItem.php"
+        role: model
+
+  getCmsPageCategoryNameForListing:
+    id: content.QRY005
+    kind: query
+    name: "GetCmsPageCategoryNameForListing"
+    description: "Get category name for grid listing display. Lightweight query optimized for list views."
+    delivery_priority: should-have
+    initiated_by: [content.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/CmsPageCategory/Query/GetCmsPageCategoryNameForListing.php"
+        role: implementation
+
+  getCmsPageParentCategoryIdForRedirection:
+    id: content.QRY006
+    kind: query
+    name: "GetCmsPageParentCategoryIdForRedirection"
+    description: "Get parent category ID for redirect after a category action (e.g., after delete, redirect to the parent category listing)."
+    delivery_priority: should-have
+    initiated_by: [content.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/CmsPageCategory/Query/GetCmsPageParentCategoryIdForRedirection.php"
+        role: implementation
+
+errors:
+  cmsPageNotFound:
+    id: content.ERR001
+    name: "CmsPageNotFound"
+    description: "The specified CMS page does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  cmsPageCategoryNotFound:
+    id: content.ERR002
+    name: "CmsPageCategoryNotFound"
+    description: "The specified CMS page category does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  cannotDeleteCategoryWithChildren:
+    id: content.ERR003
+    name: "CannotDeleteCategoryWithChildren"
+    description: "Cannot delete a CMS page category that has child categories or assigned pages without handling descendants first."
+    category: conflict
+    severity: error
+    http_status: 409
+    related_rules: [content.VR003]

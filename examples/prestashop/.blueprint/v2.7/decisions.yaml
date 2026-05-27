@@ -1,0 +1,221 @@
+---
+version: "1.0.0"
+decisions:
+  - id: D001
+    title: "Event-driven order lifecycle"
+    summary: "Use domain events to coordinate order state changes across services."
+    date: "2026-01"
+    status: accepted
+    rationale:
+      problem: "Order state changes require coordination across inventory, payments, and notifications. Synchronous calls create tight coupling and cascading failures."
+      options:
+        - "Synchronous REST calls between services"
+        - "Shared database with distributed transactions"
+        - "Domain events via message broker (AsyncAPI)"
+      chosen: "Domain events via message broker"
+    motivation_refs:
+      goals: [orders.G003]
+      risks: [orders.R001]
+    capability_refs: [CAP001]
+    consequences:
+      positive:
+        - "Services remain independently deployable"
+        - "Failures are isolated — stock reservation failure does not block order creation"
+      negative:
+        - "Eventual consistency requires compensating transactions for rollback"
+        - "Debugging distributed flows is harder than single-process"
+    code_refs:
+      - path: "src/Core/Domain/Order/Event/"
+        role: implementation
+        description: "Order domain events directory"
+
+  - id: D002
+    title: "Elasticsearch for product search"
+    summary: "Use Elasticsearch as read-optimized search index instead of MySQL LIKE queries."
+    date: "2026-01"
+    status: landed
+    rationale:
+      problem: "PrestaShop's MySQL-based product search degrades with large catalogs (>50k products). Full-text search, faceted filtering, and fuzzy matching are not feasible with SQL LIKE."
+      options:
+        - "MySQL FULLTEXT indexes"
+        - "Elasticsearch dedicated search service"
+        - "Algolia hosted search (SaaS)"
+      chosen: "Elasticsearch dedicated search service"
+    motivation_refs:
+      goals: [catalog.G001]
+    capability_refs: [CAP005, CAP018]
+    consequences:
+      positive:
+        - "Sub-100ms search response for catalogs up to 500k products"
+        - "Faceted navigation and typo tolerance out of the box"
+      negative:
+        - "Additional infrastructure to maintain (ES cluster)"
+        - "Index rebuild required after bulk product updates"
+
+  - id: D003
+    title: "PCI-compliant payment via gateway modules"
+    summary: "Delegate all payment card handling to certified gateway modules (Stripe, PayPal, Mollie)."
+    date: "2025-11"
+    status: landed
+    rationale:
+      problem: "Handling card data directly requires PCI DSS Level 1 compliance — annual audits costing $50k+ and specialized infrastructure."
+      options:
+        - "Build in-house payment processing (PCI Level 1)"
+        - "Use tokenized gateway modules (PCI SAQ-A)"
+        - "Redirect to hosted payment pages only"
+      chosen: "Tokenized gateway modules — card data never touches PrestaShop servers"
+    motivation_refs:
+      goals: [checkout.G002]
+      risks: [checkout.R002]
+    capability_refs: [CAP003]
+    consequences:
+      positive:
+        - "PCI scope reduced to SAQ-A (self-assessment questionnaire)"
+        - "Multiple payment methods via module ecosystem"
+      negative:
+        - "Dependent on third-party module quality and update cadence"
+    code_refs:
+      - path: "src/Core/Domain/Order/Payment/"
+        role: implementation
+        description: "Payment domain classes"
+
+  - id: D004
+    title: "Server-side cart with session persistence"
+    summary: "Store cart state server-side (database) rather than client-side (cookies/localStorage)."
+    date: "2025-12"
+    status: accepted
+    rationale:
+      problem: "Client-side carts lose data on device switch, can be tampered with (price manipulation), and cannot be recovered after browser clear."
+      options:
+        - "Client-side cart (localStorage + cookies)"
+        - "Server-side cart (database, session-keyed)"
+        - "Hybrid (local for speed, server for persistence)"
+      chosen: "Server-side cart — single source of truth, tamper-proof"
+    motivation_refs:
+      goals: [orders.G001, checkout.G001]
+      risks: [orders.R003]
+    capability_refs: [CAP001, CAP003]
+    consequences:
+      positive:
+        - "Cart survives device switches and browser clears"
+        - "Server-side price validation prevents tampering"
+      negative:
+        - "Every cart operation requires a server round-trip"
+        - "Database load increases with active cart count"
+    code_refs:
+      - path: "src/Core/Domain/Cart/"
+        role: implementation
+        description: "Cart domain aggregate"
+
+  - id: D005
+    title: "CQRS pattern for domain commands"
+    summary: "Adopt Command-Query Responsibility Segregation across all domain aggregates for clear write/read separation."
+    date: "2024-06"
+    status: landed
+    rationale:
+      problem: "Legacy PrestaShop ObjectModel mixes read/write concerns, making it hard to optimize queries independently and enforce command validation."
+      options:
+        - "Continue with ObjectModel for all operations"
+        - "CQRS with separate command/query handlers"
+        - "Event sourcing with command/event store"
+      chosen: "CQRS with separate command/query handlers — pragmatic write/read split without event sourcing complexity"
+    motivation_refs:
+      goals: [orders.G003]
+    capability_refs: [CAP001, CAP005]
+    consequences:
+      positive:
+        - "Commands have explicit validation and authorization"
+        - "Queries can be optimized independently (read replicas, caching)"
+        - "Handler classes are small, focused, testable"
+      negative:
+        - "More classes per operation (Command + Handler + DTO)"
+        - "Migration from ObjectModel is gradual — dual-path during transition"
+    code_refs:
+      - path: "src/Core/Domain/"
+        role: implementation
+        description: "CQRS domain layer root — all aggregates follow Command/CommandHandler pattern"
+      - path: "https://github.com/PrestaShop/docs/blob/9.x/development/architecture/domain/_index.md"
+        role: documentation
+        description: "CQRS architecture documentation"
+
+  - id: D006
+    title: "Symfony framework migration"
+    summary: "Migrate back-office from legacy controllers to Symfony framework with Twig templates."
+    date: "2023-01"
+    status: landed
+    rationale:
+      problem: "Legacy PrestaShop controllers use custom MVC with Smarty templates. No dependency injection, no standard routing, no modern testing tools."
+      options:
+        - "Continue custom MVC framework"
+        - "Migrate to Symfony (gradual)"
+        - "Rewrite as headless SPA"
+      chosen: "Gradual Symfony migration — new pages in Symfony, legacy pages migrated incrementally"
+    capability_refs: [CAP015, CAP016]
+    consequences:
+      positive:
+        - "Standard Symfony DI container, routing, security"
+        - "Twig templating with proper escaping (XSS prevention)"
+        - "PHPUnit integration testing with Symfony kernel"
+      negative:
+        - "Two controller systems coexist during migration (legacy + Symfony)"
+        - "Template migration from Smarty to Twig is labor-intensive"
+    code_refs:
+      - path: "src/PrestaShopBundle/"
+        role: implementation
+        description: "Symfony bundle for back-office"
+      - path: "https://github.com/PrestaShop/docs/blob/9.x/development/architecture/migration-guide/_index.md"
+        role: documentation
+        description: "Symfony migration guide"
+
+  - id: D007
+    title: "New Admin API with OAuth2"
+    summary: "Introduce a modern REST API for back-office operations with OAuth2 authentication, replacing legacy webservice."
+    date: "2024-01"
+    status: accepted
+    rationale:
+      problem: "Legacy webservice API uses custom authentication, lacks proper authorization scopes, and exposes internal data structures directly."
+      options:
+        - "Extend legacy webservice API"
+        - "New Admin API with OAuth2 and resource-based design"
+        - "GraphQL API"
+      chosen: "New Admin API — resource-oriented REST with OAuth2 scopes and proper versioning"
+    capability_refs: [CAP016]
+    consequences:
+      positive:
+        - "Standard OAuth2 flow (RFC 6749) for third-party integrations"
+        - "Scoped access control per API client"
+        - "OpenAPI specification for client generation"
+      negative:
+        - "Two API systems coexist (legacy webservice + new Admin API)"
+        - "Module developers must adapt to new authentication"
+    code_refs:
+      - path: "src/Core/Domain/ApiClient/"
+        role: implementation
+        description: "API client domain aggregate"
+      - path: "https://github.com/PrestaShop/docs/blob/9.x/development/webservice/_index.md"
+        role: documentation
+        description: "API documentation"
+
+  - id: D008
+    title: "Headless architecture support"
+    summary: "Support headless commerce by exposing all storefront operations through APIs, enabling decoupled frontends."
+    date: "2025-06"
+    status: proposed
+    rationale:
+      problem: "PrestaShop's tightly-coupled Smarty/Twig frontend limits integration with modern SPA frameworks, mobile apps, and composable commerce."
+      options:
+        - "Keep monolithic server-rendered frontend only"
+        - "Add REST API layer for headless alongside existing frontend"
+        - "Full headless-only (drop server-rendered frontend)"
+      chosen: "Add REST API layer — support headless while maintaining traditional frontend for backwards compatibility"
+    motivation_refs:
+      goals: [catalog.G001]
+    capability_refs: [CAP016, CAP005]
+    consequences:
+      positive:
+        - "Frontend framework freedom (Next.js, Nuxt, mobile apps)"
+        - "Better performance via CDN-cached API responses"
+        - "Enables composable commerce architecture"
+      negative:
+        - "Two frontend paradigms to maintain (server-rendered + headless)"
+        - "SEO requires server-side rendering or pre-rendering for headless"

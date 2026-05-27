@@ -1,0 +1,543 @@
+---
+version: "1.0.0"
+scope: orders
+tags: [orders, models]
+
+components:
+  schemas:
+    PlaceOrderPayload:
+      x-model-id: MDL100
+      purpose: command-payload
+      description: "Request body for placing a new order from a validated cart."
+      represents:
+        - concept: orders.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              paymentModuleName: CAT109
+      type: object
+      required: [cartId, paymentModuleName, orderStateId]
+      properties:
+        cartId:
+          type: integer
+          description: "Cart to convert into an order."
+          example: 156
+        employeeId:
+          type: integer
+          description: "Employee creating the order (for back-office orders)."
+          example: 1
+        orderMessage:
+          type: string
+          description: "Optional message attached to the order."
+          example: "Please gift-wrap this order."
+        paymentModuleName:
+          type: string
+          description: "Payment module name (e.g. ps_wirepayment, ps_checkpayment)."
+          example: "ps_wirepayment"
+        orderStateId:
+          type: integer
+          description: "Initial order state ID."
+          example: 1
+      code_refs:
+        - path: "src/Core/Domain/Order/Command/AddOrderFromBackOfficeCommand.php"
+          role: schema
+
+    UpdateOrderStatusPayload:
+      x-model-id: MDL101
+      purpose: command-payload
+      description: "Request body for changing an order's status."
+      represents:
+        - concept: orders.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              currentState: CAT104
+      type: object
+      required: [orderId, newOrderStatusId]
+      properties:
+        orderId:
+          type: integer
+          description: "Order to update."
+          example: 4217
+        newOrderStatusId:
+          type: integer
+          description: "Target order state ID."
+          example: 4
+      code_refs:
+        - path: "src/Core/Domain/Order/Command/UpdateOrderStatusCommand.php"
+          role: schema
+
+    ChangeDeliveryAddressPayload:
+      x-model-id: MDL102
+      purpose: command-payload
+      description: "Request body for changing the delivery address on an order."
+      represents:
+        - concept: orders.CN002
+          kind: api
+      type: object
+      required: [orderId, newAddressId]
+      properties:
+        orderId:
+          type: integer
+          description: "Order whose delivery address to change."
+          example: 4217
+        newAddressId:
+          type: integer
+          description: "New customer address ID."
+          example: 12
+      code_refs:
+        - path: "src/Core/Domain/Order/Command/ChangeOrderDeliveryAddressCommand.php"
+          role: schema
+
+    AddPaymentPayload:
+      x-model-id: MDL107
+      purpose: command-payload
+      description: "Request body for manually recording a payment on an order."
+      represents:
+        - concept: orders.CN005
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              transactionId: CAT120
+              amount: CAT121
+              paymentMethod: CAT122
+      type: object
+      required: [orderId, paymentMethod, amount, currencyId]
+      properties:
+        orderId:
+          type: integer
+          description: "Order to add payment to."
+          example: 4217
+        paymentMethod:
+          type: string
+          description: "Payment method name."
+          example: "Bank Wire"
+        amount:
+          type: string
+          description: "Payment amount (decimal)."
+          example: "129.990000"
+        currencyId:
+          type: integer
+          description: "Currency of the payment."
+          example: 1
+        transactionId:
+          type: string
+          description: "External payment gateway transaction ID."
+          example: "TXN-2026-03-19-001"
+        invoiceId:
+          type: integer
+          description: "Invoice to associate this payment with (0 for auto)."
+          example: 0
+        dateAdd:
+          type: string
+          format: date
+          description: "Payment date."
+          example: "2026-03-19"
+      code_refs:
+        - path: "src/Core/Domain/Order/Command/AddPaymentCommand.php"
+          role: schema
+
+    IssuePartialRefundPayload:
+      x-model-id: MDL108
+      purpose: command-payload
+      description: "Request body for issuing a partial refund on specific order lines."
+      represents:
+        - concept: orders.CN009
+          kind: api
+      type: object
+      required: [orderId, orders]
+      properties:
+        orderId:
+          type: integer
+          description: "Order to refund."
+          example: 4217
+        orders:
+          type: object
+          description: "Map of order detail ID to refund info."
+          additionalProperties:
+            type: object
+            properties:
+              quantity:
+                type: integer
+                example: 1
+              amount:
+                type: string
+                example: "29.990000"
+          example:
+            "42": { "quantity": 1, "amount": "29.990000" }
+        shippingCostRefundAmount:
+          type: string
+          description: "Amount of shipping cost to refund."
+          example: "0.000000"
+        restockProducts:
+          type: boolean
+          description: "Whether to restock refunded products."
+          example: true
+        generateCreditSlip:
+          type: boolean
+          description: "Whether to generate a credit slip document."
+          example: true
+        generateVoucher:
+          type: boolean
+          description: "Whether to generate a voucher instead of monetary refund."
+          example: false
+        voucherRefundType:
+          type: integer
+          description: "Voucher type (0=products excluded tax, 1=products included tax, 2=whole order)."
+          example: 0
+
+    OrderResource:
+      x-model-id: MDL103
+      purpose: read-model
+      description: "Comprehensive order representation for back-office viewing. Composite model with 14+ sub-objects covering products, payments, history, documents, and messaging."
+      represents:
+        - concept: orders.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              orderId: CAT100
+              reference: CAT101
+              totalPaid: CAT102
+              totalProducts: CAT103
+              paymentMethod: CAT109
+      type: object
+      properties:
+        orderId:
+          type: integer
+          description: "Unique order identifier."
+          example: 4217
+        reference:
+          type: string
+          description: "Human-readable order reference."
+          example: "XKBKNABJK"
+        isVirtual:
+          type: boolean
+          description: "Whether order contains only virtual products."
+          example: false
+        isValid:
+          type: boolean
+          description: "Whether order passed validation."
+          example: true
+        hasBeenPaid:
+          type: boolean
+          description: "Whether any payment has been received."
+          example: true
+        hasInvoice:
+          type: boolean
+          description: "Whether an invoice has been generated."
+          example: true
+        isDelivered:
+          type: boolean
+          description: "Whether the order has been delivered."
+          example: false
+        isShipped:
+          type: boolean
+          description: "Whether the order has been shipped."
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: "Order creation timestamp."
+          example: "2026-03-19T14:23:45+01:00"
+        currencyId:
+          type: integer
+          description: "Currency identifier."
+          example: 1
+        carrierId:
+          type: integer
+          description: "Carrier identifier."
+          example: 2
+        carrierName:
+          type: string
+          description: "Carrier display name."
+          example: "Colissimo"
+        shopId:
+          type: integer
+          description: "Shop identifier."
+          example: 1
+        note:
+          type: string
+          description: "Internal order note."
+          example: "VIP customer — expedite shipping."
+        paymentMethod:
+          type: string
+          description: "Payment method display name."
+          example: "Bank Wire"
+        paymentModule:
+          type: string
+          description: "Payment module technical name."
+          example: "ps_wirepayment"
+        cartId:
+          type: integer
+          description: "Source cart identifier."
+          example: 156
+        customer:
+          type: object
+          description: "Customer summary."
+          properties:
+            customerId:
+              type: integer
+              example: 42
+            firstName:
+              type: string
+              example: "Jean"
+            lastName:
+              type: string
+              example: "Dupont"
+            email:
+              type: string
+              example: "jean.dupont@example.com"
+        shippingAddress:
+          type: object
+          description: "Formatted delivery address."
+          properties:
+            addressId:
+              type: integer
+              example: 12
+            formatted:
+              type: string
+              example: "Jean Dupont\n15 Rue de la Paix\n75001 Paris\nFrance"
+        invoiceAddress:
+          type: object
+          description: "Formatted billing address."
+          properties:
+            addressId:
+              type: integer
+              example: 12
+            formatted:
+              type: string
+              example: "Jean Dupont\n15 Rue de la Paix\n75001 Paris\nFrance"
+        products:
+          type: array
+          description: "Order line items."
+          items:
+            $ref: "#/components/schemas/OrderProductItem"
+        prices:
+          $ref: "#/components/schemas/OrderPricesInfo"
+        history:
+          type: array
+          description: "Order status change history."
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date-time
+                example: "2026-03-19T14:23:45+01:00"
+              stateName:
+                type: string
+                example: "Payment accepted"
+              employeeName:
+                type: string
+                example: "Admin PrestaShop"
+        payments:
+          type: array
+          description: "Payment records."
+          items:
+            type: object
+            properties:
+              paymentId:
+                type: integer
+                example: 1
+              transactionId:
+                type: string
+                example: "pi_3Mq2Dj2eZvKYlo2C0"
+              amount:
+                type: string
+                example: "129.990000"
+              paymentMethod:
+                type: string
+                example: "Bank Wire"
+              dateAdd:
+                type: string
+                format: date-time
+                example: "2026-03-19T14:25:00+01:00"
+      code_refs:
+        - path: "src/Core/Domain/Order/QueryResult/OrderForViewing.php"
+          role: schema
+          description: "OrderForViewing — 36 constructor params, 14 sub-objects"
+
+    OrderListItem:
+      x-model-id: MDL104
+      purpose: read-model
+      description: "Lightweight order summary for paginated list views."
+      represents:
+        - concept: orders.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              orderId: CAT100
+              reference: CAT101
+              totalPaid: CAT102
+      type: object
+      properties:
+        orderId:
+          type: integer
+          description: "Order identifier."
+          example: 4217
+        reference:
+          type: string
+          description: "Order reference code."
+          example: "XKBKNABJK"
+        customerName:
+          type: string
+          description: "Customer full name."
+          example: "Jean Dupont"
+        totalPaid:
+          type: string
+          description: "Total paid amount."
+          example: "129.990000"
+        paymentMethod:
+          type: string
+          description: "Payment method."
+          example: "Bank Wire"
+        currentStateName:
+          type: string
+          description: "Current order state label."
+          example: "Payment accepted"
+        currentStateColor:
+          type: string
+          description: "State color for UI display."
+          example: "#32CD32"
+        createdAt:
+          type: string
+          format: date-time
+          description: "Order creation date."
+          example: "2026-03-19T14:23:45+01:00"
+        country:
+          type: string
+          description: "Delivery country name."
+          example: "France"
+        companyName:
+          type: string
+          description: "Customer company name (B2B)."
+          example: ""
+      code_refs:
+        - path: "src/Core/Domain/Order/QueryResult/OrderPreview.php"
+          role: schema
+
+    OrderProductItem:
+      x-model-id: MDL105
+      purpose: dto
+      description: "Single order line item — product, quantity, unit price, and line total."
+      represents:
+        - concept: orders.CN003
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              orderDetailId: CAT110
+              productName: CAT111
+              quantity: CAT112
+              unitPrice: CAT113
+              lineTotal: CAT114
+      type: object
+      properties:
+        orderDetailId:
+          type: integer
+          description: "Line item identifier."
+          example: 89
+        productId:
+          type: integer
+          description: "Product identifier."
+          example: 42
+        combinationId:
+          type: integer
+          description: "Combination identifier (0 if no variant)."
+          example: 7
+        productName:
+          type: string
+          description: "Product name at time of order."
+          example: "Classic Laptop 15-inch - Size: M, Color: Black"
+        reference:
+          type: string
+          description: "Product reference at time of order."
+          example: "LAPTOP-15-BLK-M"
+        quantity:
+          type: integer
+          description: "Ordered quantity."
+          example: 2
+        unitPriceTaxExcluded:
+          type: string
+          description: "Unit price without tax."
+          example: "1049.990000"
+        unitPriceTaxIncluded:
+          type: string
+          description: "Unit price with tax."
+          example: "1259.990000"
+        totalPriceTaxExcluded:
+          type: string
+          description: "Line total without tax."
+          example: "2099.980000"
+        totalPriceTaxIncluded:
+          type: string
+          description: "Line total with tax."
+          example: "2519.980000"
+        imageUrl:
+          type: string
+          description: "Product thumbnail URL."
+          example: "/img/p/42/14-cart_default.jpg"
+        availableQuantity:
+          type: integer
+          description: "Current stock available."
+          example: 23
+        location:
+          type: string
+          description: "Warehouse location."
+          example: "Warehouse A, Shelf 12"
+
+    OrderPricesInfo:
+      x-model-id: MDL106
+      purpose: dto
+      description: "Order pricing summary — products total, shipping, discounts, tax, and grand total."
+      represents:
+        - concept: orders.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              totalPaid: CAT102
+              totalProducts: CAT103
+      type: object
+      properties:
+        productsPriceTaxExcluded:
+          type: string
+          description: "Sum of all product lines without tax."
+          example: "2099.980000"
+        productsPriceTaxIncluded:
+          type: string
+          description: "Sum of all product lines with tax."
+          example: "2519.980000"
+        shippingPriceTaxExcluded:
+          type: string
+          description: "Shipping cost without tax."
+          example: "5.830000"
+        shippingPriceTaxIncluded:
+          type: string
+          description: "Shipping cost with tax."
+          example: "7.000000"
+        discountAmount:
+          type: string
+          description: "Total discount amount."
+          example: "0.000000"
+        wrappingPriceTaxIncluded:
+          type: string
+          description: "Gift wrapping cost with tax."
+          example: "0.000000"
+        taxesAmount:
+          type: string
+          description: "Total tax amount."
+          example: "421.170000"
+        totalPaidTaxIncluded:
+          type: string
+          description: "Grand total including all taxes and fees."
+          example: "2526.980000"
+        totalPaidTaxExcluded:
+          type: string
+          description: "Grand total excluding taxes."
+          example: "2105.810000"

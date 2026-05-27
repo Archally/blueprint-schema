@@ -1,0 +1,129 @@
+---
+version: "1.0.0"
+scope: shop
+
+goals:
+  - id: shop.G001
+    statement: "Consistent store branding across all customer touchpoints"
+    description: >
+      Logo and favicon management ensures the store has a unified visual
+      identity across storefront header, email templates, invoices, and
+      browser tabs.
+    summary: "Store branding consistency"
+    priority: medium
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: shop.G002
+    statement: "Improved product discoverability through search aliases"
+    description: >
+      Search term aliases bridge the gap between customer vocabulary and
+      product catalog terminology, improving search hit rates.
+    summary: "Search alias discoverability"
+    priority: high
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: shop.G003
+    statement: "SEO referrer tracking for marketing analytics"
+    description: >
+      SearchEngine configuration enables tracking which external search
+      engines drive traffic to the store, informing SEO strategy.
+    summary: "SEO referrer analytics"
+    priority: medium
+    discovery_stage: validated
+    certainty: confirmed
+
+risks:
+  - id: shop.R001
+    statement: "Search index staleness after catalog changes"
+    description: >
+      If the search index is not rebuilt after significant catalog changes
+      (new products, price updates), customers may see outdated or missing
+      search results.
+    summary: "Stale search index"
+    likelihood: medium
+    impact: high
+    mitigation: "SearchIndexation command can be triggered manually or scheduled. Monitor index age."
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: shop.R002
+    statement: "Multi-store configuration gaps outside CQRS layer"
+    description: >
+      Core multi-store operations (shop creation, domain/SSL config,
+      maintenance mode) are not in the CQRS domain layer. Store aggregate
+      lacks add/edit commands. This makes the domain model incomplete for
+      multi-store governance.
+    summary: "Multi-store CQRS gaps"
+    likelihood: high
+    impact: medium
+    mitigation: "Document gaps as inquiries. Plan CQRS migration for critical multi-store operations."
+    discovery_stage: validated
+    certainty: confirmed
+
+non_goals:
+  - id: shop.NG001
+    statement: "No marketplace/multi-vendor capabilities"
+    reason: >
+      PrestaShop is a single-merchant platform. Multi-store shares one merchant
+      identity across storefronts. Marketplace features (vendor onboarding,
+      per-vendor commission, vendor dashboards) require dedicated marketplace
+      modules — there are no VendorCommand or SellerCommand classes in core.
+    discovery_stage: committed
+    certainty: confirmed
+
+assumptions:
+  - id: shop.A001
+    statement: "MySQL/MariaDB is the only supported RDBMS"
+    consequence: >
+      If PostgreSQL or SQLite support is required, all ObjectModel raw SQL,
+      Doctrine DBAL queries, and database-specific features (IFNULL, GROUP_CONCAT,
+      INSERT IGNORE) must be abstracted or ported.
+    discovery_stage: committed
+    certainty: confirmed
+
+trade_offs:
+  - id: shop.T001
+    choice: "Multi-store data isolation model"
+    selected: "Shared database with shop_id column filtering"
+    rejected: "Separate database per shop (simpler isolation but harder shared catalog)"
+    rationale: >
+      Shared catalog across shops is a core multi-store feature — merchants
+      want one product in multiple shops. Separate databases would require
+      cross-database joins or catalog sync, adding massive complexity.
+      Shop_id filtering keeps data co-located and queryable.
+    accepted_risk: "Poorly scoped queries can leak data across shops. Every query must include shop_id filter."
+    discovery_stage: committed
+    certainty: confirmed
+
+inquiries:
+  - id: shop.INQ001
+    statement: "Should multi-store configuration (maintenance mode, domain, SSL) be migrated to the CQRS domain layer?"
+    summary: "Multi-store CQRS gap"
+    description: >
+      The Shop aggregate has only UploadLogos in the CQRS layer. Core
+      multi-store operations (maintenance mode toggle, domain configuration,
+      SSL settings, shop creation/deletion) are managed by legacy code.
+      This is a significant domain gap for multi-store governance.
+    category: technical
+    goal_refs:
+      - shop.G001
+    blocking: false
+    status: investigating
+    discovery_stage: exploring
+    certainty: speculative
+
+  - id: shop.INQ002
+    statement: "Should Store creation and editing be added to the CQRS domain layer?"
+    summary: "Store CRUD gap"
+    description: >
+      The Store aggregate only exposes delete, toggle status, and bulk
+      operations. Store creation and editing are managed outside the CQRS
+      layer. This prevents domain-level validation of store addresses and
+      geographic coordinates.
+    category: technical
+    blocking: false
+    status: investigating
+    discovery_stage: exploring
+    certainty: speculative

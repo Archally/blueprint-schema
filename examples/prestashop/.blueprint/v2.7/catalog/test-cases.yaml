@@ -1,0 +1,147 @@
+---
+version: "1.0.0"
+scope: catalog
+
+happy_path:
+  - id: catalog.TC001
+    name: "Create product — happy path"
+    summary: "Valid product data creates product with draft status successfully."
+    validates:
+      operations: [catalog.CMD001, catalog.EVT001]
+      rules: [catalog.SR001]
+    contract:
+      kind: openapi
+      file: dist/catalog-api.openapi.yaml
+    given:
+      description: "Product with name, description, price=999.99, type=standard."
+    expected_result:
+      status: success
+      code: 201
+
+  - id: catalog.TC002
+    name: "Search products — keyword match"
+    summary: "Search by product name returns matching results within SLO."
+    validates:
+      operations: [catalog.QRY001]
+    given:
+      description: "Catalog with 100 products. Search for 'laptop'."
+      state:
+        catalogSize: 100
+        query: "laptop"
+    expected_result:
+      status: success
+
+  - id: catalog.TC003
+    name: "Generate combinations — happy path"
+    summary: "Generating combinations for a valid product creates all permutations."
+    validates:
+      operations: [catalog.CMD011, catalog.EVT004]
+      rules: [catalog.CR002]
+    given:
+      description: "Product with type=combinations, 2 attribute groups (Size:S,M,L; Color:Red,Blue)."
+      state:
+        productType: combinations
+        groups: 2
+        valuesPerGroup: [3, 2]
+    expected_result:
+      status: success
+
+  - id: catalog.TC004
+    name: "Add category — happy path"
+    summary: "Creating a category within valid depth succeeds."
+    validates:
+      operations: [catalog.CMD025, catalog.EVT009]
+      rules: [catalog.SR002]
+    given:
+      description: "Parent category at depth 3, max depth 10."
+    expected_result:
+      status: success
+      code: 201
+
+  - id: catalog.TC005
+    name: "Add specific price — percentage discount"
+    summary: "Creating a 20% discount specific price succeeds."
+    validates:
+      operations: [catalog.CMD021, catalog.EVT007]
+      rules: [catalog.VR003]
+    given:
+      description: "Product exists, reduction=20, reductionType=percentage."
+    expected_result:
+      status: success
+
+edge_cases:
+  - id: catalog.EC001
+    name: "Create product — duplicate SKU"
+    summary: "Attempting to create a combination with existing attribute values."
+    validates:
+      operations: [catalog.CMD011]
+      rules: [catalog.VR004]
+    given:
+      description: "Product already has combination with Size:M, Color:Red."
+      state:
+        existingCombination: "Size:M-Color:Red"
+    expected_result:
+      status: failure
+      code: 409
+
+  - id: catalog.EC002
+    name: "Category tree depth limit"
+    summary: "Creating a category that exceeds maximum nesting depth."
+    validates:
+      operations: [catalog.CMD025]
+      rules: [catalog.SR002]
+    given:
+      description: "Parent category at depth 10, max depth 10."
+    expected_result:
+      status: failure
+      code: 422
+
+  - id: catalog.EC003
+    name: "Combination explosion guard"
+    summary: "Attempting to generate too many combinations triggers a warning or rejection."
+    validates:
+      operations: [catalog.CMD011]
+    given:
+      description: "Product with 5 attribute groups of 10 values each (100,000 combinations)."
+      state:
+        expectedCombinations: 100000
+    expected_result:
+      status: failure
+      code: 422
+
+error_cases:
+  - id: catalog.ER001
+    name: "Upload undersized image"
+    summary: "Attempting to upload a product image smaller than minimum dimensions."
+    validates:
+      operations: [catalog.CMD016]
+      rules: [catalog.VR001]
+    given:
+      description: "Image 400x300 pixels, minimum required 800x800."
+    expected_result:
+      status: failure
+      code: 422
+
+  - id: catalog.ER002
+    name: "Delete product with pending orders"
+    summary: "Attempting to delete a product that has pending orders."
+    validates:
+      operations: [catalog.CMD003]
+      rules: [catalog.VR002]
+    given:
+      description: "Product has 3 pending orders."
+    expected_result:
+      status: failure
+      code: 422
+
+  - id: catalog.ER003
+    name: "Invalid specific price percentage"
+    summary: "Attempting to create a specific price with 150% reduction."
+    validates:
+      operations: [catalog.CMD021]
+      rules: [catalog.VR003]
+    given:
+      description: "Reduction=150, reductionType=percentage."
+    expected_result:
+      status: failure
+      code: 422

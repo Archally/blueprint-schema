@@ -1,0 +1,52 @@
+---
+version: "1.0.0"
+scope: catalog
+
+kpis:
+  - id: catalog.KPI001
+    name: "Search Result Relevance"
+    target: "Top-5 results contain the intended product in >= 90% of queries"
+    window: "weekly"
+    goal: catalog.G001
+
+  - id: catalog.KPI002
+    name: "Catalog Completeness"
+    target: ">= 95% of active products have at least one image and complete description"
+    window: "daily"
+    goal: catalog.G003
+
+  - id: catalog.KPI003
+    name: "API Coverage"
+    target: "100% of CQRS catalog commands accessible via Admin API"
+    window: "per-release"
+    goal: catalog.G004
+
+slos:
+  - id: catalog.SLO001
+    name: "Search API Latency"
+    target: "p95 < 100ms"
+    window: "weekly"
+    operations: [catalog.QRY001]
+    error_budget: "5% of queries may exceed 100ms"
+
+  - id: catalog.SLO002
+    name: "Product Save Latency"
+    target: "p95 < 500ms"
+    window: "weekly"
+    operations: [catalog.CMD001, catalog.CMD002]
+    error_budget: "2% of saves may exceed 500ms"
+
+  - id: catalog.SLO003
+    name: "Bulk Import Throughput"
+    target: "10,000 rows in under 10 minutes"
+    window: "per-import"
+    error_budget: "5% of rows may fail validation"
+
+resilience:
+  - id: catalog.RES001
+    name: "Search Index Recovery"
+    type: disaster-recovery
+    target: "Full index rebuild from MySQL in under 30 minutes for 500k products"
+    rto: "30 minutes"
+    rpo: "0 (MySQL is source of truth)"
+    strategy: "Scheduled full re-index as fallback; incremental updates via events for normal operation."

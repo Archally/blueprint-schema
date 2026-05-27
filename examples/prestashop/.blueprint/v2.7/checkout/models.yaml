@@ -1,0 +1,762 @@
+---
+version: "1.0.0"
+scope: checkout
+tags: [cart, discount, pricing, models]
+
+components:
+  schemas:
+    AddToCartPayload:
+      x-model-id: MDL200
+      purpose: command-payload
+      description: "Request body for adding a product to a cart. Creates cart session if none exists. Supports product variants (combinations) and customizations."
+      represents:
+        - concept: checkout.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              cartId: CAT200
+              productId: CAT207
+              quantity: CAT209
+              combinationId: CAT208
+      type: object
+      required: [cartId, productId, quantity]
+      properties:
+        cartId:
+          type: integer
+          description: "Target cart session identifier."
+          example: 71
+        productId:
+          type: integer
+          description: "Catalog product to add."
+          example: 42
+        quantity:
+          type: integer
+          description: "Number of units to add."
+          example: 2
+        combinationId:
+          type: integer
+          description: "Product variant (combination) identifier. 0 for products without variants."
+          example: 15
+        customizations:
+          type: array
+          description: "Product customization fields (text or file uploads)."
+          items:
+            type: object
+            properties:
+              fieldId:
+                type: integer
+                description: "Customization field identifier."
+                example: 1
+              value:
+                type: string
+                description: "Customization value (text content or uploaded file path)."
+                example: "Happy Birthday, John!"
+              type:
+                type: string
+                enum: [text, file]
+                description: "Customization field type."
+                example: "text"
+      code_refs:
+        - path: "src/Core/Domain/Cart/Command/AddProductToCartCommand.php"
+          role: schema
+          description: "Constructor defines payload shape for adding products"
+
+    UpdateCartQuantityPayload:
+      x-model-id: MDL201
+      purpose: command-payload
+      description: "Request body for changing the quantity of an existing product in the cart."
+      represents:
+        - concept: checkout.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              cartId: CAT200
+              productId: CAT207
+              combinationId: CAT208
+              quantity: CAT209
+      type: object
+      required: [cartId, productId, quantity]
+      properties:
+        cartId:
+          type: integer
+          description: "Cart session identifier."
+          example: 71
+        productId:
+          type: integer
+          description: "Product whose quantity is being updated."
+          example: 42
+        combinationId:
+          type: integer
+          description: "Product variant (combination) identifier. 0 for products without variants."
+          example: 15
+        quantity:
+          type: integer
+          description: "New quantity value (absolute, not delta)."
+          example: 3
+      code_refs:
+        - path: "src/Core/Domain/Cart/Command/UpdateProductQuantityInCartCommand.php"
+          role: schema
+          description: "Constructor defines payload shape for quantity updates"
+
+    CartResource:
+      x-model-id: MDL202
+      purpose: read-model
+      description: "Full cart representation for back-office editing. Composite model with product lines, computed totals, applied rules, and delivery configuration."
+      represents:
+        - concept: checkout.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              cartId: CAT200
+              customerId: CAT201
+              currencyId: CAT205
+      type: object
+      properties:
+        cartId:
+          type: integer
+          description: "Unique cart identifier."
+          example: 71
+        customerId:
+          type: integer
+          description: "Customer who owns this cart."
+          example: 3
+        currencyId:
+          type: integer
+          description: "Currency used for all cart calculations."
+          example: 1
+        languageId:
+          type: integer
+          description: "Language context for product names and labels."
+          example: 1
+        products:
+          type: array
+          description: "Cart line items."
+          items:
+            $ref: "#/components/schemas/CartItem"
+        totals:
+          type: object
+          description: "Computed cart totals."
+          properties:
+            totalProducts:
+              type: string
+              description: "Sum of product line totals excluding tax."
+              example: "1999.980000"
+            totalProductsWithTax:
+              type: string
+              description: "Sum of product line totals including tax."
+              example: "2399.980000"
+            totalDiscounts:
+              type: string
+              description: "Sum of all applied discount reductions."
+              example: "50.000000"
+            totalShipping:
+              type: string
+              description: "Shipping cost for the selected carrier."
+              example: "7.500000"
+            totalShippingWithTax:
+              type: string
+              description: "Shipping cost including tax."
+              example: "9.000000"
+            totalWrapping:
+              type: string
+              description: "Gift wrapping cost."
+              example: "0.000000"
+            totalOrderAmount:
+              type: string
+              description: "Final order amount including all taxes, shipping, and discounts."
+              example: "2358.980000"
+        carrierInfo:
+          type: object
+          description: "Selected shipping carrier details."
+          properties:
+            carrierId:
+              type: integer
+              description: "Selected carrier identifier."
+              example: 2
+            carrierName:
+              type: string
+              description: "Carrier display name."
+              example: "My carrier"
+            deliveryOption:
+              type: string
+              description: "Formatted delivery option reference."
+              example: "2,"
+        deliveryAddress:
+          type: object
+          description: "Delivery address summary."
+          properties:
+            addressId:
+              type: integer
+              description: "Delivery address identifier."
+              example: 5
+            alias:
+              type: string
+              description: "Address alias."
+              example: "My home"
+        invoiceAddress:
+          type: object
+          description: "Invoice address summary."
+          properties:
+            addressId:
+              type: integer
+              description: "Invoice address identifier."
+              example: 5
+            alias:
+              type: string
+              description: "Address alias."
+              example: "My home"
+        appliedCartRules:
+          type: array
+          description: "Cart rules currently applied to this cart."
+          items:
+            type: object
+            properties:
+              cartRuleId:
+                type: integer
+                description: "Cart rule identifier."
+                example: 12
+              name:
+                type: string
+                description: "Cart rule display name."
+                example: "Spring Sale -10%"
+              value:
+                type: string
+                description: "Computed reduction amount."
+                example: "50.000000"
+      code_refs:
+        - path: "src/Core/Domain/Cart/QueryResult/CartForViewing.php"
+          role: schema
+          description: "CartForViewing QueryResult — the master cart read model"
+
+    CartItem:
+      x-model-id: MDL203
+      purpose: dto
+      description: "Single cart line item with product details, variant, quantity, and computed price."
+      represents:
+        - concept: checkout.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              productId: CAT207
+              combinationId: CAT208
+              quantity: CAT209
+              unitPrice: CAT210
+      type: object
+      properties:
+        productId:
+          type: integer
+          description: "Catalog product identifier."
+          example: 42
+        combinationId:
+          type: integer
+          description: "Product variant (combination) identifier."
+          example: 15
+        name:
+          type: string
+          description: "Product name in cart language, including variant label."
+          example: "Classic Laptop 15-inch - Color: Black, Size: 15\""
+        reference:
+          type: string
+          description: "Product or combination reference / SKU."
+          example: "LAPTOP-15-BLK"
+        quantity:
+          type: integer
+          description: "Number of units in the cart."
+          example: 2
+        unitPrice:
+          type: string
+          description: "Unit price excluding tax."
+          example: "999.990000"
+        unitPriceWithTax:
+          type: string
+          description: "Unit price including tax."
+          example: "1199.990000"
+        totalPrice:
+          type: string
+          description: "Line total excluding tax (unitPrice x quantity)."
+          example: "1999.980000"
+        totalPriceWithTax:
+          type: string
+          description: "Line total including tax."
+          example: "2399.980000"
+        imageUrl:
+          type: string
+          description: "Product cover image thumbnail URL."
+          example: "/img/p/42/42-cart_default.jpg"
+        customizations:
+          type: array
+          description: "Applied customization fields."
+          items:
+            type: object
+            properties:
+              fieldId:
+                type: integer
+                description: "Customization field identifier."
+                example: 1
+              fieldName:
+                type: string
+                description: "Customization field label."
+                example: "Engraving text"
+              value:
+                type: string
+                description: "Customer-provided value."
+                example: "Happy Birthday, John!"
+
+    CreateCartRulePayload:
+      x-model-id: MDL204
+      purpose: command-payload
+      description: "Request body for creating a discount cart rule. Covers voucher codes, automatic discounts, free shipping, and BOGO offers with conditions and usage limits."
+      represents:
+        - concept: checkout.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              name: CAT214
+              code: CAT215
+              reductionType: CAT216
+              reductionValue: CAT217
+              minimumAmount: CAT218
+              dateFrom: CAT219
+              dateTo: CAT220
+              totalQuantity: CAT221
+              quantityPerUser: CAT222
+              priority: CAT223
+              freeShipping: CAT224
+              active: CAT225
+      type: object
+      required: [name, reductionType, reductionValue, dateFrom, dateTo]
+      properties:
+        name:
+          type: object
+          description: "Localized discount display name keyed by language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Spring Sale -10%"
+            "2": "Soldes de Printemps -10%"
+        code:
+          type: string
+          description: "Voucher code for manual application. Leave empty for automatic discounts."
+          example: "SPRING2026"
+        description:
+          type: string
+          description: "Internal description visible only in back-office."
+          example: "Spring campaign 2026 — 10% off orders over 50 EUR"
+        reductionType:
+          type: string
+          enum: [percentage, amount]
+          description: "How the discount amount is calculated."
+          example: "percentage"
+        reductionValue:
+          type: string
+          description: "Numeric reduction value (percentage or fixed amount)."
+          example: "10.000000"
+        reductionCurrency:
+          type: integer
+          description: "Currency for fixed-amount reductions. Ignored for percentage."
+          example: 1
+        reductionTax:
+          type: boolean
+          description: "Whether the fixed-amount reduction includes tax."
+          example: false
+        minimumAmount:
+          type: string
+          description: "Minimum cart total required to apply the discount."
+          example: "50.000000"
+        minimumAmountCurrency:
+          type: integer
+          description: "Currency for the minimum amount threshold."
+          example: 1
+        minimumAmountTax:
+          type: boolean
+          description: "Whether the minimum amount includes tax."
+          example: false
+        freeShipping:
+          type: boolean
+          description: "Whether this discount grants free shipping."
+          example: false
+        dateFrom:
+          type: string
+          format: date-time
+          description: "Validity period start."
+          example: "2026-03-01T00:00:00"
+        dateTo:
+          type: string
+          format: date-time
+          description: "Validity period end."
+          example: "2026-05-31T23:59:59"
+        totalQuantity:
+          type: integer
+          description: "Global usage limit across all customers. 0 for unlimited."
+          example: 1000
+        quantityPerUser:
+          type: integer
+          description: "Maximum usage per individual customer."
+          example: 1
+        priority:
+          type: integer
+          description: "Application priority (lower = higher priority)."
+          example: 1
+        active:
+          type: boolean
+          description: "Whether the discount is enabled immediately."
+          example: true
+        conditions:
+          type: object
+          description: "Eligibility conditions for the discount."
+          properties:
+            customerGroupIds:
+              type: array
+              description: "Restrict to specific customer groups."
+              items:
+                type: integer
+              example: [1, 2]
+            countryIds:
+              type: array
+              description: "Restrict to customers in specific countries."
+              items:
+                type: integer
+              example: [8, 13]
+            productRuleGroups:
+              type: array
+              description: "Product selection conditions defining qualifying products."
+              items:
+                type: object
+                properties:
+                  quantity:
+                    type: integer
+                    description: "Minimum quantity of matching products required."
+                    example: 1
+                  productIds:
+                    type: array
+                    description: "Specific product IDs that qualify."
+                    items:
+                      type: integer
+                    example: [42, 43, 44]
+      code_refs:
+        - path: "src/Core/Domain/Discount/Command/AddDiscountCommand.php"
+          role: schema
+          description: "Constructor defines payload shape for discount creation"
+
+    CartRuleResource:
+      x-model-id: MDL205
+      purpose: read-model
+      description: "Full cart rule / discount representation for the editing form. Includes all conditions, actions, and usage statistics."
+      represents:
+        - concept: checkout.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              discountId: CAT213
+              name: CAT214
+              code: CAT215
+              reductionType: CAT216
+              reductionValue: CAT217
+              minimumAmount: CAT218
+              dateFrom: CAT219
+              dateTo: CAT220
+              totalQuantity: CAT221
+              quantityPerUser: CAT222
+              priority: CAT223
+              freeShipping: CAT224
+              active: CAT225
+      type: object
+      properties:
+        discountId:
+          type: integer
+          description: "Unique discount / cart rule identifier."
+          example: 12
+        name:
+          type: object
+          description: "Localized discount display name keyed by language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Spring Sale -10%"
+            "2": "Soldes de Printemps -10%"
+        description:
+          type: string
+          description: "Internal description."
+          example: "Spring campaign 2026 — 10% off orders over 50 EUR"
+        code:
+          type: string
+          description: "Voucher code. Empty for automatic discounts."
+          example: "SPRING2026"
+        reductionType:
+          type: string
+          enum: [percentage, amount]
+          description: "How the discount amount is calculated."
+          example: "percentage"
+        reductionValue:
+          type: string
+          description: "Numeric reduction value."
+          example: "10.000000"
+        reductionCurrency:
+          type: integer
+          description: "Currency for fixed-amount reductions."
+          example: 1
+        reductionTax:
+          type: boolean
+          description: "Whether reduction includes tax."
+          example: false
+        minimumAmount:
+          type: string
+          description: "Minimum cart total required."
+          example: "50.000000"
+        minimumAmountCurrency:
+          type: integer
+          description: "Currency for minimum amount."
+          example: 1
+        minimumAmountTax:
+          type: boolean
+          description: "Whether minimum amount includes tax."
+          example: false
+        freeShipping:
+          type: boolean
+          description: "Whether this discount grants free shipping."
+          example: false
+        dateFrom:
+          type: string
+          format: date-time
+          description: "Validity period start."
+          example: "2026-03-01T00:00:00"
+        dateTo:
+          type: string
+          format: date-time
+          description: "Validity period end."
+          example: "2026-05-31T23:59:59"
+        totalQuantity:
+          type: integer
+          description: "Global usage limit."
+          example: 1000
+        totalQuantityUsed:
+          type: integer
+          description: "Number of times the discount has been used."
+          example: 247
+        quantityPerUser:
+          type: integer
+          description: "Maximum usage per customer."
+          example: 1
+        priority:
+          type: integer
+          description: "Application priority (lower = higher priority)."
+          example: 1
+        active:
+          type: boolean
+          description: "Whether the discount is currently enabled."
+          example: true
+        conditions:
+          type: object
+          description: "Eligibility conditions."
+          properties:
+            customerGroupIds:
+              type: array
+              items:
+                type: integer
+              example: [1, 2]
+            countryIds:
+              type: array
+              items:
+                type: integer
+              example: [8, 13]
+            productRuleGroups:
+              type: array
+              items:
+                type: object
+                properties:
+                  quantity:
+                    type: integer
+                    example: 1
+                  productIds:
+                    type: array
+                    items:
+                      type: integer
+                    example: [42, 43, 44]
+      code_refs:
+        - path: "src/Core/Domain/Discount/Query/GetDiscountForEditing.php"
+          role: schema
+          description: "GetDiscountForEditing QueryResult — master discount read model"
+
+    CreateCatalogPriceRulePayload:
+      x-model-id: MDL206
+      purpose: command-payload
+      description: "Request body for creating a catalog price rule. Bulk price reductions for product selections based on quantity thresholds, customer groups, or date ranges."
+      represents:
+        - concept: checkout.CN006
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              name: CAT228
+              reductionType: CAT229
+              reductionValue: CAT230
+              fromQuantity: CAT231
+              dateFrom: CAT232
+              dateTo: CAT233
+      type: object
+      required: [name, reductionType, reductionValue]
+      properties:
+        name:
+          type: string
+          description: "Rule display name."
+          example: "B2B Wholesale Discount - Laptops"
+        shopId:
+          type: integer
+          description: "Target shop (0 for all shops)."
+          example: 1
+        currencyId:
+          type: integer
+          description: "Currency (0 for all currencies)."
+          example: 0
+        countryId:
+          type: integer
+          description: "Country (0 for all countries)."
+          example: 0
+        groupId:
+          type: integer
+          description: "Customer group (0 for all groups)."
+          example: 3
+        fromQuantity:
+          type: integer
+          description: "Minimum product quantity to trigger the rule."
+          example: 10
+        reductionType:
+          type: string
+          enum: [percentage, amount]
+          description: "How the reduction is calculated."
+          example: "percentage"
+        reductionValue:
+          type: string
+          description: "Numeric reduction value."
+          example: "15.000000"
+        reductionTax:
+          type: boolean
+          description: "Whether the fixed-amount reduction includes tax."
+          example: false
+        dateFrom:
+          type: string
+          format: date-time
+          description: "Validity period start."
+          example: "2026-01-01T00:00:00"
+        dateTo:
+          type: string
+          format: date-time
+          description: "Validity period end."
+          example: "2026-12-31T23:59:59"
+        conditionGroups:
+          type: array
+          description: "Product condition groups defining which products qualify."
+          items:
+            type: object
+            properties:
+              conditionType:
+                type: string
+                enum: [product, attribute, category, manufacturer, supplier, feature]
+                description: "Type of product condition."
+                example: "category"
+              values:
+                type: array
+                description: "Matching values for the condition type."
+                items:
+                  type: integer
+                example: [5, 12]
+      code_refs:
+        - path: "src/Core/Domain/CatalogPriceRule/Command/AddCatalogPriceRuleCommand.php"
+          role: schema
+          description: "Constructor defines payload shape for catalog price rule creation"
+
+    CatalogPriceRuleResource:
+      x-model-id: MDL207
+      purpose: read-model
+      description: "Full catalog price rule representation for the editing form. Includes conditions, reduction settings, and applicable product filters."
+      represents:
+        - concept: checkout.CN006
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              catalogPriceRuleId: CAT227
+              name: CAT228
+              reductionType: CAT229
+              reductionValue: CAT230
+              fromQuantity: CAT231
+              dateFrom: CAT232
+              dateTo: CAT233
+      type: object
+      properties:
+        catalogPriceRuleId:
+          type: integer
+          description: "Unique catalog price rule identifier."
+          example: 5
+        name:
+          type: string
+          description: "Rule display name."
+          example: "B2B Wholesale Discount - Laptops"
+        shopId:
+          type: integer
+          description: "Target shop."
+          example: 1
+        currencyId:
+          type: integer
+          description: "Currency restriction (0 = all)."
+          example: 0
+        countryId:
+          type: integer
+          description: "Country restriction (0 = all)."
+          example: 0
+        groupId:
+          type: integer
+          description: "Customer group restriction (0 = all)."
+          example: 3
+        fromQuantity:
+          type: integer
+          description: "Minimum product quantity to trigger the rule."
+          example: 10
+        reductionType:
+          type: string
+          enum: [percentage, amount]
+          description: "How the reduction is calculated."
+          example: "percentage"
+        reductionValue:
+          type: string
+          description: "Numeric reduction value."
+          example: "15.000000"
+        reductionTax:
+          type: boolean
+          description: "Whether the fixed-amount reduction includes tax."
+          example: false
+        dateFrom:
+          type: string
+          format: date-time
+          description: "Validity period start."
+          example: "2026-01-01T00:00:00"
+        dateTo:
+          type: string
+          format: date-time
+          description: "Validity period end."
+          example: "2026-12-31T23:59:59"
+        conditionGroups:
+          type: array
+          description: "Product condition groups."
+          items:
+            type: object
+            properties:
+              conditionType:
+                type: string
+                enum: [product, attribute, category, manufacturer, supplier, feature]
+                example: "category"
+              values:
+                type: array
+                items:
+                  type: integer
+                example: [5, 12]
+      code_refs:
+        - path: "src/Core/Domain/CatalogPriceRule/Query/GetCatalogPriceRuleForEditing.php"
+          role: schema
+          description: "GetCatalogPriceRuleForEditing QueryResult — master catalog price rule read model"

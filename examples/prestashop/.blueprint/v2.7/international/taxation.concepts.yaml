@@ -1,0 +1,111 @@
+---
+version: "1.0.0"
+scope: international
+tags: [taxation]
+
+concepts:
+  - id: international.CN007
+    name: "Tax"
+    stereotype: aggregate-root
+    description: "A tax rate definition with localized name and percentage rate. Tax rates are referenced by TaxRulesGroup bindings to determine applicable taxation for products/shipping."
+    tags: [aggregate-root, taxation]
+    attributes:
+      localizedNames:
+        id: CAT532
+        description: "Tax display name per language"
+        example: "VAT 20%"
+      rate:
+        id: CAT533
+        description: "Tax rate as a percentage"
+        example: "20.0"
+      enabled:
+        id: CAT534
+        description: "Whether this tax rate is active"
+    code_refs:
+      - path: "src/Core/Domain/Tax/Command/AddTaxCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Tax/Command/EditTaxCommand.php"
+        role: implementation
+
+  - id: international.CN008
+    name: "TaxRulesGroup"
+    stereotype: aggregate-root
+    description: "A named group of tax rules that binds tax rates to geographic zones and countries. Products and carriers reference a TaxRulesGroup to determine their applicable tax. The group owns TaxRule entities that define the actual bindings."
+    tags: [aggregate-root, taxation]
+    attributes:
+      name:
+        id: CAT535
+        description: "Tax rules group display name"
+        example: "EU VAT Standard Rate"
+      enabled:
+        id: CAT536
+        description: "Whether this group is active"
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/Command/AddTaxRulesGroupCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/TaxRulesGroup/Command/EditTaxRulesGroupCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/TaxRulesGroup/ValueObject/TaxRulesGroupId.php"
+        role: model
+
+  - id: international.CN009
+    name: "TaxRule"
+    stereotype: entity
+    description: "A binding record within a TaxRulesGroup that maps a Tax rate to a Zone and optionally a Country/State. Determines which tax rate applies for a given geographic location. Has database identity but no independent CQRS lifecycle — managed through TaxRulesGroup configuration."
+    tags: [entity, within:international.CN008, taxation]
+    attributes:
+      taxId:
+        id: CAT537
+        description: "Reference to the Tax rate applied by this rule"
+      zoneId:
+        id: CAT538
+        description: "Reference to the Zone this rule applies to"
+      countryId:
+        id: CAT539
+        description: "Reference to the Country (optional — zone-level if omitted)"
+      stateId:
+        id: CAT540
+        description: "Reference to the State (optional — country/zone-level if omitted)"
+      behavior:
+        id: CAT541
+        description: "Tax combination behavior when multiple rules match"
+
+actors:
+  - id: international.ACT002
+    type: human
+    name: "TaxAccountant"
+    description: "Specialist responsible for configuring tax rates, tax rules groups, and ensuring compliance with regional tax regulations (VAT, sales tax)."
+    personas:
+      - name: "Typical TaxAccountant"
+        quote: "Tax rules must be correct for every zone and country — errors mean regulatory penalties or customer overcharging."
+        goals: ["Configure accurate tax rates", "Map tax rules to zones/countries", "Ensure VAT compliance"]
+        pain_points: ["Complex multi-country VAT rules", "Tax rule gaps causing zero-tax charges", "Regulatory changes requiring updates"]
+        behaviors: ["Reviews tax configuration quarterly", "Validates tax calculations against invoices"]
+        tech_savviness: medium
+        job_to_be_done: "Ensure every product and shipment is taxed correctly per regional regulations"
+        context: "Tax compliance and configuration"
+        demographics:
+          role: "Tax/Finance Specialist"
+          industry: "E-commerce"
+
+associations:
+  - id: international.AS005
+    subject: international.CN008
+    predicate: depends-on
+    object: international.CN009
+    cardinality: "0..*"
+    description: "A TaxRulesGroup contains zero or more TaxRule bindings."
+
+  - id: international.AS006
+    subject: international.CN009
+    predicate: depends-on
+    object: international.CN007
+    cardinality: "1"
+    description: "Each TaxRule references exactly one Tax rate."
+
+  - id: international.AS007
+    subject: international.CN009
+    predicate: depends-on
+    object: international.CN006
+    cardinality: "1"
+    description: "Each TaxRule is scoped to exactly one Zone."

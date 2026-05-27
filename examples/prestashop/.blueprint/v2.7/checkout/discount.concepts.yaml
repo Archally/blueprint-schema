@@ -1,0 +1,149 @@
+---
+version: "1.0.0"
+scope: checkout
+tags: [discount, promotions]
+
+concepts:
+  - id: checkout.CN004
+    name: "Discount"
+    description: "Promotion rule engine — the v9 CQRS domain for managing voucher codes, automatic discounts, free shipping, and BOGO offers. Wraps the legacy CartRule table with a modern command/query interface."
+    stereotype: aggregate-root
+    attributes:
+      discountId:
+        id: CAT213
+        description: "Unique discount identifier"
+      name:
+        id: CAT214
+        description: "Display name for the discount"
+      code:
+        id: CAT215
+        description: "Voucher code for manual application (empty for automatic discounts)"
+      reductionType:
+        id: CAT216
+        description: "Type of reduction: percentage or fixed amount"
+      reductionValue:
+        id: CAT217
+        description: "Numeric reduction value"
+      minimumAmount:
+        id: CAT218
+        description: "Minimum cart total required to apply"
+      dateFrom:
+        id: CAT219
+        description: "Validity period start date"
+      dateTo:
+        id: CAT220
+        description: "Validity period end date"
+      totalQuantity:
+        id: CAT221
+        description: "Global usage limit across all customers"
+      quantityPerUser:
+        id: CAT222
+        description: "Maximum usage per individual customer"
+      priority:
+        id: CAT223
+        description: "Application priority (lower = higher priority)"
+      freeShipping:
+        id: CAT224
+        description: "Whether this discount grants free shipping"
+      active:
+        id: CAT225
+        description: "Whether the discount is currently enabled"
+    code_refs:
+      - path: "src/Core/Domain/Discount/ValueObject/DiscountId.php"
+        role: model
+      - path: "src/Core/Domain/Discount/DiscountSettings.php"
+        role: configuration
+      - path: "src/Core/Domain/Discount/Command/AddDiscountCommand.php"
+        role: implementation
+
+  - id: checkout.CN005
+    name: "ProductRuleGroup"
+    description: "Grouping of product selection conditions within a discount. Each group defines which products qualify via product rules."
+    stereotype: value-object
+    attributes:
+      quantity:
+        id: CAT226
+        description: "Minimum quantity of matching products required"
+    code_refs:
+      - path: "src/Core/Domain/Discount/ProductRuleGroup.php"
+        role: model
+      - path: "src/Core/Domain/Discount/ProductRuleGroupType.php"
+        role: model
+
+actors:
+  - id: checkout.ACT001
+    name: "MarketingManager"
+    type: human
+    description: "Creates and manages promotional campaigns, voucher codes, and catalog pricing rules."
+    responsibilities:
+      - "Create and configure discount campaigns"
+      - "Set voucher codes and usage limits"
+      - "Configure catalog price rules for B2B/wholesale"
+      - "Monitor promotion performance and ROI"
+      - "Manage discount stacking and priority rules"
+    personas:
+      - name: "Typical MarketingManager"
+        quote: "I need to launch the spring sale by Friday with the right discounts and usage limits."
+        goals:
+          - "Launch promotional campaigns quickly"
+          - "Track discount ROI accurately"
+          - "Prevent discount abuse"
+        pain_points:
+          - "Complex condition combinations are hard to preview"
+          - "No visibility into stacking behavior before publishing"
+          - "Difficult to duplicate and adapt seasonal campaigns"
+        behaviors:
+          - "Creates campaigns weeks in advance with scheduled activation"
+          - "Copies last year's seasonal campaigns as templates"
+          - "Tests discount codes before sharing with customers"
+        tech_savviness: medium
+        job_to_be_done: "Configure and monitor promotional pricing strategies that drive revenue without margin erosion"
+
+enumerations:
+  - id: checkout.EN003
+    name: "DiscountType"
+    description: "Types of discount mechanisms."
+    values:
+      - name: voucher-code
+        description: "Manual entry of a code by the customer."
+      - name: automatic
+        description: "Automatically applied when conditions are met."
+    code_refs:
+      - path: "src/Core/Domain/Discount/ValueObject/DiscountType.php"
+        role: model
+
+  - id: checkout.EN004
+    name: "ReductionType"
+    description: "How the discount amount is calculated."
+    values:
+      - name: percentage
+        description: "Percentage off the applicable total."
+      - name: amount
+        description: "Fixed monetary amount off."
+    code_refs:
+      - path: "src/Core/Domain/Discount/DiscountSettings.php"
+        role: configuration
+
+  - id: checkout.EN005
+    name: "DiscountPeriodFilter"
+    description: "Filter options for discount listing by validity period."
+    values:
+      - name: all
+        description: "Show all discounts regardless of period."
+      - name: active
+        description: "Currently within validity date range."
+      - name: scheduled
+        description: "Start date is in the future."
+      - name: expired
+        description: "End date has passed."
+    code_refs:
+      - path: "src/Core/Domain/Discount/DiscountSettings.php"
+        role: configuration
+
+associations:
+  - id: checkout.AS003
+    subject: checkout.CN004
+    predicate: depends-on
+    object: checkout.CN005
+    cardinality: "0..*"
+    description: "Discount eligibility depends on product rule groups defining qualifying products."

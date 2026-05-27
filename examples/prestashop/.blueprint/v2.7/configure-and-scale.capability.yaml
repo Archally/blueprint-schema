@@ -1,0 +1,72 @@
+---
+version: "1.0.0"
+tags: [configure-and-scale]
+capabilities:
+  # ── Level 1: Content & Design ──────────────────────────────────────────
+  - id: CAP013
+    name: "Content Management"
+    level: 1
+    description: >
+      Ability to create and manage CMS pages, page categories, themes,
+      email templates, and SEO metadata.
+    maturity: established
+    strategic_importance: medium
+    delivery_priority: should-have
+    discovery_stage: committed
+    certainty: confirmed
+    value_stream_refs: [VS003]
+
+  # ── Level 1: Extension & Integration ───────────────────────────────────
+  - id: CAP014
+    name: "Module Ecosystem"
+    level: 1
+    description: >
+      Ability to extend platform functionality through installable modules
+      with a hook-based extension system and marketplace integration.
+    maturity: optimized
+    strategic_importance: critical
+    delivery_priority: must-have
+    discovery_stage: committed
+    certainty: confirmed
+    value_stream_refs: [VS003]
+
+  # ── Level 1: Administration ────────────────────────────────────────────
+  - id: CAP015
+    name: "Employee & Access Management"
+    level: 1
+    description: >
+      Ability to manage back-office employees, role-based access control
+      profiles, API clients, and security audit trails.
+    maturity: established
+    strategic_importance: high
+    delivery_priority: must-have
+    discovery_stage: committed
+    certainty: confirmed
+    value_stream_refs: [VS003]
+
+  - id: CAP016
+    name: "API & Integration Platform"
+    level: 1
+    description: >
+      Ability to expose platform data and operations through REST APIs,
+      webservice keys, and OAuth2 API clients for third-party integrations.
+    maturity: developing
+    strategic_importance: critical
+    delivery_priority: must-have
+    discovery_stage: committed
+    certainty: confirmed
+    value_stream_refs: [VS003]
+
+  # ── Level 1: Store Operations ──────────────────────────────────────────
+  - id: CAP017
+    name: "Multi-Store Management"
+    level: 1
+    description: >
+      Ability to operate multiple shops from a single back-office with
+      shared or independent catalogs, customers, and configurations.
+    maturity: established
+    strategic_importance: high
+    delivery_priority: should-have
+    discovery_stage: committed
+    certainty: confirmed
+    value_stream_refs: [VS003]

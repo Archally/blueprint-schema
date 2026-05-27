@@ -1,0 +1,118 @@
+---
+name: "Language Management"
+version: "1.0.0"
+scope: international
+tags: [localization, language]
+
+operations:
+
+  addLanguage:
+    id: international.CMD007
+    kind: command
+    name: "AddLanguage"
+    description: "Create a new store language with ISO code, locale, name, RTL flag, and flag image."
+    delivery_priority: must-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT007]
+      mode: all
+    governed_by:
+      - rule: international.VR003
+    code_refs:
+      - path: "src/Core/Domain/Language/Command/AddLanguageCommand.php"
+        role: implementation
+
+  editLanguage:
+    id: international.CMD008
+    kind: command
+    name: "EditLanguage"
+    description: "Update a language's name, locale, RTL flag, or status."
+    delivery_priority: must-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT008]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Language/Command/EditLanguageCommand.php"
+        role: implementation
+
+  deleteLanguage:
+    id: international.CMD009
+    kind: command
+    name: "DeleteLanguage"
+    description: "Delete a language. The default language cannot be deleted."
+    delivery_priority: must-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT009]
+      mode: all
+    governed_by:
+      - rule: international.VR004
+    code_refs:
+      - path: "src/Core/Domain/Language/Command/DeleteLanguageCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Language/Command/BulkDeleteLanguagesCommand.php"
+        role: implementation
+
+  toggleLanguageStatus:
+    id: international.CMD010
+    kind: command
+    name: "ToggleLanguageStatus"
+    description: "Enable or disable a language. Disabled languages are not available in the storefront language selector."
+    delivery_priority: must-have
+    initiated_by: [international.ACT001]
+    produces:
+      operations: [international.EVT010]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Language/Command/ToggleLanguageStatusCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Language/Command/BulkToggleLanguagesStatusCommand.php"
+        role: implementation
+
+  # --- Events ---
+
+  languageCreated:
+    id: international.EVT007
+    kind: event
+    name: "LanguageCreated"
+    description: "A new language has been added."
+
+  languageUpdated:
+    id: international.EVT008
+    kind: event
+    name: "LanguageUpdated"
+    description: "A language's configuration has been modified."
+
+  languageDeleted:
+    id: international.EVT009
+    kind: event
+    name: "LanguageDeleted"
+    description: "One or more languages have been deleted."
+
+  languageStatusToggled:
+    id: international.EVT010
+    kind: event
+    name: "LanguageStatusToggled"
+    description: "A language's enabled/disabled status has changed."
+
+  # --- Queries ---
+
+  getLanguageForEditing:
+    id: international.QRY004
+    kind: query
+    name: "GetLanguageForEditing"
+    description: "Retrieve a language's full configuration for the edit form."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Language/Query/GetLanguageForEditing.php"
+        role: implementation
+
+errors:
+  languageNotFound:
+    id: international.ERR003
+    name: "LanguageNotFound"
+    description: "The specified language does not exist."
+    category: not-found
+    severity: error
+    http_status: 404

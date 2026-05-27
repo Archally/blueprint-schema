@@ -1,0 +1,76 @@
+---
+version: "1.0.0"
+scope: shipping
+tags: [shipment-management]
+
+concepts:
+  - id: shipping.CN004
+    name: "Shipment"
+    stereotype: aggregate-root
+    description: "An order fulfillment unit grouping products assigned to a specific carrier. Shipments have their own identity (ShipmentId), can be split or merged, and track delivery via carrier tracking numbers. A single order may have multiple shipments."
+    tags: [aggregate-root]
+    states: [pending, shipped]
+    initial_state: pending
+    attributes:
+      shipmentId:
+        id: CAT420
+        description: "Unique shipment identifier"
+        example: "42"
+      orderId:
+        id: CAT421
+        description: "Reference to the order this shipment fulfills"
+        example: "1001"
+      carrierId:
+        id: CAT422
+        description: "Reference to the carrier handling delivery"
+        example: "3"
+      trackingNumber:
+        id: CAT423
+        description: "Carrier-provided tracking identifier for this shipment"
+        example: "1Z999AA10123456784"
+    code_refs:
+      - path: "src/Core/Domain/Shipment/ValueObject/ShipmentId.php"
+        role: model
+      - path: "src/Core/Domain/Shipment/Command/CreateShipment.php"
+        role: implementation
+        description: "Full creation attributes: orderId, carrierId, productId, quantity, combinationId"
+
+  - id: shipping.CN005
+    name: "ShipmentProduct"
+    stereotype: entity
+    description: "A product line assigned to a shipment with quantity. Products can be added, removed, or moved between shipments via split/merge operations."
+    tags: [entity, within:shipping.CN004]
+    attributes:
+      orderDetailId:
+        id: CAT424
+        description: "Reference to order detail (line item) this shipment product represents"
+      productId:
+        id: CAT425
+        description: "Reference to the catalog product"
+      combinationId:
+        id: CAT426
+        description: "Reference to product combination/variant (optional)"
+      quantity:
+        id: CAT427
+        description: "Number of units of this product in the shipment"
+        example: "2"
+    code_refs:
+      - path: "src/Core/Domain/Shipment/ValueObject/OrderDetailId.php"
+        role: model
+      - path: "src/Core/Domain/Shipment/ValueObject/OrderDetailQuantity.php"
+        role: model
+
+associations:
+  - id: shipping.AS002
+    subject: shipping.CN004
+    predicate: depends-on
+    object: shipping.CN005
+    cardinality: "1..*"
+    description: "A shipment contains one or more product lines with quantities."
+
+  - id: shipping.AS003
+    subject: shipping.CN004
+    predicate: depends-on
+    object: shipping.CN001
+    cardinality: "1"
+    description: "Each shipment is assigned to exactly one carrier. Carrier can be switched via SwitchShipmentCarrier."

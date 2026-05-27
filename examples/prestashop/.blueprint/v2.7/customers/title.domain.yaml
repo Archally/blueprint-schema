@@ -1,0 +1,81 @@
+---
+name: "Title"
+version: "1.0.0"
+scope: customers
+tags: [title, reference-data]
+
+operations:
+  addTitle:
+    id: customers.CMD020
+    kind: command
+    name: "AddTitle"
+    description: "Create a new customer title (salutation) with localized name and gender association."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT004]
+    produces:
+      operations: [customers.EVT013]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Title/Command/AddTitleCommand.php"
+        role: implementation
+
+  editTitle:
+    id: customers.CMD021
+    kind: command
+    name: "EditTitle"
+    description: "Update an existing title's name or gender."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT004]
+    produces:
+      operations: [customers.EVT014]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Title/Command/EditTitleCommand.php"
+        role: implementation
+
+  deleteTitle:
+    id: customers.CMD022
+    kind: command
+    name: "DeleteTitle"
+    description: "Delete one or more titles. Supports single and bulk deletion."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT004]
+    produces:
+      operations: [customers.EVT013]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Title/Command/DeleteTitleCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Title/Command/BulkDeleteTitleCommand.php"
+        role: implementation
+
+  getTitleForEditing:
+    id: customers.QRY013
+    kind: query
+    name: "GetTitleForEditing"
+    description: "Retrieve a title for the edit form."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/Title/Query/GetTitleForEditing.php"
+        role: implementation
+
+  titleCreated:
+    id: customers.EVT013
+    kind: event
+    name: "TitleCreated"
+    description: "Emitted when a title is created or deleted."
+
+  titleUpdated:
+    id: customers.EVT014
+    kind: event
+    name: "TitleUpdated"
+    description: "Emitted when a title is modified."
+
+errors:
+  titleNotFound:
+    id: customers.ERR008
+    name: "TitleNotFound"
+    description: "Requested title does not exist."
+    category: not-found
+    severity: error
+    http_status: 404

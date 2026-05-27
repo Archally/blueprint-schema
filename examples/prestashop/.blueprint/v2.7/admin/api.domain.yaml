@@ -1,0 +1,219 @@
+---
+name: "API Management"
+version: "1.0.0"
+scope: admin
+tags: [api-management]
+
+operations:
+
+  # ── ApiClient (5 CMD + 1 QRY) ──
+
+  addApiClient:
+    id: admin.CMD021
+    kind: command
+    name: "AddApiClient"
+    description: "Create a new OAuth2 API client with name, client ID, scopes, lifetime, and enabled status."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT003]
+    produces:
+      operations: [admin.EVT014]
+      mode: all
+    governed_by:
+      - rule: admin.VR005
+    code_refs:
+      - path: "src/Core/Domain/ApiClient/Command/AddApiClientCommand.php"
+        role: implementation
+
+  apiClientAdded:
+    id: admin.EVT014
+    kind: event
+    name: "ApiClientAdded"
+    description: "New API client registered."
+
+  editApiClient:
+    id: admin.CMD022
+    kind: command
+    name: "EditApiClient"
+    description: "Update an existing API client's configuration including scopes, lifetime, and enabled status."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT003]
+    produces:
+      operations: [admin.EVT015]
+      mode: all
+    governed_by:
+      - rule: admin.VR005
+    code_refs:
+      - path: "src/Core/Domain/ApiClient/Command/EditApiClientCommand.php"
+        role: implementation
+
+  apiClientEdited:
+    id: admin.EVT015
+    kind: event
+    name: "ApiClientEdited"
+    description: "API client configuration updated."
+
+  deleteApiClient:
+    id: admin.CMD023
+    kind: command
+    name: "DeleteApiClient"
+    description: "Remove an API client and revoke all associated tokens."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT003]
+    produces:
+      operations: [admin.EVT016]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/ApiClient/Command/DeleteApiClientCommand.php"
+        role: implementation
+
+  apiClientDeleted:
+    id: admin.EVT016
+    kind: event
+    name: "ApiClientDeleted"
+    description: "API client removed and tokens revoked."
+
+  rotateApiClientSecret:
+    id: admin.CMD024
+    kind: command
+    name: "RotateApiClientSecret"
+    description: "Rotate an API client's secret. Virtual operation grouping ForceApiClientSecret (explicit value) and GenerateApiClientSecret (auto-generated). Both accomplish the same domain goal: secret rotation."
+    delivery_priority: must-have
+    initiated_by: [admin.ACT003]
+    produces:
+      operations: [admin.EVT017]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/ApiClient/Command/ForceApiClientSecretCommand.php"
+        role: implementation
+        description: "Force-set a specific secret value"
+      - path: "src/Core/Domain/ApiClient/Command/GenerateApiClientSecretCommand.php"
+        role: implementation
+        description: "Auto-generate a new secret"
+
+  apiClientSecretRotated:
+    id: admin.EVT017
+    kind: event
+    name: "ApiClientSecretRotated"
+    description: "API client secret changed."
+
+  getApiClientForEditing:
+    id: admin.QRY005
+    kind: query
+    name: "GetApiClientForEditing"
+    description: "Retrieve API client details for the edit form."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/ApiClient/Query/GetApiClientForEditing.php"
+        role: implementation
+
+  # ── WebserviceKey (4 CMD + 1 QRY) ──
+
+  addWebserviceKey:
+    id: admin.CMD025
+    kind: command
+    name: "AddWebserviceKey"
+    description: "Create a new legacy webservice access key with resource permissions."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT003]
+    produces:
+      operations: [admin.EVT018]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Webservice/Command/AddWebserviceKeyCommand.php"
+        role: implementation
+
+  webserviceKeyAdded:
+    id: admin.EVT018
+    kind: event
+    name: "WebserviceKeyAdded"
+    description: "New webservice key created."
+
+  editWebserviceKey:
+    id: admin.CMD026
+    kind: command
+    name: "EditWebserviceKey"
+    description: "Update a webservice key's description and resource permissions."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT003]
+    produces:
+      operations: [admin.EVT019]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Webservice/Command/EditWebserviceKeyCommand.php"
+        role: implementation
+
+  webserviceKeyEdited:
+    id: admin.EVT019
+    kind: event
+    name: "WebserviceKeyEdited"
+    description: "Webservice key permissions updated."
+
+  deleteWebserviceKey:
+    id: admin.CMD027
+    kind: command
+    name: "DeleteWebserviceKey"
+    description: "Remove a webservice key, revoking legacy API access."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT003]
+    produces:
+      operations: [admin.EVT020]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Webservice/Command/DeleteWebserviceKeyCommand.php"
+        role: implementation
+
+  webserviceKeyDeleted:
+    id: admin.EVT020
+    kind: event
+    name: "WebserviceKeyDeleted"
+    description: "Webservice key removed."
+
+  bulkDeleteWebserviceKey:
+    id: admin.CMD028
+    kind: command
+    name: "BulkDeleteWebserviceKey"
+    description: "Delete multiple webservice keys at once."
+    delivery_priority: could-have
+    initiated_by: [admin.ACT003]
+    produces:
+      operations: [admin.EVT020]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Webservice/Command/BulkDeleteWebserviceKeyCommand.php"
+        role: implementation
+
+  getWebserviceKeyForEditing:
+    id: admin.QRY006
+    kind: query
+    name: "GetWebserviceKeyForEditing"
+    description: "Retrieve webservice key details for the edit form."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Webservice/Query/GetWebserviceKeyForEditing.php"
+        role: implementation
+
+errors:
+  apiClientNotFound:
+    id: admin.ERR006
+    name: "ApiClientNotFound"
+    description: "The specified API client ID does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  invalidApiScopes:
+    id: admin.ERR007
+    name: "InvalidApiScopes"
+    description: "One or more provided scopes are not valid strings."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [admin.VR005]
+
+  webserviceKeyNotFound:
+    id: admin.ERR008
+    name: "WebserviceKeyNotFound"
+    description: "The specified webservice key does not exist."
+    category: not-found
+    severity: error
+    http_status: 404

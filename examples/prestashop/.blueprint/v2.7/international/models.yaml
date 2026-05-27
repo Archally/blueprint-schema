@@ -1,0 +1,578 @@
+---
+version: "1.0.0"
+scope: international
+tags: [international, models]
+
+components:
+  schemas:
+    CreateCurrencyPayload:
+      x-model-id: MDL500
+      purpose: command-payload
+      description: "Request body for creating a new currency (official or unofficial) with ISO code, exchange rate, precision, and localized names."
+      represents:
+        - concept: international.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              isoCode: CAT500
+              exchangeRate: CAT501
+              precision: CAT502
+              localizedNames: CAT503
+              active: CAT505
+      type: object
+      required: [isoCode, exchangeRate, precision, localizedNames, active]
+      properties:
+        isoCode:
+          type: string
+          description: "ISO 4217 alpha currency code."
+          example: "EUR"
+        exchangeRate:
+          type: string
+          description: "Exchange rate relative to the default (reference) currency."
+          example: "1.000000"
+        precision:
+          type: integer
+          description: "Number of decimal places for display and rounding."
+          example: 2
+        localizedNames:
+          type: object
+          description: "Currency display name per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Euro"
+            "2": "Euro"
+        active:
+          type: boolean
+          description: "Whether this currency is active and available on the storefront."
+          example: true
+        shopIds:
+          type: array
+          description: "Shop IDs this currency is associated with (multi-store)."
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/Currency/Command/AddCurrencyCommand.php"
+          role: schema
+        - path: "src/Core/Domain/Currency/Command/AddUnofficialCurrencyCommand.php"
+          role: schema
+
+    CurrencyResource:
+      x-model-id: MDL501
+      purpose: read-model
+      description: "Currency representation for back-office editing. Exposes the full attribute set including localized names, symbols, transformations, and exchange rate."
+      represents:
+        - concept: international.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              isoCode: CAT500
+              exchangeRate: CAT501
+              precision: CAT502
+              localizedNames: CAT503
+              localizedSymbols: CAT504
+              isEnabled: CAT505
+              localizedTransformations: CAT506
+      type: object
+      properties:
+        currencyId:
+          type: integer
+          description: "Unique currency identifier."
+          example: 1
+        isoCode:
+          type: string
+          description: "ISO 4217 alpha currency code."
+          example: "EUR"
+        numericIsoCode:
+          type: string
+          description: "ISO 4217 numeric currency code."
+          example: "978"
+        exchangeRate:
+          type: string
+          description: "Exchange rate relative to the reference currency."
+          example: "1.000000"
+        precision:
+          type: integer
+          description: "Number of decimal places."
+          example: 2
+        localizedNames:
+          type: object
+          description: "Currency display name per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Euro"
+        localizedSymbols:
+          type: object
+          description: "Currency symbol per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "\u20AC"
+        localizedTransformations:
+          type: object
+          description: "Display transformation patterns per language (formatting rules)."
+          additionalProperties:
+            type: string
+        isEnabled:
+          type: boolean
+          description: "Whether this currency is active."
+          example: true
+        isDefault:
+          type: boolean
+          description: "Whether this is the store's reference (default) currency."
+          example: true
+        shopIds:
+          type: array
+          description: "Associated shop IDs."
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/Currency/Query/GetCurrencyForEditing.php"
+          role: schema
+        - path: "src/Core/Domain/Currency/ValueObject/AlphaIsoCode.php"
+          role: model
+
+    CreateTaxPayload:
+      x-model-id: MDL502
+      purpose: command-payload
+      description: "Request body for creating a new tax rate definition with localized name and percentage."
+      represents:
+        - concept: international.CN007
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              localizedNames: CAT532
+              rate: CAT533
+              active: CAT534
+      type: object
+      required: [localizedNames, rate, active]
+      properties:
+        localizedNames:
+          type: object
+          description: "Tax display name per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "VAT 20%"
+            "2": "TVA 20%"
+        rate:
+          type: string
+          description: "Tax rate as a percentage."
+          example: "20.000000"
+        active:
+          type: boolean
+          description: "Whether this tax rate is active."
+          example: true
+      code_refs:
+        - path: "src/Core/Domain/Tax/Command/AddTaxCommand.php"
+          role: schema
+
+    TaxRulesGroupResource:
+      x-model-id: MDL503
+      purpose: read-model
+      description: "Tax rules group representation for back-office editing. Includes the group name, status, and associated tax rule bindings."
+      represents:
+        - concept: international.CN008
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              name: CAT535
+              isEnabled: CAT536
+      type: object
+      properties:
+        taxRulesGroupId:
+          type: integer
+          description: "Unique tax rules group identifier."
+          example: 1
+        name:
+          type: string
+          description: "Tax rules group display name."
+          example: "EU VAT Standard Rate"
+        isEnabled:
+          type: boolean
+          description: "Whether this group is active."
+          example: true
+        taxRules:
+          type: array
+          description: "Tax rule bindings within this group."
+          items:
+            type: object
+            properties:
+              taxId:
+                type: integer
+                description: "Reference to the Tax rate."
+                example: 1
+              zoneId:
+                type: integer
+                description: "Reference to the Zone."
+                example: 1
+              countryId:
+                type: integer
+                description: "Optional country reference."
+                example: 8
+              stateId:
+                type: integer
+                description: "Optional state reference."
+                example: 0
+              behavior:
+                type: string
+                description: "Tax combination behavior when multiple rules match."
+                example: "this_tax_only"
+        shopIds:
+          type: array
+          description: "Associated shop IDs."
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/TaxRulesGroup/Query/GetTaxRulesGroupForEditing.php"
+          role: schema
+        - path: "src/Core/Domain/TaxRulesGroup/ValueObject/TaxRulesGroupId.php"
+          role: model
+
+    CreateCountryPayload:
+      x-model-id: MDL504
+      purpose: command-payload
+      description: "Request body for creating a new country with ISO code, zone assignment, address configuration, and zip code format."
+      represents:
+        - concept: international.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              isoCode: CAT514
+              localizedNames: CAT515
+              zoneId: CAT517
+              needsZipCode: CAT518
+              zipCodeFormat: CAT519
+              active: CAT524
+      type: object
+      required: [isoCode, localizedNames, zoneId, active]
+      properties:
+        isoCode:
+          type: string
+          description: "ISO 3166-1 alpha-2 country code."
+          example: "FR"
+        localizedNames:
+          type: object
+          description: "Country display name per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "France"
+            "2": "Francia"
+        zoneId:
+          type: integer
+          description: "Geographic zone this country belongs to."
+          example: 1
+        active:
+          type: boolean
+          description: "Whether this country is active for store operations."
+          example: true
+        needsZipCode:
+          type: boolean
+          description: "Whether addresses in this country require a postal/zip code."
+          example: true
+        zipCodeFormat:
+          type: string
+          description: "Regex-like format pattern for zip code validation (N=digit, L=letter, C=iso code)."
+          example: "NNNNN"
+      code_refs:
+        - path: "src/Core/Domain/Country/Command/AddCountryCommand.php"
+          role: schema
+        - path: "src/Core/Domain/Country/ValueObject/CountryZipCodeFormat.php"
+          role: model
+
+    CountryResource:
+      x-model-id: MDL505
+      purpose: read-model
+      description: "Country representation for back-office editing. Includes ISO code, zone, address format, zip code configuration, and tax display settings."
+      represents:
+        - concept: international.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              isoCode: CAT514
+              localizedNames: CAT515
+              callPrefix: CAT516
+              zoneId: CAT517
+              needZipCode: CAT518
+              zipCodeFormat: CAT519
+              addressFormat: CAT520
+              containsStates: CAT521
+              needIdNumber: CAT522
+              displayTaxLabel: CAT523
+              enabled: CAT524
+      type: object
+      properties:
+        countryId:
+          type: integer
+          description: "Unique country identifier."
+          example: 8
+        isoCode:
+          type: string
+          description: "ISO 3166-1 alpha-2 country code."
+          example: "FR"
+        localizedNames:
+          type: object
+          description: "Country display name per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "France"
+        callPrefix:
+          type: string
+          description: "International dialing prefix."
+          example: "33"
+        zoneId:
+          type: integer
+          description: "Geographic zone reference."
+          example: 1
+        needZipCode:
+          type: boolean
+          description: "Whether addresses require a postal/zip code."
+          example: true
+        zipCodeFormat:
+          type: string
+          description: "Zip code validation pattern."
+          example: "NNNNN"
+        addressFormat:
+          type: string
+          description: "Address line format template."
+          example: "firstname lastname\ncompany\naddress1\naddress2\npostcode city\nCountry:name"
+        containsStates:
+          type: boolean
+          description: "Whether this country has states/provinces/regions."
+          example: false
+        needIdNumber:
+          type: boolean
+          description: "Whether customers need an identification number."
+          example: false
+        displayTaxLabel:
+          type: boolean
+          description: "Whether to show tax-inclusive/exclusive labels."
+          example: true
+        enabled:
+          type: boolean
+          description: "Whether this country is active."
+          example: true
+        shopIds:
+          type: array
+          description: "Associated shop IDs."
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/Country/Query/GetCountryForEditing.php"
+          role: schema
+
+    LanguageResource:
+      x-model-id: MDL506
+      purpose: read-model
+      description: "Language representation for back-office viewing and editing. Exposes the full attribute set including locale, RTL support, and date format."
+      represents:
+        - concept: international.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              name: CAT509
+              isoCode: CAT507
+              locale: CAT508
+              rtl: CAT510
+              enabled: CAT511
+      type: object
+      properties:
+        langId:
+          type: integer
+          description: "Unique language identifier."
+          example: 1
+        name:
+          type: string
+          description: "Language display name."
+          example: "French (France)"
+        isoCode:
+          type: string
+          description: "ISO 639-1 language code."
+          example: "fr"
+        locale:
+          type: string
+          description: "Full locale identifier (language + region)."
+          example: "fr-FR"
+        dateFormat:
+          type: string
+          description: "Default date format pattern for this language."
+          example: "d/m/Y"
+        rtl:
+          type: boolean
+          description: "Whether the language uses right-to-left text direction."
+          example: false
+        enabled:
+          type: boolean
+          description: "Whether this language is active and available."
+          example: true
+        flagImageUrl:
+          type: string
+          description: "Flag image URL for language selector."
+          example: "/img/l/1.jpg"
+        shopIds:
+          type: array
+          description: "Associated shop IDs."
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/Language/Query/GetLanguageForEditing.php"
+          role: schema
+        - path: "src/Core/Domain/Language/Command/EditLanguageCommand.php"
+          role: model
+
+    ZoneResource:
+      x-model-id: MDL507
+      purpose: read-model
+      description: "Geographic zone representation for back-office editing. Zones group countries and states for shipping cost calculation and tax rule assignment."
+      represents:
+        - concept: international.CN006
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              name: CAT530
+              enabled: CAT531
+      type: object
+      properties:
+        zoneId:
+          type: integer
+          description: "Unique zone identifier."
+          example: 1
+        name:
+          type: string
+          description: "Zone display name."
+          example: "Europe"
+        enabled:
+          type: boolean
+          description: "Whether this zone is active."
+          example: true
+        shopIds:
+          type: array
+          description: "Associated shop IDs."
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/Zone/Query/GetZoneForEditing.php"
+          role: schema
+
+    CreateLanguagePayload:
+      x-model-id: MDL508
+      purpose: command-payload
+      description: "Request body for creating a new store language with ISO code, locale, name, RTL flag, and flag image."
+      represents:
+        - concept: international.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              name: CAT509
+              isoCode: CAT507
+              locale: CAT508
+              isRtl: CAT510
+              isEnabled: CAT511
+              flagImageFileName: CAT512
+      type: object
+      required: [name, isoCode, locale, isRtl, isEnabled]
+      properties:
+        name:
+          type: string
+          description: "Language display name."
+          example: "French (France)"
+        isoCode:
+          type: string
+          description: "ISO 639-1 language code."
+          example: "fr"
+        locale:
+          type: string
+          description: "Full locale identifier (language + region)."
+          example: "fr-FR"
+        isRtl:
+          type: boolean
+          description: "Whether the language uses right-to-left text direction."
+          example: false
+        isEnabled:
+          type: boolean
+          description: "Whether this language is active."
+          example: true
+        flagImageFileName:
+          type: string
+          description: "Flag image file for language selector."
+          example: "fr.jpg"
+        shopIds:
+          type: array
+          description: "Shop IDs this language is associated with."
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/Language/Command/AddLanguageCommand.php"
+          role: schema
+
+    StateResource:
+      x-model-id: MDL509
+      purpose: read-model
+      description: "State/province/region representation for back-office editing. States have their own zone assignment enabling granular shipping and tax configuration within a country."
+      represents:
+        - concept: international.CN005
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              name: CAT525
+              isoCode: CAT526
+              countryId: CAT527
+              zoneId: CAT528
+              enabled: CAT529
+      type: object
+      properties:
+        stateId:
+          type: integer
+          description: "Unique state identifier."
+          example: 1
+        name:
+          type: string
+          description: "State display name."
+          example: "California"
+        isoCode:
+          type: string
+          description: "State/region ISO code."
+          example: "CA"
+        countryId:
+          type: integer
+          description: "Parent country reference."
+          example: 21
+        countryName:
+          type: string
+          description: "Parent country display name."
+          example: "United States"
+        zoneId:
+          type: integer
+          description: "Geographic zone reference (may differ from country's zone)."
+          example: 2
+        zoneName:
+          type: string
+          description: "Zone display name."
+          example: "US"
+        enabled:
+          type: boolean
+          description: "Whether this state is active."
+          example: true
+      code_refs:
+        - path: "src/Core/Domain/State/Query/GetStateForEditing.php"
+          role: schema

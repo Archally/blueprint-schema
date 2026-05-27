@@ -1,0 +1,427 @@
+---
+version: "1.0.0"
+scope: content
+tags: [content, models]
+
+components:
+  schemas:
+    CreateCmsPagePayload:
+      x-model-id: MDL600
+      purpose: command-payload
+      description: "Request body for creating a new CMS page with localized title, content, SEO metadata, friendly URL, and category assignment."
+      represents:
+        - concept: content.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              categoryId: CAT607
+              localizedTitle: CAT600
+              localizedContent: CAT601
+              localizedMetaTitle: CAT602
+              localizedMetaDescription: CAT603
+              localizedFriendlyUrl: CAT604
+              active: CAT606
+      type: object
+      required: [categoryId, localizedTitle, localizedContent, localizedFriendlyUrl, active]
+      properties:
+        categoryId:
+          type: integer
+          description: "CMS page category this page belongs to."
+          example: 1
+        localizedTitle:
+          type: object
+          description: "Page title per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "About Us"
+            "2": "A propos"
+        localizedContent:
+          type: object
+          description: "HTML content body per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "<p>Welcome to our store. Learn about our history and values.</p>"
+        localizedMetaTitle:
+          type: object
+          description: "SEO meta title per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "About Us | My Store"
+        localizedMetaDescription:
+          type: object
+          description: "SEO meta description per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Learn about our company history and values"
+        localizedFriendlyUrl:
+          type: object
+          description: "URL slug per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "about-us"
+            "2": "a-propos"
+        active:
+          type: boolean
+          description: "Whether this page is displayed on the front office."
+          example: true
+        shopIds:
+          type: array
+          description: "Shop IDs this page is associated with (multi-store)."
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/CmsPage/Command/AddCmsPageCommand.php"
+          role: schema
+
+    CmsPageResource:
+      x-model-id: MDL601
+      purpose: read-model
+      description: "CMS page representation for back-office editing. Includes all localized fields, SEO metadata, category assignment, and display status."
+      represents:
+        - concept: content.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              localizedTitle: CAT600
+              localizedContent: CAT601
+              localizedMetaTitle: CAT602
+              localizedMetaDescription: CAT603
+              localizedFriendlyUrl: CAT604
+              indexedForSearch: CAT605
+              displayed: CAT606
+              categoryRef: CAT607
+      type: object
+      properties:
+        cmsPageId:
+          type: integer
+          description: "Unique CMS page identifier."
+          example: 5
+        localizedTitle:
+          type: object
+          description: "Page title per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "About Us"
+        localizedContent:
+          type: object
+          description: "HTML content body per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "<p>Welcome to our store.</p>"
+        localizedMetaTitle:
+          type: object
+          description: "SEO meta title per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "About Us | My Store"
+        localizedMetaDescription:
+          type: object
+          description: "SEO meta description per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Learn about our company history and values"
+        localizedFriendlyUrl:
+          type: object
+          description: "URL slug per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "about-us"
+        indexedForSearch:
+          type: boolean
+          description: "Whether this page appears in internal search results."
+          example: true
+        displayed:
+          type: boolean
+          description: "Whether this page is visible on the front office."
+          example: true
+        categoryId:
+          type: integer
+          description: "CMS page category reference."
+          example: 1
+        categoryName:
+          type: string
+          description: "Category display name (for breadcrumb/context)."
+          example: "Home"
+        shopIds:
+          type: array
+          description: "Associated shop IDs."
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/CmsPage/Query/GetCmsPageForEditing.php"
+          role: schema
+        - path: "src/Core/Domain/CmsPage/QueryResult/EditableCmsPage.php"
+          role: model
+
+    CreateCmsCategoryPayload:
+      x-model-id: MDL602
+      purpose: command-payload
+      description: "Request body for creating a new CMS page category with localized name, description, SEO metadata, friendly URL, and parent assignment."
+      represents:
+        - concept: content.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              localizedName: CAT608
+              localizedFriendlyUrl: CAT609
+              parentId: CAT610
+              isDisplayed: CAT611
+              localizedDescription: CAT612
+              localizedMetaTitle: CAT613
+              localizedMetaDescription: CAT614
+              shopAssociation: CAT615
+      type: object
+      required: [localizedName, localizedFriendlyUrl, parentId, isDisplayed]
+      properties:
+        parentId:
+          type: integer
+          description: "Parent category reference (root categories reference the system root)."
+          example: 1
+        localizedName:
+          type: object
+          description: "Category display name per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Legal Information"
+            "2": "Informations l\u00E9gales"
+        localizedFriendlyUrl:
+          type: object
+          description: "URL slug per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "legal"
+            "2": "informations-legales"
+        localizedDescription:
+          type: object
+          description: "Category description per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Legal pages including terms of service and privacy policy"
+        localizedMetaTitle:
+          type: object
+          description: "SEO meta title per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Legal Information | My Store"
+        localizedMetaDescription:
+          type: object
+          description: "SEO meta description per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Legal information, terms of service, and privacy policy"
+        isDisplayed:
+          type: boolean
+          description: "Whether this category is visible on the front office."
+          example: true
+        shopAssociation:
+          type: array
+          description: "Shop IDs this category is associated with."
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/CmsPageCategory/Command/AddCmsPageCategoryCommand.php"
+          role: schema
+
+    CmsCategoryResource:
+      x-model-id: MDL603
+      purpose: read-model
+      description: "CMS page category representation for back-office editing. Includes localized fields, hierarchy info, SEO metadata, and shop association."
+      represents:
+        - concept: content.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              localizedName: CAT608
+              localizedFriendlyUrl: CAT609
+              parentId: CAT610
+              isDisplayed: CAT611
+              localizedDescription: CAT612
+              localizedMetaTitle: CAT613
+              localizedMetaDescription: CAT614
+              shopAssociation: CAT615
+      type: object
+      properties:
+        cmsCategoryId:
+          type: integer
+          description: "Unique CMS page category identifier."
+          example: 2
+        localizedName:
+          type: object
+          description: "Category display name per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Legal Information"
+        localizedFriendlyUrl:
+          type: object
+          description: "URL slug per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "legal"
+        localizedDescription:
+          type: object
+          description: "Category description per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Legal pages including terms of service and privacy policy"
+        localizedMetaTitle:
+          type: object
+          description: "SEO meta title per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Legal Information | My Store"
+        localizedMetaDescription:
+          type: object
+          description: "SEO meta description per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Legal information, terms of service, and privacy policy"
+        parentId:
+          type: integer
+          description: "Parent category ID. Root-level categories show the system root."
+          example: 1
+        isDisplayed:
+          type: boolean
+          description: "Whether this category is visible on the front office."
+          example: true
+        shopAssociation:
+          type: array
+          description: "Associated shop IDs."
+          items:
+            type: integer
+          example: [1]
+        breadcrumb:
+          type: array
+          description: "Ancestry chain from root to this category for breadcrumb navigation."
+          items:
+            type: object
+            properties:
+              categoryId:
+                type: integer
+                example: 1
+              name:
+                type: string
+                example: "Home"
+      code_refs:
+        - path: "src/Core/Domain/CmsPageCategory/Query/GetCmsPageCategoryForEditing.php"
+          role: schema
+        - path: "src/Core/Domain/CmsPageCategory/QueryResult/EditableCmsPageCategory.php"
+          role: model
+
+    ThemeResource:
+      x-model-id: MDL604
+      purpose: read-model
+      description: "Theme representation for back-office listing and management. Exposes theme identity, version, active status, and preview information."
+      represents:
+        - concept: content.CN003
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              name: CAT616
+              isActive: CAT617
+              directory: CAT618
+              version: CAT619
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Theme identifier name."
+          example: "classic"
+        version:
+          type: string
+          description: "Theme version string."
+          example: "2.1.0"
+        directory:
+          type: string
+          description: "Filesystem directory containing theme files."
+          example: "themes/classic"
+        isActive:
+          type: boolean
+          description: "Whether this theme is currently enabled for the shop."
+          example: true
+        previewUrl:
+          type: string
+          description: "URL to theme preview screenshot."
+          example: "/themes/classic/preview.png"
+      code_refs:
+        - path: "src/Core/Domain/Theme/ValueObject/ThemeName.php"
+          role: model
+
+    MetaResource:
+      x-model-id: MDL605
+      purpose: read-model
+      description: "SEO metadata entry for a page type. Maps internal page names to localized titles, meta descriptions, and URL rewrite rules."
+      represents:
+        - concept: content.CN005
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              pageName: CAT623
+              localizedTitle: CAT624
+              localizedMetaDescription: CAT625
+              localizedUrlRewrite: CAT626
+      type: object
+      properties:
+        metaId:
+          type: integer
+          description: "Unique meta entry identifier."
+          example: 3
+        pageName:
+          type: string
+          description: "Internal page identifier (e.g., 'category', 'product', 'cms')."
+          example: "category"
+        localizedTitle:
+          type: object
+          description: "Display title per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Product Categories"
+        localizedMetaDescription:
+          type: object
+          description: "SEO meta description per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Browse our product categories"
+        localizedUrlRewrite:
+          type: object
+          description: "URL rewrite rules per language for SEO-friendly URLs."
+          additionalProperties:
+            type: string
+          example:
+            "1": "categories"
+            "2": "categories"
+      code_refs:
+        - path: "src/Core/Domain/Meta/Query/GetMetaForEditing.php"
+          role: schema
+        - path: "src/Core/Domain/Meta/QueryResult/EditableMeta.php"
+          role: model

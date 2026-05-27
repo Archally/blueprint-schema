@@ -1,0 +1,17 @@
+---
+version: "1.0.0"
+scope: customers
+
+execution:
+  model: sequential
+  description: "Customer operations are request-scoped with no background processing."
+  rationale: "Customer CRUD operations are low-throughput and stateless per request, making synchronous processing sufficient without event-driven complexity."
+
+race_conditions:
+  - id: customers.RC001
+    name: "Duplicate email registration"
+    scenario: "Two registration requests with the same email arrive simultaneously."
+    impact: "Duplicate customer account created."
+    likelihood: low
+    mitigation: "Unique constraint on email+shop_id with proper error handling."
+    affects: [customers.CMD001]

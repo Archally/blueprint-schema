@@ -1,0 +1,491 @@
+---
+name: "Shop & Settings"
+version: "1.0.0"
+scope: shop
+tags: [platform-config]
+
+operations:
+
+  # ── Shop (1 CMD + 2 QRY) ──
+
+  uploadLogos:
+    id: shop.CMD001
+    kind: command
+    name: "UploadLogos"
+    description: "Upload store branding images: header logo, invoice logo, mail logo, and favicon. Each file type has its own extension validation (logo: jpg/gif/png, favicon: ico only)."
+    delivery_priority: should-have
+    initiated_by: [shop.ACT001]
+    produces:
+      operations: [shop.EVT001]
+      mode: all
+    governed_by:
+      - rule: shop.VR001
+    code_refs:
+      - path: "src/Core/Domain/Shop/Command/UploadLogosCommand.php"
+        role: implementation
+
+  logosUploaded:
+    id: shop.EVT001
+    kind: event
+    name: "LogosUploaded"
+    description: "Store branding images updated."
+
+  getLogosPaths:
+    id: shop.QRY001
+    kind: query
+    name: "GetLogosPaths"
+    description: "Retrieve current logo file paths for the shop."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Shop/Query/GetLogosPaths.php"
+        role: implementation
+
+  searchShops:
+    id: shop.QRY002
+    kind: query
+    name: "SearchShops"
+    description: "Search for shops in a multi-store installation."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Shop/Query/SearchShops.php"
+        role: implementation
+
+  # ── Store (4 CMD + 1 QRY) ──
+
+  deleteStore:
+    id: shop.CMD002
+    kind: command
+    name: "DeleteStore"
+    description: "Remove a physical store location."
+    delivery_priority: should-have
+    initiated_by: [shop.ACT001]
+    produces:
+      operations: [shop.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Store/Command/DeleteStoreCommand.php"
+        role: implementation
+
+  storeDeleted:
+    id: shop.EVT002
+    kind: event
+    name: "StoreDeleted"
+    description: "Physical store location removed."
+
+  toggleStoreStatus:
+    id: shop.CMD003
+    kind: command
+    name: "ToggleStoreStatus"
+    description: "Toggle a store's active/inactive visibility status."
+    delivery_priority: should-have
+    initiated_by: [shop.ACT001]
+    produces:
+      operations: [shop.EVT003]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Store/Command/ToggleStoreStatusCommand.php"
+        role: implementation
+
+  storeStatusToggled:
+    id: shop.EVT003
+    kind: event
+    name: "StoreStatusToggled"
+    description: "Store visibility status changed."
+
+  bulkDeleteStore:
+    id: shop.CMD004
+    kind: command
+    name: "BulkDeleteStore"
+    description: "Delete multiple physical store locations at once."
+    delivery_priority: could-have
+    initiated_by: [shop.ACT001]
+    produces:
+      operations: [shop.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Store/Command/BulkDeleteStoreCommand.php"
+        role: implementation
+
+  bulkUpdateStoreStatus:
+    id: shop.CMD005
+    kind: command
+    name: "BulkUpdateStoreStatus"
+    description: "Enable or disable multiple store locations at once."
+    delivery_priority: could-have
+    initiated_by: [shop.ACT001]
+    produces:
+      operations: [shop.EVT003]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Store/Command/BulkUpdateStoreStatusCommand.php"
+        role: implementation
+
+  getStoreForEditing:
+    id: shop.QRY003
+    kind: query
+    name: "GetStoreForEditing"
+    description: "Retrieve store details for the edit form."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Store/Query/GetStoreForEditing.php"
+        role: implementation
+
+  # ── SearchEngine (4 CMD + 1 QRY) ──
+
+  addSearchEngine:
+    id: shop.CMD006
+    kind: command
+    name: "AddSearchEngine"
+    description: "Register a new SEO referrer search engine for analytics tracking."
+    delivery_priority: should-have
+    initiated_by: [shop.ACT002]
+    produces:
+      operations: [shop.EVT004]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/SearchEngine/Command/AddSearchEngineCommand.php"
+        role: implementation
+
+  searchEngineAdded:
+    id: shop.EVT004
+    kind: event
+    name: "SearchEngineAdded"
+    description: "New SEO referrer search engine registered."
+
+  editSearchEngine:
+    id: shop.CMD007
+    kind: command
+    name: "EditSearchEngine"
+    description: "Update an SEO referrer search engine's server and query key."
+    delivery_priority: should-have
+    initiated_by: [shop.ACT002]
+    produces:
+      operations: [shop.EVT005]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/SearchEngine/Command/EditSearchEngineCommand.php"
+        role: implementation
+
+  searchEngineEdited:
+    id: shop.EVT005
+    kind: event
+    name: "SearchEngineEdited"
+    description: "SEO referrer search engine updated."
+
+  deleteSearchEngine:
+    id: shop.CMD008
+    kind: command
+    name: "DeleteSearchEngine"
+    description: "Remove an SEO referrer search engine."
+    delivery_priority: should-have
+    initiated_by: [shop.ACT002]
+    produces:
+      operations: [shop.EVT006]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/SearchEngine/Command/DeleteSearchEngineCommand.php"
+        role: implementation
+
+  searchEngineDeleted:
+    id: shop.EVT006
+    kind: event
+    name: "SearchEngineDeleted"
+    description: "SEO referrer search engine removed."
+
+  bulkDeleteSearchEngine:
+    id: shop.CMD009
+    kind: command
+    name: "BulkDeleteSearchEngine"
+    description: "Delete multiple SEO referrer search engines at once."
+    delivery_priority: could-have
+    initiated_by: [shop.ACT002]
+    produces:
+      operations: [shop.EVT006]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/SearchEngine/Command/BulkDeleteSearchEngineCommand.php"
+        role: implementation
+
+  getSearchEngineForEditing:
+    id: shop.QRY004
+    kind: query
+    name: "GetSearchEngineForEditing"
+    description: "Retrieve search engine details for the edit form."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/SearchEngine/Query/GetSearchEngineForEditing.php"
+        role: implementation
+
+  # ── Alias (4 CMD + 3 QRY) ──
+
+  addSearchTermAliases:
+    id: shop.CMD010
+    kind: command
+    name: "AddSearchTermAliases"
+    description: "Create a new search term alias mapping (e.g., 'tshirt' → 't-shirt')."
+    delivery_priority: should-have
+    initiated_by: [shop.ACT002]
+    produces:
+      operations: [shop.EVT007]
+      mode: all
+    governed_by:
+      - rule: shop.VR002
+    code_refs:
+      - path: "src/Core/Domain/Alias/Command/AddSearchTermAliasesCommand.php"
+        role: implementation
+
+  searchTermAliasesAdded:
+    id: shop.EVT007
+    kind: event
+    name: "SearchTermAliasesAdded"
+    description: "New search term alias mapping created."
+
+  updateSearchTermAliases:
+    id: shop.CMD011
+    kind: command
+    name: "UpdateSearchTermAliases"
+    description: "Update an existing search term alias mapping."
+    delivery_priority: should-have
+    initiated_by: [shop.ACT002]
+    produces:
+      operations: [shop.EVT008]
+      mode: all
+    governed_by:
+      - rule: shop.VR002
+    code_refs:
+      - path: "src/Core/Domain/Alias/Command/UpdateSearchTermAliasesCommand.php"
+        role: implementation
+
+  searchTermAliasesUpdated:
+    id: shop.EVT008
+    kind: event
+    name: "SearchTermAliasesUpdated"
+    description: "Search term alias mapping updated."
+
+  deleteSearchTermAliases:
+    id: shop.CMD012
+    kind: command
+    name: "DeleteSearchTermAliases"
+    description: "Remove a search term alias mapping."
+    delivery_priority: should-have
+    initiated_by: [shop.ACT002]
+    produces:
+      operations: [shop.EVT009]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Alias/Command/DeleteSearchTermAliasesCommand.php"
+        role: implementation
+
+  searchTermAliasesDeleted:
+    id: shop.EVT009
+    kind: event
+    name: "SearchTermAliasesDeleted"
+    description: "Search term alias mapping removed."
+
+  bulkDeleteSearchTermAliases:
+    id: shop.CMD013
+    kind: command
+    name: "BulkDeleteSearchTermAliases"
+    description: "Delete multiple search term alias mappings at once."
+    delivery_priority: could-have
+    initiated_by: [shop.ACT002]
+    produces:
+      operations: [shop.EVT009]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Alias/Command/BulkDeleteSearchTermsAliasesCommand.php"
+        role: implementation
+
+  getAliasForEditing:
+    id: shop.QRY005
+    kind: query
+    name: "GetAliasForEditing"
+    description: "Retrieve alias details for the edit form."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Alias/Query/GetAliasForEditing.php"
+        role: implementation
+
+  getAliasesBySearchTerm:
+    id: shop.QRY006
+    kind: query
+    name: "GetAliasesBySearchTerm"
+    description: "Retrieve all aliases configured for a specific search term."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Alias/Query/GetAliasesBySearchTermForEditing.php"
+        role: implementation
+
+  searchForSearchTerm:
+    id: shop.QRY007
+    kind: query
+    name: "SearchForSearchTerm"
+    description: "Search across alias terms to find matching configurations."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/Alias/Query/SearchForSearchTerm.php"
+        role: implementation
+
+  # ── Search Index (1 CMD) ──
+
+  rebuildSearchIndex:
+    id: shop.CMD014
+    kind: command
+    name: "RebuildSearchIndex"
+    description: "Trigger a full rebuild of the product search index."
+    delivery_priority: must-have
+    task_type: automated
+    initiated_by: [shop.ACT001]
+    produces:
+      operations: [shop.EVT010]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Search/Command/SearchIndexationCommand.php"
+        role: implementation
+
+  searchIndexRebuilt:
+    id: shop.EVT010
+    kind: event
+    name: "SearchIndexRebuilt"
+    description: "Product search index rebuild completed."
+
+  # ── Contact (2 CMD + 1 QRY) ──
+
+  addContact:
+    id: shop.CMD015
+    kind: command
+    name: "AddContact"
+    description: "Create a new 'Contact Us' form department with localized name, email, and description."
+    delivery_priority: should-have
+    initiated_by: [shop.ACT001]
+    produces:
+      operations: [shop.EVT011]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Contact/Command/AddContactCommand.php"
+        role: implementation
+
+  contactAdded:
+    id: shop.EVT011
+    kind: event
+    name: "ContactAdded"
+    description: "New contact department created."
+
+  editContact:
+    id: shop.CMD016
+    kind: command
+    name: "EditContact"
+    description: "Update a 'Contact Us' department's name, email, or description."
+    delivery_priority: should-have
+    initiated_by: [shop.ACT001]
+    produces:
+      operations: [shop.EVT012]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Contact/Command/EditContactCommand.php"
+        role: implementation
+
+  contactEdited:
+    id: shop.EVT012
+    kind: event
+    name: "ContactEdited"
+    description: "Contact department updated."
+
+  getContactForEditing:
+    id: shop.QRY008
+    kind: query
+    name: "GetContactForEditing"
+    description: "Retrieve contact department details for the edit form."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Contact/Query/GetContactForEditing.php"
+        role: implementation
+
+  # ── Notification (1 CMD + 1 QRY) ──
+
+  updateNotificationLastElement:
+    id: shop.CMD017
+    kind: command
+    name: "UpdateNotificationLastElement"
+    description: "Update the last-seen notification element for an employee, resetting unread counts for orders, customers, or messages."
+    delivery_priority: could-have
+    task_type: automated
+    produces:
+      operations: [shop.EVT013]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Notification/Command/UpdateEmployeeNotificationLastElementCommand.php"
+        role: implementation
+
+  notificationLastElementUpdated:
+    id: shop.EVT013
+    kind: event
+    name: "NotificationLastElementUpdated"
+    description: "Employee notification last-seen marker updated."
+
+  getNotificationLastElements:
+    id: shop.QRY009
+    kind: query
+    name: "GetNotificationLastElements"
+    description: "Retrieve last-seen notification elements for unread count calculation."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/Notification/Query/GetNotificationLastElements.php"
+        role: implementation
+
+  # ── ShowcaseCard (1 CMD + 1 QRY) ──
+
+  closeShowcaseCard:
+    id: shop.CMD018
+    kind: command
+    name: "CloseShowcaseCard"
+    description: "Dismiss a promotional/informational card on the admin dashboard."
+    delivery_priority: could-have
+    produces:
+      operations: [shop.EVT014]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/ShowcaseCard/Command/CloseShowcaseCardCommand.php"
+        role: implementation
+
+  showcaseCardClosed:
+    id: shop.EVT014
+    kind: event
+    name: "ShowcaseCardClosed"
+    description: "Dashboard showcase card dismissed."
+
+  getShowcaseCardIsClosed:
+    id: shop.QRY010
+    kind: query
+    name: "GetShowcaseCardIsClosed"
+    description: "Check whether a showcase card has been closed by the employee."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/ShowcaseCard/Query/GetShowcaseCardIsClosed.php"
+        role: implementation
+
+errors:
+  logoExtensionNotSupported:
+    id: shop.ERR001
+    name: "LogoExtensionNotSupported"
+    description: "Uploaded logo file has an unsupported extension. Header logos: jpg/gif/png. Favicon: ico only."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [shop.VR001]
+
+  searchEngineNotFound:
+    id: shop.ERR002
+    name: "SearchEngineNotFound"
+    description: "The specified search engine ID does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  aliasNotFound:
+    id: shop.ERR003
+    name: "AliasNotFound"
+    description: "The specified alias ID does not exist."
+    category: not-found
+    severity: error
+    http_status: 404

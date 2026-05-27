@@ -1,0 +1,370 @@
+---
+version: "1.0.0"
+scope: shop
+tags: [shop, models]
+
+components:
+  schemas:
+    UploadLogosPayload:
+      x-model-id: MDL900
+      purpose: command-payload
+      description: "Request body for uploading store branding images. Each file type has extension validation — logos accept jpg/gif/png, favicon accepts ico only."
+      represents:
+        - concept: shop.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              headerLogo: CAT901
+              mailLogo: CAT903
+              invoiceLogo: CAT902
+              favicon: CAT904
+      type: object
+      properties:
+        headerLogo:
+          type: string
+          format: binary
+          description: "Header logo image file (jpg/gif/png)."
+          example: "logo-header.png"
+        mailLogo:
+          type: string
+          format: binary
+          description: "Email template logo image file (jpg/gif/png)."
+          example: "logo-mail.png"
+        invoiceLogo:
+          type: string
+          format: binary
+          description: "Invoice logo image file (jpg/gif/png)."
+          example: "logo-invoice.jpg"
+        favicon:
+          type: string
+          format: binary
+          description: "Favicon file (ico only)."
+          example: "favicon.ico"
+      code_refs:
+        - path: "src/Core/Domain/Shop/Command/UploadLogosCommand.php"
+          role: schema
+
+    ShopResource:
+      x-model-id: MDL901
+      purpose: read-model
+      description: "Shop details for multi-store management. Represents a single storefront instance in PrestaShop's multi-store architecture."
+      represents:
+        - concept: shop.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              name: CAT900
+      type: object
+      properties:
+        shopId:
+          type: integer
+          description: "Unique shop identifier."
+          example: 1
+        name:
+          type: string
+          description: "Shop display name."
+          example: "My Store"
+        domain:
+          type: string
+          description: "Shop domain for HTTP access."
+          example: "www.mystore.com"
+        sslDomain:
+          type: string
+          description: "Shop domain for HTTPS access."
+          example: "www.mystore.com"
+        physicalUri:
+          type: string
+          description: "Physical URI path on the server."
+          example: "/"
+        virtualUri:
+          type: string
+          description: "Virtual URI for URL rewriting."
+          example: ""
+        active:
+          type: boolean
+          description: "Whether the shop is currently active."
+          example: true
+      code_refs:
+        - path: "src/Core/Domain/Shop/Query/SearchShops.php"
+          role: schema
+          description: "SearchShops query result — shop data for multi-store selection"
+
+    CreateStorePayload:
+      x-model-id: MDL902
+      purpose: command-payload
+      description: "Request body for creating a physical retail store location with address, coordinates, and operating hours."
+      represents:
+        - concept: shop.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              localizedNames: CAT905
+              active: CAT906
+      type: object
+      required: [localizedNames, countryId, active]
+      properties:
+        localizedNames:
+          type: object
+          description: "Store name per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Downtown Store"
+            "2": "Magasin Centre-Ville"
+        address:
+          type: string
+          description: "Street address of the physical store."
+          example: "15 Rue de la Paix"
+        city:
+          type: string
+          description: "City where the store is located."
+          example: "Paris"
+        postCode:
+          type: string
+          description: "Postal/ZIP code."
+          example: "75001"
+        countryId:
+          type: integer
+          description: "Country identifier."
+          example: 8
+        latitude:
+          type: string
+          description: "Geographic latitude (decimal degrees)."
+          example: "48.868610"
+        longitude:
+          type: string
+          description: "Geographic longitude (decimal degrees)."
+          example: "2.332030"
+        phone:
+          type: string
+          description: "Store phone number."
+          example: "+33 1 23 45 67 89"
+        hours:
+          type: array
+          description: "Operating hours per day of the week (index 0 = Monday)."
+          items:
+            type: string
+          example: ["09:00-19:00", "09:00-19:00", "09:00-19:00", "09:00-19:00", "09:00-20:00", "10:00-18:00", ""]
+        active:
+          type: boolean
+          description: "Whether the store is visible on the storefront."
+          example: true
+      code_refs:
+        - path: "src/Core/Domain/Store/Command/"
+          role: schema
+          description: "Store creation — CQRS layer covers delete/toggle only; creation implied by domain model"
+
+    StoreResource:
+      x-model-id: MDL903
+      purpose: read-model
+      description: "Physical store location details for the back-office edit form."
+      represents:
+        - concept: shop.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              localizedNames: CAT905
+              active: CAT906
+      type: object
+      properties:
+        storeId:
+          type: integer
+          description: "Unique store identifier."
+          example: 1
+        localizedNames:
+          type: object
+          description: "Store name per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Downtown Store"
+            "2": "Magasin Centre-Ville"
+        address:
+          type: string
+          description: "Street address."
+          example: "15 Rue de la Paix"
+        city:
+          type: string
+          description: "City."
+          example: "Paris"
+        postCode:
+          type: string
+          description: "Postal/ZIP code."
+          example: "75001"
+        countryId:
+          type: integer
+          description: "Country identifier."
+          example: 8
+        countryName:
+          type: string
+          description: "Country display name."
+          example: "France"
+        latitude:
+          type: string
+          description: "Geographic latitude."
+          example: "48.868610"
+        longitude:
+          type: string
+          description: "Geographic longitude."
+          example: "2.332030"
+        phone:
+          type: string
+          description: "Store phone number."
+          example: "+33 1 23 45 67 89"
+        hours:
+          type: array
+          description: "Operating hours per day of the week."
+          items:
+            type: string
+          example: ["09:00-19:00", "09:00-19:00", "09:00-19:00", "09:00-19:00", "09:00-20:00", "10:00-18:00", ""]
+        active:
+          type: boolean
+          description: "Whether the store is currently active."
+          example: true
+      code_refs:
+        - path: "src/Core/Domain/Store/Query/GetStoreForEditing.php"
+          role: schema
+          description: "GetStoreForEditing query result — populates the store edit form"
+
+    CreateSearchEnginePayload:
+      x-model-id: MDL904
+      purpose: command-payload
+      description: "Request body for registering a new SEO referrer search engine for analytics tracking."
+      represents:
+        - concept: shop.CN003
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              server: CAT907
+              queryKey: CAT908
+      type: object
+      required: [server, queryKey]
+      properties:
+        server:
+          type: string
+          description: "Search engine server hostname."
+          example: "google"
+        queryKey:
+          type: string
+          description: "URL query parameter used for search terms."
+          example: "q"
+      code_refs:
+        - path: "src/Core/Domain/SearchEngine/Command/AddSearchEngineCommand.php"
+          role: schema
+
+    SearchEngineResource:
+      x-model-id: MDL905
+      purpose: read-model
+      description: "SEO referrer search engine details for the back-office edit form."
+      represents:
+        - concept: shop.CN003
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              server: CAT907
+              queryKey: CAT908
+      type: object
+      properties:
+        searchEngineId:
+          type: integer
+          description: "Unique search engine identifier."
+          example: 1
+        server:
+          type: string
+          description: "Search engine server hostname."
+          example: "google"
+        queryKey:
+          type: string
+          description: "URL query parameter for search terms."
+          example: "q"
+      code_refs:
+        - path: "src/Core/Domain/SearchEngine/Query/GetSearchEngineForEditing.php"
+          role: schema
+          description: "GetSearchEngineForEditing query result — populates the search engine edit form"
+
+    CreateAliasPayload:
+      x-model-id: MDL906
+      purpose: command-payload
+      description: "Request body for creating a search term alias mapping to improve storefront search relevance."
+      represents:
+        - concept: shop.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              search: CAT909
+              alias: CAT910
+              active: CAT911
+      type: object
+      required: [search, alias, active]
+      properties:
+        search:
+          type: string
+          description: "The original search term entered by customers."
+          example: "tshirt"
+        alias:
+          type: string
+          description: "Comma-separated alias terms to map to."
+          example: "t-shirt,tee"
+        active:
+          type: boolean
+          description: "Whether this alias mapping is currently active."
+          example: true
+      code_refs:
+        - path: "src/Core/Domain/Alias/Command/AddSearchTermAliasesCommand.php"
+          role: schema
+
+    ContactResource:
+      x-model-id: MDL907
+      purpose: read-model
+      description: "Contact department details for the back-office edit form. Represents a 'Contact Us' form category."
+      represents:
+        - concept: shop.CN006
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              localizedNames: CAT912
+              email: CAT913
+              localizedDescriptions: CAT914
+      type: object
+      properties:
+        contactId:
+          type: integer
+          description: "Unique contact department identifier."
+          example: 1
+        localizedNames:
+          type: object
+          description: "Contact department name per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Customer Support"
+            "2": "Support Client"
+        localizedDescriptions:
+          type: object
+          description: "Contact department description per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "For any questions about your order"
+            "2": "Pour toute question concernant votre commande"
+        email:
+          type: string
+          format: email
+          description: "Email address for this contact department."
+          example: "support@store.com"
+        isMessages:
+          type: boolean
+          description: "Whether messages sent to this contact are stored in the customer service system."
+          example: true
+      code_refs:
+        - path: "src/Core/Domain/Contact/Query/GetContactForEditing.php"
+          role: schema
+          description: "GetContactForEditing query result — populates the contact edit form"

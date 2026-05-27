@@ -1,0 +1,420 @@
+---
+version: "1.0.0"
+scope: orders
+tags: [order-core]
+
+concepts:
+  - id: orders.CN002
+    name: "Order"
+    description: "A confirmed purchase with payment, shipping, and line-item details. The primary aggregate root of the orders bounded context, governing all order lifecycle transitions, product modifications, refunds, and invoice generation."
+    stereotype: aggregate-root
+    states:
+      - name: awaiting-check-payment
+        description: "Order placed with offline payment; awaiting manual verification."
+      - name: awaiting-wire-payment
+        description: "Awaiting bank wire transfer confirmation."
+      - name: payment-accepted
+        description: "Payment confirmed by gateway or merchant."
+      - name: processing
+        description: "Order is being prepared for shipment."
+      - name: shipped
+        description: "Order shipped; tracking number assigned."
+      - name: delivered
+        description: "Delivery confirmed by carrier or customer."
+      - name: cancelled
+        description: "Order cancelled before or after shipment."
+      - name: refunded
+        description: "Full refund processed; order closed."
+      - name: payment-error
+        description: "Payment attempt failed; awaiting retry or cancellation."
+      - name: on-backorder-paid
+        description: "Paid but one or more items are on backorder."
+      - name: on-backorder-unpaid
+        description: "Unpaid and one or more items are on backorder."
+      - name: awaiting-cod-validation
+        description: "Cash on delivery order; awaiting validation."
+    initial_state: awaiting-check-payment
+    terminal_states: [delivered, cancelled, refunded]
+    transition_rules:
+      - orders.TR001
+    attributes:
+      orderId:
+        id: CAT100
+        description: "Unique order identifier (auto-incremented integer)."
+        example: "4217"
+      reference:
+        id: CAT101
+        description: "Human-readable order reference (e.g. ABCDEFGHI)."
+        example: "XKBKNABJK"
+      totalPaid:
+        id: CAT102
+        description: "Total amount paid including tax and shipping."
+        example: "129.99"
+      totalProducts:
+        id: CAT103
+        description: "Total product amount excluding tax."
+        example: "109.99"
+      currentState:
+        id: CAT104
+        description: "Current order state ID referencing the OrderState entity."
+        example: "2"
+      customerRef:
+        id: CAT105
+        description: "Reference to the customer who placed the order."
+        example: "customer.CN001:42"
+      deliveryAddressRef:
+        id: CAT106
+        description: "Reference to the delivery address for this order."
+      invoiceAddressRef:
+        id: CAT107
+        description: "Reference to the invoice/billing address for this order."
+      currency:
+        id: CAT108
+        description: "ISO 4217 currency code used for this order."
+        example: "EUR"
+      paymentMethod:
+        id: CAT109
+        description: "Payment module name used for this order."
+        example: "ps_wirepayment"
+    code_refs:
+      - path: "src/Core/Domain/Order/"
+        role: model
+        description: "Order domain aggregate root directory"
+      - path: "classes/order/Order.php"
+        role: implementation
+        description: "Legacy Order ObjectModel class"
+    tags: [aggregate-root, core-domain]
+
+  - id: orders.CN003
+    name: "OrderLine"
+    description: "A single line item in an order — product reference, quantity, unit price, and line total. Managed through addProductToOrder, removeProductFromOrder, and updateOrderProduct commands."
+    stereotype: entity
+    attributes:
+      orderDetailId:
+        id: CAT110
+        description: "Unique line item identifier."
+      productName:
+        id: CAT111
+        description: "Product name at time of order (snapshot)."
+      quantity:
+        id: CAT112
+        description: "Ordered quantity for this line."
+        example: "2"
+      unitPrice:
+        id: CAT113
+        description: "Unit price excluding tax at time of order."
+      lineTotal:
+        id: CAT114
+        description: "Computed line total: unitPrice * quantity."
+    relationships:
+      - predicate: part-of
+        object: orders.CN002
+        cardinality: "1..*"
+        description: "An order must have at least one line."
+    code_refs:
+      - path: "classes/order/OrderDetail.php"
+        role: implementation
+
+  - id: orders.CN006
+    name: "Invoice"
+    description: "A tax invoice generated for a paid order. Contains line-item breakdown, tax details, and sequential invoice number. Created as a side effect of payment acceptance or explicitly via generateInvoice command."
+    stereotype: entity
+    attributes:
+      invoiceNumber:
+        id: CAT115
+        description: "Sequential invoice number for fiscal compliance."
+        example: "IN000042"
+      invoiceDate:
+        id: CAT116
+        description: "Date the invoice was generated."
+      totalPaidTaxIncl:
+        id: CAT117
+        description: "Total amount on invoice including tax."
+      note:
+        id: CAT118
+        description: "Free-text note attached to the invoice."
+    relationships:
+      - predicate: part-of
+        object: orders.CN002
+        cardinality: "0..*"
+        description: "An order may have zero or more invoices (partial invoicing)."
+    code_refs:
+      - path: "classes/order/OrderInvoice.php"
+        role: implementation
+
+  - id: orders.CN005
+    name: "PaymentRecord"
+    description: "Captures a payment transaction — gateway, amount, currency, transaction ID, and status. Multiple payments may exist for a single order (e.g. split payment, partial refund credits)."
+    stereotype: entity
+    attributes:
+      paymentId:
+        id: CAT119
+        description: "Unique payment record identifier."
+      transactionId:
+        id: CAT120
+        description: "Payment gateway transaction reference."
+        example: "pi_3Mq2Dj2eZvKYlo2C0"
+      amount:
+        id: CAT121
+        description: "Payment amount in order currency."
+      paymentMethod:
+        id: CAT122
+        description: "Payment module that processed this transaction."
+      dateAdd:
+        id: CAT123
+        description: "Timestamp when payment was recorded."
+    relationships:
+      - predicate: part-of
+        object: orders.CN002
+        cardinality: "0..*"
+        description: "An order may have multiple payment records."
+    code_refs:
+      - path: "classes/order/OrderPayment.php"
+        role: implementation
+
+  - id: orders.CN004
+    name: "ShippingAddress"
+    description: "Delivery address associated with an order. Snapshotted at order creation time to preserve the address even if the customer later modifies their address book."
+    stereotype: value-object
+    attributes:
+      firstName:
+        id: CAT124
+        description: "Recipient first name."
+      lastName:
+        id: CAT125
+        description: "Recipient last name."
+      address1:
+        id: CAT126
+        description: "Street address line 1."
+      city:
+        id: CAT127
+        description: "City name."
+      postcode:
+        id: CAT128
+        description: "Postal/ZIP code."
+      countryCode:
+        id: CAT129
+        description: "ISO 3166-1 alpha-2 country code."
+        example: "FR"
+
+actors:
+  - id: orders.ACT001
+    name: "Shopper"
+    type: human
+    description: "End customer browsing the catalog and placing orders."
+    summary: "Online consumer purchasing products."
+    responsibilities:
+      - "Browse product catalog"
+      - "Add items to cart"
+      - "Complete checkout and payment"
+      - "Track order status"
+    personas:
+      - name: "Impulse Buyer"
+        quote: "I saw it, I want it, just let me pay."
+        goals:
+          - "One-click checkout"
+          - "Save payment method for repeat purchases"
+          - "Complete purchase in under 60 seconds"
+        pain_points:
+          - "Mandatory account creation before purchase"
+          - "Cart cleared after session timeout"
+          - "Too many checkout steps"
+        behaviors:
+          - "Shops on mobile during commute (60% mobile traffic)"
+          - "Rarely compares prices — buys on impulse"
+          - "Abandons cart if checkout requires more than 2 steps"
+        tech_savviness: high
+        job_to_be_done: "Purchase products instantly with zero friction."
+        demographics:
+          role: "Online consumer"
+          industry: "Retail / E-commerce"
+      - name: "Research Shopper"
+        quote: "I need to compare specs and read reviews before buying."
+        goals:
+          - "Detailed product comparison across attributes"
+          - "Trusted reviews and ratings"
+          - "Price history or price-match guarantees"
+        pain_points:
+          - "Incomplete product specifications"
+          - "No way to compare products side-by-side"
+          - "Unexpected shipping costs revealed only at checkout"
+        behaviors:
+          - "Desktop user — opens 10+ tabs"
+          - "Spends 30+ minutes researching before purchase"
+          - "Compares prices across 2-3 stores"
+        tech_savviness: high
+        job_to_be_done: "Make an informed purchase decision with full product transparency."
+        demographics:
+          role: "Online consumer"
+          industry: "Retail / E-commerce"
+      - name: "Gift Buyer"
+        quote: "I need it wrapped and shipped to someone else by Friday."
+        goals:
+          - "Gift wrapping options"
+          - "Ship to different address than billing"
+          - "Guaranteed delivery by a specific date"
+        pain_points:
+          - "No clear delivery date estimates"
+          - "Gift message not supported"
+          - "Confusing multi-address checkout"
+        behaviors:
+          - "Shops seasonally (holidays, birthdays)"
+          - "Willing to pay express shipping premium"
+          - "Needs order tracking to share with recipient"
+        tech_savviness: medium
+        job_to_be_done: "Purchase and deliver a gift to someone else with confidence in timing."
+        demographics:
+          role: "Online consumer"
+          industry: "Retail / E-commerce"
+
+  - id: orders.ACT002
+    name: "Order Domain Lead"
+    type: role
+    description: "Technical lead responsible for the orders bounded context architecture and reliability."
+    summary: "Technical architect for order processing."
+
+  - id: orders.ACT003
+    name: "Merchant"
+    type: human
+    description: "Business owner managing daily PrestaShop store operations — products, orders, returns."
+    summary: "Store owner and operator."
+    responsibilities:
+      - "Manage product listings and pricing"
+      - "Process and fulfill customer orders"
+      - "Handle returns and refunds"
+      - "Monitor store performance metrics"
+    personas:
+      - name: "Solo Merchant"
+        quote: "I need to see my orders and revenue without asking a developer."
+        goals:
+          - "Process orders within 24 hours of placement"
+          - "Reduce return rate below 5%"
+          - "Understand store performance from the dashboard"
+        pain_points:
+          - "Back-office is slow and requires too many clicks per order"
+          - "No clear visibility into order error rates"
+          - "Module updates break checkout without warning"
+        behaviors:
+          - "Checks order dashboard 3-5 times daily"
+          - "Processes orders in bulk during morning shift"
+          - "Relies on email notifications for urgent issues"
+        tech_savviness: low
+        job_to_be_done: "Run a profitable online store without needing technical expertise."
+        demographics:
+          role: "SMB Owner"
+          industry: "Retail"
+          team_size: "1-10"
+      - name: "Enterprise Catalog Manager"
+        quote: "I manage 50,000 SKUs across 3 stores — I need bulk tools and reliable imports."
+        goals:
+          - "Bulk order processing across multiple stores"
+          - "Automated order routing by warehouse location"
+          - "Real-time inventory sync across channels"
+        pain_points:
+          - "No bulk status update — must process orders one by one"
+          - "Multi-store order visibility requires switching contexts"
+          - "CSV import breaks on large datasets"
+        behaviors:
+          - "Uses API integrations for order management"
+          - "Delegates to team members with role-based access"
+          - "Reviews aggregated reports weekly"
+        tech_savviness: high
+        job_to_be_done: "Operate a multi-store e-commerce operation with team delegation and automation."
+        demographics:
+          role: "E-commerce Operations Manager"
+          industry: "Retail / Enterprise"
+          team_size: "10-50"
+
+  - id: orders.ACT004
+    name: "Administrator"
+    type: human
+    description: "Tech support specialist resolving customer issues, managing refunds, and handling escalations."
+    summary: "Customer support and tech ops."
+    responsibilities:
+      - "Resolve customer order complaints"
+      - "Process refunds and cancellations"
+      - "Investigate order processing errors"
+      - "Escalate technical issues to engineering"
+    personas:
+      - name: "Support Administrator"
+        quote: "Give me fast access to order history and one-click refund tools."
+        goals:
+          - "Resolve customer tickets within 30 minutes"
+          - "Access complete order history with 2 clicks"
+          - "Process refunds without developer assistance"
+        pain_points:
+          - "Order search in back-office is slow for large stores"
+          - "No audit trail for who modified an order"
+          - "Refund process requires 5+ steps across multiple screens"
+        behaviors:
+          - "Handles 20-40 support tickets per day"
+          - "Uses keyboard shortcuts extensively"
+          - "Cross-references order data with payment gateway dashboard"
+        tech_savviness: medium
+        job_to_be_done: "Resolve customer order issues quickly with full data access and efficient tooling."
+        demographics:
+          role: "Customer Support"
+          industry: "E-commerce Operations"
+          team_size: "5-20"
+
+enumerations:
+  - id: orders.EN001
+    name: "OrderStatus"
+    description: "Lifecycle states of an order in PrestaShop. Maps to the ps_order_state table with configurable labels and colors."
+    values:
+      - name: awaiting-check-payment
+        description: "Order placed with offline payment; awaiting manual verification."
+        transitions_to: [payment-accepted, cancelled, payment-error]
+      - name: awaiting-wire-payment
+        description: "Awaiting bank wire transfer confirmation."
+        transitions_to: [payment-accepted, cancelled]
+      - name: payment-accepted
+        description: "Payment confirmed by gateway or merchant."
+        transitions_to: [processing, cancelled, refunded]
+      - name: processing
+        description: "Order is being prepared for shipment."
+        transitions_to: [shipped, cancelled, refunded]
+      - name: shipped
+        description: "Shipped, tracking number assigned."
+        transitions_to: [delivered]
+      - name: delivered
+        description: "Delivery confirmed."
+        terminal: true
+      - name: cancelled
+        description: "Cancelled before or after shipment."
+        terminal: true
+      - name: refunded
+        description: "Full refund processed."
+        terminal: true
+      - name: payment-error
+        description: "Payment attempt failed."
+        transitions_to: [awaiting-check-payment, awaiting-wire-payment, cancelled]
+      - name: on-backorder-paid
+        description: "Paid but items on backorder."
+        transitions_to: [processing, cancelled, refunded]
+      - name: on-backorder-unpaid
+        description: "Unpaid and items on backorder."
+        transitions_to: [payment-accepted, cancelled]
+      - name: awaiting-cod-validation
+        description: "Cash on delivery; awaiting validation."
+        transitions_to: [payment-accepted, cancelled]
+
+  - id: orders.EN002
+    name: "PaymentMethod"
+    description: "Supported payment methods in PrestaShop checkout."
+    values: [credit-card, paypal, bank-transfer, cash-on-delivery, mollie, stripe]
+    extensible: true
+
+associations:
+  - id: orders.AS001
+    predicate: depends-on
+    subject: orders.CN002
+    object: orders.CN004
+    cardinality: "1:1"
+    description: "Every order depends on a delivery address."
+
+  - id: orders.AS002
+    predicate: triggers
+    subject: orders.CN002
+    object: orders.CN006
+    description: "Payment acceptance on an order triggers invoice generation."

@@ -1,0 +1,212 @@
+---
+name: "Admin Stories"
+version: "1.0.0"
+scope: admin
+
+stories:
+  - id: admin.STR001
+    title: "Employee Onboarding"
+    description: "An administrator creates a new employee account, assigns a profile with appropriate permissions, and configures shop access."
+    process:
+      id: admin.SP001
+      trigger:
+        type: message
+        operation: admin.CMD001
+        description: "Administrator creates a new employee account."
+      end_states:
+        - name: "Employee onboarded"
+          type: complete
+          description: "Employee created with profile assignment and shop access configured."
+        - name: "Onboarding failed"
+          type: error
+          description: "Duplicate email or password policy violation."
+      lanes:
+        - actor: admin.ACT001
+          operations: [admin.CMD001, admin.CMD013]
+    activities:
+      - id: admin.SA001
+        name: "Create Employee"
+        triggered_by: [admin.ACT001]
+        entry_operation: admin.CMD001
+        path_type: happy
+
+      - id: admin.SA002
+        name: "Configure Permissions"
+        triggered_by: [admin.EVT001]
+        entry_operation: admin.CMD013
+        path_type: happy
+    code_refs:
+      - path: "src/PrestaShopBundle/Controller/Admin/Configure/AdvancedParameters/EmployeeController.php"
+        role: implementation
+        description: "Employee account management controller."
+
+  - id: admin.STR002
+    title: "API Integration Setup"
+    description: "An API integrator creates a new Admin API client with appropriate scopes and rotates the secret for secure deployment."
+    process:
+      id: admin.SP002
+      trigger:
+        type: message
+        operation: admin.CMD021
+        description: "API integrator creates a new Admin API client."
+      end_states:
+        - name: "API client configured"
+          type: complete
+          description: "Client created with scopes, secret generated and rotated for production."
+        - name: "Setup failed"
+          type: error
+          description: "Invalid scopes or client name conflict."
+      lanes:
+        - actor: admin.ACT003
+          operations: [admin.CMD021, admin.CMD024]
+    activities:
+      - id: admin.SA003
+        name: "Create API Client"
+        triggered_by: [admin.ACT003]
+        entry_operation: admin.CMD021
+        path_type: happy
+
+      - id: admin.SA004
+        name: "Rotate Secret"
+        triggered_by: [admin.EVT014]
+        entry_operation: admin.CMD024
+        path_type: happy
+
+  - id: admin.STR003
+    title: "Security Session Cleanup"
+    description: "An administrator clears outdated or compromised sessions for both employees and customers."
+    process:
+      id: admin.SP003
+      trigger:
+        type: manual
+        operation: admin.CMD019
+        description: "Administrator initiates cleanup of outdated sessions."
+      end_states:
+        - name: "Sessions cleared"
+          type: complete
+          description: "Outdated and compromised sessions terminated."
+      lanes:
+        - actor: admin.ACT001
+          operations: [admin.CMD019]
+    activities:
+      - id: admin.SA005
+        name: "Clear Outdated Sessions"
+        triggered_by: [admin.ACT001]
+        entry_operation: admin.CMD019
+        path_type: happy
+
+user_stories:
+  - id: admin.US001
+    actor: admin.ACT001
+    goal: "create new employee accounts with appropriate profile and shop access"
+    benefit: "new team members can access the back-office with correct permissions from day one"
+    acceptance_criteria:
+      - "Employee created with all required fields"
+      - "Profile correctly assigned"
+      - "Shop association configured for multi-store"
+    delivery_priority: must-have
+    status: draft
+    operations: [admin.CMD001, admin.CMD002, admin.QRY001]
+    test_cases: [admin.TC001]
+
+  - id: admin.US002
+    actor: admin.ACT001
+    goal: "manage access control profiles and their permission matrices"
+    benefit: "each role has precisely the access needed — no more, no less"
+    acceptance_criteria:
+      - "Profile CRUD operations working"
+      - "Tab permissions configurable per profile"
+      - "Module permissions configurable per profile"
+    delivery_priority: must-have
+    status: draft
+    operations: [admin.CMD009, admin.CMD010, admin.CMD013, admin.CMD014, admin.QRY004]
+    test_cases: [admin.TC002]
+
+  - id: admin.US003
+    actor: admin.ACT003
+    goal: "set up and manage Admin API clients for third-party integrations"
+    benefit: "external systems can securely access the store API with scoped permissions"
+    acceptance_criteria:
+      - "API client created with scopes and lifetime"
+      - "Secret rotation without downtime"
+      - "Client can be disabled immediately"
+    delivery_priority: must-have
+    status: draft
+    operations: [admin.CMD021, admin.CMD022, admin.CMD024, admin.QRY005]
+    test_cases: [admin.TC003]
+
+  - id: admin.US004
+    actor: admin.ACT001
+    goal: "monitor and clear active sessions during security incidents"
+    benefit: "compromised sessions can be terminated immediately to limit damage"
+    acceptance_criteria:
+      - "Individual session deletion for employees and customers"
+      - "Bulk session cleanup available"
+      - "Automated outdated session clearing"
+    delivery_priority: must-have
+    status: draft
+    operations: [admin.CMD015, admin.CMD016, admin.CMD017, admin.CMD018, admin.CMD019, admin.CMD020]
+    test_cases: [admin.TC004]
+
+  - id: admin.US005
+    actor: admin.ACT001
+    goal: "create and execute saved SQL queries for reporting"
+    benefit: "get custom data extracts without direct database access"
+    acceptance_criteria:
+      - "SQL query saved with name"
+      - "Query execution returns result set"
+      - "Dangerous queries rejected"
+    delivery_priority: should-have
+    status: draft
+    operations: [admin.CMD029, admin.QRY008]
+    test_cases: [admin.TC005]
+
+use_cases:
+  - id: admin.UC001
+    name: "Onboard Employee"
+    primary_actor: admin.ACT001
+    main_scenario:
+      - step: 1
+        action: "Administrator opens Employee management page"
+      - step: 2
+        action: "Administrator fills in employee details (name, email, language)"
+      - step: 3
+        action: "Administrator selects a profile from existing profiles"
+        operation: admin.CMD001
+      - step: 4
+        action: "System validates email uniqueness and password policy"
+      - step: 5
+        action: "Administrator configures tab and module permissions for the profile"
+        operation: admin.CMD013
+      - step: 6
+        action: "Employee receives access credentials"
+    extensions:
+      - step: 4
+        condition: "Email already in use"
+        action: "Show validation error, prompt for different email"
+      - step: 4
+        condition: "Password too weak"
+        action: "Show password policy requirements"
+    user_stories: [admin.US001, admin.US002]
+
+  - id: admin.UC002
+    name: "Configure API Client"
+    primary_actor: admin.ACT003
+    main_scenario:
+      - step: 1
+        action: "Integrator opens API Client management page"
+      - step: 2
+        action: "Integrator creates new API client with name, scopes, and lifetime"
+        operation: admin.CMD021
+      - step: 3
+        action: "System generates initial client secret"
+      - step: 4
+        action: "Integrator rotates secret for production deployment"
+        operation: admin.CMD024
+      - step: 5
+        action: "Integrator configures external system with client credentials"
+    extensions:
+      - step: 2
+        condition: "Invalid scopes provided"
+        action: "Show scope validation error"
+    user_stories: [admin.US003]

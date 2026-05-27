@@ -1,0 +1,49 @@
+---
+version: "1.0.0"
+scope: shop
+tags: [platform-config]
+
+validation:
+  - id: shop.VR001
+    name: "Logo file extension validation"
+    description: "Uploaded logo images must match allowed extensions: header/mail/invoice logos accept jpg, gif, png; favicon accepts ico only."
+    concepts: [shop.CN001]
+    modality: obligatory
+    logic:
+      when: "Logo file is uploaded"
+      then: "File extension must be in the allowed set for that logo type"
+    on_violation:
+      action: reject
+
+  - id: shop.VR002
+    name: "Alias search term non-empty"
+    description: "Search term aliases must have a non-empty search term and at least one non-empty alias."
+    concepts: [shop.CN004]
+    modality: obligatory
+    logic:
+      when: "Search term alias is added or updated"
+      then: "Both the search term and aliases must be non-empty strings"
+    on_violation:
+      action: reject
+
+  - id: shop.VR003
+    name: "Contact email format"
+    description: "Contact department email must be a valid email address."
+    concepts: [shop.CN006]
+    modality: obligatory
+    logic:
+      when: "Contact department is added or edited"
+      then: "Email field must be a valid email format"
+    on_violation:
+      action: reject
+
+  - id: shop.VR004
+    name: "Search engine server uniqueness"
+    description: "No two search engine entries should share the same server hostname."
+    concepts: [shop.CN003]
+    modality: obligatory
+    logic:
+      when: "Search engine is added or edited"
+      then: "Server value must not already exist in another entry"
+    on_violation:
+      action: reject

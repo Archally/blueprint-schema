@@ -1,0 +1,36 @@
+---
+version: "1.0.0"
+scope: content
+tags: [seo]
+
+concepts:
+  - id: content.CN005
+    name: "Meta"
+    stereotype: entity
+    description: "SEO metadata configuration for a specific page type (e.g., 'category', 'product', 'cms'). Defines localized page titles, meta descriptions, and URL rewrite rules. Meta entries map internal page names to SEO-friendly URLs. Note: Meta has no delete command in the CQRS layer — entries are managed through add and edit only."
+    tags: [entity, seo]
+    attributes:
+      pageName:
+        id: CAT623
+        description: "Internal page identifier (e.g., 'cms', 'category', 'product'). Wrapped in Name value object."
+        example: "category"
+      localizedPageTitle:
+        id: CAT624
+        description: "Display title per language (validated: no angle brackets or curly braces)"
+        example: "Product Categories"
+      localizedMetaDescription:
+        id: CAT625
+        description: "SEO meta description per language (validated: same regex)"
+        example: "Browse our product categories"
+      localizedRewriteUrl:
+        id: CAT626
+        description: "URL rewrite rules per language for SEO-friendly URLs"
+        example: "categories"
+    code_refs:
+      - path: "src/Core/Domain/Meta/Command/AddMetaCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Meta/Command/AbstractMetaCommand.php"
+        role: implementation
+        description: "Base class with regex validation for meta fields"
+      - path: "src/Core/Domain/Meta/ValueObject/MetaId.php"
+        role: model

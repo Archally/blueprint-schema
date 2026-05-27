@@ -1,0 +1,156 @@
+---
+version: "1.0.0"
+scope: customers
+
+goals:
+  - id: customers.G001
+    statement: "Customer registration conversion rate above 15%"
+    description: >
+      Of visitors who view the registration page, at least 15% should
+      complete account creation. Minimizing required fields and offering
+      social login reduces abandonment.
+    summary: "High registration completion rate"
+    priority: high
+    measure: "Monthly registration page visitors to completed registrations ratio >= 15%"
+    discovery_stage: committed
+    certainty: probable
+
+  - id: customers.G002
+    statement: "Address data quality above 95% validation pass rate"
+    description: >
+      Addresses entered by customers must pass country-specific validation
+      to ensure deliverability. Invalid addresses cause shipping failures
+      and returns.
+    summary: "High address data quality"
+    priority: high
+    measure: "95% of addresses pass validation on first submission"
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: customers.G003
+    statement: "Customer service first response within 4 hours"
+    description: >
+      Customer service threads should receive a first response within
+      4 business hours. Delayed responses drive negative reviews and
+      reduce repeat purchases.
+    summary: "Fast customer service response"
+    priority: high
+    measure: "90% of threads receive first reply within 4 business hours"
+    discovery_stage: committed
+    certainty: probable
+
+  - id: customers.G004
+    statement: "Full GDPR compliance for customer data handling"
+    description: >
+      Customer personal data must be handled per GDPR requirements:
+      right to access, right to erasure, data portability, and consent
+      management.
+    summary: "GDPR compliance"
+    priority: critical
+    measure: "100% of GDPR deletion requests processed within 30 days"
+    discovery_stage: committed
+    certainty: confirmed
+
+risks:
+  - id: customers.R001
+    statement: "Email spoofing enables duplicate account creation"
+    description: >
+      Without email verification, attackers can create accounts with
+      other people's email addresses. This enables order fraud and
+      reputation damage.
+    summary: "Email spoofing risk"
+    likelihood: medium
+    impact: high
+    mitigation: "Require email verification on registration. Rate-limit registration attempts per IP."
+    goal_refs:
+      - customers.G001
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: customers.R002
+    statement: "Address validation gaps for international formats"
+    description: >
+      Country-specific address formats vary widely (Japanese addresses,
+      UK postcodes, US ZIP+4). Generic validation may reject valid
+      international addresses or accept invalid ones.
+    summary: "International address validation"
+    likelihood: high
+    impact: medium
+    mitigation: "Use country-specific validation rules. Partner with address verification services for key markets."
+    goal_refs:
+      - customers.G002
+    discovery_stage: exploring
+    certainty: probable
+
+  - id: customers.R003
+    statement: "PII data breach via customer export or API"
+    description: >
+      Customer data exports and API endpoints expose PII (email, phone,
+      addresses). A vulnerability could leak thousands of records.
+    summary: "PII data breach risk"
+    likelihood: low
+    impact: critical
+    mitigation: "Encrypt PII at rest. Audit API endpoints for data exposure. Implement field-level access controls."
+    goal_refs:
+      - customers.G004
+    discovery_stage: validated
+    certainty: confirmed
+
+non_goals:
+  - id: customers.NG001
+    statement: "No built-in SSO/SAML/OIDC for customer authentication"
+    reason: >
+      Customer authentication is email/password with optional social login
+      via modules. Enterprise SSO (SAML, OIDC) is handled by dedicated
+      modules — core has no SSO commands or identity provider integration.
+    discovery_stage: committed
+    certainty: confirmed
+
+trade_offs:
+  - id: customers.T001
+    choice: "Customer data deletion strategy for GDPR compliance"
+    selected: "Anonymize + soft-delete with audit trail preservation"
+    rejected: "Hard delete (simpler but loses order history integrity)"
+    rationale: >
+      Hard-deleting customer records would break order history, invoice
+      references, and financial audit trails. GDPR right-to-erasure is
+      satisfied by anonymization (replacing PII with hashed placeholders)
+      while preserving the relational integrity of business records.
+    accepted_risk: "Anonymized records still occupy database space. Audit trail references anonymized IDs."
+    discovery_stage: committed
+    certainty: confirmed
+
+inquiries:
+  - id: customers.INQ001
+    statement: "Should customer segmentation support real-time behavioral triggers?"
+    summary: "Customer segmentation API"
+    description: >
+      Current customer groups are static (manual assignment). Real-time
+      segmentation based on purchase history, cart value, or engagement
+      would enable dynamic pricing and personalized promotions.
+    category: technical
+    goal_refs:
+      - customers.G001
+    blocking: false
+    status: investigating
+    discovery_stage: exploring
+    certainty: speculative
+    tags: [segmentation, personalization]
+
+  - id: customers.INQ002
+    statement: "Should GDPR deletion be automated with a configurable retention pipeline?"
+    summary: "Automated GDPR deletion"
+    description: >
+      Manual deletion requests are error-prone. An automated pipeline
+      with configurable retention periods per data type would ensure
+      compliance and reduce operational burden.
+    category: technical
+    goal_refs:
+      - customers.G004
+    risk_refs:
+      - customers.R003
+    blocking: false
+    status: investigating
+    discovery_stage: exploring
+    certainty: speculative
+    tags: [gdpr, automation]

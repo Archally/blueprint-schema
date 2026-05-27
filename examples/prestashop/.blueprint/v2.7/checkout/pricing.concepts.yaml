@@ -1,0 +1,37 @@
+---
+version: "1.0.0"
+scope: checkout
+tags: [pricing, catalog-price-rule, b2b]
+
+concepts:
+  - id: checkout.CN006
+    name: "CatalogPriceRule"
+    description: "Bulk price reduction applied to product selections based on quantity thresholds, customer groups, or date ranges. Used for B2B/wholesale pricing and automated catalog-wide promotions."
+    stereotype: aggregate-root
+    attributes:
+      catalogPriceRuleId:
+        id: CAT227
+        description: "Unique catalog price rule identifier"
+      name:
+        id: CAT228
+        description: "Rule display name"
+      reductionType:
+        id: CAT229
+        description: "Percentage or fixed amount reduction"
+      reductionValue:
+        id: CAT230
+        description: "Numeric reduction value"
+      fromQuantity:
+        id: CAT231
+        description: "Minimum product quantity to trigger the rule"
+      dateFrom:
+        id: CAT232
+        description: "Validity period start"
+      dateTo:
+        id: CAT233
+        description: "Validity period end"
+    code_refs:
+      - path: "src/Core/Domain/CatalogPriceRule/Command/AddCatalogPriceRuleCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/CatalogPriceRule/Command/EditCatalogPriceRuleCommand.php"
+        role: implementation

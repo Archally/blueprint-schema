@@ -1,0 +1,303 @@
+---
+name: "Modules & Hooks"
+version: "1.0.0"
+scope: modules
+tags: [extension-system]
+
+operations:
+
+  # --- Module Lifecycle ---
+
+  installModule:
+    id: modules.CMD001
+    kind: command
+    name: "InstallModule"
+    description: "Install a module by technical name. Triggers dependency resolution, database schema setup, and hook registration as side effects. Module must not already be installed."
+    delivery_priority: must-have
+    initiated_by: [modules.ACT001]
+    produces:
+      operations: [modules.EVT001]
+      mode: all
+    governed_by:
+      - rule: modules.VR001
+      - rule: modules.TR001
+    code_refs:
+      - path: "src/Core/Domain/Module/Command/InstallModuleCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Module/CommandHandler/InstallModuleHandlerInterface.php"
+        role: implementation
+
+  uninstallModule:
+    id: modules.CMD002
+    kind: command
+    name: "UninstallModule"
+    description: "Uninstall a module. Optionally deletes module files (deleteFiles=false by default). Cascades hook unregistration."
+    delivery_priority: must-have
+    initiated_by: [modules.ACT001]
+    produces:
+      operations: [modules.EVT002]
+      mode: all
+    governed_by:
+      - rule: modules.SR001
+      - rule: modules.TR001
+    code_refs:
+      - path: "src/Core/Domain/Module/Command/UninstallModuleCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Module/CommandHandler/UninstallModuleHandlerInterface.php"
+        role: implementation
+
+  updateModuleStatus:
+    id: modules.CMD003
+    kind: command
+    name: "UpdateModuleStatus"
+    description: "Enable or disable a module via a single command with an enabled boolean flag. Unified command replaces separate enable/disable — the code has no separate EnableModuleCommand or DisableModuleCommand."
+    delivery_priority: must-have
+    initiated_by: [modules.ACT001]
+    produces:
+      operations: [modules.EVT003]
+      mode: all
+    governed_by:
+      - rule: modules.SR001
+      - rule: modules.TR001
+    code_refs:
+      - path: "src/Core/Domain/Module/Command/UpdateModuleStatusCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Module/CommandHandler/UpdateModuleStatusHandlerInterface.php"
+        role: implementation
+
+  bulkToggleModuleStatus:
+    id: modules.CMD004
+    kind: command
+    name: "BulkToggleModuleStatus"
+    description: "Enable or disable multiple modules in a single batch operation. Takes an array of technical names and an expectedStatus boolean."
+    delivery_priority: should-have
+    initiated_by: [modules.ACT001]
+    produces:
+      operations: [modules.EVT003]
+      mode: all
+    governed_by:
+      - rule: modules.SR001
+    code_refs:
+      - path: "src/Core/Domain/Module/Command/BulkToggleModuleStatusCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Module/CommandHandler/BulkToggleModuleStatusHandlerInterface.php"
+        role: implementation
+
+  bulkUninstallModule:
+    id: modules.CMD005
+    kind: command
+    name: "BulkUninstallModule"
+    description: "Uninstall multiple modules in a single batch operation. Each module is wrapped in ModuleTechnicalName value object. Optionally deletes files."
+    delivery_priority: should-have
+    initiated_by: [modules.ACT001]
+    produces:
+      operations: [modules.EVT002]
+      mode: all
+    governed_by:
+      - rule: modules.SR001
+    code_refs:
+      - path: "src/Core/Domain/Module/Command/BulkUninstallModuleCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Module/CommandHandler/BulkUninstallModuleHandlerInterface.php"
+        role: implementation
+
+  resetModule:
+    id: modules.CMD006
+    kind: command
+    name: "ResetModule"
+    description: "Reset a module — uninstalls and reinstalls without losing configuration (keepData=true by default). Module must be installed. Results in installed+enabled state."
+    delivery_priority: should-have
+    initiated_by: [modules.ACT001]
+    produces:
+      operations: [modules.EVT004]
+      mode: all
+    governed_by:
+      - rule: modules.VR002
+      - rule: modules.TR001
+    code_refs:
+      - path: "src/Core/Domain/Module/Command/ResetModuleCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Module/CommandHandler/ResetModuleHandlerInterface.php"
+        role: implementation
+
+  upgradeModule:
+    id: modules.CMD007
+    kind: command
+    name: "UpgradeModule"
+    description: "Upgrade an installed module to the latest available version. Fails if module is already up to date. Note: the codebase uses 'Upgrade' not 'Update' — there is no general UpdateModuleCommand."
+    delivery_priority: must-have
+    initiated_by: [modules.ACT001]
+    produces:
+      operations: [modules.EVT005]
+      mode: all
+    governed_by:
+      - rule: modules.VR003
+      - rule: modules.TR001
+    code_refs:
+      - path: "src/Core/Domain/Module/Command/UpgradeModuleCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Module/CommandHandler/UpgradeModuleHandlerInterface.php"
+        role: implementation
+
+  uploadModule:
+    id: modules.CMD008
+    kind: command
+    name: "UploadModule"
+    description: "Upload a module package from a source path (zip archive). This is a pre-install step — the module becomes available for installation after upload. Takes a raw source string (no value object wrapping)."
+    delivery_priority: must-have
+    initiated_by: [modules.ACT002]
+    produces:
+      operations: [modules.EVT006]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Module/Command/UploadModuleCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Module/CommandHandler/UploadModuleHandlerInterface.php"
+        role: implementation
+
+  # --- Module Events ---
+
+  moduleInstalled:
+    id: modules.EVT001
+    kind: event
+    name: "ModuleInstalled"
+    description: "A module has been installed. Hook registrations and database schema setup completed as side effects."
+
+  moduleUninstalled:
+    id: modules.EVT002
+    kind: event
+    name: "ModuleUninstalled"
+    description: "A module has been uninstalled. Hook registrations removed."
+
+  moduleStatusUpdated:
+    id: modules.EVT003
+    kind: event
+    name: "ModuleStatusUpdated"
+    description: "A module's enabled/disabled status has been changed."
+
+  moduleReset:
+    id: modules.EVT004
+    kind: event
+    name: "ModuleReset"
+    description: "A module has been reset — uninstalled and reinstalled, optionally preserving data."
+
+  moduleUpgraded:
+    id: modules.EVT005
+    kind: event
+    name: "ModuleUpgraded"
+    description: "A module has been upgraded to a newer version."
+
+  moduleUploaded:
+    id: modules.EVT006
+    kind: event
+    name: "ModuleUploaded"
+    description: "A module package has been uploaded and is available for installation."
+
+  # --- Module Query ---
+
+  getModuleInfos:
+    id: modules.QRY001
+    kind: query
+    name: "GetModuleInfos"
+    description: "Retrieve module information by technical name. Returns moduleId, technicalName, moduleVersion, installedVersion, enabled, installed."
+    delivery_priority: must-have
+    initiated_by: [modules.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/Module/Query/GetModuleInfos.php"
+        role: implementation
+      - path: "src/Core/Domain/Module/QueryResult/ModuleInfos.php"
+        role: model
+
+  # --- Hook Operations ---
+
+  updateHookStatus:
+    id: modules.CMD009
+    kind: command
+    name: "UpdateHookStatus"
+    description: "Enable or disable a hook by ID. When a hook is disabled, modules registered to it will not execute their callbacks."
+    delivery_priority: must-have
+    initiated_by: [modules.ACT001]
+    produces:
+      operations: [modules.EVT007]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Hook/Command/UpdateHookStatusCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Hook/CommandHandler/UpdateHookStatusCommandHandlerInterface.php"
+        role: implementation
+
+  hookStatusUpdated:
+    id: modules.EVT007
+    kind: event
+    name: "HookStatusUpdated"
+    description: "A hook's active/inactive status has been changed."
+
+  # --- Hook Queries ---
+
+  getHook:
+    id: modules.QRY002
+    kind: query
+    name: "GetHook"
+    description: "Retrieve full hook details by ID. Returns id, active, name, title, description."
+    delivery_priority: must-have
+    initiated_by: [modules.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/Hook/Query/GetHook.php"
+        role: implementation
+      - path: "src/Core/Domain/Hook/QueryResult/Hook.php"
+        role: model
+
+  getHookStatus:
+    id: modules.QRY003
+    kind: query
+    name: "GetHookStatus"
+    description: "Retrieve hook active status by ID. Lightweight query returning only id and isActive."
+    delivery_priority: should-have
+    initiated_by: [modules.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/Hook/Query/GetHookStatus.php"
+        role: implementation
+      - path: "src/Core/Domain/Hook/QueryResult/HookStatus.php"
+        role: model
+
+errors:
+  moduleNotFound:
+    id: modules.ERR001
+    name: "ModuleNotFound"
+    description: "The specified module technical name does not match any known module."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  moduleNotInstalled:
+    id: modules.ERR002
+    name: "ModuleNotInstalled"
+    description: "Operation requires an installed module but the module is not installed."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [modules.SR001]
+
+  alreadyInstalledModule:
+    id: modules.ERR003
+    name: "AlreadyInstalledModule"
+    description: "Cannot install a module that is already installed."
+    category: conflict
+    severity: error
+    http_status: 409
+
+  moduleAlreadyUpToDate:
+    id: modules.ERR004
+    name: "ModuleAlreadyUpToDate"
+    description: "Cannot upgrade a module that is already at the latest available version."
+    category: conflict
+    severity: error
+    http_status: 409
+
+  hookNotFound:
+    id: modules.ERR005
+    name: "HookNotFound"
+    description: "The specified hook ID does not exist."
+    category: not-found
+    severity: error
+    http_status: 404

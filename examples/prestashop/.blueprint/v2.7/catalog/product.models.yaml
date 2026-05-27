@@ -1,0 +1,681 @@
+---
+version: "1.0.0"
+scope: catalog
+tags: [product, models]
+
+components:
+  schemas:
+    CreateProductPayload:
+      x-model-id: MDL001
+      purpose: command-payload
+      description: "Request body for creating a new product. Minimal fields — product starts in draft status."
+      represents:
+        - concept: catalog.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              productType: CAT006
+              localizedNames: CAT002
+      type: object
+      required: [productType, shopId]
+      properties:
+        productType:
+          type: string
+          description: "Product structural type."
+          enum: [standard, combinations, pack, virtual]
+          example: "standard"
+        shopId:
+          type: integer
+          description: "Target shop identifier for multi-store."
+          example: 1
+        localizedNames:
+          type: object
+          description: "Product name keyed by language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Classic Laptop 15-inch"
+            "2": "Ordinateur Portable Classique 15 pouces"
+      code_refs:
+        - path: "src/Core/Domain/Product/Command/AddProductCommand.php"
+          role: schema
+          description: "Constructor defines payload shape"
+
+    UpdateProductPayload:
+      x-model-id: MDL002
+      purpose: command-payload
+      description: "Partial update payload for product. All fields optional except productId. Covers name, description, prices, SEO, options, shipping."
+      represents:
+        - concept: catalog.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              localizedNames: CAT002
+              localizedDescriptions: CAT003
+              price: CAT004
+              reference: CAT007
+      type: object
+      required: [productId]
+      properties:
+        productId:
+          type: integer
+          description: "Product to update."
+          example: 42
+        localizedNames:
+          type: object
+          description: "Product name per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Classic Laptop 15-inch (Updated)"
+        localizedDescriptions:
+          type: object
+          description: "Product description per language ID (HTML)."
+          additionalProperties:
+            type: string
+          example:
+            "1": "<p>High-performance laptop with 16GB RAM and 512GB SSD.</p>"
+        localizedShortDescriptions:
+          type: object
+          description: "Short product description per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Powerful 15-inch laptop for professionals."
+        price:
+          type: string
+          description: "Base price excluding tax (decimal string)."
+          example: "999.990000"
+        ecotax:
+          type: string
+          description: "Eco-tax amount."
+          example: "0.500000"
+        taxRulesGroupId:
+          type: integer
+          description: "Tax rules group for price calculation."
+          example: 1
+        onSale:
+          type: boolean
+          description: "Whether product is marked as on sale."
+          example: false
+        wholesalePrice:
+          type: string
+          description: "Wholesale / cost price."
+          example: "750.000000"
+        unitPrice:
+          type: string
+          description: "Unit price for comparison display."
+          example: "0.000000"
+        unity:
+          type: string
+          description: "Unit label (e.g. 'kg', 'liter')."
+          example: ""
+        reference:
+          type: string
+          description: "Internal reference / merchant SKU."
+          example: "LAPTOP-15-BLK"
+        isbn:
+          type: string
+          description: "ISBN for books."
+          example: ""
+        upc:
+          type: string
+          description: "UPC barcode."
+          example: ""
+        ean13:
+          type: string
+          description: "EAN-13 barcode."
+          example: "5901234123457"
+        mpn:
+          type: string
+          description: "Manufacturer Part Number."
+          example: "MPN-LAP-2026"
+        active:
+          type: boolean
+          description: "Whether product is enabled for sale."
+          example: true
+        condition:
+          type: string
+          enum: [new, used, refurbished]
+          description: "Product condition."
+          example: "new"
+        showCondition:
+          type: boolean
+          description: "Whether to display condition on storefront."
+          example: true
+        visibility:
+          type: string
+          enum: [both, catalog, search, none]
+          description: "Where the product appears."
+          example: "both"
+        availableForOrder:
+          type: boolean
+          description: "Whether product can be ordered."
+          example: true
+        showPrice:
+          type: boolean
+          description: "Whether to display price on storefront."
+          example: true
+        onlineOnly:
+          type: boolean
+          description: "Whether product is online-only."
+          example: false
+        width:
+          type: string
+          description: "Package width (decimal, cm)."
+          example: "38.000000"
+        height:
+          type: string
+          description: "Package height (decimal, cm)."
+          example: "2.500000"
+        depth:
+          type: string
+          description: "Package depth (decimal, cm)."
+          example: "26.000000"
+        weight:
+          type: string
+          description: "Package weight (decimal, kg)."
+          example: "2.100000"
+        additionalShippingCost:
+          type: string
+          description: "Extra shipping cost for this product."
+          example: "0.000000"
+        deliveryTimeNoteType:
+          type: integer
+          description: "Delivery time display mode (0=none, 1=default, 2=specific)."
+          example: 1
+        localizedMetaTitles:
+          type: object
+          description: "SEO meta title per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Classic Laptop 15-inch | Best Price"
+        localizedMetaDescriptions:
+          type: object
+          description: "SEO meta description per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Buy the Classic Laptop 15-inch with free shipping. 16GB RAM, 512GB SSD."
+        localizedLinkRewrites:
+          type: object
+          description: "URL slug per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "classic-laptop-15-inch"
+        redirectType:
+          type: string
+          description: "Redirect type when product is disabled."
+          example: "301-product"
+        redirectTarget:
+          type: integer
+          description: "Target product/category ID for redirect."
+          example: 0
+      code_refs:
+        - path: "src/Core/Domain/Product/Command/UpdateProductCommand.php"
+          role: schema
+          description: "Partial-update command with ~50 optional setters"
+
+    ProductResource:
+      x-model-id: MDL003
+      purpose: read-model
+      description: "Full product representation for editing. Composite model with nested sub-objects for prices, stock, SEO, shipping, and options."
+      represents:
+        - concept: catalog.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              productId: CAT001
+              productType: CAT006
+      type: object
+      properties:
+        productId:
+          type: integer
+          description: "Unique product identifier."
+          example: 42
+        productType:
+          type: string
+          enum: [standard, combinations, pack, virtual]
+          description: "Product structural type."
+          example: "combinations"
+        active:
+          type: boolean
+          description: "Whether product is enabled."
+          example: true
+        basicInformation:
+          type: object
+          description: "Core product info: names, descriptions."
+          properties:
+            localizedNames:
+              type: object
+              additionalProperties:
+                type: string
+              example:
+                "1": "Classic Laptop 15-inch"
+                "2": "Ordinateur Portable Classique 15 pouces"
+            localizedDescriptions:
+              type: object
+              additionalProperties:
+                type: string
+              example:
+                "1": "<p>High-performance laptop with 16GB RAM and 512GB SSD.</p>"
+            localizedShortDescriptions:
+              type: object
+              additionalProperties:
+                type: string
+              example:
+                "1": "Powerful 15-inch laptop for professionals."
+        categoriesInformation:
+          type: object
+          description: "Category assignments and default category."
+          properties:
+            categoriesIds:
+              type: array
+              items:
+                type: integer
+              example: [2, 5, 12]
+            defaultCategoryId:
+              type: integer
+              example: 5
+        pricesInformation:
+          $ref: "#/components/schemas/ProductPricesInfo"
+        options:
+          type: object
+          description: "Product display and behavior options."
+          properties:
+            visibility:
+              type: string
+              enum: [both, catalog, search, none]
+              example: "both"
+            availableForOrder:
+              type: boolean
+              example: true
+            showPrice:
+              type: boolean
+              example: true
+            onlineOnly:
+              type: boolean
+              example: false
+            condition:
+              type: string
+              enum: [new, used, refurbished]
+              example: "new"
+            showCondition:
+              type: boolean
+              example: true
+        details:
+          type: object
+          description: "Product identifiers and references."
+          properties:
+            reference:
+              type: string
+              example: "LAPTOP-15-BLK"
+            isbn:
+              type: string
+              example: ""
+            upc:
+              type: string
+              example: ""
+            ean13:
+              type: string
+              example: "5901234123457"
+            mpn:
+              type: string
+              example: "MPN-LAP-2026"
+        shippingInformation:
+          type: object
+          description: "Shipping dimensions and cost."
+          properties:
+            width:
+              type: string
+              example: "38.000000"
+            height:
+              type: string
+              example: "2.500000"
+            depth:
+              type: string
+              example: "26.000000"
+            weight:
+              type: string
+              example: "2.100000"
+            additionalShippingCost:
+              type: string
+              example: "0.000000"
+            deliveryTimeNoteType:
+              type: integer
+              example: 1
+        stockInformation:
+          $ref: "#/components/schemas/ProductStockInfo"
+        seoOptions:
+          type: object
+          description: "SEO metadata per language."
+          properties:
+            localizedMetaTitles:
+              type: object
+              additionalProperties:
+                type: string
+              example:
+                "1": "Classic Laptop 15-inch | Best Price"
+            localizedMetaDescriptions:
+              type: object
+              additionalProperties:
+                type: string
+              example:
+                "1": "Buy the Classic Laptop 15-inch with free shipping."
+            localizedLinkRewrites:
+              type: object
+              additionalProperties:
+                type: string
+              example:
+                "1": "classic-laptop-15-inch"
+            redirectType:
+              type: string
+              example: "301-product"
+            redirectTarget:
+              type: integer
+              example: 0
+        attachments:
+          type: array
+          description: "Downloadable attachments."
+          items:
+            type: object
+            properties:
+              attachmentId:
+                type: integer
+                example: 7
+              fileName:
+                type: string
+                example: "laptop-manual.pdf"
+              localizedNames:
+                type: object
+                additionalProperties:
+                  type: string
+                example:
+                  "1": "User Manual"
+        virtualProductFile:
+          type: object
+          description: "Virtual product download info (null for non-virtual)."
+          nullable: true
+        coverThumbnailUrl:
+          type: string
+          description: "URL of cover image thumbnail."
+          example: "/img/p/42/42-home_default.jpg"
+        shopIds:
+          type: array
+          description: "Shops this product belongs to."
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/Product/QueryResult/ProductForEditing.php"
+          role: schema
+          description: "ProductForEditing QueryResult — the master read model"
+
+    ProductListItem:
+      x-model-id: MDL004
+      purpose: read-model
+      description: "Lightweight product summary for paginated list views and search results."
+      represents:
+        - concept: catalog.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              productId: CAT001
+              name: CAT002
+              reference: CAT007
+              price: CAT004
+              productType: CAT006
+      type: object
+      properties:
+        productId:
+          type: integer
+          description: "Product identifier."
+          example: 42
+        name:
+          type: string
+          description: "Product name in current language."
+          example: "Classic Laptop 15-inch"
+        reference:
+          type: string
+          description: "Merchant SKU."
+          example: "LAPTOP-15-BLK"
+        price:
+          type: string
+          description: "Formatted price with tax."
+          example: "€1,199.99"
+        priceTaxExcluded:
+          type: string
+          description: "Base price without tax."
+          example: "999.990000"
+        productType:
+          type: string
+          enum: [standard, combinations, pack, virtual]
+          example: "combinations"
+        quantity:
+          type: integer
+          description: "Current stock quantity."
+          example: 150
+        active:
+          type: boolean
+          description: "Whether product is enabled."
+          example: true
+        imageUrl:
+          type: string
+          description: "Cover image thumbnail URL."
+          example: "/img/p/42/42-small_default.jpg"
+        categoryName:
+          type: string
+          description: "Default category name."
+          example: "Laptops"
+        position:
+          type: integer
+          description: "Product position in category."
+          example: 3
+      code_refs:
+        - path: "src/Core/Domain/Product/QueryResult/FoundProduct.php"
+          role: schema
+          description: "Lightweight product search result"
+
+    ProductPricesInfo:
+      x-model-id: MDL005
+      purpose: dto
+      description: "Product pricing subsection — base price, tax, ecotax, wholesale, unit price."
+      represents:
+        - concept: catalog.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              price: CAT004
+      type: object
+      properties:
+        price:
+          type: string
+          description: "Base price excluding tax."
+          example: "999.990000"
+        priceTaxIncluded:
+          type: string
+          description: "Computed price with tax."
+          example: "1199.990000"
+        ecotax:
+          type: string
+          description: "Eco-tax amount."
+          example: "0.500000"
+        ecotaxTaxIncluded:
+          type: string
+          description: "Eco-tax with applied tax."
+          example: "0.600000"
+        taxRulesGroupId:
+          type: integer
+          description: "Tax rules group ID."
+          example: 1
+        onSale:
+          type: boolean
+          description: "On-sale flag."
+          example: false
+        wholesalePrice:
+          type: string
+          description: "Wholesale / cost price."
+          example: "750.000000"
+        unitPrice:
+          type: string
+          description: "Unit price for comparison."
+          example: "0.000000"
+        unitPriceTaxIncluded:
+          type: string
+          description: "Unit price with tax."
+          example: "0.000000"
+        unity:
+          type: string
+          description: "Unit label (kg, liter, etc.)."
+          example: ""
+        unitPriceRatio:
+          type: string
+          description: "Computed unit price ratio."
+          example: "0.000000"
+      code_refs:
+        - path: "src/Core/Domain/Product/QueryResult/ProductPricesInformation.php"
+          role: schema
+
+    ProductStockInfo:
+      x-model-id: MDL006
+      purpose: dto
+      description: "Product stock subsection — quantity, minimum order, low stock alert, availability labels."
+      type: object
+      properties:
+        quantity:
+          type: integer
+          description: "Current available stock."
+          example: 150
+        minimalQuantity:
+          type: integer
+          description: "Minimum order quantity."
+          example: 1
+        lowStockThreshold:
+          type: integer
+          description: "Alert threshold for low stock."
+          example: 10
+        lowStockAlertEnabled:
+          type: boolean
+          description: "Whether low stock email alert is enabled."
+          example: true
+        localizedAvailableNowLabels:
+          type: object
+          description: "In-stock availability label per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "In stock"
+            "2": "En stock"
+        localizedAvailableLaterLabels:
+          type: object
+          description: "Out-of-stock availability label per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Available in 3-5 days"
+        location:
+          type: string
+          description: "Warehouse location reference."
+          example: "Warehouse A, Shelf 12"
+        availableDate:
+          type: string
+          format: date
+          description: "Expected availability date."
+          example: "2026-04-15"
+        packStockType:
+          type: integer
+          description: "Stock management type for pack products (0=decrement pack only, 1=products only, 2=both, 3=default)."
+          example: 0
+        outOfStockType:
+          type: integer
+          description: "Behavior when out of stock (0=deny, 1=allow, 2=default)."
+          example: 0
+      code_refs:
+        - path: "src/Core/Domain/Product/QueryResult/ProductStockInformation.php"
+          role: schema
+
+    AddSpecificPricePayload:
+      x-model-id: MDL019
+      purpose: command-payload
+      description: "Request body for creating a specific price rule on a product."
+      represents:
+        - concept: catalog.CN010
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              reduction: CAT031
+              reductionType: CAT032
+              fromQuantity: CAT033
+      type: object
+      required: [productId, reduction, reductionType]
+      properties:
+        productId:
+          type: integer
+          description: "Target product for the specific price."
+          example: 42
+        combinationId:
+          type: integer
+          description: "Specific combination (0 for all)."
+          example: 0
+        shopId:
+          type: integer
+          description: "Target shop (0 for all shops)."
+          example: 0
+        currencyId:
+          type: integer
+          description: "Currency (0 for all currencies)."
+          example: 0
+        countryId:
+          type: integer
+          description: "Country (0 for all countries)."
+          example: 0
+        groupId:
+          type: integer
+          description: "Customer group (0 for all groups)."
+          example: 0
+        customerId:
+          type: integer
+          description: "Specific customer (0 for all customers)."
+          example: 0
+        price:
+          type: string
+          description: "Fixed price override (-1 to keep base price)."
+          example: "-1.000000"
+        fromQuantity:
+          type: integer
+          description: "Minimum quantity for rule to apply."
+          example: 5
+        reduction:
+          type: string
+          description: "Discount amount or percentage value."
+          example: "10.000000"
+        reductionType:
+          type: string
+          enum: [amount, percentage]
+          description: "How to interpret the reduction value."
+          example: "percentage"
+        reductionTax:
+          type: boolean
+          description: "Whether reduction includes tax."
+          example: false
+        dateFrom:
+          type: string
+          format: date-time
+          description: "Start of validity period."
+          example: "2026-03-01T00:00:00"
+        dateTo:
+          type: string
+          format: date-time
+          description: "End of validity period."
+          example: "2026-06-30T23:59:59"
+      code_refs:
+        - path: "src/Core/Domain/Product/SpecificPrice/Command/AddSpecificPriceCommand.php"
+          role: schema

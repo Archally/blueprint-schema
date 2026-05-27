@@ -1,0 +1,144 @@
+---
+version: "1.0.0"
+scope: customers
+
+happy_path:
+  - id: customers.TC001
+    name: "Register customer — happy path"
+    summary: "Register a new customer with valid email and password."
+    validates:
+      operations: [customers.CMD001, customers.EVT001]
+      rules: [customers.VR001, customers.VR002]
+    contract:
+      kind: openapi
+      file: dist/customers-api.openapi.yaml
+    given:
+      description: "Email john@example.com not yet registered. Password meets policy."
+      state:
+        email: "john@example.com"
+        password: "SecurePass123"
+        firstName: "John"
+        lastName: "Doe"
+    expected_result:
+      status: success
+      code: 200
+
+  - id: customers.TC002
+    name: "Add customer address — happy path"
+    summary: "Add a delivery address with all required fields for France."
+    validates:
+      operations: [customers.CMD012, customers.EVT007]
+      rules: [customers.VR005]
+    given:
+      description: "Customer exists. Address has all FR-required fields."
+      state:
+        alias: "Home"
+        address1: "15 Rue de la Paix"
+        city: "Paris"
+        postcode: "75002"
+        countryRef: "FR"
+    expected_result:
+      status: success
+      code: 200
+
+  - id: customers.TC003
+    name: "Transform guest to customer — happy path"
+    summary: "Convert a guest account to registered customer."
+    validates:
+      operations: [customers.CMD008, customers.EVT004]
+      rules: [customers.VR003]
+    given:
+      description: "Guest account with valid email, no existing registered account with same email."
+      state:
+        isGuest: true
+        email: "guest@example.com"
+    expected_result:
+      status: success
+
+  - id: customers.TC004
+    name: "Reply to customer service thread — happy path"
+    summary: "Agent replies to an open service thread."
+    validates:
+      operations: [customers.CMD016, customers.EVT010]
+    given:
+      description: "Thread ID 42 exists with status open."
+      state:
+        threadStatus: "open"
+        replyMessage: "Thank you for contacting us. We are looking into your issue."
+    expected_result:
+      status: success
+
+edge_cases:
+  - id: customers.EC001
+    name: "Register with duplicate email"
+    summary: "Attempt to register with an email already in use."
+    validates:
+      operations: [customers.CMD001]
+      rules: [customers.SR001, customers.VR001]
+    given:
+      description: "Email existing@example.com already registered."
+      state:
+        email: "existing@example.com"
+    expected_result:
+      status: failure
+      code: 409
+
+  - id: customers.EC002
+    name: "Address missing country-required fields"
+    summary: "Submit address without postcode for a country that requires it."
+    validates:
+      operations: [customers.CMD012]
+      rules: [customers.VR005]
+    given:
+      description: "French address without postcode. France requires postcode."
+      state:
+        address1: "15 Rue de la Paix"
+        city: "Paris"
+        countryRef: "FR"
+        postcode: null
+    expected_result:
+      status: failure
+      code: 422
+
+error_cases:
+  - id: customers.ER001
+    name: "Register with weak password"
+    summary: "Attempt to register with a password shorter than minimum."
+    validates:
+      operations: [customers.CMD001]
+      rules: [customers.VR002]
+    given:
+      description: "Password '123' is 3 characters, minimum is 8."
+      state:
+        password: "123"
+    expected_result:
+      status: failure
+      code: 422
+
+  - id: customers.ER002
+    name: "Guest conversion with duplicate email"
+    summary: "Convert guest whose email is already used by a registered customer."
+    validates:
+      operations: [customers.CMD008]
+      rules: [customers.VR003]
+    given:
+      description: "Guest email matches existing registered customer."
+      state:
+        isGuest: true
+        email: "existing@example.com"
+    expected_result:
+      status: failure
+      code: 409
+
+  - id: customers.ER003
+    name: "Delete non-existent customer"
+    summary: "Attempt to delete a customer ID that does not exist."
+    validates:
+      operations: [customers.CMD003]
+    given:
+      description: "Customer ID 99999 does not exist."
+      state:
+        customerId: 99999
+    expected_result:
+      status: failure
+      code: 404

@@ -1,0 +1,173 @@
+---
+version: "1.0.0"
+scope: admin
+tags: [identity-access]
+
+concepts:
+  - id: admin.CN001
+    name: "Employee"
+    stereotype: aggregate-root
+    description: "A back-office user with profile-based access control. Employees have a lifecycle (active/inactive), are assigned to one profile for RBAC, and can be associated with specific shops in multi-store setups. Password management uses value objects with configurable strength policy (minLength, maxLength, minScore)."
+    tags: [aggregate-root, identity]
+    attributes:
+      firstName:
+        id: CAT800
+        description: "Employee first name (validated via FirstName value object)"
+        example: "John"
+      lastName:
+        id: CAT801
+        description: "Employee last name (validated via LastName value object)"
+        example: "Smith"
+      email:
+        id: CAT802
+        description: "Employee email address (validated via shared Email value object)"
+        example: "john.smith@store.com"
+      active:
+        id: CAT803
+        description: "Whether the employee account is currently enabled"
+      profileId:
+        id: CAT804
+        description: "Reference to the assigned access control profile"
+        example: "1"
+      defaultPageId:
+        id: CAT805
+        description: "Admin page shown after login"
+      languageId:
+        id: CAT806
+        description: "Back-office language preference"
+      shopAssociation:
+        id: CAT807
+        description: "Array of shop IDs this employee can access (multi-store)"
+    code_refs:
+      - path: "src/Core/Domain/Employee/Command/AddEmployeeCommand.php"
+        role: implementation
+        description: "Employee creation with profile assignment, password policy, and shop association"
+      - path: "src/Core/Domain/Employee/ValueObject/FirstName.php"
+        role: model
+      - path: "src/Core/Domain/Employee/ValueObject/LastName.php"
+        role: model
+      - path: "src/Core/Domain/Employee/ValueObject/Password.php"
+        role: model
+        description: "Password value object with configurable minLength, maxLength, minScore"
+
+  - id: admin.CN002
+    name: "Profile"
+    stereotype: aggregate-root
+    description: "A role-based access control profile that defines what an employee can do in the back-office. Profiles have localized names and are assigned to employees. Permission management is handled through a separate Permission sub-entity."
+    tags: [aggregate-root, identity]
+    attributes:
+      name:
+        id: CAT808
+        description: "Localized profile name (per language)"
+        example: "SuperAdmin"
+    code_refs:
+      - path: "src/Core/Domain/Profile/Command/AddProfileCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Profile/Command/AbstractProfileCommand.php"
+        role: implementation
+        description: "Shared base class for profile commands with localized name handling"
+      - path: "src/Core/Domain/Profile/ProfileSettings.php"
+        role: model
+        description: "Profile settings constants"
+
+  - id: admin.CN003
+    name: "Permission"
+    stereotype: entity
+    description: "Permission entries within a Profile that control access to back-office tabs and module features. Permissions are managed via UpdateTabPermissions and UpdateModulePermissions commands — separate from the Profile CRUD lifecycle."
+    tags: [entity, within:admin.CN002, identity]
+    attributes:
+      tabPermissions:
+        id: CAT809
+        description: "Matrix of tab-level permissions (view, add, edit, delete) per profile"
+      modulePermissions:
+        id: CAT810
+        description: "Matrix of module-level permissions per profile"
+    code_refs:
+      - path: "src/Core/Domain/Profile/Permission/Command/UpdateTabPermissionsCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Profile/Permission/Command/UpdateModulePermissionsCommand.php"
+        role: implementation
+
+  - id: admin.CN004
+    name: "Security"
+    stereotype: aggregate-root
+    description: "Session management aggregate handling both employee and customer session lifecycle. All 6 commands live in the same domain directory and change together under the same security policies (best practice #13: change-together heuristic). Manages session deletion, bulk cleanup, and outdated session clearing."
+    tags: [aggregate-root, security]
+    attributes:
+      sessionId:
+        id: CAT811
+        description: "Unique session identifier"
+      sessionType:
+        id: CAT812
+        description: "Whether session belongs to employee or customer"
+    code_refs:
+      - path: "src/Core/Domain/Security/Command/DeleteEmployeeSessionCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Security/Command/DeleteCustomerSessionCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Security/Command/ClearOutdatedEmployeeSessionCommand.php"
+        role: implementation
+
+actors:
+  - id: admin.ACT001
+    name: "SuperAdmin"
+    type: human
+    description: "Top-level administrator with full access to all back-office features including employee management, profile configuration, API client setup, and system configuration."
+    personas:
+      - name: "Hands-On SuperAdmin"
+        quote: "I need full control over who can do what in the back-office, and I need to respond fast to security incidents."
+        goals: ["Manage employee access securely", "Configure API integrations", "Monitor and clear sessions"]
+        pain_points: ["Complex permission matrices", "No audit trail for permission changes", "Session management spread across screens"]
+        behaviors: ["Reviews permissions after employee role changes", "Clears sessions during security incidents"]
+        tech_savviness: high
+        job_to_be_done: "Control back-office access and maintain system security"
+        context: "Back-office administration and security management"
+        demographics:
+          role: "System Administrator"
+          industry: "E-commerce"
+
+  - id: admin.ACT002
+    name: "ShopOperator"
+    type: human
+    description: "Day-to-day back-office user with profile-restricted access. Cannot manage employees or profiles but uses the system within their assigned permissions."
+    personas:
+      - name: "Typical ShopOperator"
+        quote: "I just need to do my job without hitting permission walls I don't understand."
+        goals: ["Access assigned features reliably", "Understand what I can and cannot do"]
+        pain_points: ["Cryptic permission denied errors", "Cannot see why access was revoked"]
+        behaviors: ["Works within assigned profile", "Contacts admin when access issues arise"]
+        tech_savviness: medium
+        job_to_be_done: "Operate the store back-office within assigned role boundaries"
+        context: "Daily back-office operations"
+        demographics:
+          role: "Store Operator"
+          industry: "E-commerce"
+
+enumerations:
+  - id: admin.EN001
+    name: "PermissionLevel"
+    description: "The four permission actions available on tabs and modules in the RBAC matrix."
+    values:
+      - name: view
+        description: "Can view/read the resource"
+      - name: add
+        description: "Can create new entries"
+      - name: edit
+        description: "Can modify existing entries"
+      - name: delete
+        description: "Can remove entries"
+
+associations:
+  - id: admin.AS001
+    subject: admin.CN001
+    predicate: depends-on
+    object: admin.CN002
+    cardinality: "1..1"
+    description: "Every employee is assigned exactly one profile that determines their RBAC permissions."
+
+  - id: admin.AS002
+    subject: admin.CN003
+    predicate: depends-on
+    object: admin.CN002
+    cardinality: "0..*"
+    description: "A profile contains zero or more permission entries governing tab and module access."

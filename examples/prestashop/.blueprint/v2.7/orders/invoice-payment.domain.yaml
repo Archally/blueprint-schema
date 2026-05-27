@@ -1,0 +1,83 @@
+---
+name: "Invoice and Payment"
+version: "1.0.0"
+scope: orders
+tags: [invoice, payment]
+
+operations:
+  generateInvoice:
+    id: orders.CMD017
+    kind: command
+    name: "GenerateInvoice"
+    description: "Explicitly generate an invoice for an order. Normally invoices are auto-generated on payment acceptance, but merchants may trigger manual generation."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT003]
+    governed_by:
+      - rule: orders.SR002
+    produces:
+      operations: [orders.EVT007]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Order/Invoice/Command/GenerateInvoiceCommand.php"
+        role: implementation
+
+  updateInvoiceNote:
+    id: orders.CMD018
+    kind: command
+    name: "UpdateInvoiceNote"
+    description: "Add or update a note on an existing invoice. Used for fiscal or internal annotations."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT003]
+    code_refs:
+      - path: "src/Core/Domain/Order/Invoice/Command/UpdateInvoiceNoteCommand.php"
+        role: implementation
+
+  addPayment:
+    id: orders.CMD019
+    kind: command
+    idempotent: true
+    idempotency_key: "$.body.paymentTransactionId"
+    name: "AddPayment"
+    description: "Manually record a payment transaction on an order. Used for offline payments (bank transfer, check) or split payment scenarios."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT003, orders.ACT004]
+    governed_by:
+      - rule: orders.VR002
+    produces:
+      operations: [orders.EVT008]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Order/Payment/Command/AddPaymentCommand.php"
+        role: implementation
+
+  # --- Events ---
+
+  invoiceGenerated:
+    id: orders.EVT007
+    kind: event
+    name: "InvoiceGenerated"
+    description: "Emitted when a new invoice is created for an order. Carries the invoice number and amount."
+
+  paymentAdded:
+    id: orders.EVT008
+    kind: event
+    name: "PaymentAdded"
+    description: "Emitted when a payment is recorded on an order. May trigger status transition to payment-accepted."
+
+errors:
+  paymentDeclined:
+    id: orders.ERR002
+    name: "PaymentDeclined"
+    description: "Payment gateway rejected the transaction (insufficient funds, expired card, fraud check)."
+    category: external
+    severity: error
+    http_status: 402
+
+  invoiceAlreadyGenerated:
+    id: orders.ERR006
+    name: "InvoiceAlreadyGenerated"
+    description: "An invoice already exists for this order or order segment. Duplicate invoice generation is prevented for fiscal integrity."
+    category: conflict
+    severity: error
+    http_status: 409
+    related_rules: [orders.SR002]

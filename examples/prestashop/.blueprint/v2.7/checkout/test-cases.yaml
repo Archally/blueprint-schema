@@ -1,0 +1,149 @@
+---
+version: "1.0.0"
+scope: checkout
+
+happy_path:
+  - id: checkout.TC001
+    name: "Add product to cart — happy path"
+    summary: "Add an in-stock product to an empty cart."
+    validates:
+      operations: [checkout.CMD009, checkout.EVT004]
+      rules: [checkout.SR001]
+    contract:
+      kind: openapi
+      file: dist/checkout-api.openapi.yaml
+    given:
+      description: "Product SKU-001 in stock (qty: 10). Cart is empty."
+      state:
+        cartStatus: "empty"
+        productStock: 10
+        quantity: 2
+    expected_result:
+      status: success
+      code: 200
+
+  - id: checkout.TC002
+    name: "Apply valid voucher code — happy path"
+    summary: "Apply a valid voucher code to a cart meeting all conditions."
+    validates:
+      operations: [checkout.CMD014, checkout.EVT005]
+      rules: [checkout.VR001, checkout.VR002, checkout.VR003]
+    given:
+      description: "Cart total EUR 80. Voucher SPRING20 gives 20% off, min EUR 50, valid until 2026-06-01, unused."
+      state:
+        cartTotal: 80.00
+        voucherCode: "SPRING20"
+        reductionType: "percentage"
+        reductionValue: 20
+        minimumAmount: 50.00
+    expected_result:
+      status: success
+      code: 200
+
+  - id: checkout.TC003
+    name: "Create discount campaign — happy path"
+    summary: "Create a percentage discount with date range and usage limits."
+    validates:
+      operations: [checkout.CMD016, checkout.EVT007]
+      rules: [checkout.SR002, checkout.VR001]
+    given:
+      description: "Marketing manager creates 15% off discount, valid March-April 2026, max 500 uses."
+      state:
+        reductionType: "percentage"
+        reductionValue: 15
+        dateFrom: "2026-03-01"
+        dateTo: "2026-04-30"
+        totalQuantity: 500
+    expected_result:
+      status: success
+
+  - id: checkout.TC004
+    name: "Create catalog price rule — happy path"
+    summary: "Create a B2B quantity discount for bulk purchases."
+    validates:
+      operations: [checkout.CMD021, checkout.EVT010]
+      rules: [checkout.VR004]
+    given:
+      description: "10% off for orders of 100+ units, valid all year."
+      state:
+        reductionType: "percentage"
+        reductionValue: 10
+        fromQuantity: 100
+    expected_result:
+      status: success
+
+edge_cases:
+  - id: checkout.EC001
+    name: "Apply expired voucher code"
+    summary: "Attempt to apply a voucher whose validity period has passed."
+    validates:
+      operations: [checkout.CMD014]
+      rules: [checkout.VR001]
+    given:
+      description: "Voucher WINTER25 expired on 2026-01-31. Current date is 2026-03-18."
+      state:
+        voucherCode: "WINTER25"
+        dateTo: "2026-01-31"
+    expected_result:
+      status: failure
+      code: 422
+
+  - id: checkout.EC002
+    name: "Exceed discount per-customer usage limit"
+    summary: "Customer attempts to use a voucher they have already exhausted."
+    validates:
+      operations: [checkout.CMD014]
+      rules: [checkout.VR003]
+    given:
+      description: "Voucher LOYAL10 allows 1 use per customer. Customer has already used it once."
+      state:
+        quantityPerUser: 1
+        customerUsageCount: 1
+    expected_result:
+      status: failure
+      code: 422
+
+error_cases:
+  - id: checkout.ER001
+    name: "Delete cart linked to completed order"
+    summary: "Attempt to delete a cart that was already converted to an order."
+    validates:
+      operations: [checkout.CMD007]
+      rules: [checkout.VR005]
+    given:
+      description: "Cart ID 42 has status 'completed' — order was placed."
+      state:
+        cartStatus: "completed"
+    expected_result:
+      status: failure
+      code: 409
+
+  - id: checkout.ER002
+    name: "Create discount with invalid configuration"
+    summary: "Attempt to create a discount with end date before start date."
+    validates:
+      operations: [checkout.CMD016]
+      rules: [checkout.SR002, checkout.VR001]
+    given:
+      description: "Discount with dateFrom 2026-05-01 and dateTo 2026-04-01."
+      state:
+        dateFrom: "2026-05-01"
+        dateTo: "2026-04-01"
+    expected_result:
+      status: failure
+      code: 422
+
+  - id: checkout.ER003
+    name: "Apply voucher below minimum order amount"
+    summary: "Voucher requires EUR 50 minimum but cart total is EUR 30."
+    validates:
+      operations: [checkout.CMD014]
+      rules: [checkout.VR002]
+    given:
+      description: "Cart total EUR 30. Voucher requires minimum EUR 50."
+      state:
+        cartTotal: 30.00
+        minimumAmount: 50.00
+    expected_result:
+      status: failure
+      code: 422

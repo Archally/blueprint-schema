@@ -1,0 +1,84 @@
+---
+version: "1.0.0"
+value_streams:
+  - id: VS001
+    name: "Shop & Buy"
+    description: "End-customer journey from product discovery through order receipt."
+    trigger: "Customer arrives at storefront"
+    outcome: "Customer receives purchased goods and confirmation"
+    primary_actors: [orders.ACT001]
+    discovery_stage: committed
+    certainty: confirmed
+    metrics: [catalog.KPI001, checkout.KPI001, orders.KPI001]
+    stages:
+      - name: "Discover"
+        description: "Customer finds products through search, browsing, or external links."
+        capabilities: [CAP018, CAP005]
+        lead_time: "< 2 seconds"
+      - name: "Select & Cart"
+        description: "Customer adds products to cart with quantity and variant selection."
+        capabilities: [CAP002]
+        lead_time: "< 1 second per item"
+      - name: "Checkout"
+        description: "Customer provides shipping/billing info, selects carrier, and pays."
+        capabilities: [CAP003, CAP004]
+        pain_points:
+          - "Too many form fields"
+          - "Unclear delivery time estimates"
+        lead_time: "2-5 minutes"
+      - name: "Fulfill"
+        description: "Merchant processes, ships, and delivers the order."
+        capabilities: [CAP001, CAP010]
+        lead_time: "1-5 business days"
+      - name: "Notify"
+        description: "Customer receives order confirmation, shipping updates, and delivery notice."
+        capabilities: [CAP006]
+
+  - id: VS002
+    name: "Sell & Fulfill"
+    description: "Merchant journey from catalog setup through order fulfillment and returns."
+    trigger: "Merchant adds or updates products"
+    outcome: "Orders processed, shipped, and revenue collected"
+    primary_actors: [catalog.ACT001]
+    discovery_stage: committed
+    certainty: confirmed
+    metrics: [catalog.KPI001, orders.KPI001, shipping.KPI001]
+    stages:
+      - name: "Catalog Setup"
+        description: "Merchant creates products, variants, and organizes categories."
+        capabilities: [CAP005]
+      - name: "Pricing & Tax"
+        description: "Merchant configures prices, currencies, and tax rules."
+        capabilities: [CAP011, CAP012]
+      - name: "Order Processing"
+        description: "Merchant reviews, validates, and manages orders."
+        capabilities: [CAP001]
+      - name: "Fulfillment"
+        description: "Merchant ships orders and manages returns/refunds."
+        capabilities: [CAP010]
+
+  - id: VS003
+    name: "Configure & Scale"
+    description: "Platform admin journey from store setup through multi-store scaling."
+    trigger: "Admin creates or reconfigures a shop"
+    outcome: "Fully configured, extensible multi-store platform"
+    primary_actors: [admin.ACT001]
+    discovery_stage: committed
+    certainty: confirmed
+    metrics: [admin.KPI001, modules.KPI001, shop.KPI001]
+    stages:
+      - name: "Store Setup"
+        description: "Admin configures shop identity, contacts, and basic settings."
+        capabilities: [CAP017]
+      - name: "Content & Design"
+        description: "Admin manages CMS pages, themes, and email templates."
+        capabilities: [CAP013]
+      - name: "Extend"
+        description: "Admin installs and configures modules to add functionality."
+        capabilities: [CAP014]
+      - name: "Secure & Integrate"
+        description: "Admin manages employees, API clients, and integrations."
+        capabilities: [CAP015, CAP016]
+      - name: "Account Management"
+        description: "Admin oversees customer accounts and service interactions."
+        capabilities: [CAP007, CAP008, CAP009]

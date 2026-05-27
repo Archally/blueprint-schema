@@ -1,0 +1,135 @@
+---
+version: "1.0.0"
+scope: international
+tags: [localization]
+
+concepts:
+  - id: international.CN001
+    name: "Currency"
+    stereotype: aggregate-root
+    description: "A monetary currency with ISO code, exchange rate, localized names/symbols, and precision. Supports both official (CLDR-backed) and unofficial (custom) currencies via separate creation commands that share the same aggregate."
+    tags: [aggregate-root, localization]
+    attributes:
+      isoCode:
+        id: CAT500
+        description: "ISO 4217 alpha currency code"
+        example: "EUR"
+      exchangeRate:
+        id: CAT501
+        description: "Exchange rate relative to the default (reference) currency"
+        example: "1.0"
+      precision:
+        id: CAT502
+        description: "Number of decimal places for display and rounding"
+        example: "2"
+      localizedNames:
+        id: CAT503
+        description: "Currency display name per language"
+        example: "Euro"
+      localizedSymbols:
+        id: CAT504
+        description: "Currency symbol per language"
+        example: "€"
+      isEnabled:
+        id: CAT505
+        description: "Whether this currency is active and available"
+        example: "true"
+      localizedTransformations:
+        id: CAT506
+        description: "Display transformation patterns per language (formatting rules)"
+    code_refs:
+      - path: "src/Core/Domain/Currency/Command/AbstractAddCurrencyCommand.php"
+        role: implementation
+        description: "Full attribute set in abstract base class"
+      - path: "src/Core/Domain/Currency/ValueObject/AlphaIsoCode.php"
+        role: model
+      - path: "src/Core/Domain/Currency/ValueObject/ExchangeRate.php"
+        role: model
+      - path: "src/Core/Domain/Currency/ValueObject/Precision.php"
+        role: model
+
+  - id: international.CN002
+    name: "Language"
+    stereotype: aggregate-root
+    description: "A store language with ISO code, locale, RTL support, and flag image. Languages determine translations, date/number formatting, and text direction."
+    tags: [aggregate-root, localization]
+    attributes:
+      isoCode:
+        id: CAT507
+        description: "ISO 639-1 language code"
+        example: "fr"
+      locale:
+        id: CAT508
+        description: "Full locale identifier (language + region)"
+        example: "fr-FR"
+      name:
+        id: CAT509
+        description: "Language display name"
+        example: "French (France)"
+      isRtl:
+        id: CAT510
+        description: "Whether the language uses right-to-left text direction"
+        example: "false"
+      isEnabled:
+        id: CAT511
+        description: "Whether this language is active and available"
+        example: "true"
+      flagImageFileName:
+        id: CAT512
+        description: "Flag image file for language selector"
+        example: "fr.jpg"
+    code_refs:
+      - path: "src/Core/Domain/Language/Command/AddLanguageCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Language/Command/EditLanguageCommand.php"
+        role: implementation
+
+  - id: international.CN003
+    name: "ExchangeRate"
+    stereotype: value-object
+    description: "The conversion rate between a currency and the store's reference (default) currency. Rates can be refreshed from external providers or set manually."
+    tags: [value-object, within:international.CN001]
+    attributes:
+      rate:
+        id: CAT513
+        description: "Conversion multiplier relative to the reference currency"
+        example: "0.85"
+    code_refs:
+      - path: "src/Core/Domain/Currency/ValueObject/ExchangeRate.php"
+        role: model
+
+actors:
+  - id: international.ACT001
+    name: "LocalizationAdmin"
+    type: human
+    description: "Back-office administrator managing currencies, languages, exchange rates, and localization settings."
+    personas:
+      - name: "Typical LocalizationAdmin"
+        quote: "I need to support multiple currencies and languages so our store serves international customers."
+        goals: ["Configure multi-currency support", "Keep exchange rates current", "Enable multi-language store"]
+        pain_points: ["Manual exchange rate updates", "Ensuring all content is translated", "Complex locale configuration"]
+        behaviors: ["Configures currencies/languages during store setup", "Periodically refreshes exchange rates"]
+        tech_savviness: high
+        job_to_be_done: "Enable the store to operate across multiple currencies and languages"
+        context: "Back-office international settings"
+        demographics:
+          role: "Store Administrator"
+          industry: "E-commerce"
+
+enumerations:
+  - id: international.EN001
+    name: "CurrencyType"
+    description: "Distinguishes official (CLDR-backed) from unofficial (custom) currencies."
+    values:
+      - name: official
+        description: "Standard ISO 4217 currency with CLDR data"
+      - name: unofficial
+        description: "Custom currency with user-defined ISO code and properties"
+
+associations:
+  - id: international.AS001
+    subject: international.CN001
+    predicate: depends-on
+    object: international.CN003
+    cardinality: "1"
+    description: "Each currency has exactly one exchange rate relative to the reference currency."

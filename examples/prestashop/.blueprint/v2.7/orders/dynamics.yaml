@@ -1,0 +1,48 @@
+---
+version: "1.0.0"
+scope: orders
+
+execution:
+  model: event-driven
+  description: "CQRS command dispatch with domain events triggering side effects (email, stock, payment)."
+  rationale: "Order lifecycle involves multiple downstream systems (payment gateway, inventory, notifications) that must react asynchronously to state changes without blocking the primary command path."
+
+race_conditions:
+  - id: orders.RC001
+    name: "Double-submit order"
+    scenario: "Two concurrent placeOrder requests from same cart create duplicate orders."
+    impact: "Duplicate orders, double payment capture."
+    likelihood: medium
+    mitigation: "Cart-based idempotency key prevents second order creation."
+    affects: [orders.CMD001]
+
+  - id: orders.RC002
+    name: "Concurrent order status update"
+    scenario: "Two administrators update the same order status simultaneously, one transition overwrites the other."
+    impact: "Lost state transition, order stuck in wrong state."
+    likelihood: low
+    mitigation: "Optimistic locking on order version column."
+    affects: [orders.CMD004]
+
+  - id: orders.RC003
+    name: "Refund during cancellation"
+    scenario: "Partial refund issued while another admin cancels the same order, causing double financial reversal."
+    impact: "Customer refunded twice, financial loss."
+    likelihood: very-low
+    mitigation: "Order-level pessimistic lock during refund/cancel operations."
+    affects: [orders.CMD002, orders.CMD015]
+
+ordering:
+  - id: orders.ORD001
+    summary: "Payment can only be recorded after order is placed."
+    operations: [orders.CMD019]
+    requires: [orders.CMD001]
+
+parallelism:
+  - id: orders.PAR001
+    name: "Parallel event dispatch"
+    operations: [orders.EVT001, orders.EVT005]
+    relationship: independent
+    benefit: "Event handlers for email, stock, and search index run concurrently."
+    complexity: low
+    implemented: true

@@ -1,0 +1,41 @@
+---
+version: "1.0.0"
+scope: content
+
+kpis:
+  - id: content.KPI001
+    name: "SEO Metadata Coverage"
+    target: ">= 95% of page types have meta entries with titles and descriptions configured"
+    window: "weekly"
+    goal: content.G002
+    thresholds:
+      warning: "90%"
+      critical: "80%"
+
+  - id: content.KPI002
+    name: "CMS Content Completeness"
+    target: ">= 90% of CMS pages have all required fields populated (title, content, category)"
+    window: "weekly"
+    goal: content.G001
+    thresholds:
+      warning: "85%"
+      critical: "75%"
+
+  - id: content.KPI003
+    name: "Theme Activation Success Rate"
+    target: ">= 99% of theme enable operations complete without error"
+    window: "monthly"
+    goal: content.G003
+
+slos:
+  - id: content.SLO001
+    name: "CMS Page Load Time"
+    target: "P95 < 500ms for CMS page content delivery"
+    window: "daily"
+    operations: [content.QRY001]
+
+  - id: content.SLO002
+    name: "Theme Switch Availability"
+    target: ">= 99.9% uptime during theme activation operations"
+    window: "monthly"
+    operations: [content.CMD014]

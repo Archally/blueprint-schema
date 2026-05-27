@@ -1,0 +1,86 @@
+---
+name: "Supply Chain"
+version: "1.0.0"
+scope: catalog
+tags: [supply-chain]
+
+operations:
+  addManufacturer:
+    id: catalog.CMD034
+    kind: command
+    name: "AddManufacturer"
+    description: "Register a new manufacturer/brand."
+    delivery_priority: should-have
+    produces:
+      operations: [catalog.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Manufacturer/Command/AddManufacturerCommand.php"
+        role: implementation
+
+  editManufacturer:
+    id: catalog.CMD035
+    kind: command
+    name: "EditManufacturer"
+    description: "Update manufacturer name, logo, description, address."
+    delivery_priority: should-have
+    produces:
+      operations: [catalog.EVT002]
+      mode: all
+
+  deleteManufacturer:
+    id: catalog.CMD036
+    kind: command
+    name: "DeleteManufacturer"
+    description: "Remove a manufacturer. Products referencing it are unlinked."
+    delivery_priority: should-have
+    produces:
+      operations: [catalog.EVT002]
+      mode: all
+
+  addSupplier:
+    id: catalog.CMD037
+    kind: command
+    name: "AddSupplier"
+    description: "Register a new product supplier."
+    delivery_priority: should-have
+    produces:
+      operations: [catalog.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Command/AddSupplierCommand.php"
+        role: implementation
+
+  editSupplier:
+    id: catalog.CMD038
+    kind: command
+    name: "EditSupplier"
+    description: "Update supplier name, contact, address."
+    delivery_priority: should-have
+    produces:
+      operations: [catalog.EVT002]
+      mode: all
+
+  deleteSupplier:
+    id: catalog.CMD039
+    kind: command
+    name: "DeleteSupplier"
+    description: "Remove a supplier. Products referencing it are unlinked."
+    delivery_priority: should-have
+    produces:
+      operations: [catalog.EVT002]
+      mode: all
+
+  getManufacturers:
+    id: catalog.QRY010
+    kind: query
+    name: "GetManufacturers"
+    description: "List all manufacturers/brands."
+    delivery_priority: should-have
+
+  getSuppliers:
+    id: catalog.QRY011
+    kind: query
+    name: "GetSuppliers"
+    description: "List all suppliers."
+    delivery_priority: should-have

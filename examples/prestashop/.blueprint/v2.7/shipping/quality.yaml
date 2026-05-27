@@ -1,0 +1,41 @@
+---
+version: "1.0.0"
+scope: shipping
+
+kpis:
+  - id: shipping.KPI001
+    name: "Shipping Cost Accuracy"
+    target: ">= 99.5% of orders charged correct shipping cost matching carrier range configuration"
+    window: "weekly"
+    goal: shipping.G001
+    thresholds:
+      warning: "98%"
+      critical: "95%"
+
+  - id: shipping.KPI002
+    name: "Zone Coverage Completeness"
+    target: "100% of active delivery zones have at least one active carrier"
+    window: "daily"
+    goal: shipping.G002
+    thresholds:
+      warning: "95%"
+      critical: "90%"
+
+  - id: shipping.KPI003
+    name: "Shipment Fulfillment Rate"
+    target: ">= 95% of orders have all products assigned to shipments within 24 hours"
+    window: "weekly"
+    goal: shipping.G003
+
+slos:
+  - id: shipping.SLO001
+    name: "Carrier Configuration API Latency"
+    target: "p99 < 500ms for carrier CRUD operations"
+    window: "weekly"
+    operations: [shipping.CMD001, shipping.CMD002, shipping.CMD008]
+
+  - id: shipping.SLO002
+    name: "Shipment Creation Latency"
+    target: "p99 < 1s for shipment creation and product assignment"
+    window: "weekly"
+    operations: [shipping.CMD011, shipping.CMD013]

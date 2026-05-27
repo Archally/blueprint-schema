@@ -1,0 +1,467 @@
+---
+version: "1.0.0"
+scope: shipping
+tags: [shipping, models]
+
+components:
+  schemas:
+    CreateCarrierPayload:
+      x-model-id: MDL400
+      purpose: command-payload
+      description: "Request body for creating a new carrier with delivery configuration, zone assignments, dimensional constraints, and shop associations."
+      represents:
+        - concept: shipping.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              name: CAT400
+              localizedDelay: CAT401
+              grade: CAT402
+              trackingUrl: CAT403
+              active: CAT404
+              isFree: CAT405
+              shippingMethod: CAT406
+              rangeBehavior: CAT407
+              hasAdditionalHandlingFee: CAT408
+              maxWidth: CAT409
+              maxHeight: CAT410
+              maxDepth: CAT411
+              maxWeight: CAT412
+      type: object
+      required: [name, localizedDelay, grade, shippingMethod, rangeBehavior, zones]
+      properties:
+        name:
+          type: string
+          description: "Carrier display name."
+          example: "DHL Express"
+        localizedDelay:
+          type: object
+          description: "Estimated delivery time text keyed by language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "2-3 business days"
+            "2": "2-3 jours ouvrés"
+        grade:
+          type: integer
+          description: "Speed/quality grade (0-9, higher = faster)."
+          example: 5
+        trackingUrl:
+          type: string
+          description: "URL template for parcel tracking (@ = tracking number placeholder)."
+          example: "https://track.dhl.com/@"
+        active:
+          type: boolean
+          description: "Whether the carrier is available for selection."
+          example: true
+        groupIds:
+          type: array
+          items:
+            type: integer
+          description: "Customer groups that can use this carrier."
+          example: [1, 2, 3]
+        hasAdditionalHandlingFee:
+          type: boolean
+          description: "Whether an extra handling fee is applied on top of range-based cost."
+          example: false
+        isFree:
+          type: boolean
+          description: "Whether shipping is always free regardless of ranges."
+          example: false
+        shippingMethod:
+          type: string
+          description: "Cost calculation method (by_weight or by_price)."
+          example: "by_weight"
+        rangeBehavior:
+          type: string
+          description: "Behavior when order exceeds maximum range (use_highest_range or disabled)."
+          example: "use_highest_range"
+        zones:
+          type: array
+          description: "Zone assignments with cost ranges."
+          items:
+            $ref: "#/components/schemas/CarrierZoneConfig"
+        shopIds:
+          type: array
+          items:
+            type: integer
+          description: "Shops this carrier is available in."
+          example: [1]
+        maxWidth:
+          type: integer
+          description: "Maximum package width in default unit (0 = no limit)."
+          example: 150
+        maxHeight:
+          type: integer
+          description: "Maximum package height in default unit (0 = no limit)."
+          example: 80
+        maxDepth:
+          type: integer
+          description: "Maximum package depth in default unit (0 = no limit)."
+          example: 80
+        maxWeight:
+          type: number
+          description: "Maximum package weight in default unit (0 = no limit)."
+          example: 30.0
+        logoFile:
+          type: string
+          description: "Carrier logo file name."
+          example: "dhl_express.jpg"
+      code_refs:
+        - path: "src/Core/Domain/Carrier/Command/AddCarrierCommand.php"
+          role: schema
+        - path: "src/Core/Domain/Carrier/CommandHandler/AddCarrierHandler.php"
+          role: implementation
+
+    CarrierResource:
+      x-model-id: MDL401
+      purpose: read-model
+      description: "Full carrier configuration for the back-office editing form including zones, ranges, dimensional constraints, and versioning metadata."
+      represents:
+        - concept: shipping.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              name: CAT400
+              localizedDelay: CAT401
+              grade: CAT402
+              trackingUrl: CAT403
+              active: CAT404
+              isFree: CAT405
+              shippingMethod: CAT406
+              rangeBehavior: CAT407
+              hasAdditionalHandlingFee: CAT408
+              maxWidth: CAT409
+              maxHeight: CAT410
+              maxDepth: CAT411
+              maxWeight: CAT412
+              position: CAT413
+              logoPathName: CAT414
+      type: object
+      properties:
+        carrierId:
+          type: integer
+          description: "Current carrier version identifier."
+          example: 5
+        carrierReferenceId:
+          type: integer
+          description: "Stable carrier identity across versions."
+          example: 3
+        name:
+          type: string
+          description: "Carrier display name."
+          example: "DHL Express"
+        localizedDelay:
+          type: object
+          description: "Estimated delivery time text keyed by language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "2-3 business days"
+            "2": "2-3 jours ouvrés"
+        grade:
+          type: integer
+          description: "Speed/quality grade (0-9)."
+          example: 5
+        trackingUrl:
+          type: string
+          description: "Tracking URL template."
+          example: "https://track.dhl.com/@"
+        active:
+          type: boolean
+          description: "Whether the carrier is enabled."
+          example: true
+        isFree:
+          type: boolean
+          description: "Whether shipping is always free."
+          example: false
+        shippingMethod:
+          type: string
+          description: "Cost calculation method."
+          example: "by_weight"
+        rangeBehavior:
+          type: string
+          description: "Out-of-range behavior."
+          example: "use_highest_range"
+        hasAdditionalHandlingFee:
+          type: boolean
+          description: "Whether extra handling fee is applied."
+          example: false
+        maxWidth:
+          type: integer
+          description: "Maximum package width (0 = no limit)."
+          example: 150
+        maxHeight:
+          type: integer
+          description: "Maximum package height (0 = no limit)."
+          example: 80
+        maxDepth:
+          type: integer
+          description: "Maximum package depth (0 = no limit)."
+          example: 80
+        maxWeight:
+          type: number
+          description: "Maximum package weight (0 = no limit)."
+          example: 30.0
+        position:
+          type: integer
+          description: "Display order in carrier selection lists."
+          example: 1
+        logoUrl:
+          type: string
+          description: "Full URL to carrier logo image."
+          example: "/img/s/5.jpg"
+        taxRuleGroupId:
+          type: integer
+          description: "Associated tax rule group identifier."
+          example: 1
+        groupIds:
+          type: array
+          items:
+            type: integer
+          description: "Customer groups that can use this carrier."
+          example: [1, 2, 3]
+        shopIds:
+          type: array
+          items:
+            type: integer
+          description: "Shops this carrier is available in."
+          example: [1]
+        zones:
+          type: array
+          description: "Zone assignments with cost ranges."
+          items:
+            $ref: "#/components/schemas/CarrierZoneConfig"
+      code_refs:
+        - path: "src/Core/Domain/Carrier/Query/GetCarrierForEditing.php"
+          role: schema
+
+    CarrierListItem:
+      x-model-id: MDL402
+      purpose: read-model
+      description: "Lightweight carrier summary for paginated back-office list views."
+      represents:
+        - concept: shipping.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              name: CAT400
+              localizedDelay: CAT401
+              active: CAT404
+              isFree: CAT405
+              position: CAT413
+      type: object
+      properties:
+        carrierId:
+          type: integer
+          description: "Carrier identifier."
+          example: 5
+        carrierReferenceId:
+          type: integer
+          description: "Stable carrier identity across versions."
+          example: 3
+        name:
+          type: string
+          description: "Carrier display name."
+          example: "DHL Express"
+        delay:
+          type: string
+          description: "Estimated delivery time (current language)."
+          example: "2-3 business days"
+        active:
+          type: boolean
+          description: "Whether the carrier is enabled."
+          example: true
+        isFree:
+          type: boolean
+          description: "Whether shipping is always free."
+          example: false
+        position:
+          type: integer
+          description: "Display order position."
+          example: 1
+        shippingMethod:
+          type: string
+          description: "Cost calculation method."
+          example: "by_weight"
+      code_refs:
+        - path: "src/Core/Domain/Carrier/Query/GetAvailableCarriers.php"
+          role: schema
+
+    ShipmentResource:
+      x-model-id: MDL403
+      purpose: read-model
+      description: "Full shipment details for back-office viewing including carrier, tracking, products, and delivery status."
+      represents:
+        - concept: shipping.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              shipmentId: CAT420
+              orderId: CAT421
+              carrierId: CAT422
+              trackingNumber: CAT423
+      type: object
+      properties:
+        shipmentId:
+          type: integer
+          description: "Unique shipment identifier."
+          example: 42
+        orderId:
+          type: integer
+          description: "Order this shipment fulfills."
+          example: 1001
+        carrierId:
+          type: integer
+          description: "Carrier handling delivery."
+          example: 5
+        carrierName:
+          type: string
+          description: "Carrier display name."
+          example: "DHL Express"
+        trackingNumber:
+          type: string
+          description: "Carrier-provided tracking identifier."
+          example: "1Z999AA10123456784"
+        trackingUrl:
+          type: string
+          description: "Fully resolved tracking URL."
+          example: "https://track.dhl.com/1Z999AA10123456784"
+        status:
+          type: string
+          description: "Shipment status (pending, shipped)."
+          example: "pending"
+        products:
+          type: array
+          description: "Products assigned to this shipment."
+          items:
+            type: object
+            properties:
+              orderDetailId:
+                type: integer
+                example: 89
+              productId:
+                type: integer
+                example: 42
+              combinationId:
+                type: integer
+                example: 7
+              productName:
+                type: string
+                example: "Classic Laptop 15-inch - Size: M, Color: Black"
+              reference:
+                type: string
+                example: "LAPTOP-15-BLK-M"
+              quantity:
+                type: integer
+                example: 2
+        createdAt:
+          type: string
+          format: date-time
+          description: "Shipment creation timestamp."
+          example: "2026-03-19T15:00:00+01:00"
+      code_refs:
+        - path: "src/Core/Domain/Shipment/Query/GetShipmentForViewing.php"
+          role: schema
+
+    ShippingCostResponse:
+      x-model-id: MDL404
+      purpose: read-model
+      description: "Computed shipping cost for a carrier in a given context (zone, weight/price bracket, tax rule)."
+      represents:
+        - concept: shipping.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              price: CAT418
+      type: object
+      properties:
+        carrierId:
+          type: integer
+          description: "Carrier identifier."
+          example: 5
+        carrierName:
+          type: string
+          description: "Carrier display name."
+          example: "DHL Express"
+        shippingCostTaxExcluded:
+          type: string
+          description: "Shipping cost without tax."
+          example: "5.830000"
+        shippingCostTaxIncluded:
+          type: string
+          description: "Shipping cost with tax."
+          example: "7.000000"
+        taxRate:
+          type: number
+          description: "Applied tax rate percentage."
+          example: 20.0
+        isFree:
+          type: boolean
+          description: "Whether free shipping applies."
+          example: false
+        delay:
+          type: string
+          description: "Estimated delivery time."
+          example: "2-3 business days"
+        logoUrl:
+          type: string
+          description: "Carrier logo URL."
+          example: "/img/s/5.jpg"
+      code_refs:
+        - path: "src/Core/Domain/Carrier/Query/GetAvailableCarriers.php"
+          role: schema
+          description: "Shipping cost computed during carrier availability evaluation"
+
+    CarrierZoneConfig:
+      x-model-id: MDL405
+      purpose: dto
+      description: "Zone-based shipping configuration — defines cost ranges for a carrier within a specific delivery zone."
+      represents:
+        - concept: shipping.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              zoneId: CAT415
+              rangeFrom: CAT416
+              rangeTo: CAT417
+              price: CAT418
+      type: object
+      properties:
+        zoneId:
+          type: integer
+          description: "Delivery zone identifier."
+          example: 1
+        zoneName:
+          type: string
+          description: "Zone display name."
+          example: "Europe"
+        ranges:
+          type: array
+          description: "Cost brackets within this zone."
+          items:
+            type: object
+            properties:
+              rangeFrom:
+                type: number
+                description: "Lower bound of the weight/price bracket."
+                example: 0
+              rangeTo:
+                type: number
+                description: "Upper bound of the weight/price bracket."
+                example: 10.0
+              price:
+                type: string
+                description: "Shipping cost for this bracket."
+                example: "5.990000"
+      code_refs:
+        - path: "src/Core/Domain/Carrier/ValueObject/CarrierRangeZone.php"
+          role: model
+        - path: "src/Core/Domain/Carrier/ValueObject/CarrierRangesCollection.php"
+          role: model

@@ -1,0 +1,31 @@
+---
+version: "1.0.0"
+scope: checkout
+
+execution:
+  model: event-driven
+  description: "Cart operations dispatch events for price recalculation and rule evaluation."
+  rationale: "Each cart mutation triggers cascading recalculations (totals, discounts, shipping estimates) that benefit from event-driven decoupling to keep the write path responsive."
+
+race_conditions:
+  - id: checkout.RC001
+    name: "Concurrent cart modification"
+    scenario: "Customer adds item while another tab removes an item from same cart."
+    impact: "Cart state inconsistent, totals miscalculated."
+    likelihood: medium
+    mitigation: "Cart row-level locking during modification, recalculate totals atomically."
+    affects: [checkout.CMD009, checkout.CMD010]
+
+  - id: checkout.RC002
+    name: "Voucher usage race"
+    scenario: "Two customers apply the same single-use voucher code simultaneously."
+    impact: "Voucher used twice, exceeding usage limit."
+    likelihood: low
+    mitigation: "Atomic decrement-and-check on voucher usage counter."
+    affects: [checkout.CMD014]
+
+ordering:
+  - id: checkout.ORD001
+    summary: "Cart must have items before voucher can be applied."
+    operations: [checkout.CMD014]
+    requires: [checkout.CMD009]

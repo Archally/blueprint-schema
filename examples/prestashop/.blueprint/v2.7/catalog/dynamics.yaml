@@ -1,0 +1,32 @@
+---
+version: "1.0.0"
+scope: catalog
+
+execution:
+  model: event-driven
+  description: "Product mutations dispatch domain events for search indexing and cache invalidation."
+  rationale: "Catalog changes must propagate to search indexes, CDN caches, and price engines without blocking the admin save operation."
+
+race_conditions:
+  - id: catalog.RC001
+    name: "Concurrent product edit"
+    scenario: "Two administrators edit the same product simultaneously, last write wins."
+    impact: "One editor's changes silently lost."
+    likelihood: low
+    mitigation: "Optimistic locking with version check on product save."
+    affects: [catalog.CMD002]
+
+ordering:
+  - id: catalog.ORD001
+    summary: "Search index update must follow product creation, not precede it."
+    operations: [catalog.EVT001]
+    requires: [catalog.CMD001]
+
+parallelism:
+  - id: catalog.PAR001
+    name: "Bulk product import"
+    operations: [catalog.CMD001]
+    relationship: embarrassingly-parallel
+    benefit: "CSV rows processed concurrently, 3-5x import speedup."
+    complexity: medium
+    implemented: false

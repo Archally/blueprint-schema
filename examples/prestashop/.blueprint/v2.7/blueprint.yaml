@@ -1,0 +1,12 @@
+---
+version: "1.0.0"
+schemaVersion: "2.6.0"
+name: "PrestaShop E-Commerce Platform"
+description: >
+  Blueprint model of the PrestaShop v9 open-source e-commerce platform covering
+  10 bounded contexts derived from 62 CQRS domain aggregates and 352+ commands.
+  Based on the real PrestaShop codebase (https://github.com/PrestaShop/PrestaShop).
+repository:
+  url: "https://github.com/PrestaShop/PrestaShop"
+  branch: "develop"
+  provider: "github"

@@ -1,0 +1,135 @@
+---
+version: "1.0.0"
+scope: modules
+tags: [extension-system]
+
+concepts:
+  - id: modules.CN001
+    name: "Module"
+    stereotype: aggregate-root
+    description: "A PrestaShop extension package with a full lifecycle state machine (not_installed → installed_enabled ↔ installed_disabled → not_installed). Modules are identified by technical name, can be uploaded, installed, enabled/disabled, upgraded, and reset. The lifecycle is a composite of two boolean fields (installed + enabled) that together form a 3-state machine."
+    tags: [aggregate-root, core-domain]
+    attributes:
+      technicalName:
+        id: CAT700
+        description: "Unique module identifier string (validated non-empty via ModuleTechnicalName value object)"
+        example: "ps_emailsubscription"
+      version:
+        id: CAT701
+        description: "Current available module version from package descriptor"
+        example: "2.8.1"
+      installedVersion:
+        id: CAT702
+        description: "Currently installed version (null if not installed)"
+        example: "2.7.0"
+      enabled:
+        id: CAT703
+        description: "Whether the module is currently active (only meaningful when installed)"
+      installed:
+        id: CAT704
+        description: "Whether the module is installed in the system"
+    states:
+      - name: not_installed
+        description: "Module package exists but is not installed"
+      - name: installed_enabled
+        description: "Module is installed and active"
+      - name: installed_disabled
+        description: "Module is installed but deactivated"
+    code_refs:
+      - path: "src/Core/Domain/Module/Command/InstallModuleCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Module/ValueObject/ModuleTechnicalName.php"
+        role: model
+      - path: "src/Core/Domain/Module/ValueObject/ModuleId.php"
+        role: model
+      - path: "src/Core/Domain/Module/QueryResult/ModuleInfos.php"
+        role: model
+        description: "Query result exposing moduleId, technicalName, moduleVersion, installedVersion, enabled, installed"
+
+  - id: modules.CN002
+    name: "Hook"
+    stereotype: aggregate-root
+    description: "An extension point in the PrestaShop system where modules can register callbacks. Hooks have a name, title, description, and active status. Hook-module position management is not in the CQRS domain layer — only hook activation/deactivation is modeled."
+    tags: [aggregate-root, extension-system]
+    attributes:
+      name:
+        id: CAT705
+        description: "Hook identifier name"
+        example: "displayHeader"
+      title:
+        id: CAT706
+        description: "Human-readable hook title"
+        example: "Display Header"
+      description:
+        id: CAT707
+        description: "Hook purpose description"
+        example: "Allows modules to add content to the page header"
+      active:
+        id: CAT708
+        description: "Whether this hook is currently active"
+    code_refs:
+      - path: "src/Core/Domain/Hook/Command/UpdateHookStatusCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Hook/ValueObject/HookId.php"
+        role: model
+      - path: "src/Core/Domain/Hook/QueryResult/Hook.php"
+        role: model
+        description: "Query result exposing id, active, name, title, description"
+
+actors:
+  - id: modules.ACT001
+    name: "StoreAdmin"
+    type: human
+    description: "Back-office administrator responsible for installing, configuring, and managing modules to extend storefront functionality."
+    personas:
+      - name: "Typical StoreAdmin"
+        quote: "I need modules to work reliably. A broken module can take down the entire store."
+        goals: ["Install modules safely", "Keep modules up to date", "Disable problematic modules quickly"]
+        pain_points: ["Module incompatibilities after upgrades", "No rollback mechanism", "Unclear dependency chains"]
+        behaviors: ["Tests modules in staging before production", "Disables modules before major upgrades"]
+        tech_savviness: high
+        job_to_be_done: "Extend storefront functionality through modules while maintaining store stability"
+        context: "Back-office module management"
+        demographics:
+          role: "Store Administrator"
+          industry: "E-commerce"
+
+  - id: modules.ACT002
+    name: "ModuleDeveloper"
+    type: human
+    description: "Third-party or in-house developer who builds, uploads, and tests modules against the PrestaShop extension system."
+    personas:
+      - name: "Typical ModuleDeveloper"
+        quote: "I need clear hook documentation and reliable lifecycle events to build quality modules."
+        goals: ["Build compatible modules", "Register hooks correctly", "Test module lifecycle"]
+        pain_points: ["Hook documentation gaps", "Version compatibility matrix", "Reset behavior unpredictability"]
+        behaviors: ["Uses upload command for local development", "Tests install/uninstall/reset cycles"]
+        tech_savviness: high
+        job_to_be_done: "Build and deploy modules that integrate cleanly with the PrestaShop extension system"
+        context: "Module development and testing"
+        demographics:
+          role: "PHP Developer"
+          industry: "E-commerce / Software"
+
+enumerations:
+  - id: modules.EN001
+    name: "ModuleLifecycleState"
+    description: "Composite state derived from installed (bool) + enabled (bool) fields. The code uses two booleans but they form a 3-state machine with defined transitions."
+    values:
+      - name: not_installed
+        description: "Module package exists but is not installed (installed=false)"
+        transitions_to: [installed_enabled]
+      - name: installed_enabled
+        description: "Module is installed and active (installed=true, enabled=true)"
+        transitions_to: [installed_disabled, not_installed]
+      - name: installed_disabled
+        description: "Module is installed but deactivated (installed=true, enabled=false)"
+        transitions_to: [installed_enabled, not_installed]
+
+associations:
+  - id: modules.AS001
+    subject: modules.CN001
+    predicate: depends-on
+    object: modules.CN002
+    cardinality: "0..*"
+    description: "A module registers against zero or more hooks. Hook-module binding occurs as a side effect of install/uninstall — not modeled as a separate CQRS operation."

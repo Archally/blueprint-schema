@@ -1,0 +1,172 @@
+---
+version: "1.0.0"
+scope: content
+
+happy_path:
+  - id: content.TC001
+    name: "Create CMS page with category assignment"
+    summary: "Verify that a CMS page can be created with all required fields and assigned to a category."
+    validates:
+      operations: [content.CMD001]
+      rules: [content.VR001, content.VR002]
+      concepts: [content.CN001]
+    contract:
+      kind: openapi
+      file: dist/content-api.openapi.yaml
+    given:
+      description: "A CMS page category exists."
+      state:
+        categoryId: 1
+        title: "About Us"
+        content: "<p>Welcome to our store</p>"
+        metaTitle: "About Us | My Store"
+    expected_result:
+      status: success
+      code: 200
+
+  - id: content.TC002
+    name: "Create CMS page category with parent"
+    summary: "Verify that a CMS page category can be created within the tree hierarchy."
+    validates:
+      operations: [content.CMD007]
+      rules: [content.SR001]
+      concepts: [content.CN002]
+    given:
+      description: "A parent CMS page category exists."
+      state:
+        parentCategoryId: 1
+        name: "Legal Information"
+        friendlyUrl: "legal"
+    expected_result:
+      status: success
+      code: 200
+
+  - id: content.TC003
+    name: "Import and enable theme"
+    summary: "Verify that a theme can be imported and activated, deactivating the previous theme."
+    validates:
+      operations: [content.CMD013, content.CMD014]
+      rules: [content.VR004]
+      concepts: [content.CN003]
+    given:
+      description: "A theme archive is available and a default theme is currently active."
+      state:
+        currentActiveTheme: "classic"
+        importSource: "archive"
+        newThemeName: "modern"
+    expected_result:
+      status: success
+
+  - id: content.TC004
+    name: "Add SEO meta entry for page type"
+    summary: "Verify that a meta entry can be created for a page type with localized titles and URL rewrites."
+    validates:
+      operations: [content.CMD019]
+      rules: [content.VR006, content.VR002]
+      concepts: [content.CN005]
+    given:
+      description: "No meta entry exists for the page type 'category'."
+      state:
+        pageName: "category"
+        pageTitle: "Product Categories"
+        rewriteUrl: "categories"
+    expected_result:
+      status: success
+      code: 200
+
+  - id: content.TC005
+    name: "Reset theme layouts to defaults"
+    summary: "Verify that theme layouts can be reset to their default configuration."
+    validates:
+      operations: [content.CMD016]
+      concepts: [content.CN003]
+    given:
+      description: "A theme exists with customized layouts."
+      state:
+        themeName: "classic"
+        hasCustomLayouts: true
+    expected_result:
+      status: success
+
+edge_cases:
+  - id: content.EC001
+    name: "Edit category parent to create cycle is rejected"
+    summary: "Verify that setting a category's parent to one of its descendants is rejected."
+    validates:
+      operations: [content.CMD008]
+      rules: [content.SR001]
+      concepts: [content.CN002]
+    given:
+      description: "Category A is parent of Category B."
+      state:
+        categoryAId: 1
+        categoryBId: 2
+        parentOfB: 1
+        newParentOfA: 2
+    expected_result:
+      status: failure
+      code: 422
+
+  - id: content.EC002
+    name: "Enable already-active theme is idempotent"
+    summary: "Verify that enabling the already-active theme does not cause errors."
+    validates:
+      operations: [content.CMD014]
+      rules: [content.VR004]
+      concepts: [content.CN003]
+    given:
+      description: "Theme 'classic' is currently active."
+      state:
+        activeTheme: "classic"
+        enableTheme: "classic"
+    expected_result:
+      status: success
+
+error_cases:
+  - id: content.ER001
+    name: "Delete category with child pages is rejected"
+    summary: "Verify that deleting a category containing CMS pages is rejected."
+    validates:
+      operations: [content.CMD009]
+      rules: [content.VR003]
+      concepts: [content.CN002]
+    given:
+      description: "Category 'Legal' has 3 assigned CMS pages."
+      state:
+        categoryId: 5
+        assignedPageCount: 3
+    expected_result:
+      status: failure
+      code: 409
+
+  - id: content.ER002
+    name: "Delete active theme is rejected"
+    summary: "Verify that the currently active theme cannot be deleted."
+    validates:
+      operations: [content.CMD015]
+      rules: [content.VR005]
+      concepts: [content.CN003]
+    given:
+      description: "Theme 'classic' is the active theme."
+      state:
+        themeName: "classic"
+        isActive: true
+    expected_result:
+      status: failure
+      code: 409
+
+  - id: content.ER003
+    name: "Add meta with duplicate page name is rejected"
+    summary: "Verify that creating a meta entry with an existing page name is rejected."
+    validates:
+      operations: [content.CMD019]
+      rules: [content.VR006]
+      concepts: [content.CN005]
+    given:
+      description: "A meta entry for page name 'category' already exists."
+      state:
+        existingPageName: "category"
+        newPageName: "category"
+    expected_result:
+      status: failure
+      code: 409

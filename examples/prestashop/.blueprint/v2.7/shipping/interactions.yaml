@@ -1,0 +1,83 @@
+---
+version: "1.0.0"
+scope: shipping
+
+design_references:
+  design_system: "PrestaShop UIKit (Bootstrap 4)"
+  storybook_url: "https://build.prestashop-project.org/prestashop-ui-kit/"
+  accessibility_standard: WCAG-2.1-AA
+
+screens:
+  - id: shipping.SCR001
+    name: "Carrier List"
+    summary: "Paginated list of carriers with status indicators, shipping method, and bulk enable/disable/delete actions."
+    uses_models: ["CarrierList"]
+    motivated_by: [shipping.G002]
+
+  - id: shipping.SCR002
+    name: "Carrier Configuration"
+    summary: "Multi-step carrier form: general settings, zones, ranges, dimensional constraints, and tax rule assignment."
+    uses_models: ["CarrierForEditing"]
+    stories: [shipping.STR001]
+
+  - id: shipping.SCR003
+    name: "Order Shipments"
+    summary: "List of shipments for a specific order with product assignments, tracking numbers, and split/merge actions."
+    uses_models: ["OrderShipmentList"]
+    motivated_by: [shipping.G003]
+
+  - id: shipping.SCR004
+    name: "Shipment Detail"
+    summary: "Single shipment view with assigned products, carrier info, tracking number, and edit/split controls."
+    uses_models: ["ShipmentForViewing"]
+    stories: [shipping.STR002]
+
+actions:
+  - id: shipping.UAC001
+    screen: shipping.SCR001
+    name: "Add Carrier"
+    description: "Navigate to carrier creation form."
+    triggers_operations: [shipping.CMD001]
+
+  - id: shipping.UAC002
+    screen: shipping.SCR001
+    name: "Bulk Toggle Carrier Status"
+    description: "Enable or disable selected carriers in bulk."
+    triggers_operations: [shipping.CMD006]
+
+  - id: shipping.UAC003
+    screen: shipping.SCR002
+    name: "Save Carrier"
+    description: "Save carrier configuration including zones and ranges."
+    triggers_operations: [shipping.CMD001, shipping.CMD002, shipping.CMD008, shipping.CMD009, shipping.CMD010]
+
+  - id: shipping.UAC004
+    screen: shipping.SCR003
+    name: "Create Shipment"
+    description: "Create a new shipment for this order."
+    triggers_operations: [shipping.CMD011]
+
+  - id: shipping.UAC005
+    screen: shipping.SCR004
+    name: "Split Shipment"
+    description: "Split selected products into a new shipment."
+    triggers_operations: [shipping.CMD015]
+
+  - id: shipping.UAC006
+    screen: shipping.SCR004
+    name: "Merge Products"
+    description: "Merge products from other shipments into this one."
+    triggers_operations: [shipping.CMD016]
+
+navigation:
+  - id: shipping.UNV001
+    from: shipping.SCR001
+    to: shipping.SCR002
+    condition: "User clicks carrier row or 'Add Carrier' button"
+    description: "Navigate to carrier configuration."
+
+  - id: shipping.UNV002
+    from: shipping.SCR003
+    to: shipping.SCR004
+    condition: "User clicks shipment row"
+    description: "Navigate to shipment detail."

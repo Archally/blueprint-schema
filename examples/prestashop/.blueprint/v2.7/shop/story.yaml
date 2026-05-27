@@ -1,0 +1,130 @@
+---
+name: "Shop Stories"
+version: "1.0.0"
+scope: shop
+
+stories:
+  - id: shop.STR001
+    title: "Store Branding Setup"
+    description: "An administrator uploads store logos and favicon to establish the shop's visual identity."
+    process:
+      id: shop.SP001
+      trigger:
+        type: message
+        operation: shop.CMD001
+        description: "Administrator uploads store logo and favicon."
+      end_states:
+        - name: "Branding uploaded"
+          type: complete
+          description: "Logo and favicon saved, visible on storefront."
+        - name: "Upload failed"
+          type: error
+          description: "Unsupported file extension or file too large."
+      lanes:
+        - actor: shop.ACT001
+          operations: [shop.CMD001]
+    activities:
+      - id: shop.SA001
+        name: "Upload Branding"
+        triggered_by: [shop.ACT001]
+        entry_operation: shop.CMD001
+        path_type: happy
+
+  - id: shop.STR002
+    title: "Search Alias Configuration"
+    description: "A marketing manager configures search term aliases to improve product discoverability."
+    process:
+      id: shop.SP002
+      trigger:
+        type: message
+        operation: shop.CMD010
+        description: "Marketing manager creates a search term alias."
+      end_states:
+        - name: "Alias configured"
+          type: complete
+          description: "Search alias created, variants mapped to canonical term."
+        - name: "Configuration failed"
+          type: error
+          description: "Duplicate alias or invalid search term."
+      lanes:
+        - actor: shop.ACT002
+          operations: [shop.CMD010]
+    activities:
+      - id: shop.SA002
+        name: "Add Alias"
+        triggered_by: [shop.ACT002]
+        entry_operation: shop.CMD010
+        path_type: happy
+
+user_stories:
+  - id: shop.US001
+    actor: shop.ACT001
+    goal: "upload and manage store branding images (logos and favicon)"
+    benefit: "the storefront has consistent visual identity across header, emails, invoices, and browser tabs"
+    acceptance_criteria:
+      - "Header logo uploaded with valid extension"
+      - "Favicon uploaded as .ico file"
+      - "Current logo paths retrievable"
+    delivery_priority: should-have
+    status: draft
+    operations: [shop.CMD001, shop.QRY001]
+    test_cases: [shop.TC001]
+
+  - id: shop.US002
+    actor: shop.ACT002
+    goal: "manage search term aliases to map customer search variants to canonical terms"
+    benefit: "customers find products even when using non-standard terminology"
+    acceptance_criteria:
+      - "Alias created with search term and target aliases"
+      - "Existing aliases editable"
+      - "Aliases searchable and filterable"
+    delivery_priority: should-have
+    status: draft
+    operations: [shop.CMD010, shop.CMD011, shop.QRY005, shop.QRY006]
+    test_cases: [shop.TC002]
+
+  - id: shop.US003
+    actor: shop.ACT002
+    goal: "configure SEO referrer search engines for analytics tracking"
+    benefit: "the store can track which external search engines drive traffic"
+    acceptance_criteria:
+      - "Search engine added with server and query key"
+      - "Existing entries editable and deletable"
+    delivery_priority: should-have
+    status: draft
+    operations: [shop.CMD006, shop.CMD007, shop.CMD008]
+    test_cases: [shop.TC003]
+
+  - id: shop.US004
+    actor: shop.ACT001
+    goal: "manage 'Contact Us' form departments"
+    benefit: "customer inquiries are routed to the correct team"
+    acceptance_criteria:
+      - "Contact department created with name and email"
+      - "Existing departments editable"
+    delivery_priority: should-have
+    status: draft
+    operations: [shop.CMD015, shop.CMD016, shop.QRY008]
+
+use_cases:
+  - id: shop.UC001
+    name: "Configure Store Branding"
+    primary_actor: shop.ACT001
+    main_scenario:
+      - step: 1
+        action: "Administrator opens Logos & Favicons settings page"
+      - step: 2
+        action: "Administrator uploads header logo image"
+        operation: shop.CMD001
+      - step: 3
+        action: "System validates file extension (jpg/gif/png)"
+      - step: 4
+        action: "Administrator uploads favicon (.ico)"
+        operation: shop.CMD001
+      - step: 5
+        action: "Branding images saved and visible on storefront"
+    extensions:
+      - step: 3
+        condition: "Unsupported file extension"
+        action: "Show validation error with allowed extensions"
+    user_stories: [shop.US001]

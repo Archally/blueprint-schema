@@ -1,0 +1,59 @@
+---
+version: "1.0.0"
+scope: modules
+
+design_references:
+  design_system: "PrestaShop UIKit (Bootstrap 4)"
+  storybook_url: "https://build.prestashop-project.org/prestashop-ui-kit/"
+  accessibility_standard: WCAG-2.1-AA
+
+screens:
+  - id: modules.SCR001
+    name: "Module Manager"
+    summary: "Grid of modules with status indicators, bulk actions, and lifecycle controls (install, enable, disable, upgrade)."
+    uses_models: ["ModuleList"]
+    motivated_by: [modules.G001]
+
+  - id: modules.SCR002
+    name: "Module Upload"
+    summary: "Module upload form for importing module packages from file archives."
+    uses_models: ["ModuleUpload"]
+    stories: [modules.STR001]
+
+  - id: modules.SCR003
+    name: "Hook Configuration"
+    summary: "Hook list with active status toggles. Shows registered modules per hook."
+    uses_models: ["HookList"]
+    motivated_by: [modules.G003]
+
+actions:
+  - id: modules.UAC001
+    screen: modules.SCR001
+    name: "Install Module"
+    description: "Install a module from the available modules list."
+    triggers_operations: [modules.CMD001]
+
+  - id: modules.UAC002
+    screen: modules.SCR001
+    name: "Toggle Module Status"
+    description: "Enable or disable a module."
+    triggers_operations: [modules.CMD003]
+
+  - id: modules.UAC003
+    screen: modules.SCR002
+    name: "Upload Module"
+    description: "Upload a module package from a file archive."
+    triggers_operations: [modules.CMD008]
+
+  - id: modules.UAC004
+    screen: modules.SCR003
+    name: "Toggle Hook Status"
+    description: "Enable or disable a hook extension point."
+    triggers_operations: [modules.CMD009]
+
+navigation:
+  - id: modules.UNV001
+    from: modules.SCR001
+    to: modules.SCR002
+    condition: "User clicks 'Upload Module' button"
+    description: "Navigate to module upload form."

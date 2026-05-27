@@ -1,0 +1,62 @@
+---
+version: "1.0.0"
+scope: checkout
+
+kpis:
+  - id: checkout.KPI001
+    name: "Cart-to-Order Conversion Rate"
+    target: ">= 3.5% of active carts result in completed orders"
+    window: "monthly"
+    goal: checkout.G001
+    thresholds:
+      warning: "2.5%"
+      critical: "2.0%"
+
+  - id: checkout.KPI002
+    name: "Discount Calculation Accuracy"
+    target: "100% of applied discounts compute correct reduction amounts"
+    window: "daily"
+    goal: checkout.G002
+    thresholds:
+      warning: "99.9%"
+      critical: "99.5%"
+
+  - id: checkout.KPI003
+    name: "Active Discount Campaign Count"
+    target: "System supports 200+ concurrent active discounts without degradation"
+    window: "continuous"
+    goal: checkout.G003
+
+slos:
+  - id: checkout.SLO001
+    name: "Add-to-Cart Latency"
+    target: "p99 < 500ms"
+    window: "weekly"
+    operations: [checkout.CMD009]
+    error_budget: "1% of add-to-cart requests may exceed 500ms"
+
+  - id: checkout.SLO002
+    name: "Cart Rule Evaluation Latency"
+    target: "p99 < 500ms with 50+ active rules"
+    window: "weekly"
+    operations: [checkout.CMD014]
+    error_budget: "0.5% of evaluations may exceed 500ms"
+
+  - id: checkout.SLO003
+    name: "Discount CRUD Response Time"
+    target: "p95 < 1s for create/update operations"
+    window: "weekly"
+    operations: [checkout.CMD016, checkout.CMD017]
+
+security:
+  - id: checkout.SEC001
+    name: "Voucher Code Brute-Force Protection"
+    type: access-control
+    requirement: "Rate-limit voucher code application to 10 attempts per minute per session. Lock session after 30 failed attempts."
+    operations: [checkout.CMD014]
+
+compliance:
+  - id: checkout.CMP001
+    name: "Promotion Transparency"
+    regulation: "EU Consumer Rights Directive"
+    requirement: "All applied discounts must be itemized in the cart summary with original and reduced prices visible to the customer."

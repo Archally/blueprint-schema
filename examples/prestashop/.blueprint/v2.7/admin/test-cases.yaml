@@ -1,0 +1,146 @@
+---
+version: "1.0.0"
+scope: admin
+
+happy_path:
+  - id: admin.TC001
+    name: "Add employee with profile assignment"
+    summary: "Creating an employee with valid data and a profile assignment succeeds."
+    given:
+      description: "A profile 'ShopOperator' exists with ID 2."
+      state:
+        profileExists: true
+        profileId: 2
+    expected_result:
+      status: success
+    validates:
+      rules: [admin.VR001, admin.VR002]
+      operations: [admin.CMD001, admin.EVT001]
+      concepts: [admin.CN001]
+    contract:
+      kind: openapi
+      file: dist/admin-api.openapi.yaml
+
+  - id: admin.TC002
+    name: "Update tab permissions for profile"
+    summary: "Updating the tab permission matrix for a profile applies the new permissions."
+    given:
+      description: "A profile exists with default permissions."
+      state:
+        profileExists: true
+    expected_result:
+      status: success
+    validates:
+      rules: [admin.VR004]
+      operations: [admin.CMD013, admin.EVT010]
+      concepts: [admin.CN003]
+
+  - id: admin.TC003
+    name: "Create API client with scopes"
+    summary: "Creating an API client with valid name, scopes, and lifetime succeeds."
+    given:
+      description: "No API client with the same clientId exists."
+      state:
+        clientIdAvailable: true
+    expected_result:
+      status: success
+    validates:
+      rules: [admin.VR005]
+      operations: [admin.CMD021, admin.EVT014]
+      concepts: [admin.CN005]
+
+  - id: admin.TC004
+    name: "Clear outdated employee sessions"
+    summary: "Automated clearing of expired employee sessions succeeds."
+    given:
+      description: "Multiple employee sessions exist, some past expiry."
+      state:
+        expiredSessionsExist: true
+    expected_result:
+      status: success
+    validates:
+      operations: [admin.CMD019, admin.EVT012]
+      concepts: [admin.CN004]
+
+  - id: admin.TC005
+    name: "Execute saved SQL query"
+    summary: "Executing a valid read-only SQL query returns a result set."
+    given:
+      description: "A saved SQL request with a valid SELECT query exists."
+      state:
+        sqlRequestExists: true
+        queryIsReadOnly: true
+    expected_result:
+      status: success
+    validates:
+      rules: [admin.VR006]
+      operations: [admin.QRY008]
+      concepts: [admin.CN007]
+
+edge_cases:
+  - id: admin.EC001
+    name: "Bulk delete employees including last super-admin"
+    summary: "Bulk delete should protect the last super-admin employee from deletion."
+    given:
+      description: "Three employees exist. One is the only super-admin."
+      state:
+        employeeCount: 3
+        superAdminCount: 1
+    expected_result:
+      status: failure
+    validates:
+      operations: [admin.CMD006]
+      concepts: [admin.CN001]
+
+  - id: admin.EC002
+    name: "Rotate API client secret while tokens are active"
+    summary: "Secret rotation should not immediately invalidate active tokens."
+    given:
+      description: "An API client has active tokens issued with the current secret."
+      state:
+        activeTokensExist: true
+    expected_result:
+      status: success
+    validates:
+      operations: [admin.CMD024, admin.EVT017]
+      concepts: [admin.CN005]
+
+error_cases:
+  - id: admin.ER001
+    name: "Add employee with duplicate email"
+    summary: "Creating an employee with an already-used email is rejected."
+    given:
+      description: "An employee with email 'john@store.com' already exists."
+      state:
+        emailInUse: true
+    expected_result:
+      status: error
+    validates:
+      rules: [admin.VR001]
+      operations: [admin.CMD001]
+
+  - id: admin.ER002
+    name: "Delete profile with assigned employees"
+    summary: "Deleting a profile that still has employees assigned is rejected."
+    given:
+      description: "Profile 'ShopOperator' has 3 employees assigned."
+      state:
+        assignedEmployeeCount: 3
+    expected_result:
+      status: error
+    validates:
+      rules: [admin.VR003]
+      operations: [admin.CMD011]
+
+  - id: admin.ER003
+    name: "Execute SQL query with forbidden statements"
+    summary: "Executing a SQL query containing write operations is rejected."
+    given:
+      description: "A saved SQL request contains 'DROP TABLE ps_product'."
+      state:
+        queryContainsForbiddenStatements: true
+    expected_result:
+      status: error
+    validates:
+      rules: [admin.VR006]
+      operations: [admin.QRY008]

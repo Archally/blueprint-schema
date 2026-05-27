@@ -1,0 +1,201 @@
+---
+name: "System Config"
+version: "1.0.0"
+scope: admin
+tags: [system-config]
+
+operations:
+
+  # ── SqlManagement (5 CMD + 3 QRY) ──
+
+  addSqlRequest:
+    id: admin.CMD029
+    kind: command
+    name: "AddSqlRequest"
+    description: "Create a new saved SQL query."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT021]
+      mode: all
+    governed_by:
+      - rule: admin.VR006
+    code_refs:
+      - path: "src/Core/Domain/SqlManagement/Command/AddSqlRequestCommand.php"
+        role: implementation
+
+  sqlRequestAdded:
+    id: admin.EVT021
+    kind: event
+    name: "SqlRequestAdded"
+    description: "New SQL query saved."
+
+  editSqlRequest:
+    id: admin.CMD030
+    kind: command
+    name: "EditSqlRequest"
+    description: "Update an existing saved SQL query."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT022]
+      mode: all
+    governed_by:
+      - rule: admin.VR006
+    code_refs:
+      - path: "src/Core/Domain/SqlManagement/Command/EditSqlRequestCommand.php"
+        role: implementation
+
+  sqlRequestEdited:
+    id: admin.EVT022
+    kind: event
+    name: "SqlRequestEdited"
+    description: "Saved SQL query updated."
+
+  deleteSqlRequest:
+    id: admin.CMD031
+    kind: command
+    name: "DeleteSqlRequest"
+    description: "Remove a saved SQL query."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT023]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/SqlManagement/Command/DeleteSqlRequestCommand.php"
+        role: implementation
+
+  sqlRequestDeleted:
+    id: admin.EVT023
+    kind: event
+    name: "SqlRequestDeleted"
+    description: "Saved SQL query removed."
+
+  bulkDeleteSqlRequest:
+    id: admin.CMD032
+    kind: command
+    name: "BulkDeleteSqlRequest"
+    description: "Delete multiple saved SQL queries at once."
+    delivery_priority: could-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT023]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/SqlManagement/Command/BulkDeleteSqlRequestCommand.php"
+        role: implementation
+
+  saveSqlRequestSettings:
+    id: admin.CMD033
+    kind: command
+    name: "SaveSqlRequestSettings"
+    description: "Save global SQL manager configuration settings (e.g., default file encoding for CSV export)."
+    delivery_priority: could-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT024]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/SqlManagement/Command/SaveSqlRequestSettingsCommand.php"
+        role: implementation
+
+  sqlRequestSettingsSaved:
+    id: admin.EVT024
+    kind: event
+    name: "SqlRequestSettingsSaved"
+    description: "SQL manager settings updated."
+
+  getSqlRequestForEditing:
+    id: admin.QRY007
+    kind: query
+    name: "GetSqlRequestForEditing"
+    description: "Retrieve a saved SQL query for editing."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/SqlManagement/Query/GetSqlRequestForEditing.php"
+        role: implementation
+
+  executeSqlRequest:
+    id: admin.QRY008
+    kind: query
+    name: "ExecuteSqlRequest"
+    description: "Execute a saved SQL query and return the result set. Core business value of the SqlManagement feature."
+    delivery_priority: must-have
+    governed_by:
+      - rule: admin.VR006
+    code_refs:
+      - path: "src/Core/Domain/SqlManagement/Query/GetSqlRequestExecutionResult.php"
+        role: implementation
+
+  getSqlRequestSettings:
+    id: admin.QRY009
+    kind: query
+    name: "GetSqlRequestSettings"
+    description: "Retrieve global SQL manager configuration settings."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/SqlManagement/Query/GetSqlRequestSettings.php"
+        role: implementation
+
+  # ── Configuration (1 CMD) ──
+
+  switchDebugMode:
+    id: admin.CMD034
+    kind: command
+    name: "SwitchDebugMode"
+    description: "Toggle debug mode on/off for the store. Only CQRS command in the Configuration aggregate — most config is handled by legacy infrastructure."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT025]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Configuration/Command/SwitchDebugModeCommand.php"
+        role: implementation
+
+  debugModeSwitched:
+    id: admin.EVT025
+    kind: event
+    name: "DebugModeSwitched"
+    description: "Store debug mode toggled."
+
+  # ── Tab (1 CMD) ──
+
+  updateTabStatus:
+    id: admin.CMD035
+    kind: command
+    name: "UpdateTabStatus"
+    description: "Enable or disable a back-office admin menu tab by its PHP controller class name."
+    delivery_priority: could-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT026]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Tab/Command/UpdateTabStatusByClassNameCommand.php"
+        role: implementation
+
+  tabStatusUpdated:
+    id: admin.EVT026
+    kind: event
+    name: "TabStatusUpdated"
+    description: "Admin menu tab visibility changed."
+
+errors:
+  sqlRequestNotFound:
+    id: admin.ERR009
+    name: "SqlRequestNotFound"
+    description: "The specified SQL request ID does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  sqlQueryForbidden:
+    id: admin.ERR010
+    name: "SqlQueryForbidden"
+    description: "The SQL query contains forbidden statements (write operations, schema modifications)."
+    category: validation
+    severity: error
+    http_status: 403
+    related_rules: [admin.VR006]

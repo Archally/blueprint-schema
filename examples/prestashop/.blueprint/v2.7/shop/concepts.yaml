@@ -1,0 +1,209 @@
+---
+version: "1.0.0"
+scope: shop
+tags: [platform-config]
+
+concepts:
+  # ── Multi-Store ──
+
+  - id: shop.CN001
+    name: "Shop"
+    stereotype: aggregate-root
+    description: "The core multi-store aggregate representing a storefront instance. In PrestaShop's multi-store architecture, a single installation can serve multiple shops. The only CQRS command is logo upload (header, invoice, mail, favicon). All other shop configuration (domain, SSL, maintenance mode) is managed by legacy infrastructure outside the CQRS layer."
+    tags: [aggregate-root, multi-store]
+    attributes:
+      name:
+        id: CAT900
+        description: "Shop name"
+        example: "My Store"
+      headerLogo:
+        id: CAT901
+        description: "Path to the shop header logo image file"
+      invoiceLogo:
+        id: CAT902
+        description: "Path to the invoice logo image file"
+      mailLogo:
+        id: CAT903
+        description: "Path to the email template logo image file"
+      favicon:
+        id: CAT904
+        description: "Path to the favicon (.ico file)"
+    code_refs:
+      - path: "src/Core/Domain/Shop/Command/UploadLogosCommand.php"
+        role: implementation
+        description: "Logo upload for header, invoice, mail, and favicon (4 file types with extension validation)"
+      - path: "src/Core/Domain/Shop/DTO/ShopLogoSettings.php"
+        role: model
+        description: "Logo settings constants (allowed extensions)"
+
+  - id: shop.CN002
+    name: "Store"
+    stereotype: aggregate-root
+    description: "A physical retail location (brick-and-mortar store) with address, hours, and geographic coordinates. The CQRS layer only exposes delete, toggle status, and bulk operations — store creation and editing are managed outside the domain layer."
+    tags: [aggregate-root, multi-store]
+    attributes:
+      name:
+        id: CAT905
+        description: "Store display name"
+        example: "Downtown Store"
+      active:
+        id: CAT906
+        description: "Whether the store is currently active and visible"
+    code_refs:
+      - path: "src/Core/Domain/Store/Command/DeleteStoreCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Store/Command/ToggleStoreStatusCommand.php"
+        role: implementation
+
+  # ── Discovery ──
+
+  - id: shop.CN003
+    name: "SearchEngine"
+    stereotype: aggregate-root
+    description: "An SEO referrer configuration entry — NOT the product search engine. SearchEngine tracks external search engine referrers (Google, Bing, etc.) for analytics and SEO purposes. Supports CRUD and bulk delete."
+    tags: [aggregate-root, discovery]
+    attributes:
+      server:
+        id: CAT907
+        description: "Search engine server hostname"
+        example: "google"
+      queryKey:
+        id: CAT908
+        description: "URL query parameter used for search terms"
+        example: "q"
+    code_refs:
+      - path: "src/Core/Domain/SearchEngine/Command/AddSearchEngineCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/SearchEngine/Command/EditSearchEngineCommand.php"
+        role: implementation
+
+  - id: shop.CN004
+    name: "Alias"
+    stereotype: aggregate-root
+    description: "A search term redirect/synonym configuration. When a customer searches for one term, it can be redirected to another (e.g., 'tshirt' → 't-shirt'). Aliases improve search relevance on the storefront."
+    tags: [aggregate-root, discovery]
+    attributes:
+      searchTerm:
+        id: CAT909
+        description: "The original search term entered by customers"
+        example: "tshirt"
+      aliases:
+        id: CAT910
+        description: "Comma-separated alias terms to map to"
+        example: "t-shirt,tee"
+      active:
+        id: CAT911
+        description: "Whether this alias mapping is currently active"
+    code_refs:
+      - path: "src/Core/Domain/Alias/Command/AddSearchTermAliasesCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Alias/Command/UpdateSearchTermAliasesCommand.php"
+        role: implementation
+
+  - id: shop.CN005
+    name: "SearchIndex"
+    stereotype: domain-service
+    description: "Service responsible for rebuilding the product search index. Only one CQRS command exists (SearchIndexationCommand) with no queries — the search index is an infrastructure concern surfaced to the domain layer."
+    tags: [domain-service, discovery]
+    code_refs:
+      - path: "src/Core/Domain/Search/Command/SearchIndexationCommand.php"
+        role: implementation
+
+  # ── Communication ──
+
+  - id: shop.CN006
+    name: "Contact"
+    stereotype: aggregate-root
+    description: "A 'Contact Us' form department (e.g., Sales, Technical Support). Each contact has a localized name, email, and description. Only Add and Edit commands exist in the CQRS layer — no Delete."
+    tags: [aggregate-root, communication]
+    attributes:
+      name:
+        id: CAT912
+        description: "Localized contact department name"
+        example: "Customer Support"
+      email:
+        id: CAT913
+        description: "Email address for this contact department"
+        example: "support@store.com"
+      description:
+        id: CAT914
+        description: "Localized description of the contact department"
+    code_refs:
+      - path: "src/Core/Domain/Contact/Command/AddContactCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Contact/Command/EditContactCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Contact/Command/AbstractContactCommand.php"
+        role: implementation
+        description: "Shared base class for add/edit with localized name/email/description"
+
+  - id: shop.CN007
+    name: "Notification"
+    stereotype: domain-service
+    description: "Employee notification preferences service. Tracks last-seen notification elements per employee so the back-office can display unread counts for orders, customers, and messages."
+    tags: [domain-service, communication]
+    code_refs:
+      - path: "src/Core/Domain/Notification/Command/UpdateEmployeeNotificationLastElementCommand.php"
+        role: implementation
+
+  # ── Display ──
+
+  - id: shop.CN008
+    name: "ShowcaseCard"
+    stereotype: entity
+    description: "A promotional or informational card on the admin dashboard that can be dismissed (closed) by an employee. Once closed, it stays hidden."
+    tags: [entity, display]
+    attributes:
+      cardName:
+        id: CAT915
+        description: "Unique identifier name for the showcase card"
+        example: "ps_metrics"
+      isClosed:
+        id: CAT916
+        description: "Whether the card has been dismissed by the employee"
+    code_refs:
+      - path: "src/Core/Domain/ShowcaseCard/Command/CloseShowcaseCardCommand.php"
+        role: implementation
+
+actors:
+  - id: shop.ACT001
+    name: "StoreAdmin"
+    type: human
+    description: "Administrator responsible for platform-level configuration including multi-store setup, branding, SEO, search, and contact information."
+    personas:
+      - name: "Typical StoreAdmin"
+        quote: "I need to manage multiple storefronts from one admin panel without breaking anything."
+        goals: ["Configure store branding", "Manage SEO referrers", "Set up search aliases", "Maintain contact departments"]
+        pain_points: ["Multi-store config complexity", "No CQRS coverage for store creation", "Search alias management is tedious"]
+        behaviors: ["Uses bulk operations for cleanup", "Tests search aliases after adding"]
+        tech_savviness: high
+        job_to_be_done: "Configure and maintain the platform's identity, search, and communication settings"
+        context: "Back-office platform configuration"
+        demographics:
+          role: "Store Administrator"
+          industry: "E-commerce"
+
+  - id: shop.ACT002
+    name: "MarketingManager"
+    type: human
+    description: "Marketing team member responsible for SEO referrer tracking, search optimization through aliases, and storefront branding."
+    personas:
+      - name: "Typical MarketingManager"
+        quote: "I need search to work well for customers — aliases fix the gap between what people type and what we call things."
+        goals: ["Optimize search relevance", "Track SEO referrers", "Maintain store branding"]
+        pain_points: ["No bulk alias import", "Cannot preview alias effects before saving"]
+        behaviors: ["Regularly reviews search analytics", "Adds aliases based on customer search patterns"]
+        tech_savviness: medium
+        job_to_be_done: "Improve discoverability and branding across storefronts"
+        context: "Marketing and SEO optimization"
+        demographics:
+          role: "Marketing Manager"
+          industry: "E-commerce"
+
+associations:
+  - id: shop.AS001
+    subject: shop.CN001
+    predicate: depends-on
+    object: shop.CN002
+    cardinality: "0..*"
+    description: "A shop installation may have zero or more physical store locations."

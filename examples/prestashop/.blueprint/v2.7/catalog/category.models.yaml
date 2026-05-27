@@ -1,0 +1,256 @@
+---
+version: "1.0.0"
+scope: catalog
+tags: [category, models]
+
+components:
+  schemas:
+    CreateCategoryPayload:
+      x-model-id: MDL011
+      purpose: command-payload
+      description: "Request body for creating a new category."
+      represents:
+        - concept: catalog.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              localizedNames: CAT009
+              parentId: CAT010
+              active: CAT012
+      type: object
+      required: [parentId, localizedNames]
+      properties:
+        parentId:
+          type: integer
+          description: "Parent category ID. Use root category ID for top-level."
+          example: 2
+        localizedNames:
+          type: object
+          description: "Category name per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Laptops"
+            "2": "Ordinateurs Portables"
+        localizedDescriptions:
+          type: object
+          description: "Category description per language ID (HTML)."
+          additionalProperties:
+            type: string
+          example:
+            "1": "<p>Browse our selection of laptops.</p>"
+        active:
+          type: boolean
+          description: "Whether category is visible to shoppers."
+          example: true
+        localizedMetaTitles:
+          type: object
+          description: "SEO meta title per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Laptops - Best Prices"
+        localizedMetaDescriptions:
+          type: object
+          description: "SEO meta description per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Shop laptops from top brands at the best prices."
+        localizedLinkRewrites:
+          type: object
+          description: "URL slug per language."
+          additionalProperties:
+            type: string
+          example:
+            "1": "laptops"
+        associatedShopIds:
+          type: array
+          description: "Shops where this category is visible."
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/Category/Command/AddCategoryCommand.php"
+          role: schema
+
+    EditCategoryPayload:
+      x-model-id: MDL012
+      purpose: command-payload
+      description: "Partial update payload for an existing category."
+      represents:
+        - concept: catalog.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              localizedNames: CAT009
+              active: CAT012
+      type: object
+      required: [categoryId]
+      properties:
+        categoryId:
+          type: integer
+          description: "Category to update."
+          example: 5
+        localizedNames:
+          type: object
+          description: "Category name per language ID."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Laptops & Notebooks"
+        localizedDescriptions:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "<p>Updated selection of laptops and notebooks.</p>"
+        active:
+          type: boolean
+          description: "Visibility toggle."
+          example: true
+        parentId:
+          type: integer
+          description: "New parent category ID (for moves)."
+          example: 2
+        localizedMetaTitles:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "Laptops & Notebooks - Best Prices"
+        localizedMetaDescriptions:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "Shop laptops and notebooks from top brands."
+        localizedLinkRewrites:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "laptops-notebooks"
+
+    CategoryResource:
+      x-model-id: MDL013
+      purpose: read-model
+      description: "Full category representation for editing. Includes tree position, names, SEO, and cover image."
+      represents:
+        - concept: catalog.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              categoryId: CAT008
+              localizedNames: CAT009
+              parentId: CAT010
+              depth: CAT011
+              active: CAT012
+      type: object
+      properties:
+        categoryId:
+          type: integer
+          description: "Unique category identifier."
+          example: 5
+        parentId:
+          type: integer
+          description: "Parent category ID."
+          example: 2
+        depth:
+          type: integer
+          description: "Depth in category tree (0 = root)."
+          example: 2
+        active:
+          type: boolean
+          description: "Whether category is visible."
+          example: true
+        localizedNames:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "Laptops"
+            "2": "Ordinateurs Portables"
+        localizedDescriptions:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "<p>Browse our selection of laptops.</p>"
+        localizedMetaTitles:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "Laptops - Best Prices"
+        localizedMetaDescriptions:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "Shop laptops from top brands."
+        localizedLinkRewrites:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "1": "laptops"
+        coverImageUrl:
+          type: string
+          description: "Category cover image URL."
+          example: "/img/c/5-category_default.jpg"
+        thumbnailUrl:
+          type: string
+          description: "Category thumbnail URL for menus."
+          example: "/img/c/5-medium_default.jpg"
+        isRootCategory:
+          type: boolean
+          description: "Whether this is the store root category."
+          example: false
+        childrenCount:
+          type: integer
+          description: "Number of direct child categories."
+          example: 3
+        productsCount:
+          type: integer
+          description: "Number of products assigned to this category."
+          example: 47
+        shopIds:
+          type: array
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "src/Core/Domain/Category/QueryResult/EditableCategory.php"
+          role: schema
+
+    CategoryTreeNode:
+      x-model-id: MDL014
+      purpose: dto
+      description: "Recursive tree node for category hierarchy display."
+      represents:
+        - concept: catalog.CN002
+          kind: ui
+      type: object
+      properties:
+        categoryId:
+          type: integer
+          example: 5
+        name:
+          type: string
+          description: "Category name in current language."
+          example: "Laptops"
+        active:
+          type: boolean
+          example: true
+        depth:
+          type: integer
+          example: 2
+        children:
+          type: array
+          description: "Child category nodes (recursive)."
+          items:
+            $ref: "#/components/schemas/CategoryTreeNode"

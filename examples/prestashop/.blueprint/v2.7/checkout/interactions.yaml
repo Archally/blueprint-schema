@@ -1,0 +1,77 @@
+---
+version: "1.0.0"
+scope: checkout
+
+design_references:
+  design_system: "PrestaShop UIKit (Bootstrap 4)"
+  storybook_url: "https://build.prestashop-project.org/prestashop-ui-kit/"
+  accessibility_standard: WCAG-2.1-AA
+
+screens:
+  - id: checkout.SCR001
+    name: "Cart Detail (Back-Office)"
+    summary: "Back-office view of a cart session with products, totals, applied discounts, and customer info."
+    uses_models: ["CartForViewing"]
+    motivated_by: [checkout.G001]
+    stories: [checkout.STR001]
+
+  - id: checkout.SCR002
+    name: "Discount List"
+    summary: "Paginated list of all discounts with status filters (active, scheduled, expired), search, and bulk actions."
+    uses_models: ["DiscountList"]
+    motivated_by: [checkout.G002]
+
+  - id: checkout.SCR003
+    name: "Discount Edit"
+    summary: "Form for creating and editing discounts — conditions, actions, validity, usage limits, and product rule groups."
+    uses_models: ["DiscountForEditing"]
+    stories: [checkout.STR002]
+
+  - id: checkout.SCR004
+    name: "Catalog Price Rule List"
+    summary: "List of catalog price rules with bulk delete and status management."
+    uses_models: ["CatalogPriceRuleList"]
+
+actions:
+  - id: checkout.UAC001
+    screen: checkout.SCR001
+    name: "Add Product to Cart"
+    description: "Add a product to the back-office cart."
+    triggers_operations: [checkout.CMD009]
+
+  - id: checkout.UAC002
+    screen: checkout.SCR001
+    name: "Apply Cart Rule"
+    description: "Apply a discount voucher to the cart."
+    triggers_operations: [checkout.CMD014]
+
+  - id: checkout.UAC003
+    screen: checkout.SCR002
+    name: "Create Discount"
+    description: "Navigate to discount creation form."
+    triggers_operations: [checkout.CMD016]
+
+  - id: checkout.UAC004
+    screen: checkout.SCR003
+    name: "Save Discount"
+    description: "Save discount configuration (create or update)."
+    triggers_operations: [checkout.CMD016, checkout.CMD017]
+
+  - id: checkout.UAC005
+    screen: checkout.SCR002
+    name: "Bulk Delete Discounts"
+    description: "Delete selected discounts from the list."
+    triggers_operations: [checkout.CMD018]
+
+navigation:
+  - id: checkout.UNV001
+    from: checkout.SCR002
+    to: checkout.SCR003
+    condition: "User clicks discount row or 'Create' button"
+    description: "Navigate to discount edit form."
+
+  - id: checkout.UNV002
+    from: checkout.SCR001
+    to: checkout.SCR002
+    condition: "User clicks 'Manage Discounts' link"
+    description: "Navigate from cart to discount list."

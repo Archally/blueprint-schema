@@ -1,0 +1,248 @@
+---
+name: "Customer Core"
+version: "1.0.0"
+scope: customers
+tags: [customer, account-management]
+
+operations:
+  addCustomer:
+    id: customers.CMD001
+    kind: command
+    name: "AddCustomer"
+    description: "Register a new customer account with profile data, group assignment, and shop association."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT004]
+    governed_by:
+      - rule: customers.VR001
+      - rule: customers.VR002
+    produces:
+      operations: [customers.EVT001]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Customer/Command/AddCustomerCommand.php"
+        role: implementation
+
+  editCustomer:
+    id: customers.CMD002
+    kind: command
+    name: "EditCustomer"
+    description: "Update customer profile data (name, email, group, newsletter, active status)."
+    delivery_priority: must-have
+    initiated_by: [customers.ACT001, orders.ACT004]
+    governed_by:
+      - rule: customers.VR001
+    produces:
+      operations: [customers.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Customer/Command/EditCustomerCommand.php"
+        role: implementation
+
+  deleteCustomer:
+    id: customers.CMD003
+    kind: command
+    name: "DeleteCustomer"
+    description: "Delete one or more customer accounts. Supports single and bulk deletion."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT004]
+    produces:
+      operations: [customers.EVT003]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Customer/Command/DeleteCustomerCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Customer/Command/BulkDeleteCustomerCommand.php"
+        role: implementation
+
+  bulkEnableCustomer:
+    id: customers.CMD004
+    kind: command
+    name: "BulkEnableCustomer"
+    description: "Enable multiple customer accounts in a single operation."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT004]
+    produces:
+      operations: [customers.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Customer/Command/BulkEnableCustomerCommand.php"
+        role: implementation
+
+  bulkDisableCustomer:
+    id: customers.CMD005
+    kind: command
+    name: "BulkDisableCustomer"
+    description: "Disable multiple customer accounts in a single operation."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT004]
+    produces:
+      operations: [customers.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Customer/Command/BulkDisableCustomerCommand.php"
+        role: implementation
+
+  setPrivateNoteAboutCustomer:
+    id: customers.CMD006
+    kind: command
+    name: "SetPrivateNoteAboutCustomer"
+    description: "Add or update an internal note about a customer visible only to back-office employees."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT004]
+    produces:
+      operations: [customers.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Customer/Command/SetPrivateNoteAboutCustomerCommand.php"
+        role: implementation
+
+  setRequiredFieldsForCustomer:
+    id: customers.CMD007
+    kind: command
+    name: "SetRequiredFieldsForCustomer"
+    description: "Configure which customer profile fields are mandatory for registration and editing."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT004]
+    produces:
+      operations: [customers.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Customer/Command/SetRequiredFieldsForCustomerCommand.php"
+        role: implementation
+
+  transformGuestToCustomer:
+    id: customers.CMD008
+    kind: command
+    name: "TransformGuestToCustomer"
+    description: "Convert a guest account to a registered customer. Requires valid email; sets password and activates full account."
+    delivery_priority: must-have
+    initiated_by: [orders.ACT004]
+    governed_by:
+      - rule: customers.VR003
+    produces:
+      operations: [customers.EVT004]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Customer/Command/TransformGuestToCustomerCommand.php"
+        role: implementation
+
+  customerCreated:
+    id: customers.EVT001
+    kind: event
+    name: "CustomerCreated"
+    description: "Emitted when a new customer account is registered."
+
+  customerUpdated:
+    id: customers.EVT002
+    kind: event
+    name: "CustomerUpdated"
+    description: "Emitted when customer profile, status, or configuration changes."
+
+  customerDeleted:
+    id: customers.EVT003
+    kind: event
+    name: "CustomerDeleted"
+    description: "Emitted when one or more customer accounts are deleted."
+
+  guestConvertedToCustomer:
+    id: customers.EVT004
+    kind: event
+    name: "GuestConvertedToCustomer"
+    description: "Emitted when a guest account is converted to a registered customer."
+
+  getCustomerForEditing:
+    id: customers.QRY001
+    kind: query
+    name: "GetCustomerForEditing"
+    description: "Retrieve customer profile data for the edit form."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Customer/Query/GetCustomerForEditing.php"
+        role: implementation
+
+  getCustomerForViewing:
+    id: customers.QRY002
+    kind: query
+    name: "GetCustomerForViewing"
+    description: "Retrieve full customer details for back-office viewing (profile, orders, carts, addresses, groups)."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Customer/Query/GetCustomerForViewing.php"
+        role: implementation
+
+  searchCustomers:
+    id: customers.QRY003
+    kind: query
+    name: "SearchCustomers"
+    description: "Search customers by name or email. Used for customer lookup in back-office."
+    delivery_priority: must-have
+    code_refs:
+      - path: "src/Core/Domain/Customer/Query/SearchCustomers.php"
+        role: implementation
+
+  getCustomerForAddressCreation:
+    id: customers.QRY004
+    kind: query
+    name: "GetCustomerForAddressCreation"
+    description: "Retrieve minimal customer data needed for address creation form."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Customer/Query/GetCustomerForAddressCreation.php"
+        role: implementation
+
+  getCustomerCarts:
+    id: customers.QRY005
+    kind: query
+    name: "GetCustomerCarts"
+    description: "Retrieve all cart sessions for a customer (active and completed)."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Customer/Query/GetCustomerCarts.php"
+        role: implementation
+
+  getCustomerOrders:
+    id: customers.QRY006
+    kind: query
+    name: "GetCustomerOrders"
+    description: "Retrieve order history for a customer."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Customer/Query/GetCustomerOrders.php"
+        role: implementation
+
+  getRequiredFieldsForCustomer:
+    id: customers.QRY007
+    kind: query
+    name: "GetRequiredFieldsForCustomer"
+    description: "Retrieve the list of mandatory fields for customer registration."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Customer/Query/GetRequiredFieldsForCustomer.php"
+        role: implementation
+
+errors:
+  customerNotFound:
+    id: customers.ERR001
+    name: "CustomerNotFound"
+    description: "Requested customer account does not exist."
+    category: not-found
+    severity: error
+    http_status: 404
+
+  duplicateCustomerEmail:
+    id: customers.ERR002
+    name: "DuplicateCustomerEmail"
+    description: "A customer with this email already exists in the shop."
+    category: conflict
+    severity: error
+    http_status: 409
+    related_rules: [customers.VR001]
+
+  invalidCustomerData:
+    id: customers.ERR003
+    name: "InvalidCustomerData"
+    description: "Customer data fails validation (invalid email format, weak password, missing required fields)."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [customers.VR001, customers.VR002]

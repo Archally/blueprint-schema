@@ -1,0 +1,68 @@
+---
+version: "1.0.0"
+tags: [sell-and-fulfill]
+capabilities:
+  # ── Level 1: Catalog ──────────────────────────────────────────────────
+  - id: CAP005
+    name: "Catalog Management"
+    level: 1
+    description: >
+      Ability to define, organize, and publish products with attributes,
+      combinations, categories, and search indexing.
+    goal_refs:
+      - catalog.G001
+      - catalog.G002
+    operations:
+      - catalog.CMD001
+      - catalog.CMD002
+      - catalog.QRY001
+      - catalog.QRY002
+    maturity: optimized
+    strategic_importance: critical
+    delivery_priority: must-have
+    discovery_stage: committed
+    certainty: confirmed
+    value_stream_refs: [VS001, VS002]
+
+  # ── Level 1: Shipping & Delivery ──────────────────────────────────────
+  - id: CAP010
+    name: "Shipping & Delivery"
+    level: 1
+    description: >
+      Ability to configure carriers, calculate shipping costs by weight/price/zone,
+      and track shipments through delivery.
+    maturity: established
+    strategic_importance: high
+    delivery_priority: must-have
+    discovery_stage: committed
+    certainty: confirmed
+    value_stream_refs: [VS002]
+
+  # ── Level 1: International ────────────────────────────────────────────
+  - id: CAP011
+    name: "Multi-Currency & Tax"
+    level: 1
+    description: >
+      Ability to operate in multiple currencies with exchange rates, and apply
+      zone-based tax rules for global compliance.
+    goal_refs:
+      - orders.G002
+    maturity: established
+    strategic_importance: critical
+    delivery_priority: must-have
+    discovery_stage: committed
+    certainty: confirmed
+    value_stream_refs: [VS001, VS002]
+    children:
+      - id: CAP012
+        name: "Localization"
+        level: 2
+        description: >
+          Multi-language support with translation management, locale-specific
+          formatting (dates, numbers, addresses), and country/zone hierarchies.
+        maturity: established
+        strategic_importance: high
+        delivery_priority: must-have
+        discovery_stage: committed
+        certainty: confirmed
+        value_stream_refs: [VS002]

@@ -1,0 +1,110 @@
+---
+version: "1.0.0"
+scope: shipping
+
+goals:
+  - id: shipping.G001
+    statement: "Accurate shipping cost calculation for all carrier/zone/range combinations"
+    description: >
+      Ensure customers see correct shipping costs during checkout based on
+      carrier zones, weight/price ranges, and tax rules. Incorrect costs
+      lead to either revenue loss or cart abandonment.
+    summary: "Accurate shipping costs"
+    priority: high
+    measure: ">= 99.5% of orders charged correct shipping cost matching carrier range configuration"
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: shipping.G002
+    statement: "Every delivery zone has at least one active carrier"
+    description: >
+      Ensure carrier availability coverage so no customer is left without
+      a shipping option during checkout. Zones without carriers block orders.
+    summary: "Full zone coverage"
+    priority: high
+    measure: "100% of active delivery zones have at least one active carrier"
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: shipping.G003
+    statement: "Flexible shipment management for partial fulfillment"
+    description: >
+      Support split, merge, and carrier switch operations on shipments to
+      optimize parcel logistics and handle partial fulfillment scenarios.
+    summary: "Efficient order fulfillment"
+    priority: medium
+    measure: ">= 95% of orders have all products assigned to shipments within 24 hours"
+    discovery_stage: exploring
+    certainty: probable
+
+risks:
+  - id: shipping.R001
+    statement: "Zone coverage gap prevents checkout completion"
+    description: >
+      Some delivery zones may have no active carrier, preventing customers
+      in those areas from completing checkout.
+    summary: "Zone gap risk"
+    likelihood: medium
+    impact: high
+    mitigation: "Structural rule SR001 enforces at least one zone per carrier. Monitoring should alert when a zone has no active carrier."
+    goal_refs:
+      - shipping.G002
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: shipping.R002
+    statement: "Overlapping or incorrect ranges cause wrong shipping costs"
+    description: >
+      Misconfigured ranges may cause undercharging (revenue loss) or
+      overcharging (customer abandonment). Complex zone/range matrices
+      are error-prone during manual configuration.
+    summary: "Range miscalculation risk"
+    likelihood: medium
+    impact: medium
+    mitigation: "Validation rule VR004 prevents overlapping ranges. Range non-negativity enforced by VR005."
+    goal_refs:
+      - shipping.G001
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: shipping.R003
+    statement: "Editing shipped shipments causes data inconsistency"
+    description: >
+      Modifying a shipment after physical dispatch could cause mismatch
+      between system records and actual parcels. Tracking, inventory,
+      and customer communications would become unreliable.
+    summary: "Shipment integrity after dispatch"
+    likelihood: low
+    impact: high
+    mitigation: "Transition rule TR001 makes shipped shipments immutable. CannotEditShipmentShippedException enforced at domain level."
+    goal_refs:
+      - shipping.G003
+    discovery_stage: validated
+    certainty: confirmed
+
+non_goals:
+  - id: shipping.NG001
+    statement: "No fleet management or driver dispatch"
+    reason: >
+      Shipping is limited to carrier configuration, cost calculation by
+      weight/price/zone, and tracking number assignment. Route optimization,
+      driver dispatch, and fleet management are logistics operations outside
+      PrestaShop's scope — handled by carrier APIs and third-party logistics.
+    discovery_stage: committed
+    certainty: confirmed
+
+inquiries:
+  - id: shipping.INQ001
+    statement: "Should the system offer automated carrier selection based on cost/speed comparison?"
+    summary: "Multi-carrier rate comparison"
+    description: >
+      Currently merchants manually assign carriers. Automated rate
+      comparison across available carriers for a given order could
+      optimize shipping costs and delivery times.
+    category: business
+    goal_refs:
+      - shipping.G001
+    blocking: false
+    status: investigating
+    discovery_stage: exploring
+    certainty: speculative

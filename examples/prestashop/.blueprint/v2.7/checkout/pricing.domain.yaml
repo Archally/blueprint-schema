@@ -1,0 +1,101 @@
+---
+name: "Catalog Pricing"
+version: "1.0.0"
+scope: checkout
+tags: [pricing, catalog-price-rule, b2b]
+
+operations:
+  createCatalogPriceRule:
+    id: checkout.CMD021
+    kind: command
+    name: "CreateCatalogPriceRule"
+    description: "Create a bulk price reduction rule for product selections based on quantity thresholds, customer groups, or date ranges."
+    delivery_priority: should-have
+    initiated_by: [checkout.ACT001]
+    governed_by:
+      - rule: checkout.VR004
+    produces:
+      operations: [checkout.EVT010]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/CatalogPriceRule/Command/AddCatalogPriceRuleCommand.php"
+        role: implementation
+
+  editCatalogPriceRule:
+    id: checkout.CMD022
+    kind: command
+    name: "EditCatalogPriceRule"
+    description: "Modify an existing catalog price rule's conditions, reduction, or validity period."
+    delivery_priority: should-have
+    initiated_by: [checkout.ACT001]
+    governed_by:
+      - rule: checkout.VR004
+    produces:
+      operations: [checkout.EVT011]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/CatalogPriceRule/Command/EditCatalogPriceRuleCommand.php"
+        role: implementation
+
+  deleteCatalogPriceRule:
+    id: checkout.CMD023
+    kind: command
+    name: "DeleteCatalogPriceRule"
+    description: "Delete one or more catalog price rules. Supports single and bulk deletion."
+    delivery_priority: should-have
+    initiated_by: [checkout.ACT001]
+    produces:
+      operations: [checkout.EVT012]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/CatalogPriceRule/Command/DeleteCatalogPriceRuleCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/CatalogPriceRule/Command/BulkDeleteCatalogPriceRuleCommand.php"
+        role: implementation
+
+  getCatalogPriceRuleForEditing:
+    id: checkout.QRY007
+    kind: query
+    name: "GetCatalogPriceRuleForEditing"
+    description: "Retrieve full catalog price rule configuration for the edit form."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/CatalogPriceRule/Query/GetCatalogPriceRuleForEditing.php"
+        role: implementation
+
+  getCatalogPriceRuleListForProduct:
+    id: checkout.QRY008
+    kind: query
+    name: "GetCatalogPriceRuleListForProduct"
+    description: "List all catalog price rules applicable to a specific product."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/CatalogPriceRule/Query/GetCatalogPriceRuleListForProduct.php"
+        role: implementation
+
+  catalogPriceRuleCreated:
+    id: checkout.EVT010
+    kind: event
+    name: "CatalogPriceRuleCreated"
+    description: "Emitted when a new catalog price rule is created."
+
+  catalogPriceRuleUpdated:
+    id: checkout.EVT011
+    kind: event
+    name: "CatalogPriceRuleUpdated"
+    description: "Emitted when a catalog price rule is modified."
+
+  catalogPriceRuleDeleted:
+    id: checkout.EVT012
+    kind: event
+    name: "CatalogPriceRuleDeleted"
+    description: "Emitted when one or more catalog price rules are deleted."
+
+errors:
+  catalogPriceRuleNotFound:
+    id: checkout.ERR008
+    name: "CatalogPriceRuleNotFound"
+    description: "Requested catalog price rule does not exist."
+    category: validation
+    severity: error
+    http_status: 404

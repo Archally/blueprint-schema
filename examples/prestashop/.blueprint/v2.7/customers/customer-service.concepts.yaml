@@ -1,0 +1,50 @@
+---
+version: "1.0.0"
+scope: customers
+tags: [customer-service, support]
+
+concepts:
+  - id: customers.CN005
+    name: "CustomerThread"
+    description: "Customer service thread — a support conversation initiated by a customer or employee. Tracks status, assigned employee, and message history."
+    stereotype: aggregate-root
+    states: [open, pending_customer, pending_employee, closed]
+    initial_state: open
+    attributes:
+      threadId:
+        id: CAT325
+        description: "Unique thread identifier"
+      subject:
+        id: CAT326
+        description: "Thread subject line"
+      status:
+        id: CAT327
+        description: "Current thread status"
+      employeeRef:
+        id: CAT328
+        description: "Assigned employee handling this thread"
+    code_refs:
+      - path: "src/Core/Domain/CustomerService/Command/ReplyToCustomerThreadCommand.php"
+        role: implementation
+
+enumerations:
+  - id: customers.EN003
+    name: "ThreadStatus"
+    description: "Customer service thread lifecycle states."
+    values:
+      - name: open
+        description: "Thread is open and awaiting response."
+      - name: pending_customer
+        description: "Awaiting customer reply."
+      - name: pending_employee
+        description: "Awaiting employee reply."
+      - name: closed
+        description: "Thread resolved and closed."
+
+associations:
+  - id: customers.AS003
+    subject: customers.CN001
+    predicate: uses
+    object: customers.CN005
+    cardinality: "0..*"
+    description: "A customer can have zero or more service threads."
