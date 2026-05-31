@@ -38,7 +38,7 @@
     "render:prestashop": "node tools/renderer/dist/cli.js examples/prestashop/.blueprint/v2.7 -o examples/prestashop/.blueprint/v2.7/.specs/overview.md -t PrestaShop-v9",
     "check": "node tools/semantic-checker/dist/cli.js",
     "check:examples": "node tools/semantic-checker/dist/cli.js examples/ecommerce/.blueprint/v2.6",
-    "test": "vitest run --config tools/model-builder/vitest.config.ts",
+    "test": "vitest run --config tools/model-builder/vitest.config.ts && vitest run --config tools/semantic-checker/vitest.config.ts",
     "prepublishOnly": "npm run build"
   },
   "bin": {
@@ -49,6 +49,7 @@
     "blueprint-render": "tools/renderer/dist/cli.js"
   },
   "dependencies": {
+    "@archally/semantic-checker": "github:archally/semantic-checker#v0.1.0",
     "ajv": "^8.17.0",
     "ajv-formats": "^3.0.0",
     "yaml": "^2.7.0"

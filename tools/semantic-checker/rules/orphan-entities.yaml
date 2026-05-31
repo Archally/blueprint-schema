@@ -1,0 +1,14 @@
+engineVersion: "0.1"
+rules:
+  - id: orphan-entities
+    severity: warn
+    description: Entities that are defined but never referenced by any relation (source or target).
+    find:
+      all: true
+    filter:
+      type_not_in: [Missing, CodeFile]
+    check:
+      has_relation:
+        direction: any
+        exists: true
+    message: '{type} "{displayId}" ({name|''unnamed''}) is never referenced by any other entity.'

@@ -6,6 +6,18 @@ entries:
     date: "2026-05-26"
     summary: "File naming consistency — rename acronym schema files to full descriptive names"
     changes:
+      - kind: modify
+        target: "tools/semantic-checker — engine extracted to @archally/semantic-checker"
+        semver: none
+        notes: >
+          The semantic-checker engine was extracted to the standalone package
+          @archally/semantic-checker (installed from github:archally/semantic-checker#v0.1.0).
+          tools/semantic-checker/ is now a thin adapter (BlueprintModel → CheckableModel) plus the
+          six rules as declarative YAML; the engine, severity handling, and JSON-Schema rule
+          validation come from the package. The blueprint-check CLI, its arguments, exit codes, and
+          .blueprint-lint.yaml config are unchanged, and findings on the example models are
+          identical (set + messages; output is now ordered deterministically by rule+id). No schema
+          change — this is a tooling refactor.
       - kind: rename
         target: "design/rg.schema.yaml → design/infrastructure.schema.yaml"
         semver: major

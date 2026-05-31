@@ -1,0 +1,16 @@
+engineVersion: "0.1"
+rules:
+  - id: aggregate-root-signals
+    severity: info
+    description: Concepts with stereotype aggregate-root should have states, contains relationships, or governed-by rules.
+    find:
+      entity_type: Concept
+    filter:
+      field_eq:
+        data.stereotype: aggregate-root
+    # Required: at least one signal — lifecycle states OR any relationship. Emit when neither holds.
+    check:
+      any_of:
+        - all_non_empty: [data.states]
+        - has_relation: { direction: any, exists: true }
+    message: 'Aggregate root "{displayId}" ({name|''unnamed''}) has no states, no relationships, and no governance links. Consider adding lifecycle states or connecting to rules/operations.'

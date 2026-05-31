@@ -1,0 +1,15 @@
+engineVersion: "0.1"
+rules:
+  - id: unanswered-questions
+    severity: info
+    description: Domain questions with empty answered_by represent knowledge gaps. Surfaced as info for backlog prioritization.
+    find:
+      entity_type: Question
+    # adapter: question_answered_by → answered-by (question → operation), so the question must have
+    # an outgoing answered-by edge.
+    check:
+      has_relation:
+        direction: out
+        type: answered-by
+        exists: true
+    message: 'Question "{displayId}" ({name|''unnamed''}) has no operation answering it — domain gap.'

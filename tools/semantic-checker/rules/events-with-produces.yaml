@@ -1,0 +1,16 @@
+engineVersion: "0.1"
+rules:
+  - id: events-with-produces
+    severity: warn
+    description: Events are domain facts and should not produce other operations. Use reacts_to on the consuming command instead.
+    # Relation-centric: every `produces` edge whose source is an event Operation is a violation.
+    # Messages resolve against the relation's source entity (the event).
+    find:
+      relation_type: produces
+    filter:
+      source_type: Operation
+      source_field_eq:
+        data.kind: event
+    check:
+      always: true
+    message: 'Event "{displayId}" has a produces link. Events should trigger reactions via reacts_to on the consuming command.'

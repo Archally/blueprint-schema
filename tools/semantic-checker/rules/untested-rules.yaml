@@ -1,0 +1,21 @@
+engineVersion: "0.1"
+rules:
+  - id: untested-rules
+    severity: warn
+    description: Every business rule should be validated by at least one test case.
+    find:
+      entity_type_in:
+        - StructuralRule
+        - ClassificationRule
+        - DerivationRule
+        - EquivalenceRule
+        - ValidationRule
+        - TransitionRule
+    # A rule is tested when a test `validates` it (adapter: validates → validated-by, test → rule),
+    # i.e. the rule has an incoming validated-by edge.
+    check:
+      has_relation:
+        direction: in
+        type: validated-by
+        exists: true
+    message: 'Rule "{displayId}" ({name|''unnamed''}) has no test case validating it.'

@@ -1,0 +1,16 @@
+engineVersion: "0.1"
+rules:
+  - id: missing-causal-links
+    severity: warn
+    description: Commands must produce at least one event. Reactive commands must have reacts_to.
+    find:
+      entity_type: Operation
+    filter:
+      field_eq:
+        data.kind: command
+    check:
+      has_relation:
+        direction: out
+        type: produces
+        exists: true
+    message: 'Command "{displayId}" ({name|''unnamed''}) has no produces link to any event.'
