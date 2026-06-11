@@ -56,6 +56,16 @@ properties:
     description: "Availability, disaster recovery, and backup requirements. Defines RTO, RPO, and failover strategies."
     items:
       $ref: "#/$defs/resilience_requirement"
+  findings:
+    type: array
+    description: >
+      AS-IS internal-quality defects discovered in the codebase (maintainability / modularity dimension of
+      ISO/IEC 25010): smells, duplication, drift, coupling, boundary leaks, god-classes. An ASSESSMENT of
+      current state — NOT a target (contrast metrics/SLOs/KPIs, which are forward-looking commitments). Each
+      finding anchors the remediation chain finding → risk → decision → migration. Drives refactoring and
+      modularization/microservices planning. Slice-scoped (per-slice quality file) or root (systemic).
+    items:
+      $ref: "#/$defs/finding"
   observability:
     type: object
     description: "Observability strategy across four pillars: metrics, logs, traces, events. Each pillar is optional — start with what you need."
@@ -487,6 +497,127 @@ $defs:
       version:
         $ref: "../metamodel.schema.yaml#/$defs/entity_version"
         description: "Resilience requirement version for lifecycle tracking."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  finding:
+    type: object
+    description: >
+      An AS-IS internal-quality defect discovered in the codebase (maintainability / modularity): a smell,
+      duplication, drift, coupling, boundary leak, god-class, or dead/dual implementation. An ASSESSMENT of
+      current state — not a target. Carries code_refs to the offending code and `affects` refs to the domain
+      entities it touches. Anchors the remediation chain: finding → risk → decision → migration (the downstream
+      hops are stored idiomatically on decision.motivation_refs.risks and migration.related_decisions).
+    additionalProperties: false
+    required:
+      - id
+      - title
+      - kind
+      - severity
+      - statement
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/finding_ref"
+        description: "Unique finding identifier (FN + NNN, e.g. FN001 or ordering.FN001)."
+      title:
+        type: string
+        description: "Short descriptive title understandable without reading the full statement."
+      summary:
+        type: string
+        maxLength: 120
+        description: "One-line summary for listings."
+      kind:
+        type: string
+        enum:
+          - god-class
+          - duplication
+          - drift
+          - coupling
+          - boundary-leak
+          - misplaced-shared-kernel
+          - dead-code
+          - naming
+          - anemic-model
+          - dual-implementation
+          - missing-abstraction
+          - other
+        description: >
+          Defect category: god-class=one class, many concerns; duplication=repeated logic/model;
+          drift=divergent parallel implementations; coupling=undue dependency; boundary-leak=concern in the
+          wrong context; misplaced-shared-kernel=shared code filed under one consumer; dead-code=unused;
+          naming=misleading/legacy term; anemic-model=data without behaviour; dual-implementation=old+new in
+          flight; missing-abstraction=copy-paste where an abstraction belongs."
+      quality_characteristic:
+        type: string
+        enum: [maintainability, modularity, analysability, testability, reusability]
+        description: "ISO/IEC 25010 product-quality characteristic this finding degrades. Optional."
+      severity:
+        type: string
+        enum: [low, medium, high, critical]
+        description: "How damaging the defect is to maintainability / the modularization goal."
+      effort:
+        type: string
+        enum: [s, m, l, xl]
+        description: "Rough remediation effort (t-shirt size). Optional."
+      statement:
+        type: string
+        description: "The observation — what is wrong and where, in plain language."
+      recommendation:
+        type: string
+        description: "Suggested remediation direction, in prose. The structured fix lives in the linked migration."
+      affects:
+        type: object
+        description: "Blueprint entities this finding touches. Links the defect to the domain model."
+        additionalProperties: false
+        properties:
+          operation_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            description: "Operations affected."
+          concept_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+            description: "Concepts affected."
+          context_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+            description: "Bounded contexts / slices affected."
+      risk_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/risk_ref"
+        description: "Risks this finding rolls up into (finding → risk — first hop of the remediation chain)."
+      decision_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/decision_ref"
+        description: "Decisions that address this finding (finding → decision; usually reached via a risk)."
+      migration_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/migration_ref"
+        description: "The migration that remediates this finding (the TO-BE change — last hop of the chain)."
+      status:
+        type: string
+        enum: [open, acknowledged, planned, in-progress, resolved, wont-fix]
+        description: "Remediation lifecycle: open=logged, acknowledged=triaged, planned=scheduled, in-progress, resolved, wont-fix=tolerated."
+      certainty:
+        $ref: "../metamodel.schema.yaml#/$defs/certainty"
+        description: "Confidence that this is a real defect (not a false positive). Optional."
+      discovery_stage:
+        $ref: "../metamodel.schema.yaml#/$defs/discovery_stage"
+        description: "Epistemic maturity of this finding. Optional."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Finding version for lifecycle tracking."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Finding-level ownership override."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:

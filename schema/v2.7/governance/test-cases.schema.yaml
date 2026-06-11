@@ -165,7 +165,12 @@ $defs:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/rule_ref"
-        description: "Rules this test validates."
+        description: "Rules this test validates (structural/validation/classification/derivation/equivalence)."
+      transitions:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/transition_ref"
+        description: "State transition rules (TR) this test validates. Separate from `rules` because rule_ref excludes TR."
       operations:
         type: array
         items:

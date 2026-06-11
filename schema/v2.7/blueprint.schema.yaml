@@ -70,9 +70,17 @@ properties:
           slices:
             type: array
             items:
-              type: string
-              pattern: "^[a-z][a-z0-9-]*$"
-            description: "Subfolder names (kebab-case) for domain slices."
+              oneOf:
+                - type: string
+                  pattern: "^[a-z][a-z0-9-]*$"
+                - $ref: "#/$defs/slice"
+            description: >
+              Domain/capability slices. Each item is either a kebab-case subfolder name
+              (shorthand, backward-compatible) or a slice object (name + description + type
+              + owner + subdomains). A slice is the problem-space unit of decomposition: a
+              business domain OR a cross-cutting technical capability (which may still warrant
+              a deep model). Distinct from a bounded context (solution space; see
+              design/arch.schema), which a slice may map to 1:1, 1:many, or partially.
           shared:
             type: object
             description: "Optional root-level paths for shared/system entities."
@@ -241,6 +249,84 @@ properties:
       $ref: "#/$defs/profile"
 
 $defs:
+  slice:
+    type: object
+    description: >
+      A domain or capability slice — the problem-space unit of decomposition. `name` is the
+      kebab-case subfolder under the blueprint root. A slice is NOT necessarily a strict
+      business domain: a cross-cutting technical capability (e.g. a workflow, messaging, or
+      forms engine) is also a slice, and may itself be a deep model. Distinct from a bounded
+      context (solution space; see design/arch.schema): a slice may map to one context,
+      several, or part of one.
+    additionalProperties: false
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        pattern: "^[a-z][a-z0-9-]*$"
+        description: "Slice folder name (kebab-case); matches the subfolder under the blueprint root."
+      description:
+        type: string
+        description: "What this slice is about — its business or technical responsibility."
+      type:
+        type: string
+        enum: [core-domain, supporting-domain, generic-domain, technical-capability]
+        description: >
+          Slice nature. core/supporting/generic-domain capture DDD subdomain importance
+          (problem space); technical-capability is a cross-cutting technical concern realized
+          as a slice (which may still be a deep model). Distinct from a bounded context's
+          `kind` in design/arch.schema (solution space).
+      complexity:
+        $ref: "metamodel.schema.yaml#/$defs/complexity_pattern"
+        description: >
+          Dominant problem-type of the slice: crud / presentation / transformation /
+          integration / cdc / concurrency / state-management. The implementation-complexity axis —
+          orthogonal to `type` (strategic value). Use per-subdomain entries when the slice is
+          split-natured (e.g. ordering: order-lifecycle=state-management, inventory-reservation=concurrency).
+      model_traits:
+        type: array
+        items:
+          $ref: "metamodel.schema.yaml#/$defs/model_traits_item"
+        description: "Behavioural archetype(s) of the slice (Wirfs-Brock role stereotypes)."
+      owner:
+        $ref: "metamodel.schema.yaml#/$defs/owned_by"
+        description: "Owning team/department/party (references governance/organization)."
+      subdomains:
+        type: array
+        description: >
+          Subdomains/modules within this slice (problem-space partitions; e.g. ordering →
+          cart, checkout, order, payment, fulfillment). Each maps by convention to a
+          file-name prefix within the slice folder (order.*.yaml) and/or a tag.
+        items:
+          oneOf:
+            - type: string
+              pattern: "^[a-z][a-z0-9-]*$"
+            - type: object
+              additionalProperties: false
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  pattern: "^[a-z][a-z0-9-]*$"
+                  description: "Subdomain/module name (kebab-case; matches the file-name prefix, e.g. order)."
+                description:
+                  type: string
+                  description: "What this subdomain/module covers."
+                kind:
+                  type: string
+                  enum: [core, supporting, generic]
+                  description: "Optional DDD importance of this subdomain within the slice."
+                complexity:
+                  $ref: "metamodel.schema.yaml#/$defs/complexity_pattern"
+                  description: "Optional dominant problem-type of this subdomain — lets a split-natured slice mark each facet (e.g. order-lifecycle=state-management, inventory-reservation=concurrency)."
+                model_traits:
+                  type: array
+                  items:
+                    $ref: "metamodel.schema.yaml#/$defs/model_traits_item"
+                  description: "Optional behavioural archetype(s) of this subdomain."
+
   profile:
     type: object
     description: "Domain-specific extension adding schemas or constraints without forking core."

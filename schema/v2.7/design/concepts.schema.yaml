@@ -225,6 +225,9 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "Epistemic provenance for this concept (brownfield modeling confidence)."
 
   owned_relationship:
     type: object
@@ -329,6 +332,9 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "Epistemic provenance for this actor (brownfield modeling confidence)."
 
   persona:
     type: object
@@ -449,6 +455,9 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "Epistemic provenance for this enumeration (brownfield modeling confidence)."
 
   concept_attribute:
     type: object
@@ -514,3 +523,6 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "Epistemic provenance for this association (brownfield modeling confidence)."

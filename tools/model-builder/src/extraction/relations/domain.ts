@@ -153,6 +153,25 @@ export function extractDomainRelations(
         });
       }
     }
+
+    // responses[].error: operation can raise a catalog error (operation → error)
+    const responses = data.responses as Array<Record<string, unknown>> | undefined;
+    if (Array.isArray(responses)) {
+      const seenErrorTargets = new Set<string>();
+      for (const resp of responses) {
+        const errorRef = (resp?.error as string | undefined) ?? undefined;
+        if (!errorRef) continue;
+        const targetId = resolveOrPlaceholder(errorRef, domain, entities, placeholders);
+        if (seenErrorTargets.has(targetId)) continue; // dedupe multiple responses to same error
+        seenErrorTargets.add(targetId);
+        relations.push({
+          id: `${entity.id}--${RELATION_TYPE.RaisesError}--${targetId}`,
+          source_entity_id: entity.id,
+          target_entity_id: targetId,
+          type: RELATION_TYPE.RaisesError,
+        });
+      }
+    }
   }
 
   return relations;

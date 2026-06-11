@@ -5,6 +5,9 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
 
 const VALIDATES_GROUPS: ReadonlyArray<{ key: string; predicate: string }> = [
   { key: 'rules', predicate: 'rule' },
+  // transition rules (TR) are Rule entities too, but rule_ref excludes TR; a dedicated
+  // group lets tests link to transitions so they are not flagged untested.
+  { key: 'transitions', predicate: 'transition' },
   { key: 'operations', predicate: 'operation' },
   { key: 'concepts', predicate: 'concept' },
   { key: 'models', predicate: 'model' },

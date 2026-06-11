@@ -144,6 +144,8 @@ export const RELATION_TYPE = {
   InitiatedBy: 'initiated_by',
   // domain.schema: operation materializes concept (operation.materializes[].concept)
   Materializes: 'materializes',
+  // domain.schema: operation can raise a catalog error (operation.responses[].error → Error)
+  RaisesError: 'raises_error',
   // rg.schema (Step 01 / D26): resource owned by org team (resource.owner.team → Team).
   OwnedByTeam: 'owned_by_team',
   // rg.schema (Step 01 / D26): arch service deployed in deployment tier (topology.tiers[].services[] → Service).

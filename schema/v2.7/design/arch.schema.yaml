@@ -113,9 +113,8 @@ $defs:
         enum: [core, generic-core, support, generic]
         description: "DDD context classification: core=competitive advantage, support=enables core, generic=commodity. Maps to BCC v5 Strategic Classification — Domain Importance."
       complexity:
-        type: string
-        enum: [crud, presentation, transformation, integration, cdc, concurrency]
-        description: "Dominant implementation complexity pattern. Distinct from `model_traits` which captures behavioural archetype."
+        $ref: "../metamodel.schema.yaml#/$defs/complexity_pattern"
+        description: "Dominant implementation-complexity / problem-type pattern. Distinct from `model_traits` (behavioural archetype) and `kind` (strategic value)."
       business_model_role:
         type: string
         enum: [revenue-generator, engagement-creator, compliance-enforcer]
@@ -133,18 +132,7 @@ $defs:
       model_traits:
         type: array
         items:
-          type: string
-          enum:
-            - analyser
-            - executor
-            - drafter
-            - auditor
-            - controller
-            - service-provider
-            - information-holder
-            - structurer
-            - coordinator
-            - interfacer
+          $ref: "../metamodel.schema.yaml#/$defs/model_traits_item"
         description: >
           BCC v5 Model Traits — behavioural archetypes for this context. All
           values are role nouns ("a context that does X") for authoring
@@ -341,6 +329,9 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "Epistemic provenance for this service (brownfield modeling confidence)."
 
   contracts:
     type: object

@@ -103,6 +103,9 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "Epistemic provenance for this model (brownfield modeling confidence)."
 
   represents_entry:
     type: object

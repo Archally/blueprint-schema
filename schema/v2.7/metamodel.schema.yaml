@@ -39,8 +39,8 @@ $defs:
 
   schema_version:
     type: string
-    enum: ["2.6.0", "2.5.0", "2.4.0", "2.3.0", "2.2.0"]
-    description: "Blueprint schema version. v2.6 schemas accept v2.5, v2.4, v2.3, and v2.2 documents for backward compatibility."
+    enum: ["2.7.0", "2.6.0", "2.5.0", "2.4.0", "2.3.0", "2.2.0"]
+    description: "Blueprint schema version. v2.7 schemas accept v2.6, v2.5, v2.4, v2.3, and v2.2 documents for backward compatibility."
 
   # ---------------------------------------------------------------------------
   # Entity Properties (v2.3)
@@ -387,6 +387,26 @@ $defs:
     pattern: "^([a-z][a-z0-9-]*\\.)?MT\\d{3}$"
     description: "Reference to a quality metric (e.g. MT001 or billing.MT001)."
 
+  finding_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?FN\\d{3}$"
+    description: "Reference to a quality finding — an AS-IS internal-quality defect (e.g. FN001 or ordering.FN001)."
+
+  complexity_pattern:
+    type: string
+    enum: [crud, presentation, transformation, integration, cdc, concurrency, state-management]
+    description: >
+      Dominant implementation-complexity / problem-type pattern of a context or subdomain:
+      crud=record management; presentation=UI-heavy; transformation=translation/ACL between models;
+      integration=orchestration/sagas across systems; cdc=change-data-capture; concurrency=contention
+      over a finite shared resource; state-management=lifecycle/state-machine. The problem-type axis —
+      distinct from `model_traits` (behavioural archetype) and from `kind`/`type` (strategic value).
+
+  model_traits_item:
+    type: string
+    enum: [analyser, executor, drafter, auditor, controller, service-provider, information-holder, structurer, coordinator, interfacer]
+    description: "A behavioural archetype (Wirfs-Brock role stereotype) of a context or subdomain — e.g. controller/coordinator drives a process/state-machine, information-holder is CRUD-ish, interfacer translates."
+
   kpi_ref:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?KPI\\d{3}$"
@@ -579,8 +599,9 @@ $defs:
 
   # ---------------------------------------------------------------------------
   # Evidence Chain (v2.6)
-  # Justifies a governance entity's discovery_stage and certainty with
-  # structured evidence records. Applied to governance entities only.
+  # Justifies an entity's discovery_stage and certainty with structured
+  # evidence records. Used by governance entities via flat fields, and by
+  # design entities via the grouped $defs/provenance object (v2.8).
   # ---------------------------------------------------------------------------
 
   evidence:
@@ -620,6 +641,32 @@ $defs:
           type: string
           enum: [supports, weakens, invalidates]
           description: "How this evidence affects confidence in the entity."
+
+  # ---------------------------------------------------------------------------
+  # Provenance (v2.8) — grouped epistemic metadata for DESIGN-plane entities.
+  # Governance entities carry discovery_stage/certainty/evidence as flat fields;
+  # design entities nest them here to avoid colliding with domain-semantic
+  # fields (e.g. rules.certainty = definitive|heuristic). Optional and additive.
+  # ---------------------------------------------------------------------------
+
+  provenance:
+    type: object
+    additionalProperties: false
+    description: >
+      Epistemic provenance for a design-plane entity discovered or authored with
+      varying confidence (e.g. brownfield reverse-engineering). Complements code_refs:
+      code_refs say WHERE the entity is implemented; provenance says HOW SURE the
+      modeling judgement is and on WHAT evidence.
+    properties:
+      discovery_stage:
+        $ref: "#/$defs/discovery_stage"
+        description: "Epistemic maturity of this design entity."
+      certainty:
+        $ref: "#/$defs/certainty"
+        description: "Confidence in this design entity or its modeling judgement."
+      evidence:
+        $ref: "#/$defs/evidence"
+        description: "Evidence chain justifying discovery_stage and certainty."
 
   # ---------------------------------------------------------------------------
   # Shared Traceability Links (use typed refs)

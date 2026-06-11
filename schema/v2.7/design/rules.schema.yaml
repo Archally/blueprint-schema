@@ -132,6 +132,9 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "Epistemic provenance for this rule (brownfield modeling confidence). Distinct from rule.certainty (definitive|heuristic)."
 
   transition_rule:
     type: object
@@ -200,6 +203,9 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "Epistemic provenance for this transition rule (brownfield modeling confidence)."
 
   violation_response:
     type: object
