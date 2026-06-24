@@ -8,6 +8,53 @@ import type {
 import { getSchemaTypeFromPath } from '../extraction/entities/id.js';
 import { extractAllEntities } from '../extraction/entities/index.js';
 import { buildRelations } from '../extraction/relations/index.js';
+import { ENTITY_TYPE } from './entityTypes.js';
+import type { Entity } from './types.js';
+
+/**
+ * Merge Party entities that share the same (scope, name) across multiple arch files.
+ *
+ * A root context map may be split into several `*.arch.yaml` files, each of which must
+ * re-declare its `parties: [{ name, env, contexts }]` wrapper to be schema-valid. The arch
+ * extractor emits one Party entity per file (its id is file-scoped), so the same party would
+ * otherwise appear N times. Collapse them into the first occurrence, unioning their
+ * `data.contexts` (by context name). Context/Service/Contract entities are emitted separately
+ * and are unaffected; no relation builder resolves against Party, so this is purely de-duplication.
+ */
+function mergeArchParties(entities: Entity[]): Entity[] {
+  const byKey = new Map<string, Entity>();
+  const result: Entity[] = [];
+  for (const entity of entities) {
+    if (entity.type !== ENTITY_TYPE.Party) {
+      result.push(entity);
+      continue;
+    }
+    const scope = (entity.data?._scope as string | undefined) ?? '';
+    const key = `${scope}::${entity.displayId}`;
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, entity);
+      result.push(entity);
+      continue;
+    }
+    // Fold this party's contexts into the first one; drop the duplicate Party entity.
+    const target = (existing.data ??= {});
+    const existingContexts = Array.isArray(target.contexts) ? (target.contexts as unknown[]) : [];
+    const incoming = Array.isArray(entity.data?.contexts) ? (entity.data!.contexts as unknown[]) : [];
+    const seen = new Set(
+      existingContexts.map((c) => (c as { name?: string } | null)?.name).filter(Boolean)
+    );
+    for (const ctx of incoming) {
+      const name = (ctx as { name?: string } | null)?.name;
+      if (name && !seen.has(name)) {
+        existingContexts.push(ctx);
+        seen.add(name);
+      }
+    }
+    target.contexts = existingContexts;
+  }
+  return result;
+}
 
 /**
  * Group parsed documents by schema type (derived from file path).
@@ -47,7 +94,7 @@ export function buildBlueprintModel(documentsByType: DocumentsBySchemaType): Blu
     lastModified: undefined,
   }));
 
-  const entities = extractAllEntities(documentsByType);
+  const entities = mergeArchParties(extractAllEntities(documentsByType));
   const { relations, addedEntities } = buildRelations(entities, documentsByType);
   const domainDescriptions = extractDomainDescriptions(documentsByType);
   const repository = extractRepositoryConfig(documentsByType.blueprint);

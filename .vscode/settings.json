@@ -2,65 +2,65 @@
   "workbench.iconTheme": "material-icon-theme",
 
   "yaml.schemas": {
-    "schema/v2.7/schema/blueprint.schema.yaml": [
+    "schema/v2.7/blueprint.schema.yaml": [
       "**/.blueprint/**/blueprint.yaml"
     ],
-    "schema/v2.7/schema/metamodel.schema.yaml": [
+    "schema/v2.7/metamodel.schema.yaml": [
       "**/.blueprint/**/metamodel.schema.yaml"
     ],
-    "schema/v2.7/schema/migration.schema.yaml": [
+    "schema/v2.7/migration.schema.yaml": [
       "**/.blueprint/**/*.migration.yaml",
       "**/.blueprint/**/migration.yaml"
     ],
-    "schema/v2.7/schema/design/arch.schema.yaml": [
+    "schema/v2.7/design/arch.schema.yaml": [
       "**/.blueprint/**/*arch.yaml"
     ],
-    "schema/v2.7/schema/design/concepts.schema.yaml": [
+    "schema/v2.7/design/concepts.schema.yaml": [
       "**/.blueprint/**/*concepts.yaml"
     ],
-    "schema/v2.7/schema/design/domain.schema.yaml": [
+    "schema/v2.7/design/domain.schema.yaml": [
       "**/.blueprint/**/*domain.yaml"
     ],
-    "schema/v2.7/schema/design/dynamics.schema.yaml": [
+    "schema/v2.7/design/dynamics.schema.yaml": [
       "**/.blueprint/**/*dynamics.yaml"
     ],
-    "schema/v2.7/schema/design/models.schema.yaml": [
+    "schema/v2.7/design/models.schema.yaml": [
       "**/.blueprint/**/*models.yaml"
     ],
-    "schema/v2.7/schema/design/quality.schema.yaml": [
+    "schema/v2.7/design/quality.schema.yaml": [
       "**/.blueprint/**/*quality.yaml"
     ],
-    "schema/v2.7/schema/design/infrastructure.schema.yaml": [
+    "schema/v2.7/design/infrastructure.schema.yaml": [
       "**/.blueprint/**/*infrastructure.yaml"
     ],
-    "schema/v2.7/schema/design/rules.schema.yaml": [
+    "schema/v2.7/design/rules.schema.yaml": [
       "**/.blueprint/**/*rules.yaml"
     ],
-    "schema/v2.7/schema/design/story.schema.yaml": [
+    "schema/v2.7/design/story.schema.yaml": [
       "**/.blueprint/**/*story.yaml"
     ],
-    "schema/v2.7/schema/design/interactions.schema.yaml": [
+    "schema/v2.7/design/interactions.schema.yaml": [
       "**/.blueprint/**/*interactions.yaml"
     ],
-    "schema/v2.7/schema/governance/capability.schema.yaml": [
+    "schema/v2.7/governance/capability.schema.yaml": [
       "**/.blueprint/**/*capability.yaml"
     ],
-    "schema/v2.7/schema/governance/decisions.schema.yaml": [
+    "schema/v2.7/governance/decisions.schema.yaml": [
       "**/.blueprint/**/*decisions.yaml"
     ],
-    "schema/v2.7/schema/governance/motivation.schema.yaml": [
+    "schema/v2.7/governance/motivation.schema.yaml": [
       "**/.blueprint/**/*motivation.yaml"
     ],
-    "schema/v2.7/schema/governance/organization.schema.yaml": [
+    "schema/v2.7/governance/organization.schema.yaml": [
       "**/.blueprint/**/*organization.yaml"
     ],
-    "schema/v2.7/schema/governance/roadmap.schema.yaml": [
+    "schema/v2.7/governance/roadmap.schema.yaml": [
       "**/.blueprint/**/*roadmap.yaml"
     ],
-    "schema/v2.7/schema/governance/test-cases.schema.yaml": [
+    "schema/v2.7/governance/test-cases.schema.yaml": [
       "**/.blueprint/**/*test-cases.yaml"
     ],
-    "schema/v2.7/schema/governance/value-stream.schema.yaml": [
+    "schema/v2.7/governance/value-stream.schema.yaml": [
       "**/.blueprint/**/*value-stream.yaml"
     ]
   },
@@ -110,5 +110,5 @@
   "material-icon-theme.folders.associations": {
     ".blueprint": "sandbox"
   },
-  "workbench.colorTheme": "One Dark Flatland Monokai"
+  "workbench.colorTheme": "Dark 2026"
 }

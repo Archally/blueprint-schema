@@ -58,6 +58,33 @@ describe('extractQuality', () => {
     expect(entities[0]!.description).toBe('Must use OAuth2');
   });
 
+  it('extracts findings using title and statement fallbacks', () => {
+    const doc: ParsedBlueprintDocument = {
+      data: {
+        version: '1.0.0',
+        findings: [
+          {
+            id: 'FN001',
+            title: 'Checkout god-class',
+            kind: 'god-class',
+            severity: 'high',
+            statement: 'OrderService mixes pricing, tax and shipping concerns.',
+            risk_refs: ['R008'],
+          },
+        ],
+      },
+      filePath: 'checkout.findings.quality.yaml',
+      scope: undefined,
+    };
+    const entities = extractQuality(doc);
+    expect(entities).toHaveLength(1);
+    expect(entities[0]!.type).toBe(ENTITY_TYPE.Finding);
+    expect(entities[0]!.layer).toBe('design.quality');
+    expect(entities[0]!.term).toBe('Checkout god-class');
+    expect(entities[0]!.description).toBe('OrderService mixes pricing, tax and shipping concerns.');
+    expect(entities[0]!.data).toMatchObject({ risk_refs: ['R008'] });
+  });
+
   it('returns empty array for doc with no quality collections', () => {
     const doc: ParsedBlueprintDocument = {
       data: { version: '1.0.0' },

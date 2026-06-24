@@ -5,6 +5,7 @@ import { extractDomainRelations } from './domain.js';
 import { extractDecisionRelations } from './decisions.js';
 import { extractTestCaseRelations } from './testCases.js';
 import { extractArchRelations } from './arch.js';
+import { extractArchDependencyRelations } from './archDependencies.js';
 import { buildStoryRelations } from './story.js';
 import { extractOrgRelations } from './org.js';
 import { extractUIRelations } from './ui.js';
@@ -50,6 +51,7 @@ export function buildRelations(
     ...extractDecisionRelations(entities, placeholders),
     ...extractTestCaseRelations(entities, placeholders),
     ...extractArchRelations(entities),
+    ...extractArchDependencyRelations(entities, placeholders),
     ...buildStoryRelations(entities, placeholders),
     ...extractOrgRelations(entities),
     ...extractUIRelations(entities, placeholders),

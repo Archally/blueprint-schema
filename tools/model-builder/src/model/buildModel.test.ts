@@ -4,6 +4,76 @@ import type { ParsedBlueprintDocument } from './types.js';
 import { ENTITY_TYPE } from './entityTypes.js';
 
 describe('buildBlueprintModel', () => {
+  it('merges same-name parties declared across multiple arch files', () => {
+    const documents: ParsedBlueprintDocument[] = [
+      {
+        data: {
+          version: '1.0.0',
+          name: 'Shop',
+          parties: [{ name: 'Shop', env: 'prod', contexts: [{ name: 'Catalog', summary: 'Products' }] }],
+        },
+        filePath: 'catalog.arch.yaml',
+      },
+      {
+        data: {
+          version: '1.0.0',
+          name: 'Shop',
+          parties: [{ name: 'Shop', env: 'prod', contexts: [{ name: 'Checkout', summary: 'Cart + payment' }] }],
+        },
+        filePath: 'checkout.arch.yaml',
+      },
+    ];
+    const model = buildBlueprintModel(groupDocumentsBySchemaType(documents));
+    const parties = model.entities.filter((e) => e.type === ENTITY_TYPE.Party);
+    expect(parties).toHaveLength(1);
+    expect(parties[0]!.displayId).toBe('Shop');
+    const ctxNames = ((parties[0]!.data?.contexts as Array<{ name: string }>) ?? []).map((c) => c.name);
+    expect(ctxNames).toEqual(['Catalog', 'Checkout']);
+    // both contexts are still emitted as their own entities
+    expect(
+      model.entities
+        .filter((e) => e.type === ENTITY_TYPE.Context)
+        .map((e) => e.displayId)
+        .sort()
+    ).toEqual(['Catalog', 'Checkout']);
+  });
+
+  it('builds Context->Context depends_on relations from dependencies[]', () => {
+    const documents: ParsedBlueprintDocument[] = [
+      {
+        data: {
+          version: '1.0.0',
+          name: 'Shop',
+          parties: [
+            {
+              name: 'Shop',
+              env: 'prod',
+              contexts: [
+                {
+                  name: 'Checkout',
+                  summary: 'Cart',
+                  dependencies: [
+                    { name: 'Catalog', type: 'api', relationship: 'customer-supplier', direction: 'downstream' },
+                  ],
+                },
+                { name: 'Catalog', summary: 'Products' },
+              ],
+            },
+          ],
+        },
+        filePath: 'shop.arch.yaml',
+      },
+    ];
+    const model = buildBlueprintModel(groupDocumentsBySchemaType(documents));
+    const checkout = model.entities.find((e) => e.type === ENTITY_TYPE.Context && e.displayId === 'Checkout')!;
+    const catalog = model.entities.find((e) => e.type === ENTITY_TYPE.Context && e.displayId === 'Catalog')!;
+    const dep = model.relations.find(
+      (r) => r.type === 'depends_on' && r.source_entity_id === checkout.id && r.target_entity_id === catalog.id
+    );
+    expect(dep).toBeDefined();
+    expect(dep!.data?.relationship).toBe('customer-supplier');
+  });
+
   it('returns entities and metadata; full build on small example has expected counts per layer', () => {
     const documents: ParsedBlueprintDocument[] = [
       {

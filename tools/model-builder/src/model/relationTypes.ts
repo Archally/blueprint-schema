@@ -35,6 +35,8 @@ export const RELATION_TYPE = {
   Contains: 'contains',
   // arch.schema: service structurally provides contract (hierarchy from YAML nesting)
   Provides: 'provides',
+  // arch.schema: context depends on another context / external system (context.dependencies[])
+  DependsOn: 'depends_on',
   // motivation.schema: goal tracked by KPI (goal.kpi)
   GoalKpi: 'goal.kpi',
   // story.schema: story orders operations (story → operation, with position)

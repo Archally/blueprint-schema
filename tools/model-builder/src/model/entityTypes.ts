@@ -34,6 +34,7 @@ export const ENTITY_TYPE = {
   Security: 'Security',
   Compliance: 'Compliance',
   Resilience: 'Resilience',
+  Finding: 'Finding',
   Story: 'Story',
   Dynamics: 'Dynamics',
   Models: 'Models',

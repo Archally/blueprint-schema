@@ -1,0 +1,54 @@
+{
+  "name": "archally-blueprint-navigation",
+  "displayName": "Archally Blueprint Navigation",
+  "description": "Go-to-definition, hover, and re-index for Archally blueprint IDs (e.g. slice.TYPE### references) across .blueprint YAML files.",
+  "version": "0.1.0",
+  "publisher": "archally",
+  "license": "Apache-2.0",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    "archally",
+    "blueprint",
+    "yaml",
+    "ddd"
+  ],
+  "activationEvents": [
+    "onLanguage:yaml",
+    "workspaceContains:**/.blueprint/**/*.yaml"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Archally Blueprint Navigation",
+      "properties": {
+        "archallyBlueprint.fileGlob": {
+          "type": "string",
+          "default": "**/.blueprint/**/*.yaml",
+          "description": "Glob for the blueprint YAML files to index for id navigation."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "archallyBlueprint.reindex",
+        "title": "Archally Blueprint: Re-index IDs"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.7.0"
+  }
+}
