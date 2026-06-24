@@ -405,6 +405,8 @@ For the full set of practices, anti-patterns, decision trees, and reference dire
 
 Full entity ID patterns, traceability map, and schema evolution history: [Schema Reference](docs/schema-reference.md). File naming and layout rules: [File Conventions](docs/file-conventions.md).
 
+**Browse the schemas by version** — each [`schema/`](schema/) version folder has its own README index (Design / Governance planes + the cross-cutting metamodel and migration schemas).
+
 ## Tools
 
 Three tools ship with the schema — validate, build models, and check semantics:
