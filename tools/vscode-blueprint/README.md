@@ -13,6 +13,10 @@ that gap.
   workspace it lives (the loader merges files by suffix, so a referenced id is often in another file).
 - **Hover** → shows the entity's kind/name + summary and the **source file:line**, with a click-to-open link.
 - Indexes both block (`- id: orders.CMD001`) and inline (`{ id: CAT1200, ... }`) declarations.
+- **Highlight known ids** with a distinct color/style (decoration-based, so it's the same on **any theme**). Only ids
+  that are actually *declared* somewhere get coloured — **canary yellow** by default (`archallyBlueprint.idForeground`) —
+  so a mistyped or unknown reference stays un-coloured, an easy correctness signal. Configurable color +
+  weight/style/underline. Note: the editor font *family* can't be changed per token — only color/weight/style/underline.
 - Re-indexes on save / file change; **Archally Blueprint: Re-index IDs** command to rebuild on demand.
 
 It complements `redhat.vscode-yaml` (schema validation + autocomplete + hover on property *keys*) — install both.
@@ -40,6 +44,11 @@ code --install-extension archally-blueprint-navigation-0.1.0.vsix
 | Setting | Default | Description |
 |---|---|---|
 | `archallyBlueprint.fileGlob` | `**/.blueprint/**/*.yaml` | Which YAML files to index for id navigation. |
+| `archallyBlueprint.highlight.enabled` | `true` | Highlight blueprint IDs with a distinct color/style. |
+| `archallyBlueprint.highlight.color` | `""` | Override color (any CSS color, e.g. `#c586c0`). Empty = use the themed `archallyBlueprint.idForeground`. |
+| `archallyBlueprint.highlight.fontStyle` | `bold` | `normal` / `bold` / `italic` / `underline` / `bold-underline`. |
+
+To recolor without the override setting, theme it: `"workbench.colorCustomizations": { "archallyBlueprint.idForeground": "#c586c0" }`.
 
 ## How it works
 

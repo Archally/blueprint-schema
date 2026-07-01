@@ -174,8 +174,61 @@ const hoverProvider: vscode.HoverProvider = {
   },
 };
 
+// ── Highlighting (editor decorations — theme-independent, configurable) ──────────────────────────
+
+// Global-flag variant of the token grammar, for scanning a whole document.
+const TOKEN_RE_G = /[a-z][a-z0-9-]*\.[A-Za-z]{1,6}\d{2,5}|[A-Za-z]{1,6}\d{2,5}/g;
+
+let decoType: vscode.TextEditorDecorationType | undefined;
+let decoTimer: ReturnType<typeof setTimeout> | undefined;
+
+function createDecoType(): vscode.TextEditorDecorationType | undefined {
+  const cfg = vscode.workspace.getConfiguration('archallyBlueprint');
+  if (!cfg.get<boolean>('highlight.enabled', true)) return undefined;
+
+  const override = (cfg.get<string>('highlight.color') || '').trim();
+  const style = cfg.get<string>('highlight.fontStyle', 'bold');
+  const opts: vscode.DecorationRenderOptions = {
+    rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+    color: override ? override : new vscode.ThemeColor('archallyBlueprint.idForeground'),
+  };
+  if (style.includes('bold')) opts.fontWeight = 'bold';
+  if (style.includes('italic')) opts.fontStyle = 'italic';
+  if (style.includes('underline')) opts.textDecoration = 'underline';
+  return vscode.window.createTextEditorDecorationType(opts);
+}
+
+function rebuildDecoType(): void {
+  decoType?.dispose();
+  decoType = createDecoType();
+}
+
+function applyDecorations(editor: vscode.TextEditor | undefined): void {
+  if (!editor) return;
+  if (!decoType || vscode.languages.match(selector(), editor.document) === 0) {
+    return; // not a blueprint file, or highlighting disabled (disposed deco clears itself)
+  }
+  const ranges: vscode.Range[] = [];
+  const lines = editor.document.getText().split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    TOKEN_RE_G.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = TOKEN_RE_G.exec(lines[i])) !== null) {
+      if (!index.has(m[0])) continue; // only highlight KNOWN ids — unknown refs / typos stay un-coloured
+      ranges.push(new vscode.Range(i, m.index, i, m.index + m[0].length));
+    }
+  }
+  editor.setDecorations(decoType, ranges);
+}
+
+function refreshAllDecorations(): void {
+  for (const editor of vscode.window.visibleTextEditors) applyDecorations(editor);
+}
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   await rebuildIndex();
+  rebuildDecoType();
+  refreshAllDecorations();
 
   context.subscriptions.push(
     vscode.languages.registerDefinitionProvider(selector(), definitionProvider),
@@ -190,21 +243,45 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // Keep the index fresh.
   const watcher = vscode.workspace.createFileSystemWatcher(currentGlob());
-  watcher.onDidChange(reindexFile);
-  watcher.onDidCreate(reindexFile);
-  watcher.onDidDelete((uri) => removeFile(uri.toString()));
+  const onFsChange = async (uri: vscode.Uri) => {
+    await reindexFile(uri);
+    refreshAllDecorations(); // the known-id set may have changed
+  };
+  watcher.onDidChange(onFsChange);
+  watcher.onDidCreate(onFsChange);
+  watcher.onDidDelete((uri) => {
+    removeFile(uri.toString());
+    refreshAllDecorations();
+  });
   context.subscriptions.push(
     watcher,
     vscode.workspace.onDidSaveTextDocument((d) => {
-      if (vscode.languages.match(selector(), d) > 0) indexText(d.uri, d.getText());
+      if (vscode.languages.match(selector(), d) > 0) {
+        indexText(d.uri, d.getText());
+        refreshAllDecorations();
+      }
+    }),
+    vscode.window.onDidChangeActiveTextEditor((e) => applyDecorations(e)),
+    vscode.window.onDidChangeVisibleTextEditors(() => refreshAllDecorations()),
+    vscode.workspace.onDidChangeTextDocument((e) => {
+      const ed = vscode.window.activeTextEditor;
+      if (!ed || e.document !== ed.document) return;
+      if (decoTimer) clearTimeout(decoTimer);
+      decoTimer = setTimeout(() => applyDecorations(ed), 150);
     }),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('archallyBlueprint.fileGlob')) void rebuildIndex();
+      if (e.affectsConfiguration('archallyBlueprint.highlight')) {
+        rebuildDecoType();
+        refreshAllDecorations();
+      }
     }),
   );
 }
 
 export function deactivate(): void {
+  if (decoTimer) clearTimeout(decoTimer);
+  decoType?.dispose();
   index.clear();
   fileIds.clear();
 }

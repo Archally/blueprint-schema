@@ -1,10 +1,15 @@
 {
   "name": "archally-blueprint-navigation",
   "displayName": "Archally Blueprint Navigation",
-  "description": "Go-to-definition, hover, and re-index for Archally blueprint IDs (e.g. slice.TYPE### references) across .blueprint YAML files.",
-  "version": "0.1.0",
+  "description": "Go-to-definition, hover, highlight, and re-index for Archally blueprint IDs (e.g. slice.TYPE### references) across .blueprint YAML files.",
+  "version": "0.3.0",
   "publisher": "archally",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/archally/blueprint-schema",
+    "directory": "tools/vscode-blueprint"
+  },
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -31,9 +36,37 @@
           "type": "string",
           "default": "**/.blueprint/**/*.yaml",
           "description": "Glob for the blueprint YAML files to index for id navigation."
+        },
+        "archallyBlueprint.highlight.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Highlight blueprint IDs (slice.TYPE###, bare TYPE###, MIG###, CAT####) with a distinct color/style."
+        },
+        "archallyBlueprint.highlight.color": {
+          "type": "string",
+          "default": "",
+          "description": "Override color for highlighted IDs (any CSS color, e.g. #c586c0). Empty = use the themed 'archallyBlueprint.idForeground' color (override that via workbench.colorCustomizations)."
+        },
+        "archallyBlueprint.highlight.fontStyle": {
+          "type": "string",
+          "enum": ["normal", "bold", "italic", "underline", "bold-underline"],
+          "default": "bold",
+          "description": "Font style for highlighted IDs. Note: the editor font FAMILY cannot be changed per token — only weight/style/underline."
         }
       }
     },
+    "colors": [
+      {
+        "id": "archallyBlueprint.idForeground",
+        "description": "Foreground color used to highlight known Archally blueprint IDs. Default: canary yellow.",
+        "defaults": {
+          "dark": "#ffef00",
+          "light": "#9a7d00",
+          "highContrast": "#ffef00",
+          "highContrastLight": "#9a7d00"
+        }
+      }
+    ],
     "commands": [
       {
         "command": "archallyBlueprint.reindex",
