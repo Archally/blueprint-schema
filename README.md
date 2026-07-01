@@ -407,6 +407,8 @@ Full entity ID patterns, traceability map, and schema evolution history: [Schema
 
 **Browse the schemas by version** — each [`schema/`](schema/) version folder has its own README index (Design / Governance planes + the cross-cutting metamodel and migration schemas).
 
+**Read the schema without the JSON** — the generated [**Blueprint Schema Atlas**](docs/schema-atlas/) projects the schema into a human-readable layer map, entity catalog, relationship map, and a structural changelog. It is regenerated from schema truth (never hand-edited), so it cannot drift from the metamodel.
+
 ## Tools
 
 Three tools ship with the schema — validate, build models, and check semantics:
@@ -446,6 +448,17 @@ npx @archally/blueprint-schema blueprint-check .blueprint/v2.7
 Built-in rules: orphan entities, missing causal links (commands without produces), events misusing produces, untested rules, aggregate root signal warnings, unanswered domain questions.
 
 See [tools/semantic-checker/README.md](tools/semantic-checker/README.md) for rule reference, configuration, and custom rule API.
+
+### Schema Atlas
+
+Generates the [Blueprint Schema Atlas](docs/schema-atlas/) — a human-readable, regenerable projection of the JSON Schema (layer map, entity catalog, relationships, examples, structural changelog) with provenance on every page.
+
+```bash
+npm run atlas          # regenerate docs/schema-atlas/**
+npm run atlas:check    # drift check (CI-friendly)
+```
+
+See [tools/schema-atlas/README.md](tools/schema-atlas/README.md) for the overlay contract, fail/warn/skip policy, and governance.
 
 ## Example
 
