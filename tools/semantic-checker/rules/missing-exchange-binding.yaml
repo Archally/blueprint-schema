@@ -1,0 +1,21 @@
+engineVersion: "0.1"
+rules:
+  - id: missing-exchange-binding
+    severity: warn
+    description: >-
+      Commands and queries are invocable operations that typically cross a process or service
+      boundary, so they should declare an `exchange` (transport protocol + binding: endpoint /
+      method / topic / queue / graphql). Events are domain facts (in-process by default) and are
+      exempt. Completeness nudge, like missing-causal-links — override per-project via
+      .blueprint-lint.yaml (e.g. `missing-exchange-binding: off`).
+    # Subjects: every Operation. Narrow to commands/queries (events exempt). Healthy = has a
+    # non-empty `exchange` (object or multi-channel array); the engine emits when it is absent.
+    find:
+      entity_type: Operation
+    filter:
+      field_in:
+        data.kind: [command, query]
+    check:
+      any_non_empty:
+        - data.exchange
+    message: 'Operation "{displayId}" ({name|''unnamed''}) has no exchange binding — a command/query should declare its transport (protocol + endpoint/method/topic/queue).'
