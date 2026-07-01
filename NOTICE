@@ -1,0 +1,15 @@
+Archally Blueprint Schema
+Copyright 2026 Adam Walkowski
+
+This product includes software developed for the Archally project
+(https://archally.pro).
+
+This repository is dual-licensed. See LICENSE for the authoritative map:
+  - The schema, examples, docs, and reference validator are under the
+    Apache License, Version 2.0 (LICENSE-APACHE).
+  - The model-builder, semantic-checker, renderer, schema-update, and
+    schema-atlas tools are under the Functional Source License, Version 1.1,
+    ALv2 Future License (LICENSE-FSL).
+
+"Archally" and "Blueprint" are trademarks of Adam Walkowski / Archally.
+See TRADEMARKS.md.

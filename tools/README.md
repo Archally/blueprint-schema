@@ -28,3 +28,10 @@ npm run render:ecommerce     # regenerate its .specs/overview.md
 ```
 
 See the [project README](../README.md) for the full ecosystem overview, and [docs/](../docs/) for the schema reference and modeling guide.
+
+## Licensing
+
+These tools are **not** all under the same license (see [tools/LICENSE](./LICENSE) and the repo-root [LICENSE](../LICENSE) map):
+
+- **`validator`** and **`vscode-blueprint`** → Apache-2.0. Reference conformance and editor tooling for the open format; use freely.
+- **`model-builder`, `semantic-checker`, `renderer`, `schema-update`, `schema-atlas`** → [FSL-1.1-ALv2](../LICENSE-FSL). Free for internal use, non-commercial education/research, and professional services — **not** for a Competing Use. Each version converts to Apache-2.0 two years after release.

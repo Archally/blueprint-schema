@@ -3,7 +3,7 @@
 YAML-based schema for digital system modeling — a domain-first multi-method specification format covering domain design, business rules, value streams, governance, and organizational alignment in a single machine-readable format.
 
 [![npm version](https://img.shields.io/npm/v/@archally/blueprint-schema)](https://www.npmjs.com/package/@archally/blueprint-schema)
-[![license](https://img.shields.io/npm/l/@archally/blueprint-schema)](./LICENSE)
+[![license](https://img.shields.io/badge/license-Apache--2.0%20%2B%20FSL--1.1-blue)](./LICENSE)
 [![CI](https://github.com/archally/blueprint-schema/actions/workflows/validate.yml/badge.svg)](https://github.com/archally/blueprint-schema/actions)
 
 ## The Problem
@@ -479,7 +479,7 @@ Blueprint Schema is the open foundation of the [Archally](https://archally.pro) 
 
 **For AI-augmented teams:** Archally MCP servers expose blueprint models as structured grounding for AI agents — deterministic graph queries against a validated domain model, not retrieval over unstructured documents. Agents get typed entities, traced relationships, and governance constraints at inference time. The same model that serves human understanding serves machine reasoning.
 
-The schema itself is Apache 2.0-licensed and can be used independently of Archally tooling.
+The schema itself is Apache 2.0-licensed and can be used independently of Archally tooling. The value-add reference tooling (model-builder, semantic-checker, renderer, schema-update, schema-atlas) is source-available under the Functional Source License — free for internal, educational, and professional-services use, but not for building a competing product. See [License](#license).
 
 ### Archally Pro
 
@@ -496,8 +496,15 @@ Commercial tools that consume this schema — available at [archally.pro](https:
 
 ## Contributing
 
-Issues and discussions are welcome. For schema change proposals, please open an issue describing the use case before submitting a PR — schema changes affect all downstream consumers.
+Issues and discussions are welcome. For schema change proposals, please open an issue describing the use case before submitting a PR — schema changes affect all downstream consumers. Contributions require a DCO sign-off (`git commit -s`) and are accepted under the terms in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 
-[Apache 2.0](./LICENSE) - Copyright 2026 Adam Walkowski
+This repository is **dual-licensed** — see [LICENSE](./LICENSE) for the authoritative map. Copyright 2026 Adam Walkowski.
+
+| Part | License | You may |
+| --- | --- | --- |
+| Schema, examples, docs, reference validator, VS Code extension | [Apache 2.0](./LICENSE-APACHE) | Use freely, including in commercial and proprietary products. The format is meant to be adopted. |
+| Tooling — `model-builder`, `semantic-checker`, `renderer`, `schema-update`, `schema-atlas` | [FSL-1.1-ALv2](./LICENSE-FSL) | Use for any Permitted Purpose (internal use, non-commercial education/research, professional services). **Not** for a Competing Use. Each version converts to Apache 2.0 two years after its release. |
+
+For a commercial license covering a Competing Use, contact adam.walkowski@inperceptic.com. "Archally" and "Blueprint" are trademarks — see [TRADEMARKS.md](./TRADEMARKS.md).

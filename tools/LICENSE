@@ -1,0 +1,20 @@
+Licensing for tools/
+=====================
+
+The tools in this directory are NOT all under the same license. See the
+repository-root LICENSE for the authoritative map.
+
+Functional Source License 1.1 (ALv2 Future License) — see ../LICENSE-FSL
+  - model-builder/
+  - semantic-checker/
+  - renderer/
+  - schema-update/
+  - schema-atlas/
+
+  Free for any Permitted Purpose (internal use, non-commercial education and
+  research, and professional services you provide to others). NOT for a
+  Competing Use. Each version converts to Apache-2.0 two years after release.
+
+Apache License, Version 2.0 — see ../LICENSE-APACHE
+  - validator/            (the reference conformance validator)
+  - vscode-blueprint/     (see its own vscode-blueprint/LICENSE)
