@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractTitle, guideOutputStem, rewriteMarkdownLinksForHtml } from './core.js';
+import { extractTitle, guideOutputStem, renderGuideVisuals, rewriteMarkdownLinksForHtml } from './core.js';
 
 describe('guideOutputStem', () => {
   it('maps README.md to blueprint-authoring-atlas', () => {
@@ -26,5 +26,20 @@ describe('rewriteMarkdownLinksForHtml', () => {
   it('leaves external links untouched', () => {
     const input = '[site](https://archally.pro)';
     expect(rewriteMarkdownLinksForHtml(input)).toBe(input);
+  });
+});
+
+describe('renderGuideVisuals', () => {
+  it('renders multiple visual sections for a regular guide', () => {
+    const html = renderGuideVisuals('docs/authoring-guides/design-story.md', 'Story Authoring Guide');
+    expect(html).toContain('Guide family map');
+    expect(html).toContain('Capture → focus → transformation');
+    expect(html).toContain('Story');
+  });
+
+  it('adds the multi-file guidance visual for the umbrella guide', () => {
+    const html = renderGuideVisuals('docs/authoring-guides/README.md', 'Blueprint Authoring Atlas');
+    expect(html).toContain('One layer can span multiple files');
+    expect(html).toContain('consumer.concepts.yaml');
   });
 });

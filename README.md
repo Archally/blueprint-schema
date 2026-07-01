@@ -312,7 +312,7 @@ Start from scratch with a Minimal Viable Blueprint (MVB):
 3. Add rules, stories, and test cases for the happy path
 4. Iterate: extend with value objects, error paths, governance, quality
 
-Start small (5-20 entities), validate, then grow through phases. See the [Modeling Guide](docs/modeling-guide.md) for phase details, decision trees, and anti-patterns.
+Start small (5-20 entities), validate, then grow through phases. See the [Modeling Guide](docs/modeling-guide.md) for phase details, decision trees, and anti-patterns. If you need a **non-technical capture guide** for workshops, business users, or AI handoff, start with the [Blueprint Authoring Atlas](docs/authoring-guides/README.md) and its [umbrella PDF](docs/authoring-guides/pdf/blueprint-authoring-atlas.pdf).
 
 ### Brownfield — Existing System
 
@@ -409,6 +409,8 @@ Full entity ID patterns, traceability map, and schema evolution history: [Schema
 
 **Read the schema without the JSON** — the generated [**Blueprint Schema Atlas**](docs/schema-atlas/) projects the schema into a human-readable layer map, entity catalog, relationship map, and a structural changelog. It is regenerated from schema truth (never hand-edited), so it cannot drift from the metamodel.
 
+**Capture blueprint knowledge without reading the schema** — the [**Blueprint Authoring Atlas**](docs/authoring-guides/README.md) explains how non-technical contributors should describe entities, relations, processes, screens, risks, and other layer knowledge so a technical person or AI agent can transform it into YAML. For workshop/offline use, see the committed [PDF set](docs/authoring-guides/pdf/).
+
 ## Tools
 
 Three tools ship with the schema — validate, build models, and check semantics:
@@ -459,6 +461,17 @@ npm run atlas:check    # drift check (CI-friendly)
 ```
 
 See [tools/schema-atlas/README.md](tools/schema-atlas/README.md) for the overlay contract, fail/warn/skip policy, and governance.
+
+### Blueprint Authoring Atlas
+
+Non-technical authoring guides for capturing Blueprint knowledge in plain language before it is transformed into YAML.
+
+```bash
+npm run guides:pdf      # regenerate docs/authoring-guides/pdf/**
+npm run guides:check    # drift check for committed PDFs
+```
+
+Start with the [umbrella guide](docs/authoring-guides/README.md), the [umbrella PDF](docs/authoring-guides/pdf/blueprint-authoring-atlas.pdf), or browse the full [PDF directory](docs/authoring-guides/pdf/).
 
 ## Example
 

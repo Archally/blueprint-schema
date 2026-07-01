@@ -38,9 +38,23 @@ Good authoring input is:
 - **outcome-focused** — it explains what changes, not only what exists
 - **reviewable** — another person can read it and point out gaps or contradictions
 
-## The layers at a glance
+## The layers and root guides at a glance
 
-Use these guides depending on what you are trying to capture:
+Use these guides depending on what you are trying to capture. The family has:
+
+- **root/cross-cutting guides** — how the whole Blueprint bundle hangs together
+- **design guides** — what the system is and how it works
+- **governance guides** — why it exists, who owns it, how it changes, and how it is proven
+
+### Root and cross-cutting guides
+
+| Guide | Use it when you need to describe | Status |
+| --- | --- | --- |
+| [Blueprint Bundle](./blueprint-schema.md) | the overall system model, its scope, layout, slices, shared files, and bundle-level principles | available |
+| [Metamodel Vocabulary](./metamodel-schema.md) | cross-layer vocabulary, typed IDs, shared meanings, and reference consistency | available |
+| [Migrations](./migration-schema.md) | model change, upgrade intent, ordered changes, rollback, and impact over time | available |
+
+### Design guides
 
 | Guide | Use it when you need to describe | Status |
 | --- | --- | --- |
@@ -54,6 +68,11 @@ Use these guides depending on what you are trying to capture:
 | [Quality](./design-quality.md) | measures, KPIs, SLOs, security, compliance, resilience, and observability | available |
 | [Rules](./design-rules.md) | obligations, prohibitions, derivations, validation, and transitions | available |
 | [Story](./design-story.md) | journeys, processes, activities, steps, and outcomes | available |
+
+### Governance guides
+
+| Guide | Use it when you need to describe | Status |
+| --- | --- | --- |
 | [Capability](./governance-capability.md) | what the business can do, independent of teams or processes | available |
 | [Decisions](./governance-decisions.md) | explicit choices, rationale, status, and impact | available |
 | [Motivation](./governance-motivation.md) | goals, non-goals, risks, assumptions, trade-offs, and open questions | available |
@@ -90,6 +109,9 @@ What matters for you is this:
 
 In simple terms: it is the reason your input needs to be clear and well separated by layer.
 
+If you need to describe the **whole Blueprint bundle** in plain language, use the dedicated
+[Blueprint Bundle guide](./blueprint-schema.md).
+
 ## What `metamodel.schema` means for authors
 
 You do **not** need to read `metamodel.schema` line by line.
@@ -102,6 +124,9 @@ What matters for you is this:
 
 In simple terms: it is the reason vocabulary and relationships must stay consistent.
 
+If you need to align people on shared **cross-layer vocabulary and typed references**, use the
+dedicated [Metamodel Vocabulary guide](./metamodel-schema.md).
+
 ## What migrations mean for authors
 
 Blueprint evolves over time. Migrations exist because the language changes.
@@ -113,6 +138,9 @@ For authors, this means:
 - keeping capture clear and plain-language makes migration easier
 
 In simple terms: if the language evolves, clear source thinking survives better than tool-specific wording.
+
+If you need to describe **how the model changes over time**, use the dedicated
+[Migrations guide](./migration-schema.md).
 
 ## Cross-layer consistency checklist
 
@@ -133,12 +161,85 @@ Before handing off your notes, check:
 5. Review the transformed YAML for fidelity.
 6. Correct meaning first, formatting second.
 
+## When one layer needs multiple files
+
+Even non-technical contributors should know that one Blueprint layer does **not** always mean one
+physical file.
+
+Sometimes the same schema type is split across multiple files because the knowledge is too large,
+has natural semantic clusters, or belongs to different ownership groups.
+
+### Good reasons to split one layer into multiple files
+
+- the content grows beyond a manageable size
+- there are clear semantic clusters
+- different teams own different subsets
+- you want the file layout to reveal the domain structure more clearly
+
+Examples:
+
+- `consumer.concepts.yaml` and `organization.concepts.yaml`
+- `checkout.domain.yaml` and `fulfillment.domain.yaml`
+- `pricing.rules.yaml` and `compliance.rules.yaml`
+- `happy-path.story.yaml` and `error-handling.story.yaml`
+
+### What this means for non-technical authors
+
+You should still think in terms of **one layer of knowledge**, but you may choose to organize your
+capture into **multiple thematic documents** inside that layer.
+
+For example:
+
+- one Concepts capture for customer-facing terms and another for internal/back-office terms
+- one Story capture for the main journey and another for exception handling
+- one Rules capture for policy rules and another for compliance rules
+
+### Good practice
+
+- split by **meaningful theme**, not arbitrary numbering
+- keep the same kind of knowledge together
+- use names that explain the cluster in business language
+- avoid splitting too early if one clear document is still enough
+- keep cross-file vocabulary consistent so the transformed YAML still reads like one model
+
+### Important scoping rule
+
+The same schema type can appear:
+
+- at the **root level** for shared/system-wide concerns, and
+- inside **slices** for domain-specific concerns
+
+These are related, but they are **not the same scope**.
+
+In plain terms:
+
+- root files describe the forest
+- slice files describe the trees
+
+### Naming pattern to know
+
+When the technical model is split into multiple files of the same type, the common pattern is:
+
+- `{semantic-prefix}.{schema-type}.yaml`
+
+Examples:
+
+- `consumer.concepts.yaml`
+- `checkout.story.yaml`
+- `security.decisions.yaml`
+
+You do not need to produce final filenames yourself, but it helps to organize your source notes in
+the same spirit: by clear semantic cluster.
+
 ## PDF exports
 
 Generated PDFs for workshop/offline sharing live in [`./pdf/`](./pdf/):
 
 - [Blueprint Authoring Atlas PDF](./pdf/blueprint-authoring-atlas.pdf)
 - one PDF per layer guide, generated from the Markdown sources in this folder
+
+The PDF set also includes root/cross-cutting guides for Blueprint Bundle, Metamodel Vocabulary,
+and Migrations.
 
 ## Common mistakes
 
@@ -157,4 +258,4 @@ Use these first:
 - [Interactions authoring guide](./design-interactions.md)
 - [Concepts authoring guide](./design-concepts.md)
 
-Then continue with the rest of the layer guides listed above.
+Then continue with the rest of the design, governance, and root guides listed above.
