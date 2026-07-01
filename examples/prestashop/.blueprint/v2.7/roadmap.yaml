@@ -1,5 +1,12 @@
 ---
 version: "1.0.0"
+
+# Sprint cadence anchor (v2.7.2) — enables sprint-based placement on work_items below.
+cadence:
+  anchor_sprint: 1
+  anchor_start: "2026-01-07"     # Wed; sprint 1 start
+  sprint_length_days: 14         # two-week sprints
+
 milestones:
   - id: MS001
     name: "MVP — Cart & Checkout"
@@ -119,3 +126,55 @@ milestones:
     dependencies: [MS002, MS003]
     owned_by:
       team: TM009
+
+# ── Execution-tier work breakdown (WBS, v2.7.2) — epics/subscopes rolling up to
+#    milestones, placed by sprint, with typed traceability to decisions/value-streams.
+work_items:
+  - id: WI001
+    kind: epic
+    name: "Cart & Checkout MVP"
+    description: "End-to-end checkout epic delivering the MS001 release."
+    milestone: MS001
+    status: in-progress
+    confidence: committed
+    start_sprint: 1
+    end_sprint: 6
+    buffer_end_sprint: 7
+    progress: 60
+    owned_by:
+      team: TM001
+    realizes_decisions: [D001]
+    value_streams: [VS001]
+    children:
+      - id: WI002
+        kind: subscope
+        name: "Cart management"
+        start_sprint: 1
+        end_sprint: 3
+        confidence: committed
+        progress: 90
+      - id: WI003
+        kind: subscope
+        name: "Payment initiation"
+        start_sprint: 3.5
+        end_sprint: 6
+        confidence: estimated
+        progress: 30
+        depends_on: [WI002]
+        blockers:
+          - text: "Awaiting PSP sandbox credentials"
+
+  - id: WI010
+    kind: epic
+    name: "Search & Filters"
+    description: "Elasticsearch-backed search epic for the MS002 release."
+    milestone: MS002
+    status: planned
+    confidence: estimated
+    start_sprint: 7
+    end_sprint: 12
+    progress: 0
+    owned_by:
+      team: TM002
+    value_streams: [VS002]
+    depends_on: [WI001]

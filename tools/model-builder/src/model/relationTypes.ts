@@ -160,6 +160,26 @@ export const RELATION_TYPE = {
   OwnedByTeam: 'owned_by_team',
   // rg.schema (Step 01 / D26): arch service deployed in deployment tier (topology.tiers[].services[] → Service).
   DeployedInTier: 'deployed_in_tier',
+  // roadmap.schema (v2.7.2): work item rolls up to milestone / release (work_item.milestone)
+  WorkItemMilestone: 'work_item_milestone',
+  // roadmap.schema (v2.7.2): parent work item contains child work item (work_item.children[])
+  WorkItemChild: 'work_item_child',
+  // roadmap.schema (v2.7.2): work item depends on work item / milestone (work_item.depends_on[])
+  WorkItemDependency: 'work_item_dependency',
+  // roadmap.schema (v2.7.2): work item blocked by work item / milestone / inquiry (work_item.blockers[].blocked_by[])
+  WorkItemBlockedBy: 'work_item_blocked_by',
+  // roadmap.schema (v2.7.2): roadmap item (milestone|work_item) advances goal (advances_goals[])
+  RoadmapAdvancesGoal: 'roadmap_advances_goal',
+  // roadmap.schema (v2.7.2): roadmap item mitigates risk (mitigates_risks[])
+  RoadmapMitigatesRisk: 'roadmap_mitigates_risk',
+  // roadmap.schema (v2.7.2): roadmap item realizes decision (realizes_decisions[])
+  RoadmapRealizesDecision: 'roadmap_realizes_decision',
+  // roadmap.schema (v2.7.2): roadmap item contributes to value stream (value_streams[])
+  RoadmapValueStream: 'roadmap_value_stream',
+  // roadmap.schema (v2.7.2): roadmap item delivers user story (user_stories[])
+  RoadmapUserStory: 'roadmap_user_story',
+  // roadmap.schema (v2.7.2): roadmap item delivers use case (use_cases[])
+  RoadmapUseCase: 'roadmap_use_case',
 } as const;
 
 export type RelationType = (typeof RELATION_TYPE)[keyof typeof RELATION_TYPE];

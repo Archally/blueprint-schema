@@ -432,7 +432,7 @@ $defs:
         description: "Communication protocol. Standard protocols or x- prefixed custom."
         oneOf:
           - type: string
-            enum: [http, http-sse, tcp, tds/tcp, grpc, trpc, orpc, x-ws, amqp, amqp091, amqp1, mqtt, kafka, graphql, stdio]
+            enum: [http, http-sse, tcp, tds/tcp, grpc, trpc, orpc, json-rpc, x-ws, amqp, amqp091, amqp1, mqtt, kafka, graphql, stdio]
           - type: string
             pattern: "^x-[a-z][a-z0-9-]*$"
       endpoint:
@@ -446,7 +446,7 @@ $defs:
         description: "Message queue configuration (alternative to topic for AMQP/MQTT)."
       method:
         $ref: "#/$defs/method"
-        description: "RPC method configuration (required for tcp/grpc/trpc/orpc/x-ws)."
+        description: "RPC method configuration (required for tcp/grpc/trpc/orpc/json-rpc/x-ws)."
       graphql:
         $ref: "#/$defs/graphql_binding"
         description: "GraphQL operation binding (required for graphql protocol)."
@@ -467,7 +467,7 @@ $defs:
           required: [endpoint]
       - if:
           properties:
-            protocol: { type: string, enum: [tcp, tds/tcp, grpc, trpc, orpc, x-ws] }
+            protocol: { type: string, enum: [tcp, tds/tcp, grpc, trpc, orpc, json-rpc, x-ws] }
           required: [protocol]
         then:
           required: [method]
@@ -570,7 +570,7 @@ $defs:
 
   method:
     type: object
-    description: "RPC method configuration for gRPC/TCP protocols."
+    description: "RPC method configuration for gRPC/TCP/JSON-RPC and similar RPC protocols (method name + params + result; OpenRPC-compatible)."
     additionalProperties: false
     required:
       - name

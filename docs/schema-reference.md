@@ -71,7 +71,7 @@ Two planes + one cross-cutting metamodel:
 | `test-cases.schema.yaml` | Governance | Test cases validating rules, operations, concepts |
 | `organization.schema.yaml` | Governance | Organizational hierarchy: parties, departments, teams (v2.2) |
 | `interactions.schema.yaml` | Design | UI screens, actions, and navigation with cross-links (v2.2) |
-| `roadmap.schema.yaml` | Governance | Product milestones with deliverables and success criteria (v2.5) |
+| `roadmap.schema.yaml` | Governance | Product milestones with deliverables and success criteria (v2.5); execution-tier work items / WBS with sprint cadence and typed relations (v2.7.2) |
 
 > **Note:** In v2.6 and earlier, `infrastructure.schema.yaml` was named `rg.schema.yaml`, `interactions.schema.yaml` was `ui.schema.yaml`, and `organization.schema.yaml` was `org.schema.yaml`. The v2.7 names are used throughout this document.
 
@@ -178,6 +178,7 @@ All IDs support optional context prefix using dot notation (e.g. `billing.CN001`
 | User Story | `US\d{3,}` | `US001`, `orders.US001` |
 | Use Case | `UC\d{3,}` | `UC001`, `orders.UC001` |
 | Milestone | `MS\d{3,}` | `MS001`, `roadmap.MS001` |
+| Work Item | `WI\d{3,}` | `WI001`, `roadmap.WI001` |
 
 Rule prefixes: `SR`=structural, `CR`=classification, `DR`=derivation, `EQ`=equivalence, `VR`=validation.
 
@@ -597,7 +598,7 @@ exchange:
     description: "Kafka topic for order events"
 ```
 
-Supported: `http`, `tcp`, `tds/tcp`, `grpc`, `trpc`, `orpc`, `amqp`, `amqp091`, `amqp1`, `mqtt`, `kafka`, and `x-*` custom protocols.
+Supported: `http`, `http-sse`, `tcp`, `tds/tcp`, `grpc`, `trpc`, `orpc`, `json-rpc`, `x-ws`, `amqp`, `amqp091`, `amqp1`, `mqtt`, `kafka`, `graphql`, `stdio`, and `x-*` custom protocols. RPC protocols (`tcp`/`grpc`/`trpc`/`orpc`/`json-rpc`/`x-ws`) require the `method` binding.
 
 ### Typed Contracts (arch.schema.yaml)
 
@@ -1503,3 +1504,55 @@ Optional `design_references` object on interactions.yaml root:
 `delivery_priority` (MoSCoW) added to operations, capabilities, user stories, and use cases. `release_target` (free-form string) added to the same entities.
 
 **Important:** `delivery_priority` (MoSCoW for release planning) is distinct from `priority` on questions (urgency of knowledge gap).
+
+---
+
+## 25. v2.7.2 New Fields
+
+### Roadmap Work Items (`governance/roadmap.schema.yaml`)
+
+The roadmap gains an execution-tier **work breakdown (WBS)** below milestones — the structure a Gantt view renders as lanes and child bars. Milestones (`MS###`, dated releases) are unchanged; work items (`WI###`) are the new tier. Existing milestone-only roadmaps continue to validate (all additions are optional).
+
+**Sprint cadence (optional, roadmap root):**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `cadence.anchor_sprint` | integer | Sprint number of the anchor point |
+| `cadence.anchor_start` | date | ISO date the anchor sprint starts |
+| `cadence.sprint_length_days` | integer | Sprint length in days |
+
+When `cadence` is set, work items may be placed by sprint number; dates derive as `anchor_start + (sprint − anchor_sprint) × sprint_length_days`.
+
+**Work items (`work_items[]`, recursive via `children`):**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `WI\d{3,}` | Work-item identifier (`WI001`) |
+| `kind` | enum | epic, phase, foundation, subscope, task |
+| `name` / `description` | string | Title and detail |
+| `status` | enum | planned, in-progress, achieved, deferred, cancelled (lifecycle) |
+| `confidence` | enum | committed, estimated, tentative (planning confidence — orthogonal to `status`) |
+| `progress` | integer 0–100 | Percent complete |
+| `milestone` | `MS\d{3,}` | The release this rolls up to |
+| `start_sprint` / `end_sprint` | number | Sprint placement (fractional allowed: `30.5`) |
+| `start_date` / `end_date` | date | Explicit dates (override sprint placement) |
+| `buffer_end_sprint` / `buffer_end` | number / date | Buffer tail after the committed end |
+| `owned_by` | owned_by | Typed org owner (team / department / party) |
+| `executor` | string[] | Human owner name(s), distinct from typed `owned_by` |
+| `tracker_ref` | string | External issue-tracker key/URL (base-URL construction is a view concern) |
+| `depends_on` | (`WI` \| `MS`)[] | Predecessor work items or milestones |
+| `blockers` | (string \| {text, tracker_ref, blocked_by})[] | Active blockers |
+| `children` | work_item[] | Nested subscopes / tasks |
+
+**Typed relations (on both `milestone` and `work_item`):**
+
+| Field | Target | Meaning |
+|-------|--------|---------|
+| `advances_goals` | `G\d{3}` | Motivation goals advanced |
+| `mitigates_risks` | `R\d{3}` | Motivation risks mitigated |
+| `realizes_decisions` | `D\d{3}` | Decisions (ADR) realized |
+| `value_streams` | `VS\d{3,}` | Value streams contributed to |
+| `user_stories` | `US\d{3,}` | User stories delivered |
+| `use_cases` | `UC\d{3,}` | Use cases delivered |
+
+**Views vs structure.** Pure-rendering concerns (tracker base URL, axis bounds, marker / "today" lines, colours, hatching) are **not** modelled here — they belong to a Gantt *view-config*. The roadmap is the single source of truth; the Gantt is a derived view.

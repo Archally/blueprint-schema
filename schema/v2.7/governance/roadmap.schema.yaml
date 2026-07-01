@@ -27,6 +27,42 @@ properties:
     description: "Product milestones ordered by target date."
     items:
       $ref: "#/$defs/milestone"
+  cadence:
+    type: object
+    description: >
+      Sprint cadence anchor (v2.7.2). When present, work items may be placed by sprint
+      number and their calendar dates are derived as
+      anchor_start + (sprint - anchor_sprint) * sprint_length_days. Optional — omit for a
+      purely date-based roadmap. Pure-rendering concerns (axis bounds, marker lines,
+      tracker base URL) live in the Gantt view-config, not here.
+    additionalProperties: false
+    required:
+      - anchor_sprint
+      - anchor_start
+      - sprint_length_days
+    properties:
+      anchor_sprint:
+        type: integer
+        description: "Sprint number of the anchor point (e.g. the current sprint)."
+        examples: [30]
+      anchor_start:
+        type: string
+        format: date
+        description: "ISO date on which the anchor sprint starts."
+        examples: ["2026-07-01"]
+      sprint_length_days:
+        type: integer
+        minimum: 1
+        description: "Sprint length in days (e.g. 14 for two-week sprints)."
+        examples: [14]
+  work_items:
+    type: array
+    description: >
+      Execution-tier work breakdown (WBS, v2.7.2): epics, phases, foundations and their
+      nested subscopes/tasks. Each work item optionally rolls up to a milestone (its
+      release). This is the tier a Gantt view renders as lanes and child bars.
+    items:
+      $ref: "#/$defs/work_item"
 
 $defs:
 
@@ -88,6 +124,18 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/milestone_ref"
         description: "Milestones that must complete before this one."
+      advances_goals:
+        $ref: "#/$defs/goal_ref_list"
+      mitigates_risks:
+        $ref: "#/$defs/risk_ref_list"
+      realizes_decisions:
+        $ref: "#/$defs/decision_ref_list"
+      value_streams:
+        $ref: "#/$defs/value_stream_ref_list"
+      user_stories:
+        $ref: "#/$defs/user_story_ref_list"
+      use_cases:
+        $ref: "#/$defs/use_case_ref_list"
       owned_by:
         $ref: "../metamodel.schema.yaml#/$defs/owned_by"
         description: "Team or department responsible for this milestone."
@@ -97,3 +145,190 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  # --- Execution tier (WBS) — added v2.7.2 ---
+
+  work_item:
+    type: object
+    description: >
+      A roadmap work-breakdown node: an epic, phase, or foundation lane, or a nested
+      subscope/task. Recursive via `children`. Placed by sprint (first-class, requires
+      `cadence`) or by explicit date; rolls up to a milestone via `milestone`. Carries
+      typed traceability to goals/risks/decisions/value-streams/stories/use-cases so
+      delivery links back to strategic intent. Rendering concerns (colour, hatching, axis,
+      marker lines, tracker base URL) are NOT modelled here — they belong to a Gantt
+      view-config.
+    additionalProperties: false
+    required:
+      - id
+      - kind
+      - name
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/work_item_ref"
+        description: "Unique work-item identifier (WI + 3+ digits)."
+        examples: ["WI001", "WI010"]
+      kind:
+        type: string
+        enum: [epic, phase, foundation, subscope, task]
+        description: >
+          WBS tier. epic/phase/foundation are top-level lanes; subscope/task are nested
+          children. Encodes hierarchy level independently of `children` nesting depth.
+      name:
+        type: string
+        description: "Short work-item title (e.g. 'Survey Setup', 'Reminders')."
+      description:
+        type: string
+        description: "What this work item delivers and why."
+      status:
+        type: string
+        enum: [planned, in-progress, achieved, deferred, cancelled]
+        description: "Delivery lifecycle status (same axis as milestone.status)."
+      confidence:
+        type: string
+        enum: [committed, estimated, tentative]
+        description: >
+          Planning confidence in the placement/scope — orthogonal to `status`. committed =
+          firm dates; estimated = sized but movable; tentative = provisional/placeholder.
+      progress:
+        type: integer
+        minimum: 0
+        maximum: 100
+        description: "Percent complete (0–100). Rolls up (duration-weighted) to parents in a view."
+        examples: [0, 80]
+      milestone:
+        $ref: "../metamodel.schema.yaml#/$defs/milestone_ref"
+        description: "The milestone (release) this work item rolls up to (e.g. the MVP milestone)."
+      start_sprint:
+        type: number
+        description: "First sprint. Fractional allowed: 30.5 = halfway through sprint 30. Requires `cadence`."
+        examples: [30, 30.5]
+      end_sprint:
+        type: number
+        description: "End sprint. Integer = inclusive whole sprint; fractional (31.5) = that exact point."
+        examples: [35, 31.5]
+      start_date:
+        type: string
+        format: date
+        description: "Explicit start date. Overrides start_sprint when both are present."
+      end_date:
+        type: string
+        format: date
+        description: "Explicit end date (bar right edge). Overrides end_sprint when both are present."
+      buffer_end_sprint:
+        type: number
+        description: "Last buffer sprint (committed end → hatched buffer tail). Fractional allowed."
+      buffer_end:
+        type: string
+        format: date
+        description: "Explicit buffer right edge. Overrides buffer_end_sprint."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Owning team/department/party (typed org reference)."
+      executor:
+        type: array
+        items:
+          type: string
+        description: "Human owner(s) responsible — free-text names/teams, distinct from the typed `owned_by`."
+        examples: [["Jane Doe"], ["Backend Team"]]
+      tracker_ref:
+        type: string
+        description: >
+          External issue-tracker key or URL (e.g. a Jira key 'ABC-1234'). The base URL /
+          link construction is a view concern (Gantt view-config), not modelled here.
+      note:
+        type: string
+        description: "Free-text planning note (e.g. a scheduling caveat)."
+      advances_goals:
+        $ref: "#/$defs/goal_ref_list"
+      mitigates_risks:
+        $ref: "#/$defs/risk_ref_list"
+      realizes_decisions:
+        $ref: "#/$defs/decision_ref_list"
+      value_streams:
+        $ref: "#/$defs/value_stream_ref_list"
+      user_stories:
+        $ref: "#/$defs/user_story_ref_list"
+      use_cases:
+        $ref: "#/$defs/use_case_ref_list"
+      depends_on:
+        type: array
+        description: "Work items or milestones that must complete before this one starts."
+        items:
+          anyOf:
+            - $ref: "../metamodel.schema.yaml#/$defs/work_item_ref"
+            - $ref: "../metamodel.schema.yaml#/$defs/milestone_ref"
+      blockers:
+        type: array
+        description: "Active blockers preventing progress."
+        items:
+          $ref: "#/$defs/blocker"
+      children:
+        type: array
+        description: "Nested work items (e.g. an epic's subscopes; a subscope's tasks)."
+        items:
+          $ref: "#/$defs/work_item"
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  blocker:
+    description: >
+      A blocker on a work item. Either a plain string, or an object with a description, an
+      optional external tracker key/URL, and optional typed links to the blocking work
+      item(s), milestone(s), or open inquiry(ies).
+    oneOf:
+      - type: string
+      - type: object
+        additionalProperties: false
+        properties:
+          text:
+            type: string
+            description: "Human description of the blocker."
+          tracker_ref:
+            type: string
+            description: "External tracker key or URL for the blocking issue."
+          blocked_by:
+            type: array
+            description: "Typed references to what is blocking this item."
+            items:
+              anyOf:
+                - $ref: "../metamodel.schema.yaml#/$defs/work_item_ref"
+                - $ref: "../metamodel.schema.yaml#/$defs/milestone_ref"
+                - $ref: "../metamodel.schema.yaml#/$defs/inquiry_ref"
+
+  # --- Reusable typed-relation lists (shared by milestone + work_item) ---
+
+  goal_ref_list:
+    type: array
+    description: "Motivation goals (G###) this item advances."
+    items:
+      $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
+  risk_ref_list:
+    type: array
+    description: "Motivation risks (R###) this item mitigates."
+    items:
+      $ref: "../metamodel.schema.yaml#/$defs/risk_ref"
+  decision_ref_list:
+    type: array
+    description: "Decisions (D###) this item realizes / implements."
+    items:
+      $ref: "../metamodel.schema.yaml#/$defs/decision_ref"
+  value_stream_ref_list:
+    type: array
+    description: "Value streams (VS###) this item contributes to."
+    items:
+      $ref: "../metamodel.schema.yaml#/$defs/value_stream_ref"
+  user_story_ref_list:
+    type: array
+    description: "User stories (US###) delivered by this item."
+    items:
+      $ref: "../metamodel.schema.yaml#/$defs/user_story_ref"
+  use_case_ref_list:
+    type: array
+    description: "Use cases (UC###) delivered by this item."
+    items:
+      $ref: "../metamodel.schema.yaml#/$defs/use_case_ref"
