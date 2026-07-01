@@ -70,4 +70,43 @@ describe('extractRoadmap', () => {
     expect(extractRoadmap({ data: {}, filePath: 'roadmap.yaml' })).toEqual([]);
     expect(extractRoadmap({ data: { milestones: null }, filePath: 'roadmap.yaml' })).toEqual([]);
   });
+
+  it('extracts WorkItem entities recursively (epic → nested children, v2.7.2)', () => {
+    const doc: ParsedBlueprintDocument = {
+      data: {
+        version: '1.0.0',
+        work_items: [
+          {
+            id: 'WI001', kind: 'epic', name: 'Survey Setup', description: 'MVP epic',
+            children: [
+              { id: 'WI002', kind: 'subscope', name: 'Reminders' },
+              { id: 'WI003', kind: 'subscope', name: 'Schedule', children: [{ id: 'WI004', kind: 'task', name: 'Cron' }] },
+            ],
+          },
+        ],
+      },
+      filePath: 'orders/roadmap.yaml',
+      scope: 'orders',
+    };
+    const workItems = extractRoadmap(doc).filter((e) => e.type === ENTITY_TYPE.WorkItem);
+    expect(workItems.map((e) => e.displayId)).toEqual(['WI001', 'WI002', 'WI003', 'WI004']);
+    expect(workItems[0]!.layer).toBe('governance.roadmap');
+    expect(workItems[0]!.id).toBe('orders-roadmap.yaml-WI001');
+    expect(workItems[0]!.summary).toBe('Survey Setup');
+    expect(workItems[0]!.description).toBe('MVP epic');
+  });
+
+  it('extracts milestones and work_items together and skips work items without id', () => {
+    const doc: ParsedBlueprintDocument = {
+      data: {
+        version: '1.0.0',
+        milestones: [{ id: 'MS001', name: 'MVP', target_date: '2026-06-01' }],
+        work_items: [{ kind: 'epic', name: 'no id' }, { id: 'WI001', kind: 'epic', name: 'E1' }],
+      },
+      filePath: 'roadmap.yaml',
+    };
+    const entities = extractRoadmap(doc);
+    expect(entities.filter((e) => e.type === ENTITY_TYPE.Milestone)).toHaveLength(1);
+    expect(entities.filter((e) => e.type === ENTITY_TYPE.WorkItem)).toHaveLength(1);
+  });
 });

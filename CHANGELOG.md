@@ -40,6 +40,17 @@ entries:
         notes: >
           Documented the v2.7.2 roadmap fields + WI### ID pattern (schema-reference §25);
           added a work_items WBS demonstration to the prestashop example roadmap.
+      - kind: modify
+        target: "tools/model-builder"
+        semver: none
+        notes: >
+          Model-builder now extracts WorkItem entities (WI###, recursive from
+          work_items[] + children[]) and roadmap relations: work_item_milestone
+          (roll-up), work_item_child (hierarchy), work_item_dependency,
+          work_item_blocked_by, plus the shared typed relations (roadmap_advances_goal /
+          roadmap_mitigates_risk / roadmap_realizes_decision / roadmap_value_stream /
+          roadmap_user_story / roadmap_use_case) on both milestone and work_item.
+          Verified on examples/prestashop (4 work items, 0 dangling refs); 210 tests pass.
 
   - version: "2.7.0"
     date: "2026-05-26"

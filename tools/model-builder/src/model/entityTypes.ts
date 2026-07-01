@@ -51,6 +51,7 @@ export const ENTITY_TYPE = {
   UserStory: 'UserStory',
   UseCase: 'UseCase',
   Milestone: 'Milestone',
+  WorkItem: 'WorkItem',
   ValueStream: 'ValueStream',
   CodeFile: 'CodeFile',
   Missing: 'Missing',
