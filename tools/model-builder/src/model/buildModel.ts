@@ -98,6 +98,7 @@ export function buildBlueprintModel(documentsByType: DocumentsBySchemaType): Blu
   const { relations, addedEntities } = buildRelations(entities, documentsByType);
   const domainDescriptions = extractDomainDescriptions(documentsByType);
   const repository = extractRepositoryConfig(documentsByType.blueprint);
+  const repositories = extractRepositoriesConfig(documentsByType.blueprint);
 
   // Merge placeholder "Missing" entities into the entity list so the model
   // has one unified array (frontend renders placeholders as gray nodes).
@@ -113,6 +114,7 @@ export function buildBlueprintModel(documentsByType: DocumentsBySchemaType): Blu
       last_loaded: new Date().toISOString(),
       domain_descriptions: domainDescriptions,
       ...(repository && { repository }),
+      ...(repositories && { repositories }),
     },
   };
 }
@@ -179,6 +181,33 @@ function extractRepositoryConfig(
       branch: repo.branch != null ? String(repo.branch) : undefined,
       provider: repo.provider != null ? String(repo.provider) : undefined,
     };
+  }
+  return undefined;
+}
+
+/**
+ * Extract the multi-repository config map from blueprint root documents (v2.7.1).
+ * Keyed by the code_ref org/repo prefix. Returns undefined when absent/empty.
+ */
+function extractRepositoriesConfig(
+  blueprintDocs?: ParsedBlueprintDocument[]
+): Record<string, RepositoryConfig> | undefined {
+  if (!blueprintDocs) return undefined;
+  for (const doc of blueprintDocs) {
+    const repos = doc.data?.repositories as Record<string, unknown> | undefined;
+    if (!repos || typeof repos !== 'object') continue;
+    const out: Record<string, RepositoryConfig> = {};
+    for (const [key, value] of Object.entries(repos)) {
+      const repo = value as Record<string, unknown> | undefined;
+      const url = repo?.url as string | undefined;
+      if (!url) continue;
+      out[key] = {
+        url,
+        branch: repo!.branch != null ? String(repo!.branch) : undefined,
+        provider: repo!.provider != null ? String(repo!.provider) : undefined,
+      };
+    }
+    if (Object.keys(out).length > 0) return out;
   }
   return undefined;
 }
