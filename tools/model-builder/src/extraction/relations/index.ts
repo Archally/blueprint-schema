@@ -2,6 +2,7 @@ import type { Entity, Relation, DocumentsBySchemaType } from '../../model/types.
 import { extractConceptRelations } from './concepts.js';
 import { extractRuleRelations } from './rules.js';
 import { extractDomainRelations } from './domain.js';
+import { extractPayloadModelRelations } from './payloadModel.js';
 import { extractDecisionRelations } from './decisions.js';
 import { extractTestCaseRelations } from './testCases.js';
 import { extractArchRelations } from './arch.js';
@@ -49,6 +50,7 @@ export function buildRelations(
     ...extractConceptRelations(entities, placeholders),
     ...extractRuleRelations(entities, placeholders),
     ...extractDomainRelations(entities, placeholders),
+    ...extractPayloadModelRelations(entities, placeholders),
     ...extractDecisionRelations(entities, placeholders),
     ...extractTestCaseRelations(entities, placeholders),
     ...extractArchRelations(entities),

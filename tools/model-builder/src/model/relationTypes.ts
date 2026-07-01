@@ -156,6 +156,8 @@ export const RELATION_TYPE = {
   Materializes: 'materializes',
   // domain.schema: operation can raise a catalog error (operation.responses[].error → Error)
   RaisesError: 'raises_error',
+  // domain.schema: operation payload references a data model (operation.payload.schema → Models)
+  PayloadModel: 'payload_model',
   // rg.schema (Step 01 / D26): resource owned by org team (resource.owner.team → Team).
   OwnedByTeam: 'owned_by_team',
   // rg.schema (Step 01 / D26): arch service deployed in deployment tier (topology.tiers[].services[] → Service).
