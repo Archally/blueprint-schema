@@ -1,0 +1,23 @@
+engineVersion: "0.1"
+rules:
+  - id: contract-operation-missing-exchange
+    severity: warn
+    description: >-
+      Integrity companion to missing-exchange-binding. An operation referenced by a service
+      contract (expose / call / send / receive) is by definition invoked across a service
+      boundary, so it MUST declare a transport `exchange`. Zero false positives — it only fires
+      for contract-wired operations. Consider raising this to `error` per-project via
+      .blueprint-lint.yaml once contracts are authored.
+    # Subjects: every Operation. Healthy = the op is NOT wired to a contract, OR it has an
+    # exchange. The engine emits only when an op IS contract-wired AND has no exchange.
+    find:
+      entity_type: Operation
+    check:
+      any_of:
+        - has_relation:
+            direction: any
+            type: [contract_exposes, contract_calls, contract_sends, contract_receives]
+            exists: false
+        - any_non_empty:
+            - data.exchange
+    message: 'Operation "{displayId}" ({name|''unnamed''}) is wired to a service contract (expose/call/send/receive) but has no exchange binding — a boundary-crossing operation must declare its transport.'

@@ -37,6 +37,14 @@ export const RELATION_TYPE = {
   Provides: 'provides',
   // arch.schema: context depends on another context / external system (context.dependencies[])
   DependsOn: 'depends_on',
+  // arch.schema: service contract exposes a domain operation (contract.expose[] → Operation)
+  ContractExposes: 'contract_exposes',
+  // arch.schema: service contract calls a domain operation on a dependency (contract.call[] → Operation)
+  ContractCalls: 'contract_calls',
+  // arch.schema: service contract publishes a domain operation as a message (contract.send[] → Operation)
+  ContractSends: 'contract_sends',
+  // arch.schema: service contract consumes a domain operation as a message (contract.receive[] → Operation)
+  ContractReceives: 'contract_receives',
   // motivation.schema: goal tracked by KPI (goal.kpi)
   GoalKpi: 'goal.kpi',
   // story.schema: story orders operations (story → operation, with position)
