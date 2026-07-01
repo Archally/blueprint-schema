@@ -9,7 +9,7 @@ loadFromDirectory ─▶ buildBlueprintModel ─▶ toCheckableModel (adapter) �
    (parse YAML)          (entities+relations)        (normalize)             (loadRules → runChecker)
 ```
 
-The eight rules are declarative YAML (`rules/*.yaml`); the engine, severity handling, and JSON-Schema
+The nine rules are declarative YAML (`rules/*.yaml`); the engine, severity handling, and JSON-Schema
 rule validation come from the package. See its
 [`docs/`](https://github.com/archally/semantic-checker/tree/main/docs) for the rule DSL.
 
@@ -30,6 +30,7 @@ npx @archally/blueprint-schema blueprint-check <dir> --config .blueprint-lint.ya
 | `missing-causal-links` | warn | every command Operation has a `produces` edge to an event |
 | `missing-exchange-binding` | warn | every command/query Operation declares an `exchange` (transport binding); events exempt |
 | `contract-operation-missing-exchange` | warn | every Operation wired to a service contract (`expose`/`call`/`send`/`receive`) declares an `exchange` |
+| `exchange-missing-payload` | warn | every Operation with an `exchange` also declares a `payload.schema` (the data model on the wire) |
 | `events-with-produces` | warn | no event Operation is the source of a `produces` edge (anti-pattern) |
 | `untested-rules` | warn | every business rule has an incoming `validated-by` edge (a test validates it) |
 | `aggregate-root-signals` | info | aggregate-root Concepts have lifecycle states or relationships |
@@ -74,7 +75,7 @@ Severities: `error` (fails), `warn`, `info`, `off`.
 |------|----------------|
 | `cli.ts` | thin entry point — load model, adapt, run, format (compiled to `dist/cli.js`) |
 | `adapter.ts` | `BlueprintModel` → engine `CheckableModel` |
-| `rules/*.yaml` | the eight declarative rule packs the CLI loads |
+| `rules/*.yaml` | the nine declarative rule packs the CLI loads |
 | `adapter.test.ts` | adapter unit test (field mapping, plane derivation, relation renames) |
 
 ## Custom rules
