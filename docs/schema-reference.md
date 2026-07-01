@@ -693,7 +693,7 @@ code_refs:
     description: "Shared TypeScript interface"
 ```
 
-The viewer constructs clickable links using the blueprint's `repository` config and the hosting provider's URL pattern.
+The viewer constructs clickable links using the blueprint's `repository` config (single repo) — or the `repositories` map for cross-repo prefixes (see below) — plus the hosting provider's URL pattern.
 
 ### Repository Configuration (blueprint.schema.yaml)
 
@@ -704,6 +704,21 @@ repository:
   url: "https://github.com/acme/order-service"
   branch: "main"
   provider: "github"     # github | gitlab | bitbucket
+```
+
+For blueprints whose `code_refs` span **multiple repositories** (the `org/repo#path` form above), use the
+`repositories` map (added v2.7.1). The map **key** is the code_ref prefix (the `org/repo` segment before `#`);
+unprefixed (same-repo) refs fall back to the single `repository`:
+
+```yaml
+repositories:
+  "acme/order-service":      # resolves code_refs "acme/order-service#..."
+    url: "https://github.com/acme/order-service"
+    provider: "github"
+  "acme/shared-types":       # a different repo, different provider
+    url: "https://gitlab.com/acme/shared-types"
+    branch: "main"
+    provider: "gitlab"
 ```
 
 ### Domain Questions (`questions[]`)

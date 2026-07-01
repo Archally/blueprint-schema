@@ -21,35 +21,24 @@ properties:
     type: string
     description: "Brief system summary for human and AI agent orientation."
 
-  # === Repository (v2.4) ===
+  # === Repository (v2.4; multi-repo `repositories` added v2.7.1) ===
   repository:
-    type: object
+    $ref: "#/$defs/repository_config"
     description: >
-      Source code repository configuration. Used by the viewer to construct
-      clickable links from code_refs to the actual files in the repository.
-    additionalProperties: false
-    required:
-      - url
-    properties:
-      url:
-        type: string
-        description: "Repository URL (e.g., https://github.com/acme/ecommerce)."
-      branch:
-        type: string
-        default: main
-        description: "Default branch for constructing file URLs. Defaults to main."
-      provider:
-        description: >
-          Repository hosting provider. Determines URL construction pattern:
-          github: {url}/blob/{branch}/{path},
-          gitlab: {url}/-/blob/{branch}/{path},
-          bitbucket: {url}/src/{branch}/{path}.
-          x-custom prefixed providers fall back to GitHub pattern.
-        oneOf:
-          - type: string
-            enum: [github, gitlab, bitbucket]
-          - type: string
-            pattern: "^x-[a-z][a-z0-9-]*$"
+      Source code repository configuration for the primary repo. Used by the viewer to
+      construct clickable links from code_refs to the actual files. For blueprints whose
+      code_refs span multiple repositories use `repositories` (keyed by the code_ref org/repo
+      prefix); `repository` stays the fallback for unprefixed (same-repo) code_refs.
+  repositories:
+    type: object
+    additionalProperties:
+      $ref: "#/$defs/repository_config"
+    description: >
+      Per-repository configuration for cross-repo code_refs written in `org/repo#path` form
+      (see metamodel `code_ref_entry`). The map KEY is the code_ref prefix — the `org/repo`
+      segment before `#` — and each VALUE is a repository config. The viewer resolves a
+      prefixed code_ref by looking up its prefix here; unprefixed refs fall back to `repository`.
+      Example: { "acme/orders-service": { url: "https://gitlab.com/acme/orders-service", provider: gitlab } }.
 
   # === Layout ===
   layout:
@@ -249,6 +238,32 @@ properties:
       $ref: "#/$defs/profile"
 
 $defs:
+  repository_config:
+    type: object
+    description: "Source code repository configuration used to construct clickable links from code_refs to files."
+    additionalProperties: false
+    required:
+      - url
+    properties:
+      url:
+        type: string
+        description: "Repository URL (e.g., https://github.com/acme/ecommerce)."
+      branch:
+        type: string
+        default: main
+        description: "Default branch for constructing file URLs. Defaults to main."
+      provider:
+        description: >
+          Repository hosting provider. Determines URL construction pattern:
+          github: {url}/blob/{branch}/{path},
+          gitlab: {url}/-/blob/{branch}/{path},
+          bitbucket: {url}/src/{branch}/{path}.
+          x-custom prefixed providers fall back to GitHub pattern.
+        oneOf:
+          - type: string
+            enum: [github, gitlab, bitbucket]
+          - type: string
+            pattern: "^x-[a-z][a-z0-9-]*$"
   slice:
     type: object
     description: >
