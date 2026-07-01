@@ -42,25 +42,25 @@ Good authoring input is:
 
 Use these guides depending on what you are trying to capture:
 
-| Guide | Use it when you need to describe | Current status |
+| Guide | Use it when you need to describe | Status |
 | --- | --- | --- |
-| [Story](./design-story.md) | journeys, processes, activities, steps, and outcomes | first wave |
-| [Interactions](./design-interactions.md) | screens, actions, responses, navigation, and user-system exchanges | first wave |
-| [Concepts](./design-concepts.md) | business terms, entities, identities, relationships, and state meaning | first wave |
-| Architecture | system structure, boundaries, services, integrations | planned |
-| Domain | operations, events, queries, causal changes | planned |
-| Dynamics | ordering, timing, race conditions, parallel work | planned |
-| Infrastructure | deployment/runtime/integration infrastructure | planned |
-| Models | data shapes crossing boundaries or shown to users | planned |
-| Quality | measures, KPIs, SLOs, qualities, acceptance thresholds | planned |
-| Rules | obligations, prohibitions, transitions, constraints | planned |
-| Capability | stable business abilities | planned |
-| Decisions | explicit rationale and trade-offs | planned |
-| Motivation | goals, assumptions, risks, opportunities | planned |
-| Organization | parties, teams, roles, ownership | planned |
-| Roadmap | milestones and delivery framing | planned |
-| Test Cases | scenarios proving behavior and constraints | planned |
-| Value Stream | end-to-end value stages across capabilities | planned |
+| [Architecture](./design-arch.md) | system boundaries, parties, contexts, services, and dependencies | available |
+| [Concepts](./design-concepts.md) | business terms, entities, identities, relationships, and state meaning | available |
+| [Domain](./design-domain.md) | operations, events, queries, documents, errors, and key questions | available |
+| [Dynamics](./design-dynamics.md) | runtime ordering, timing, parallel work, and race conditions | available |
+| [Infrastructure](./design-infrastructure.md) | environments, resources, topology, and operational ownership | available |
+| [Interactions](./design-interactions.md) | screens, actions, responses, navigation, and user-system exchanges | available |
+| [Models](./design-models.md) | data shapes crossing boundaries or shown to users | available |
+| [Quality](./design-quality.md) | measures, KPIs, SLOs, security, compliance, resilience, and observability | available |
+| [Rules](./design-rules.md) | obligations, prohibitions, derivations, validation, and transitions | available |
+| [Story](./design-story.md) | journeys, processes, activities, steps, and outcomes | available |
+| [Capability](./governance-capability.md) | what the business can do, independent of teams or processes | available |
+| [Decisions](./governance-decisions.md) | explicit choices, rationale, status, and impact | available |
+| [Motivation](./governance-motivation.md) | goals, non-goals, risks, assumptions, trade-offs, and open questions | available |
+| [Organization](./governance-organization.md) | parties, departments, teams, and ownership | available |
+| [Roadmap](./governance-roadmap.md) | milestones, deliverables, dependencies, and success criteria | available |
+| [Test Cases](./governance-test-cases.md) | scenarios proving expected, edge, error, and fitness behavior | available |
+| [Value Stream](./governance-value-stream.md) | end-to-end value stages across capabilities and actors | available |
 
 ## How plain-language capture becomes YAML
 
@@ -149,3 +149,5 @@ Use these first:
 - [Story authoring guide](./design-story.md)
 - [Interactions authoring guide](./design-interactions.md)
 - [Concepts authoring guide](./design-concepts.md)
+
+Then continue with the rest of the layer guides listed above.
