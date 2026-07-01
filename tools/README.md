@@ -10,13 +10,14 @@ Reference tooling that ships with the schema. All are **version-agnostic** — p
 | [**renderer**](./renderer/) | Example blueprint projection viewer. Generates a markdown report with embedded Mermaid diagrams from a model (the `.specs/overview.md` in each example). | `blueprint-render <dir> -o overview.md` |
 | [**schema-update**](./schema-update/) | Automated schema-version migration (e.g. `v2.6 → v2.7`) with `--dry-run`, applied safely. | `blueprint-schema-update <dir> --dry-run` |
 | [**schema-atlas**](./schema-atlas/) | Generates the human-readable [Schema Atlas](../docs/schema-atlas/) — layer map, entity catalog, relationships, and a structural changelog — from schema truth, with drift detection. | `npm run atlas` · `npm run atlas:check` · bin `blueprint-atlas` |
+| [**guide-publisher**](./guide-publisher/) | Builds preview HTML and committed PDFs for the non-technical [Blueprint Authoring Atlas](../docs/authoring-guides/) guide family, with manifest-based drift checks. | `npm run guides:build` · `npm run guides:pdf` · `npm run guides:check` · bin `blueprint-guides` |
 
 ## Build
 
-The validator is plain `.mjs` (no build). The other five are TypeScript — compile them once before use:
+The validator is plain `.mjs` (no build). The other six are TypeScript — compile them once before use:
 
 ```bash
-npm run build          # builds model-builder, semantic-checker, schema-update, renderer, schema-atlas
+npm run build          # builds model-builder, semantic-checker, schema-update, renderer, schema-atlas, guide-publisher
 ```
 
 ## Quick reference

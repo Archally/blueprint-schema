@@ -13,3 +13,9 @@ jobs:
       - run: npm run validate:examples
       - run: npm run check:examples
       - run: npm test
+      # Blueprint Schema Atlas drift check — ADVISORY first (DEC-ATL-20). Reports stale
+      # generated docs without failing the build; flip `continue-on-error` to false to
+      # enforce once output stability is proven.
+      - name: Atlas drift check (advisory)
+        run: npm run atlas:check
+        continue-on-error: true

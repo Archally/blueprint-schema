@@ -133,6 +133,13 @@ Before handing off your notes, check:
 5. Review the transformed YAML for fidelity.
 6. Correct meaning first, formatting second.
 
+## PDF exports
+
+Generated PDFs for workshop/offline sharing live in [`./pdf/`](./pdf/):
+
+- [Blueprint Authoring Atlas PDF](./pdf/blueprint-authoring-atlas.pdf)
+- one PDF per layer guide, generated from the Markdown sources in this folder
+
 ## Common mistakes
 
 - mixing screens, concepts, stories, and risks into one document

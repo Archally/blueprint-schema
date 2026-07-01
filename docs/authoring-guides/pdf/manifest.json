@@ -1,0 +1,150 @@
+{
+  "generatedBy": "tools/guide-publisher",
+  "sourceDir": "docs/authoring-guides",
+  "guides": [
+    {
+      "sourceRel": "docs/authoring-guides/design-arch.md",
+      "title": "Architecture Authoring Guide",
+      "htmlRel": "design-arch.html",
+      "pdfRel": "design-arch.pdf",
+      "sourceHash": "ecf930cd536691e08339494c8a5b4218f5e7bb65e6b17cf5338cb2c447945ea7",
+      "htmlHash": "33caa550f310e7142f47d7497324c0b5dd6ffe182603bc75539081ddecf65631"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/design-concepts.md",
+      "title": "Concepts Authoring Guide",
+      "htmlRel": "design-concepts.html",
+      "pdfRel": "design-concepts.pdf",
+      "sourceHash": "51d576c5ad4be662a0166e5581a15075d8d79dec3e0bb48dac186a39a5d84a88",
+      "htmlHash": "9218f8340f7d9fdcb1f8f028ffe35f89c96956a88ef56d2ff70253f53a4a1e56"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/design-domain.md",
+      "title": "Domain Authoring Guide",
+      "htmlRel": "design-domain.html",
+      "pdfRel": "design-domain.pdf",
+      "sourceHash": "1aca5391ae39a4a3bc46661f1e9a07040134e36b93a05a228962b42104aaafa3",
+      "htmlHash": "04bc5771af53d4506a4805c7802e111a2b61987d2ae88e9b74dabf7f575d218c"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/design-dynamics.md",
+      "title": "Dynamics Authoring Guide",
+      "htmlRel": "design-dynamics.html",
+      "pdfRel": "design-dynamics.pdf",
+      "sourceHash": "60e9586f4e7a5680a4c11ead6ca4ad6e024703bdaf19ec59514e76138e60019e",
+      "htmlHash": "1363b817845d22ae5ecaad031116b8dc2774a21a11d6acf0e467416644b3bb3b"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/design-infrastructure.md",
+      "title": "Infrastructure Authoring Guide",
+      "htmlRel": "design-infrastructure.html",
+      "pdfRel": "design-infrastructure.pdf",
+      "sourceHash": "fc1fbf036cf598d2a87baf78f97fa352b3587b89d74bf00a2af591ed4108ee47",
+      "htmlHash": "7a34a62a04c5a8d2b6b68754eff3fe58d9e134c22ce0c584600fac617e365b1e"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/design-interactions.md",
+      "title": "Interactions Authoring Guide",
+      "htmlRel": "design-interactions.html",
+      "pdfRel": "design-interactions.pdf",
+      "sourceHash": "06c023ffda2194b3f06cf34f747fe376e40c36fc23d5bdafd65d469c23513bd0",
+      "htmlHash": "f6a0f1cf6d09b8b2b001edd06a6ff20fcc59f4a08fc87e6aa60778583eb6ba15"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/design-models.md",
+      "title": "Models Authoring Guide",
+      "htmlRel": "design-models.html",
+      "pdfRel": "design-models.pdf",
+      "sourceHash": "b283affc6eb15031cee42b947682dd0a836f0af83da96000c8ed75818e9098c8",
+      "htmlHash": "59cf16fc1ead51dcdac1086daa324b7886ed3133141f95cd5f26cde5c81c475e"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/design-quality.md",
+      "title": "Quality Authoring Guide",
+      "htmlRel": "design-quality.html",
+      "pdfRel": "design-quality.pdf",
+      "sourceHash": "603041d17872e28581e3d53e08741cbb1d329f5e97b1559b07e941b187afef3e",
+      "htmlHash": "750cdfe1f9d16b9f0173c22309818290ae4471ae5158fb007357461e0a146e30"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/design-rules.md",
+      "title": "Rules Authoring Guide",
+      "htmlRel": "design-rules.html",
+      "pdfRel": "design-rules.pdf",
+      "sourceHash": "7bafb16f4c6676136d305a91ac32cc207c60d46722cf8a4a8062cdfe5934dc25",
+      "htmlHash": "1aac9cf2096586052787de1d60146a7a31dacb964d46ffbbb5df168d7581e65b"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/design-story.md",
+      "title": "Story Authoring Guide",
+      "htmlRel": "design-story.html",
+      "pdfRel": "design-story.pdf",
+      "sourceHash": "cc41d7eadaee59d994b0245db882615eac4b3bdd25bad9dc77f8f3016fd7f9df",
+      "htmlHash": "50dc494247cc7da0d714cffe3e1d7ff586a6d21c8ca1c4d59229ea04c287cd6f"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/governance-capability.md",
+      "title": "Capability Authoring Guide",
+      "htmlRel": "governance-capability.html",
+      "pdfRel": "governance-capability.pdf",
+      "sourceHash": "06d5ae0a1a236197be9bc7b4270e9e4ced39c2a57591235700aa90df464a882c",
+      "htmlHash": "dfc1ed8902caab2bf365717c68c07e940d9a3d9261de06741aeeb86cb5fc64d8"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/governance-decisions.md",
+      "title": "Decisions Authoring Guide",
+      "htmlRel": "governance-decisions.html",
+      "pdfRel": "governance-decisions.pdf",
+      "sourceHash": "886ae5512a72f7f8c8bc213d86d6c4446dbc77356a321ce10ed6dc0f106cf690",
+      "htmlHash": "46a2764ae07f6ce8b46074676f5228073e54380ed147e6a48f15b8a114eac52e"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/governance-motivation.md",
+      "title": "Motivation Authoring Guide",
+      "htmlRel": "governance-motivation.html",
+      "pdfRel": "governance-motivation.pdf",
+      "sourceHash": "0338ff3a61b22a299db2022e6f72c9dfd4032a8d2c58080891e3413f4995ddd2",
+      "htmlHash": "68eff6ad9fdeecadf5681032ceec935196e547124d8a18417e044f4ec20a7000"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/governance-organization.md",
+      "title": "Organization Authoring Guide",
+      "htmlRel": "governance-organization.html",
+      "pdfRel": "governance-organization.pdf",
+      "sourceHash": "d9ea5d068f1e4ef03271138280e4d90e826cc225e5f9434e54cad2119f559621",
+      "htmlHash": "22cc63d508348d6737276ffd37c899dc2688607b50f51df479644cc083f79db9"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/governance-roadmap.md",
+      "title": "Roadmap Authoring Guide",
+      "htmlRel": "governance-roadmap.html",
+      "pdfRel": "governance-roadmap.pdf",
+      "sourceHash": "22b110a26d4ef19387eda35449aab664ed18051b47c35a7101c0caa053c39e00",
+      "htmlHash": "7368a413e7de45ce1e6c8a9172d0f5be347da0e43a1899f93680d7c6a971cfcf"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/governance-test-cases.md",
+      "title": "Test Cases Authoring Guide",
+      "htmlRel": "governance-test-cases.html",
+      "pdfRel": "governance-test-cases.pdf",
+      "sourceHash": "15c0a5719d8afe07f0de7a365b6f11160481b458b23e08aef44feb033b4e4489",
+      "htmlHash": "03f8cb340e8d2cd575daa8fbf4143052b5682499758ff06067bca49201e5cb3a"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/governance-value-stream.md",
+      "title": "Value Stream Authoring Guide",
+      "htmlRel": "governance-value-stream.html",
+      "pdfRel": "governance-value-stream.pdf",
+      "sourceHash": "ae28ebce54bdc7339b408a14af171a276d39e39c37db5bd2574e4a92c235e4fe",
+      "htmlHash": "1b7c78a288dd2f6ee56ed1ba6ca259606c105274b1ba4e3c73322fbff1df5170"
+    },
+    {
+      "sourceRel": "docs/authoring-guides/README.md",
+      "title": "Blueprint Authoring Atlas",
+      "htmlRel": "blueprint-authoring-atlas.html",
+      "pdfRel": "blueprint-authoring-atlas.pdf",
+      "sourceHash": "a027b9fc6ea88b25c0544c021556b5f9e9c62f654f199cd4b9a78bcf17553036",
+      "htmlHash": "5971d1783629e78605ae0a1ce33d0f45c7c3b73412bde01591b06e46ae8b6bfd"
+    }
+  ]
+}
