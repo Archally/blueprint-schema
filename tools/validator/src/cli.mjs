@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import chalk from "chalk";
 import { validateModel } from "./validate.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -71,49 +72,49 @@ function main() {
   try {
     result = validateModel(args);
   } catch (err) {
-    console.error(`Validation runner failed: ${err.message}`);
+    console.error(chalk.red(`Validation runner failed: ${err.message}`));
     process.exit(2);
   }
 
-  console.log(`Model:     ${result.modelPath}`);
-  console.log(`Schemas:   ${args.schemas}`);
-  console.log(`Mode:      ${args.compat ? "compat" : "strict"}`);
-  console.log(`Files:     ${result.filesValidated} validated, ${result.filesSkipped} skipped`);
+  console.log(`${chalk.cyan("Model:")}     ${result.modelPath}`);
+  console.log(`${chalk.cyan("Schemas:")}   ${args.schemas}`);
+  console.log(`${chalk.cyan("Mode:")}      ${args.compat ? chalk.yellow("compat") : "strict"}`);
+  console.log(`${chalk.cyan("Files:")}     ${chalk.green(result.filesValidated)} validated, ${result.filesSkipped} skipped`);
   console.log("");
 
   if (result.schemaErrors.length) {
-    console.log("Schema Errors:");
-    result.schemaErrors.forEach((e) => console.log(`  - ${e}`));
+    console.log(chalk.red.bold("Schema Errors:"));
+    result.schemaErrors.forEach((e) => console.log(chalk.red(`  - ${e}`)));
     console.log("");
   } else {
-    console.log("Schema Errors: none");
+    console.log(`${chalk.bold("Schema Errors:")} ${chalk.green("none")}`);
     console.log("");
   }
 
   if (result.crossErrors.length) {
-    console.log("Cross-Reference Errors:");
-    result.crossErrors.forEach((e) => console.log(`  - ${e}`));
+    console.log(chalk.red.bold("Cross-Reference Errors:"));
+    result.crossErrors.forEach((e) => console.log(chalk.red(`  - ${e}`)));
     console.log("");
   } else {
-    console.log("Cross-Reference Errors: none");
+    console.log(`${chalk.bold("Cross-Reference Errors:")} ${chalk.green("none")}`);
     console.log("");
   }
 
   if (result.warnings.length) {
-    console.log("Gap Warnings:");
-    result.warnings.forEach((w) => console.log(`  - ${w}`));
+    console.log(chalk.yellow.bold("Gap Warnings:"));
+    result.warnings.forEach((w) => console.log(chalk.yellow(`  - ${w}`)));
     console.log("");
   } else {
-    console.log("Gap Warnings: none");
+    console.log(`${chalk.bold("Gap Warnings:")} ${chalk.green("none")}`);
     console.log("");
   }
 
   const errorCount = result.schemaErrors.length + result.crossErrors.length;
   if (errorCount > 0) {
-    console.log(`FAILED with ${errorCount} error(s), ${result.warnings.length} warning(s).`);
+    console.log(chalk.red.bold(`FAILED with ${errorCount} error(s), ${result.warnings.length} warning(s).`));
     process.exit(1);
   }
-  console.log(`PASSED with ${result.warnings.length} warning(s).`);
+  console.log(chalk.green.bold(`PASSED with ${result.warnings.length} warning(s).`));
 }
 
 main();
