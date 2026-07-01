@@ -9,13 +9,14 @@ Reference tooling that ships with the schema. All are **version-agnostic** — p
 | [**semantic-checker**](./semantic-checker/) | Catches modeling issues schema validation can't — orphan entities, missing causal links, untested rules. Configurable rule engine (`.blueprint-lint.yaml`). | `blueprint-check <dir>` |
 | [**renderer**](./renderer/) | Example blueprint projection viewer. Generates a markdown report with embedded Mermaid diagrams from a model (the `.specs/overview.md` in each example). | `blueprint-render <dir> -o overview.md` |
 | [**schema-update**](./schema-update/) | Automated schema-version migration (e.g. `v2.6 → v2.7`) with `--dry-run`, applied safely. | `blueprint-schema-update <dir> --dry-run` |
+| [**schema-atlas**](./schema-atlas/) | Generates the human-readable [Schema Atlas](../docs/schema-atlas/) — layer map, entity catalog, relationships, and a structural changelog — from schema truth, with drift detection. | `npm run atlas` · `npm run atlas:check` · bin `blueprint-atlas` |
 
 ## Build
 
-The validator is plain `.mjs` (no build). The other four are TypeScript — compile them once before use:
+The validator is plain `.mjs` (no build). The other five are TypeScript — compile them once before use:
 
 ```bash
-npm run build          # builds model-builder, semantic-checker, schema-update, renderer
+npm run build          # builds model-builder, semantic-checker, schema-update, renderer, schema-atlas
 ```
 
 ## Quick reference
@@ -27,3 +28,10 @@ npm run render:ecommerce     # regenerate its .specs/overview.md
 ```
 
 See the [project README](../README.md) for the full ecosystem overview, and [docs/](../docs/) for the schema reference and modeling guide.
+
+## Licensing
+
+These tools are **not** all under the same license (see [tools/LICENSE](./LICENSE) and the repo-root [LICENSE](../LICENSE) map):
+
+- **`validator`** and **`vscode-blueprint`** → Apache-2.0. Reference conformance and editor tooling for the open format; use freely.
+- **`model-builder`, `semantic-checker`, `renderer`, `schema-update`, `schema-atlas`** → [FSL-1.1-ALv2](../LICENSE-FSL). Free for internal use, non-commercial education/research, and professional services — **not** for a Competing Use. Each version converts to Apache-2.0 two years after release.

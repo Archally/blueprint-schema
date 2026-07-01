@@ -1,0 +1,28 @@
+# Blueprint Schema Atlas — changelog overlay (NON-AUTHORITATIVE, shared across versions).
+#
+# Rename annotations are the ONLY sanctioned way to upgrade a conservative add/remove pair
+# into a `rename` classification (DEC-ATL-19). Each annotation records the prior address
+# (`renamedFrom`), the new address (`target`), and a human note; the diff engine consumes
+# them and stamps `renameBasis` so the claim stays auditable. Sourced from CHANGELOG.md 2.7.0.
+id: atlas-changelog
+description: Explicit rename annotations and rationale for the v2.6 → v2.7 diff path.
+entries:
+  - category: rename-annotation
+    target: design/infrastructure.schema.yaml
+    renamedFrom: design/rg.schema.yaml
+    note: >
+      Renamed rg.schema.yaml → infrastructure.schema.yaml for consistency with full descriptive
+      file names. Consumers must rename rg.yaml → infrastructure.yaml in their .blueprint/ dirs.
+
+  - category: rename-annotation
+    target: design/interactions.schema.yaml
+    renamedFrom: design/ui.schema.yaml
+    note: >
+      Renamed ui.schema.yaml → interactions.schema.yaml — the schema models concrete
+      user–system interaction points (screens, actions, navigation), not broad UX concerns.
+
+  - category: rename-annotation
+    target: governance/organization.schema.yaml
+    renamedFrom: governance/org.schema.yaml
+    note: >
+      Renamed org.schema.yaml → organization.schema.yaml for naming consistency.

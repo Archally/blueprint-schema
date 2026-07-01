@@ -2,6 +2,11 @@
 
 Complete reference for Archally Blueprint Schema definitions. Covers entity types, ID patterns, versioning, traceability, and modeling conventions.
 
+> **Doc role: `canonical manual overview`** (hand-authored narrative). For a *generated* per-file
+> view of every definition, property, requiredness, and enum — regenerated from schema truth — see
+> the [Blueprint Schema Atlas](schema-atlas/) (entity catalog, relationships, changelog). This
+> reference stays authoritative for ID patterns, traceability, and modeling conventions.
+
 > **Priority order:** Domain-first (B) > Ops-first (C) > Contract-first (A). Blueprint is Project Memory.
 
 ---

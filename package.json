@@ -2,7 +2,7 @@
   "name": "@archally/blueprint-schema",
   "version": "2.7.2",
   "description": "YAML-based schema for digital system modeling — domain-first multi-method specification format",
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "author": "Adam Walkowski <adam.walkowski@inperceptic.com>",
   "repository": {
     "type": "git",
@@ -27,18 +27,24 @@
     "schema/",
     "tools/",
     "LICENSE",
+    "LICENSE-APACHE",
+    "LICENSE-FSL",
+    "NOTICE",
+    "TRADEMARKS.md",
     "README.md"
   ],
   "scripts": {
     "validate": "node tools/validator/src/cli.mjs",
     "validate:examples": "node tools/validator/src/cli.mjs examples/ecommerce/.blueprint/v2.6 --schemas schema/v2.6",
-    "build": "tsc -p tools/model-builder/tsconfig.json && tsc -p tools/semantic-checker/tsconfig.json && tsc -p tools/schema-update/tsconfig.json && tsc -p tools/renderer/tsconfig.json",
+    "build": "tsc -p tools/model-builder/tsconfig.json && tsc -p tools/semantic-checker/tsconfig.json && tsc -p tools/schema-update/tsconfig.json && tsc -p tools/renderer/tsconfig.json && tsc -p tools/schema-atlas/tsconfig.json",
     "render": "node tools/renderer/dist/cli.js",
     "render:ecommerce": "node tools/renderer/dist/cli.js examples/ecommerce/.blueprint/v2.6 -o examples/ecommerce/.blueprint/v2.6/.specs/overview.md -t E-Commerce",
     "render:prestashop": "node tools/renderer/dist/cli.js examples/prestashop/.blueprint/v2.7 -o examples/prestashop/.blueprint/v2.7/.specs/overview.md -t PrestaShop-v9",
     "check": "node tools/semantic-checker/dist/cli.js",
     "check:examples": "node tools/semantic-checker/dist/cli.js examples/ecommerce/.blueprint/v2.6",
-    "test": "vitest run --config tools/model-builder/vitest.config.ts && vitest run --config tools/semantic-checker/vitest.config.ts",
+    "atlas": "node tools/schema-atlas/dist/cli.js generate",
+    "atlas:check": "node tools/schema-atlas/dist/cli.js check",
+    "test": "vitest run --config tools/model-builder/vitest.config.ts && vitest run --config tools/semantic-checker/vitest.config.ts && vitest run --config tools/schema-atlas/vitest.config.ts",
     "prepublishOnly": "npm run build"
   },
   "bin": {
@@ -46,7 +52,8 @@
     "blueprint-model": "tools/model-builder/dist/cli.js",
     "blueprint-check": "tools/semantic-checker/dist/cli.js",
     "blueprint-schema-update": "tools/schema-update/dist/cli.js",
-    "blueprint-render": "tools/renderer/dist/cli.js"
+    "blueprint-render": "tools/renderer/dist/cli.js",
+    "blueprint-atlas": "tools/schema-atlas/dist/cli.js"
   },
   "dependencies": {
     "@archally/semantic-checker": "github:archally/semantic-checker#v0.1.0",

@@ -9,6 +9,8 @@ This folder holds the versioned JSON-Schema (YAML, draft 2020-12) bundles. Each 
 
 Browse into a version for a per-plane index (**Design** / **Governance**) plus the cross-cutting **metamodel** and **migration** schemas.
 
+For a human-readable projection of these schemas — layer map, entity catalog, relationships, and a structural changelog, all generated from schema truth — see the [**Blueprint Schema Atlas**](../docs/schema-atlas/).
+
 ## Choosing a version
 
 - **New projects →** start with **[v2.7](./v2.7/)**.

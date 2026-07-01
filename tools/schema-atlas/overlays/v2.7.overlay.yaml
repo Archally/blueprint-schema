@@ -1,0 +1,41 @@
+# Blueprint Schema Atlas — curated overlay for v2.7 (NON-AUTHORITATIVE).
+#
+# Overlays add only human semantics the JSON Schema cannot safely express on its own
+# (DEC-ATL-08, DEC-ATL-17). They MUST NOT redefine validation truth — the loader
+# rejects any entry containing type/required/enum/properties/pattern/$ref/etc.
+# Allowed categories: explanatory-note, modeling-guidance, migration-note,
+# changelog-rationale, curated-example, rename-annotation.
+#
+# `target` is a version-relative address: `<file>` or `<file>#<json-pointer>`.
+id: atlas-v2.7
+description: Curated explanatory notes and examples for the v2.7 Atlas.
+entries:
+  - category: explanatory-note
+    target: metamodel.schema.yaml#/$defs/spec_path
+    note: >
+      SpecPath is the addressing scheme behind Change Impact Analysis: any element in a
+      blueprint has a `[context.]layer[.category].ID[.field]` path, so a decision or test can
+      point at exactly what it affects. It is the human-facing sibling of the source-true
+      addresses this Atlas uses internally.
+
+  - category: modeling-guidance
+    target: design/domain.schema.yaml#/$defs/question
+    note: >
+      Competency questions (QN###) are first-class and exist *before* the operations that
+      answer them. Model the questions a bounded context must answer first; an empty
+      `answered_by` is a deliberate gap signal for backlog prioritisation, not an oversight.
+
+  - category: curated-example
+    target: design/domain.schema.yaml#/$defs/operation
+    example: |
+      operations:
+        submitOrder:
+          id: CMD001
+          kind: command
+          name: Submit Order
+          description: Places a validated cart as an order.
+          governed_by:
+            - rule: CR003
+          produces:
+            operations: [EVT001]   # OrderSubmitted
+            mode: any
