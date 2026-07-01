@@ -228,6 +228,15 @@ $defs:
     pattern: "^([a-z][a-z0-9-]*\\.)?MS\\d{3,}$"
     description: "Reference to a roadmap milestone (MS + 3+ digits, optional context prefix)."
 
+  work_item_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?WI\\d{3,}$"
+    description: >
+      Reference to a roadmap work item / WBS node (WI + 3+ digits, optional context
+      prefix). Work items are the execution tier beneath milestones (epic → subscope →
+      task) defined in governance/roadmap.schema.yaml. Used for work-item dependencies
+      and blocker links.
+
   error_ref:
     description: >
       Reference to a domain error. Two formats supported:

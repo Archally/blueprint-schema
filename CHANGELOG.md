@@ -2,6 +2,45 @@
 # All schema version releases in reverse chronological order.
 ---
 entries:
+  - version: "2.7.2"
+    date: "2026-07-01"
+    summary: "Roadmap execution tier — work-item WBS (WI###) with sprint cadence and typed relations to goals/risks/decisions/value-streams/stories/use-cases"
+    changes:
+      - kind: modify
+        target: "governance/roadmap.schema.yaml"
+        semver: minor
+        notes: >
+          Added an optional execution tier below milestones: root `cadence`
+          (anchor_sprint + anchor_start + sprint_length_days → sprint→date derivation) and
+          `work_items[]`. New `work_item` $def (id WI###; kind
+          epic|phase|foundation|subscope|task; recursive via `children`) with sprint OR
+          date placement, buffer tail, `status` (lifecycle) + `confidence`
+          (committed|estimated|tentative), progress, `milestone` roll-up, owned_by +
+          executor[], tracker_ref, depends_on, blockers ($def `blocker`). Typed relation
+          arrays (advances_goals/mitigates_risks/realizes_decisions/value_streams/
+          user_stories/use_cases) on BOTH milestone and work_item. All additive/optional —
+          existing milestone-only roadmaps validate unchanged.
+      - kind: add
+        target: "metamodel.schema.yaml"
+        semver: minor
+        notes: >
+          Added `work_item_ref` ($def, pattern `^([a-z][a-z0-9-]*\.)?WI\d{3,}$`) for the
+          roadmap work-item WBS tier (work_item.depends_on, blocker.blocked_by).
+      - kind: modify
+        target: "design/domain.schema.yaml"
+        semver: minor
+        notes: >
+          Added `json-rpc` to the operation exchange `protocol` enum and to the RPC
+          binding group (requires the `method` sub-field, alongside
+          tcp/grpc/trpc/orpc/x-ws). JSON-RPC methods reuse the existing OpenRPC-compatible
+          `method` $def (name + params + result). Additive; existing exchanges unaffected.
+      - kind: modify
+        target: "docs/schema-reference.md, examples/prestashop/.blueprint/v2.7/roadmap.yaml"
+        semver: none
+        notes: >
+          Documented the v2.7.2 roadmap fields + WI### ID pattern (schema-reference §25);
+          added a work_items WBS demonstration to the prestashop example roadmap.
+
   - version: "2.7.0"
     date: "2026-05-26"
     summary: "File naming consistency — rename acronym schema files to full descriptive names"
