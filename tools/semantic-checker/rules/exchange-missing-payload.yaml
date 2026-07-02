@@ -5,10 +5,15 @@ rules:
     description: >-
       An operation that declares an `exchange` (transport binding) should also declare a `payload`
       whose `schema` names the data model carried over that transport. A transport with no payload
-      model is an incomplete contract — the wire is known, the message is not. Override per-project
-      via .blueprint-lint.yaml.
+      model is an incomplete contract — the wire is known, the message is not. EXEMPTION: queue-based
+      transports (a non-empty `exchange.queue`, e.g. `x-hangfire` job queues or `amqp`) carry an
+      OPTIONAL argument/message payload — recurring or no-argument jobs legitimately have none — so they
+      are not flagged. Override per-project via .blueprint-lint.yaml.
     # Subjects: every Operation. Healthy = the op has NO exchange, OR it declares a payload model
-    # (payload.schema is a model_ref). Emits only when an exchange is present but the model is not.
+    # (payload.schema is a model_ref), OR its exchange is queue-based (payload optional — `exchange.queue`
+    # non-empty). Emits only when a payload-expecting exchange (http / rpc / graphql / topic) is present
+    # but the model is not. Note: `exchange.queue` resolves only for a single exchange object, not a
+    # multi-channel array — a payload-less array exchange still emits (author a payload or split it).
     find:
       entity_type: Operation
     check:
@@ -18,4 +23,6 @@ rules:
               - data.exchange
         - any_non_empty:
             - data.payload.schema
+        - any_non_empty:
+            - data.exchange.queue
     message: 'Operation "{displayId}" ({name|''unnamed''}) declares an exchange but no payload model — define `payload.schema` (the data model carried over the transport).'
