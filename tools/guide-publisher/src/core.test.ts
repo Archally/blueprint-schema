@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { extractTitle, guideOutputStem, renderGuideVisuals, rewriteMarkdownLinksForHtml } from './core.js';
+import { extractTitle, guideOutputStem, renderGuideVisuals, rewriteMarkdownLinksForHtml, splitGuideBodySections } from './core.js';
 
 describe('guideOutputStem', () => {
-  it('maps README.md to blueprint-authoring-atlas', () => {
-    expect(guideOutputStem('docs/authoring-guides/README.md')).toBe('blueprint-authoring-atlas');
+  it('maps README.md to blueprint-handoff-atlas', () => {
+    expect(guideOutputStem('docs/handoff-guides/markdown/README.md')).toBe('blueprint-handoff-atlas');
   });
 
-  it('maps other guide files to their basename', () => {
-    expect(guideOutputStem('docs/authoring-guides/design-story.md')).toBe('design-story');
+  it('maps nested guide files to their relative path without the plane prefix in the basename', () => {
+    expect(guideOutputStem('docs/handoff-guides/markdown/design/story.md')).toBe('design/story');
   });
 });
 
 describe('extractTitle', () => {
   it('uses the first heading when present', () => {
-    expect(extractTitle('# Blueprint Authoring Atlas\n\nBody', 'docs/authoring-guides/README.md')).toBe('Blueprint Authoring Atlas');
+    expect(extractTitle('# Blueprint Handoff Atlas\n\nBody', 'docs/handoff-guides/markdown/README.md')).toBe('Blueprint Handoff Atlas');
   });
 });
 
@@ -31,15 +31,25 @@ describe('rewriteMarkdownLinksForHtml', () => {
 
 describe('renderGuideVisuals', () => {
   it('renders multiple visual sections for a regular guide', () => {
-    const html = renderGuideVisuals('docs/authoring-guides/design-story.md', 'Story Authoring Guide');
+    const html = renderGuideVisuals('docs/handoff-guides/markdown/design/story.md', 'Story Handoff Guide');
     expect(html).toContain('Guide family map');
     expect(html).toContain('Capture → focus → transformation');
     expect(html).toContain('Story');
   });
 
   it('adds the multi-file guidance visual for the umbrella guide', () => {
-    const html = renderGuideVisuals('docs/authoring-guides/README.md', 'Blueprint Authoring Atlas');
+    const html = renderGuideVisuals('docs/handoff-guides/markdown/README.md', 'Blueprint Handoff Atlas');
     expect(html).toContain('One layer can span multiple files');
     expect(html).toContain('consumer.concepts.yaml');
+  });
+});
+
+describe('splitGuideBodySections', () => {
+  it('extracts the knowledge area section from the body', () => {
+    const html = '<h1>Story Handoff Guide</h1><p>Intro.</p><h2>Knowledge area</h2><p>Plain language. Technical language.</p><h2>What belongs here</h2><p>Body.</p>';
+    const sections = splitGuideBodySections(html);
+    expect(sections.introHtml).toContain('<h1>Story Handoff Guide</h1>');
+    expect(sections.knowledgeAreaHtml).toContain('Plain language. Technical language.');
+    expect(sections.remainingHtml).toContain('<h2>What belongs here</h2>');
   });
 });

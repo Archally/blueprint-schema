@@ -8,4 +8,4 @@ dist/
 *.d.ts.map
 *.js.map
 tools/**/*.js
-docs/authoring-guides/.build/
+docs/handoff-guides/markdown/.build/

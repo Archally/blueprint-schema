@@ -4,8 +4,8 @@ How to build effective blueprints — from a blank directory to a comprehensive 
 
 ## Related docs
 
-- [Blueprint Authoring Atlas](authoring-guides/README.md) — non-technical, layer-by-layer capture guidance for workshops, business users, and AI handoff.
-- [Blueprint Authoring Atlas PDF](authoring-guides/pdf/blueprint-authoring-atlas.pdf) — umbrella PDF for offline review and facilitation.
+- [Blueprint Handoff Atlas](handoff-guides/markdown/README.md) — non-technical, layer-by-layer capture guidance for workshops, business users, and AI handoff.
+- [Blueprint Handoff Atlas PDF](handoff-guides/pdf/blueprint-handoff-atlas.pdf) — umbrella PDF for offline review and facilitation.
 - [Blueprint Schema Atlas](schema-atlas/README.md) — generated technical reference for the schema and metamodel.
 - [File Conventions](file-conventions.md) — scoping, naming, and file layout rules.
 

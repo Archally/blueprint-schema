@@ -12,18 +12,18 @@ interface CliOptions extends PublisherOptions {
 const HELP = [
   'Usage: blueprint-guides <build|pdf|check> [options]',
   '',
-  'Build preview HTML and committed PDFs for docs/authoring-guides.',
+  'Build preview HTML and committed PDFs for docs/handoff-guides/markdown.',
   '',
   'Modes:',
-  '  build              Write preview HTML to docs/authoring-guides/.build',
-  '  pdf                Write preview HTML and committed PDFs to docs/authoring-guides/pdf',
+  '  build              Write preview HTML to docs/handoff-guides/markdown/.build',
+  '  pdf                Write preview HTML and committed PDFs to docs/handoff-guides/pdf',
   '  check              Verify committed PDFs + manifest are current and links are valid',
   '',
   'Options:',
   '  --repo-root <dir>  Repository root (default: current working directory)',
-  '  --source <dir>     Source guide directory (default: docs/authoring-guides)',
-  '  --build <dir>      Preview HTML directory (default: docs/authoring-guides/.build)',
-  '  --pdf <dir>        PDF output directory (default: docs/authoring-guides/pdf)',
+  '  --source <dir>     Source guide directory (default: docs/handoff-guides/markdown)',
+  '  --build <dir>      Preview HTML directory (default: docs/handoff-guides/markdown/.build)',
+  '  --pdf <dir>        PDF output directory (default: docs/handoff-guides/pdf)',
   '  --browser <path>   Browser executable for PDF rendering',
   '  --help, -h         Show this help',
 ].join('\n');
@@ -32,9 +32,9 @@ function parseArgs(argv: string[]): CliOptions {
   const opts: CliOptions = {
     mode: 'build',
     repoRoot: process.cwd(),
-    sourceDir: 'docs/authoring-guides',
-    buildDir: 'docs/authoring-guides/.build',
-    pdfDir: 'docs/authoring-guides/pdf',
+    sourceDir: 'docs/handoff-guides/markdown',
+    buildDir: 'docs/handoff-guides/markdown/.build',
+    pdfDir: 'docs/handoff-guides/pdf',
   };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;
@@ -68,12 +68,12 @@ async function main(): Promise<void> {
   if (opts.mode === 'check') {
     const issues = checkPdfOutputs(opts, rendered);
     if (issues.length > 0) {
-      console.error(`✖ Authoring guide PDFs are out of date (${issues.length}):`);
+    console.error(`✖ Handoff guide PDFs are out of date (${issues.length}):`);
       for (const issue of issues) console.error(`   ${issue}`);
       console.error('\nRun `npm run guides:pdf` to regenerate the committed PDFs.');
       process.exit(1);
     }
-    console.log(`✓ Authoring guide PDFs are up to date (${rendered.guides.length} guides).`);
+    console.log(`✓ Handoff guide PDFs are up to date (${rendered.guides.length} guides).`);
     return;
   }
 

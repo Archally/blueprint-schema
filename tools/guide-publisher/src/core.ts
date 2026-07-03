@@ -55,10 +55,30 @@ interface GuideVisualSpec {
   related: string[];
 }
 
-const DEFAULT_SOURCE_DIR = 'docs/authoring-guides';
-const DEFAULT_BUILD_DIR = 'docs/authoring-guides/.build';
-const DEFAULT_PDF_DIR = 'docs/authoring-guides/pdf';
-const GENERATED_TARGET_PREFIXES = ['pdf/', './pdf/', '.build/', './.build/'];
+interface LayerPalette {
+  border: string;
+  bgTop: string;
+  bgBottom: string;
+  shadow: string;
+  title: string;
+  relatedBorder: string;
+  relatedBg: string;
+  relatedText: string;
+  currentBorder: string;
+  currentBg: string;
+  currentText: string;
+  focusBorder: string;
+  focusBg: string;
+  arrow: string;
+  linkBorder: string;
+  linkBg: string;
+  linkText: string;
+}
+
+const DEFAULT_SOURCE_DIR = 'docs/handoff-guides/markdown';
+const DEFAULT_BUILD_DIR = 'docs/handoff-guides/markdown/.build';
+const DEFAULT_PDF_DIR = 'docs/handoff-guides/pdf';
+const GENERATED_TARGET_PREFIXES = ['pdf/', './pdf/', '../pdf/', '.build/', './.build/', '../.build/'];
 const DEFAULT_BROWSER_CANDIDATES = [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
@@ -74,176 +94,201 @@ const GUIDE_GROUP_LABELS: Record<GuideGroup, string> = {
 
 const GUIDE_GROUPS: Record<GuideGroup, string[]> = {
   root: [
-    'docs/authoring-guides/README.md',
-    'docs/authoring-guides/blueprint-schema.md',
-    'docs/authoring-guides/metamodel-schema.md',
-    'docs/authoring-guides/migration-schema.md',
+    'docs/handoff-guides/markdown/README.md',
+    'docs/handoff-guides/markdown/blueprint-schema.md',
+    'docs/handoff-guides/markdown/metamodel-schema.md',
+    'docs/handoff-guides/markdown/migration-schema.md',
   ],
   design: [
-    'docs/authoring-guides/design-arch.md',
-    'docs/authoring-guides/design-concepts.md',
-    'docs/authoring-guides/design-domain.md',
-    'docs/authoring-guides/design-dynamics.md',
-    'docs/authoring-guides/design-infrastructure.md',
-    'docs/authoring-guides/design-interactions.md',
-    'docs/authoring-guides/design-models.md',
-    'docs/authoring-guides/design-quality.md',
-    'docs/authoring-guides/design-rules.md',
-    'docs/authoring-guides/design-story.md',
+    'docs/handoff-guides/markdown/design/arch.md',
+    'docs/handoff-guides/markdown/design/concepts.md',
+    'docs/handoff-guides/markdown/design/domain.md',
+    'docs/handoff-guides/markdown/design/dynamics.md',
+    'docs/handoff-guides/markdown/design/infrastructure.md',
+    'docs/handoff-guides/markdown/design/interactions.md',
+    'docs/handoff-guides/markdown/design/models.md',
+    'docs/handoff-guides/markdown/design/quality.md',
+    'docs/handoff-guides/markdown/design/rules.md',
+    'docs/handoff-guides/markdown/design/story.md',
   ],
   governance: [
-    'docs/authoring-guides/governance-capability.md',
-    'docs/authoring-guides/governance-decisions.md',
-    'docs/authoring-guides/governance-motivation.md',
-    'docs/authoring-guides/governance-organization.md',
-    'docs/authoring-guides/governance-roadmap.md',
-    'docs/authoring-guides/governance-test-cases.md',
-    'docs/authoring-guides/governance-value-stream.md',
+    'docs/handoff-guides/markdown/governance/capability.md',
+    'docs/handoff-guides/markdown/governance/decisions.md',
+    'docs/handoff-guides/markdown/governance/motivation.md',
+    'docs/handoff-guides/markdown/governance/organization.md',
+    'docs/handoff-guides/markdown/governance/roadmap.md',
+    'docs/handoff-guides/markdown/governance/test-cases.md',
+    'docs/handoff-guides/markdown/governance/value-stream.md',
   ],
 };
 
+// Tuned to resonate with the assigned VS Code Material Icon Theme file icons.
+const LAYER_PALETTES: Record<string, LayerPalette> = {
+  'blueprint-handoff-atlas': { border: '#64b5f6', bgTop: '#e3f2fd', bgBottom: '#bbdefb', shadow: 'rgba(25, 118, 210, 0.12)', title: '#1976d2', relatedBorder: '#90caf9', relatedBg: '#e3f2fd', relatedText: '#1565c0', currentBorder: '#1976d2', currentBg: '#1976d2', currentText: '#ffffff', focusBorder: '#64b5f6', focusBg: '#e3f2fd', arrow: '#1976d2', linkBorder: '#90caf9', linkBg: '#e3f2fd', linkText: '#1565c0' },
+  'blueprint-schema': { border: '#64b5f6', bgTop: '#f5faff', bgBottom: '#e3f2fd', shadow: 'rgba(25, 118, 210, 0.10)', title: '#1565c0', relatedBorder: '#90caf9', relatedBg: '#e3f2fd', relatedText: '#1565c0', currentBorder: '#1976d2', currentBg: '#1976d2', currentText: '#ffffff', focusBorder: '#64b5f6', focusBg: '#e3f2fd', arrow: '#1976d2', linkBorder: '#90caf9', linkBg: '#e3f2fd', linkText: '#1565c0' },
+  'metamodel-schema': { border: '#4fc3f7', bgTop: '#e1f5fe', bgBottom: '#b3e5fc', shadow: 'rgba(41, 182, 246, 0.12)', title: '#039be5', relatedBorder: '#81d4fa', relatedBg: '#e1f5fe', relatedText: '#0288d1', currentBorder: '#039be5', currentBg: '#039be5', currentText: '#ffffff', focusBorder: '#4fc3f7', focusBg: '#e1f5fe', arrow: '#039be5', linkBorder: '#81d4fa', linkBg: '#e1f5fe', linkText: '#0288d1' },
+  'migration-schema': { border: '#64b5f6', bgTop: '#e3f2fd', bgBottom: '#bbdefb', shadow: 'rgba(66, 165, 245, 0.12)', title: '#1e88e5', relatedBorder: '#90caf9', relatedBg: '#e3f2fd', relatedText: '#1976d2', currentBorder: '#1e88e5', currentBg: '#1e88e5', currentText: '#ffffff', focusBorder: '#64b5f6', focusBg: '#e3f2fd', arrow: '#1e88e5', linkBorder: '#90caf9', linkBg: '#e3f2fd', linkText: '#1976d2' },
+  'design-arch': { border: '#ef5350', bgTop: '#ffebee', bgBottom: '#fff8e1', shadow: 'rgba(229, 57, 53, 0.12)', title: '#d32f2f', relatedBorder: '#ef9a9a', relatedBg: '#ffebee', relatedText: '#c62828', currentBorder: '#d32f2f', currentBg: '#d32f2f', currentText: '#ffffff', focusBorder: '#f9a825', focusBg: '#fff8e1', arrow: '#e53935', linkBorder: '#ef9a9a', linkBg: '#ffebee', linkText: '#c62828' },
+  'design-concepts': { border: '#82b1ff', bgTop: '#e3f2fd', bgBottom: '#bbdefb', shadow: 'rgba(68, 138, 255, 0.12)', title: '#2979ff', relatedBorder: '#82b1ff', relatedBg: '#e3f2fd', relatedText: '#1565c0', currentBorder: '#2979ff', currentBg: '#2979ff', currentText: '#ffffff', focusBorder: '#82b1ff', focusBg: '#e3f2fd', arrow: '#2979ff', linkBorder: '#82b1ff', linkBg: '#e3f2fd', linkText: '#1565c0' },
+  'design-domain': { border: '#ce93d8', bgTop: '#f3e5f5', bgBottom: '#e1bee7', shadow: 'rgba(171, 71, 188, 0.12)', title: '#8e24aa', relatedBorder: '#ce93d8', relatedBg: '#f3e5f5', relatedText: '#7b1fa2', currentBorder: '#8e24aa', currentBg: '#8e24aa', currentText: '#ffffff', focusBorder: '#ce93d8', focusBg: '#f3e5f5', arrow: '#8e24aa', linkBorder: '#ce93d8', linkBg: '#f3e5f5', linkText: '#7b1fa2' },
+  'design-dynamics': { border: '#ffca28', bgTop: '#fff8e1', bgBottom: '#fce4ec', shadow: 'rgba(173, 20, 87, 0.12)', title: '#ad1457', relatedBorder: '#ffca28', relatedBg: '#fff8e1', relatedText: '#ad1457', currentBorder: '#ad1457', currentBg: '#ad1457', currentText: '#ffffff', focusBorder: '#ffca28', focusBg: '#fff8e1', arrow: '#ff5252', linkBorder: '#ffca28', linkBg: '#fff8e1', linkText: '#ad1457' },
+  'design-infrastructure': { border: '#4fc3f7', bgTop: '#e1f5fe', bgBottom: '#b3e5fc', shadow: 'rgba(41, 182, 246, 0.12)', title: '#039be5', relatedBorder: '#81d4fa', relatedBg: '#e1f5fe', relatedText: '#0288d1', currentBorder: '#039be5', currentBg: '#039be5', currentText: '#ffffff', focusBorder: '#4fc3f7', focusBg: '#e1f5fe', arrow: '#039be5', linkBorder: '#81d4fa', linkBg: '#e1f5fe', linkText: '#0288d1' },
+  'design-interactions': { border: '#ff8a65', bgTop: '#fbe9e7', bgBottom: '#ede7f6', shadow: 'rgba(124, 77, 255, 0.12)', title: '#7c4dff', relatedBorder: '#ff8a65', relatedBg: '#fce4ec', relatedText: '#ad1457', currentBorder: '#7c4dff', currentBg: '#7c4dff', currentText: '#ffffff', focusBorder: '#29b6f6', focusBg: '#e3f2fd', arrow: '#7c4dff', linkBorder: '#ff8a65', linkBg: '#fce4ec', linkText: '#ad1457' },
+  'design-models': { border: '#69f0ae', bgTop: '#e8f5e9', bgBottom: '#e1f5fe', shadow: 'rgba(79, 195, 247, 0.12)', title: '#039be5', relatedBorder: '#69f0ae', relatedBg: '#e8f5e9', relatedText: '#00897b', currentBorder: '#039be5', currentBg: '#039be5', currentText: '#ffffff', focusBorder: '#69f0ae', focusBg: '#e8f5e9', arrow: '#039be5', linkBorder: '#69f0ae', linkBg: '#e8f5e9', linkText: '#00897b' },
+  'design-quality': { border: '#9ccc65', bgTop: '#f1f8e9', bgBottom: '#dcedc8', shadow: 'rgba(124, 179, 66, 0.12)', title: '#689f38', relatedBorder: '#aed581', relatedBg: '#f1f8e9', relatedText: '#558b2f', currentBorder: '#689f38', currentBg: '#689f38', currentText: '#ffffff', focusBorder: '#9ccc65', focusBg: '#f1f8e9', arrow: '#689f38', linkBorder: '#aed581', linkBg: '#f1f8e9', linkText: '#558b2f' },
+  'design-rules': { border: '#ffab91', bgTop: '#fbe9e7', bgBottom: '#ffccbc', shadow: 'rgba(255, 112, 67, 0.12)', title: '#e64a19', relatedBorder: '#ffab91', relatedBg: '#fbe9e7', relatedText: '#d84315', currentBorder: '#e64a19', currentBg: '#e64a19', currentText: '#ffffff', focusBorder: '#ffab91', focusBg: '#fbe9e7', arrow: '#e64a19', linkBorder: '#ffab91', linkBg: '#fbe9e7', linkText: '#d84315' },
+  'design-story': { border: '#90caf9', bgTop: '#e3f2fd', bgBottom: '#bbdefb', shadow: 'rgba(66, 165, 245, 0.12)', title: '#1e88e5', relatedBorder: '#90caf9', relatedBg: '#e3f2fd', relatedText: '#1976d2', currentBorder: '#1e88e5', currentBg: '#1e88e5', currentText: '#ffffff', focusBorder: '#90caf9', focusBg: '#e3f2fd', arrow: '#1e88e5', linkBorder: '#90caf9', linkBg: '#e3f2fd', linkText: '#1976d2' },
+  'governance-capability': { border: '#ffd54f', bgTop: '#fffde7', bgBottom: '#fff9c4', shadow: 'rgba(255, 202, 40, 0.12)', title: '#f57f17', relatedBorder: '#ffe082', relatedBg: '#fffde7', relatedText: '#f57f17', currentBorder: '#f57f17', currentBg: '#f57f17', currentText: '#ffffff', focusBorder: '#ffd54f', focusBg: '#fffde7', arrow: '#f57f17', linkBorder: '#ffe082', linkBg: '#fffde7', linkText: '#f57f17' },
+  'governance-decisions': { border: '#81c784', bgTop: '#e8f5e9', bgBottom: '#c8e6c9', shadow: 'rgba(76, 175, 80, 0.12)', title: '#388e3c', relatedBorder: '#a5d6a7', relatedBg: '#e8f5e9', relatedText: '#2e7d32', currentBorder: '#388e3c', currentBg: '#388e3c', currentText: '#ffffff', focusBorder: '#81c784', focusBg: '#e8f5e9', arrow: '#388e3c', linkBorder: '#a5d6a7', linkBg: '#e8f5e9', linkText: '#2e7d32' },
+  'governance-motivation': { border: '#ffd54f', bgTop: '#fff8e1', bgBottom: '#ffecb3', shadow: 'rgba(255, 202, 40, 0.12)', title: '#ff8f00', relatedBorder: '#ffe082', relatedBg: '#fff8e1', relatedText: '#f57c00', currentBorder: '#ff8f00', currentBg: '#ff8f00', currentText: '#ffffff', focusBorder: '#ffd54f', focusBg: '#fff8e1', arrow: '#ff8f00', linkBorder: '#ffe082', linkBg: '#fff8e1', linkText: '#f57c00' },
+  'governance-organization': { border: '#9ccc65', bgTop: '#f1f8e9', bgBottom: '#dcedc8', shadow: 'rgba(124, 179, 66, 0.12)', title: '#689f38', relatedBorder: '#aed581', relatedBg: '#f1f8e9', relatedText: '#558b2f', currentBorder: '#689f38', currentBg: '#689f38', currentText: '#ffffff', focusBorder: '#9ccc65', focusBg: '#f1f8e9', arrow: '#689f38', linkBorder: '#aed581', linkBg: '#f1f8e9', linkText: '#558b2f' },
+  'governance-roadmap': { border: '#ef5350', bgTop: '#ffebee', bgBottom: '#fff8e1', shadow: 'rgba(229, 57, 53, 0.12)', title: '#d32f2f', relatedBorder: '#ef9a9a', relatedBg: '#ffebee', relatedText: '#c62828', currentBorder: '#d32f2f', currentBg: '#d32f2f', currentText: '#ffffff', focusBorder: '#f9a825', focusBg: '#fff8e1', arrow: '#e53935', linkBorder: '#ef9a9a', linkBg: '#ffebee', linkText: '#c62828' },
+  'governance-test-cases': { border: '#ffd54f', bgTop: '#fff8e1', bgBottom: '#ffecb3', shadow: 'rgba(255, 202, 40, 0.12)', title: '#fb8c00', relatedBorder: '#ffe082', relatedBg: '#fff8e1', relatedText: '#f57c00', currentBorder: '#fb8c00', currentBg: '#fb8c00', currentText: '#ffffff', focusBorder: '#ffd54f', focusBg: '#fff8e1', arrow: '#fb8c00', linkBorder: '#ffe082', linkBg: '#fff8e1', linkText: '#f57c00' },
+  'governance-value-stream': { border: '#ff8a80', bgTop: '#ffebee', bgBottom: '#fff8e1', shadow: 'rgba(183, 28, 28, 0.12)', title: '#b71c1c', relatedBorder: '#ef9a9a', relatedBg: '#ffebee', relatedText: '#c62828', currentBorder: '#b71c1c', currentBg: '#b71c1c', currentText: '#ffffff', focusBorder: '#fbc02d', focusBg: '#fff8e1', arrow: '#e53935', linkBorder: '#ef9a9a', linkBg: '#ffebee', linkText: '#c62828' },
+};
+
 const GUIDE_VISUALS: Record<string, GuideVisualSpec> = {
-  'docs/authoring-guides/README.md': {
-    label: 'Authoring Atlas',
+  'docs/handoff-guides/markdown/README.md': {
+    label: 'Handoff Atlas',
     group: 'root',
     captures: ['Workshop notes', 'Guide selection', 'Cross-layer consistency'],
     outputs: ['Transformation-ready text', 'Shared guide map', 'Review loop'],
     related: ['Blueprint Bundle', 'Metamodel Vocabulary', 'Migrations'],
   },
-  'docs/authoring-guides/blueprint-schema.md': {
+  'docs/handoff-guides/markdown/blueprint-schema.md': {
     label: 'Blueprint Bundle',
     group: 'root',
     captures: ['System scope', 'Slices & shared files', 'Bundle conventions'],
     outputs: ['Blueprint layout', 'Root vs slice structure', 'Whole-model clarity'],
-    related: ['Authoring Atlas', 'Metamodel Vocabulary', 'Migrations'],
+    related: ['Handoff Atlas', 'Metamodel Vocabulary', 'Migrations'],
   },
-  'docs/authoring-guides/metamodel-schema.md': {
+  'docs/handoff-guides/markdown/metamodel-schema.md': {
     label: 'Metamodel Vocabulary',
     group: 'root',
     captures: ['Shared terms', 'Typed references', 'Cross-layer consistency'],
     outputs: ['Stable naming', 'Reference clarity', 'Shared language'],
-    related: ['Authoring Atlas', 'Blueprint Bundle', 'Migrations'],
+    related: ['Handoff Atlas', 'Blueprint Bundle', 'Migrations'],
   },
-  'docs/authoring-guides/migration-schema.md': {
+  'docs/handoff-guides/markdown/migration-schema.md': {
     label: 'Migrations',
     group: 'root',
     captures: ['Change intent', 'Ordering & dependencies', 'Rollback concerns'],
     outputs: ['Model evolution plan', 'Traceable changes', 'Upgrade safety'],
-    related: ['Authoring Atlas', 'Blueprint Bundle', 'Decisions'],
+    related: ['Handoff Atlas', 'Blueprint Bundle', 'Decisions'],
   },
-  'docs/authoring-guides/design-arch.md': {
+  'docs/handoff-guides/markdown/design/arch.md': {
     label: 'Architecture',
     group: 'design',
     captures: ['Boundaries', 'Contexts & services', 'Dependencies'],
     outputs: ['Structural map', 'Ownership seams', 'System overview'],
     related: ['Infrastructure', 'Domain', 'Organization'],
   },
-  'docs/authoring-guides/design-concepts.md': {
+  'docs/handoff-guides/markdown/design/concepts.md': {
     label: 'Concepts',
     group: 'design',
     captures: ['Business entities', 'Identity & states', 'Relationships'],
     outputs: ['Shared domain meaning', 'Stable vocabulary', 'Concept links'],
     related: ['Story', 'Rules', 'Models'],
   },
-  'docs/authoring-guides/design-domain.md': {
+  'docs/handoff-guides/markdown/design/domain.md': {
     label: 'Domain',
     group: 'design',
     captures: ['Commands/events/queries', 'Effects', 'Errors & questions'],
     outputs: ['Causal understanding', 'Operation catalog', 'Traceable change'],
     related: ['Story', 'Rules', 'Dynamics'],
   },
-  'docs/authoring-guides/design-dynamics.md': {
+  'docs/handoff-guides/markdown/design/dynamics.md': {
     label: 'Dynamics',
     group: 'design',
     captures: ['Ordering', 'Parallel work', 'Timing hazards'],
     outputs: ['Runtime flow', 'Concurrency risks', 'Execution insight'],
     related: ['Domain', 'Infrastructure', 'Quality'],
   },
-  'docs/authoring-guides/design-infrastructure.md': {
+  'docs/handoff-guides/markdown/design/infrastructure.md': {
     label: 'Infrastructure',
     group: 'design',
     captures: ['Resources', 'Environments', 'Operational ownership'],
     outputs: ['Topology view', 'Runtime dependencies', 'Support boundaries'],
     related: ['Architecture', 'Dynamics', 'Organization'],
   },
-  'docs/authoring-guides/design-interactions.md': {
+  'docs/handoff-guides/markdown/design/interactions.md': {
     label: 'Interactions',
     group: 'design',
     captures: ['Screens', 'User actions', 'Responses & navigation'],
     outputs: ['UI flow clarity', 'State transitions', 'Links to stories'],
     related: ['Story', 'Concepts', 'Rules'],
   },
-  'docs/authoring-guides/design-models.md': {
+  'docs/handoff-guides/markdown/design/models.md': {
     label: 'Models',
     group: 'design',
     captures: ['Information bundles', 'Fields with meaning', 'Producers/consumers'],
     outputs: ['Shared payload shapes', 'Boundary clarity', 'Display/read-models'],
     related: ['Domain', 'Concepts', 'Interactions'],
   },
-  'docs/authoring-guides/design-quality.md': {
+  'docs/handoff-guides/markdown/design/quality.md': {
     label: 'Quality',
     group: 'design',
     captures: ['Measures', 'Targets', 'Security/compliance needs'],
     outputs: ['Good-enough thresholds', 'Monitoring focus', 'Risk visibility'],
     related: ['Motivation', 'Infrastructure', 'Test Cases'],
   },
-  'docs/authoring-guides/design-rules.md': {
+  'docs/handoff-guides/markdown/design/rules.md': {
     label: 'Rules',
     group: 'design',
     captures: ['Constraints', 'Derivations', 'Transitions'],
     outputs: ['Decision criteria', 'Allowed/forbidden behavior', 'State logic'],
     related: ['Concepts', 'Domain', 'Test Cases'],
   },
-  'docs/authoring-guides/design-story.md': {
+  'docs/handoff-guides/markdown/design/story.md': {
     label: 'Story',
     group: 'design',
     captures: ['Actors & goals', 'Activities & steps', 'Outcomes & exceptions'],
     outputs: ['Journey map', 'Process narrative', 'Layer handoff'],
     related: ['Interactions', 'Concepts', 'Domain'],
   },
-  'docs/authoring-guides/governance-capability.md': {
+  'docs/handoff-guides/markdown/governance/capability.md': {
     label: 'Capability',
     group: 'governance',
     captures: ['Business abilities', 'Hierarchy', 'Supported goals'],
     outputs: ['What the business can do', 'Stable map', 'Strategy links'],
     related: ['Value Stream', 'Motivation', 'Roadmap'],
   },
-  'docs/authoring-guides/governance-decisions.md': {
+  'docs/handoff-guides/markdown/governance/decisions.md': {
     label: 'Decisions',
     group: 'governance',
     captures: ['Choices made', 'Options considered', 'Rationale & impact'],
     outputs: ['Explicit rationale', 'Traceable consequences', 'Governed change'],
     related: ['Motivation', 'Roadmap', 'Migrations'],
   },
-  'docs/authoring-guides/governance-motivation.md': {
+  'docs/handoff-guides/markdown/governance/motivation.md': {
     label: 'Motivation',
     group: 'governance',
     captures: ['Goals & non-goals', 'Risks & assumptions', 'Trade-offs'],
     outputs: ['Strategic intent', 'Known uncertainties', 'Decision pressure'],
     related: ['Capability', 'Decisions', 'Quality'],
   },
-  'docs/authoring-guides/governance-organization.md': {
+  'docs/handoff-guides/markdown/governance/organization.md': {
     label: 'Organization',
     group: 'governance',
     captures: ['Parties', 'Departments & teams', 'Ownership'],
     outputs: ['Accountability map', 'Responsibility boundaries', 'Owner links'],
     related: ['Architecture', 'Infrastructure', 'Roadmap'],
   },
-  'docs/authoring-guides/governance-roadmap.md': {
+  'docs/handoff-guides/markdown/governance/roadmap.md': {
     label: 'Roadmap',
     group: 'governance',
     captures: ['Milestones', 'Deliverables', 'Dependencies & success'],
     outputs: ['Delivery shape', 'Priority sequence', 'Timeline expectations'],
     related: ['Capability', 'Decisions', 'Value Stream'],
   },
-  'docs/authoring-guides/governance-test-cases.md': {
+  'docs/handoff-guides/markdown/governance/test-cases.md': {
     label: 'Test Cases',
     group: 'governance',
     captures: ['Happy/edge/error cases', 'Expected results', 'Fitness checks'],
     outputs: ['Proof of behavior', 'Coverage thinking', 'Validation evidence'],
     related: ['Rules', 'Quality', 'Story'],
   },
-  'docs/authoring-guides/governance-value-stream.md': {
+  'docs/handoff-guides/markdown/governance/value-stream.md': {
     label: 'Value Stream',
     group: 'governance',
     captures: ['Trigger to outcome', 'Stages', 'Capabilities & actors'],
@@ -271,8 +316,18 @@ function publisherSourceDir(options: PublisherOptions): string {
 }
 
 export function guideOutputStem(sourceRel: string): string {
-  const base = path.basename(sourceRel, '.md');
-  return base.toLowerCase() === 'readme' ? 'blueprint-authoring-atlas' : base;
+  const normalized = posixPath(sourceRel);
+  if (normalized === 'docs/handoff-guides/markdown/README.md') return 'blueprint-handoff-atlas';
+  const relative = posixPath(path.relative('docs/handoff-guides/markdown', normalized));
+  return relative.replace(/\.md$/i, '');
+}
+
+function guideThemeKey(sourceRel: string): string {
+  return guideOutputStem(sourceRel).replace(/\//g, '-');
+}
+
+function guidePalette(sourceRel: string): LayerPalette {
+  return LAYER_PALETTES[guideThemeKey(sourceRel)] ?? LAYER_PALETTES['blueprint-handoff-atlas'];
 }
 
 export function extractTitle(sourceText: string, sourceRel: string): string {
@@ -282,6 +337,55 @@ export function extractTitle(sourceText: string, sourceRel: string): string {
 
 export function rewriteMarkdownLinksForHtml(sourceText: string): string {
   return sourceText.replace(/\]\((?!https?:|mailto:|#)([^)]+\.md)(#[^)]+)?\)/gi, (_m, file, anchor = '') => `](${file.replace(/\.md$/i, '.html')}${anchor})`);
+}
+
+function annotateGuideLinks(htmlBody: string, sourceRel: string): string {
+  const currentDir = path.posix.dirname(posixPath(sourceRel));
+  return htmlBody.replace(/<a href="([^"]+\.html(?:#[^"]+)?)">/gi, (match, hrefWithAnchor: string) => {
+    const [hrefPath] = hrefWithAnchor.split('#', 1);
+    const targetSourceRel = posixPath(path.posix.normalize(path.posix.join(currentDir, hrefPath.replace(/\.html$/i, '.md'))));
+    if (!(targetSourceRel in GUIDE_VISUALS) && targetSourceRel !== 'docs/handoff-guides/markdown/README.md') return match;
+    const themeKey = guideThemeKey(targetSourceRel);
+    return `<a class="guide-link theme-${themeKey}" href="${hrefWithAnchor}">`;
+  });
+}
+
+function renderThemeCss(): string {
+  return Object.entries(LAYER_PALETTES).map(([key, palette]) => `
+      .theme-shell.theme-${key} {
+        --theme-border: ${palette.border};
+        --theme-bg-top: ${palette.bgTop};
+        --theme-bg-bottom: ${palette.bgBottom};
+        --theme-shadow: ${palette.shadow};
+        --theme-title: ${palette.title};
+        --theme-related-border: ${palette.relatedBorder};
+        --theme-related-bg: ${palette.relatedBg};
+        --theme-related-text: ${palette.relatedText};
+        --theme-current-border: ${palette.currentBorder};
+        --theme-current-bg: ${palette.currentBg};
+        --theme-current-text: ${palette.currentText};
+        --theme-focus-border: ${palette.focusBorder};
+        --theme-focus-bg: ${palette.focusBg};
+        --theme-arrow: ${palette.arrow};
+      }
+      .guide-link.theme-${key} {
+        border-color: ${palette.linkBorder};
+        background: ${palette.linkBg};
+        color: ${palette.linkText};
+      }`).join('\n');
+}
+
+function findMarkdownFilesRecursive(dir: string): string[] {
+  return fs.readdirSync(dir, { withFileTypes: true })
+    .flatMap((entry) => {
+      const abs = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === '.build' || entry.name === 'pdf') return [];
+        return findMarkdownFilesRecursive(abs);
+      }
+      return entry.isFile() && entry.name.toLowerCase().endsWith('.md') ? [abs] : [];
+    })
+    .sort((a, b) => a.localeCompare(b));
 }
 
 function escapeHtml(text: string): string {
@@ -322,7 +426,7 @@ function renderGuideMapDiagram(sourceRel: string, spec: GuideVisualSpec): string
   return `
     <section class="diagram-card">
       <div class="diagram-title">Guide family map</div>
-      <div class="diagram-subtitle">Where this guide sits in the full Blueprint Authoring Atlas family.</div>
+      <div class="diagram-subtitle">Where this guide sits in the full Blueprint Handoff Atlas family.</div>
       <div class="family-map">${groupBlocks}</div>
     </section>`;
 }
@@ -378,12 +482,59 @@ function renderMultiFileDiagram(): string {
 export function renderGuideVisuals(sourceRel: string, title: string): string {
   const spec = guideSpec(sourceRel, title);
   const sections = [renderGuideMapDiagram(sourceRel, spec), renderCaptureFlowDiagram(spec)];
-  if (sourceRel === 'docs/authoring-guides/README.md') sections.push(renderMultiFileDiagram());
+  if (sourceRel === 'docs/handoff-guides/markdown/README.md') sections.push(renderMultiFileDiagram());
   return `<section class="visual-stack">${sections.join('')}</section>`;
 }
 
+export interface GuideBodySections {
+  introHtml: string;
+  knowledgeAreaHtml: string;
+  remainingHtml: string;
+}
+
+export function splitGuideBodySections(htmlBody: string): GuideBodySections {
+  const normalized = normalizeText(htmlBody);
+  const firstHeadingIndex = normalized.search(/<h2>/i);
+  if (firstHeadingIndex < 0) {
+    return { introHtml: normalized, knowledgeAreaHtml: '', remainingHtml: '' };
+  }
+
+  const introHtml = normalized.slice(0, firstHeadingIndex);
+  const bodyFromFirstHeading = normalized.slice(firstHeadingIndex);
+  const knowledgeMatch = bodyFromFirstHeading.match(/^\s*<h2>Knowledge area<\/h2>\s*((?:<p>[\s\S]*?<\/p>\s*)+)/i);
+
+  if (!knowledgeMatch) {
+    return {
+      introHtml,
+      knowledgeAreaHtml: '',
+      remainingHtml: bodyFromFirstHeading,
+    };
+  }
+
+  return {
+    introHtml,
+    knowledgeAreaHtml: knowledgeMatch[1] ?? '',
+    remainingHtml: bodyFromFirstHeading.slice(knowledgeMatch[0].length),
+  };
+}
+
+function renderKnowledgeAreaCallout(knowledgeAreaHtml: string, group: GuideGroup): string {
+  if (!knowledgeAreaHtml.trim()) return '';
+  return `
+    <section class="knowledge-callout group-${group}">
+      <div class="knowledge-title">Knowledge area</div>
+      <div class="knowledge-body">${knowledgeAreaHtml}</div>
+    </section>`;
+}
+
 function renderHtmlDocument(title: string, sourceRel: string, htmlBody: string): string {
+  const spec = guideSpec(sourceRel, title);
+  const themedBody = annotateGuideLinks(htmlBody, sourceRel);
+  const sections = splitGuideBodySections(themedBody);
   const visuals = renderGuideVisuals(sourceRel, title);
+  const knowledgeCallout = renderKnowledgeAreaCallout(sections.knowledgeAreaHtml, spec.group);
+  const themeKey = guideThemeKey(sourceRel);
+  const themeCss = renderThemeCss();
   return normalizeText(`<!doctype html>
 <html lang="en">
   <head>
@@ -404,34 +555,41 @@ function renderHtmlDocument(title: string, sourceRel: string, htmlBody: string):
       code { background: #f3f4f6; padding: 0.1em 0.35em; border-radius: 4px; }
       pre code { display: block; padding: 12px; overflow-x: auto; }
       a { color: #1d4ed8; }
+      .guide-link { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; text-decoration: none; font-weight: 600; }
       blockquote { border-left: 4px solid #c7d2fe; margin: 16px 0; padding: 0 16px; color: #475569; }
+      .intro-block { margin-bottom: 20px; }
+      .knowledge-callout { margin: 0 0 22px; padding: 18px 20px; border-radius: 16px; border: 1px solid var(--theme-border, #cbd5e1); background: linear-gradient(180deg, var(--theme-bg-top, #f8fafc) 0%, var(--theme-bg-bottom, #eef2ff) 100%); box-shadow: 0 12px 24px var(--theme-shadow, rgba(15, 23, 42, 0.08)); }
+      .knowledge-title { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--theme-title, #334155); font-weight: 700; margin-bottom: 8px; }
+      .knowledge-body p { margin: 0; font-size: 16px; line-height: 1.65; color: #0f172a; }
+      .knowledge-body strong:first-of-type { color: #111827; }
       .visual-stack { display: grid; gap: 18px; margin: 0 0 28px; }
       .diagram-card { border: 1px solid #dbe2f0; border-radius: 14px; background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%); padding: 18px; }
       .diagram-title { font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
       .diagram-subtitle { font-size: 13px; color: #475569; margin-bottom: 14px; }
       .family-map { display: grid; gap: 12px; }
       .diagram-group { border: 1px solid #d6deed; border-radius: 12px; background: #ffffffcc; padding: 12px; }
-      .diagram-group.active { border-color: #2563eb; box-shadow: inset 0 0 0 1px #93c5fd; }
+      .diagram-group.active { border-color: var(--theme-current-border, #2563eb); box-shadow: inset 0 0 0 1px var(--theme-border, #93c5fd); }
       .diagram-group-title { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: #475569; margin-bottom: 10px; }
       .chip-grid { display: flex; flex-wrap: wrap; gap: 8px; }
       .guide-chip { border-radius: 999px; border: 1px solid #cbd5e1; background: #f8fafc; padding: 6px 10px; font-size: 12px; color: #334155; }
-      .guide-chip.related { border-color: #93c5fd; background: #eff6ff; color: #1d4ed8; }
-      .guide-chip.current { border-color: #2563eb; background: #2563eb; color: #fff; font-weight: 600; }
+      .guide-chip.related { border-color: var(--theme-related-border, #93c5fd); background: var(--theme-related-bg, #eff6ff); color: var(--theme-related-text, #1d4ed8); }
+      .guide-chip.current { border-color: var(--theme-current-border, #2563eb); background: var(--theme-current-bg, #2563eb); color: var(--theme-current-text, #fff); font-weight: 600; }
       .flow-diagram, .split-diagram { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 10px; align-items: center; }
       .split-diagram { grid-template-columns: 1fr auto 1.2fr; }
       .flow-box, .split-box { border: 1px solid #cbd5e1; border-radius: 12px; background: #fff; padding: 14px; }
-      .focus-box, .primary-box { border-color: #2563eb; background: #eff6ff; }
+      .focus-box, .primary-box { border-color: var(--theme-focus-border, #2563eb); background: var(--theme-focus-bg, #eff6ff); }
       .flow-heading { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
       .focus-note, .split-caption { font-size: 12px; color: #475569; line-height: 1.5; }
       .flow-box ul { margin: 0; padding-left: 18px; }
       .flow-box li { margin: 0 0 4px; }
-      .flow-arrow { font-size: 24px; font-weight: 700; color: #2563eb; text-align: center; }
+      .flow-arrow { font-size: 24px; font-weight: 700; color: var(--theme-arrow, #2563eb); text-align: center; }
       .split-column { display: grid; gap: 10px; }
       .split-stack { display: grid; gap: 8px; }
+      ${themeCss}
       @media print {
         body { background: #fff; }
         main { max-width: none; margin: 0; padding: 0; }
-        .meta, .visual-stack, h1, p:first-of-type { break-inside: avoid-page; }
+        .meta, .intro-block, .knowledge-callout, .visual-stack { break-inside: avoid-page; }
         .diagram-card { break-inside: avoid; }
         h2 {
           break-before: page;
@@ -449,10 +607,12 @@ function renderHtmlDocument(title: string, sourceRel: string, htmlBody: string):
     </style>
   </head>
   <body>
-    <main>
+    <main class="theme-shell theme-${themeKey}">
       <div class="meta">Generated from <code>${sourceRel}</code> by <code>tools/guide-publisher</code>.</div>
+      <section class="intro-block">${sections.introHtml}</section>
+      ${knowledgeCallout}
       ${visuals}
-      ${htmlBody}
+      ${sections.remainingHtml}
     </main>
   </body>
 </html>
@@ -479,14 +639,11 @@ function localLinkErrors(sourceText: string, sourceAbs: string): string[] {
 export function renderGuideSet(options: PublisherOptions): RenderedGuideSet {
   const repoRoot = path.resolve(options.repoRoot);
   const sourceDir = path.resolve(repoRoot, publisherSourceDir(options));
-  const sourceFiles = fs.readdirSync(sourceDir)
-    .filter((entry) => entry.toLowerCase().endsWith('.md'))
-    .sort((a, b) => a.localeCompare(b));
+  const sourceFiles = findMarkdownFilesRecursive(sourceDir);
 
   const guides: GuideArtifact[] = [];
   const linkErrors: string[] = [];
-  for (const file of sourceFiles) {
-    const sourceAbs = path.join(sourceDir, file);
+  for (const sourceAbs of sourceFiles) {
     const sourceRel = posixPath(path.relative(repoRoot, sourceAbs));
     const sourceText = normalizeText(fs.readFileSync(sourceAbs, 'utf8'));
     linkErrors.push(...localLinkErrors(sourceText, sourceAbs));
@@ -568,8 +725,10 @@ export async function writePdfOutputs(options: PublisherOptions, rendered: Rende
       const page = await browser.newPage();
       await page.setContent(guide.html, { waitUntil: 'load' });
       await page.emulateMediaType('screen');
+      const pdfAbs = path.join(pdfDir, guide.pdfRel);
+      fs.mkdirSync(path.dirname(pdfAbs), { recursive: true });
       await page.pdf({
-        path: path.join(pdfDir, guide.pdfRel),
+        path: pdfAbs,
         format: 'A4',
         printBackground: true,
         margin: { top: '12mm', right: '12mm', bottom: '14mm', left: '12mm' },
