@@ -72,19 +72,15 @@ function findBlueprintYamlEdits(blueprintDir: string): PlannedChange[] {
       }
     }
 
-    for (const rule of FILE_RENAMES) {
-      const oldFileName = rule.from.source.replace('^(.*)', '').replace('\\.(yaml|yml)$/i', '');
-      if (content.includes(`rg.yaml`) || content.includes(`ui.yaml`) || content.includes(`org.yaml`)) {
-        // Only add once per file
-        if (!changes.some((c) => c.path === relativePath && c.type === 'edit-yaml' && c.detail.includes('path reference'))) {
-          changes.push({
-            type: 'edit-yaml',
-            path: relativePath,
-            detail: 'Update file path references (rg.yaml→infrastructure.yaml, ui.yaml→interactions.yaml, org.yaml→organization.yaml)',
-          });
-        }
-        break;
-      }
+    // NOTE: additive 2.7 fields (e.g. operation `dispatch`, roadmap work-items, the `json-rpc`
+    // protocol) require NO migration — they are optional, so pre-2.7 documents validate against 2.7
+    // unchanged. Only the acronym file/key renames are structural. Flag path references to renamed files.
+    if (content.includes('rg.yaml') || content.includes('ui.yaml') || content.includes('org.yaml')) {
+      changes.push({
+        type: 'edit-yaml',
+        path: relativePath,
+        detail: 'Update file path references (rg.yaml→infrastructure.yaml, ui.yaml→interactions.yaml, org.yaml→organization.yaml)',
+      });
     }
   }
 

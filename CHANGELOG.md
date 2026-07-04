@@ -2,6 +2,48 @@
 # All schema version releases in reverse chronological order.
 ---
 entries:
+  - version: "2.7.3"
+    date: "2026-07-04"
+    summary: "Operation `dispatch: in-process` — mark commands/queries that execute in-process with no wire transport, exempting them from the missing-exchange-binding completeness check"
+    changes:
+      - kind: modify
+        target: "design/domain.schema.yaml"
+        semver: minor
+        notes: >
+          Added an optional operation-level `dispatch` enum (`in-process`), ORTHOGONAL to
+          `exchange`. `dispatch: in-process` declares a command/query executes in-process with no
+          wire transport of its own (cross-cutting middleware, scoped-context / data-access steps,
+          pure compute, writes embedded in a parent aggregate's endpoint, or in-process
+          delegation/write-back). Mutually exclusive with `exchange`. Additive/optional — existing
+          operations validate unchanged, and pre-2.7 documents need no migration for it.
+      - kind: modify
+        target: "tools/semantic-checker/rules/missing-exchange-binding.yaml"
+        semver: none
+        notes: >
+          The completeness check now exempts operations marked `dispatch: in-process` (a structural
+          exemption marker, like the queue-payload exemption) — intentionally transport-less
+          operations are no longer flagged, while genuinely-missing bindings and unimplemented gaps
+          still surface.
+      - kind: add
+        target: "tools/semantic-checker/rules/dispatch-with-exchange.yaml"
+        semver: none
+        notes: >
+          New warn rule: an operation must not set BOTH `dispatch: in-process` AND an `exchange`
+          (mutually exclusive — invoked in-process OR over the wire, not both).
+      - kind: modify
+        target: "tools/validator/src/validate.mjs"
+        semver: none
+        notes: >
+          The gap check ("has no exchange block") now only flags commands/queries lacking BOTH an
+          `exchange` and `dispatch: in-process`; events are no longer flagged (domain facts, exempt).
+      - kind: modify
+        target: "docs/modeling-guide.md"
+        semver: none
+        notes: >
+          Added a "Transport binding and transport-less operations" section (the in-process flavor
+          taxonomy + the bind-⟺-crosses-a-real-boundary rule) and anti-pattern AP41 (Fake
+          Transport); clarified "Model This Operation or Skip?" that in-process execution is not a
+          skip criterion.
   - version: "2.7.2"
     date: "2026-07-01"
     summary: "Roadmap execution tier — work-item WBS (WI###) with sprint cadence and typed relations to goals/risks/decisions/value-streams/stories/use-cases"

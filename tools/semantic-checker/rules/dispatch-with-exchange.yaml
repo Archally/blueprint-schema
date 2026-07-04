@@ -1,0 +1,23 @@
+engineVersion: "0.1"
+rules:
+  - id: dispatch-with-exchange
+    severity: warn
+    description: >-
+      `dispatch: in-process` declares that an operation has NO wire transport of its own, so it must
+      not also carry an `exchange` (transport binding). The two are mutually exclusive — an operation
+      is invoked either in-process OR over the wire, not both. If the operation really does cross a
+      boundary, drop `dispatch`; if it is in-process, drop the `exchange`. Guards misuse of the
+      transport-less exemption marker (see missing-exchange-binding).
+    # Subjects: every Operation. Healthy = it does NOT have `dispatch`, OR it does NOT have an
+    # `exchange`. The engine emits only when BOTH are present.
+    find:
+      entity_type: Operation
+    check:
+      any_of:
+        - not:
+            any_non_empty:
+              - data.dispatch
+        - not:
+            any_non_empty:
+              - data.exchange
+    message: 'Operation "{displayId}" ({name|''unnamed''}) sets dispatch:in-process AND declares an exchange — these are mutually exclusive (an operation is invoked in-process OR over the wire, not both).'

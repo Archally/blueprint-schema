@@ -126,6 +126,19 @@ $defs:
             items:
               $ref: "#/$defs/exchange"
             minItems: 1
+      dispatch:
+        type: string
+        enum: [in-process]
+        description: >
+          Invocation model, ORTHOGONAL to `exchange` (which is the wire transport). Set `in-process` to
+          declare that this command/query EXECUTES in-process and has no wire transport of its own —
+          cross-cutting middleware, a request-scoped context or data-access step, pure compute, a write
+          embedded in a parent aggregate's endpoint, or an in-process delegation/write-back from a
+          consuming context. Absent (the default) means the operation is invoked over the wire via
+          `exchange`. `in-process` and `exchange` are mutually exclusive (see the dispatch-with-exchange
+          check). It exempts the operation from the `missing-exchange-binding` completeness check — so use
+          it only for operations that genuinely execute with no transport, NOT for unimplemented/phantom
+          gaps (those should keep surfacing). Events are already exempt and should not set `dispatch`.
       payload:
         $ref: "#/$defs/payload"
         description: "Message payload schema and content type."

@@ -104,7 +104,10 @@ function checkGaps(yamlFiles, modelDir, warnings) {
     if (!data?.operations) continue;
     const relFile = toPosixPath(path.relative(modelDir, filePath));
     for (const [key, op] of Object.entries(data.operations)) {
-      if (!op.exchange) {
+      // Only invocable operations (commands/queries) need a wire transport. Events are domain facts
+      // (exempt, cf. AP21), and an op marked `dispatch: in-process` is intentionally transport-less.
+      const needsExchange = op.kind === "command" || op.kind === "query";
+      if (needsExchange && !op.exchange && op.dispatch !== "in-process") {
         warnings.push(`[${relFile}] Operation "${key}" (${op.id ?? "no-id"}) has no exchange block`);
       }
     }

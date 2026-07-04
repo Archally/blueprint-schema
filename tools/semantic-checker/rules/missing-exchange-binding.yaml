@@ -6,16 +6,24 @@ rules:
       Commands and queries are invocable operations that typically cross a process or service
       boundary, so they should declare an `exchange` (transport protocol + binding: endpoint /
       method / topic / queue / graphql). Events are domain facts (in-process by default) and are
-      exempt. Completeness nudge, like missing-causal-links — override per-project via
+      exempt. EXEMPTION: an operation with `dispatch: in-process` declares it executes in-process
+      with no wire transport of its own (middleware / scoped-context / data-access / pure compute /
+      embedded-in-parent / in-process write-back) — it is intentionally transport-less and is not
+      flagged. Completeness nudge, like missing-causal-links — override per-project via
       .blueprint-lint.yaml (e.g. `missing-exchange-binding: off`).
     # Subjects: every Operation. Narrow to commands/queries (events exempt). Healthy = has a
-    # non-empty `exchange` (object or multi-channel array); the engine emits when it is absent.
+    # non-empty `exchange` (object or multi-channel array) OR is marked `dispatch: in-process`
+    # (a structural exemption marker, like the queue-payload exemption); the engine emits when
+    # neither is present.
     find:
       entity_type: Operation
     filter:
       field_in:
         data.kind: [command, query]
     check:
-      any_non_empty:
-        - data.exchange
+      any_of:
+        - any_non_empty:
+            - data.exchange
+        - any_non_empty:
+            - data.dispatch
     message: 'Operation "{displayId}" ({name|''unnamed''}) has no exchange binding — a command/query should declare its transport (protocol + endpoint/method/topic/queue).'
