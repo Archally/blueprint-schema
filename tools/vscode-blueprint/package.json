@@ -56,7 +56,26 @@
         "archallyBlueprint.codeRef.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Turn code_ref paths in .blueprint YAML into clickable links that open the file on the configured git host (from `repository`/`repositories` in blueprint.yaml). Local-clone resolution is added in a later release."
+          "description": "Turn code_ref paths in .blueprint YAML into clickable links → the local clone (see codeRef.localRoots) when resolvable, otherwise the file on the configured git host (from `repository`/`repositories` in blueprint.yaml)."
+        },
+        "archallyBlueprint.codeRef.localRoots": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          },
+          "markdownDescription": "Map a code repository to a **local clone** so `code_ref` paths open the file on disk instead of the git host. Key = the repo `url` from the owning `blueprint.yaml` (e.g. `https://github.com/acme/shop`) or its `org/repo` prefix (e.g. `acme/shop`); value = an **absolute** local folder (a relative path resolves against the workspace folder). Example: `{ \"https://github.com/PrestaShop/PrestaShop\": \"C:/code/PrestaShop\" }`."
+        },
+        "archallyBlueprint.codeRef.openBehavior": {
+          "type": "string",
+          "enum": ["localThenBrowser", "browser", "local"],
+          "enumDescriptions": [
+            "Open the local clone when the file exists (via codeRef.localRoots); otherwise open the git host in the browser.",
+            "Always open the git host in the browser (ignore local clones).",
+            "Only open the local clone; do not fall back to the browser."
+          ],
+          "default": "localThenBrowser",
+          "description": "What a code_ref link opens: the local clone first with a browser fallback, browser only, or local only."
         },
         "archallyBlueprint.codeRef.highlight.enabled": {
           "type": "boolean",
@@ -113,7 +132,7 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "test": "npm run compile && node --test ./out/codeRef.test.js",
+    "test": "npm run compile && node --test ./out/codeRef.test.js ./out/codeRef.local.test.js",
     "vscode:prepublish": "npm run compile"
   },
   "devDependencies": {

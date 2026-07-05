@@ -17,12 +17,13 @@ that gap.
   that are actually *declared* somewhere get coloured — **canary yellow** by default (`archallyBlueprint.idForeground`) —
   so a mistyped or unknown reference stays un-coloured, an easy correctness signal. Configurable color +
   weight/style/underline. Note: the editor font *family* can't be changed per token — only color/weight/style/underline.
-- **Open `code_refs`** (`Ctrl`+click) on a `code_refs[].path` → opens that source file on its git host
-  (GitHub / GitLab / Bitbucket), built from the `repository` / `repositories` block in the owning
-  `blueprint.yaml`. Handles same-repo paths and cross-repo `org/repo#path` refs. `code_ref` paths are
-  shown in a **distinct link colour** (link-blue by default, `archallyBlueprint.codeRefForeground`) so they
-  read as clickable and don't blend with the canary-yellow IDs. (Opening a *local clone* instead of the
-  browser is coming in a later release.)
+- **Open `code_refs`** (`Ctrl`+click) on a `code_refs[].path` → opens that source file — the **local clone**
+  when you've mapped its repo in `archallyBlueprint.codeRef.localRoots` and the file exists on disk, otherwise
+  the file on its **git host** (GitHub / GitLab / Bitbucket), built from the `repository` / `repositories`
+  block in the owning `blueprint.yaml`. Handles same-repo paths and cross-repo `org/repo#path` refs; set the
+  preference with `archallyBlueprint.codeRef.openBehavior` (`localThenBrowser` default / `browser` / `local`).
+  `code_ref` paths are shown in a **distinct link colour** (link-blue by default,
+  `archallyBlueprint.codeRefForeground`) so they read as clickable and don't blend with the canary-yellow IDs.
 - **Open evidence & URL references** (`Ctrl`+click) → any `http(s)://` URL anywhere in a `.blueprint` YAML
   (evidence `source`, issue trackers, doc links) opens in the browser; an `evidence[].source` that is a
   repo-relative path opens the local workspace file. Shares the code_ref link colour.
@@ -60,9 +61,27 @@ code --install-extension archally-blueprint-navigation-0.1.0.vsix
 | `archallyBlueprint.codeRef.highlight.enabled` | `true` | Color `code_ref` paths (distinct from IDs) to mark them as clickable links. |
 | `archallyBlueprint.codeRef.highlight.color` | `""` | Override the `code_ref` color. Empty = themed `archallyBlueprint.codeRefForeground` (link blue). |
 | `archallyBlueprint.codeRef.highlight.fontStyle` | `underline` | `normal` / `bold` / `italic` / `underline` / `bold-underline`. |
+| `archallyBlueprint.codeRef.localRoots` | `{}` | Map a repo (`url` or `org/repo` prefix) → a local clone folder so `code_ref`s open on disk. Absolute paths recommended. |
+| `archallyBlueprint.codeRef.openBehavior` | `localThenBrowser` | `code_ref` open preference: `localThenBrowser` (local if present, else git host) / `browser` / `local` (no fallback). |
 | `archallyBlueprint.referenceLinks.enabled` | `true` | Linkify `http(s)` URLs anywhere + `evidence[].source` file-paths (open browser / local file). |
 
 To recolor without the override setting, theme it: `"workbench.colorCustomizations": { "archallyBlueprint.idForeground": "#c586c0" }`.
+
+### Opening local clones
+
+By default a `code_ref` opens on the git host. To open your **local checkout** instead, map the repo to its
+folder — key = the `url` from the owning `blueprint.yaml` (or the `org/repo` prefix), value = an absolute folder:
+
+```jsonc
+"archallyBlueprint.codeRef.localRoots": {
+  "https://github.com/PrestaShop/PrestaShop": "C:/code/PrestaShop"
+}
+```
+
+A `code_ref` whose file exists under that folder now opens in the editor (even if the code repo isn't part of
+this workspace); anything unmapped or missing falls back to the git host. `archallyBlueprint.codeRef.openBehavior`
+overrides the preference — `browser` = always the host, `local` = never fall back. A relative `localRoots` folder
+resolves against the workspace folder, but absolute paths are recommended.
 
 ## How it works
 

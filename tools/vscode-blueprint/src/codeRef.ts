@@ -70,6 +70,58 @@ export function resolveBrowserUrl(rawPath: string, set: RepoConfigSet): string |
   return buildCodeRefUrl(config, filepath);
 }
 
+// ── local-clone resolution (step-02; D2 local-then-browser, D5 url-keyed + prefix alias) ──────────
+
+export type CodeRefOpenBehavior = 'localThenBrowser' | 'browser' | 'local';
+
+/**
+ * Resolve a code_ref to a candidate ABSOLUTE local file path (a string — existence is NOT checked here; that
+ * is I/O the caller does). The `localRoots` map is keyed by the resolved repo `url` (primary identity, D5) with
+ * the `org/repo` prefix accepted as an alias; a trailing slash on the url key is tolerated. `localRoots` values
+ * must already be absolute folders (the extension resolves any relative folder against the workspace first).
+ * Returns `<root>/<filepath>` (forward-slash normalized), or `undefined` if no mapping applies.
+ */
+export function resolveLocalPath(
+  rawPath: string,
+  set: RepoConfigSet,
+  localRoots: Record<string, string>,
+): string | undefined {
+  const { prefix, filepath } = parseCodeRefPath(rawPath);
+  if (!filepath) return undefined;
+  const url = selectRepoConfig(prefix, set)?.url;
+  const root =
+    (url && (localRoots[url] ?? localRoots[url.replace(/\/+$/, '')])) ||
+    (prefix ? localRoots[prefix] : undefined);
+  if (!root || !root.trim()) return undefined;
+  const cleanRoot = root.trim().replace(/\\/g, '/').replace(/\/+$/, '');
+  const cleanFile = filepath.replace(/\\/g, '/').replace(/^\/+/, '');
+  return `${cleanRoot}/${cleanFile}`;
+}
+
+/**
+ * Decide what a code_ref link opens (D2), given the `localRoots` map + `openBehavior`. The existence check is
+ * INJECTED (`exists`) so this stays pure / `vscode`-free and the full behavior × existence matrix is unit-testable;
+ * the extension supplies an fs-backed predicate. Semantics:
+ *   - `localThenBrowser` → the local file when it exists, else the git-host URL;
+ *   - `local`            → the local file when it exists, else nothing (no browser fallback);
+ *   - `browser`          → always the git-host URL (local clone ignored).
+ */
+export async function resolveCodeRefTarget(
+  rawPath: string,
+  set: RepoConfigSet,
+  localRoots: Record<string, string>,
+  behavior: CodeRefOpenBehavior,
+  exists: (absPath: string) => Promise<boolean>,
+): Promise<{ kind: 'file'; value: string } | { kind: 'url'; value: string } | undefined> {
+  if (behavior !== 'browser') {
+    const candidate = resolveLocalPath(rawPath, set, localRoots);
+    if (candidate && (await exists(candidate))) return { kind: 'file', value: candidate };
+    if (behavior === 'local') return undefined; // no browser fallback
+  }
+  const url = resolveBrowserUrl(rawPath, set);
+  return url ? { kind: 'url', value: url } : undefined;
+}
+
 // ── blueprint.yaml repository-config parsing (zero-dep, indent-based) ────────────────────────────
 // The extension deliberately avoids a YAML dependency (line-scan everywhere, for exact ranges and
 // pre-model operation). `repository`/`repositories` are simple, flat, root-level blocks, so a
