@@ -17,6 +17,12 @@ that gap.
   that are actually *declared* somewhere get coloured — **canary yellow** by default (`archallyBlueprint.idForeground`) —
   so a mistyped or unknown reference stays un-coloured, an easy correctness signal. Configurable color +
   weight/style/underline. Note: the editor font *family* can't be changed per token — only color/weight/style/underline.
+- **Open `code_refs`** (`Ctrl`+click) on a `code_refs[].path` → opens that source file on its git host
+  (GitHub / GitLab / Bitbucket), built from the `repository` / `repositories` block in the owning
+  `blueprint.yaml`. Handles same-repo paths and cross-repo `org/repo#path` refs. `code_ref` paths are
+  shown in a **distinct link colour** (link-blue by default, `archallyBlueprint.codeRefForeground`) so they
+  read as clickable and don't blend with the canary-yellow IDs. (Opening a *local clone* instead of the
+  browser is coming in a later release.)
 - Re-indexes on save / file change; **Archally Blueprint: Re-index IDs** command to rebuild on demand.
 
 It complements `redhat.vscode-yaml` (schema validation + autocomplete + hover on property *keys*) — install both.
@@ -47,6 +53,10 @@ code --install-extension archally-blueprint-navigation-0.1.0.vsix
 | `archallyBlueprint.highlight.enabled` | `true` | Highlight blueprint IDs with a distinct color/style. |
 | `archallyBlueprint.highlight.color` | `""` | Override color (any CSS color, e.g. `#c586c0`). Empty = use the themed `archallyBlueprint.idForeground`. |
 | `archallyBlueprint.highlight.fontStyle` | `bold` | `normal` / `bold` / `italic` / `underline` / `bold-underline`. |
+| `archallyBlueprint.codeRef.enabled` | `true` | Make `code_refs[].path` clickable → open the file on the git host (from `repository`/`repositories` in `blueprint.yaml`). |
+| `archallyBlueprint.codeRef.highlight.enabled` | `true` | Color `code_ref` paths (distinct from IDs) to mark them as clickable links. |
+| `archallyBlueprint.codeRef.highlight.color` | `""` | Override the `code_ref` color. Empty = themed `archallyBlueprint.codeRefForeground` (link blue). |
+| `archallyBlueprint.codeRef.highlight.fontStyle` | `underline` | `normal` / `bold` / `italic` / `underline` / `bold-underline`. |
 
 To recolor without the override setting, theme it: `"workbench.colorCustomizations": { "archallyBlueprint.idForeground": "#c586c0" }`.
 

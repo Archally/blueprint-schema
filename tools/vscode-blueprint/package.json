@@ -52,6 +52,27 @@
           "enum": ["normal", "bold", "italic", "underline", "bold-underline"],
           "default": "bold",
           "description": "Font style for highlighted IDs. Note: the editor font FAMILY cannot be changed per token — only weight/style/underline."
+        },
+        "archallyBlueprint.codeRef.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Turn code_ref paths in .blueprint YAML into clickable links that open the file on the configured git host (from `repository`/`repositories` in blueprint.yaml). Local-clone resolution is added in a later release."
+        },
+        "archallyBlueprint.codeRef.highlight.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Color code_ref paths (distinct from blueprint IDs) to mark them as clickable source links."
+        },
+        "archallyBlueprint.codeRef.highlight.color": {
+          "type": "string",
+          "default": "",
+          "description": "Override color for highlighted code_ref paths (any CSS color, e.g. #4daafc). Empty = use the themed 'archallyBlueprint.codeRefForeground' color."
+        },
+        "archallyBlueprint.codeRef.highlight.fontStyle": {
+          "type": "string",
+          "enum": ["normal", "bold", "italic", "underline", "bold-underline"],
+          "default": "underline",
+          "description": "Font style for highlighted code_ref paths. Default underline (a link affordance)."
         }
       }
     },
@@ -65,6 +86,16 @@
           "highContrast": "#ffef00",
           "highContrastLight": "#9a7d00"
         }
+      },
+      {
+        "id": "archallyBlueprint.codeRefForeground",
+        "description": "Foreground color for clickable code_ref paths (distinct from blueprint IDs). Default: link blue.",
+        "defaults": {
+          "dark": "#4daafc",
+          "light": "#0067c0",
+          "highContrast": "#4daafc",
+          "highContrastLight": "#0067c0"
+        }
       }
     ],
     "commands": [
@@ -77,6 +108,7 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "test": "npm run compile && node --test ./out/codeRef.test.js",
     "vscode:prepublish": "npm run compile"
   },
   "devDependencies": {

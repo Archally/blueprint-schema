@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { parseRepositoryConfig, resolveBrowserUrl, scanCodeRefPaths, type RepoConfigSet } from './codeRef';
 
 /**
  * Archally Blueprint Navigation
@@ -28,6 +29,8 @@ interface Decl {
 
 const index = new Map<string, Decl[]>();
 const fileIds = new Map<string, Set<string>>(); // uriString -> ids declared in that file
+// code_ref: owning blueprint.yaml uri -> parsed repository config. Cleared on reindex / blueprint.yaml change.
+const repoConfigCache = new Map<string, RepoConfigSet>();
 
 function currentGlob(): string {
   return vscode.workspace.getConfiguration('archallyBlueprint').get<string>('fileGlob') || DEFAULT_GLOB;
@@ -134,6 +137,7 @@ async function reindexFile(uri: vscode.Uri): Promise<void> {
 async function rebuildIndex(): Promise<void> {
   index.clear();
   fileIds.clear();
+  repoConfigCache.clear();
   const files = await vscode.workspace.findFiles(currentGlob(), '**/node_modules/**');
   await Promise.all(files.map(reindexFile));
 }
@@ -174,12 +178,77 @@ const hoverProvider: vscode.HoverProvider = {
   },
 };
 
+// ── code_ref navigation (ctrl+click a code_ref path → open on the git host) ──────────────────────
+// Turns each `code_refs[].path` in a `.blueprint` YAML into a DocumentLink to the file on its git
+// host, built from the owning `blueprint.yaml`'s `repository`/`repositories`. Local-clone resolution
+// is layered on in a later step; this is the zero-config browser path. Pure URL/parse logic lives in
+// codeRef.ts (unit-tested); here we do the vscode-side scanning + link creation.
+
+function codeRefEnabled(): boolean {
+  return vscode.workspace.getConfiguration('archallyBlueprint').get<boolean>('codeRef.enabled', true);
+}
+
+/** Walk up from a document to the nearest ancestor `blueprint.yaml`. */
+async function findOwningBlueprintUri(docUri: vscode.Uri): Promise<vscode.Uri | undefined> {
+  let dir = vscode.Uri.joinPath(docUri, '..');
+  for (let depth = 0; depth < 16; depth++) {
+    const candidate = vscode.Uri.joinPath(dir, 'blueprint.yaml');
+    try {
+      await vscode.workspace.fs.stat(candidate);
+      return candidate;
+    } catch {
+      /* not here — keep climbing */
+    }
+    const parent = vscode.Uri.joinPath(dir, '..');
+    if (parent.toString() === dir.toString()) break; // reached the filesystem root
+    dir = parent;
+  }
+  return undefined;
+}
+
+/** Parsed repository config for the blueprint owning `docUri` (cached per blueprint.yaml). */
+async function repoConfigForDoc(docUri: vscode.Uri): Promise<RepoConfigSet | undefined> {
+  const blueprintUri = await findOwningBlueprintUri(docUri);
+  if (!blueprintUri) return undefined;
+  const key = blueprintUri.toString();
+  const cached = repoConfigCache.get(key);
+  if (cached) return cached;
+  try {
+    const buf = await vscode.workspace.fs.readFile(blueprintUri);
+    const set = parseRepositoryConfig(Buffer.from(buf).toString('utf8'));
+    repoConfigCache.set(key, set);
+    return set;
+  } catch {
+    return undefined;
+  }
+}
+
+const codeRefLinkProvider: vscode.DocumentLinkProvider = {
+  async provideDocumentLinks(doc) {
+    if (!codeRefEnabled()) return [];
+    const set = await repoConfigForDoc(doc.uri);
+    if (!set || (!set.repository && !set.repositories)) return [];
+
+    const links: vscode.DocumentLink[] = [];
+    for (const hit of scanCodeRefPaths(doc.getText())) {
+      const url = resolveBrowserUrl(hit.raw, set);
+      if (!url) continue;
+      const range = new vscode.Range(hit.line, hit.startCh, hit.line, hit.endCh);
+      const link = new vscode.DocumentLink(range, vscode.Uri.parse(url));
+      link.tooltip = `Open on host: ${url}`;
+      links.push(link);
+    }
+    return links;
+  },
+};
+
 // ── Highlighting (editor decorations — theme-independent, configurable) ──────────────────────────
 
 // Global-flag variant of the token grammar, for scanning a whole document.
 const TOKEN_RE_G = /[a-z][a-z0-9-]*\.[A-Za-z]{1,6}\d{2,5}|[A-Za-z]{1,6}\d{2,5}/g;
 
 let decoType: vscode.TextEditorDecorationType | undefined;
+let codeRefDecoType: vscode.TextEditorDecorationType | undefined;
 let decoTimer: ReturnType<typeof setTimeout> | undefined;
 
 function createDecoType(): vscode.TextEditorDecorationType | undefined {
@@ -198,27 +267,57 @@ function createDecoType(): vscode.TextEditorDecorationType | undefined {
   return vscode.window.createTextEditorDecorationType(opts);
 }
 
+// Distinct decoration for clickable code_ref paths (link-blue by default — different from IDs).
+function createCodeRefDecoType(): vscode.TextEditorDecorationType | undefined {
+  const cfg = vscode.workspace.getConfiguration('archallyBlueprint');
+  if (!cfg.get<boolean>('codeRef.highlight.enabled', true)) return undefined;
+
+  const override = (cfg.get<string>('codeRef.highlight.color') || '').trim();
+  const style = cfg.get<string>('codeRef.highlight.fontStyle', 'underline');
+  const opts: vscode.DecorationRenderOptions = {
+    rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+    color: override ? override : new vscode.ThemeColor('archallyBlueprint.codeRefForeground'),
+  };
+  if (style.includes('bold')) opts.fontWeight = 'bold';
+  if (style.includes('italic')) opts.fontStyle = 'italic';
+  if (style.includes('underline')) opts.textDecoration = 'underline';
+  return vscode.window.createTextEditorDecorationType(opts);
+}
+
 function rebuildDecoType(): void {
   decoType?.dispose();
   decoType = createDecoType();
+  codeRefDecoType?.dispose();
+  codeRefDecoType = createCodeRefDecoType();
 }
 
 function applyDecorations(editor: vscode.TextEditor | undefined): void {
   if (!editor) return;
-  if (!decoType || vscode.languages.match(selector(), editor.document) === 0) {
-    return; // not a blueprint file, or highlighting disabled (disposed deco clears itself)
-  }
-  const ranges: vscode.Range[] = [];
-  const lines = editor.document.getText().split(/\r?\n/);
-  for (let i = 0; i < lines.length; i++) {
-    TOKEN_RE_G.lastIndex = 0;
-    let m: RegExpExecArray | null;
-    while ((m = TOKEN_RE_G.exec(lines[i])) !== null) {
-      if (!index.has(m[0])) continue; // only highlight KNOWN ids — unknown refs / typos stay un-coloured
-      ranges.push(new vscode.Range(i, m.index, i, m.index + m[0].length));
+  if (vscode.languages.match(selector(), editor.document) === 0) return; // not a blueprint file
+  const text = editor.document.getText();
+  const lines = text.split(/\r?\n/);
+
+  // Known ids (canary yellow by default).
+  if (decoType) {
+    const idRanges: vscode.Range[] = [];
+    for (let i = 0; i < lines.length; i++) {
+      TOKEN_RE_G.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = TOKEN_RE_G.exec(lines[i])) !== null) {
+        if (!index.has(m[0])) continue; // only highlight KNOWN ids — unknown refs / typos stay un-coloured
+        idRanges.push(new vscode.Range(i, m.index, i, m.index + m[0].length));
+      }
     }
+    editor.setDecorations(decoType, idRanges);
   }
-  editor.setDecorations(decoType, ranges);
+
+  // code_ref paths (link-blue by default — a distinct, clickable-looking colour).
+  if (codeRefDecoType) {
+    const refRanges = scanCodeRefPaths(text).map(
+      (h) => new vscode.Range(h.line, h.startCh, h.line, h.endCh),
+    );
+    editor.setDecorations(codeRefDecoType, refRanges);
+  }
 }
 
 function refreshAllDecorations(): void {
@@ -233,6 +332,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     vscode.languages.registerDefinitionProvider(selector(), definitionProvider),
     vscode.languages.registerHoverProvider(selector(), hoverProvider),
+    vscode.languages.registerDocumentLinkProvider(selector(), codeRefLinkProvider),
     vscode.commands.registerCommand('archallyBlueprint.reindex', rebuildIndex),
     vscode.commands.registerCommand('archallyBlueprint.goto', async (uriStr: string, line: number, character: number) => {
       const uri = vscode.Uri.parse(uriStr);
@@ -245,6 +345,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const watcher = vscode.workspace.createFileSystemWatcher(currentGlob());
   const onFsChange = async (uri: vscode.Uri) => {
     await reindexFile(uri);
+    if (uri.path.endsWith('/blueprint.yaml')) repoConfigCache.clear();
     refreshAllDecorations(); // the known-id set may have changed
   };
   watcher.onDidChange(onFsChange);
@@ -260,6 +361,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         indexText(d.uri, d.getText());
         refreshAllDecorations();
       }
+      if (d.uri.path.endsWith('/blueprint.yaml')) repoConfigCache.clear();
     }),
     vscode.window.onDidChangeActiveTextEditor((e) => applyDecorations(e)),
     vscode.window.onDidChangeVisibleTextEditors(() => refreshAllDecorations()),
@@ -271,7 +373,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('archallyBlueprint.fileGlob')) void rebuildIndex();
-      if (e.affectsConfiguration('archallyBlueprint.highlight')) {
+      if (
+        e.affectsConfiguration('archallyBlueprint.highlight') ||
+        e.affectsConfiguration('archallyBlueprint.codeRef.highlight')
+      ) {
         rebuildDecoType();
         refreshAllDecorations();
       }
@@ -282,6 +387,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 export function deactivate(): void {
   if (decoTimer) clearTimeout(decoTimer);
   decoType?.dispose();
+  codeRefDecoType?.dispose();
   index.clear();
   fileIds.clear();
 }
