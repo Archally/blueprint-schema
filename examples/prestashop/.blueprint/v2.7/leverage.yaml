@@ -1,0 +1,120 @@
+version: 0.1.0
+schemaVersion: "2.7.0"
+horizon: "next 2 quarters"
+ranking_basis:
+  - urgency
+  - dependency-hub
+  - blast-radius
+  - delivery-risk-reduction
+  - evidence-confidence
+pareto_core:
+  - LP001
+  - LP002
+
+leverage_points:
+  - id: LP001
+    title: "Isolate async order processing from the interactive checkout path"
+    summary: "Move fulfillment, email, and webhooks off the request thread so checkout stays responsive under load."
+    one_thing: "Keep checkout latency flat under peak load by making order-side effects asynchronous."
+    rank: 1
+    area: platform
+    status: accepted
+    decision_refs: [D001]
+    fitness_function_refs: [FF001]
+    realized_by: [WI001]
+    advances_value_streams: [VS001]
+    capability_refs: [CAP003]
+    enables: [LP003]
+    consequences_if_done:
+      - "Checkout p95 stays flat as order volume grows; a slow email provider no longer blocks the buyer."
+      - "Retries and dead-lettering become possible for fulfillment side effects."
+    consequences_if_not_done:
+      - "Peak-season checkout latency spikes track third-party provider latency."
+    discovery_stage: validated
+    certainty: probable
+    evidence:
+      - kind: codebase-analysis
+        source: "orders/order-processing.domain.yaml"
+        summary: "Fulfillment and notification run inline in the order-placement handler."
+
+  - id: LP002
+    title: "Make module boundaries explicit before adding payment providers"
+    summary: "Draw the payment/shipping module seams as bounded contexts so new providers plug in cleanly."
+    one_thing: "Turn implicit module coupling into an explicit provider seam before the next integration lands."
+    rank: 2
+    area: domain-architecture
+    status: accepted
+    decision_refs: [D002, D003]
+    realized_by: [WI002]
+    advances_value_streams: [VS002]
+    capability_refs: [CAP004]
+    enables: [LP004]
+    consequences_if_done:
+      - "A new payment provider is an additive module, not a cross-cutting edit."
+    consequences_if_not_done:
+      - "Each provider integration re-touches shared checkout code, compounding regression risk."
+    discovery_stage: validated
+    certainty: probable
+
+  - id: LP003
+    title: "Add a dedicated read model for the order-history view"
+    summary: "Serve buyer/admin order history from a projection instead of joining live transactional tables."
+    one_thing: "Decouple the order-history query from the write model so reporting can't slow order writes."
+    rank: 3
+    area: delivery-data
+    status: proposed
+    decision_refs: [D004]
+    fitness_function_refs: [FF003]
+    realized_by: [WI003]
+    advances_value_streams: [VS001]
+    depends_on: [LP001]
+    consequences_if_done:
+      - "Heavy history/reporting reads no longer contend with order writes."
+    consequences_if_not_done:
+      - "Reporting queries and checkout writes keep contending on the same tables."
+    discovery_stage: hypothesis
+    certainty: speculative
+
+  - id: LP004
+    title: "Introduce a pluggable shipping-rate provider seam"
+    summary: "Abstract carrier rate lookups behind a provider interface with an anticorruption layer."
+    one_thing: "Let carriers be added/swapped without editing the checkout context."
+    rank: 4
+    area: platform
+    status: proposed
+    decision_refs: [D005]
+    advances_value_streams: [VS003]
+    capability_refs: [CAP006]
+    depends_on: [LP002]
+    consequences_if_done:
+      - "New carriers ship as configuration + a small adapter."
+    consequences_if_not_done:
+      - "Carrier changes remain risky edits inside the checkout flow."
+    discovery_stage: hypothesis
+    certainty: speculative
+
+  - id: LP005
+    title: "Establish contract tests for the payment-webhook surface"
+    summary: "Guard the inbound payment-webhook contract with provider-state contract tests."
+    one_thing: "Catch payment-webhook contract drift in CI instead of in production reconciliation."
+    rank: 5
+    area: governance
+    status: proposed
+    decision_refs: [D006]
+    fitness_function_refs: [FF004, FF005]
+    realized_by: [WI010]
+    consequences_if_done:
+      - "A provider changing its webhook shape fails a contract test, not a payment."
+    consequences_if_not_done:
+      - "Silent webhook drift surfaces as missed/duplicated order state."
+    discovery_stage: exploring
+    certainty: probable
+
+watchlist:
+  - id: W001
+    title: "Retire compatibility-only legacy admin controllers"
+    note: "Monitored, not yet acted on — promote to a leverage point once a slice depends on removing them."
+    decision_refs: [D007]
+  - id: W002
+    title: "Third-party module coupling growth"
+    note: "Watch for new modules reaching into checkout internals; promote if coupling crosses a threshold."

@@ -52,6 +52,32 @@ entries:
         notes: >
           `FILENAME_TO_SCHEMA` now maps `leverage` (and `*.leverage.yaml`) → governance/leverage.schema.yaml
           so leverage files are validated against the new schema.
+      - kind: modify
+        target: "tools/model-builder/src/extraction/entities/leverage.ts, tools/model-builder/src/extraction/relations/leverage.ts"
+        semver: none
+        notes: >
+          Model-builder now extracts `LeveragePoint` (LP###) entities and their outbound relations:
+          finding/risk/decision/fitness-function refs (AS-IS), migration_refs + realized_by→WI### (TO-BE),
+          advances_goals/advances_value_streams/capability_refs (strategic intent), and a NORMALIZED
+          leverage DAG — `depends_on[]` and the inverse of `enables[]` fold into a single
+          dependent→prerequisite `leverage_depends_on` edge (deduped), so the interactive leverage view
+          gets a clean single-direction graph. Unresolved refs degrade to Missing placeholders. Unblocks
+          the interactive leverage view.
+      - kind: add
+        target: "tools/semantic-checker/rules/leverage-point-no-address.yaml, tools/semantic-checker/rules/leverage-point-no-strategic-intent.yaml"
+        semver: none
+        notes: >
+          Two leverage-point completeness lints. `leverage-point-no-address` (warn): an LP that references
+          no finding/risk/decision/fitness-function has no AS-IS anchor (aspirational, not leverage).
+          `leverage-point-no-strategic-intent` (info): an LP that advances no goal/value-stream/capability
+          states no strategic "why now". Both overridable per-project via `.blueprint-lint.yaml`.
+      - kind: add
+        target: "examples/prestashop/.blueprint/v2.7/leverage.yaml"
+        semver: none
+        notes: >
+          Worked leverage-map example for the PrestaShop reference model: 5 leverage points (LP001–005),
+          `pareto_core`, a two-item `watchlist`, and the full ref repertoire (decisions, fitness functions,
+          work-items, value-streams, capabilities, and a depends_on/enables DAG).
   - version: "2.7.3"
     date: "2026-07-04"
     summary: "Operation `dispatch: in-process` — mark commands/queries that execute in-process with no wire transport, exempting them from the missing-exchange-binding completeness check"

@@ -182,6 +182,26 @@ export const RELATION_TYPE = {
   RoadmapUserStory: 'roadmap_user_story',
   // roadmap.schema (v2.7.2): roadmap item delivers use case (use_cases[])
   RoadmapUseCase: 'roadmap_use_case',
+  // leverage.schema (v2.7.4): leverage point remediates AS-IS finding (finding_refs[])
+  LeverageFinding: 'leverage_finding',
+  // leverage.schema (v2.7.4): leverage point mitigates risk (risk_refs[])
+  LeverageRisk: 'leverage_risk',
+  // leverage.schema (v2.7.4): leverage point bundles / is realized through decision (decision_refs[])
+  LeverageDecision: 'leverage_decision',
+  // leverage.schema (v2.7.4): leverage point establishes / relies on fitness function (fitness_function_refs[])
+  LeverageFitnessFunction: 'leverage_fitness_function',
+  // leverage.schema (v2.7.4): leverage point implemented by migration (migration_refs[])
+  LeverageMigration: 'leverage_migration',
+  // leverage.schema (v2.7.4): leverage point delivered/sequenced by roadmap work item (realized_by[])
+  LeverageRealizedBy: 'leverage_realized_by',
+  // leverage.schema (v2.7.4): leverage point advances goal (advances_goals[])
+  LeverageAdvancesGoal: 'leverage_advances_goal',
+  // leverage.schema (v2.7.4): leverage point advances value stream (advances_value_streams[])
+  LeverageValueStream: 'leverage_value_stream',
+  // leverage.schema (v2.7.4): leverage point strengthens capability (capability_refs[])
+  LeverageCapability: 'leverage_capability',
+  // leverage.schema (v2.7.4): leverage DAG — dependent LP → prerequisite LP (depends_on[] + inverse of enables[])
+  LeverageDependsOn: 'leverage_depends_on',
 } as const;
 
 export type RelationType = (typeof RELATION_TYPE)[keyof typeof RELATION_TYPE];
