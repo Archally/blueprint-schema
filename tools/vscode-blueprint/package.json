@@ -73,6 +73,11 @@
           "enum": ["normal", "bold", "italic", "underline", "bold-underline"],
           "default": "underline",
           "description": "Font style for highlighted code_ref paths. Default underline (a link affordance)."
+        },
+        "archallyBlueprint.referenceLinks.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Linkify http(s) URLs anywhere in .blueprint YAML (evidence sources, trackers, docs) → open in the browser, and evidence[].source file-paths → open the local workspace file. Shares the code_ref link colour."
         }
       }
     },

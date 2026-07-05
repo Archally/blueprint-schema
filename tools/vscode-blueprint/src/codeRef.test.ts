@@ -7,6 +7,8 @@ import {
   resolveBrowserUrl,
   parseRepositoryConfig,
   scanCodeRefPaths,
+  scanEvidenceSources,
+  scanUrls,
 } from './codeRef';
 
 test('parseCodeRefPath — unprefixed vs cross-repo, trims', () => {
@@ -149,4 +151,45 @@ test('scanCodeRefPaths — block, inline-flow, cross-repo; ignores non-code_refs
 
 test('scanCodeRefPaths — no code_refs block → no hits', () => {
   assert.deepEqual(scanCodeRefPaths('domain:\n  path: "x.ts"\n  aggregates: []\n'), []);
+});
+
+test('scanUrls — finds http(s) URLs, trims trailing punctuation, ignores non-URLs', () => {
+  const lines = [
+    'motivation:',
+    '  goals:',
+    '    - id: G001',
+    '      evidence:',
+    '        - kind: documentation',
+    '          source: "https://acme.atlassian.net/wiki/spaces/X/pages/42/Overview+page"',
+    '        - kind: analytics',
+    '          source: See https://example.com/report.',            // trailing period trimmed
+    '      note: "no url here, just text"',
+  ];
+  const hits = scanUrls(lines.join('\n'));
+  assert.deepEqual(hits.map((h) => h.raw), [
+    'https://acme.atlassian.net/wiki/spaces/X/pages/42/Overview+page',
+    'https://example.com/report',
+  ]);
+  for (const h of hits) {
+    // range covers exactly the reported url (quote/period excluded)
+    assert.equal(lines[h.line].slice(h.startCh, h.endCh), h.raw);
+  }
+});
+
+test('scanEvidenceSources — returns file-path sources, excludes URLs, ignores non-evidence source:', () => {
+  const lines = [
+    'motivation:',
+    '  risks:',
+    '    - id: R001',
+    '      source: "not-evidence-source.md"',                       // a `source:` OUTSIDE evidence
+    '      evidence:',
+    '        - kind: documentation',
+    '          source: ".prompts/2026-06-16-roi/ROI-ANALYSIS.md"',  // file path → kept',
+    '        - kind: codebase-analysis',
+    '          source: "https://github.com/acme/x"',                // URL → excluded (scanUrls handles it)',
+    '        - kind: assumption',
+    '          source: "the platform team"',                        // free text → kept (resolves to no file later)',
+  ];
+  const hits = scanEvidenceSources(lines.join('\n'));
+  assert.deepEqual(hits.map((h) => h.raw), ['.prompts/2026-06-16-roi/ROI-ANALYSIS.md', 'the platform team']);
 });

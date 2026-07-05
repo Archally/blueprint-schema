@@ -23,6 +23,9 @@ that gap.
   shown in a **distinct link colour** (link-blue by default, `archallyBlueprint.codeRefForeground`) so they
   read as clickable and don't blend with the canary-yellow IDs. (Opening a *local clone* instead of the
   browser is coming in a later release.)
+- **Open evidence & URL references** (`Ctrl`+click) → any `http(s)://` URL anywhere in a `.blueprint` YAML
+  (evidence `source`, issue trackers, doc links) opens in the browser; an `evidence[].source` that is a
+  repo-relative path opens the local workspace file. Shares the code_ref link colour.
 - Re-indexes on save / file change; **Archally Blueprint: Re-index IDs** command to rebuild on demand.
 
 It complements `redhat.vscode-yaml` (schema validation + autocomplete + hover on property *keys*) — install both.
@@ -57,6 +60,7 @@ code --install-extension archally-blueprint-navigation-0.1.0.vsix
 | `archallyBlueprint.codeRef.highlight.enabled` | `true` | Color `code_ref` paths (distinct from IDs) to mark them as clickable links. |
 | `archallyBlueprint.codeRef.highlight.color` | `""` | Override the `code_ref` color. Empty = themed `archallyBlueprint.codeRefForeground` (link blue). |
 | `archallyBlueprint.codeRef.highlight.fontStyle` | `underline` | `normal` / `bold` / `italic` / `underline` / `bold-underline`. |
+| `archallyBlueprint.referenceLinks.enabled` | `true` | Linkify `http(s)` URLs anywhere + `evidence[].source` file-paths (open browser / local file). |
 
 To recolor without the override setting, theme it: `"workbench.colorCustomizations": { "archallyBlueprint.idForeground": "#c586c0" }`.
 

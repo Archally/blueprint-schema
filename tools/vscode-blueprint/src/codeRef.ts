@@ -120,32 +120,30 @@ function parseRepositoriesMap(lines: string[], start: number): Record<string, Re
   return map;
 }
 
-// ── code_refs path scanning (pure; the extension wraps each hit in a DocumentLink) ──────────────
-
-const CODE_REFS_START_RE = /^(\s*)code_refs:\s*(?:#.*)?$/;
-// A `path:` value inside a code_ref entry — block (`- path: X`) or inline flow (`{ path: X, ... }`).
-const CODE_REF_PATH_RE = /(?:^|[\s{,])path:\s*(['"]?)([^'"\n}]+?)\1\s*(?=[,}\s]|$)/;
+// ── field/URL scanning (pure; the extension wraps each hit in a DocumentLink) ────────────────────
 
 export interface CodeRefHit {
   line: number; // 0-based line index
-  startCh: number; // 0-based start column of the path value (quotes excluded)
+  startCh: number; // 0-based start column of the value (quotes excluded)
   endCh: number; // exclusive end column
-  raw: string; // the raw code_ref path text
+  raw: string; // the raw value text
 }
 
 /**
- * Find every `code_refs[].path` value in a YAML document, with exact positions. Tracks the
- * `code_refs:` block by indent so a `path:` key elsewhere is never matched; handles block
- * (`- path: X`) and inline-flow (`{ path: X, ... }`) entries. Zero-dep, line-scan (matches the
- * rest of the extension) so ranges are exact and it works before the model is built.
+ * Find every `<valueKey>:` value inside a `<blockKey>:` block, with exact positions. Tracks the block by
+ * indent so a matching key elsewhere is never picked up; handles block (`- key: X`) and inline-flow
+ * (`{ key: X, ... }`) entries. Zero-dep line-scan (matches the rest of the extension) so ranges are exact
+ * and it works before the model is built. `blockKey`/`valueKey` are plain identifiers (no regex metachars).
  */
-export function scanCodeRefPaths(text: string): CodeRefHit[] {
+export function scanFieldInBlock(text: string, blockKey: string, valueKey: string): CodeRefHit[] {
+  const blockStartRe = new RegExp(`^(\\s*)${blockKey}:\\s*(?:#.*)?$`);
+  const valueRe = new RegExp(`(?:^|[\\s{,])${valueKey}:\\s*(['"]?)([^'"\\n}]+?)\\1\\s*(?=[,}\\s]|$)`);
   const hits: CodeRefHit[] = [];
   const lines = text.split(/\r?\n/);
-  let blockIndent: number | null = null; // indent of the active code_refs: block, or null
+  let blockIndent: number | null = null; // indent of the active block, or null
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const startMatch = CODE_REFS_START_RE.exec(line);
+    const startMatch = blockStartRe.exec(line);
     if (startMatch) {
       blockIndent = startMatch[1].length;
       continue;
@@ -157,11 +155,41 @@ export function scanCodeRefPaths(text: string): CodeRefHit[] {
       blockIndent = null;
       continue;
     }
-    const pathMatch = CODE_REF_PATH_RE.exec(line);
-    if (!pathMatch) continue;
-    const raw = pathMatch[2];
-    const startCh = pathMatch.index + pathMatch[0].indexOf(raw);
+    const valueMatch = valueRe.exec(line);
+    if (!valueMatch) continue;
+    const raw = valueMatch[2];
+    const startCh = valueMatch.index + valueMatch[0].indexOf(raw);
     hits.push({ line: i, startCh, endCh: startCh + raw.length, raw });
+  }
+  return hits;
+}
+
+/** `code_refs[].path` values (repo-relative or cross-repo `org/repo#path`). */
+export function scanCodeRefPaths(text: string): CodeRefHit[] {
+  return scanFieldInBlock(text, 'code_refs', 'path');
+}
+
+/** `evidence[].source` values that are NOT http(s) URLs — file-path candidates (URLs are handled by scanUrls). */
+export function scanEvidenceSources(text: string): CodeRefHit[] {
+  return scanFieldInBlock(text, 'evidence', 'source').filter((h) => !/^https?:\/\//i.test(h.raw));
+}
+
+// Every http(s):// URL in a scalar value; the char class stops at a quote / whitespace / bracket, then
+// trailing sentence punctuation is trimmed. Field-agnostic (E1) — VS Code does not linkify YAML-string URLs.
+const URL_RE = /https?:\/\/[^\s"'`<>()\[\]{}]+/g;
+
+/** Every http(s):// URL anywhere in the document, with exact ranges. */
+export function scanUrls(text: string): CodeRefHit[] {
+  const hits: CodeRefHit[] = [];
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    URL_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = URL_RE.exec(lines[i])) !== null) {
+      const raw = m[0].replace(/[.,;:]+$/, ''); // trim trailing prose punctuation
+      if (raw.length <= 'https://'.length) continue;
+      hits.push({ line: i, startCh: m.index, endCh: m.index + raw.length, raw });
+    }
   }
   return hits;
 }
