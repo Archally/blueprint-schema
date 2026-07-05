@@ -53,6 +53,7 @@ export const ENTITY_TYPE = {
   Milestone: 'Milestone',
   WorkItem: 'WorkItem',
   ValueStream: 'ValueStream',
+  LeveragePoint: 'LeveragePoint',
   CodeFile: 'CodeFile',
   Missing: 'Missing',
 } as const;
@@ -78,5 +79,6 @@ export const SCHEMA_TYPE_TO_LAYER: Record<string, string> = {
   ui: 'design.ui',
   roadmap: 'governance.roadmap',
   'value-stream': 'governance.value-stream',
+  leverage: 'governance.leverage',
   blueprint: 'blueprint',
 };

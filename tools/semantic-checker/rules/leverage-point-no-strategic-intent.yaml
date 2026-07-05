@@ -1,0 +1,22 @@
+engineVersion: "0.1"
+rules:
+  - id: leverage-point-no-strategic-intent
+    severity: info
+    description: >-
+      A leverage point should connect its AS-IS remediation to forward strategic intent — the goal,
+      value stream, or capability it advances — so prioritization is traceable to outcomes. One with
+      none states no "why now" beyond the defect it fixes. Surfaced as info (some leverage points are
+      pure risk-reduction with no direct outcome link). Healthy = at least one of advances_goals /
+      advances_value_streams / capability_refs is non-empty. Override per-project via
+      .blueprint-lint.yaml (e.g. `leverage-point-no-strategic-intent: off`).
+    find:
+      entity_type: LeveragePoint
+    check:
+      any_of:
+        - any_non_empty:
+            - data.advances_goals
+        - any_non_empty:
+            - data.advances_value_streams
+        - any_non_empty:
+            - data.capability_refs
+    message: 'Leverage point "{displayId}" ({name|''unnamed''}) advances no goal/value-stream/capability — state the strategic intent it serves.'

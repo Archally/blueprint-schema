@@ -28,6 +28,7 @@ export const V2_SCHEMA_TYPES = [
   'interactions',
   'roadmap',
   'value-stream',
+  'leverage',
   'blueprint',
 ] as const;
 
@@ -68,13 +69,15 @@ export const FILENAME_TO_SCHEMA: Record<string, V2SchemaType> = {
   'roadmap.yml': 'roadmap',
   'value-stream.yaml': 'value-stream',
   'value-stream.yml': 'value-stream',
+  'leverage.yaml': 'leverage',
+  'leverage.yml': 'leverage',
   'blueprint.yaml': 'blueprint',
   'blueprint.yml': 'blueprint',
 };
 
 /** Multi-file pattern: {name}.{schema-type}.yaml (e.g. consumer.domain.yaml, payment.concepts.yaml). */
 export const MULTI_FILE_PATTERN =
-  /^[^/\\]+\.(concepts|rules|domain|arch|motivation|decisions|test-cases|dynamics|quality|capability|story|models|infrastructure|organization|interactions|roadmap|value-stream)\.(yaml|yml)$/i;
+  /^[^/\\]+\.(concepts|rules|domain|arch|motivation|decisions|test-cases|dynamics|quality|capability|story|models|infrastructure|organization|interactions|roadmap|value-stream|leverage)\.(yaml|yml)$/i;
 
 /**
  * Map file path to v2 schema type. Returns null for files outside the blueprint convention.
