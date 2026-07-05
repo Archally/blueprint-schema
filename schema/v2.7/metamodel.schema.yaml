@@ -401,6 +401,87 @@ $defs:
     pattern: "^([a-z][a-z0-9-]*\\.)?FN\\d{3}$"
     description: "Reference to a quality finding — an AS-IS internal-quality defect (e.g. FN001 or ordering.FN001)."
 
+  leverage_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?LP\\d{3}$"
+    description: >
+      Reference to a leverage point — a prioritized cross-cutting intervention that bundles findings /
+      risks / decisions / fitness-functions and is delivered via migrations / roadmap work-items
+      (e.g. LP001 or platform.LP001). Added v2.7.4.
+
+  quality_characteristic:
+    type: string
+    enum:
+      - functional-suitability
+      - performance-efficiency
+      - compatibility
+      - usability
+      - reliability
+      - security
+      - maintainability
+      - portability
+      - safety
+    description: >
+      ISO/IEC 25010:2011 top-level product-quality characteristic — the eight 2011 characteristics
+      plus `safety` (the one clearly-useful 2023 addition). Names the top-level quality attribute a
+      finding degrades or a requirement targets; finer grain goes in `quality_subcharacteristic`.
+      Added v2.7.4 — supersedes the former maintainability-family-only enum (the removed values
+      modularity/analysability/reusability/testability are now sub-characteristics; see schema-update
+      module 002).
+
+  quality_subcharacteristic:
+    type: string
+    enum:
+      # maintainability
+      - modularity
+      - reusability
+      - analysability
+      - modifiability
+      - testability
+      # security
+      - confidentiality
+      - integrity
+      - non-repudiation
+      - accountability
+      - authenticity
+      # functional-suitability
+      - functional-completeness
+      - functional-correctness
+      - functional-appropriateness
+      # performance-efficiency
+      - time-behaviour
+      - resource-utilization
+      - capacity
+      # compatibility
+      - co-existence
+      - interoperability
+      # usability
+      - appropriateness-recognizability
+      - learnability
+      - operability
+      - user-error-protection
+      - user-interface-aesthetics
+      - accessibility
+      # reliability
+      - maturity
+      - availability
+      - fault-tolerance
+      - recoverability
+      # portability
+      - adaptability
+      - installability
+      - replaceability
+      # safety (ISO/IEC 25010:2023)
+      - operational-constraint
+      - risk-identification
+      - fail-safe
+      - hazard-warning
+      - safe-integration
+    description: >
+      ISO/IEC 25010 sub-characteristic — the finer grain under a `quality_characteristic`. The pairing
+      of a sub-characteristic to its top-level is a CONVENTION the author keeps, not a schema-enforced
+      constraint (a flat enum). Safety sub-characteristics are from the 2023 revision. Added v2.7.4.
+
   complexity_pattern:
     type: string
     enum: [crud, presentation, transformation, integration, cdc, concurrency, state-management]

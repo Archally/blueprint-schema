@@ -15,6 +15,7 @@ Each file below is a standalone JSON Schema (draft 2020-12), loaded by the valid
 | [`test-cases.schema.yaml`](./test-cases.schema.yaml) | Test cases organized as happy-path, edge-case, and error-case suites. Owns validates references as the authoritative source of test-to-blueprint traceability. |
 | [`roadmap.schema.yaml`](./roadmap.schema.yaml) | Product roadmap milestones with deliverables, success criteria, and dependencies. Used for PRD timeline section generation. |
 | [`organization.schema.yaml`](./organization.schema.yaml) | Organizational hierarchy — Party > Department > Team. Defines who owns what in the blueprint. Teams are first-class entities under a party; departments reference teams by ID. |
+| [`leverage.schema.yaml`](./leverage.schema.yaml) | Leverage Map — the prioritization tier that sits ABOVE the AS-IS remediation chain (finding → risk → decision → migration). A leverage point (LP###) is the "vital few" cross-cutting intervention: it bundles the findings/risks/decisions/fitness-functions it addresses, projects the consequences of acting (or not), and delegates its delivery/sequencing to roadmap work-items (WI###) rather than re-modelling execution. Answers: what are the highest-leverage things to do, in what order, why, and how confident are we? Distinct from `design/quality` findings (an AS-IS assessment) — leverage is forward-looking, target-setting prioritization. |
 
 ---
 

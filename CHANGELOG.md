@@ -2,6 +2,56 @@
 # All schema version releases in reverse chronological order.
 ---
 entries:
+  - version: "2.7.4"
+    date: "2026-07-05"
+    summary: "Governance-plane enrichment — leverage-point layer (LP###), evidence/provenance on test cases, and ISO/IEC 25010:2011 two-level quality characteristics on findings"
+    changes:
+      - kind: add
+        target: "governance/leverage.schema.yaml"
+        semver: minor
+        notes: >
+          New Leverage Map governance layer: `LeveragePoint` (LP###) — a prioritization tier ABOVE the
+          finding→risk→decision→migration chain — plus `watch_item` (W###), and document arrays
+          `leverage_points`/`pareto_core`/`ranking_basis`/`watchlist`. Typed relations
+          (finding/risk/decision/fitness-function refs = AS-IS; migration_refs/realized_by→WI### = TO-BE;
+          advances_goals/value_streams/capability_refs = strategic; depends_on/enables→LP### = graph).
+          Additive/optional.
+      - kind: modify
+        target: "governance/test-cases.schema.yaml"
+        semver: minor
+        notes: >
+          Optional `provenance` (evidence + discovery-stage + certainty) on `test_case` and
+          `fitness_function` — orthogonal to `code_refs` (code_refs = automation; provenance = manual /
+          documentation / assumption). Additive/optional.
+      - kind: modify
+        target: "metamodel.schema.yaml"
+        semver: minor
+        notes: >
+          Added `leverage_ref` (LP### pattern). Added `$defs/quality_characteristic` (ISO/IEC 25010:2011
+          top-level 8 + `safety`) and `$defs/quality_subcharacteristic` (the ISO 25010 sub-characteristics,
+          incl. 2023 safety) for reuse. Additive.
+      - kind: modify
+        target: "design/quality.schema.yaml"
+        semver: major
+        notes: >
+          `finding.quality_characteristic` now $refs the ISO 25010:2011 top-level enum (was the
+          maintainability-family mix `[maintainability, modularity, analysability, testability,
+          reusability]`). Added optional `quality_subcharacteristic` (finer grain) and `regulatory[]`
+          (GDPR/PCI-DSS/WCAG tag — NOT a 'compliance' characteristic). Generalized `severity.description`.
+          BREAKING: `modularity/analysability/reusability/testability` are no longer valid top-level
+          values (they are now sub-characteristics) — remap external v2.6 data via schema-update module 002.
+      - kind: modify
+        target: "blueprint.schema.yaml"
+        semver: minor
+        notes: >
+          Wired the governance `leverage` block ($ref governance/leverage.schema.yaml) and
+          `layout.shared.leverage`.
+      - kind: modify
+        target: "tools/validator/src/schema-types.mjs"
+        semver: none
+        notes: >
+          `FILENAME_TO_SCHEMA` now maps `leverage` (and `*.leverage.yaml`) → governance/leverage.schema.yaml
+          so leverage files are validated against the new schema.
   - version: "2.7.3"
     date: "2026-07-04"
     summary: "Operation `dispatch: in-process` — mark commands/queries that execute in-process with no wire transport, exempting them from the missing-exchange-binding completeness check"

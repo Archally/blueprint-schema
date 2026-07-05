@@ -77,6 +77,12 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          Epistemic provenance for this fitness function: the evidence and confidence behind the
+          constraint (e.g. codebase-analysis that motivated the guardrail, an ADR sign-off).
+          Complements `code_refs`. Optional; additive (v2.7.4).
 
   test_case:
     type: object
@@ -155,6 +161,15 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          Epistemic provenance for this test case: on what basis it was authored and how sure we
+          are it encodes correct behaviour. Complements `code_refs` — code_refs say WHERE the test /
+          its subject lives; provenance says ON WHAT EVIDENCE (e.g. codebase-analysis of a legacy
+          flow, documentation, stakeholder sign-off) and HOW SURE (discovery_stage / certainty).
+          Especially useful for brownfield tests reverse-engineered from observed behaviour.
+          Optional; additive (v2.7.4).
 
   validates_refs:
     type: object

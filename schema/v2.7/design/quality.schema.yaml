@@ -550,13 +550,28 @@ $defs:
           naming=misleading/legacy term; anemic-model=data without behaviour; dual-implementation=old+new in
           flight; missing-abstraction=copy-paste where an abstraction belongs."
       quality_characteristic:
-        type: string
-        enum: [maintainability, modularity, analysability, testability, reusability]
-        description: "ISO/IEC 25010 product-quality characteristic this finding degrades. Optional."
+        $ref: "../metamodel.schema.yaml#/$defs/quality_characteristic"
+        description: >
+          ISO/IEC 25010:2011 top-level product-quality characteristic this finding degrades — the
+          top-level attribute only (finer grain goes in `quality_subcharacteristic`). Optional.
+      quality_subcharacteristic:
+        $ref: "../metamodel.schema.yaml#/$defs/quality_subcharacteristic"
+        description: >
+          ISO/IEC 25010 sub-characteristic under `quality_characteristic` (e.g. `modularity` under
+          `maintainability`, `confidentiality` under `security`). Consistency with the named top-level
+          is by convention. Optional.
+      regulatory:
+        type: array
+        items:
+          type: string
+        description: >
+          Regulatory frameworks this finding relates to (e.g. GDPR, PCI-DSS, WCAG). A tag, NOT a
+          quality characteristic — regulatory concerns classify as security / functional-suitability
+          per ISO 25010 (which dropped the 9126 'compliance' characteristic). Optional.
       severity:
         type: string
         enum: [low, medium, high, critical]
-        description: "How damaging the defect is to maintainability / the modularization goal."
+        description: "How damaging the defect is to the relevant quality characteristic / the modernization goal."
       effort:
         type: string
         enum: [s, m, l, xl]
