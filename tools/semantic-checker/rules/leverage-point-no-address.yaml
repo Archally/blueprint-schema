@@ -1,0 +1,24 @@
+engineVersion: "0.1"
+rules:
+  - id: leverage-point-no-address
+    severity: warn
+    description: >-
+      A leverage point (LP###) is a prioritized intervention that sits ABOVE the AS-IS remediation
+      chain — it exists to attack concrete problems the model already records. One that references
+      no finding, risk, decision, or fitness-function has no AS-IS anchor: it is aspirational rather
+      than leverage. Healthy = at least one of finding_refs / risk_refs / decision_refs /
+      fitness_function_refs is non-empty. Completeness nudge — override per-project via
+      .blueprint-lint.yaml (e.g. `leverage-point-no-address: off`).
+    find:
+      entity_type: LeveragePoint
+    check:
+      any_of:
+        - any_non_empty:
+            - data.finding_refs
+        - any_non_empty:
+            - data.risk_refs
+        - any_non_empty:
+            - data.decision_refs
+        - any_non_empty:
+            - data.fitness_function_refs
+    message: 'Leverage point "{displayId}" ({name|''unnamed''}) addresses nothing AS-IS — link the finding/risk/decision/fitness-function it targets.'

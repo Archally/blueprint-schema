@@ -20,6 +20,7 @@ export const FILENAME_TO_SCHEMA = {
   interactions: "design/interactions.schema.yaml",
   roadmap: "governance/roadmap.schema.yaml",
   "value-stream": "governance/value-stream.schema.yaml",
+  leverage: "governance/leverage.schema.yaml",
 };
 
 export function detectSchemaType(filePath) {

@@ -92,6 +92,7 @@ properties:
               organization: { type: string, description: "Path to organization.yaml." }
               roadmap: { type: string, description: "Path to roadmap.yaml." }
               value_stream: { type: string, description: "Path to value-stream.yaml." }
+              leverage: { type: string, description: "Path to leverage.yaml." }
 
   # === Constitution ===
   constitution:
@@ -229,6 +230,9 @@ properties:
       value_stream:
         $ref: "governance/value-stream.schema.yaml"
         description: "End-to-end value delivery flows crossing bounded contexts and capabilities."
+      leverage:
+        $ref: "governance/leverage.schema.yaml"
+        description: "Leverage map — prioritized cross-cutting interventions (LP###) over the finding→risk→decision→migration chain."
 
   # === Extensibility ===
   profiles:

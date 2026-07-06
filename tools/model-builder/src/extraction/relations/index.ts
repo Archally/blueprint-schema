@@ -21,6 +21,7 @@ import { extractMotivationRelations } from './motivation.js';
 import { extractInquiryRelations } from './inquiry.js';
 import { extractCapabilityRelations } from './capability.js';
 import { extractValueStreamRelations } from './valueStream.js';
+import { extractLeverageRelations } from './leverage.js';
 import { extractBccRelations } from './bcc.js';
 import { extractRgRelations } from './rg.js';
 
@@ -68,6 +69,7 @@ export function buildRelations(
     ...extractInquiryRelations(entities, placeholders),
     ...extractCapabilityRelations(entities, placeholders),
     ...extractValueStreamRelations(entities, placeholders),
+    ...extractLeverageRelations(entities, placeholders),
     ...extractBccRelations(entities, placeholders),
     ...extractRgRelations(entities),
     ...codeRefRelations,

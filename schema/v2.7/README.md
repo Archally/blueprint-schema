@@ -7,7 +7,7 @@ Meta-schema composing all blueprint layers into Design + Governance planes with 
 A blueprint is organized into **two planes** plus **cross-cutting schemas**. Each plane lives in its own folder; browse in for a per-file index:
 
 - **[Design Plane →](./design/)** — *what & how.* `concepts`, `domain`, `rules`, `story`, `models`, `arch`, `interactions`, `quality`, `dynamics`, `infrastructure`
-- **[Governance Plane →](./governance/)** — *why & proof.* `motivation`, `decisions`, `capability`, `value-stream`, `test-cases`, `roadmap`, `organization`
+- **[Governance Plane →](./governance/)** — *why & proof.* `motivation`, `decisions`, `capability`, `value-stream`, `test-cases`, `roadmap`, `organization`, `leverage`
 
 ## Cross-cutting schemas
 
@@ -19,9 +19,9 @@ The entry-point schema: it composes the design and governance layers into one mo
 
 ### [`metamodel.schema.yaml`](./metamodel.schema.yaml) — the shared vocabulary (the model's *legend*)
 
-Cross-cutting definitions for all blueprint layers. Every design and governance schema imports from it, so identifiers and shared shapes mean the same thing in every layer. It defines **81 shared definitions**, including:
+Cross-cutting definitions for all blueprint layers. Every design and governance schema imports from it, so identifiers and shared shapes mean the same thing in every layer. It defines **84 shared definitions**, including:
 
-- **Typed ID references** (52 forms) — one per entity type (`CN001` concept, `CMD001` command, `EVT001` event …), optionally context-prefixed (`billing.CN001`). These turn the model into a navigable graph.
+- **Typed ID references** (53 forms) — one per entity type (`CN001` concept, `CMD001` command, `EVT001` event …), optionally context-prefixed (`billing.CN001`). These turn the model into a navigable graph.
 - **Versioning** — `semver` content versions plus `schema_version`, which also accepts older document versions for forward-compatibility.
 - **Evidence chains** — `discovery_stage`, `certainty`, `evidence`, `provenance` track how claims mature from hypothesis to confirmed.
 - **Code references** — `code_refs` bridge an entity to the source files that implement it.

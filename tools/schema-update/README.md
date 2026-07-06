@@ -23,6 +23,9 @@ blueprint-schema-validate .blueprint/v2.7
 | Update | Changes |
 |--------|---------|
 | v2.6 → v2.7 | Rename `rg.yaml` → `infrastructure.yaml`, `ui.yaml` → `interactions.yaml`, `org.yaml` → `organization.yaml` |
+| v2.7 → v2.7 (2.7.4) | Quality two-level: remap `finding.quality_characteristic` values `modularity`/`analysability`/`reusability`/`testability` (no longer valid top-level ISO 25010:2011 values) → `quality_characteristic: maintainability` + `quality_subcharacteristic: <value>` |
+
+> A v2.6 model reaching 2.7.4 is a **two-step** run: apply `v2.6 → v2.7` first (renames the directory to `v2.7`), then run again on the `v2.7` directory to apply the quality two-level remap. Each step is idempotent.
 
 ## How It Works
 

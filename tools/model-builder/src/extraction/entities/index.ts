@@ -16,6 +16,7 @@ import { extractCapability } from './capability.js';
 import { extractQuality } from './quality.js';
 import { extractRoadmap } from './roadmap.js';
 import { extractValueStream } from './valueStream.js';
+import { extractLeverage } from './leverage.js';
 import { extractRg } from './rg.js';
 
 /**
@@ -44,6 +45,7 @@ const EXTRACTORS: Record<string, (doc: ParsedBlueprintDocument) => Entity[]> = {
   interactions: extractUI,
   roadmap: extractRoadmap,
   'value-stream': extractValueStream,
+  leverage: extractLeverage,
 };
 
 /**
@@ -90,5 +92,6 @@ export { extractCapability } from './capability.js';
 export { extractQuality } from './quality.js';
 export { extractRoadmap } from './roadmap.js';
 export { extractValueStream } from './valueStream.js';
+export { extractLeverage } from './leverage.js';
 export { extractRg } from './rg.js';
 export { makeInternalId, getSchemaTypeFromPath } from './id.js';

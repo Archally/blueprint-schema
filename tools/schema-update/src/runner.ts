@@ -3,8 +3,9 @@ import fs from 'node:fs';
 import type { SchemaUpdate, UpdatePlan } from './types.js';
 
 import { update as update001 } from './updates/001-rename-acronym-schemas.js';
+import { update as update002 } from './updates/002-quality-characteristic-two-level.js';
 
-const ALL_UPDATES: SchemaUpdate[] = [update001];
+const ALL_UPDATES: SchemaUpdate[] = [update001, update002];
 
 export function detectVersion(blueprintDir: string): string | null {
   const dirName = path.basename(path.resolve(blueprintDir));

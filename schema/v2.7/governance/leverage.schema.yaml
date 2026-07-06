@@ -1,0 +1,242 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Leverage Map
+description: >
+  Governance Plane: Leverage Map — the prioritization tier that sits ABOVE the AS-IS remediation
+  chain (finding → risk → decision → migration). A leverage point (LP###) is the "vital few"
+  cross-cutting intervention: it bundles the findings/risks/decisions/fitness-functions it addresses,
+  projects the consequences of acting (or not), and delegates its delivery/sequencing to roadmap
+  work-items (WI###) rather than re-modelling execution. Answers: what are the highest-leverage
+  things to do, in what order, why, and how confident are we? Distinct from `design/quality`
+  findings (an AS-IS assessment) — leverage is forward-looking, target-setting prioritization.
+type: object
+additionalProperties: false
+required:
+  - version
+  - leverage_points
+properties:
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version of this leverage map."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: "Bounded context / slice this leverage map covers (omit for a systemic, root-level map)."
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default. Leverage points inherit unless overridden."
+  horizon:
+    type: string
+    description: "Planning horizon this map targets (e.g. 'H2-2026', 'next 2 quarters'). Free-text."
+  ranking_basis:
+    type: array
+    items:
+      type: string
+    description: >
+      The shared rubric used to rank leverage points (e.g. urgency, dependency-hub, blast-radius,
+      delivery-risk-reduction, evidence-confidence). Documents HOW `rank` was assigned. Not derivable
+      from the model — records the human judgement rubric.
+  pareto_core:
+    type: array
+    items:
+      $ref: "../metamodel.schema.yaml#/$defs/leverage_ref"
+    description: >
+      The committed 'vital few' — a CURATED subset of leverage points the team commits to now.
+      Semantically distinct from `rank` (which orders all points): pareto_core is the go/no-go
+      selection, which may be narrower than 'the top N by rank'.
+  leverage_points:
+    type: array
+    description: "The leverage points — prioritized cross-cutting interventions."
+    items:
+      $ref: "#/$defs/leverage_point"
+  watchlist:
+    type: array
+    description: >
+      Signals being MONITORED but not yet acted on — candidate future leverage points or deferred
+      risks. Lightweight: enough to not lose the thread, without promoting to a full leverage point.
+    items:
+      $ref: "#/$defs/watch_item"
+
+$defs:
+
+  leverage_point:
+    type: object
+    description: >
+      A prioritized cross-cutting intervention — "the one thing to do for X". Synthesizes the model:
+      it references (does NOT duplicate) the findings/risks/decisions/fitness-functions it addresses,
+      the migrations/roadmap-work-items that deliver it, and the goals/value-streams it advances.
+      Caps the remediation chain finding → risk → decision → migration with a prioritization tier.
+      Connected to decisions three ways: directly via `decision_refs`; indirectly via
+      `finding_refs → finding.decision_refs`; and via `realized_by → work_item.realizes_decisions`.
+    additionalProperties: false
+    required:
+      - id
+      - title
+      - one_thing
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/leverage_ref"
+        description: "Unique leverage-point identifier (LP + 3 digits, optional context prefix)."
+      title:
+        type: string
+        description: "Short imperative title of the intervention (e.g. 'Isolate reporting workloads from the interactive path')."
+      summary:
+        type: string
+        maxLength: 120
+        description: "One-line summary for listings (≤120 chars)."
+      one_thing:
+        type: string
+        description: >
+          The single highest-value thing this intervention achieves, in prose. The definitional core:
+          if you did only one thing here, this is it (e.g. 'make schema evolution safe enough to ship
+          urgent product work')."
+      rank:
+        type: integer
+        minimum: 1
+        description: "Priority rank (1 = highest). Assigned per `ranking_basis`. Optional."
+      area:
+        type: string
+        description: "Concern area this intervention sits in (e.g. 'delivery-data', 'domain-architecture', 'platform'). Free-text label for grouping."
+      status:
+        type: string
+        enum: [proposed, accepted, in-progress, realized, superseded, dropped]
+        description: "Lifecycle: proposed=logged, accepted=committed, in-progress, realized=done, superseded=replaced, dropped=won't do."
+      # --- Address (AS-IS): what this intervention attacks ---
+      finding_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/finding_ref"
+        description: "AS-IS quality findings (FN###) this intervention remediates."
+      risk_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/risk_ref"
+        description: "Motivation risks (R###) this intervention mitigates."
+      decision_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/decision_ref"
+        description: >
+          Decisions (D###) this intervention bundles / is realized through — the DIRECT link to the
+          architecture decision log. (Indirect links also exist via `finding_refs` and `realized_by`.)
+      fitness_function_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/fitness_function_ref"
+        description: "Fitness functions (FF###) this intervention establishes or relies on as guardrails."
+      # --- Deliver (TO-BE): how it gets done ---
+      migration_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/migration_ref"
+        description: "Migrations (MIG###) that implement the TO-BE change this intervention calls for."
+      realized_by:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/work_item_ref"
+        description: >
+          Roadmap work-items (WI###) that deliver/sequence this intervention. Delivery is DELEGATED to
+          the roadmap execution tier — leverage does not re-model steps/horizons/progress. Optional:
+          prioritize-before-schedule is the normal early state (an LP may exist before its work-items).
+      # --- Strategic intent ---
+      advances_goals:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
+        description: "Motivation goals (G###) this intervention advances."
+      advances_value_streams:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/value_stream_ref"
+        description: "Value streams (VS###) / initiatives this intervention unblocks or accelerates."
+      capability_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/capability_ref"
+        description: "Business capabilities (CAP###) this intervention strengthens. Optional."
+      # --- Leverage graph (LP → LP) ---
+      depends_on:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/leverage_ref"
+        description: "Leverage points that must land first (prerequisites). Forms the leverage DAG."
+      enables:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/leverage_ref"
+        description: "Leverage points this one unblocks once done. Inverse edge of `depends_on`."
+      # --- Consequence framing ---
+      consequences_if_done:
+        type: array
+        items:
+          type: string
+        description: "What improves if this intervention is executed."
+      consequences_if_not_done:
+        type: array
+        items:
+          type: string
+        description: "What persists / degrades if it is NOT executed (the cost of inaction)."
+      # --- Governance epistemics (flat, mirroring value_stream) ---
+      discovery_stage:
+        $ref: "../metamodel.schema.yaml#/$defs/discovery_stage"
+        description: "Epistemic maturity of this leverage recommendation."
+      certainty:
+        $ref: "../metamodel.schema.yaml#/$defs/certainty"
+        description: "Confidence in the recommendation (speculative | probable | confirmed)."
+      evidence:
+        $ref: "../metamodel.schema.yaml#/$defs/evidence"
+        description: "Evidence chain justifying the priority and the consequence framing."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Leverage-point version for lifecycle tracking."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Leverage-point ownership override."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  watch_item:
+    type: object
+    description: >
+      A monitored signal not yet promoted to a leverage point. Links to the existing risk/finding it
+      concerns rather than duplicating it.
+    additionalProperties: false
+    required:
+      - id
+      - title
+    properties:
+      id:
+        type: string
+        pattern: "^W\\d{3}$"
+        description: "Local watch-item id (W + 3 digits). Not referenced elsewhere — local to this map."
+      title:
+        type: string
+        description: "What is being watched (e.g. 'Retire compatibility-only runtime islands')."
+      note:
+        type: string
+        description: "Why it is on the watchlist and what would trigger promotion to a leverage point."
+      risk_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/risk_ref"
+        description: "Risks (R###) this watch item concerns."
+      finding_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/finding_ref"
+        description: "Findings (FN###) this watch item concerns."
+      decision_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/decision_ref"
+        description: "Decisions (D###) relevant to this watch item."
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
