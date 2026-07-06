@@ -13,6 +13,15 @@ work-breakdown structure.
 This guide helps with **delivery milestones and work planning**. Technically, it covers **delivery
 planning and execution sequencing**.
 
+## Main entities in this guide
+
+- `milestone` — a dated delivery target with outcomes and success criteria.
+- `work_item` — the execution-level work that makes a milestone real.
+- `blocker` — something preventing a `work_item` from moving forward.
+- `cadence` — the sprint anchor used when work is planned by sprint rather than only by date.
+  - Often confused with: a `leverage_point`. A roadmap item is delivery work or timing; a leverage
+    point is the higher-level intervention being prioritized.
+
 ## What belongs here
 
 - milestones
@@ -42,6 +51,7 @@ planning and execution sequencing**.
 - what execution work items exist beneath the milestone layer
 - what kind of work item each one is (`epic`, `phase`, `foundation`, `subscope`, `task`)
 - when work starts and ends, either by sprint or by explicit date
+- whether a work item is the delivery vehicle for a higher-level leverage intervention
 - who owns the milestone or work item
 - what dependencies, blockers, or rollback-style delivery risks matter
 - what goals, risks, decisions, value streams, stories, or use cases the work advances
@@ -55,6 +65,7 @@ planning and execution sequencing**.
 - work item -> work item dependency
 - parent work item -> child work item
 - work item -> blocker
+- leverage intervention -> roadmap work item that realizes it
 - work item or milestone -> goals/risks/decisions/value streams/stories/use cases
 
 ## Modus operandi
@@ -68,6 +79,7 @@ Use roadmap capture to show meaningful progress:
 5. add nested subscopes or tasks only where they improve handoff clarity
 6. state success criteria, dependencies, blockers, and ownership
 7. connect roadmap items back to the goals, risks, decisions, value streams, stories, and use cases they serve
+8. if the work exists mainly to realize a leverage point, say that explicitly
 
 Think of this guide as a **delivery handoff** from intent to execution: a reader should understand
 what is being delivered, in what order, by whom, and why it matters.
@@ -83,6 +95,7 @@ what is being delivered, in what order, by whom, and why it matters.
 - are those work items better expressed by sprint or by date?
 - what blocks them today?
 - what goal, risk, decision, or value stream does each item support?
+- which work items are the concrete delivery path for the top leverage interventions?
 
 ## Free-text intake template
 
@@ -104,6 +117,7 @@ what is being delivered, in what order, by whom, and why it matters.
   - **Owner / executor:**
   - **Depends on:**
   - **Blockers:**
+  - **Related leverage point (if this work realizes one):**
   - **Advances goals / mitigates risks / realizes decisions / supports value streams / delivers stories or use cases:**
 
 ## Worked example
@@ -124,8 +138,10 @@ what is being delivered, in what order, by whom, and why it matters.
   - **Foundation:** refund policy integration
     - depends on policy rule clarification
     - blocker: unresolved fraud review
-  - **Task:** manager dashboard decision panel
-    - executor: backend + frontend team
+    - related leverage point: LP001 consistent return decisions across channels
+  - **Task:** support review console decision panel
+    - executor: platform + storefront team
+    - related leverage point: LP001 consistent return decisions across channels
     - delivers related story and use case coverage
 
 ## Layer-specific handoff guidance
@@ -148,6 +164,7 @@ A technical modeler or AI agent can transform this into:
 - milestones with target dates, deliverables, status, success criteria, and dependencies
 - optional roadmap cadence for sprint-based planning
 - execution work items with kind, timing, ownership, progress, blockers, nesting, and milestone roll-up
+- optional handoff cues showing which work items realize which leverage points
 - typed traceability links back to goals, risks, decisions, value streams, stories, and use cases
 
 ## Common mistakes

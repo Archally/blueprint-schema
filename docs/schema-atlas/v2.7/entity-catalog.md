@@ -8,7 +8,7 @@ Every schema file, its root object, and its definitions — with types, required
 
 **Design Plane:** [`design/arch.schema.yaml`](#design-arch) · [`design/concepts.schema.yaml`](#design-concepts) · [`design/domain.schema.yaml`](#design-domain) · [`design/dynamics.schema.yaml`](#design-dynamics) · [`design/infrastructure.schema.yaml`](#design-infrastructure) · [`design/interactions.schema.yaml`](#design-interactions) · [`design/models.schema.yaml`](#design-models) · [`design/quality.schema.yaml`](#design-quality) · [`design/rules.schema.yaml`](#design-rules) · [`design/story.schema.yaml`](#design-story)
 
-**Governance Plane:** [`governance/capability.schema.yaml`](#governance-capability) · [`governance/decisions.schema.yaml`](#governance-decisions) · [`governance/motivation.schema.yaml`](#governance-motivation) · [`governance/organization.schema.yaml`](#governance-organization) · [`governance/roadmap.schema.yaml`](#governance-roadmap) · [`governance/test-cases.schema.yaml`](#governance-test-cases) · [`governance/value-stream.schema.yaml`](#governance-value-stream)
+**Governance Plane:** [`governance/capability.schema.yaml`](#governance-capability) · [`governance/decisions.schema.yaml`](#governance-decisions) · [`governance/leverage.schema.yaml`](#governance-leverage) · [`governance/motivation.schema.yaml`](#governance-motivation) · [`governance/organization.schema.yaml`](#governance-organization) · [`governance/roadmap.schema.yaml`](#governance-roadmap) · [`governance/test-cases.schema.yaml`](#governance-test-cases) · [`governance/value-stream.schema.yaml`](#governance-value-stream)
 
 ## Cross-cutting
 
@@ -238,6 +238,7 @@ _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/impacts_links`_
 | `user_story_ref` | `string` |  | Reference to a user story (US + 3+ digits, optional context prefix). |
 | `use_case_ref` | `string` |  | Reference to a use case (UC + 3+ digits, optional context prefix). |
 | `milestone_ref` | `string` |  | Reference to a roadmap milestone (MS + 3+ digits, optional context prefix). |
+| `work_item_ref` | `string` |  | Reference to a roadmap work item / WBS node (WI + 3+ digits, optional context prefix). Work items are the execution tier beneath milestones (epic → subscope →… |
 | `error_ref` | `union` |  | Reference to a domain error. Two formats supported: (1) ID-based: optional context prefix + ERR + digits (e.g., ERR001, orders.ERR001). (2) Domain:key: domainR… |
 | `fitness_function_ref` | `string` |  | Reference to an architectural fitness function (e.g. FF001 or billing.FF001). |
 | `migration_ref` | `string` |  | Reference to a blueprint model migration (e.g. MIG001 or billing.MIG001). |
@@ -258,6 +259,9 @@ _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/impacts_links`_
 | `non_goal_ref` | `string` |  | Reference to a motivation non-goal (e.g. NG001 or billing.NG001). |
 | `metric_ref` | `string` |  | Reference to a quality metric (e.g. MT001 or billing.MT001). |
 | `finding_ref` | `string` |  | Reference to a quality finding — an AS-IS internal-quality defect (e.g. FN001 or ordering.FN001). |
+| `leverage_ref` | `string` |  | Reference to a leverage point — a prioritized cross-cutting intervention that bundles findings / risks / decisions / fitness-functions and is delivered via mig… |
+| `quality_characteristic` | `string` | `functional-suitability`, `performance-efficiency`, `compatibility`, `usability`, `reliability`, `security` … (9) | ISO/IEC 25010:2011 top-level product-quality characteristic — the eight 2011 characteristics plus `safety` (the one clearly-useful 2023 addition). Names the to… |
+| `quality_subcharacteristic` | `string` | `modularity`, `reusability`, `analysability`, `modifiability`, `testability`, `confidentiality` … (36) | ISO/IEC 25010 sub-characteristic — the finer grain under a `quality_characteristic`. The pairing of a sub-characteristic to its top-level is a CONVENTION the a… |
 | `complexity_pattern` | `string` | `crud`, `presentation`, `transformation`, `integration`, `cdc`, `concurrency` … (7) | Dominant implementation-complexity / problem-type pattern of a context or subdomain: crud=record management; presentation=UI-heavy; transformation=translation/… |
 | `model_traits_item` | `string` | `analyser`, `executor`, `drafter`, `auditor`, `controller`, `service-provider` … (10) | A behavioural archetype (Wirfs-Brock role stereotype) of a context or subdomain — e.g. controller/coordinator drives a process/state-machine, information-holde… |
 | `kpi_ref` | `string` |  | Reference to a quality KPI (e.g. KPI001 or billing.KPI001). |
@@ -695,7 +699,7 @@ Core domain vocabulary entry. Minimum: id + name (v2.3) or id + term (v2.1/v2.2 
 | `name` | `string` | — |  | Display name for this concept (e.g. Order, Customer, Payment). |
 | `description` | `string` | — |  | Human-readable description of the concept. |
 | `term` | `string` | — |  | Optional formal DDD term. Use when it differs from name. Prefer properties.term for v2.3+. |
-| `summary` | `string` | — |  | Brief summary (≤120 chars, for RAG and quick reference). |
+| `summary` | `string` | — |  | Brief summary (≤200 chars, for RAG and quick reference). |
 | `definition` | `string` | — |  | Optional formal glossary definition. Prefer properties.definition for v2.3+. |
 | `stereotype` | `string` | — | `entity`, `value-object`, `aggregate-root`, `domain-service`, `specification`, `read-model` | DDD modeling classification. entity = has identity and lifecycle. value-object = structural equality, immutable. aggregate-root = entity that forms a transacti… |
 | `properties` | `ref → entity_properties` | — |  | Open metadata bag. Known keys: term (DDD formal name), definition (glossary entry). |
@@ -748,7 +752,7 @@ Stakeholder, user, system, or role interacting with the domain.
 | `id` | `ref → actor_ref` | ✓ |  | Unique actor identifier (e.g. ACT001 or billing.ACT001). |
 | `name` | `string` | ✓ |  | Actor name (e.g. Customer, Payment Gateway). |
 | `type` | `string` | ✓ | `human`, `system`, `external`, `role`, `time` | Actor classification: human=person, system=internal service, external=third-party, role=abstract role, time=temporal trigger (timer, schedule, time passing). |
-| `summary` | `string` | — |  | Brief description of this actor (≤120 chars). |
+| `summary` | `string` | — |  | Brief description of this actor (≤200 chars). |
 | `responsibilities` | `array<string>` | — |  | What this actor is responsible for in the domain. |
 | `interactions` | `array<object>` | — |  | Concepts or operations this actor interacts with. |
 | `description` | `string` | — |  | Human-readable description of this actor. |
@@ -793,7 +797,7 @@ Closed value set for a domain category (e.g. order statuses, payment types).
 | `name` | `string` | — |  | Display name for this enumeration (e.g. Order Status, Payment Type). |
 | `term` | `string` | — |  | Optional formal DDD term. Use when it differs from name. |
 | `description` | `string` | — |  | Human-readable description of this value set. |
-| `summary` | `string` | — |  | Brief description of this value set (≤120 chars). |
+| `summary` | `string` | — |  | Brief description of this value set (≤200 chars). |
 | `extensible` | `boolean` | — |  | Whether consumers can extend this value set with additional values. |
 | `values` | `array<union>` | ✓ |  | Allowed values. Plain strings or objects with name, description, code, and optional state transitions. |
 | `properties` | `ref → entity_properties` | — |  |  |
@@ -884,6 +888,7 @@ A domain operation with protocol binding, rule governance, and behavioral proper
 | `description` | `string` | — |  | What this operation does and its domain significance. |
 | `rules` | `object` | — |  | Legacy free-text business rules. For new documents prefer governed_by, preconditions, postconditions with typed rule refs. |
 | `exchange` | `union` | — |  | Communication protocol and binding for this operation. Single exchange or array for multi-channel operations. |
+| `dispatch` | `string` | — | `in-process` | Invocation model, ORTHOGONAL to `exchange` (which is the wire transport). Set `in-process` to declare that this command/query EXECUTES in-process and has no wi… |
 | `payload` | `ref → payload` | — |  | Message payload schema and content type. |
 | `responses` | `array<ref → response>` | — |  | Possible response codes and their meanings. |
 | `reasons` | `array<ref → reason>` | — |  | Business reasons that may trigger or result from this operation. |
@@ -938,7 +943,7 @@ Communication protocol and binding. Protocol determines which sub-fields are req
 | `endpoint` | `ref → endpoint` | — |  | Endpoint configuration (required for http, http-sse, and stdio protocols). |
 | `topic` | `ref → topic` | — |  | Message topic configuration (for AMQP/MQTT protocols). |
 | `queue` | `ref → queue` | — |  | Message queue configuration (alternative to topic for AMQP/MQTT). |
-| `method` | `ref → method` | — |  | RPC method configuration (required for tcp/grpc/trpc/orpc/x-ws). |
+| `method` | `ref → method` | — |  | RPC method configuration (required for tcp/grpc/trpc/orpc/json-rpc/x-ws). |
 | `graphql` | `ref → graphql_binding` | — |  | GraphQL operation binding (required for graphql protocol). |
 
 _Source: `schema/v2.7/design/domain.schema.yaml#/$defs/exchange`_
@@ -1010,7 +1015,7 @@ _Source: `schema/v2.7/design/domain.schema.yaml#/$defs/graphql_binding`_
 
 #### `method`
 
-RPC method configuration for gRPC/TCP protocols.
+RPC method configuration for gRPC/TCP/JSON-RPC and similar RPC protocols (method name + params + result; OpenRPC-compatible).
 
 **Required:** `name`
 
@@ -1165,7 +1170,7 @@ A competency question this domain was created to answer. Questions are first-cla
 | `id` | `ref → question_ref` | ✓ |  | Unique question identifier (e.g. QN001 or billing.QN001). |
 | `statement` | `string` | ✓ |  | The question as a natural-language interrogative sentence. Should be phrased from the stakeholder's perspective, not the system's. E.g., "What is the current s… |
 | `name` | `string` | — |  | Short name for listings and graph nodes (e.g. 'Order Status'). |
-| `summary` | `string` | — |  | One-line summary for listings (≤120 chars). |
+| `summary` | `string` | — |  | One-line summary for listings (≤200 chars). |
 | `description` | `string` | — |  | Extended context: why this question matters, what answering it enables, and what business decisions depend on the answer. |
 | `category` | `string` | — | `existence`, `enumeration`, `relationship`, `measurement`, `temporal`, `behavioral` … (14) | Question category. Ontology categories (existence through compliance) classify what the question asks about — from Gruninger & Fox 1995. Domain categories (bus… |
 | `priority` | `string` | — | `critical`, `high`, `medium`, `low` | Question priority. Critical questions define the domain's raison d'être — if the system can't answer them, the domain has no justification. |
@@ -1515,7 +1520,7 @@ A UI screen or view the user interacts with. Links to models, goals, decisions, 
 | --- | --- | --- | --- | --- |
 | `id` | `ref → screen_ref` | ✓ |  | Unique screen identifier (SCR001, SCR002, etc.). |
 | `name` | `string` | ✓ |  | Human-readable screen name (e.g. 'Order Summary'). |
-| `summary` | `string` | — |  | One-line summary for listings (≤120 chars). |
+| `summary` | `string` | — |  | One-line summary for listings (≤200 chars). |
 | `description` | `string` | — |  | Detailed screen purpose and content overview. |
 | `uses_models` | `array<ref → model_ref>` | — |  | Data models this screen displays or consumes. |
 | `motivated_by` | `array<ref → goal_ref>` | — |  | Goals this screen helps achieve. |
@@ -1883,8 +1888,10 @@ An AS-IS internal-quality defect discovered in the codebase (maintainability / m
 | `title` | `string` | ✓ |  | Short descriptive title understandable without reading the full statement. |
 | `summary` | `string` | — |  | One-line summary for listings. |
 | `kind` | `string` | ✓ | `god-class`, `duplication`, `drift`, `coupling`, `boundary-leak`, `misplaced-shared-kernel` … (12) | Defect category: god-class=one class, many concerns; duplication=repeated logic/model; drift=divergent parallel implementations; coupling=undue dependency; bou… |
-| `quality_characteristic` | `string` | — | `maintainability`, `modularity`, `analysability`, `testability`, `reusability` | ISO/IEC 25010 product-quality characteristic this finding degrades. Optional. |
-| `severity` | `string` | ✓ | `low`, `medium`, `high`, `critical` | How damaging the defect is to maintainability / the modularization goal. |
+| `quality_characteristic` | `ref → quality_characteristic` | — |  | ISO/IEC 25010:2011 top-level product-quality characteristic this finding degrades — the top-level attribute only (finer grain goes in `quality_subcharacteristi… |
+| `quality_subcharacteristic` | `ref → quality_subcharacteristic` | — |  | ISO/IEC 25010 sub-characteristic under `quality_characteristic` (e.g. `modularity` under `maintainability`, `confidentiality` under `security`). Consistency wi… |
+| `regulatory` | `array<string>` | — |  | Regulatory frameworks this finding relates to (e.g. GDPR, PCI-DSS, WCAG). A tag, NOT a quality characteristic — regulatory concerns classify as security / func… |
+| `severity` | `string` | ✓ | `low`, `medium`, `high`, `critical` | How damaging the defect is to the relevant quality characteristic / the modernization goal. |
 | `effort` | `string` | — | `s`, `m`, `l`, `xl` | Rough remediation effort (t-shirt size). Optional. |
 | `statement` | `string` | ✓ |  | The observation — what is wrong and where, in plain language. |
 | `recommendation` | `string` | — |  | Suggested remediation direction, in prose. The structured fix lives in the linked migration. |
@@ -1973,7 +1980,7 @@ Business rule. Minimum: id, name.
 | `id` | `ref → rule_ref` | ✓ |  | Unique rule ID. Prefix indicates category: SR=structural, CR=classification, DR=derivation, EQ=equivalence, VR=validation. |
 | `name` | `string` | ✓ |  | Human-readable name in imperative form. Describes what the rule enforces, not how. |
 | `description` | `string` | — |  | Human-readable description of what the rule does and why. |
-| `summary` | `string` | — |  | One-line summary (≤120 chars) for listings and quick reference. Must be self-contained. |
+| `summary` | `string` | — |  | One-line summary (≤200 chars) for listings and quick reference. Must be self-contained. |
 | `logic` | `ref → logic_tuple` | — |  | Business logic as when/then/else. 'when' = condition (omit for invariants). 'then' = required outcome. 'else' = alternative. |
 | `version` | `ref → entity_version` | — |  | Rule version for individual lifecycle tracking. |
 | `modality` | `ref → sbvr_modality` | — |  | Deontic strength: necessary=domain truth, obligatory=system enforced, prohibited=must never happen, permitted=explicitly allowed. |
@@ -2002,7 +2009,7 @@ State transition rule. Defines when and how a concept moves between lifecycle st
 | --- | --- | --- | --- | --- |
 | `id` | `ref → transition_ref` | ✓ |  | Unique transition rule ID (e.g. TR001 or billing.TR001). |
 | `name` | `string` | ✓ |  | Human-readable name for this transition. |
-| `summary` | `string` | — |  | One-line summary of the state transition (≤120 chars). |
+| `summary` | `string` | — |  | One-line summary of the state transition (≤200 chars). |
 | `concept` | `ref → concept_ref` | ✓ |  | The concept whose lifecycle state machine this transition belongs to. Must define states[]. |
 | `from` | `string` | ✓ |  | Source state name. Must match a state defined in the referenced concept's states[]. |
 | `to` | `string` | ✓ |  | Target state name. Must match a state defined in the referenced concept's states[]. |
@@ -2266,7 +2273,7 @@ An Architecture Decision Record (ADR). Minimum: id, title, summary, date, status
 | `id` | `ref → decision_ref` | ✓ |  | Unique decision ID (e.g. D001 or billing.D001). Assigned chronologically; never reused. |
 | `description` | `string` | — |  | Human-readable description. |
 | `title` | `string` | ✓ |  | Short descriptive title understandable without reading the full rationale. |
-| `summary` | `string` | — |  | One-line summary for listings and quick scanning (≤120 chars). Self-contained. |
+| `summary` | `string` | — |  | One-line summary for listings and quick scanning (≤200 chars). Self-contained. |
 | `date` | `string` | ✓ |  | Date proposed or accepted. Format: YYYY-MM or YYYY-MM-DD. |
 | `status` | `ref → decision_status` | ✓ |  | Lifecycle status: proposed→accepted→landed; rejected or deprecated at any stage. |
 | `rationale` | `ref → rationale` | ✓ |  | The reasoning behind this decision. Answers 'why' for future readers. |
@@ -2410,6 +2417,92 @@ BCC v5 Business Decision — a key rule or policy that governs the behaviour of 
 | `code_refs` | `ref → code_refs` | — |  |  |
 
 _Source: `schema/v2.7/governance/decisions.schema.yaml#/$defs/business_decision`_
+
+<a id="governance-leverage"></a>
+
+### `governance/leverage.schema.yaml`
+
+**Blueprint Leverage Map**
+
+Governance Plane: Leverage Map — the prioritization tier that sits ABOVE the AS-IS remediation chain (finding → risk → decision → migration). A leverage point (LP###) is the "vital few" cross-cutting intervention: it bundles the findings/risks/decisions/fitness-functions it addresses, projects the consequences of acting (or not), and delegates its delivery/sequencing to roadmap work-items (WI###) rather than re-modelling execution. Answers: what are the highest-leverage things to do, in what or…
+
+_Source: `schema/v2.7/governance/leverage.schema.yaml` · root type `object`_
+
+**Root required:** `version`, `leverage_points`
+
+**Root properties:**
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `version` | `ref → semver` | ✓ |  | Content version of this leverage map. |
+| `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
+| `scope` | `ref → context_prefix` | — |  | Bounded context / slice this leverage map covers (omit for a systemic, root-level map). |
+| `tags` | `ref → tags` | — |  |  |
+| `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Leverage points inherit unless overridden. |
+| `horizon` | `string` | — |  | Planning horizon this map targets (e.g. 'H2-2026', 'next 2 quarters'). Free-text. |
+| `ranking_basis` | `array<string>` | — |  | The shared rubric used to rank leverage points (e.g. urgency, dependency-hub, blast-radius, delivery-risk-reduction, evidence-confidence). Documents HOW `rank`… |
+| `pareto_core` | `array<ref → leverage_ref>` | — |  | The committed 'vital few' — a CURATED subset of leverage points the team commits to now. Semantically distinct from `rank` (which orders all points): pareto_co… |
+| `leverage_points` | `array<ref → leverage_point>` | ✓ |  | The leverage points — prioritized cross-cutting interventions. |
+| `watchlist` | `array<ref → watch_item>` | — |  | Signals being MONITORED but not yet acted on — candidate future leverage points or deferred risks. Lightweight: enough to not lose the thread, without promotin… |
+
+#### Definitions
+
+#### `leverage_point`
+
+A prioritized cross-cutting intervention — "the one thing to do for X". Synthesizes the model: it references (does NOT duplicate) the findings/risks/decisions/fitness-functions it addresses, the migrations/roadmap-work-items that deliver it, and the goals/value-streams it advances. Caps the remediation chain finding → risk → decision → migration with a prioritization tier. Connected to decisions…
+
+**Required:** `id`, `title`, `one_thing`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `id` | `ref → leverage_ref` | ✓ |  | Unique leverage-point identifier (LP + 3 digits, optional context prefix). |
+| `title` | `string` | ✓ |  | Short imperative title of the intervention (e.g. 'Isolate reporting workloads from the interactive path'). |
+| `summary` | `string` | — |  | One-line summary for listings (≤120 chars). |
+| `one_thing` | `string` | ✓ |  | The single highest-value thing this intervention achieves, in prose. The definitional core: if you did only one thing here, this is it (e.g. 'make schema evolu… |
+| `rank` | `integer` | — |  | Priority rank (1 = highest). Assigned per `ranking_basis`. Optional. |
+| `area` | `string` | — |  | Concern area this intervention sits in (e.g. 'delivery-data', 'domain-architecture', 'platform'). Free-text label for grouping. |
+| `status` | `string` | — | `proposed`, `accepted`, `in-progress`, `realized`, `superseded`, `dropped` | Lifecycle: proposed=logged, accepted=committed, in-progress, realized=done, superseded=replaced, dropped=won't do. |
+| `finding_refs` | `array<ref → finding_ref>` | — |  | AS-IS quality findings (FN###) this intervention remediates. |
+| `risk_refs` | `array<ref → risk_ref>` | — |  | Motivation risks (R###) this intervention mitigates. |
+| `decision_refs` | `array<ref → decision_ref>` | — |  | Decisions (D###) this intervention bundles / is realized through — the DIRECT link to the architecture decision log. (Indirect links also exist via `finding_re… |
+| `fitness_function_refs` | `array<ref → fitness_function_ref>` | — |  | Fitness functions (FF###) this intervention establishes or relies on as guardrails. |
+| `migration_refs` | `array<ref → migration_ref>` | — |  | Migrations (MIG###) that implement the TO-BE change this intervention calls for. |
+| `realized_by` | `array<ref → work_item_ref>` | — |  | Roadmap work-items (WI###) that deliver/sequence this intervention. Delivery is DELEGATED to the roadmap execution tier — leverage does not re-model steps/hori… |
+| `advances_goals` | `array<ref → goal_ref>` | — |  | Motivation goals (G###) this intervention advances. |
+| `advances_value_streams` | `array<ref → value_stream_ref>` | — |  | Value streams (VS###) / initiatives this intervention unblocks or accelerates. |
+| `capability_refs` | `array<ref → capability_ref>` | — |  | Business capabilities (CAP###) this intervention strengthens. Optional. |
+| `depends_on` | `array<ref → leverage_ref>` | — |  | Leverage points that must land first (prerequisites). Forms the leverage DAG. |
+| `enables` | `array<ref → leverage_ref>` | — |  | Leverage points this one unblocks once done. Inverse edge of `depends_on`. |
+| `consequences_if_done` | `array<string>` | — |  | What improves if this intervention is executed. |
+| `consequences_if_not_done` | `array<string>` | — |  | What persists / degrades if it is NOT executed (the cost of inaction). |
+| `discovery_stage` | `ref → discovery_stage` | — |  | Epistemic maturity of this leverage recommendation. |
+| `certainty` | `ref → certainty` | — |  | Confidence in the recommendation (speculative \| probable \| confirmed). |
+| `evidence` | `ref → evidence` | — |  | Evidence chain justifying the priority and the consequence framing. |
+| `version` | `ref → entity_version` | — |  | Leverage-point version for lifecycle tracking. |
+| `owned_by` | `ref → owned_by` | — |  | Leverage-point ownership override. |
+| `properties` | `ref → entity_properties` | — |  |  |
+| `tags` | `ref → tags` | — |  |  |
+| `code_refs` | `ref → code_refs` | — |  |  |
+
+_Source: `schema/v2.7/governance/leverage.schema.yaml#/$defs/leverage_point`_
+
+#### `watch_item`
+
+A monitored signal not yet promoted to a leverage point. Links to the existing risk/finding it concerns rather than duplicating it.
+
+**Required:** `id`, `title`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `id` | `string` | ✓ |  | Local watch-item id (W + 3 digits). Not referenced elsewhere — local to this map. |
+| `title` | `string` | ✓ |  | What is being watched (e.g. 'Retire compatibility-only runtime islands'). |
+| `note` | `string` | — |  | Why it is on the watchlist and what would trigger promotion to a leverage point. |
+| `risk_refs` | `array<ref → risk_ref>` | — |  | Risks (R###) this watch item concerns. |
+| `finding_refs` | `array<ref → finding_ref>` | — |  | Findings (FN###) this watch item concerns. |
+| `decision_refs` | `array<ref → decision_ref>` | — |  | Decisions (D###) relevant to this watch item. |
+| `code_refs` | `ref → code_refs` | — |  |  |
+
+_Source: `schema/v2.7/governance/leverage.schema.yaml#/$defs/watch_item`_
 
 <a id="governance-motivation"></a>
 
@@ -2698,6 +2791,8 @@ _Source: `schema/v2.7/governance/roadmap.schema.yaml` · root type `object`_
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Milestones inherit unless overridden. |
 | `milestones` | `array<ref → milestone>` | ✓ |  | Product milestones ordered by target date. |
+| `cadence` | `object` | — |  | Sprint cadence anchor (v2.7.2). When present, work items may be placed by sprint number and their calendar dates are derived as anchor_start + (sprint - anchor… |
+| `work_items` | `array<ref → work_item>` | — |  | Execution-tier work breakdown (WBS, v2.7.2): epics, phases, foundations and their nested subscopes/tasks. Each work item optionally rolls up to a milestone (it… |
 
 #### Definitions
 
@@ -2717,12 +2812,71 @@ Product roadmap milestone — a dated target with deliverables and success crite
 | `deliverables` | `array<object>` | — |  | What ships in this milestone — polymorphic refs. |
 | `success_criteria` | `array<string>` | — |  | Measurable criteria for milestone completion. |
 | `dependencies` | `array<ref → milestone_ref>` | — |  | Milestones that must complete before this one. |
+| `advances_goals` | `ref → goal_ref_list` | — |  |  |
+| `mitigates_risks` | `ref → risk_ref_list` | — |  |  |
+| `realizes_decisions` | `ref → decision_ref_list` | — |  |  |
+| `value_streams` | `ref → value_stream_ref_list` | — |  |  |
+| `user_stories` | `ref → user_story_ref_list` | — |  |  |
+| `use_cases` | `ref → use_case_ref_list` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | Team or department responsible for this milestone. |
 | `version` | `ref → entity_version` | — |  |  |
 | `properties` | `ref → entity_properties` | — |  |  |
 | `tags` | `ref → tags` | — |  |  |
 
 _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/milestone`_
+
+#### `work_item`
+
+A roadmap work-breakdown node: an epic, phase, or foundation lane, or a nested subscope/task. Recursive via `children`. Placed by sprint (first-class, requires `cadence`) or by explicit date; rolls up to a milestone via `milestone`. Carries typed traceability to goals/risks/decisions/value-streams/stories/use-cases so delivery links back to strategic intent. Rendering concerns (colour, hatching,…
+
+**Required:** `id`, `kind`, `name`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `id` | `ref → work_item_ref` | ✓ |  | Unique work-item identifier (WI + 3+ digits). |
+| `kind` | `string` | ✓ | `epic`, `phase`, `foundation`, `subscope`, `task` | WBS tier. epic/phase/foundation are top-level lanes; subscope/task are nested children. Encodes hierarchy level independently of `children` nesting depth. |
+| `name` | `string` | ✓ |  | Short work-item title (e.g. 'Survey Setup', 'Reminders'). |
+| `description` | `string` | — |  | What this work item delivers and why. |
+| `status` | `string` | — | `planned`, `in-progress`, `achieved`, `deferred`, `cancelled` | Delivery lifecycle status (same axis as milestone.status). |
+| `confidence` | `string` | — | `committed`, `estimated`, `tentative` | Planning confidence in the placement/scope — orthogonal to `status`. committed = firm dates; estimated = sized but movable; tentative = provisional/placeholder. |
+| `progress` | `integer` | — |  | Percent complete (0–100). Rolls up (duration-weighted) to parents in a view. |
+| `milestone` | `ref → milestone_ref` | — |  | The milestone (release) this work item rolls up to (e.g. the MVP milestone). |
+| `start_sprint` | `number` | — |  | First sprint. Fractional allowed: 30.5 = halfway through sprint 30. Requires `cadence`. |
+| `end_sprint` | `number` | — |  | End sprint. Integer = inclusive whole sprint; fractional (31.5) = that exact point. |
+| `start_date` | `string` | — |  | Explicit start date. Overrides start_sprint when both are present. |
+| `end_date` | `string` | — |  | Explicit end date (bar right edge). Overrides end_sprint when both are present. |
+| `buffer_end_sprint` | `number` | — |  | Last buffer sprint (committed end → hatched buffer tail). Fractional allowed. |
+| `buffer_end` | `string` | — |  | Explicit buffer right edge. Overrides buffer_end_sprint. |
+| `owned_by` | `ref → owned_by` | — |  | Owning team/department/party (typed org reference). |
+| `executor` | `array<string>` | — |  | Human owner(s) responsible — free-text names/teams, distinct from the typed `owned_by`. |
+| `tracker_ref` | `string` | — |  | External issue-tracker key or URL (e.g. a Jira key 'ABC-1234'). The base URL / link construction is a view concern (Gantt view-config), not modelled here. |
+| `note` | `string` | — |  | Free-text planning note (e.g. a scheduling caveat). |
+| `advances_goals` | `ref → goal_ref_list` | — |  |  |
+| `mitigates_risks` | `ref → risk_ref_list` | — |  |  |
+| `realizes_decisions` | `ref → decision_ref_list` | — |  |  |
+| `value_streams` | `ref → value_stream_ref_list` | — |  |  |
+| `user_stories` | `ref → user_story_ref_list` | — |  |  |
+| `use_cases` | `ref → use_case_ref_list` | — |  |  |
+| `depends_on` | `array<union>` | — |  | Work items or milestones that must complete before this one starts. |
+| `blockers` | `array<ref → blocker>` | — |  | Active blockers preventing progress. |
+| `children` | `array<ref → work_item>` | — |  | Nested work items (e.g. an epic's subscopes; a subscope's tasks). |
+| `version` | `ref → entity_version` | — |  |  |
+| `properties` | `ref → entity_properties` | — |  |  |
+| `tags` | `ref → tags` | — |  |  |
+
+_Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/work_item`_
+
+#### Value definitions
+
+| Definition | Type | Values | Description |
+| --- | --- | --- | --- |
+| `blocker` | `union` |  | A blocker on a work item. Either a plain string, or an object with a description, an optional external tracker key/URL, and optional typed links to the blockin… |
+| `goal_ref_list` | `array<ref → goal_ref>` |  | Motivation goals (G###) this item advances. |
+| `risk_ref_list` | `array<ref → risk_ref>` |  | Motivation risks (R###) this item mitigates. |
+| `decision_ref_list` | `array<ref → decision_ref>` |  | Decisions (D###) this item realizes / implements. |
+| `value_stream_ref_list` | `array<ref → value_stream_ref>` |  | Value streams (VS###) this item contributes to. |
+| `user_story_ref_list` | `array<ref → user_story_ref>` |  | User stories (US###) delivered by this item. |
+| `use_case_ref_list` | `array<ref → use_case_ref>` |  | Use cases (UC###) delivered by this item. |
 
 <a id="governance-test-cases"></a>
 
@@ -2769,6 +2923,7 @@ Architectural fitness function — automated constraint validated against the bl
 | `properties` | `ref → entity_properties` | — |  |  |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `provenance` | `ref → provenance` | — |  | Epistemic provenance for this fitness function: the evidence and confidence behind the constraint (e.g. codebase-analysis that motivated the guardrail, an ADR… |
 
 _Source: `schema/v2.7/governance/test-cases.schema.yaml#/$defs/fitness_function`_
 
@@ -2783,7 +2938,7 @@ A single test case. Minimum: id, name, summary, validates.
 | `id` | `ref → test_ref` | ✓ |  | Unique test ID. Prefix indicates suite: TC=happy-path, EC=edge-case, ER=error-case. |
 | `description` | `string` | — |  | Human-readable description. |
 | `name` | `string` | ✓ |  | Human-readable scenario name (e.g. 'Submit order with valid items'). |
-| `summary` | `string` | — |  | One-line summary for listings (≤120 chars). Self-contained. |
+| `summary` | `string` | — |  | One-line summary for listings (≤200 chars). Self-contained. |
 | `validates` | `ref → validates_refs` | ✓ |  | What this test proves. Authoritative source for test-to-blueprint traceability. |
 | `version` | `ref → entity_version` | — |  | Test version for lifecycle tracking. |
 | `given` | `ref → test_setup` | — |  | Initial state and preconditions (Arrange phase). |
@@ -2796,6 +2951,7 @@ A single test case. Minimum: id, name, summary, validates.
 | `properties` | `ref → entity_properties` | — |  |  |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `provenance` | `ref → provenance` | — |  | Epistemic provenance for this test case: on what basis it was authored and how sure we are it encodes correct behaviour. Complements `code_refs` — code_refs sa… |
 
 _Source: `schema/v2.7/governance/test-cases.schema.yaml#/$defs/test_case`_
 

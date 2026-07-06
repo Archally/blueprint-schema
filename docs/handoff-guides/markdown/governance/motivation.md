@@ -10,6 +10,17 @@ This guide is about **why** the system exists and what strategic forces shape it
 This guide helps with **goals, risks, assumptions, and trade-offs**. Technically, it covers
 **strategic intent, risk, and assumption management**.
 
+## Main entities in this guide
+
+- `goal` — an outcome the system or organization is trying to achieve.
+- `non_goal` — something intentionally out of scope, even if it sounds nearby.
+- `risk` — a meaningful threat to the goal or delivery outcome.
+- `assumption` — something believed true and relied on, but not guaranteed.
+- `trade_off` — a conscious balance between competing goods or constraints.
+- `inquiry` — an open question that still needs an answer.
+  - Often confused with: a `decision`. Motivation captures intent, uncertainty, and tension;
+    decisions capture chosen direction.
+
 ## What belongs here
 
 - goals and desired outcomes

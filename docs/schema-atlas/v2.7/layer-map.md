@@ -35,6 +35,7 @@ graph LR
     design_story_schema_yaml(["story"])
     governance_capability_schema_yaml(["capability"])
     governance_decisions_schema_yaml(["decisions"])
+    governance_leverage_schema_yaml(["leverage"])
     governance_motivation_schema_yaml(["motivation"])
     governance_organization_schema_yaml(["organization"])
     governance_roadmap_schema_yaml(["roadmap"])
@@ -52,6 +53,7 @@ graph LR
     blueprint_schema_yaml -->|1| design_story_schema_yaml
     blueprint_schema_yaml -->|1| governance_capability_schema_yaml
     blueprint_schema_yaml -->|1| governance_decisions_schema_yaml
+    blueprint_schema_yaml -->|1| governance_leverage_schema_yaml
     blueprint_schema_yaml -->|1| governance_motivation_schema_yaml
     blueprint_schema_yaml -->|1| governance_organization_schema_yaml
     blueprint_schema_yaml -->|1| governance_roadmap_schema_yaml
@@ -103,7 +105,7 @@ graph LR
     design_infrastructure_schema_yaml -->|9| metamodel_schema_yaml
     design_interactions_schema_yaml -->|29| metamodel_schema_yaml
     design_models_schema_yaml -->|13| metamodel_schema_yaml
-    design_quality_schema_yaml -->|67| metamodel_schema_yaml
+    design_quality_schema_yaml -->|69| metamodel_schema_yaml
     design_rules_schema_yaml -->|24| metamodel_schema_yaml
     design_story_schema_yaml -->|48| metamodel_schema_yaml
 ```
@@ -116,9 +118,10 @@ Why & proof: strategic intent, decisions, capabilities, and quality evidence.
 | --- | --- | --- | --- | --- |
 | [`governance/capability.schema.yaml`](./entity-catalog.md#governance-capability) | Blueprint Business Capabilities | 6 | 1 | Governance Plane: Business Capability Map — a hierarchical view of what the business can do, independent of organizatio… |
 | [`governance/decisions.schema.yaml`](./entity-catalog.md#governance-decisions) | Blueprint Decisions | 7 | 9 | Governance Plane: Architecture Decision Log (ADR). Chronological, append-only record of design decisions with typed imp… |
+| [`governance/leverage.schema.yaml`](./entity-catalog.md#governance-leverage) | Blueprint Leverage Map | 10 | 2 | Governance Plane: Leverage Map — the prioritization tier that sits ABOVE the AS-IS remediation chain (finding → risk →… |
 | [`governance/motivation.schema.yaml`](./entity-catalog.md#governance-motivation) | Blueprint Motivation | 11 | 6 | Governance Plane: Strategic intent — goals, non-goals, risks, assumptions, and trade-offs. Decisions reference motivati… |
 | [`governance/organization.schema.yaml`](./entity-catalog.md#governance-organization) | Blueprint Organization | 6 | 3 | Governance Plane: Organizational hierarchy — Party > Department > Team. Defines who owns what in the blueprint. Teams a… |
-| [`governance/roadmap.schema.yaml`](./entity-catalog.md#governance-roadmap) | Blueprint Roadmap | 6 | 1 | Governance Plane: Product roadmap milestones with deliverables, success criteria, and dependencies. Used for PRD timeli… |
+| [`governance/roadmap.schema.yaml`](./entity-catalog.md#governance-roadmap) | Blueprint Roadmap | 8 | 2 | Governance Plane: Product roadmap milestones with deliverables, success criteria, and dependencies. Used for PRD timeli… |
 | [`governance/test-cases.schema.yaml`](./entity-catalog.md#governance-test-cases) | Blueprint Test Cases | 9 | 5 | Governance Plane: Test cases organized as happy-path, edge-case, and error-case suites. Owns validates references as th… |
 | [`governance/value-stream.schema.yaml`](./entity-catalog.md#governance-value-stream) | Blueprint Value Streams | 6 | 2 | Governance Plane: Value Stream Map — end-to-end flows of value delivery that cross-cut bounded contexts and capabilitie… |
 
@@ -129,6 +132,7 @@ graph LR
     subgraph governance_plane["Governance Plane"]
         governance_capability_schema_yaml["capability"]
         governance_decisions_schema_yaml["decisions"]
+        governance_leverage_schema_yaml["leverage"]
         governance_motivation_schema_yaml["motivation"]
         governance_organization_schema_yaml["organization"]
         governance_roadmap_schema_yaml["roadmap"]
@@ -138,10 +142,11 @@ graph LR
     metamodel_schema_yaml(["metamodel"])
     governance_capability_schema_yaml -->|19| metamodel_schema_yaml
     governance_decisions_schema_yaml -->|45| metamodel_schema_yaml
+    governance_leverage_schema_yaml -->|30| metamodel_schema_yaml
     governance_motivation_schema_yaml -->|59| metamodel_schema_yaml
     governance_organization_schema_yaml -->|15| metamodel_schema_yaml
-    governance_roadmap_schema_yaml -->|11| metamodel_schema_yaml
-    governance_test_cases_schema_yaml -->|24| metamodel_schema_yaml
+    governance_roadmap_schema_yaml -->|28| metamodel_schema_yaml
+    governance_test_cases_schema_yaml -->|26| metamodel_schema_yaml
     governance_value_stream_schema_yaml -->|19| metamodel_schema_yaml
 ```
 

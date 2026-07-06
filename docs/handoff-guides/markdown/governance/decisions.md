@@ -10,6 +10,16 @@ This guide is about explicit rationale, not hidden assumptions.
 This guide helps with **important choices and why they were made**. Technically, it covers
 **decision rationale and governance traceability**.
 
+## Main entities in this guide
+
+- `decision` — a recorded architecture or policy choice with status, rationale, and impact.
+- `business_decision` — a business-governance choice whose consequences shape the model or
+  delivery.
+- `option` — an alternative that was considered before the final choice.
+- `rationale` — the reasoning that explains why the chosen option won.
+  - Often confused with: an `assumption` in Motivation. A decision is a committed choice; an
+    assumption is something believed true but not yet proven.
+
 ## What belongs here
 
 - architecture or policy decisions

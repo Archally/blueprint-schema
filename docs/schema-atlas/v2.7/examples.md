@@ -6,7 +6,31 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 ## Schema-native examples
 
-_No JSON Schema `examples` keywords are declared in this version (this is expected — the schema documents shapes, not instances)._
+- `schema/v2.7/governance/roadmap.schema.yaml#/properties/cadence/properties/anchor_sprint/examples/0`: `30`
+
+- `schema/v2.7/governance/roadmap.schema.yaml#/properties/cadence/properties/anchor_start/examples/0`: `"2026-07-01"`
+
+- `schema/v2.7/governance/roadmap.schema.yaml#/properties/cadence/properties/sprint_length_days/examples/0`: `14`
+
+- `schema/v2.7/governance/roadmap.schema.yaml#/$defs/work_item/properties/id/examples/0`: `"WI001"`
+
+- `schema/v2.7/governance/roadmap.schema.yaml#/$defs/work_item/properties/id/examples/1`: `"WI010"`
+
+- `schema/v2.7/governance/roadmap.schema.yaml#/$defs/work_item/properties/progress/examples/0`: `0`
+
+- `schema/v2.7/governance/roadmap.schema.yaml#/$defs/work_item/properties/progress/examples/1`: `80`
+
+- `schema/v2.7/governance/roadmap.schema.yaml#/$defs/work_item/properties/start_sprint/examples/0`: `30`
+
+- `schema/v2.7/governance/roadmap.schema.yaml#/$defs/work_item/properties/start_sprint/examples/1`: `30.5`
+
+- `schema/v2.7/governance/roadmap.schema.yaml#/$defs/work_item/properties/end_sprint/examples/0`: `35`
+
+- `schema/v2.7/governance/roadmap.schema.yaml#/$defs/work_item/properties/end_sprint/examples/1`: `31.5`
+
+- `schema/v2.7/governance/roadmap.schema.yaml#/$defs/work_item/properties/executor/examples/0`: `["Jane Doe"]`
+
+- `schema/v2.7/governance/roadmap.schema.yaml#/$defs/work_item/properties/executor/examples/1`: `["Backend Team"]`
 
 ## Reference example models
 

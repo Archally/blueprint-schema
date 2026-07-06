@@ -7,168 +7,176 @@
       "title": "Blueprint Bundle Handoff Guide",
       "htmlRel": "blueprint-schema.html",
       "pdfRel": "blueprint-schema.pdf",
-      "sourceHash": "1ad05ca43e3146f56aba4ed56f332e79cbbdc5da2e3a87fab01d4344ce175885",
-      "htmlHash": "89df5a9b76882bee693e985cf0e36fd8b62c0f9e4c68d52ce047822f338d1efa"
+      "sourceHash": "eb4d45f8e5c4c9cf2ee0eb60e6ae15181a66039f04dab567f181e392cb71e19c",
+      "htmlHash": "0f3af778abb8bb2b20cc304bdaeae9448669e37452161aa0dfca10ff330373a4"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/design/arch.md",
       "title": "Architecture Handoff Guide",
       "htmlRel": "design/arch.html",
       "pdfRel": "design/arch.pdf",
-      "sourceHash": "d9bbbedec63d598a521c31b32ca6bd5d74a2699b2afe8467543a7f0c29ba0511",
-      "htmlHash": "ad66f5170fa3dcc18213ebf3e0dec078e32f155973e23be972d1f5f44f50d958"
+      "sourceHash": "48f7904c5625e5d7e832cce7f9dead21ff67f92e8624f94c373aecc8cabb9d3a",
+      "htmlHash": "fdaf65f5acb5fbfbfac78c5f7452e1dadacbb4de74ae3f2150c8254728cc28e4"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/design/concepts.md",
       "title": "Concepts Handoff Guide",
       "htmlRel": "design/concepts.html",
       "pdfRel": "design/concepts.pdf",
-      "sourceHash": "2333ed6243548ddcaad60c2c9decbcaebc35d657726e142b71b60786c1c7ea6b",
-      "htmlHash": "f5c439073df26796276d7192a23b16fe05b3d5921e9ce2f1370b844c78148518"
+      "sourceHash": "974c46220832fe06d96945f5d1d05183027a3d2b6f2130634416b8ec514a2bda",
+      "htmlHash": "f3651f1e12a0be8b16d218713ac27c472d9966f06f4308eeb951152cc931e46a"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/design/domain.md",
       "title": "Domain Handoff Guide",
       "htmlRel": "design/domain.html",
       "pdfRel": "design/domain.pdf",
-      "sourceHash": "8f4abf7fea65e5634000217c59826515f2908564c92e74b94700fe59a284868d",
-      "htmlHash": "aa1e7ba4e4480604b0cae234f9f514cf8f4807d6c34a922aabb7717d87dbd557"
+      "sourceHash": "094ddc45cafc7c5dd2615bc9af3a4bf4082a7982f0a95dfa6953305a859ef02d",
+      "htmlHash": "485bc0f6ecd7b173df2f422563598dda183e3e7ddf534e56e874a74cfeaace0b"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/design/dynamics.md",
       "title": "Dynamics Handoff Guide",
       "htmlRel": "design/dynamics.html",
       "pdfRel": "design/dynamics.pdf",
-      "sourceHash": "e0b0bd7fb84debe15eec4a88d7c0478ab34baef4100fc5cd9aa3820ad577d958",
-      "htmlHash": "5afd268a0c2fb96adbb4f5771c6d03e9136cb4d88c03269d363b20225f6769df"
+      "sourceHash": "86c62f55b208de91df802cb720521321bdba825fb4a0824f83023cd24f7f1d69",
+      "htmlHash": "ac6197cd055ff80ebee94f1a5d914b2a24746227575fe210759159ea47b5bf83"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/design/infrastructure.md",
       "title": "Infrastructure Handoff Guide",
       "htmlRel": "design/infrastructure.html",
       "pdfRel": "design/infrastructure.pdf",
-      "sourceHash": "fc1ee5e5e971275f49d09aa3a8ab00e76ca628a1dc3bfe6e6c71b4d8fbb5f3e5",
-      "htmlHash": "6501f27c46d86f609e3aca213bef295f955105f68ee860906bd1ad44a2448fe2"
+      "sourceHash": "fb670a6fd15288a951acb3c9f5e25718e9ae633d9b79ec540c176d07de0ec41f",
+      "htmlHash": "f3112140d6f11331119b333c6e05cce76c1724aee03f690f35f3dc25012ad123"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/design/interactions.md",
       "title": "Interactions Handoff Guide",
       "htmlRel": "design/interactions.html",
       "pdfRel": "design/interactions.pdf",
-      "sourceHash": "8a791e5667d43eab425727337c734032bfe3f7da73f00c53a766d65557d8bef0",
-      "htmlHash": "18fd8c7f8b707c553d88a902c0d02fda72a34a4d7d9beeeb42e4231fe22c43f8"
+      "sourceHash": "008e1c95d82b0b9d0f5ce5f0103f1981c562a10258de65d03d5227321ecbc657",
+      "htmlHash": "2f7f27a718e26cd46ed36739c0445e7f0ae7e12bb16047c1fd42408de53ea29a"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/design/models.md",
       "title": "Models Handoff Guide",
       "htmlRel": "design/models.html",
       "pdfRel": "design/models.pdf",
-      "sourceHash": "b92d7cae625a342c81629ac9d6beb8cfeec63666b922799e8fcbd3a7593119b7",
-      "htmlHash": "890f8a8f88faf79519f0670bbbb88710527989dfc0718b7cd7e0dcca6d2fbbfa"
+      "sourceHash": "20698b2349fa27bd02f0ee902fb026ec46c79165e990b07157adacea8da74047",
+      "htmlHash": "72d4054db25b06275f29fcc3449ce56a0fc01d59f6f1d90bb07a7394621601e2"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/design/quality.md",
       "title": "Quality Handoff Guide",
       "htmlRel": "design/quality.html",
       "pdfRel": "design/quality.pdf",
-      "sourceHash": "e54435985185d8dae797bbbbcaf5e2a3adea14a481fb2cd6d5d3ca7e65ff6dbf",
-      "htmlHash": "bf7d01864ca528dee6595a971867013ad7b44847b853479b211f3bcd0fc298f8"
+      "sourceHash": "e11b9f26b49451806e8796a3dc3a678a2999b454b9485ee9adc43e3158afd2da",
+      "htmlHash": "0f06edb5ee3dd7ee7e1e7250fc5494a0179e81efbcefe75085a9d509579ebe85"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/design/rules.md",
       "title": "Rules Handoff Guide",
       "htmlRel": "design/rules.html",
       "pdfRel": "design/rules.pdf",
-      "sourceHash": "63a626f8ff9686bf30a8ebd33b09d076b00263f834453b377620e1a5316cdbe9",
-      "htmlHash": "906bb3e232ef47edb427375cde8162462395b4947fbfe11efba12fd9ae554b17"
+      "sourceHash": "248203cd6923c7f952f32672297c50d214cb3f93b350ec249a281d7ef088a7fa",
+      "htmlHash": "8c948d9659f37a5034f09aa4987b506dda9cd6107f4dd8443b68c0df1d474626"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/design/story.md",
       "title": "Story Handoff Guide",
       "htmlRel": "design/story.html",
       "pdfRel": "design/story.pdf",
-      "sourceHash": "9d8a69054369e44ff3851fb650298572a9715c3447a013fcbd4c2a4beb7449e3",
-      "htmlHash": "1934ceea4896b4c3e51a1559eb71dae9156d72485484fbb432eb51defe84bd59"
+      "sourceHash": "1159759885b5d93ce43e707d365a13395ce42c908222bebf892831fd70ae91bc",
+      "htmlHash": "d09b84678cf3da035dd7adfd70a28765ab5d9de63e1ff7c19639a24c3dfa6e86"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/governance/capability.md",
       "title": "Capability Handoff Guide",
       "htmlRel": "governance/capability.html",
       "pdfRel": "governance/capability.pdf",
-      "sourceHash": "52a24f701841cdb25305d9a9aec979210459e1029da4f72416168f82d93140ed",
-      "htmlHash": "d6fb0d9adc2dbd2aad089f10258a3ceb3653f2d93cfeaca14e72f926418d901c"
+      "sourceHash": "07e1326df1fd048edb2f8774cc30c5bf22b3bdd173b3eaea7be8901b14c8eb67",
+      "htmlHash": "b1c5bfe0e13eba2fbc5c40592f08ccbef5315b272d65291ff63f1724af310874"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/governance/decisions.md",
       "title": "Decisions Handoff Guide",
       "htmlRel": "governance/decisions.html",
       "pdfRel": "governance/decisions.pdf",
-      "sourceHash": "f33233db57908f352edba5475a43cc34d698d009a94f9eb3f8f6dec15507dcbe",
-      "htmlHash": "267c0dbb817a07202b22ef793fd37c2acb50ed56410bf1fecbbe01b8addce0de"
+      "sourceHash": "5d9e44e0b92e6cc12653d501c55bba0d1dac78a0029a4c875237778c31cbb63e",
+      "htmlHash": "6b3ff752341c066fa52e742f7366950f250b86963ba085f92d657b139fda26ff"
+    },
+    {
+      "sourceRel": "docs/handoff-guides/markdown/governance/leverage.md",
+      "title": "Leverage Handoff Guide",
+      "htmlRel": "governance/leverage.html",
+      "pdfRel": "governance/leverage.pdf",
+      "sourceHash": "53bc492829d3768b82215c8a8557814bacc05aa57c8cf2c03739372d595521d6",
+      "htmlHash": "1f71d88f801497bcc202ee68aec85abac286ef380f2ed444d662597628e4ce81"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/governance/motivation.md",
       "title": "Motivation Handoff Guide",
       "htmlRel": "governance/motivation.html",
       "pdfRel": "governance/motivation.pdf",
-      "sourceHash": "394de1e0e57d4897ebd4f75e7ebbd5a1e12a67f2ba4aac0774f5228b6229bb12",
-      "htmlHash": "500705c84d0d7b1b522e427b6783c6857d8a03d9cb6bb71e9bdc28aa1bc42dc6"
+      "sourceHash": "6eba9b2a4905ec6f6b3db731f1e99bc7d22af75773f8835f334cc3d0f74834ce",
+      "htmlHash": "9c323bdb2f2df4e260d2e5850aa17e376ddad9d749d0b095f823c61d4f502481"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/governance/organization.md",
       "title": "Organization Handoff Guide",
       "htmlRel": "governance/organization.html",
       "pdfRel": "governance/organization.pdf",
-      "sourceHash": "16093a430c3eafa4944ae81c11f07cb252c627bf9e2be1630760e16650ab8fda",
-      "htmlHash": "c44e44e51a0ab18dca01d7aa0c8153bd8644bb454e1f26ab003101c526656b79"
+      "sourceHash": "3b1e72593c624694688e08b75bbfbffdf583190f9042081d44a36168d1401dc7",
+      "htmlHash": "2cffd94a57830d3aeb0ca6ba1b65cd2971ba246a249862bdf09cf1c1f83e2c96"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/governance/roadmap.md",
       "title": "Roadmap Handoff Guide",
       "htmlRel": "governance/roadmap.html",
       "pdfRel": "governance/roadmap.pdf",
-      "sourceHash": "309eaddcfde65678447a74553aebb0786c8e09b251e496922daaf8c8021c1554",
-      "htmlHash": "9d6845f4f5b32c55ff09c7430af9a4732cc290322cdf94ce46955f8e0d686994"
+      "sourceHash": "d7762057b73fe9e093ca09a8d089a6b7f4e07c9011420b81086da0266f174431",
+      "htmlHash": "a2bc2565ff57512e077abda646bdb9910d351cdaaf603409bd752bbb1bdfcf29"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/governance/test-cases.md",
       "title": "Test Cases Handoff Guide",
       "htmlRel": "governance/test-cases.html",
       "pdfRel": "governance/test-cases.pdf",
-      "sourceHash": "040bd871f7efb3591aa7d2139fb9787bc8c1c8938b17e4d0e7885563d4290e22",
-      "htmlHash": "76d7b5ed97c34b40f245817d8c057fe8136e864fd42e84d7a1fa0ebc86560390"
+      "sourceHash": "50e264e7784377dfc2ba4a2648c9a9bcbe562be3ee2645b06e0a2f78501bc977",
+      "htmlHash": "c33b83db0ec87b5184a7e2f69a917da15eb61249e166ebcbd8f28e21700bb846"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/governance/value-stream.md",
       "title": "Value Stream Handoff Guide",
       "htmlRel": "governance/value-stream.html",
       "pdfRel": "governance/value-stream.pdf",
-      "sourceHash": "46196bb960610f9cdda63198b5e39ff5c77d935d14458aacf3dc88cc2ae849c3",
-      "htmlHash": "eda4b48abfec8390541298f51e8d71530a9d018469b6ad46347fd8edb02fbc8c"
+      "sourceHash": "b163abbb87813c56cacd3556d96811358bd143ec5efcc1f038f953255d829e60",
+      "htmlHash": "dc7a387657f6d685d59b8f7a294b9a82b806105de85913fce22c63dfc1680b90"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/metamodel-schema.md",
       "title": "Metamodel Vocabulary Handoff Guide",
       "htmlRel": "metamodel-schema.html",
       "pdfRel": "metamodel-schema.pdf",
-      "sourceHash": "86b64610988a9179c650b1cd18855e3e5157a8b2158b29f36956e21af10849ea",
-      "htmlHash": "55e5326212abb30cc7c6d00af6183245d90935c2f9ca2923ec493c8220cec2d1"
+      "sourceHash": "7dae44919cf52318fa9ae2ae33051ec7591f726ddbd1e8e883aef1ca00fb846e",
+      "htmlHash": "4807ec18f82026e0ebedfd9a98f58072045b55c0b03b3df38a04a653e2037393"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/migration-schema.md",
       "title": "Migrations Handoff Guide",
       "htmlRel": "migration-schema.html",
       "pdfRel": "migration-schema.pdf",
-      "sourceHash": "90aa864f3a25844be9c70eb7771bb1e695a37483cbdfd724d11d2271d2f89156",
-      "htmlHash": "f647514246fc24c6301ee37b046f540c4045192725ff57114419f97d977e3525"
+      "sourceHash": "4b20e4eab0ef29c165b71f010d2bd766a3a5583a72ec1d4dec5b6100f30ae5c3",
+      "htmlHash": "f345fa697f3ca2d16e88622a49c83bffb60ef4ded8d7f856b2efb315758ae020"
     },
     {
       "sourceRel": "docs/handoff-guides/markdown/README.md",
       "title": "Blueprint Handoff Atlas",
       "htmlRel": "blueprint-handoff-atlas.html",
       "pdfRel": "blueprint-handoff-atlas.pdf",
-      "sourceHash": "24563eac51012cd41e313d80ab5121ae464d3bdc0c2d7a7beb1ecc6ccbc79c13",
-      "htmlHash": "66a691987c3d1a12642c40325b6ca46ca63f351b49a26b069f0960c67911b2b8"
+      "sourceHash": "aa22c82fee6faafd730da37686d3a61097c4e9ad7e5fe0f649ce2186118cbeb5",
+      "htmlHash": "9691b90355a669e638636485170cfccf5cb1bcc8853ccacddf17947e352d1938"
     }
   ]
 }

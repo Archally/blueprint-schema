@@ -117,6 +117,7 @@ const GUIDE_GROUPS: Record<GuideGroup, string[]> = {
     'docs/handoff-guides/markdown/governance/motivation.md',
     'docs/handoff-guides/markdown/governance/organization.md',
     'docs/handoff-guides/markdown/governance/roadmap.md',
+    'docs/handoff-guides/markdown/governance/leverage.md',
     'docs/handoff-guides/markdown/governance/test-cases.md',
     'docs/handoff-guides/markdown/governance/value-stream.md',
   ],
@@ -143,6 +144,7 @@ const LAYER_PALETTES: Record<string, LayerPalette> = {
   'governance-motivation': { border: '#ffd54f', bgTop: '#fff8e1', bgBottom: '#ffecb3', shadow: 'rgba(255, 202, 40, 0.12)', title: '#ff8f00', relatedBorder: '#ffe082', relatedBg: '#fff8e1', relatedText: '#f57c00', currentBorder: '#ff8f00', currentBg: '#ff8f00', currentText: '#ffffff', focusBorder: '#ffd54f', focusBg: '#fff8e1', arrow: '#ff8f00', linkBorder: '#ffe082', linkBg: '#fff8e1', linkText: '#f57c00' },
   'governance-organization': { border: '#9ccc65', bgTop: '#f1f8e9', bgBottom: '#dcedc8', shadow: 'rgba(124, 179, 66, 0.12)', title: '#689f38', relatedBorder: '#aed581', relatedBg: '#f1f8e9', relatedText: '#558b2f', currentBorder: '#689f38', currentBg: '#689f38', currentText: '#ffffff', focusBorder: '#9ccc65', focusBg: '#f1f8e9', arrow: '#689f38', linkBorder: '#aed581', linkBg: '#f1f8e9', linkText: '#558b2f' },
   'governance-roadmap': { border: '#ef5350', bgTop: '#ffebee', bgBottom: '#fff8e1', shadow: 'rgba(229, 57, 53, 0.12)', title: '#d32f2f', relatedBorder: '#ef9a9a', relatedBg: '#ffebee', relatedText: '#c62828', currentBorder: '#d32f2f', currentBg: '#d32f2f', currentText: '#ffffff', focusBorder: '#f9a825', focusBg: '#fff8e1', arrow: '#e53935', linkBorder: '#ef9a9a', linkBg: '#ffebee', linkText: '#c62828' },
+  'governance-leverage': { border: '#ffd54f', bgTop: '#fff8e1', bgBottom: '#ffe082', shadow: 'rgba(255, 179, 0, 0.12)', title: '#ff8f00', relatedBorder: '#ffe082', relatedBg: '#fff8e1', relatedText: '#f57c00', currentBorder: '#ff8f00', currentBg: '#ff8f00', currentText: '#ffffff', focusBorder: '#ffd54f', focusBg: '#fff8e1', arrow: '#fb8c00', linkBorder: '#ffe082', linkBg: '#fff8e1', linkText: '#f57c00' },
   'governance-test-cases': { border: '#ffd54f', bgTop: '#fff8e1', bgBottom: '#ffecb3', shadow: 'rgba(255, 202, 40, 0.12)', title: '#fb8c00', relatedBorder: '#ffe082', relatedBg: '#fff8e1', relatedText: '#f57c00', currentBorder: '#fb8c00', currentBg: '#fb8c00', currentText: '#ffffff', focusBorder: '#ffd54f', focusBg: '#fff8e1', arrow: '#fb8c00', linkBorder: '#ffe082', linkBg: '#fff8e1', linkText: '#f57c00' },
   'governance-value-stream': { border: '#ff8a80', bgTop: '#ffebee', bgBottom: '#fff8e1', shadow: 'rgba(183, 28, 28, 0.12)', title: '#b71c1c', relatedBorder: '#ef9a9a', relatedBg: '#ffebee', relatedText: '#c62828', currentBorder: '#b71c1c', currentBg: '#b71c1c', currentText: '#ffffff', focusBorder: '#fbc02d', focusBg: '#fff8e1', arrow: '#e53935', linkBorder: '#ef9a9a', linkBg: '#ffebee', linkText: '#c62828' },
 };
@@ -258,7 +260,7 @@ const GUIDE_VISUALS: Record<string, GuideVisualSpec> = {
     group: 'governance',
     captures: ['Choices made', 'Options considered', 'Rationale & impact'],
     outputs: ['Explicit rationale', 'Traceable consequences', 'Governed change'],
-    related: ['Motivation', 'Roadmap', 'Migrations'],
+    related: ['Motivation', 'Leverage', 'Migrations'],
   },
   'docs/handoff-guides/markdown/governance/motivation.md': {
     label: 'Motivation',
@@ -277,9 +279,16 @@ const GUIDE_VISUALS: Record<string, GuideVisualSpec> = {
   'docs/handoff-guides/markdown/governance/roadmap.md': {
     label: 'Roadmap',
     group: 'governance',
-    captures: ['Milestones', 'Deliverables', 'Dependencies & success'],
-    outputs: ['Delivery shape', 'Priority sequence', 'Timeline expectations'],
-    related: ['Capability', 'Decisions', 'Value Stream'],
+    captures: ['Milestones', 'Work breakdown', 'Dependencies & success'],
+    outputs: ['Delivery shape', 'Execution sequence', 'Timeline expectations'],
+    related: ['Leverage', 'Capability', 'Value Stream'],
+  },
+  'docs/handoff-guides/markdown/governance/leverage.md': {
+    label: 'Leverage',
+    group: 'governance',
+    captures: ['Vital few priorities', 'What they address', 'Consequences of action/inaction'],
+    outputs: ['Prioritized intervention map', 'Why-now clarity', 'Delegation to roadmap work'],
+    related: ['Quality', 'Decisions', 'Roadmap'],
   },
   'docs/handoff-guides/markdown/governance/test-cases.md': {
     label: 'Test Cases',
@@ -298,6 +307,33 @@ const GUIDE_VISUALS: Record<string, GuideVisualSpec> = {
 };
 
 const markdown = new MarkdownIt({ html: false, linkify: true, typographer: false });
+
+const ENTITY_LABEL_EXACT_OVERRIDES: Record<string, string> = {
+  '*_ref': 'Typed Reference',
+  'components.schemas': 'Component Schemas',
+  'owned_by': 'Ownership',
+  'x-field': 'Reusable Field',
+  'x-parameter': 'Reusable Parameter',
+};
+
+const ENTITY_LABEL_WORD_OVERRIDES: Record<string, string> = {
+  api: 'API',
+  code: 'Code',
+  html: 'HTML',
+  id: 'ID',
+  ids: 'IDs',
+  kpi: 'KPI',
+  kpis: 'KPIs',
+  pdf: 'PDF',
+  ref: 'Reference',
+  refs: 'References',
+  sla: 'SLA',
+  slas: 'SLAs',
+  slo: 'SLO',
+  slos: 'SLOs',
+  ui: 'UI',
+  x: 'X',
+};
 
 export function normalizeText(text: string): string {
   return text.replace(/\r\n/g, '\n');
@@ -333,6 +369,23 @@ function guidePalette(sourceRel: string): LayerPalette {
 export function extractTitle(sourceText: string, sourceRel: string): string {
   const match = normalizeText(sourceText).match(/^#\s+(.+)$/m);
   return match?.[1]?.trim() || guideOutputStem(sourceRel);
+}
+
+export function humanizeEntityLabel(codeText: string): string {
+  const normalized = codeText.trim();
+  if (!normalized) return normalized;
+
+  const exactOverride = ENTITY_LABEL_EXACT_OVERRIDES[normalized.toLowerCase()];
+  if (exactOverride) return exactOverride;
+
+  return normalized
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((token) => {
+      const lower = token.toLowerCase();
+      return ENTITY_LABEL_WORD_OVERRIDES[lower] ?? `${lower.charAt(0).toUpperCase()}${lower.slice(1)}`;
+    })
+    .join(' ');
 }
 
 export function rewriteMarkdownLinksForHtml(sourceText: string): string {
@@ -486,6 +539,20 @@ export function renderGuideVisuals(sourceRel: string, title: string): string {
   return `<section class="visual-stack">${sections.join('')}</section>`;
 }
 
+export function stylizeMainEntitiesSection(htmlBody: string): string {
+  return normalizeText(htmlBody).replace(
+    /(<h2>Main entities in this guide<\/h2>\s*)([\s\S]*?)(?=<h2>|$)/i,
+    (_match, heading: string, sectionBody: string) => {
+      const renderedBody = sectionBody.replace(/<code>([^<]+)<\/code>/g, (_codeMatch, codeText: string) => {
+        const original = codeText.trim();
+        const label = humanizeEntityLabel(original);
+        return `<span class="entity-token" data-entity-code="${escapeHtml(original)}">${escapeHtml(label)}</span>`;
+      });
+      return `${heading}<section class="main-entities-section">${renderedBody}</section>`;
+    },
+  );
+}
+
 export interface GuideBodySections {
   introHtml: string;
   knowledgeAreaHtml: string;
@@ -529,7 +596,7 @@ function renderKnowledgeAreaCallout(knowledgeAreaHtml: string, group: GuideGroup
 
 function renderHtmlDocument(title: string, sourceRel: string, htmlBody: string): string {
   const spec = guideSpec(sourceRel, title);
-  const themedBody = annotateGuideLinks(htmlBody, sourceRel);
+  const themedBody = stylizeMainEntitiesSection(annotateGuideLinks(htmlBody, sourceRel));
   const sections = splitGuideBodySections(themedBody);
   const visuals = renderGuideVisuals(sourceRel, title);
   const knowledgeCallout = renderKnowledgeAreaCallout(sections.knowledgeAreaHtml, spec.group);
@@ -553,6 +620,16 @@ function renderHtmlDocument(title: string, sourceRel: string, htmlBody: string):
       th, td { border: 1px solid #d1d5db; padding: 10px 12px; text-align: left; vertical-align: top; }
       th { background: #f3f4f6; }
       code { background: #f3f4f6; padding: 0.1em 0.35em; border-radius: 4px; }
+      .main-entities-section .entity-token {
+        color: var(--theme-title, #334155);
+        font-family: Segoe UI, Arial, sans-serif;
+        font-weight: 700;
+        background: transparent;
+        padding: 0;
+        border-radius: 0;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
       pre code { display: block; padding: 12px; overflow-x: auto; }
       a { color: #1d4ed8; }
       .guide-link { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; text-decoration: none; font-weight: 600; }
@@ -602,6 +679,7 @@ function renderHtmlDocument(title: string, sourceRel: string, htmlBody: string):
         }
         h2, h3 { break-after: avoid-page; }
         table, ul, ol, blockquote, pre { break-inside: avoid-page; }
+        .main-entities-section .entity-token { color: var(--theme-title, #334155) !important; }
       }
       @page { size: A4; margin: 14mm; }
     </style>

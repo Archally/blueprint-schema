@@ -10,6 +10,14 @@ from one state or screen to another**.
 
 This guide helps with **screens and user interaction flow**.
 
+## Main entities in this guide
+
+- `screen` — a UI surface a person sees.
+- `action` — something a person can do on a screen.
+- `navigation` — how one screen leads to another.
+  - Often confused with: a story step. An `action` is a user-system interaction moment; a story
+    step is part of a broader business journey.
+
 ## What belongs here
 
 Capture things like:

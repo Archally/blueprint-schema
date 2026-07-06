@@ -31,6 +31,7 @@ Metamodel `*_ref` definitions turn a model into a navigable graph — each entit
 | `G` | `goal_ref` | Reference to a motivation goal (e.g. G001 or billing.G001). |
 | `INQ` | `inquiry_ref` | Reference to a governance inquiry (e.g. INQ001 or orders.INQ001). |
 | `KPI` | `kpi_ref` | Reference to a quality KPI (e.g. KPI001 or billing.KPI001). |
+| `LP` | `leverage_ref` | Reference to a leverage point — a prioritized cross-cutting intervention that bundles findings / risks / decisions / fitness-functions and is delivered via mig… |
 | `MDL` | `model_ref` | Reference to a model component. Four forms supported: (1) Typed ID: MDL + digits with optional context prefix (MDL001, billing.MDL003). (2) PascalCase name mat… |
 | `MIG` | `migration_ref` | Reference to a blueprint model migration (e.g. MIG001 or billing.MIG001). |
 | `MS` | `milestone_ref` | Reference to a roadmap milestone (MS + 3+ digits, optional context prefix). |
@@ -61,6 +62,7 @@ Metamodel `*_ref` definitions turn a model into a navigable graph — each entit
 | `UNV` | `ui_nav_ref` | Reference to a UI navigation element (e.g. UNV001 or orders.UNV001). |
 | `US` | `user_story_ref` | Reference to a user story (US + 3+ digits, optional context prefix). |
 | `VS` | `value_stream_ref` | Reference to a value stream (e.g. VS001 or orders.VS001). |
+| `WI` | `work_item_ref` | Reference to a roadmap work item / WBS node (WI + 3+ digits, optional context prefix). Work items are the execution tier beneath milestones (epic → subscope →… |
 
 _Source: `schema/v2.7/metamodel.schema.yaml#/$defs`_
 
@@ -72,7 +74,7 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub �
 
 | Schema file | Inbound refs |
 | --- | --- |
-| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 527 |
+| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 578 |
 | [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | 1 |
 | [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | 1 |
 | [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | 1 |
@@ -97,6 +99,7 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub �
 | `blueprint.schema.yaml` | `design/story.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `governance/capability.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `governance/decisions.schema.yaml` | 1 |
+| `blueprint.schema.yaml` | `governance/leverage.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `governance/motivation.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `governance/organization.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `governance/roadmap.schema.yaml` | 1 |
@@ -111,15 +114,16 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub �
 | `design/infrastructure.schema.yaml` | `metamodel.schema.yaml` | 9 |
 | `design/interactions.schema.yaml` | `metamodel.schema.yaml` | 29 |
 | `design/models.schema.yaml` | `metamodel.schema.yaml` | 13 |
-| `design/quality.schema.yaml` | `metamodel.schema.yaml` | 67 |
+| `design/quality.schema.yaml` | `metamodel.schema.yaml` | 69 |
 | `design/rules.schema.yaml` | `metamodel.schema.yaml` | 24 |
 | `design/story.schema.yaml` | `metamodel.schema.yaml` | 48 |
 | `governance/capability.schema.yaml` | `metamodel.schema.yaml` | 19 |
 | `governance/decisions.schema.yaml` | `metamodel.schema.yaml` | 45 |
+| `governance/leverage.schema.yaml` | `metamodel.schema.yaml` | 30 |
 | `governance/motivation.schema.yaml` | `metamodel.schema.yaml` | 59 |
 | `governance/organization.schema.yaml` | `metamodel.schema.yaml` | 15 |
-| `governance/roadmap.schema.yaml` | `metamodel.schema.yaml` | 11 |
-| `governance/test-cases.schema.yaml` | `metamodel.schema.yaml` | 24 |
+| `governance/roadmap.schema.yaml` | `metamodel.schema.yaml` | 28 |
+| `governance/test-cases.schema.yaml` | `metamodel.schema.yaml` | 26 |
 | `governance/value-stream.schema.yaml` | `metamodel.schema.yaml` | 19 |
 | `migration.schema.yaml` | `metamodel.schema.yaml` | 5 |
 

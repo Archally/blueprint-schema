@@ -8,6 +8,14 @@ This guide is about **who is responsible**, **how groups are arranged**, and **w
 
 This guide helps with **teams, ownership, and responsibilities**.
 
+## Main entities in this guide
+
+- `party` — the highest-level organizational owner in this guide.
+- `department` — a subdivision inside a party.
+- `team` — the working group that owns or delivers a slice of responsibility.
+  - Often confused with: `party` in the Architecture guide. Organization is about ownership
+    structure; Architecture is about structural system boundaries.
+
 ## What belongs here
 
 - companies, business units, or system-owning parties

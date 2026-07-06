@@ -23,10 +23,12 @@ knowledge is vague, mixed, or contradictory, the YAML will also be vague, mixed,
 ## How to use this guide family
 
 1. Start with the layer that best matches the knowledge you have.
-2. Write plain-language notes using the prompts in that guide.
-3. Keep one kind of knowledge in one layer as much as possible.
-4. Hand the text to a technical modeler or AI agent for YAML transformation.
-5. Review the result together and correct missing or wrong meaning.
+2. Read the **Main entities in this guide** section near the top so you use the layer's actual
+   Blueprint terms before writing free-text notes.
+3. Write plain-language notes using the prompts in that guide.
+4. Keep one kind of knowledge in one layer as much as possible.
+5. Hand the text to a technical modeler or AI agent for YAML transformation.
+6. Review the result together and correct missing or wrong meaning.
 
 ## What makes good input
 
@@ -34,6 +36,7 @@ Good handoff input is:
 
 - **concrete** — it names real actors, things, actions, and outcomes
 - **layer-aware** — it does not mix concepts, screens, stories, and risks into one blob
+- **vocabulary-aware** — it reuses the guide's named entities instead of inventing new labels
 - **connected** — it explains relationships, not only isolated items
 - **outcome-focused** — it explains what changes, not only what exists
 - **reviewable** — another person can read it and point out gaps or contradictions
@@ -97,6 +100,7 @@ Use these guides depending on what you are trying to capture. The family has:
 | [Motivation](./governance/motivation.md) | Goals, risks, assumptions, and trade-offs. Technically, strategic intent, risk, and assumption management. | goals, non-goals, risks, assumptions, trade-offs, and open questions |
 | [Organization](./governance/organization.md) | Teams, ownership, and responsibilities. | parties, departments, teams, and ownership |
 | [Roadmap](./governance/roadmap.md) | Delivery milestones and work planning. Technically, delivery planning and execution sequencing. | milestones, deliverables, dependencies, and success criteria |
+| [Leverage](./governance/leverage.md) | The few priorities that will move the system forward the most. Technically, leverage points, Pareto-core intervention choices, and consequence-based prioritization. | the most important interventions, what they address, what they unlock, and what should be watched |
 | [Test Cases](./governance/test-cases.md) | Proof that behavior works as expected. | scenarios proving expected, edge, error, and fitness behavior |
 | [Value Stream](./governance/value-stream.md) | How value flows from trigger to outcome. Technically, end-to-end value delivery flow. | end-to-end value stages across capabilities and actors |
 
