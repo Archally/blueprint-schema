@@ -69,8 +69,8 @@ $defs:
         description: "Optional formal DDD term. Use when it differs from name. Prefer properties.term for v2.3+."
       summary:
         type: string
-        maxLength: 120
-        description: "Brief summary (≤120 chars, for RAG and quick reference)."
+        maxLength: 200
+        description: "Brief summary (≤200 chars, for RAG and quick reference)."
       definition:
         type: string
         description: "Optional formal glossary definition. Prefer properties.definition for v2.3+."
@@ -285,8 +285,8 @@ $defs:
         description: "Actor classification: human=person, system=internal service, external=third-party, role=abstract role, time=temporal trigger (timer, schedule, time passing)."
       summary:
         type: string
-        maxLength: 120
-        description: "Brief description of this actor (≤120 chars)."
+        maxLength: 200
+        description: "Brief description of this actor (≤200 chars)."
       responsibilities:
         type: array
         items:
@@ -415,8 +415,8 @@ $defs:
         description: "Human-readable description of this value set."
       summary:
         type: string
-        maxLength: 120
-        description: "Brief description of this value set (≤120 chars)."
+        maxLength: 200
+        description: "Brief description of this value set (≤200 chars)."
       extensible:
         type: boolean
         default: false

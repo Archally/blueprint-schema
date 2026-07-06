@@ -73,9 +73,9 @@ Capture quality by asking:
 
 ## Worked example
 
-- Leave approval decision should be visible to the employee within 30 seconds of manager action
-- Personal leave data must be retained and accessed under privacy rules
-- Audit logs must capture approval changes
+- Return eligibility decision should be visible to the customer within 30 seconds of submission
+- Customer order data must be retained and accessed under privacy rules
+- Audit logs must capture refund-decision changes
 
 ## Layer-specific handoff guidance
 

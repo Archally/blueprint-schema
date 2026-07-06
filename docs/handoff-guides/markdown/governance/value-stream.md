@@ -73,10 +73,10 @@ Describe value from outside-in:
 
 ## Worked example
 
-- Value stream: employee leave fulfillment
-- Trigger: employee needs time off
-- Outcome: approved leave is recorded and communicated
-- Stages: request, review, decision, notification, calendar update
+- Value stream: product return fulfillment
+- Trigger: customer wants to return an item
+- Outcome: approved return is recorded and refund processing is initiated
+- Stages: request, eligibility check, decision, shipment, refund
 
 ## Layer-specific handoff guidance
 

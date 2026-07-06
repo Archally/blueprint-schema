@@ -64,9 +64,9 @@ Start with stable business language:
 
 ## Worked example
 
-- Leave Management is a top-level capability
-- It decomposes into Request Leave, Review Leave, and Track Leave Balances
-- It supports staffing continuity and employee self-service goals
+- Returns Management is a top-level capability
+- It decomposes into Request Return, Review Return, and Track Refund Status
+- It supports customer self-service and post-purchase operations goals
 
 ## Layer-specific handoff guidance
 

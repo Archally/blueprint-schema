@@ -65,9 +65,9 @@ Capture evidence in scenario form:
 
 ## Worked example
 
-- Happy path: employee submits valid leave request and receives confirmation
-- Edge case: employee submits request with the maximum allowed future range
-- Error case: employee submits overlapping dates and receives validation failure
+- Happy path: customer submits a valid return request and receives confirmation
+- Edge case: customer submits a request on the last allowed return day
+- Error case: customer selects a non-returnable item and receives validation failure
 
 ## Layer-specific handoff guidance
 

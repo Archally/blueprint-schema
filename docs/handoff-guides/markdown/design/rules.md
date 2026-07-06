@@ -69,9 +69,9 @@ Write rules as explicit business statements:
 
 ## Worked example
 
-- A leave request may not be approved if remaining leave balance is insufficient
-- A medical leave request must be classified separately when documentation is required
-- A submitted leave request may transition to approved, rejected, or cancelled
+- A return request may not be approved if the item is outside the allowed return window
+- A high-value return request must be classified separately when manual fraud review is required
+- A submitted return request may transition to approved, rejected, or completed
 
 ## Layer-specific handoff guidance
 

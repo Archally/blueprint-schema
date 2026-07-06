@@ -90,17 +90,17 @@ Use this template when gathering notes:
 
 ## Worked example
 
-### Example: leave request
+### Example: return request
 
-- **Concept name:** Leave Request
-- **Meaning:** a request by an employee to take time away from work for a specific period
-- **How to recognize one:** it belongs to one employee and one requested date range
-- **Key business properties:** requester, leave type, start date, end date, reason, decision
-- **Possible states:** draft, submitted, approved, rejected, cancelled
-- **Related concepts:** employee, leave balance, manager approval
-- **Examples:** summer vacation request, medical leave request
-- **Appears in:** leave request submission story, leave request form, manager review screen
-- **Often confused with:** leave balance, approved leave calendar entry
+- **Concept name:** Return Request
+- **Meaning:** a request by a customer to send purchased items back for refund or exchange
+- **How to recognize one:** it belongs to one order and one selected set of order items
+- **Key business properties:** customer, order number, items, return reason, refund method, decision
+- **Possible states:** draft, submitted, approved, rejected, completed
+- **Related concepts:** customer, order, refund, return shipment
+- **Examples:** damaged-item return, wrong-size exchange request
+- **Appears in:** return request submission story, return request form, support review screen
+- **Often confused with:** refund transaction, return shipment
 
 ## Layer-specific handoff guidance
 

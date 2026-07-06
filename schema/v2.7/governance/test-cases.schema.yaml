@@ -104,8 +104,8 @@ $defs:
         description: "Human-readable scenario name (e.g. 'Submit order with valid items')."
       summary:
         type: string
-        maxLength: 120
-        description: "One-line summary for listings (≤120 chars). Self-contained."
+        maxLength: 200
+        description: "One-line summary for listings (≤200 chars). Self-contained."
       validates:
         $ref: "#/$defs/validates_refs"
         description: "What this test proves. Authoritative source for test-to-blueprint traceability."
