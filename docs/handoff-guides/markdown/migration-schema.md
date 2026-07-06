@@ -10,6 +10,18 @@ This guide is about **model evolution**, not only release notes.
 This guide helps with **planned model changes over time**. Technically, it covers **model evolution
 and change traceability**.
 
+## Main entities in this guide
+
+- `migration` — the named change package with identity, status, rationale, and dependency
+  information.
+- `entity_change` — a change to a whole modeled thing, such as add, remove, split, or merge.
+- `property_change` — a change to one field or attribute on an existing thing.
+- `relationship_change` — a change to links between modeled things.
+- `meta_change` — a cross-cutting change such as tags, file moves, or bundle-level conventions.
+- `rollback` — the note about whether and how the change can be reversed safely.
+  - Often confused with: a roadmap plan. A migration describes the model change itself, not the
+    broader delivery schedule.
+
 ## What belongs here
 
 - what change is being made to the Blueprint model

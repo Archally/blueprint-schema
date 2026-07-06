@@ -11,6 +11,18 @@ This guide is about the **common language behind all layers**, not about one bus
 This guide helps with the **shared language across the blueprint**. Technically, it covers
 **shared semantic language and reference consistency**.
 
+## Main entities in this guide
+
+- `concept_ref`, `operation_ref`, and the other typed `*_ref` entries — stable short references
+  that let one guide point to things named in another.
+- `owned_by` — the typed ownership slot that says which party, department, or team is
+  responsible.
+- `tags` — reusable labels for grouping and filtering.
+- `code_refs` — links from a modeled thing to code or files that implement or evidence it.
+- `provenance` — the evidence and confidence behind a modeled claim.
+  - Often confused with: low-level schema mechanics. This guide is about shared author meaning,
+    not about teaching every validator detail.
+
 ## What belongs here
 
 - shared vocabulary used across layers

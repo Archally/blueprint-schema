@@ -11,6 +11,17 @@ they relate.
 This guide helps with the **big-picture system structure**. Technically, it covers **structural
 system design and decomposition**.
 
+## Main entities in this guide
+
+- `party` — a major owner or outside system that hosts one or more architectural areas.
+- `context` — a bounded business area with its own responsibilities, language, and boundaries.
+- `service` — a deployable or logical service inside a context that does work or exposes behavior.
+- `dependency` — a meaningful reliance on another context or external system.
+- `entity` — a core domain thing named inside a context when the structural picture needs that
+  extra detail.
+  - Often confused with: `concept` in the Concepts guide. Use `entity` here to show structure,
+    not to define business meaning in full.
+
 ## What belongs here
 
 - major systems or organizational parties

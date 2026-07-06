@@ -10,6 +10,13 @@ This guide is about stable business abilities — the **what**, not the **how**.
 This guide helps with **what the business needs to be able to do**. Technically, it covers
 **stable business abilities and operating model scope**.
 
+## Main entities in this guide
+
+- `capability` — a stable business ability the organization needs, independent of current teams or
+  tools.
+  - Often confused with: a process or a `value_stream`. A capability is what the business must be
+    able to do, not the step-by-step flow or sequence.
+
 ## What belongs here
 
 - business capabilities

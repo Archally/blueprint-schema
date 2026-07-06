@@ -11,6 +11,15 @@ screens, or implementation.
 This guide helps with **business terms and meanings**. Technically, it covers **domain semantics
 and business ontology**.
 
+## Main entities in this guide
+
+- `concept` — a business thing or idea the model must name clearly and keep stable.
+- `actor` — a person, role, or external participant that does something in the domain.
+- `enumeration` — a closed list of allowed values or states.
+- `association` — a meaningful relationship between concepts.
+  - Often confused with: `entity` in the Architecture guide. Use `concept` here when the meaning
+    matters; use `entity` there when the structural picture matters.
+
 ## What belongs here
 
 Capture things like:

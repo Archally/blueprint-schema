@@ -11,6 +11,18 @@ determined**.
 This guide helps with **business rules and decision criteria**. Technically, it covers **business
 constraints and decision logic**.
 
+## Main entities in this guide
+
+- `structural` rule — something that must always be true in the domain.
+- `classification` rule — logic that decides which category something belongs to.
+- `derivation` rule — logic that calculates or derives a value.
+- `equivalence` rule — logic that says when two values or cases count as the same thing.
+- `validation` rule — a check at a system boundary before information is accepted.
+- `transition` — a state-change rule that controls how a concept can move from one state to
+  another.
+  - Often confused with: a story or process step. A `transition` changes lifecycle state; a story
+    step describes what happens in a journey.
+
 ## What belongs here
 
 - invariants that must always hold

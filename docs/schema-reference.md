@@ -40,8 +40,8 @@ Two planes + one cross-cutting metamodel:
 │ rules            │ │ decisions                │
 │ domain           │ │ test-cases               │
 │ models           │ │ organization   (v2.2)    │
-│ infrastructure   │ │ roadmap        (v2.5)    │
-│ story            │ │                          │
+│ infrastructure   │ │ roadmap        (v2.5+)   │
+│ story            │ │ leverage       (v2.7.4)  │
 │ dynamics         │ │                          │
 │ quality          │ │                          │
 │ interactions     │ │                          │
@@ -72,6 +72,7 @@ Two planes + one cross-cutting metamodel:
 | `organization.schema.yaml` | Governance | Organizational hierarchy: parties, departments, teams (v2.2) |
 | `interactions.schema.yaml` | Design | UI screens, actions, and navigation with cross-links (v2.2) |
 | `roadmap.schema.yaml` | Governance | Product milestones with deliverables and success criteria (v2.5); execution-tier work items / WBS with sprint cadence and typed relations (v2.7.2) |
+| `leverage.schema.yaml` | Governance | Prioritized cross-cutting interventions over the finding → risk → decision → migration chain; leverage points (LP###) and watchlist items (W###) (v2.7.4) |
 
 > **Note:** In v2.6 and earlier, `infrastructure.schema.yaml` was named `rg.schema.yaml`, `interactions.schema.yaml` was `ui.schema.yaml`, and `organization.schema.yaml` was `org.schema.yaml`. The v2.7 names are used throughout this document.
 
@@ -1286,6 +1287,8 @@ rollback:
 | v2.5.0 | 2026-03-15 | User stories (US###), use cases (UC###), milestones (MS###), persona on actors, question enrichment, risk enrichment, delivery priority (MoSCoW), design references, roadmap schema |
 | v2.6.0 | 2026-03-19 | Value streams (VS###), personas 1:many, read-model stereotype, materializes, enum transitions, evidence chains, CAT### context prefix |
 | v2.7.0 | 2026-05-26 | Rename acronym files: rg->infrastructure, ui->interactions, org->organization |
+| v2.7.2 | 2026-07-01 | Roadmap execution tier: work items (WI###), sprint cadence, and typed roadmap relations |
+| v2.7.4 | 2026-07-05 | Leverage layer (LP### / W###), blueprint `governance.leverage`, and `layout.shared.leverage` |
 
 ---
 
@@ -1381,12 +1384,13 @@ Blueprint sections map to PRD (Product Requirements Document) sections:
 | Business Rules | `rules.yaml` rules[] |
 | Non-Functional Requirements | `quality.yaml` metrics/KPIs/SLOs |
 | Architecture | `arch.yaml` contexts/services |
-| Timeline / Milestones | `roadmap.yaml` milestones[] (MS###) |
+| Timeline / Milestones | `roadmap.yaml` milestones[] (MS###), work_items[] (WI###) |
 | Risks | `motivation.yaml` risks[] |
 | Open Questions | `domain.yaml` questions[] (QN### with blocking/resolution) |
 | Design References | `interactions.yaml` design_references |
 | Decisions | `decisions.yaml` decisions[] |
 | Capabilities | `capability.yaml` capabilities[] |
+| Highest-leverage priorities | `leverage.yaml` leverage_points[] (LP###), watchlist[] (W###) |
 
 ---
 
@@ -1556,3 +1560,65 @@ When `cadence` is set, work items may be placed by sprint number; dates derive a
 | `use_cases` | `UC\d{3,}` | Use cases delivered |
 
 **Views vs structure.** Pure-rendering concerns (tracker base URL, axis bounds, marker / "today" lines, colours, hatching) are **not** modelled here — they belong to a Gantt *view-config*. The roadmap is the single source of truth; the Gantt is a derived view.
+
+---
+
+## 26. v2.7.4 New Fields
+
+### Leverage Map (`governance/leverage.schema.yaml`) — NEW FILE
+
+The governance plane gains a forward-looking prioritization layer above the remediation chain:
+
+- `design/quality` records **AS-IS findings** (`FN###`)
+- `motivation` records **risks** (`R###`)
+- `decisions` records **architecture choices** (`D###`)
+- `migration` / `roadmap` record **how delivery happens** (`MIG###`, `MS###`, `WI###`)
+- `leverage` records the **vital few interventions to prioritize next** (`LP###`)
+
+In other words: findings describe what is wrong, roadmap schedules work, and leverage chooses the few cross-cutting interventions worth betting on now.
+
+**Blueprint wiring:**
+
+- `blueprint.yaml` → `governance.leverage`
+- `blueprint.yaml` → `layout.shared.leverage`
+
+### Leverage document root (`leverage.yaml`)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `version` | semver | Content version of the leverage map |
+| `horizon` | string | Planning horizon |
+| `ranking_basis` | string[] | Human rubric used to assign `rank` |
+| `pareto_core` | `LP\d{3,}`[] | The committed "vital few" subset of leverage points |
+| `leverage_points` | leverage_point[] | The prioritized interventions |
+| `watchlist` | watch_item[] | Signals being monitored but not yet promoted to leverage points |
+
+### Leverage points (`leverage_points[]`)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `LP\d{3,}` | Leverage-point identifier |
+| `title` | string | Short imperative title |
+| `one_thing` | string | The single highest-value outcome this intervention achieves |
+| `rank` / `status` | integer / enum | Priority order and lifecycle |
+| `finding_refs` / `risk_refs` / `decision_refs` / `fitness_function_refs` | typed ref[] | What this intervention addresses in the current model |
+| `migration_refs` / `realized_by` | `MIG\d{3,}`[] / `WI\d{3,}`[] | What implements it; delivery is delegated to migrations and roadmap work items |
+| `advances_goals` / `advances_value_streams` / `capability_refs` | typed ref[] | Why it matters strategically |
+| `depends_on` / `enables` | `LP\d{3,}`[] | Leverage graph edges between interventions |
+| `consequences_if_done` / `consequences_if_not_done` | string[] | Outcome framing and cost of inaction |
+| `discovery_stage` / `certainty` / `evidence` | shared governance fields | Confidence and provenance for the recommendation |
+
+### Watch items (`watchlist[]`)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `W\d{3}` | Local watch-item identifier |
+| `title` | string | What is being monitored |
+| `note` | string | Why it is on the watchlist and what would trigger promotion |
+| `risk_refs` / `finding_refs` / `decision_refs` | typed ref[] | Existing model evidence linked to the watch item |
+
+**Important distinctions:**
+
+- `LP###` entities are first-class, cross-file typed references.
+- `W###` watch items are local to `leverage.yaml`; they are intentionally lightweight.
+- `leverage` should **prioritize**, not duplicate the schedule detail already held in `roadmap.work_items[]`.

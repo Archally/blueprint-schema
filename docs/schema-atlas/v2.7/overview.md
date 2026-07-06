@@ -6,11 +6,11 @@ A generated, human-readable projection of the JSON Schema. **JSON Schema remains
 
 | Metric | Count |
 | --- | --- |
-| Schema files | 20 |
+| Schema files | 21 |
 | Planes | 3 |
-| Object definitions | 120 |
-| Typed-ID entity types | 51 |
-| Cross-file reference edges | 37 |
+| Object definitions | 123 |
+| Typed-ID entity types | 53 |
+| Cross-file reference edges | 39 |
 
 ## Plane map
 
@@ -21,7 +21,7 @@ graph TD
     ROOT --> cross_cutting
     design["Design Plane<br/>10 schema files"]
     ROOT --> design
-    governance["Governance Plane<br/>7 schema files"]
+    governance["Governance Plane<br/>8 schema files"]
     ROOT --> governance
 ```
 
@@ -60,6 +60,7 @@ Why & proof: strategic intent, decisions, capabilities, and quality evidence.
 | --- | --- | --- |
 | [`governance/capability.schema.yaml`](./entity-catalog.md#governance-capability) | Blueprint Business Capabilities | Governance Plane: Business Capability Map — a hierarchical view of what the business can do, independent of organizational structure or pro… |
 | [`governance/decisions.schema.yaml`](./entity-catalog.md#governance-decisions) | Blueprint Decisions | Governance Plane: Architecture Decision Log (ADR). Chronological, append-only record of design decisions with typed impact references, moti… |
+| [`governance/leverage.schema.yaml`](./entity-catalog.md#governance-leverage) | Blueprint Leverage Map | Governance Plane: Leverage Map — the prioritization tier that sits ABOVE the AS-IS remediation chain (finding → risk → decision → migration… |
 | [`governance/motivation.schema.yaml`](./entity-catalog.md#governance-motivation) | Blueprint Motivation | Governance Plane: Strategic intent — goals, non-goals, risks, assumptions, and trade-offs. Decisions reference motivation entities (not rev… |
 | [`governance/organization.schema.yaml`](./entity-catalog.md#governance-organization) | Blueprint Organization | Governance Plane: Organizational hierarchy — Party > Department > Team. Defines who owns what in the blueprint. Teams are first-class entit… |
 | [`governance/roadmap.schema.yaml`](./entity-catalog.md#governance-roadmap) | Blueprint Roadmap | Governance Plane: Product roadmap milestones with deliverables, success criteria, and dependencies. Used for PRD timeline section generatio… |

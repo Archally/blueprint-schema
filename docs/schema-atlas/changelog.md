@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 6 |
-| Additive (minor) | 19 |
+| Additive (minor) | 43 |
 | Clarification (patch) | 0 |
-| **Total changes** | 25 |
+| **Total changes** | 49 |
 
 ## ⚠ Breaking changes
 
@@ -54,7 +54,7 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 - **[breaking]** `design/arch.schema.yaml#/$defs/context/properties/model_traits` — Property `model_traits` type changed `array<string>` → `array<ref → model_traits_item>`.
   - _Sources: `schema/v2.7/design/arch.schema.yaml#/$defs/context/properties/model_traits`, `schema/v2.6/design/arch.schema.yaml#/$defs/context/properties/model_traits`_
 
-## Added (19)
+## Added (43)
 
 - [additive] `blueprint.schema.yaml#/$defs/repository_config` — New definition `repository_config` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.7/blueprint.schema.yaml#/$defs/repository_config`_
@@ -80,6 +80,9 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 - [additive] `design/concepts.schema.yaml#/$defs/enumeration/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.7/design/concepts.schema.yaml#/$defs/enumeration/properties/provenance`_
 
+- [additive] `design/domain.schema.yaml#/$defs/operation/properties/dispatch` — Property `dispatch` added (optional).
+  - _Source: `schema/v2.7/design/domain.schema.yaml#/$defs/operation/properties/dispatch`_
+
 - [additive] `design/domain.schema.yaml#/$defs/operation/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.7/design/domain.schema.yaml#/$defs/operation/properties/provenance`_
 
@@ -98,6 +101,63 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 - [additive] `design/rules.schema.yaml#/$defs/transition_rule/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.7/design/rules.schema.yaml#/$defs/transition_rule/properties/provenance`_
 
+- [additive] `governance/leverage.schema.yaml` — New schema file `governance/leverage.schema.yaml` added.
+  - _Source: `schema/v2.7/governance/leverage.schema.yaml`_
+
+- [additive] `governance/roadmap.schema.yaml#/$defs/blocker` — New definition `blocker` added to `governance/roadmap.schema.yaml`.
+  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/blocker`_
+
+- [additive] `governance/roadmap.schema.yaml#/$defs/decision_ref_list` — New definition `decision_ref_list` added to `governance/roadmap.schema.yaml`.
+  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/decision_ref_list`_
+
+- [additive] `governance/roadmap.schema.yaml#/$defs/goal_ref_list` — New definition `goal_ref_list` added to `governance/roadmap.schema.yaml`.
+  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/goal_ref_list`_
+
+- [additive] `governance/roadmap.schema.yaml#/$defs/milestone/properties/advances_goals` — Property `advances_goals` added (optional).
+  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/milestone/properties/advances_goals`_
+
+- [additive] `governance/roadmap.schema.yaml#/$defs/milestone/properties/mitigates_risks` — Property `mitigates_risks` added (optional).
+  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/milestone/properties/mitigates_risks`_
+
+- [additive] `governance/roadmap.schema.yaml#/$defs/milestone/properties/realizes_decisions` — Property `realizes_decisions` added (optional).
+  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/milestone/properties/realizes_decisions`_
+
+- [additive] `governance/roadmap.schema.yaml#/$defs/milestone/properties/use_cases` — Property `use_cases` added (optional).
+  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/milestone/properties/use_cases`_
+
+- [additive] `governance/roadmap.schema.yaml#/$defs/milestone/properties/user_stories` — Property `user_stories` added (optional).
+  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/milestone/properties/user_stories`_
+
+- [additive] `governance/roadmap.schema.yaml#/$defs/milestone/properties/value_streams` — Property `value_streams` added (optional).
+  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/milestone/properties/value_streams`_
+
+- [additive] `governance/roadmap.schema.yaml#/$defs/risk_ref_list` — New definition `risk_ref_list` added to `governance/roadmap.schema.yaml`.
+  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/risk_ref_list`_
+
+- [additive] `governance/roadmap.schema.yaml#/$defs/use_case_ref_list` — New definition `use_case_ref_list` added to `governance/roadmap.schema.yaml`.
+  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/use_case_ref_list`_
+
+- [additive] `governance/roadmap.schema.yaml#/$defs/user_story_ref_list` — New definition `user_story_ref_list` added to `governance/roadmap.schema.yaml`.
+  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/user_story_ref_list`_
+
+- [additive] `governance/roadmap.schema.yaml#/$defs/value_stream_ref_list` — New definition `value_stream_ref_list` added to `governance/roadmap.schema.yaml`.
+  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/value_stream_ref_list`_
+
+- [additive] `governance/roadmap.schema.yaml#/$defs/work_item` — New definition `work_item` added to `governance/roadmap.schema.yaml`.
+  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/work_item`_
+
+- [additive] `governance/roadmap.schema.yaml#/properties/cadence` — Property `cadence` added (optional).
+  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/properties/cadence`_
+
+- [additive] `governance/roadmap.schema.yaml#/properties/work_items` — Property `work_items` added (optional).
+  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/properties/work_items`_
+
+- [additive] `governance/test-cases.schema.yaml#/$defs/fitness_function/properties/provenance` — Property `provenance` added (optional).
+  - _Source: `schema/v2.7/governance/test-cases.schema.yaml#/$defs/fitness_function/properties/provenance`_
+
+- [additive] `governance/test-cases.schema.yaml#/$defs/test_case/properties/provenance` — Property `provenance` added (optional).
+  - _Source: `schema/v2.7/governance/test-cases.schema.yaml#/$defs/test_case/properties/provenance`_
+
 - [additive] `governance/test-cases.schema.yaml#/$defs/validates_refs/properties/transitions` — Property `transitions` added (optional).
   - _Source: `schema/v2.7/governance/test-cases.schema.yaml#/$defs/validates_refs/properties/transitions`_
 
@@ -107,11 +167,23 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 - [additive] `metamodel.schema.yaml#/$defs/finding_ref` — New definition `finding_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/finding_ref`_
 
+- [additive] `metamodel.schema.yaml#/$defs/leverage_ref` — New definition `leverage_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/leverage_ref`_
+
 - [additive] `metamodel.schema.yaml#/$defs/model_traits_item` — New definition `model_traits_item` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/model_traits_item`_
 
 - [additive] `metamodel.schema.yaml#/$defs/provenance` — New definition `provenance` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/provenance`_
+
+- [additive] `metamodel.schema.yaml#/$defs/quality_characteristic` — New definition `quality_characteristic` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/quality_characteristic`_
+
+- [additive] `metamodel.schema.yaml#/$defs/quality_subcharacteristic` — New definition `quality_subcharacteristic` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/quality_subcharacteristic`_
+
+- [additive] `metamodel.schema.yaml#/$defs/work_item_ref` — New definition `work_item_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/work_item_ref`_
 
 ---
 

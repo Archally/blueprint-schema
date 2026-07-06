@@ -10,6 +10,17 @@ This guide is about **commands, events, queries, documents, errors, and key doma
 This guide helps with **business actions and changes**. Technically, it covers **business behavior
 and state-change logic**.
 
+## Main entities in this guide
+
+- `operation` — a named business action or notable response, such as a command, event, query, or
+  document.
+- `error` — a named failure outcome the domain needs to surface clearly.
+- `question` — a named business question the system should be able to answer.
+- `exchange` — the boundary shape an `operation` uses when it travels through an API, topic,
+  queue, or similar channel.
+  - Often confused with: a story step. An `operation` is a reusable domain action; a story step is
+    one moment inside a larger journey.
+
 ## What belongs here
 
 - business operations

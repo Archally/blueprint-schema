@@ -10,6 +10,13 @@ This guide is about **how value is delivered from trigger to outcome**.
 This guide helps with **how value flows from trigger to outcome**. Technically, it covers
 **end-to-end value delivery flow**.
 
+## Main entities in this guide
+
+- `value_stream` — an end-to-end flow that turns a trigger into value for someone.
+- `stage` — one major phase inside that value stream.
+  - Often confused with: a capability or a story. A value stream spans end-to-end value delivery;
+    a story is one scenario, and a capability is a stable ability.
+
 ## What belongs here
 
 - end-to-end value streams

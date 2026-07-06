@@ -10,6 +10,17 @@ This guide is about **how work runs in time**, not what the business process mea
 This guide helps with **timing, sequencing, and coordination**. Technically, it covers **runtime
 behavior and temporal coordination**.
 
+## Main entities in this guide
+
+- `execution` — the main runtime behavior or execution model being described.
+- `parallelism` — work that can happen at the same time without changing the intended outcome.
+- `ordering` — a sequencing rule that says what must happen before something else.
+- `race_condition` — a timing hazard where different actions can interfere with each other.
+- `resource_profile` — the runtime resource shape, such as CPU, memory, or I/O pressure, that
+  affects timing behavior.
+  - Often confused with: story sequencing. `ordering` here is a runtime constraint, not just a
+    narrative order of steps.
+
 ## What belongs here
 
 - ordering constraints
