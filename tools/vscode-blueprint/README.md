@@ -11,7 +11,9 @@ that gap.
 
 - **Go to Definition** (`F12` / `Ctrl`+click) on any id → jumps to its `id:` declaration, wherever in the
   workspace it lives (the loader merges files by suffix, so a referenced id is often in another file).
-- **Hover** → shows the entity's kind/name + summary and the **source file:line**, with a click-to-open link.
+- **Hover** → on an id, shows the entity's kind/name + summary and the **source file:line**, with a
+  click-to-open link; on a `code_ref` path, shows where it resolves (local file or host URL), its `role` /
+  `description`, and a one-line hint when it resolves to nothing.
 - Indexes both block (`- id: orders.CMD001`) and inline (`{ id: CAT1200, ... }`) declarations.
 - **Highlight known ids** with a distinct color/style (decoration-based, so it's the same on **any theme**). Only ids
   that are actually *declared* somewhere get coloured — **canary yellow** by default (`archallyBlueprint.idForeground`) —
@@ -46,7 +48,7 @@ To package a `.vsix` for normal installation:
 
 ```bash
 npx @vscode/vsce package
-code --install-extension archally-blueprint-navigation-0.1.0.vsix
+code --install-extension archally-blueprint-navigation-0.4.0.vsix
 ```
 
 ## Configuration

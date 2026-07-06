@@ -246,6 +246,94 @@ export function scanUrls(text: string): CodeRefHit[] {
   return hits;
 }
 
+// ── code_ref hover (step-03; pure text builders — the extension supplies I/O + wraps in a Hover) ──
+
+/**
+ * Read the `role` / `description` of the code_ref entry that owns the `path:` on `pathLine`. Handles a block
+ * entry (sibling keys indented at the `path:` column) and an inline-flow entry (`{ path: …, role: … }`). Pure
+ * line-scan — never bleeds into the next list item.
+ */
+export function codeRefEntryMeta(text: string, pathLine: number): { role?: string; description?: string } {
+  const lines = text.split(/\r?\n/);
+  const line = lines[pathLine] ?? '';
+  const out: { role?: string; description?: string } = {};
+
+  // Inline flow entry: `{ path: X, role: Y, description: Z }`.
+  if (line.includes('{') && /[{,]\s*path\s*:/.test(line)) {
+    const roleMatch = line.match(/\brole\s*:\s*(['"]?)([^'",}]+?)\1\s*[,}]/);
+    const descMatch = line.match(/\bdescription\s*:\s*(['"]?)([^'"}]+?)\1\s*[,}]/);
+    if (roleMatch) out.role = roleMatch[2].trim();
+    if (descMatch) out.description = descMatch[2].trim();
+    return out;
+  }
+
+  // Block entry: role/description are sibling keys aligned at the `path:` column.
+  const pathCol = line.search(/path\s*:/);
+  if (pathCol < 0) return out;
+  for (let i = pathLine + 1; i < lines.length; i++) {
+    const current = lines[i];
+    const trimmed = current.trim();
+    if (trimmed === '' || trimmed.startsWith('#')) continue;
+    const indent = leadingIndent(current);
+    if (indent < pathCol) break; // dedented out of this entry
+    if (trimmed.startsWith('- ')) break; // next list item
+    if (indent !== pathCol) continue;
+    const roleMatch = current.match(/^\s*role\s*:\s*(['"]?)(.+?)\1\s*(?:#.*)?$/);
+    if (roleMatch && out.role === undefined) out.role = roleMatch[2].trim();
+    const descMatch = current.match(/^\s*description\s*:\s*(['"]?)(.+?)\1\s*(?:#.*)?$/);
+    if (descMatch && out.description === undefined) {
+      let value = descMatch[2].trim();
+      if (/^[|>][+-]?$/.test(value)) {
+        // Folded/literal scalar — take the next non-empty deeper line.
+        const next = lines[i + 1];
+        value = next ? next.trim().replace(/^['"]|['"]$/g, '') : '';
+      }
+      if (value) out.description = value;
+    }
+  }
+  return out;
+}
+
+export interface CodeRefHoverModel {
+  rawPath: string;
+  behavior: CodeRefOpenBehavior;
+  role?: string;
+  description?: string;
+  /** The click destination (undefined ⇒ unresolved). */
+  target?: { kind: 'file'; value: string } | { kind: 'url'; value: string };
+  /** Host URL offered alongside a local-file target under `localThenBrowser`. */
+  hostAlternate?: string;
+  /** A mapped local path that was NOT opened (missing on disk) — explains a fallback or a `local`-mode miss. */
+  localCandidate?: string;
+}
+
+/**
+ * Build the hover markdown for a `code_ref` path: the resolved destination (local path or host URL), the
+ * code_ref `role`/`description`, and — when nothing resolves — a single actionable hint (D2 behavior surfaced).
+ * Pure so it is unit-testable; the extension wraps the string in a `vscode.Hover`.
+ */
+export function buildCodeRefHover(model: CodeRefHoverModel): string {
+  const parts: string[] = [];
+  parts.push(model.role ? `**code_ref** \`${model.rawPath}\` · _${model.role}_` : `**code_ref** \`${model.rawPath}\``);
+
+  if (model.target?.kind === 'file') {
+    parts.push(`📂 Opens local file — \`${model.target.value}\``);
+    if (model.hostAlternate) parts.push(`🌐 Also on host — [${model.hostAlternate}](${model.hostAlternate})`);
+  } else if (model.target?.kind === 'url') {
+    parts.push(`🌐 Opens on host — [${model.target.value}](${model.target.value})`);
+    if (model.localCandidate) parts.push(`_local clone not found — \`${model.localCandidate}\`_`);
+  } else if (model.localCandidate) {
+    parts.push(`⚠️ Local clone not found — \`${model.localCandidate}\``);
+    parts.push('_`codeRef.openBehavior: local` has no browser fallback._');
+  } else {
+    parts.push('⚠️ No destination for this `code_ref`.');
+    parts.push('Add a `repository:` to the owning `blueprint.yaml`, or map the repo in `codeRef.localRoots`.');
+  }
+
+  if (model.description) parts.push(model.description);
+  return parts.join('\n\n');
+}
+
 /** Extract `repository` + `repositories` from a `blueprint.yaml`'s text (top-level keys only). */
 export function parseRepositoryConfig(text: string): RepoConfigSet {
   const lines = text.split(/\r?\n/);

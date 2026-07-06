@@ -1,8 +1,12 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import {
+  buildCodeRefHover,
+  codeRefEntryMeta,
   parseRepositoryConfig,
+  resolveBrowserUrl,
   resolveCodeRefTarget,
+  resolveLocalPath,
   scanCodeRefPaths,
   scanEvidenceSources,
   scanUrls,
@@ -356,6 +360,43 @@ function registerLinkProvider(): void {
   linkProviderReg = vscode.languages.registerDocumentLinkProvider(selector(), blueprintLinkProvider);
 }
 
+// Hover on a code_ref path → where it resolves (local file / host URL), its role/description, or — when nothing
+// resolves — a single actionable config hint (no diagnostics, so no spam on files with many unresolved refs).
+const codeRefHoverProvider: vscode.HoverProvider = {
+  async provideHover(doc, pos) {
+    if (!codeRefEnabled()) return undefined;
+    const text = doc.getText();
+    const hit = scanCodeRefPaths(text).find(
+      (h) => h.line === pos.line && pos.character >= h.startCh && pos.character <= h.endCh,
+    );
+    if (!hit) return undefined;
+
+    const set = (await repoConfigForDoc(doc.uri)) ?? {};
+    const localRoots = codeRefLocalRoots();
+    const behavior = codeRefOpenBehavior();
+    const target = await resolveCodeRefTarget(hit.raw, set, localRoots, behavior, fileExistsAt);
+    const meta = codeRefEntryMeta(text, hit.line);
+    const hostUrl = resolveBrowserUrl(hit.raw, set);
+    // Offer the host URL alongside a local-file target only under localThenBrowser; explain a mapped-but-missing
+    // clone whenever the local file was NOT the chosen target.
+    const hostAlternate = target?.kind === 'file' && behavior === 'localThenBrowser' ? hostUrl ?? undefined : undefined;
+    const localCandidate = target?.kind === 'file' ? undefined : resolveLocalPath(hit.raw, set, localRoots) ?? undefined;
+
+    const md = new vscode.MarkdownString(
+      buildCodeRefHover({
+        rawPath: hit.raw,
+        behavior,
+        role: meta.role,
+        description: meta.description,
+        target: target ?? undefined,
+        hostAlternate,
+        localCandidate,
+      }),
+    );
+    return new vscode.Hover(md, new vscode.Range(hit.line, hit.startCh, hit.line, hit.endCh));
+  },
+};
+
 // ── Highlighting (editor decorations — theme-independent, configurable) ──────────────────────────
 
 // Global-flag variant of the token grammar, for scanning a whole document.
@@ -452,6 +493,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     vscode.languages.registerDefinitionProvider(selector(), definitionProvider),
     vscode.languages.registerHoverProvider(selector(), hoverProvider),
+    vscode.languages.registerHoverProvider(selector(), codeRefHoverProvider),
     { dispose: () => linkProviderReg?.dispose() },
     vscode.commands.registerCommand('archallyBlueprint.reindex', rebuildIndex),
     vscode.commands.registerCommand('archallyBlueprint.goto', async (uriStr: string, line: number, character: number) => {

@@ -2,7 +2,7 @@
   "name": "archally-blueprint-navigation",
   "displayName": "Archally Blueprint Navigation",
   "description": "Go-to-definition, hover, highlight, and re-index for Archally blueprint IDs (e.g. slice.TYPE### references) across .blueprint YAML files.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "archally",
   "license": "Apache-2.0",
   "repository": {
@@ -132,7 +132,7 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "test": "npm run compile && node --test ./out/codeRef.test.js ./out/codeRef.local.test.js",
+    "test": "npm run compile && node --test ./out/codeRef.test.js ./out/codeRef.local.test.js ./out/codeRef.hover.test.js",
     "vscode:prepublish": "npm run compile"
   },
   "devDependencies": {
