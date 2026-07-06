@@ -69,9 +69,9 @@ Start from real runtime concerns:
 
 ## Worked example
 
-- Approval check and calendar sync can run in parallel after a leave request is submitted
-- Balance update must happen before final approval notification
-- Two managers acting on the same request can cause a race condition if state is stale
+- Eligibility check and refund estimate can run in parallel after a return request is submitted
+- Return approval must happen before the final customer notification is sent
+- Support agent review and automated policy evaluation can cause a race condition if request state is stale
 
 ## Layer-specific handoff guidance
 

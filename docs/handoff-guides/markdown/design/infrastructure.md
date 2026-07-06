@@ -68,8 +68,8 @@ Describe infrastructure in terms of purpose and operational dependency:
 
 ## Worked example
 
-- HR SQL Database stores employee and leave data in dev, staging, and prod
-- Notification Queue is used by approval and reminder flows
+- Commerce SQL Database stores order and return data in dev, staging, and prod
+- Notification Queue is used by return confirmation and refund update flows
 - Reporting Service runs separately and consumes replicated data
 
 ## Layer-specific handoff guidance

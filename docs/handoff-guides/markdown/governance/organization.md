@@ -62,8 +62,8 @@ Describe organization for accountability:
 
 ## Worked example
 
-- HR Operations party includes HR Policy department and Employee Platforms team
-- Employee Platforms team owns leave request workflow and employee dashboard
+- Commerce Operations party includes Returns Policy department and Storefront Experience team
+- Storefront Experience team owns the return request workflow and customer account experience
 
 ## Layer-specific handoff guidance
 

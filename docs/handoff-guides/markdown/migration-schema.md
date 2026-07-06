@@ -79,10 +79,10 @@ Describe migrations as explicit change packages:
 
 ## Worked example
 
-- **Migration name:** split-leave-and-time-tracking-slices
-- **Purpose:** separate one HR slice into two clearer business slices
+- **Migration name:** split-checkout-and-post-purchase-slices
+- **Purpose:** separate one commerce slice into two clearer business slices
 - **Status:** pending
-- **What changes:** move concepts and stories into leave-management and time-tracking; redirect references; add shared root architecture notes
+- **What changes:** move concepts and stories into checkout and post-purchase; redirect references; add shared root architecture notes
 - **Why:** the old model mixed two domains with different ownership and change rates
 - **Depends on:** establish new slice names first
 - **Breaking or non-breaking:** potentially breaking for downstream generators and references

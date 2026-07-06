@@ -74,7 +74,7 @@ $defs:
         description: "The goal as a clear, actionable statement (e.g. 'Reduce order processing time to under 2 seconds')."
       summary:
         type: string
-        maxLength: 120
+        maxLength: 200
         description: "One-line summary for listings."
       priority:
         type: string
@@ -173,7 +173,7 @@ $defs:
         description: "What could go wrong."
       summary:
         type: string
-        maxLength: 120
+        maxLength: 200
         description: "One-line summary for listings."
       likelihood:
         type: string
@@ -348,7 +348,7 @@ $defs:
         description: "The unresolved concern or question."
       summary:
         type: string
-        maxLength: 120
+        maxLength: 200
         description: "One-line summary for listings."
       description:
         type: string

@@ -844,8 +844,8 @@ $defs:
         description: "Short name for listings and graph nodes (e.g. 'Order Status')."
       summary:
         type: string
-        maxLength: 120
-        description: "One-line summary for listings (≤120 chars)."
+        maxLength: 200
+        description: "One-line summary for listings (≤200 chars)."
       description:
         type: string
         description: >

@@ -70,10 +70,10 @@ Start broad, then refine:
 
 ## Worked example
 
-- HR Platform party owns Recruiting and Time Tracking contexts
-- Recruiting context contains Candidate Service and Job Posting Service
-- Candidate Service depends on Notification Service for status updates
-- Reporting context consumes data from both Recruiting and Time Tracking
+- Commerce Platform party owns Storefront and Post-Purchase contexts
+- Post-Purchase context contains Return Service and Refund Service
+- Return Service depends on Notification Service for status updates
+- Reporting context consumes data from both Checkout and Post-Purchase
 
 ## Layer-specific handoff guidance
 

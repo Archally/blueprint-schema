@@ -69,10 +69,10 @@ Use motivation to make implicit reasoning visible:
 
 ## Worked example
 
-- Goal: employees can submit leave requests without HR mediation
-- Risk: inconsistent manager decisions create fairness concerns
-- Assumption: managers understand leave policy well enough to decide quickly
-- Trade-off: faster local decisions vs stronger centralized consistency
+- Goal: customers can submit return requests without contacting support
+- Risk: inconsistent return decisions create fairness and cost concerns
+- Assumption: policy rules capture return eligibility well enough to decide quickly
+- Trade-off: faster self-service returns vs tighter manual control
 
 ## Layer-specific handoff guidance
 

@@ -69,10 +69,10 @@ Use this guide when the team needs a shared language:
 
 ## Worked example
 
-- **Shared term:** Leave Request
-- **Meaning:** an employee's request for time away from work during a defined period
+- **Shared term:** Return Request
+- **Meaning:** a customer's request to return one or more purchased items within an allowed return window
 - **Used in:** concepts, story, interactions, rules, tests, roadmap
-- **Often confused with:** leave balance, approved leave calendar entry
+- **Often confused with:** refund transaction, return shipment
 - **Consistency rule:** use the same name and same primary identity everywhere; do not rename it by screen label or local slang
 
 ## Layer-specific handoff guidance

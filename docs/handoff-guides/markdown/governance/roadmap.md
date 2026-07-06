@@ -108,22 +108,22 @@ what is being delivered, in what order, by whom, and why it matters.
 
 ## Worked example
 
-- **Milestone:** Employee Self-Service MVP
-- **Purpose:** first usable employee leave workflow without manual HR entry
+- **Milestone:** Self-Service Returns MVP
+- **Purpose:** first usable customer return workflow without manual support entry
 - **Target date:** 2026-10-01
 - **Milestone status:** planned
-- **Deliverables:** leave request submission, manager approval, dashboard summary
-- **Success criteria:** pilot users can submit and receive leave decisions without manual HR entry
+- **Deliverables:** return request submission, eligibility checks, refund status summary
+- **Success criteria:** pilot customers can submit and track returns without manual support entry
 - **Cadence anchor:** sprint 30 starts on 2026-07-01 and lasts 14 days
 - **Execution work items:**
-  - **Epic:** Employee leave self-service
+  - **Epic:** Self-service returns
     - rolls up to MVP
     - start sprint: 30
     - end sprint: 35
-    - advances goal: employee self-service
-  - **Foundation:** approval policy integration
+    - advances goal: customer self-service returns
+  - **Foundation:** refund policy integration
     - depends on policy rule clarification
-    - blocker: unresolved compliance inquiry
+    - blocker: unresolved fraud review
   - **Task:** manager dashboard decision panel
     - executor: backend + frontend team
     - delivers related story and use case coverage

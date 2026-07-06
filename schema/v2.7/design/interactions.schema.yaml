@@ -78,8 +78,8 @@ $defs:
         description: "Human-readable screen name (e.g. 'Order Summary')."
       summary:
         type: string
-        maxLength: 120
-        description: "One-line summary for listings (≤120 chars)."
+        maxLength: 200
+        description: "One-line summary for listings (≤200 chars)."
       description:
         type: string
         description: "Detailed screen purpose and content overview."

@@ -69,8 +69,8 @@ Think in information bundles:
 
 ## Worked example
 
-- Leave Request Summary model is used on the employee dashboard and manager review page
-- It represents a leave request and includes employee name, dates, status, and decision summary
+- Return Request Summary model is used on the customer account page and support review page
+- It represents a return request and includes order number, items, status, and refund summary
 
 ## Layer-specific handoff guidance
 

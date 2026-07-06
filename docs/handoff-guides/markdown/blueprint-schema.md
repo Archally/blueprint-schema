@@ -75,13 +75,13 @@ Describe the Blueprint from outside in:
 
 ## Worked example
 
-- **Blueprint/system name:** Employee Self-Service HR Platform
-- **Overall purpose:** model employee-facing HR workflows and the supporting governance context
+- **Blueprint/system name:** Storefront Commerce Platform
+- **Overall purpose:** model shopping, checkout, and post-purchase workflows and the supporting governance context
 - **Layout mode:** slices
-- **Slices/domains:** leave-management, time-tracking, employee-profile
+- **Slices/domains:** catalog, checkout, post-purchase
 - **Shared root-level content:** overall architecture, organization, shared motivation, common decisions
-- **Bundle-level principles:** single source of truth for employee identity, local manager approval within policy boundaries
-- **Bundle-level migration notes:** move from one unified HR slice to separate leave and time slices
+- **Bundle-level principles:** single source of truth for order identity, policy-based automation within guardrails
+- **Bundle-level migration notes:** move from one unified commerce slice to separate checkout and post-purchase slices
 
 ## Layer-specific handoff guidance
 

@@ -68,11 +68,11 @@ Document decisions when a real choice has been made:
 
 ## Worked example
 
-- Decision: managers approve leave requests within their department
-- Context: HR wants local accountability and faster response
-- Options: centralized HR approval vs manager approval
-- Chosen: manager approval
-- Impact: workflow, authorization, audit trail, manager dashboard
+- Decision: eligible return requests are auto-approved within policy thresholds
+- Context: operations wants faster customer resolution and lower support volume
+- Options: manual support review for every request vs policy-based auto-approval
+- Chosen: policy-based auto-approval
+- Impact: workflow, authorization, audit trail, support dashboard
 
 ## Layer-specific handoff guidance
 

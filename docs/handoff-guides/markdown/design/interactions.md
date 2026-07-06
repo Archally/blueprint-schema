@@ -93,21 +93,21 @@ Use this template when gathering notes:
 
 ## Worked example
 
-### Example: leave request form
+### Example: return request form
 
-- **Screen name:** Leave Request Form
-- **Purpose:** let an employee submit a time-off request
-- **What the user sees:** date fields, leave type, reason field, remaining balance summary
+- **Screen name:** Return Request Form
+- **Purpose:** let a customer submit a return request
+- **What the user sees:** order items, return reason, refund method, eligibility summary
 - **Main actions:** submit request, save draft, cancel
 - **System responses:**
   - on valid submit, show confirmation and send request for review
-  - on invalid dates, show a validation error
+  - on invalid item selection, show a validation error
   - on policy conflict, show warning and block submission
 - **Navigation:**
-  - from employee dashboard to leave request form
-  - from leave request form to confirmation page after successful submit
-- **Concepts shown or edited:** employee, leave request, leave balance
-- **Related story:** employee submits a leave request
+  - from order details page to return request form
+  - from return request form to confirmation page after successful submit
+- **Concepts shown or edited:** customer, order item, return request, refund option
+- **Related story:** customer submits a return request
 
 ## Layer-specific handoff guidance
 

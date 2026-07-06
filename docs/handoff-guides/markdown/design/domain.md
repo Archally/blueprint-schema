@@ -71,10 +71,10 @@ Describe the domain as meaningful acts:
 
 ## Worked example
 
-- Submit Leave Request is a request to create a leave request
-- Leave Request Submitted is the fact that follows successful submission
-- Get Leave Balance answers how much leave is still available
-- Overlapping Leave Error appears when dates conflict with policy or approved leave
+- Submit Return Request is a request to create a return request
+- Return Request Submitted is the fact that follows successful submission
+- Get Return Eligibility answers whether the selected items can still be returned
+- Return Window Error appears when selected items fall outside the allowed return policy
 
 ## Layer-specific handoff guidance
 

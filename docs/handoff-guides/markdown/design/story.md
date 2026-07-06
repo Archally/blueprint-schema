@@ -104,27 +104,27 @@ Use this template when gathering notes:
 
 ## Worked example
 
-### Example: employee submits a leave request
+### Example: customer submits a return request
 
-- **Goal:** an employee asks for time off and receives a decision
-- **Primary actor:** employee
-- **Trigger:** employee decides to request leave
-- **Main outcome:** leave request is approved or rejected
+- **Goal:** a customer requests a return and receives a decision
+- **Primary actor:** customer
+- **Trigger:** customer decides to return an item from a completed order
+- **Main outcome:** return request is approved or rejected
 - **Activities:**
   - Create request
-    - employee enters dates and reason
+    - customer selects items and reason
     - system records the request
   - Review request
-    - manager checks coverage and policy
-    - manager approves or rejects
-  - Notify employee
+    - system checks policy and eligibility
+    - system approves automatically or routes for manual review
+  - Notify customer
     - system sends the decision
 - **Error or alternate paths:**
-  - request overlaps a blocked period
-  - request is missing information
-  - manager rejects due to staffing constraints
-- **Concepts involved:** employee, leave request, leave balance, approval decision
-- **Screens involved:** leave request form, manager review screen, confirmation/decision screen
+  - request falls outside the allowed return window
+  - request is missing item selection
+  - request is rejected because the product is non-returnable
+- **Concepts involved:** customer, order, return request, refund decision
+- **Screens involved:** order details page, return request form, confirmation/decision screen
 
 ## Layer-specific handoff guidance
 
