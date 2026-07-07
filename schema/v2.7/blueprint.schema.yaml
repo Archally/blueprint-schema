@@ -40,6 +40,26 @@ properties:
       prefixed code_ref by looking up its prefix here; unprefixed refs fall back to `repository`.
       Example: { "acme/orders-service": { url: "https://gitlab.com/acme/orders-service", provider: gitlab } }.
 
+  # === Trackers (v2.7.5) — issue/document link registry for tracker_ref ===
+  trackers:
+    type: object
+    additionalProperties:
+      $ref: "#/$defs/tracker_config"
+    description: >
+      Registry of external issue/document trackers used to turn a `tracker_ref` (on roadmap
+      work-items, milestones, blockers, …) into a clickable link. The map KEY is the tracker id
+      used as the `<tracker>:<key>` prefix on a ref (e.g. `confluence:12345`, `jira-eu:ABC-1`); a
+      bare key resolves via `default_tracker`, and a ref that is already a full URL is used verbatim.
+      Lets one blueprint link into multiple Jira sites/projects and Confluence spaces while storing
+      only short keys. Example:
+      { "jira": { url: "https://acme.atlassian.net/browse/{key}" },
+        "confluence": { url: "https://acme.atlassian.net/wiki/spaces/DOCS/pages/{key}", label: "Confluence" } }.
+  default_tracker:
+    type: string
+    description: >
+      Tracker id (a key of `trackers`) used to resolve a bare `tracker_ref` key that carries no
+      `<tracker>:` prefix. Omit if refs always carry a prefix or a full URL.
+
   # === Layout ===
   layout:
     description: "Blueprint file layout. Omit for legacy single-folder layout using design/governance paths."
@@ -268,6 +288,22 @@ $defs:
             enum: [github, gitlab, bitbucket]
           - type: string
             pattern: "^x-[a-z][a-z0-9-]*$"
+  tracker_config:
+    type: object
+    description: "An external issue/document tracker: a URL template that turns a tracker_ref key into a clickable link."
+    additionalProperties: false
+    required:
+      - url
+    properties:
+      url:
+        type: string
+        description: >
+          URL template. '{key}' is substituted with the ref key; if the template contains no '{key}',
+          the key is appended. E.g. 'https://acme.atlassian.net/browse/{key}' or
+          'https://acme.atlassian.net/wiki/spaces/DOCS/pages/{key}'.
+      label:
+        type: string
+        description: "Human-readable tracker label (e.g. 'Jira', 'Confluence')."
   slice:
     type: object
     description: >
