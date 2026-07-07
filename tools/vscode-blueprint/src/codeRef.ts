@@ -70,6 +70,58 @@ export function resolveBrowserUrl(rawPath: string, set: RepoConfigSet): string |
   return buildCodeRefUrl(config, filepath);
 }
 
+// ── local-clone resolution (step-02; D2 local-then-browser, D5 url-keyed + prefix alias) ──────────
+
+export type CodeRefOpenBehavior = 'localThenBrowser' | 'browser' | 'local';
+
+/**
+ * Resolve a code_ref to a candidate ABSOLUTE local file path (a string — existence is NOT checked here; that
+ * is I/O the caller does). The `localRoots` map is keyed by the resolved repo `url` (primary identity, D5) with
+ * the `org/repo` prefix accepted as an alias; a trailing slash on the url key is tolerated. `localRoots` values
+ * must already be absolute folders (the extension resolves any relative folder against the workspace first).
+ * Returns `<root>/<filepath>` (forward-slash normalized), or `undefined` if no mapping applies.
+ */
+export function resolveLocalPath(
+  rawPath: string,
+  set: RepoConfigSet,
+  localRoots: Record<string, string>,
+): string | undefined {
+  const { prefix, filepath } = parseCodeRefPath(rawPath);
+  if (!filepath) return undefined;
+  const url = selectRepoConfig(prefix, set)?.url;
+  const root =
+    (url && (localRoots[url] ?? localRoots[url.replace(/\/+$/, '')])) ||
+    (prefix ? localRoots[prefix] : undefined);
+  if (!root || !root.trim()) return undefined;
+  const cleanRoot = root.trim().replace(/\\/g, '/').replace(/\/+$/, '');
+  const cleanFile = filepath.replace(/\\/g, '/').replace(/^\/+/, '');
+  return `${cleanRoot}/${cleanFile}`;
+}
+
+/**
+ * Decide what a code_ref link opens (D2), given the `localRoots` map + `openBehavior`. The existence check is
+ * INJECTED (`exists`) so this stays pure / `vscode`-free and the full behavior × existence matrix is unit-testable;
+ * the extension supplies an fs-backed predicate. Semantics:
+ *   - `localThenBrowser` → the local file when it exists, else the git-host URL;
+ *   - `local`            → the local file when it exists, else nothing (no browser fallback);
+ *   - `browser`          → always the git-host URL (local clone ignored).
+ */
+export async function resolveCodeRefTarget(
+  rawPath: string,
+  set: RepoConfigSet,
+  localRoots: Record<string, string>,
+  behavior: CodeRefOpenBehavior,
+  exists: (absPath: string) => Promise<boolean>,
+): Promise<{ kind: 'file'; value: string } | { kind: 'url'; value: string } | undefined> {
+  if (behavior !== 'browser') {
+    const candidate = resolveLocalPath(rawPath, set, localRoots);
+    if (candidate && (await exists(candidate))) return { kind: 'file', value: candidate };
+    if (behavior === 'local') return undefined; // no browser fallback
+  }
+  const url = resolveBrowserUrl(rawPath, set);
+  return url ? { kind: 'url', value: url } : undefined;
+}
+
 // ── blueprint.yaml repository-config parsing (zero-dep, indent-based) ────────────────────────────
 // The extension deliberately avoids a YAML dependency (line-scan everywhere, for exact ranges and
 // pre-model operation). `repository`/`repositories` are simple, flat, root-level blocks, so a
@@ -120,32 +172,30 @@ function parseRepositoriesMap(lines: string[], start: number): Record<string, Re
   return map;
 }
 
-// ── code_refs path scanning (pure; the extension wraps each hit in a DocumentLink) ──────────────
-
-const CODE_REFS_START_RE = /^(\s*)code_refs:\s*(?:#.*)?$/;
-// A `path:` value inside a code_ref entry — block (`- path: X`) or inline flow (`{ path: X, ... }`).
-const CODE_REF_PATH_RE = /(?:^|[\s{,])path:\s*(['"]?)([^'"\n}]+?)\1\s*(?=[,}\s]|$)/;
+// ── field/URL scanning (pure; the extension wraps each hit in a DocumentLink) ────────────────────
 
 export interface CodeRefHit {
   line: number; // 0-based line index
-  startCh: number; // 0-based start column of the path value (quotes excluded)
+  startCh: number; // 0-based start column of the value (quotes excluded)
   endCh: number; // exclusive end column
-  raw: string; // the raw code_ref path text
+  raw: string; // the raw value text
 }
 
 /**
- * Find every `code_refs[].path` value in a YAML document, with exact positions. Tracks the
- * `code_refs:` block by indent so a `path:` key elsewhere is never matched; handles block
- * (`- path: X`) and inline-flow (`{ path: X, ... }`) entries. Zero-dep, line-scan (matches the
- * rest of the extension) so ranges are exact and it works before the model is built.
+ * Find every `<valueKey>:` value inside a `<blockKey>:` block, with exact positions. Tracks the block by
+ * indent so a matching key elsewhere is never picked up; handles block (`- key: X`) and inline-flow
+ * (`{ key: X, ... }`) entries. Zero-dep line-scan (matches the rest of the extension) so ranges are exact
+ * and it works before the model is built. `blockKey`/`valueKey` are plain identifiers (no regex metachars).
  */
-export function scanCodeRefPaths(text: string): CodeRefHit[] {
+export function scanFieldInBlock(text: string, blockKey: string, valueKey: string): CodeRefHit[] {
+  const blockStartRe = new RegExp(`^(\\s*)${blockKey}:\\s*(?:#.*)?$`);
+  const valueRe = new RegExp(`(?:^|[\\s{,])${valueKey}:\\s*(['"]?)([^'"\\n}]+?)\\1\\s*(?=[,}\\s]|$)`);
   const hits: CodeRefHit[] = [];
   const lines = text.split(/\r?\n/);
-  let blockIndent: number | null = null; // indent of the active code_refs: block, or null
+  let blockIndent: number | null = null; // indent of the active block, or null
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const startMatch = CODE_REFS_START_RE.exec(line);
+    const startMatch = blockStartRe.exec(line);
     if (startMatch) {
       blockIndent = startMatch[1].length;
       continue;
@@ -157,13 +207,131 @@ export function scanCodeRefPaths(text: string): CodeRefHit[] {
       blockIndent = null;
       continue;
     }
-    const pathMatch = CODE_REF_PATH_RE.exec(line);
-    if (!pathMatch) continue;
-    const raw = pathMatch[2];
-    const startCh = pathMatch.index + pathMatch[0].indexOf(raw);
+    const valueMatch = valueRe.exec(line);
+    if (!valueMatch) continue;
+    const raw = valueMatch[2];
+    const startCh = valueMatch.index + valueMatch[0].indexOf(raw);
     hits.push({ line: i, startCh, endCh: startCh + raw.length, raw });
   }
   return hits;
+}
+
+/** `code_refs[].path` values (repo-relative or cross-repo `org/repo#path`). */
+export function scanCodeRefPaths(text: string): CodeRefHit[] {
+  return scanFieldInBlock(text, 'code_refs', 'path');
+}
+
+/** `evidence[].source` values that are NOT http(s) URLs — file-path candidates (URLs are handled by scanUrls). */
+export function scanEvidenceSources(text: string): CodeRefHit[] {
+  return scanFieldInBlock(text, 'evidence', 'source').filter((h) => !/^https?:\/\//i.test(h.raw));
+}
+
+// Every http(s):// URL in a scalar value; the char class stops at a quote / whitespace / bracket, then
+// trailing sentence punctuation is trimmed. Field-agnostic (E1) — VS Code does not linkify YAML-string URLs.
+const URL_RE = /https?:\/\/[^\s"'`<>()\[\]{}]+/g;
+
+/** Every http(s):// URL anywhere in the document, with exact ranges. */
+export function scanUrls(text: string): CodeRefHit[] {
+  const hits: CodeRefHit[] = [];
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    URL_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = URL_RE.exec(lines[i])) !== null) {
+      const raw = m[0].replace(/[.,;:]+$/, ''); // trim trailing prose punctuation
+      if (raw.length <= 'https://'.length) continue;
+      hits.push({ line: i, startCh: m.index, endCh: m.index + raw.length, raw });
+    }
+  }
+  return hits;
+}
+
+// ── code_ref hover (step-03; pure text builders — the extension supplies I/O + wraps in a Hover) ──
+
+/**
+ * Read the `role` / `description` of the code_ref entry that owns the `path:` on `pathLine`. Handles a block
+ * entry (sibling keys indented at the `path:` column) and an inline-flow entry (`{ path: …, role: … }`). Pure
+ * line-scan — never bleeds into the next list item.
+ */
+export function codeRefEntryMeta(text: string, pathLine: number): { role?: string; description?: string } {
+  const lines = text.split(/\r?\n/);
+  const line = lines[pathLine] ?? '';
+  const out: { role?: string; description?: string } = {};
+
+  // Inline flow entry: `{ path: X, role: Y, description: Z }`.
+  if (line.includes('{') && /[{,]\s*path\s*:/.test(line)) {
+    const roleMatch = line.match(/\brole\s*:\s*(['"]?)([^'",}]+?)\1\s*[,}]/);
+    const descMatch = line.match(/\bdescription\s*:\s*(['"]?)([^'"}]+?)\1\s*[,}]/);
+    if (roleMatch) out.role = roleMatch[2].trim();
+    if (descMatch) out.description = descMatch[2].trim();
+    return out;
+  }
+
+  // Block entry: role/description are sibling keys aligned at the `path:` column.
+  const pathCol = line.search(/path\s*:/);
+  if (pathCol < 0) return out;
+  for (let i = pathLine + 1; i < lines.length; i++) {
+    const current = lines[i];
+    const trimmed = current.trim();
+    if (trimmed === '' || trimmed.startsWith('#')) continue;
+    const indent = leadingIndent(current);
+    if (indent < pathCol) break; // dedented out of this entry
+    if (trimmed.startsWith('- ')) break; // next list item
+    if (indent !== pathCol) continue;
+    const roleMatch = current.match(/^\s*role\s*:\s*(['"]?)(.+?)\1\s*(?:#.*)?$/);
+    if (roleMatch && out.role === undefined) out.role = roleMatch[2].trim();
+    const descMatch = current.match(/^\s*description\s*:\s*(['"]?)(.+?)\1\s*(?:#.*)?$/);
+    if (descMatch && out.description === undefined) {
+      let value = descMatch[2].trim();
+      if (/^[|>][+-]?$/.test(value)) {
+        // Folded/literal scalar — take the next non-empty deeper line.
+        const next = lines[i + 1];
+        value = next ? next.trim().replace(/^['"]|['"]$/g, '') : '';
+      }
+      if (value) out.description = value;
+    }
+  }
+  return out;
+}
+
+export interface CodeRefHoverModel {
+  rawPath: string;
+  behavior: CodeRefOpenBehavior;
+  role?: string;
+  description?: string;
+  /** The click destination (undefined ⇒ unresolved). */
+  target?: { kind: 'file'; value: string } | { kind: 'url'; value: string };
+  /** Host URL offered alongside a local-file target under `localThenBrowser`. */
+  hostAlternate?: string;
+  /** A mapped local path that was NOT opened (missing on disk) — explains a fallback or a `local`-mode miss. */
+  localCandidate?: string;
+}
+
+/**
+ * Build the hover markdown for a `code_ref` path: the resolved destination (local path or host URL), the
+ * code_ref `role`/`description`, and — when nothing resolves — a single actionable hint (D2 behavior surfaced).
+ * Pure so it is unit-testable; the extension wraps the string in a `vscode.Hover`.
+ */
+export function buildCodeRefHover(model: CodeRefHoverModel): string {
+  const parts: string[] = [];
+  parts.push(model.role ? `**code_ref** \`${model.rawPath}\` · _${model.role}_` : `**code_ref** \`${model.rawPath}\``);
+
+  if (model.target?.kind === 'file') {
+    parts.push(`📂 Opens local file — \`${model.target.value}\``);
+    if (model.hostAlternate) parts.push(`🌐 Also on host — [${model.hostAlternate}](${model.hostAlternate})`);
+  } else if (model.target?.kind === 'url') {
+    parts.push(`🌐 Opens on host — [${model.target.value}](${model.target.value})`);
+    if (model.localCandidate) parts.push(`_local clone not found — \`${model.localCandidate}\`_`);
+  } else if (model.localCandidate) {
+    parts.push(`⚠️ Local clone not found — \`${model.localCandidate}\``);
+    parts.push('_`codeRef.openBehavior: local` has no browser fallback._');
+  } else {
+    parts.push('⚠️ No destination for this `code_ref`.');
+    parts.push('Add a `repository:` to the owning `blueprint.yaml`, or map the repo in `codeRef.localRoots`.');
+  }
+
+  if (model.description) parts.push(model.description);
+  return parts.join('\n\n');
 }
 
 /** Extract `repository` + `repositories` from a `blueprint.yaml`'s text (top-level keys only). */

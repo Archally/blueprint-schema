@@ -1,5 +1,19 @@
+import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { parseRepositoryConfig, resolveBrowserUrl, scanCodeRefPaths, type RepoConfigSet } from './codeRef';
+import {
+  buildCodeRefHover,
+  codeRefEntryMeta,
+  parseRepositoryConfig,
+  resolveBrowserUrl,
+  resolveCodeRefTarget,
+  resolveLocalPath,
+  scanCodeRefPaths,
+  scanEvidenceSources,
+  scanUrls,
+  type CodeRefHit,
+  type CodeRefOpenBehavior,
+  type RepoConfigSet,
+} from './codeRef';
 
 /**
  * Archally Blueprint Navigation
@@ -188,6 +202,74 @@ function codeRefEnabled(): boolean {
   return vscode.workspace.getConfiguration('archallyBlueprint').get<boolean>('codeRef.enabled', true);
 }
 
+function referenceLinksEnabled(): boolean {
+  return vscode.workspace.getConfiguration('archallyBlueprint').get<boolean>('referenceLinks.enabled', true);
+}
+
+function codeRefOpenBehavior(): CodeRefOpenBehavior {
+  const value = vscode.workspace
+    .getConfiguration('archallyBlueprint')
+    .get<string>('codeRef.openBehavior', 'localThenBrowser');
+  return value === 'browser' || value === 'local' ? value : 'localThenBrowser';
+}
+
+/**
+ * The `codeRef.localRoots` map (repo `url` / `org/repo` prefix → local clone folder), with any relative folder
+ * resolved against the first workspace folder. Absolute folders are recommended (and documented as such).
+ */
+function codeRefLocalRoots(): Record<string, string> {
+  const raw =
+    vscode.workspace.getConfiguration('archallyBlueprint').get<Record<string, string>>('codeRef.localRoots', {}) || {};
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri;
+  const roots: Record<string, string> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (typeof value !== 'string' || !value.trim()) continue;
+    const folder = value.trim();
+    roots[key] =
+      path.isAbsolute(folder) || workspaceFolder === undefined
+        ? folder
+        : vscode.Uri.joinPath(workspaceFolder, folder).fsPath;
+  }
+  return roots;
+}
+
+/** Does an absolute path point at an existing file? (code_ref local-clone resolution — the injected predicate.) */
+async function fileExistsAt(absPath: string): Promise<boolean> {
+  try {
+    const stat = await vscode.workspace.fs.stat(vscode.Uri.file(absPath));
+    return (stat.type & vscode.FileType.File) !== 0;
+  } catch {
+    return false;
+  }
+}
+
+/** Resolve a repo-relative evidence source path against the workspace folder(s); return it only if it's a file. */
+async function resolveWorkspaceFile(relPath: string): Promise<vscode.Uri | undefined> {
+  const folders = vscode.workspace.workspaceFolders;
+  if (!folders) return undefined;
+  const clean = relPath.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
+  if (!clean) return undefined;
+  for (const folder of folders) {
+    const candidate = vscode.Uri.joinPath(folder.uri, clean);
+    try {
+      const stat = await vscode.workspace.fs.stat(candidate);
+      if ((stat.type & vscode.FileType.File) !== 0) return candidate;
+    } catch {
+      /* not in this folder */
+    }
+  }
+  return undefined;
+}
+
+function makeLink(hit: CodeRefHit, target: vscode.Uri, tooltip: string): vscode.DocumentLink {
+  const link = new vscode.DocumentLink(
+    new vscode.Range(hit.line, hit.startCh, hit.line, hit.endCh),
+    target,
+  );
+  link.tooltip = tooltip;
+  return link;
+}
+
 /** Walk up from a document to the nearest ancestor `blueprint.yaml`. */
 async function findOwningBlueprintUri(docUri: vscode.Uri): Promise<vscode.Uri | undefined> {
   let dir = vscode.Uri.joinPath(docUri, '..');
@@ -223,22 +305,95 @@ async function repoConfigForDoc(docUri: vscode.Uri): Promise<RepoConfigSet | und
   }
 }
 
-const codeRefLinkProvider: vscode.DocumentLinkProvider = {
+const blueprintLinkProvider: vscode.DocumentLinkProvider = {
   async provideDocumentLinks(doc) {
-    if (!codeRefEnabled()) return [];
-    const set = await repoConfigForDoc(doc.uri);
-    if (!set || (!set.repository && !set.repositories)) return [];
-
     const links: vscode.DocumentLink[] = [];
-    for (const hit of scanCodeRefPaths(doc.getText())) {
-      const url = resolveBrowserUrl(hit.raw, set);
-      if (!url) continue;
-      const range = new vscode.Range(hit.line, hit.startCh, hit.line, hit.endCh);
-      const link = new vscode.DocumentLink(range, vscode.Uri.parse(url));
-      link.tooltip = `Open on host: ${url}`;
-      links.push(link);
+    const text = doc.getText();
+
+    // code_refs → local clone if resolvable (codeRef.localRoots + openBehavior, D2), else git-host file URL.
+    // No repo-config guard: a localRoots entry keyed by the `org/repo` prefix can resolve a clone even when the
+    // owning blueprint.yaml has no `repository:` (resolveCodeRefTarget no-ops when nothing resolves).
+    if (codeRefEnabled()) {
+      const hits = scanCodeRefPaths(text);
+      if (hits.length) {
+        const set = (await repoConfigForDoc(doc.uri)) ?? {};
+        const localRoots = codeRefLocalRoots();
+        const behavior = codeRefOpenBehavior();
+        const resolved = await Promise.all(
+          hits.map(async (hit) => ({
+            hit,
+            target: await resolveCodeRefTarget(hit.raw, set, localRoots, behavior, fileExistsAt),
+          })),
+        );
+        for (const { hit, target } of resolved) {
+          if (!target) continue;
+          links.push(
+            target.kind === 'file'
+              ? makeLink(hit, vscode.Uri.file(target.value), `Open local file: ${target.value}`)
+              : makeLink(hit, vscode.Uri.parse(target.value), `Open on host: ${target.value}`),
+          );
+        }
+      }
     }
+
+    // Any http(s):// URL → browser; evidence[].source file-paths → the local workspace file. (No config.)
+    if (referenceLinksEnabled()) {
+      for (const hit of scanUrls(text)) {
+        links.push(makeLink(hit, vscode.Uri.parse(hit.raw), hit.raw));
+      }
+      for (const hit of scanEvidenceSources(text)) {
+        const fileUri = await resolveWorkspaceFile(hit.raw);
+        if (fileUri) links.push(makeLink(hit, fileUri, `Open ${hit.raw}`));
+      }
+    }
+
     return links;
+  },
+};
+
+// The link provider is (re)registered so config changes (localRoots / openBehavior / toggles) re-resolve links
+// live — DocumentLinks are cached per document version, so a settings change needs a fresh registration to take
+// effect without editing the file.
+let linkProviderReg: vscode.Disposable | undefined;
+function registerLinkProvider(): void {
+  linkProviderReg?.dispose();
+  linkProviderReg = vscode.languages.registerDocumentLinkProvider(selector(), blueprintLinkProvider);
+}
+
+// Hover on a code_ref path → where it resolves (local file / host URL), its role/description, or — when nothing
+// resolves — a single actionable config hint (no diagnostics, so no spam on files with many unresolved refs).
+const codeRefHoverProvider: vscode.HoverProvider = {
+  async provideHover(doc, pos) {
+    if (!codeRefEnabled()) return undefined;
+    const text = doc.getText();
+    const hit = scanCodeRefPaths(text).find(
+      (h) => h.line === pos.line && pos.character >= h.startCh && pos.character <= h.endCh,
+    );
+    if (!hit) return undefined;
+
+    const set = (await repoConfigForDoc(doc.uri)) ?? {};
+    const localRoots = codeRefLocalRoots();
+    const behavior = codeRefOpenBehavior();
+    const target = await resolveCodeRefTarget(hit.raw, set, localRoots, behavior, fileExistsAt);
+    const meta = codeRefEntryMeta(text, hit.line);
+    const hostUrl = resolveBrowserUrl(hit.raw, set);
+    // Offer the host URL alongside a local-file target only under localThenBrowser; explain a mapped-but-missing
+    // clone whenever the local file was NOT the chosen target.
+    const hostAlternate = target?.kind === 'file' && behavior === 'localThenBrowser' ? hostUrl ?? undefined : undefined;
+    const localCandidate = target?.kind === 'file' ? undefined : resolveLocalPath(hit.raw, set, localRoots) ?? undefined;
+
+    const md = new vscode.MarkdownString(
+      buildCodeRefHover({
+        rawPath: hit.raw,
+        behavior,
+        role: meta.role,
+        description: meta.description,
+        target: target ?? undefined,
+        hostAlternate,
+        localCandidate,
+      }),
+    );
+    return new vscode.Hover(md, new vscode.Range(hit.line, hit.startCh, hit.line, hit.endCh));
   },
 };
 
@@ -311,12 +466,16 @@ function applyDecorations(editor: vscode.TextEditor | undefined): void {
     editor.setDecorations(decoType, idRanges);
   }
 
-  // code_ref paths (link-blue by default — a distinct, clickable-looking colour).
+  // Links — code_ref paths + any URL + evidence file-paths — share the link-blue colour (E3),
+  // and each kind is included only when its feature toggle is on.
   if (codeRefDecoType) {
-    const refRanges = scanCodeRefPaths(text).map(
-      (h) => new vscode.Range(h.line, h.startCh, h.line, h.endCh),
+    const linkHits: CodeRefHit[] = [];
+    if (codeRefEnabled()) linkHits.push(...scanCodeRefPaths(text));
+    if (referenceLinksEnabled()) linkHits.push(...scanUrls(text), ...scanEvidenceSources(text));
+    editor.setDecorations(
+      codeRefDecoType,
+      linkHits.map((h) => new vscode.Range(h.line, h.startCh, h.line, h.endCh)),
     );
-    editor.setDecorations(codeRefDecoType, refRanges);
   }
 }
 
@@ -329,10 +488,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   rebuildDecoType();
   refreshAllDecorations();
 
+  registerLinkProvider();
+
   context.subscriptions.push(
     vscode.languages.registerDefinitionProvider(selector(), definitionProvider),
     vscode.languages.registerHoverProvider(selector(), hoverProvider),
-    vscode.languages.registerDocumentLinkProvider(selector(), codeRefLinkProvider),
+    vscode.languages.registerHoverProvider(selector(), codeRefHoverProvider),
+    { dispose: () => linkProviderReg?.dispose() },
     vscode.commands.registerCommand('archallyBlueprint.reindex', rebuildIndex),
     vscode.commands.registerCommand('archallyBlueprint.goto', async (uriStr: string, line: number, character: number) => {
       const uri = vscode.Uri.parse(uriStr);
@@ -373,19 +535,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('archallyBlueprint.fileGlob')) void rebuildIndex();
-      if (
-        e.affectsConfiguration('archallyBlueprint.highlight') ||
-        e.affectsConfiguration('archallyBlueprint.codeRef.highlight')
-      ) {
+      const linkCfgChanged =
+        e.affectsConfiguration('archallyBlueprint.codeRef') ||
+        e.affectsConfiguration('archallyBlueprint.referenceLinks');
+      if (e.affectsConfiguration('archallyBlueprint.highlight') || linkCfgChanged) {
         rebuildDecoType();
         refreshAllDecorations();
       }
+      // Re-register the link provider so new localRoots / openBehavior / enable-toggles re-resolve links live.
+      if (linkCfgChanged) registerLinkProvider();
     }),
   );
 }
 
 export function deactivate(): void {
   if (decoTimer) clearTimeout(decoTimer);
+  linkProviderReg?.dispose();
   decoType?.dispose();
   codeRefDecoType?.dispose();
   index.clear();
