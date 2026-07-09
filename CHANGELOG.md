@@ -2,6 +2,23 @@
 # All schema version releases in reverse chronological order.
 ---
 entries:
+  - version: "2.7.5"
+    date: "2026-07-07"
+    summary: "Tracker link registry — root `trackers`/`default_tracker` + `tracker_config` $def, so a `tracker_ref` (roadmap work-items, milestones, blockers) resolves to a clickable Jira/Confluence link"
+    changes:
+      - kind: add
+        target: "blueprint.schema.yaml"
+        semver: minor
+        notes: >
+          (Additive/optional.) New root `trackers` map (tracker id → `tracker_config` = {url template,
+          optional label}) plus `default_tracker`, and a new `tracker_config` $def. A `tracker_ref` of
+          the form `<tracker>:<key>` (e.g. `jira:ABC-1`, `confluence:12345`) resolves to a clickable link
+          via the tracker's URL template (`{key}` substituted, or appended when the template has no
+          `{key}`); a bare key resolves via `default_tracker`; a ref that is already a full URL is used
+          verbatim. Lets one blueprint link into multiple Jira sites/projects and Confluence spaces while
+          storing only short keys. No metamodel/schemaVersion change (the enum keys off the minor line
+          `2.7.0`); backward-compatible. Schema shipped in commit 95d911d; this entry + the package.json
+          bump (2.7.4→2.7.5) reconcile the version stamps that commit omitted.
   - version: "2.7.4"
     date: "2026-07-05"
     summary: "Governance-plane enrichment — leverage-point layer (LP###), evidence/provenance on test cases, and ISO/IEC 25010:2011 two-level quality characteristics on findings"
