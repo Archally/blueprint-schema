@@ -67,8 +67,28 @@ function typedIdOf(entity: Entity): string | null {
  *     domain-file disambiguator, so a hit here (or any case-folded hit) is a `loose`
  *     bind — correct convention-bridging, but wider surface → advisory-worthy.
  */
-function operationRefForms(entity: Entity): { precise: string[]; scoped: string | null } {
+/**
+ * Spaced/kebab/snake operation name → camelCase API-operationId form
+ * (`"Get Product"` → `getProduct`). VERBATIM port of the contract generator's
+ * `toCamelCase` (viewer/generator/v2.6/src/generators/mermaid/shared/resolve-ownership.ts) —
+ * so the core `handled_by` binding recognises the SAME `${context}:${camelCase}` contract-ref
+ * convention the generator already groups by (v2.7.6 convergence, one ownership rule).
+ */
+function toCamelCase(name: string): string {
+  const words = name.split(/[\s\-_]+/).filter(Boolean);
+  if (words.length === 0) return '';
+  return (
+    words[0].toLowerCase() +
+    words
+      .slice(1)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join('')
+  );
+}
+
+function operationRefForms(entity: Entity): { precise: string[]; loose: string[] } {
   const precise: string[] = [];
+  const loose: string[] = [];
   const domainName = contextNameOf(entity);
   const scope = scopeOf(entity);
   const opName = entity.term ?? entity.displayId;
@@ -77,8 +97,22 @@ function operationRefForms(entity: Entity): { precise: string[]; scoped: string 
     precise.push(entity.displayId);
     if (scope) precise.push(`${scope}.${entity.displayId}`);
   }
-  const scoped = opName && scope && scope !== domainName ? `${scope}:${opName}` : null;
-  return { precise, scoped };
+  // Loose surface — matched case-folded only, so a hit here is `match: 'loose'`:
+  //   - the coarse `scope:opName` (prestashop's scope-qualified convention), and
+  //   - v2.7.6 CONVERGENCE: the generator's `${context}:${camelCase(opName)}` API-operationId
+  //     form (ecommerce `catalog:getProduct` ← "Get Product"), under BOTH the scope and the
+  //     domain-file name (the generator keys on one `source_ref.context`; we cover both). This
+  //     makes the core `handled_by` binder agree with the generator's contract grouping — the
+  //     prerequisite for collapsing the two ownership resolvers in the tool merge.
+  if (opName && scope && scope !== domainName) loose.push(`${scope}:${opName}`);
+  if (opName) {
+    const camel = toCamelCase(opName);
+    if (camel) {
+      if (scope) loose.push(`${scope}:${camel}`);
+      if (domainName) loose.push(`${domainName}:${camel}`);
+    }
+  }
+  return { precise, loose };
 }
 
 /** Contract send/receive/expose/call entries: plain strings or {domainName, operationName}. */
@@ -167,8 +201,8 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
 
   // ── Operation --handled_by--> Context (m:n) ──────────────────────────────
   for (const op of operations) {
-    const { precise, scoped } = operationRefForms(op);
-    const allFolded = [...precise, ...(scoped ? [scoped] : [])].map((r) => r.toLowerCase());
+    const { precise, loose } = operationRefForms(op);
+    const allFolded = [...precise, ...loose].map((r) => r.toLowerCase());
     const providedAnywhere = allFolded.some((ref) => allProvidedFolded.has(ref));
     for (const ctx of contexts) {
       const exactHere = providedExactByContextId.get(ctx.id);

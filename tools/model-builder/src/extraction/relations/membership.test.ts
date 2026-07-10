@@ -178,3 +178,34 @@ describe('extractMembershipRelations — match provenance + loose-bind advisory 
     expect(byId.has('op-e')).toBe(false);
   });
 });
+
+describe('extractMembershipRelations — camelCase contract-ref convergence (v2.7.6 B)', () => {
+  // ecommerce shape: SPACED op name "Get Product" + camelCase API contract ref `catalog:getProduct`.
+  // Pre-B this bound only via the name/scope LEGACY fallback (scope:opName folds to `catalog:get product`
+  // ≠ `catalog:getproduct`). B ports the generator's toCamelCase so it binds contract-LOOSE instead —
+  // making the core `handled_by` agree with the generator's grouping (one rule, merge-ready).
+  const catalog = ctx('ctx-cat', 'Catalog', 'Shop', 'shop.BC001');
+  const spacedOp: Entity = {
+    id: 'op-gp', displayId: 'catalog.QRY001', term: 'Get Product', type: ENTITY_TYPE.Operation, layer: 'domain',
+    data: { _context_name: 'Catalog', _scope: 'catalog', kind: 'query' },
+  };
+  const c = contract('ctr-cat', 'Catalog', 'Shop', { expose: ['catalog:getProduct'] });
+  const es = [catalog, spacedOp, c];
+  const rels = extractMembershipRelations(es);
+  const edge = rels.find((r) => r.type === RELATION_TYPE.HandledBy && r.source_entity_id === 'op-gp');
+
+  it('binds a spaced-name op to its context via a camelCase contract ref', () => {
+    expect(edge).toBeDefined();
+    expect(edge!.target_entity_id).toBe('ctx-cat');
+  });
+
+  it('tags the camelCase bind as contract + loose (a ref worth tightening)', () => {
+    expect((edge!.data as { resolution: string; match: string }).resolution).toBe('contract');
+    expect((edge!.data as { resolution: string; match: string }).match).toBe('loose');
+  });
+
+  it('findMembershipGaps flags it as loose-bind, not unbound', () => {
+    const byId = new Map(findMembershipGaps(es, rels).map((g) => [g.entityId, g.reason]));
+    expect(byId.get('op-gp')).toBe('loose-bind');
+  });
+});
