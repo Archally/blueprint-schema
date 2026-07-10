@@ -142,6 +142,17 @@ export const RELATION_TYPE = {
   // BCC v5 (v2.6.3): bounded-context association from BD/Assumption/KPI to context
   // Source field: bounded_context_ref on business_decision, assumption, kpi
   BoundedContextRef: 'bounded_context_ref',
+  // v2.7.6 (D15): operation handled/produced by a bounded context. Materialized (not
+  // authored) — derived from arch service contracts (expose ∪ send = provide, PRIMARY,
+  // many-to-many) with the deprecated file name/scope heuristic as FALLBACK. Carries
+  // data.resolution: 'contract' | 'legacy' and data.match: 'exact' | 'loose' (D18).
+  // The resolvability rule (unbound-operation.yaml) walks this edge.
+  HandledBy: 'handled_by',
+  // v2.7.6 (D17): competency question scoped to the bounded context whose knowledge
+  // boundary it defines. Materialized — SINGLE-VALUED, from the question's explicit
+  // bounded_context_ref (PRIMARY) with name/scope as FALLBACK. data.resolution: 'ref' | 'legacy'.
+  // The resolvability rule (unbound-question.yaml) walks this edge.
+  ScopedTo: 'scoped_to',
   // BCC v5 (v2.6.3): cross-context business-decision policy linkage (BD.linked_contexts[])
   BusinessDecisionLinkedContext: 'business_decision_linked_context',
   // BCC v5 (v2.6.3): business-decision motivated by user story (BD.linked_user_stories[])

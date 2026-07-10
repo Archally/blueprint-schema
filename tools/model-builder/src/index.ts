@@ -16,6 +16,8 @@ export { RELATION_TYPE } from './model/relationTypes.js';
 export type { RelationType } from './model/relationTypes.js';
 export { buildBlueprintModel, groupDocumentsBySchemaType } from './model/buildModel.js';
 export { buildRelations } from './extraction/relations/index.js';
+export { extractMembershipRelations, findMembershipGaps } from './extraction/relations/membership.js';
+export type { MembershipGap } from './extraction/relations/membership.js';
 export type { OperationDetail } from './extraction/entities/index.js';
 export { applyMigrations, MigrationError, validateMigrations } from './migration/applyMigrations.js';
 export type { MigrationToApply } from './migration/applyMigrations.js';
