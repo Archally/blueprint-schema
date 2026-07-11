@@ -324,6 +324,37 @@ $defs:
     pattern: "^([a-z][a-z0-9-]*\\.)?TM\\d{3}$"
     description: "Reference to a team (e.g. TM001 or billing.TM001)."
 
+  # ---------------------------------------------------------------------------
+  # Architecture hierarchy (v2.7.6)
+  # Bounded contexts and services become first-class, referenceable nodes.
+  # `party_ref` (PRT###) already exists above and is reused for arch parties.
+  # ---------------------------------------------------------------------------
+
+  bounded_context_ref:
+    description: >
+      Reference to a bounded context by its arch id (e.g. BC001 or shop.BC001). Used
+      as the arch `context.id` (self-identity), by inter-context `dependency` targets
+      (id-based context-map edges), and by BCC entities (business decisions /
+      assumptions / KPIs). Operation→bounded-context membership is NOT declared with
+      this ref — it is derived from arch service contracts (`expose`/`send` = handled
+      / produced), so there is no `bounded_context_ref` on domain files (D13/D14). A
+      ref to an unknown BC### is a resolvability WARNING (promoted to error in v2.8,
+      when BC###/SVC### become required). The legacy kebab-context-name form (e.g.
+      `customer-management`) is a deprecated compatibility shim for existing BCC refs;
+      BC### is canonical.
+    anyOf:
+      - type: string
+        pattern: "^([a-z][a-z0-9-]*\\.)?BC\\d{3,}$"
+        description: "Canonical: arch bounded-context id (BC###), optionally context/party-prefixed."
+      - type: string
+        pattern: "^[a-z][a-z0-9-]*$"
+        description: "Migration shim (deprecated): legacy kebab-context-name."
+
+  service_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?SVC\\d{3,}$"
+    description: "Reference to an architecture service (e.g. SVC001 or shop.SVC001)."
+
   story_ref:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?STR\\d{3}$"

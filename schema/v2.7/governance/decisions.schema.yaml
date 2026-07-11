@@ -62,7 +62,7 @@ $defs:
       summary:
         type: string
         maxLength: 200
-        description: "One-line summary for listings and quick scanning (≤200 chars). Self-contained."
+        description: "One-line summary for listings and quick scanning (≤120 chars). Self-contained."
       date:
         type: string
         pattern: "^\\d{4}-\\d{2}(-\\d{2})?$"

@@ -105,7 +105,7 @@ $defs:
       summary:
         type: string
         maxLength: 200
-        description: "One-line summary for listings (≤200 chars). Self-contained."
+        description: "One-line summary for listings (≤120 chars). Self-contained."
       validates:
         $ref: "#/$defs/validates_refs"
         description: "What this test proves. Authoritative source for test-to-blueprint traceability."

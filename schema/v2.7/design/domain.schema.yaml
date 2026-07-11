@@ -845,7 +845,7 @@ $defs:
       summary:
         type: string
         maxLength: 200
-        description: "One-line summary for listings (≤200 chars)."
+        description: "One-line summary for listings (≤120 chars)."
       description:
         type: string
         description: >
@@ -899,6 +899,22 @@ $defs:
           Concepts this question is about. Links questions to the ubiquitous
           language. E.g., a question about "order status" references the
           Order and OrderStatus concepts.
+      bounded_context_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/bounded_context_ref"
+        description: >
+          The bounded context whose knowledge boundary this competency question
+          defines (v2.7.6, D17). SINGLE-VALUED and EXPLICIT: a competency question
+          is a knowledge requirement of exactly one BC — unlike operations (which
+          are m:n and DERIVED from arch service contracts, so they carry no ref,
+          D14). Questions are referenced by NO arch construct, so this ref is the
+          only explicit binding; it is especially load-bearing for UNANSWERED
+          questions (empty answered_by), which have no operations to inherit a BC
+          from yet still belong to the BC carrying the knowledge gap. Points at an
+          arch `context.id` (BC###, optionally scope-prefixed e.g. shop.BC001; the
+          legacy kebab-context-name is a deprecated compat shim). When absent, the
+          owning BC falls back to the deprecated file `name`/`scope` heuristic; an
+          op-less, ref-less question resolves to 0 contexts → resolvability WARN
+          (step-12). Strongly encouraged in v2.7.x, aligned to required in v2.8 (D12).
       motivated_by:
         type: array
         items:

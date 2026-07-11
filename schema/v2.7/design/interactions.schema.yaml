@@ -79,7 +79,7 @@ $defs:
       summary:
         type: string
         maxLength: 200
-        description: "One-line summary for listings (≤200 chars)."
+        description: "One-line summary for listings (≤120 chars)."
       description:
         type: string
         description: "Detailed screen purpose and content overview."

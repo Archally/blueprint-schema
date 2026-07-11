@@ -68,6 +68,13 @@ $defs:
       - contexts
       - env
     properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/party_ref"
+        description: >
+          Stable party id (PRT###) — makes the party a first-class, referenceable
+          graph node. MUST reconcile with the org-layer PRT### when the party is also
+          modelled there (parties are dual-sourced: arch + org). STRONGLY ENCOURAGED:
+          optional in v2.7.x only for additive migration; becomes REQUIRED in v2.8.
       name:
         type: string
         description: "Party name (unique within this architecture document)."
@@ -105,6 +112,16 @@ $defs:
       - name
       - kind
     properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/bounded_context_ref"
+        description: >
+          Stable bounded-context id (BC###) — the target of a domain file's
+          `bounded_context_ref` (rule-1 ownership binding) and of inter-context
+          `dependency.bounded_context_ref` edges. STRONGLY ENCOURAGED: optional in
+          v2.7.x only; becomes REQUIRED in v2.8 (alongside the resolvability
+          warn→error promotion). Until then the name/scope heuristic remains a
+          deprecated fallback. Canonical form is BC###; the legacy kebab-context-name
+          is tolerated only during migration.
       name:
         type: string
         description: "Context name (unique within this party)."
@@ -206,6 +223,12 @@ $defs:
       name:
         type: string
         description: "Name of the dependency (context or external system name)."
+      bounded_context_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/bounded_context_ref"
+        description: >
+          Optional target bounded-context id (BC###) — the id-based inter-context
+          edge (D10), preferred over matching the `name` string (deprecated
+          fallback). Use for dependencies on another bounded context in this model.
       type:
         type: string
         description: "Technical integration type (e.g. api, events, shared-db, file, grpc)."
@@ -251,6 +274,11 @@ $defs:
     required:
       - name
     properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+        description: >
+          Stable service id (SVC###) — makes the service a first-class, referenceable
+          graph node. STRONGLY ENCOURAGED: optional in v2.7.x only; becomes REQUIRED in v2.8.
       name:
         type: string
         description: "Service name (e.g. order-api, payment-worker)."

@@ -2,6 +2,48 @@
 # All schema version releases in reverse chronological order.
 ---
 entries:
+  - version: "2.7.6"
+    date: "2026-07-09"
+    summary: "Arch hierarchy typed IDs (BC###/SVC###, reusing PRT### for parties) + context-ownership binding — operations bind to bounded contexts via arch service contracts (expose/send), questions via an explicit bounded_context_ref. Coordinated wave with the infrastructure-layer v2.7.6 changes (IR/ENV/RT/BND, appended separately)."
+    changes:
+      - kind: add
+        target: "metamodel.schema.yaml"
+        semver: minor
+        notes: >
+          (Additive/optional.) New typed-ID reference $defs: `bounded_context_ref` — canonical BC###
+          (arch bounded-context id, optionally context/party-prefixed) with a deprecated legacy
+          kebab-context-name compatibility shim (anyOf) for the migration window — and `service_ref`
+          (SVC###). `party_ref` (PRT###) already existed and is reused for arch parties (no new $def).
+          Resolvability of bounded_context_ref is WARN-not-enforce in 2.7.6 (an operation resolving to 0
+          contexts, or a ref to an unknown BC###, warns; promoted to error a version later).
+          schema_version enum unchanged (keys off the 2.7.0 minor line).
+      - kind: add
+        target: "design/arch.schema.yaml"
+        semver: minor
+        notes: >
+          Arch hierarchy gains typed ids — `party.id` (PRT###, reconciles to the org-layer party),
+          `context.id` (BC###), `service.id` (SVC###) — added inline on the nested
+          party→context→service objects (hierarchy preserved, not flattened).
+          `dependency.bounded_context_ref` (BC###) adds id-based inter-context edges (the name string
+          becomes a deprecated fallback). Operation→bounded-context membership is DERIVED from arch
+          service contracts (`expose`/`send` = handled/produced, many-to-many) — there is NO
+          bounded_context_ref on domain files (the contract already states where an operation is
+          handled). The legacy file-level name/scope match stays as a deprecated fallback. Arch ids are
+          STRONGLY ENCOURAGED and OPTIONAL in v2.7.x; REQUIRED in v2.8 (with the resolvability warn→error
+          promotion). Additive — every existing model validates unchanged (prestashop: PASSED,
+          0 schema errors).
+      - kind: add
+        target: "design/domain.schema.yaml"
+        semver: minor
+        notes: >
+          The `question` object gains an optional, SINGLE-VALUED `bounded_context_ref` (BC###,
+          scope-prefixed; kebab-name shim) — the bounded context whose knowledge boundary a competency
+          question defines. Explicit and single-owner (arch references questions nowhere), especially
+          load-bearing for UNANSWERED questions (empty answered_by) which have no operations to inherit a
+          BC from yet still belong to the BC carrying the knowledge gap. Explicit-primary; deprecated
+          name/scope fallback; an op-less, ref-less question resolves to 0 contexts → resolvability WARN.
+          Concepts are NOT given this field (genuinely m:n). Encouraged/optional in v2.7.x, required in
+          v2.8. Additive.
   - version: "2.7.5"
     date: "2026-07-07"
     summary: "Tracker link registry — root `trackers`/`default_tracker` + `tracker_config` $def, so a `tracker_ref` (roadmap work-items, milestones, blockers) resolves to a clickable Jira/Confluence link"
