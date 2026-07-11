@@ -115,13 +115,15 @@ $defs:
       id:
         $ref: "../metamodel.schema.yaml#/$defs/bounded_context_ref"
         description: >
-          Stable bounded-context id (BC###) — the target of a domain file's
-          `bounded_context_ref` (rule-1 ownership binding) and of inter-context
-          `dependency.bounded_context_ref` edges. STRONGLY ENCOURAGED: optional in
-          v2.7.x only; becomes REQUIRED in v2.8 (alongside the resolvability
-          warn→error promotion). Until then the name/scope heuristic remains a
-          deprecated fallback. Canonical form is BC###; the legacy kebab-context-name
-          is tolerated only during migration.
+          Stable bounded-context id (BC###) — the target of inter-context
+          `dependency.bounded_context_ref` edges, the DERIVED operation→context
+          membership (`handled-by`, from a service contract's `expose`/`send`), and a
+          competency question's or BCC entity's `bounded_context_ref`. Operations do
+          NOT carry an ownership ref — their membership is contract-derived, not
+          declared on the domain file. STRONGLY ENCOURAGED: optional in v2.7.x only;
+          becomes REQUIRED in v2.8 (alongside the resolvability warn→error promotion).
+          Until then the name/scope heuristic remains a deprecated fallback. Canonical
+          form is BC###; the legacy kebab-context-name is tolerated only during migration.
       name:
         type: string
         description: "Context name (unique within this party)."
