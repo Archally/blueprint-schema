@@ -1,0 +1,25 @@
+engineVersion: "0.1"
+rules:
+  - id: unbound-operation
+    severity: warn
+    description: >-
+      An operation (command / query / event) belongs to exactly the bounded context(s) whose
+      service contracts provide it (expose ∪ send), with the deprecated domain-file name/scope
+      heuristic as a fallback (v2.7.6 D14/D15). The model-builder materializes that membership as
+      a `handled_by` edge (Operation → BoundedContext). An operation with NO `handled_by` edge is
+      UNBOUND: no contract exposes/sends it and no context name/scope matches it — so it renders on
+      no context's canvas and its transport surface is unspecified. This is the "silent empty
+      canvas" gap (D1): pre-CR the binding was recomputed inside one resolver where no validator
+      could see it. Fix by exposing/sending the operation from the owning service's contract (the
+      forward mechanism), or aligning its domain-file `name:`/`scope:` to the context. Advisory in
+      v2.7.x; promoted to error in v2.8 (D5). Override per-project via .blueprint-lint.yaml
+      (e.g. `unbound-operation: off`).
+    find:
+      entity_type: Operation
+    # handled_by edge points Operation → BoundedContext, so a bound op has an OUTGOING handled_by.
+    check:
+      has_relation:
+        direction: out
+        type: handled_by
+        exists: true
+    message: 'Operation "{displayId}" ({name|''unnamed''}) is unbound — no bounded context provides it via a contract (expose/send) and no name/scope match. Expose/send it from the owning service, or align its domain-file name/scope.'

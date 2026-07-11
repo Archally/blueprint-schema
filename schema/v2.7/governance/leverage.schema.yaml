@@ -86,8 +86,8 @@ $defs:
         description: "Short imperative title of the intervention (e.g. 'Isolate reporting workloads from the interactive path')."
       summary:
         type: string
-        maxLength: 120
-        description: "One-line summary for listings (≤120 chars)."
+        maxLength: 200
+        description: "One-line summary for listings (≤200 chars)."
       one_thing:
         type: string
         description: >

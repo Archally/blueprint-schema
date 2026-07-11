@@ -1,0 +1,26 @@
+engineVersion: "0.1"
+rules:
+  - id: unbound-question
+    severity: warn
+    description: >-
+      A competency question (QN###) defines the knowledge boundary of exactly one bounded context
+      (v2.7.6 D17). It binds via its explicit `bounded_context_ref` (a BC### typed id, optionally
+      scope-prefixed like `erp.BC001`), with the deprecated domain-file name/scope heuristic as a
+      fallback. The model-builder materializes that as a `scoped_to` edge (Question →
+      BoundedContext). A question with NO `scoped_to` edge is UNBOUND: either it declares no
+      `bounded_context_ref` and no name/scope matches, OR its `bounded_context_ref` points at an
+      unknown BC### (a DANGLING ref — the id was renamed/removed). Either way it floats free of the
+      context whose boundary it is meant to define. Fix by setting `bounded_context_ref` to a valid
+      BC### (single-valued — a question scopes ONE context; genuinely cross-context knowledge belongs
+      on a concept, not a question). Distinct from `unanswered-questions` (which flags a question no
+      operation ANSWERS). Advisory in v2.7.x; promoted to error in v2.8 (D5). Override per-project via
+      .blueprint-lint.yaml (e.g. `unbound-question: off`).
+    find:
+      entity_type: Question
+    # scoped_to edge points Question → BoundedContext, so a bound question has an OUTGOING scoped_to.
+    check:
+      has_relation:
+        direction: out
+        type: scoped_to
+        exists: true
+    message: 'Question "{displayId}" ({name|''unnamed''}) is unbound to a bounded context — set a valid `bounded_context_ref` (BC###). A missing ref, or one pointing at an unknown BC###, leaves it scoped to no context.'

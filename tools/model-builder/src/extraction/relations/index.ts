@@ -24,6 +24,7 @@ import { extractValueStreamRelations } from './valueStream.js';
 import { extractLeverageRelations } from './leverage.js';
 import { extractBccRelations } from './bcc.js';
 import { extractRgRelations } from './rg.js';
+import { extractMembershipRelations } from './membership.js';
 
 /**
  * Build all relations from the entity list.
@@ -72,6 +73,9 @@ export function buildRelations(
     ...extractLeverageRelations(entities, placeholders),
     ...extractBccRelations(entities, placeholders),
     ...extractRgRelations(entities),
+    // v2.7.6 (D15/D17): materialize op→BC (handled_by) + question→BC (scoped_to)
+    // membership — one inspectable edge the resolvability rules walk.
+    ...extractMembershipRelations(entities),
     ...codeRefRelations,
   ];
 
