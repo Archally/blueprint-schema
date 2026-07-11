@@ -70,7 +70,7 @@ $defs:
       summary:
         type: string
         maxLength: 200
-        description: "Brief summary (≤120 chars, for RAG and quick reference)."
+        description: "Brief summary (≤200 chars, for RAG and quick reference)."
       definition:
         type: string
         description: "Optional formal glossary definition. Prefer properties.definition for v2.3+."
@@ -286,7 +286,7 @@ $defs:
       summary:
         type: string
         maxLength: 200
-        description: "Brief description of this actor (≤120 chars)."
+        description: "Brief description of this actor (≤200 chars)."
       responsibilities:
         type: array
         items:
@@ -416,7 +416,7 @@ $defs:
       summary:
         type: string
         maxLength: 200
-        description: "Brief description of this value set (≤120 chars)."
+        description: "Brief description of this value set (≤200 chars)."
       extensible:
         type: boolean
         default: false

@@ -74,7 +74,7 @@ $defs:
       summary:
         type: string
         maxLength: 200
-        description: "One-line summary (≤120 chars) for listings and quick reference. Must be self-contained."
+        description: "One-line summary (≤200 chars) for listings and quick reference. Must be self-contained."
       logic:
         $ref: "../metamodel.schema.yaml#/$defs/logic_tuple"
         description: "Business logic as when/then/else. 'when' = condition (omit for invariants). 'then' = required outcome. 'else' = alternative."
@@ -156,7 +156,7 @@ $defs:
       summary:
         type: string
         maxLength: 200
-        description: "One-line summary of the state transition (≤120 chars)."
+        description: "One-line summary of the state transition (≤200 chars)."
       concept:
         $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
         description: "The concept whose lifecycle state machine this transition belongs to. Must define states[]."
