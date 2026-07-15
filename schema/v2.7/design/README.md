@@ -17,7 +17,7 @@ Each file below is a standalone JSON Schema (draft 2020-12), loaded by the valid
 | [`interactions.schema.yaml`](./interactions.schema.yaml) | User interface screens, actions, and navigation. Cross-links to models, operations, goals, decisions, tests, and stories for CIA traceability from domain changes to UI impact. |
 | [`quality.schema.yaml`](./quality.schema.yaml) | Non-functional requirements as first-class entities. Covers metrics, KPIs, SLOs, SLAs, security, compliance, resilience, and observability. Traceability chain: goal→KPI→metric→operation/concept→SLO→SLA. |
 | [`dynamics.schema.yaml`](./dynamics.schema.yaml) | Runtime concurrency and execution behavior. Covers execution model, parallelism, ordering constraints, race conditions, and resource profiles. Side effects in domain.yaml; observability in quality.yaml; deployment topology in infrastructure.yaml. |
-| [`infrastructure.schema.yaml`](./infrastructure.schema.yaml) | Infrastructure resource definitions and deployment topology. Declares platform resources (databases, queues, storage, services), ownership, per-environment configuration, and service placement across tiers. |
+| [`infrastructure.schema.yaml`](./infrastructure.schema.yaml) | Infrastructure resource definitions and deployment topology. Declares platform resources (databases, queues, storage, services), ownership, per-environment configuration, and service placement across tiers. v2.7.7 adds knowledge-graph participation — typed resource ids (IR###), first-class typed Environments (ENV###), TOSCA inter-resource relations, and IaC traceability — all substrate-neutral (cloud, on-premise, hybrid) and strictly additive. |
 
 ---
 

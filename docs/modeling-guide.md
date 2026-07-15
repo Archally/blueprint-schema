@@ -2,13 +2,6 @@
 
 How to build effective blueprints — from a blank directory to a comprehensive system model.
 
-## Related docs
-
-- [Blueprint Handoff Atlas](handoff-guides/markdown/README.md) — non-technical, layer-by-layer capture guidance for workshops, business users, and AI handoff.
-- [Blueprint Handoff Atlas PDF](handoff-guides/pdf/blueprint-handoff-atlas.pdf) — umbrella PDF for offline review and facilitation.
-- [Blueprint Schema Atlas](schema-atlas/README.md) — generated technical reference for the schema and metamodel.
-- [File Conventions](file-conventions.md) — scoping, naming, and file layout rules.
-
 ## Core Philosophy
 
 **MVB-first, not completeness-first.** Never build everything at once. Capture intent, identify the skeleton, produce a Minimal Viable Blueprint (5-20 entities), validate it, then grow iteratively. A focused model that validates cleanly is more useful than a comprehensive model full of gaps and broken references.
@@ -108,11 +101,6 @@ Note: this decision tree determines filesystem organization (slices). Bounded co
 3. Would it be a separate command in well-factored CQRS? → YES → **Model it**
 4. Is it just setting a single field? → **Skip** (don't create virtual operations)
 
-> In-process execution is **not** a skip criterion. A domain-meaningful step that happens to run in-process
-> (middleware, consumer write-back, pure compute) is still modeled — as a *transport-less* operation (see
-> [Transport binding and transport-less operations](#transport-binding-and-transport-less-operations)). Skip only
-> pure mechanism (serialize/map a DTO, open a connection) and single-field setters.
-
 ### Model This Data Shape or Skip?
 
 1. Does it cross a service boundary (API payload, message)? → YES → **Model it**
@@ -137,7 +125,6 @@ Note: this decision tree determines filesystem organization (slices). Bounded co
 | AP27 | 1:1 Code-to-Blueprint | One blueprint operation per code method | Group CRUD variants into semantic operations |
 | AP37 | Untested Rules | Rules without corresponding test cases | Every rule needs at least one test |
 | AP40 | Merged Duplicates | Root files duplicating slice content | Root files only for shared/system-level entities |
-| AP41 | Fake Transport | Attaching a synthetic/in-process protocol — or a non-existent endpoint — to a transport-less operation to silence a missing-binding warning | Leave it transport-less with a documented reason (or an explicit in-process marker); bind `exchange` only for real boundary-crossing transports |
 
 ## Reference Direction
 
@@ -243,33 +230,6 @@ operations:
 ```
 
 **Key rule:** Always model event→command as `reacts_to` on the command, not `produces` on the event. Events are domain facts — they don't "do" anything. Commands react to them.
-
-## Transport binding and transport-less operations
-
-`kind` (command/query/event) is domain semantics; `exchange` is transport — **orthogonal axes**. Model an operation
-by its domain meaning; add an `exchange` **only when it crosses a real process/service boundary**. Never encode a
-transport fact by changing `kind`.
-
-Many legitimate domain operations have **no wire transport of their own**. Modeling them is still correct — but you
-must not invent one. Recognise the flavor and record it; don't fake a binding:
-
-| Flavor | What it is | How to model |
-|--------|-----------|--------------|
-| **embedded** | set through a parent aggregate's endpoint (coarse-grained API) — e.g. an order line changed via the `Order` update call | no own `exchange`; note "set via `<ParentInput>`" — the transport is the parent's |
-| **delegated / write-back** | executed in-process by another operation or a consuming context — e.g. shipping writes `fulfilled` back onto the order | no own `exchange`; name the caller; usually **also a coupling finding** |
-| **ambient in-process** | cross-cutting middleware, request-scoped context, data-access routing, or pure compute — no boundary crossed | no `exchange`; note "in-process (middleware / scoped-context / routing / compute)" |
-| **cross-process signalling** | pub/sub or a bus that genuinely crosses a process boundary — e.g. a cache-invalidation broadcast | **this one DOES bind** — `exchange` with a `topic` (fan-out) or `queue` (point-to-point) |
-| **unimplemented / phantom** | a modeled intent with no handler yet, or a "read" whose backing service only writes | no `exchange`; a **gap** — record it (often a finding) |
-
-**Rule of thumb:** bind `exchange` ⟺ the operation crosses a real process/service boundary. Otherwise leave it
-transport-less and say *why* in the `description`. Being in-process is never a reason to drop a domain-meaningful
-operation, nor to attach a synthetic transport ([AP41](#anti-patterns)).
-
-> A "missing transport binding" quality check flags every transport-less command/query. In systems with a lot of
-> middleware, coarse-grained aggregate APIs, or consumer write-back, that is **expected signal** — it maps the
-> no-first-class-transport surface — not debt to drive to zero. If the schema offers an explicit transport-less
-> marker (e.g. an operation-level `dispatch: in-process`), set it so the check can distinguish "intentionally none"
-> from "forgot an endpoint".
 
 ## SBVR Modality for Rules
 

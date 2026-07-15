@@ -1,0 +1,53 @@
+version: "2.7.7"
+name: deployment-scopes-example
+description: >
+  Minimal DeploymentScope (DSC###) example for Blueprint Schema v2.7.7. It shows an
+  Azure-style subscription with two resource-groups and the keystone distinction the
+  feature exists for: `scope_ref` (who manages / bills / owns a resource — a management
+  grouping) is ORTHOGONAL to `hosted_on` (what a resource physically runs on — TOSCA
+  placement). The Accounting DB is managed by the Accounting resource-group yet runs on
+  the Shared SQL elastic pool — the two groupings legitimately disagree, and modelling
+  both is the point.
+
+# ── Management / lifecycle / ownership partitions (substrate-neutral) ──────────
+#   A DeploymentScope generalizes an Azure Resource-Group / Subscription, an AWS
+#   Account / OU, a GCP Project / Folder, a k8s Cluster / Namespace, or an on-prem
+#   Datacenter / host-pool. A top-tier scope omits `parent`; a child nests via `parent`.
+deployment_scopes:
+  - id: ops.DSC001
+    name: "Production"
+    kind: subscription            # top tier → no `parent`
+    substrate: cloud
+    provider: azure
+    description: "The Azure subscription — root of the resource-group tree."
+  - id: shared.DSC002
+    name: "Shared Platform"
+    kind: resource_group
+    parent: ops.DSC001            # nests under the subscription
+  - id: acct.DSC003
+    name: "Accounting"
+    kind: resource_group
+    parent: ops.DSC001
+
+# ── Resources join a managing scope via `scope_ref`; placement is a separate edge ──
+resources:
+  - id: shared.IR002
+    kind: database
+    name: "Shared SQL elastic pool"
+    scope_ref: shared.DSC002              # managed & billed under the Shared Platform RG
+    hosting_model: managed-service
+    platform: { name: azure, type: sql-database }
+  - id: acct.IR004
+    kind: database
+    name: "Accounting DB"
+    scope_ref: acct.DSC003                # MANAGED by the Accounting resource-group …
+    hosting_model: managed-service
+    platform: { name: azure, type: sql-database }
+    relations:
+      - { type: hosted_on, target: shared.IR002 }   # … yet RUNS ON the shared pool (RG ≠ pool)
+
+# ── An environment may target a scope by reference (or inline `{ kind, name }`) ──
+environments:
+  - id: ENV001
+    name: production
+    target_scope: { ref: ops.DSC001 }

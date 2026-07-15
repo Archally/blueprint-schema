@@ -235,6 +235,14 @@ $defs:
           type: string
           pattern: "^([a-z][a-z0-9-]*\\.)?(PRT|DPT|TM)\\d{3}$"
         description: "Org ownership refs (party, department, or team) this test validates."
+      infrastructure:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+        description: >
+          Infrastructure resources (IR###) this test validates placement or behaviour of — e.g.
+          a test asserting a service is `hosted_on` the intended tier, or that a DR failover
+          target exists. Additive/optional (v2.7.7); parallels the metamodel `validates_links` shape.
 
   test_setup:
     type: object

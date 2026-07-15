@@ -32,6 +32,7 @@ export function validateModel(args) {
   const allIds = new Map();
   const allDuplicates = new Map();
   const allRefs = [];
+  const infraScopeFiles = []; // { relFile, scopes } per infrastructure file that declares deployment_scopes
   let filesValidated = 0;
   let filesSkipped = 0;
 
@@ -70,6 +71,11 @@ export function validateModel(args) {
 
     collectIds(data, allIds, allDuplicates, [relFile]);
     collectRefs(data, allRefs, [relFile]);
+
+    // v2.7.7 DeploymentScope (DSC###): stash scopes for the post-loop graph checks below.
+    if (schemaType === "infrastructure" && Array.isArray(data.deployment_scopes)) {
+      infraScopeFiles.push({ relFile, scopes: data.deployment_scopes });
+    }
   }
 
   for (const [id, locs] of allDuplicates.entries()) {
@@ -83,6 +89,60 @@ export function validateModel(args) {
   }
 
   checkGaps(yamlFiles, modelDir, warnings);
+
+  // v2.7.7 DeploymentScope (DSC###) hierarchy checks — mirror of the monorepo validator
+  // (schemas/blueprint/v2.7/validation/validate-blueprint.mjs). scope_ref (ends `_ref`) and
+  // target_scope.ref (a LIKELY_REF_KEY) resolvability is already covered by the generic
+  // cross-ref walk above; here we add the two things that need the scope GRAPH, plus the
+  // typed-id WARN:
+  //   - DSC### FORMAT → WARN (free-string id valid but discouraged; REQUIRED in v2.8, RD25)
+  //   - dangling `parent` → Cross-Reference Error (`parent` is not a generic ref key)
+  //   - a cycle in the `parent` chain → schema-level ERROR (a subscription→resource-group
+  //     hierarchy must be a tree).
+  const DSC_RE = /^([a-z][a-z0-9-]*\.)?DSC\d{3,}$/;
+  const scopeParent = new Map(); // scopeId → parentId (only scopes that declare a parent)
+  const scopeLoc = new Map(); // scopeId → relFile (every declared scope)
+  for (const { relFile, scopes } of infraScopeFiles) {
+    for (const scope of scopes) {
+      if (!scope || typeof scope !== "object" || typeof scope.id !== "string") continue;
+      if (!DSC_RE.test(scope.id)) {
+        warnings.push(
+          `[${relFile}] Deployment scope id "${scope.id}" SHOULD match DSC### (v2.7.7 typed-id convention, RD25) — free-string is valid but discouraged; required in v2.8`,
+        );
+      }
+      scopeLoc.set(scope.id, relFile);
+      if (typeof scope.parent === "string") scopeParent.set(scope.id, scope.parent);
+    }
+  }
+  for (const [id, parent] of scopeParent.entries()) {
+    if (!scopeLoc.has(parent)) {
+      crossErrors.push(
+        `Missing reference '${parent}' at ${scopeLoc.get(id)}.deployment_scopes (DeploymentScope '${id}' parent)`,
+      );
+    }
+  }
+  // Cycle detection over the functional parent-graph (each scope has ≤1 parent).
+  const inCycle = new Set();
+  for (const start of scopeParent.keys()) {
+    if (inCycle.has(start)) continue;
+    const seenIndex = new Map();
+    const chain = [];
+    let cur = start;
+    while (cur !== undefined && scopeParent.has(cur) && !seenIndex.has(cur)) {
+      seenIndex.set(cur, chain.length);
+      chain.push(cur);
+      cur = scopeParent.get(cur);
+    }
+    if (cur !== undefined && seenIndex.has(cur)) {
+      const cycle = chain.slice(seenIndex.get(cur));
+      if (!cycle.some((n) => inCycle.has(n))) {
+        cycle.forEach((n) => inCycle.add(n));
+        schemaErrors.push(
+          `DeploymentScope parent hierarchy forms a cycle: ${cycle.join(" → ")} → ${cycle[0]} — scope.parent must be acyclic (a subscription→resource-group tree)`,
+        );
+      }
+    }
+  }
 
   if (args.compat && schemaErrors.length > 0) {
     warnings.push(

@@ -394,8 +394,8 @@ For the full set of practices, anti-patterns, decision trees, and reference dire
 | Design | `quality.schema.yaml` | Metrics (MT), KPIs (KPI), SLOs (SLO), SLAs (SLA), Security (SEC) |
 | Design | `interactions.schema.yaml` | Screens (SCR), Actions (UAC), Navigation (UNV) |
 | Design | `dynamics.schema.yaml` | Parallelism (PAR), Ordering (ORD), Race Conditions (RC) |
-| Design | `infrastructure.schema.yaml` | Infrastructure resources, deployment topology |
-| Governance | `motivation.schema.yaml` | Goals (G), Non-goals (NG), Risks (R), Assumptions (A), Trade-offs (T) |
+| Design | `infrastructure.schema.yaml` | Resources (IR), Environments (ENV), Resource Types (RT), Bindings (BND), Deployment Scopes (DSC) — TOSCA relations + IaC refs; `scope_ref` (who owns/bills it) is orthogonal to `hosted_on` (what it runs on) |
+| Governance | `motivation.schema.yaml` | Vision, Goals (G), Non-goals (NG), Risks (R), Assumptions (A), Trade-offs (T) |
 | Governance | `decisions.schema.yaml` | Decisions (D), Business Decisions (BD) |
 | Governance | `capability.schema.yaml` | Capabilities (CAP) |
 | Governance | `test-cases.schema.yaml` | Test cases (TC/EC/ER), Fitness functions (FF) |
