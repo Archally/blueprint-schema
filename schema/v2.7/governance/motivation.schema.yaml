@@ -21,6 +21,9 @@ properties:
   owned_by:
     $ref: "../metamodel.schema.yaml#/$defs/owned_by"
     description: "File-level ownership default. Entities inherit unless overridden."
+  vision:
+    $ref: "#/$defs/vision"
+    description: "The product's singular identity claim / north-star — what it fundamentally IS and aspires to become. Distinct from goals (measurable objectives that operationalize it) and from the root `description` (a summary blurb). At most one per model."
   goals:
     type: array
     description: "What the system aims to achieve. Goals drive decisions and prioritize work. Each goal can be tracked by a KPI in quality.schema.yaml."
@@ -53,6 +56,51 @@ properties:
       $ref: "#/$defs/inquiry"
 
 $defs:
+
+  vision:
+    type: object
+    description: "The singular identity claim / north-star: what the product fundamentally IS and aspires to become. Distinct from goals (measurable objectives) and from the root description (a summary blurb) — the vision is the 'why we exist' carrier that goals operationalize and value streams deliver."
+    additionalProperties: false
+    required:
+      - statement
+    properties:
+      statement:
+        type: string
+        description: "The vision as one or two sentences naming what the product is and aspires to be."
+      aspiration:
+        type: string
+        description: "Optional longer-horizon elaboration or north-star framing beyond the core statement."
+      advances_goals:
+        type: array
+        description: "Goals that operationalize this vision (forward links into `goals`)."
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
+      capability_refs:
+        type: array
+        description: "Core capabilities that embody the vision."
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/capability_ref"
+      value_stream_refs:
+        type: array
+        description: "Value streams that carry the vision end-to-end."
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/value_stream_ref"
+      discovery_stage:
+        $ref: "../metamodel.schema.yaml#/$defs/discovery_stage"
+        description: "Epistemic maturity of the vision."
+      certainty:
+        $ref: "../metamodel.schema.yaml#/$defs/certainty"
+        description: "Confidence level of the vision assertion."
+      evidence:
+        $ref: "../metamodel.schema.yaml#/$defs/evidence"
+        description: "Evidence justifying the vision's discovery_stage and certainty."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Vision-level ownership override."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
 
   goal:
     type: object

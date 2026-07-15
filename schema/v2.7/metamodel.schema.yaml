@@ -558,6 +558,92 @@ $defs:
     pattern: "^([a-z][a-z0-9-]*\\.)?RES\\d{3}$"
     description: "Reference to a resilience requirement (e.g. RES001 or billing.RES001)."
 
+  # ---------------------------------------------------------------------------
+  # Infrastructure layer (v2.7.7)
+  # Typed IDs + TOSCA relation vocabulary so the infrastructure design layer
+  # (ex-`rg`, frozen since v2.0.0) participates in the knowledge graph. The new
+  # prefixes IR/ENV/RT/BND are collision-free and pattern-distinct from their
+  # visual neighbours (ENV != EN, BND != BD, RT != R / rule refs). RES### stays
+  # `resilience_ref` (RD21) — the infra resource is IR###, not RES###.
+  # All typed IDs are STRONGLY ENCOURAGED but OPTIONAL in v2.7.x: a free-string
+  # id stays schema-valid; the validator WARNs when it doesn't match the prefix.
+  # They become REQUIRED in v2.8 (with resolvability warn->error), joining the
+  # context-ownership BC###/SVC### promotion. Defined here but referenced only
+  # from the infra / arch / governance schemas (CR steps 02-04).
+  # ---------------------------------------------------------------------------
+
+  infra_resource_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?IR\\d{3,}$"
+    description: >
+      Reference to an infrastructure resource by its typed id (e.g. IR001 or
+      prod.IR001), optionally context/environment-prefixed — the concrete host /
+      store / network / compute node in the infrastructure layer. SHOULD match
+      IR###; a free-string id (e.g. `prod-web-hosting`) stays schema-valid but
+      the validator WARNs (optional in v2.7.x, REQUIRED from v2.8). Distinct from
+      `resilience_ref` (RES###) — the infra resource is IR###, not RES### (RD21).
+
+  environment_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?ENV\\d{3,}$"
+    description: >
+      Reference to a deployment environment by its typed id (e.g. ENV001 or
+      azure.ENV001). Environments are a first-class binding dimension (production
+      / staging / dr / ...), each carrying its own target scope, credentials and
+      param overlay — not a duplicated model fork. Optional in v2.7.x, REQUIRED
+      from v2.8. Pattern-distinct from the `EN###` prefix: ENV### != EN###.
+
+  resource_type_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?RT\\d{3,}$"
+    description: >
+      Reference to a resource type in the neutral resource-type catalog (e.g.
+      RT001 or azure.RT001). A resource type carries an inputs/outputs contract
+      and is realised per platform by profile data (neutral + azure + k8s/aws).
+      Optional in v2.7.x, REQUIRED from v2.8. Pattern-distinct from `risk_ref`
+      (R###) and `rule_ref` ((SR|CR|DR|EQ|VR)###): RT### != R###, and RT is not a
+      rule prefix.
+
+  binding_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?BND\\d{3,}$"
+    description: >
+      Reference to a binding by its typed id (e.g. BND001 or prod.BND001). A
+      binding resolves (resource-type x environment) -> a concrete platform /
+      module + params (the intent->implementation bridge). Optional in v2.7.x,
+      REQUIRED from v2.8. Pattern-distinct from `business_decision_ref` (BD###):
+      BND### != BD###.
+
+  deployment_scope_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?DSC\\d{3,}$"
+    description: >
+      Reference to a deployment scope by its typed id (e.g. DSC001 or shared.DSC001).
+      A DeploymentScope is a substrate-neutral management / lifecycle / ownership /
+      billing partition — an Azure Resource Group or Subscription, an AWS Account /
+      OU, a GCP Project / Folder, a Kubernetes Cluster / Namespace, or an on-prem
+      Datacenter / host-pool. Scopes nest via `parent` (the subscription -> resource-
+      group hierarchy); each InfraResource may name its owning scope via `scope_ref`.
+      Distinct from TOSCA `hosted_on` (runtime placement, NOT management grouping) and
+      from the file-scope prefix (authoring grouping). Optional in v2.7.x, REQUIRED
+      from v2.8. Pattern-distinct from `decision_ref` (D###): DSC### != D### (the
+      character after D is S, not a digit).
+
+  infra_relation:
+    type: string
+    enum:
+      - hosted_on
+      - connects_to
+      - depends_on
+      - attaches_to
+      - routes_to
+    description: >
+      TOSCA-derived relation vocabulary for typed inter-resource edges in the
+      infrastructure layer (snake_case, TOSCA-verbatim). `hosted_on` is the
+      canonical placement edge; `connects_to` / `depends_on` may carry
+      attribute-level output refs; `depends_on` is the ordering-only fallback.
+      Exactly these five verbs — no synonyms (no `manages`, `uses`, ...).
+
   context_relationship:
     type: string
     enum:
@@ -793,6 +879,11 @@ $defs:
   # Shared Traceability Links (use typed refs)
   # ---------------------------------------------------------------------------
 
+  # NOTE (v2.7.7): validates_links / impacts_links are shared TEMPLATE $defs — the consuming
+  # schemas carry their own local copies (test-cases `validates_refs`, decisions
+  # `impact_declaration.direct`) which are the authoritative, validated structures. These
+  # templates are kept in sync as a reference shape (RD32); editing them alone is
+  # validation-inert.
   validates_links:
     type: object
     description: "Cross-layer traceability from a test case to what it validates."
@@ -812,6 +903,11 @@ $defs:
         items:
           $ref: "#/$defs/concept_ref"
         description: "Concepts covered by this test."
+      infrastructure:
+        type: array
+        items:
+          $ref: "#/$defs/infra_resource_ref"
+        description: "Infrastructure resources (IR###) whose placement/behaviour this test validates."
 
   impacts_links:
     type: object
@@ -837,3 +933,13 @@ $defs:
         items:
           $ref: "#/$defs/spec_path"
         description: "Contract elements impacted, as SpecPath references."
+      infrastructure:
+        type: array
+        items:
+          $ref: "#/$defs/infra_resource_ref"
+        description: "Infrastructure resources (IR###) impacted by this decision."
+      environments:
+        type: array
+        items:
+          $ref: "#/$defs/environment_ref"
+        description: "Deployment environments (ENV###) impacted by this decision."

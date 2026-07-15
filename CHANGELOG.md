@@ -2,6 +2,90 @@
 # All schema version releases in reverse chronological order.
 ---
 entries:
+  - version: "2.7.7"
+    date: "2026-07-15"
+    summary: >
+      Infrastructure-layer maturation + first-class DeploymentScope (DSC###) + a motivation `vision`
+      field. The infrastructure design layer (ex-`rg`, frozen since v2.0.0) now participates in the
+      knowledge graph: typed resource ids (IR###), first-class Environments (ENV###), a resource-type
+      catalog (RT###) and bindings (BND###), TOSCA inter-resource relations
+      (hosted_on/connects_to/depends_on/attaches_to/routes_to), IaC traceability (iac_refs), and the
+      abstract-need → binding → concrete-instance split. DeploymentScope adds a substrate-neutral
+      management / lifecycle / ownership / billing partition (Azure RG·Subscription, AWS Account·OU,
+      GCP Project·Folder, k8s Cluster·Namespace, on-prem Datacenter·host-pool) that is deliberately
+      ORTHOGONAL to runtime placement — `scope_ref` groups by who owns/bills a resource, `hosted_on`
+      says what it runs on, and they may legitimately disagree (an elastic-pool DB). All strictly
+      additive; every prior model validates unchanged. Three coordinated CRs share this version.
+    tasks:
+      - "infrastructure-layer-v2.7.7 CR (graph participation, needs/bindings, cross-layer wiring)"
+      - "infra deployment-scopes CR (DSC###, scope_ref, target_scope.ref, scope-tree)"
+      - "motivation vision-field CR (governance north-star)"
+    changes:
+      - kind: add
+        target: "metamodel.schema.yaml"
+        semver: minor
+        notes: >
+          New typed-ID reference `$defs`: `infra_resource_ref` (IR###), `environment_ref` (ENV###),
+          `resource_type_ref` (RT###), `binding_ref` (BND###), and `deployment_scope_ref` (DSC###) —
+          each optionally context/environment-prefixed — plus the `infra_relation` TOSCA vocabulary
+          (hosted_on/connects_to/depends_on/attaches_to/routes_to) and the shared `validates_links` /
+          `impacts_links` template shapes. Prefixes are collision-free and pattern-distinct from their
+          visual neighbours (ENV != EN, BND != BD, RT != R, DSC != a decision D###); RES### stays
+          `resilience_ref` (the infra resource is IR###, not RES###). Typed IDs — including DSC### — are
+          STRONGLY ENCOURAGED but OPTIONAL in v2.7.x (a free-string id stays schema-valid; the validator
+          WARNs on a non-matching id) and become REQUIRED in v2.8. `schema_version` enum unchanged
+          (keys off the `2.7.0` minor line).
+      - kind: add
+        target: "design/infrastructure.schema.yaml"
+        semver: minor
+        notes: >
+          The infrastructure layer gains full graph participation: typed `resources[]` (IR###) with
+          `platform`, `hosting_model`, `exposure`, `owner`, TOSCA `relations[]`, `iac_refs[]`, and
+          per-environment config; first-class `environments[]` (ENV###); abstract `needs` (Score
+          type/class/id/params) resolved per environment by `bindings[]` (BND###) to a concrete
+          resource — the three altitudes need → binding → instance. NEW DeploymentScope surface:
+          `deployment_scopes[]` (required id/name/kind; optional `parent`, `substrate`, `provider`,
+          `owner`, `region`) building a subscription→resource-group tree; `resource.scope_ref` (DSC###)
+          names a resource's managing scope; `environment.target_scope` accepts either the inline
+          `{ kind, name }` or a first-class `{ ref: DSC### }`. `scope_kind` is a 14-value enum shared
+          with `target_scope` (account/subscription/project/resource_group/region/availability_zone/
+          cluster/namespace/datacenter/site/rack/host_pool/vlan/other). Strictly additive.
+      - kind: add
+        target: "design/arch.schema.yaml + design/quality.schema.yaml + governance/decisions.schema.yaml + governance/test-cases.schema.yaml"
+        semver: minor
+        notes: >
+          Cross-layer wiring to the infrastructure graph (all additive/optional): arch services declare
+          abstract `needs` and typed `resource_refs` (IR###) — making the service→infrastructure edge a
+          first-class, traversable placement edge (the free-string `infrastructure` category list is
+          soft-deprecated); quality SLOs / resilience requirements target IR###; decisions record
+          `impacts` on IR###/ENV###; test cases record what infrastructure they `validate`. The legacy
+          `rg`-era free-string shapes remain valid as deprecated fallbacks.
+      - kind: add
+        target: "governance/motivation.schema.yaml"
+        semver: minor
+        notes: >
+          New optional singular `vision` object on the motivation document: a required `statement` plus
+          optional `aspiration`, `advances_goals` (G###), `capability_refs` (CAP###), `value_stream_refs`
+          (VS###), and the standard epistemic fields. Gives the product's identity claim / north-star a
+          first-class home distinct from `goals` (measurable objectives) and the root `description`.
+          Purely additive — existing motivation files stay valid (vision is optional, at most one).
+      - kind: add
+        target: "tools/validator"
+        semver: patch
+        notes: >
+          The validator mirrors the DeploymentScope posture: a DSC### typed-id WARN (free-string id valid
+          but discouraged), dangling `scope_ref` / `target_scope.ref` / `parent` as Cross-Reference
+          Errors, and a `parent`-chain cycle as a schema-level ERROR (a subscription→resource-group
+          hierarchy must be a tree). `scope_ref`/`target_scope.ref` resolvability rides the generic
+          cross-ref walk; the scope-graph checks are new.
+      - kind: add
+        target: "examples/deployment-scopes"
+        semver: patch
+        notes: >
+          New minimal example — an Azure-style subscription with two resource-groups, showing the
+          keystone `scope_ref`-vs-`hosted_on` distinction (the Accounting DB is managed by the
+          Accounting RG yet hosted on the Shared SQL pool) and `environment.target_scope: { ref }`.
+          Validates clean.
   - version: "2.7.6"
     date: "2026-07-09"
     summary: "Arch hierarchy typed IDs (BC###/SVC###, reusing PRT### for parties) + context-ownership binding — operations bind to bounded contexts via arch service contracts (expose/send), questions via an explicit bounded_context_ref. Coordinated wave with the infrastructure-layer v2.7.6 changes (IR/ENV/RT/BND, appended separately)."

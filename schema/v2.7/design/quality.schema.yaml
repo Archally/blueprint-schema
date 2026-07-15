@@ -256,6 +256,14 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
         description: "Operations this SLO constrains."
+      resource_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+        description: >
+          Infrastructure resources (IR###) this SLO targets — an availability/latency objective
+          can bind to a concrete host, store, or estate, not only to operations. Additive/optional
+          (v2.7.7). Distinct from `resilience_ref`/RES### (untouched, RD21).
       error_budget:
         type: string
         description: "Acceptable failure rate within the window (e.g. '0.1%' = complement of 99.9%)."
@@ -489,6 +497,15 @@ $defs:
       strategy:
         type: string
         description: "How resilience is achieved (e.g. 'active-passive failover', 'multi-region active-active')."
+      resource_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+        description: >
+          Infrastructure resources (IR###) this resilience requirement applies to — the concrete
+          host/store/failover target the RTO/RPO is measured against. Additive/optional (v2.7.7).
+          The requirement entity keeps its own RES### id (`resilience_ref`); `resource_refs` links
+          it to the infra graph.
       description:
         type: string
         description: "Human-readable description."

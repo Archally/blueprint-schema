@@ -287,6 +287,21 @@ $defs:
                 items:
                   $ref: "../metamodel.schema.yaml#/$defs/ui_nav_ref"
                 description: "Navigation flows directly affected."
+          infrastructure:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+            description: >
+              Infrastructure resources (IR###) directly affected by this decision — e.g. a
+              hosting-modernization ADR that re-platforms a store. Puts infra into decision
+              impact analysis (v2.7.7, additive). Parallels the metamodel `impacts_links` shape.
+          environments:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/environment_ref"
+            description: >
+              Deployment environments (ENV###) directly affected — e.g. a decision that adds a
+              DR environment or changes a binding for staging. Additive (v2.7.7).
       transitive_hints:
         type: array
         items:
