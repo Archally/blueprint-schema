@@ -6,10 +6,10 @@ A generated, human-readable projection of the JSON Schema. **JSON Schema remains
 
 | Metric | Count |
 | --- | --- |
-| Schema files | 21 |
+| Schema files | 22 |
 | Planes | 3 |
-| Object definitions | 123 |
-| Typed-ID entity types | 53 |
+| Object definitions | 146 |
+| Typed-ID entity types | 60 |
 | Cross-file reference edges | 39 |
 
 ## Plane map
@@ -17,7 +17,7 @@ A generated, human-readable projection of the JSON Schema. **JSON Schema remains
 ```mermaid
 graph TD
     ROOT["Blueprint v2.7"]
-    cross_cutting["Cross-cutting<br/>3 schema files"]
+    cross_cutting["Cross-cutting<br/>4 schema files"]
     ROOT --> cross_cutting
     design["Design Plane<br/>10 schema files"]
     ROOT --> design
@@ -34,6 +34,7 @@ Version-root schemas that belong to neither plane and apply across every layer: 
 | [`blueprint.schema.yaml`](./entity-catalog.md#blueprint) | Blueprint Meta-Schema | Meta-schema composing all blueprint layers into Design + Governance planes with cross-cutting metamodel. Supersedes v1 layer-based blueprin… |
 | [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | Blueprint Metamodel | Cross-cutting definitions for all blueprint layers. Provides typed ID refs, versioning, SpecPath, and shared vocabulary. Consumed by all de… |
 | [`migration.schema.yaml`](./entity-catalog.md#migration) | Blueprint Migration Schema | Versioned, ordered changes to a blueprint model instance. Enables AS-IS to TO-BE model transformation with traceability and rollback. |
+| [`profiles/infrastructure/profiles.schema.yaml`](./entity-catalog.md#profiles-infrastructure-profiles) | Blueprint Infrastructure Resource-Type Profile | Validates a resource-type catalog profile file (v2.7.7 CR-2, RD7/RD15/RD31). A profile is DATA, not schema: the resource-type catalog is sh… |
 
 ## Design Plane
 

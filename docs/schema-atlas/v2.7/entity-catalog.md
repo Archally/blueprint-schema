@@ -4,7 +4,7 @@
 
 Every schema file, its root object, and its definitions — with types, requiredness, enums, and deprecation read directly from JSON Schema. Overlay notes are labeled non-authoritative (DEC-ATL-17).
 
-**Cross-cutting:** [`blueprint.schema.yaml`](#blueprint) · [`metamodel.schema.yaml`](#metamodel) · [`migration.schema.yaml`](#migration)
+**Cross-cutting:** [`blueprint.schema.yaml`](#blueprint) · [`metamodel.schema.yaml`](#metamodel) · [`migration.schema.yaml`](#migration) · [`profiles/infrastructure/profiles.schema.yaml`](#profiles-infrastructure-profiles)
 
 **Design Plane:** [`design/arch.schema.yaml`](#design-arch) · [`design/concepts.schema.yaml`](#design-concepts) · [`design/domain.schema.yaml`](#design-domain) · [`design/dynamics.schema.yaml`](#design-dynamics) · [`design/infrastructure.schema.yaml`](#design-infrastructure) · [`design/interactions.schema.yaml`](#design-interactions) · [`design/models.schema.yaml`](#design-models) · [`design/quality.schema.yaml`](#design-quality) · [`design/rules.schema.yaml`](#design-rules) · [`design/story.schema.yaml`](#design-story)
 
@@ -34,6 +34,8 @@ _Source: `schema/v2.7/blueprint.schema.yaml` · root type `object`_
 | `description` | `string` | — |  | Brief system summary for human and AI agent orientation. |
 | `repository` | `ref → repository_config` | — |  | Source code repository configuration for the primary repo. Used by the viewer to construct clickable links from code_refs to the actual files. For blueprints w… |
 | `repositories` | `object` | — |  | Per-repository configuration for cross-repo code_refs written in `org/repo#path` form (see metamodel `code_ref_entry`). The map KEY is the code_ref prefix — th… |
+| `trackers` | `object` | — |  | Registry of external issue/document trackers used to turn a `tracker_ref` (on roadmap work-items, milestones, blockers, …) into a clickable link. The map KEY i… |
+| `default_tracker` | `string` | — |  | Tracker id (a key of `trackers`) used to resolve a bare `tracker_ref` key that carries no `<tracker>:` prefix. Omit if refs always carry a prefix or a full URL. |
 | `layout` | `union` | — |  | Blueprint file layout. Omit for legacy single-folder layout using design/governance paths. |
 | `constitution` | `object` | — |  | Core design principles and conventions governing this blueprint. Machine-readable codification of architectural standards. |
 | `migrations` | `array<union>` | — |  | Ordered list of model migrations. Loader applies pending migrations on top of AS-IS model to produce TO-BE state. Each item is either an inline migration or a… |
@@ -56,6 +58,19 @@ Source code repository configuration used to construct clickable links from code
 | `provider` | `union` | — |  | Repository hosting provider. Determines URL construction pattern: github: {url}/blob/{branch}/{path}, gitlab: {url}/-/blob/{branch}/{path}, bitbucket: {url}/sr… |
 
 _Source: `schema/v2.7/blueprint.schema.yaml#/$defs/repository_config`_
+
+#### `tracker_config`
+
+An external issue/document tracker: a URL template that turns a tracker_ref key into a clickable link.
+
+**Required:** `url`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `url` | `string` | ✓ |  | URL template. '{key}' is substituted with the ref key; if the template contains no '{key}', the key is appended. E.g. 'https://acme.atlassian.net/browse/{key}'… |
+| `label` | `string` | — |  | Human-readable tracker label (e.g. 'Jira', 'Confluence'). |
+
+_Source: `schema/v2.7/blueprint.schema.yaml#/$defs/tracker_config`_
 
 #### `slice`
 
@@ -186,6 +201,7 @@ Cross-layer traceability from a test case to what it validates.
 | `rules` | `array<ref → rule_ref>` | — |  | Rules validated by this test. |
 | `operations` | `array<ref → operation_ref>` | — |  | Operations exercised by this test. |
 | `concepts` | `array<ref → concept_ref>` | — |  | Concepts covered by this test. |
+| `infrastructure` | `array<ref → infra_resource_ref>` | — |  | Infrastructure resources (IR###) whose placement/behaviour this test validates. |
 
 _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/validates_links`_
 
@@ -199,6 +215,8 @@ Decision impact references across layers.
 | `operations` | `array<ref → operation_ref>` | — |  | Operations impacted by this decision. |
 | `concepts` | `array<ref → concept_ref>` | — |  | Concepts impacted by this decision. |
 | `contract` | `array<ref → spec_path>` | — |  | Contract elements impacted, as SpecPath references. |
+| `infrastructure` | `array<ref → infra_resource_ref>` | — |  | Infrastructure resources (IR###) impacted by this decision. |
+| `environments` | `array<ref → environment_ref>` | — |  | Deployment environments (ENV###) impacted by this decision. |
 
 _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/impacts_links`_
 
@@ -250,6 +268,8 @@ _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/impacts_links`_
 | `party_ref` | `string` |  | Reference to an organizational party (e.g. PRT001 or billing.PRT001). |
 | `department_ref` | `string` |  | Reference to an organizational department (e.g. DPT001 or billing.DPT001). |
 | `team_ref` | `string` |  | Reference to a team (e.g. TM001 or billing.TM001). |
+| `bounded_context_ref` | `union` |  | Reference to a bounded context by its arch id (e.g. BC001 or shop.BC001). Used as the arch `context.id` (self-identity), by inter-context `dependency` targets… |
+| `service_ref` | `string` |  | Reference to an architecture service (e.g. SVC001 or shop.SVC001). |
 | `story_ref` | `string` |  | Reference to a domain story (e.g. STR001 or orders.STR001). |
 | `question_ref` | `string` |  | Reference to a domain competency question (e.g. QN001 or billing.QN001). Questions are first-class entities representing knowledge requirements of a bounded co… |
 | `x_model_id` | `string` |  | Model identifier as JSON Schema x-extension (e.g. MDL001 or orders.MDL001). |
@@ -270,6 +290,12 @@ _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/impacts_links`_
 | `security_ref` | `string` |  | Reference to a security requirement (e.g. SEC001 or billing.SEC001). |
 | `compliance_ref` | `string` |  | Reference to a compliance requirement (e.g. CMP001 or billing.CMP001). |
 | `resilience_ref` | `string` |  | Reference to a resilience requirement (e.g. RES001 or billing.RES001). |
+| `infra_resource_ref` | `string` |  | Reference to an infrastructure resource by its typed id (e.g. IR001 or prod.IR001), optionally context/environment-prefixed — the concrete host / store / netwo… |
+| `environment_ref` | `string` |  | Reference to a deployment environment by its typed id (e.g. ENV001 or azure.ENV001). Environments are a first-class binding dimension (production / staging / d… |
+| `resource_type_ref` | `string` |  | Reference to a resource type in the neutral resource-type catalog (e.g. RT001 or azure.RT001). A resource type carries an inputs/outputs contract and is realis… |
+| `binding_ref` | `string` |  | Reference to a binding by its typed id (e.g. BND001 or prod.BND001). A binding resolves (resource-type x environment) -> a concrete platform / module + params… |
+| `deployment_scope_ref` | `string` |  | Reference to a deployment scope by its typed id (e.g. DSC001 or shared.DSC001). A DeploymentScope is a substrate-neutral management / lifecycle / ownership / b… |
+| `infra_relation` | `string` | `hosted_on`, `connects_to`, `depends_on`, `attaches_to`, `routes_to` | TOSCA-derived relation vocabulary for typed inter-resource edges in the infrastructure layer (snake_case, TOSCA-verbatim). `hosted_on` is the canonical placeme… |
 | `context_relationship` | `string` | `shared-kernel`, `customer-supplier`, `conformist`, `anticorruption-layer`, `open-host-service`, `published-language` … (8) | DDD strategic relationship between bounded contexts. Captures architectural intent beyond technical integration. |
 | `spec_path` | `string` |  | Addressable path to any blueprint element. Format: [context.]layer[.category].ID[.field]. Examples: rules.classification.CR003, billing.rules.classification.CR… |
 | `change_kind` | `string` | `add`, `modify`, `deprecate`, `remove`, `rename`, `split` … (7) | Change type for CIA. Semver impact: add→minor, modify→minor/major, deprecate→minor, remove/rename/split/merge→major. |
@@ -389,6 +415,93 @@ Cross-cutting changes: tags, file restructuring, bulk operations, constitution a
 
 _Source: `schema/v2.7/migration.schema.yaml#/$defs/meta_change`_
 
+<a id="profiles-infrastructure-profiles"></a>
+
+### `profiles/infrastructure/profiles.schema.yaml`
+
+**Blueprint Infrastructure Resource-Type Profile**
+
+Validates a resource-type catalog profile file (v2.7.7 CR-2, RD7/RD15/RD31). A profile is DATA, not schema: the resource-type catalog is shipped as versioned profile files so new types need no schema change (R12 — catalog is data). The `neutral` profile defines abstract resource TYPES (RT###) with an inputs/outputs contract; platform profiles (azure/aws/k8s/on-prem/openstack) define `realizations` that map each neutral RT### to a concrete module on their substrate. The same neutral RT realizing…
+
+_Source: `schema/v2.7/profiles/infrastructure/profiles.schema.yaml` · root type `object`_
+
+**Root required:** `version`, `profile`
+
+**Root properties:**
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `version` | `string` | ✓ |  | Content version of this profile file (semver). |
+| `profile` | `string` | ✓ |  | Profile name — neutral, azure, aws, k8s, on-prem, openstack, or another platform key. |
+| `substrate` | `string` | — | `neutral`, `cloud`, `on-prem`, `hybrid`, `edge` | Substrate this profile targets. `neutral` = the abstract catalog; the rest are realizations (RD31). |
+| `description` | `string` | — |  | Human-readable purpose of this profile. |
+| `resource_types` | `array<ref → resource_type>` | — |  | Abstract resource TYPE definitions (used by the neutral profile): the inputs/outputs contract each RT### exposes. `need.type_ref` / `resource.type_ref` resolve… |
+| `realizations` | `array<ref → realization>` | — |  | Platform realizations (used by platform profiles): how each neutral RT### is realized on this substrate — the concrete module + optional restated outputs contr… |
+
+#### Definitions
+
+#### `resource_type`
+
+An abstract resource TYPE (RT###) with its inputs/outputs contract — the type-level intent a service `need` targets, independent of platform.
+
+**Required:** `id`, `name`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `id` | `string` | ✓ |  | Typed resource-type id (RT###) — mirror of metamodel `resource_type_ref`. |
+| `name` | `string` | ✓ |  | Neutral type name (e.g. relational-database, object-store, message-queue, cache, secret-store). |
+| `category` | `string` | — |  | Coarse category (e.g. database, storage, messaging, cache, security, compute, network). |
+| `description` | `string` | — |  | What this resource type provides. |
+| `inputs` | `array<ref → io_field>` | — |  | Type-level inputs a consumer may set (e.g. version, size). Environment overlays + bindings refine them. |
+| `outputs` | `array<ref → io_field>` | — |  | The outputs contract every realization must honour (e.g. host/port/name/username/password:secret). Identical across substrates — the substrate-neutrality invar… |
+
+_Source: `schema/v2.7/profiles/infrastructure/profiles.schema.yaml#/$defs/resource_type`_
+
+#### `realization`
+
+How a neutral resource TYPE is realized on this profile's substrate — the concrete module + (optionally) the restated outputs contract to prove it matches the neutral one.
+
+**Required:** `realizes`, `module`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `realizes` | `string` | ✓ |  | The neutral resource TYPE (RT###) this entry realizes. |
+| `substrate` | `string` | — |  | Optional substrate hint for this realization (e.g. cloud, on-prem, private-cloud). |
+| `module` | `ref → module` | ✓ |  | The concrete platform module/recipe realizing the type (AVM module, Terraform module, Helm chart, Ansible role, …). |
+| `outputs` | `array<ref → io_field>` | — |  | Optional restatement of the outputs contract — MUST match the neutral type's outputs (the identical-contract proof, RD31). |
+| `notes` | `string` | — |  | Optional note (e.g. 'self-hosted on an IaaS VM', 'managed PaaS'). |
+
+_Source: `schema/v2.7/profiles/infrastructure/profiles.schema.yaml#/$defs/realization`_
+
+#### `io_field`
+
+A typed input or output field. An output may be secret-flagged — a reference/flow marker only, never a value (RD16). Mirrors `infrastructure.schema.yaml#/$defs/io_field`.
+
+**Required:** `name`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `name` | `string` | ✓ |  | Field name (e.g. host, port, name, username, password, endpoint, connection_string). |
+| `type` | `string` | — |  | Optional value-type hint (e.g. string, int, hostname, uri). |
+| `secret` | `boolean` | — |  | When true this field is a secret — reference/flow only, never the value (RD16). |
+| `description` | `string` | — |  | Optional description of the field. |
+
+_Source: `schema/v2.7/profiles/infrastructure/profiles.schema.yaml#/$defs/io_field`_
+
+#### `module`
+
+A concrete platform module/recipe reference with an optional pinned version (RD8 continuous-readiness). Substrate-neutral — AVM is ONE realization vocabulary, not THE vocabulary (RD31).
+
+**Required:** `ref`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `ref` | `string` | ✓ |  | Module/recipe locator (AVM path, Terraform registry module, Helm chart, Ansible role). |
+| `version_pin` | `string` | — |  | Optional pinned module version (e.g. '1.2.3', '~> 4.0'). |
+| `system` | `string` | — |  | Optional provisioner (free-text: bicep, terraform, opentofu, helm, ansible, …). |
+
+_Source: `schema/v2.7/profiles/infrastructure/profiles.schema.yaml#/$defs/module`_
+
 ## Design Plane
 
 <a id="design-arch"></a>
@@ -414,7 +527,7 @@ _Source: `schema/v2.7/design/arch.schema.yaml` · root type `object`_
 | `scope` | `ref → context_prefix` | — |  | Bounded context this architecture file belongs to. Used only for context-scoped arch fragments (future). Root-level arch files describe systems and MUST NOT de… |
 | `stage` | `string` | — |  | Architecture maturity stage (e.g. draft, review, approved, production). |
 | `domains` | `object` | — |  | Named domain references used in this architecture (name → identifier map). |
-| `infrastructure` | `object` | — |  | Named infrastructure references (name → description or identifier map). |
+| `infrastructure` | `object` | — |  | SOFT-DEPRECATED (v2.7.7). Legacy free-string name→description/identifier map for infrastructure references. Superseded by typed graph linkage: a service declar… |
 | `stories` | `array<string>` | — |  | Story file references providing narrative context for this architecture. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
@@ -430,6 +543,7 @@ An organizational or system party owning one or more bounded contexts.
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
+| `id` | `ref → party_ref` | — |  | Stable party id (PRT###) — makes the party a first-class, referenceable graph node. MUST reconcile with the org-layer PRT### when the party is also modelled th… |
 | `name` | `string` | ✓ |  | Party name (unique within this architecture document). |
 | `version` | `ref → entity_version` | — |  | Party version for lifecycle tracking. |
 | `kind` | `string` | — | `system`, `organization` | Party type: system=technical system, organization=business unit or company. |
@@ -450,6 +564,7 @@ A bounded context with its domain model, services, and dependencies.
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
+| `id` | `ref → bounded_context_ref` | — |  | Stable bounded-context id (BC###) — the target of inter-context `dependency.bounded_context_ref` edges, the DERIVED operation→context membership (`handled-by`,… |
 | `name` | `string` | ✓ |  | Context name (unique within this party). |
 | `kind` | `string` | ✓ | `core`, `generic-core`, `support`, `generic` | DDD context classification: core=competitive advantage, support=enables core, generic=commodity. Maps to BCC v5 Strategic Classification — Domain Importance. |
 | `complexity` | `ref → complexity_pattern` | — |  | Dominant implementation-complexity / problem-type pattern. Distinct from `model_traits` (behavioural archetype) and `kind` (strategic value). |
@@ -490,6 +605,7 @@ Dependency on another bounded context or external system. Technical connections 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `name` | `string` | ✓ |  | Name of the dependency (context or external system name). |
+| `bounded_context_ref` | `ref → bounded_context_ref` | — |  | Optional target bounded-context id (BC###) — the id-based inter-context edge (D10), preferred over matching the `name` string (deprecated fallback). Use for de… |
 | `type` | `string` | — |  | Technical integration type (e.g. api, events, shared-db, file, grpc). |
 | `relationship` | `ref → context_relationship` | — |  | DDD strategic relationship pattern. Captures architectural intent beyond technical integration. |
 | `direction` | `string` | — | `upstream`, `downstream`, `peer` | This context's role: upstream=we provide, downstream=we consume, peer=bidirectional. |
@@ -522,13 +638,16 @@ A deployable service or component within a bounded context.
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
+| `id` | `ref → service_ref` | — |  | Stable service id (SVC###) — makes the service a first-class, referenceable graph node. STRONGLY ENCOURAGED: optional in v2.7.x only; becomes REQUIRED in v2.8. |
 | `name` | `string` | ✓ |  | Service name (e.g. order-api, payment-worker). |
 | `kind` | `ref → service_kind` | — |  | Architectural component type. Determines applicable contract patterns. |
 | `summary` | `string` | — |  | Brief description of what this service does. |
 | `description` | `string` | — |  | Full description of this service's purpose, responsibilities, and domain role. |
 | `properties` | `ref → entity_properties` | — |  |  |
 | `vendor` | `array<ref → team>` | — |  | Teams or vendors responsible for this service. |
-| `resources` | `array<string>` | — |  | Infrastructure resources this service requires (e.g. database, queue, cache). |
+| `resources` | `array<string>` | — |  | SOFT-DEPRECATED (v2.7.7). Free-string list of infrastructure resource categories this service requires (e.g. database, queue, cache). Superseded by typed `reso… |
+| `resource_refs` | `array<ref → infra_resource_ref>` | — |  | Typed infrastructure resources this service requires (IR### — `infra_resource_ref`), resolving to `resource` entities in the infrastructure layer. This is the… |
+| `needs` | `array<ref → service_need>` | — |  | Abstract infrastructure NEEDS (Score `type`/`class`/`id`/`params` vocabulary, RD15/CR-2) this service declares — TYPE-level intent, resolved to a concrete reso… |
 | `owned_by` | `ref → owned_by` | — |  | Service-level ownership override. |
 | `servers` | `array<object>` | — |  | Server instances where this service is deployed. Follows OpenAPI server object pattern. |
 | `contracts` | `ref → contracts` | — |  | External contracts exposing and consuming interfaces for this service. |
@@ -538,6 +657,22 @@ A deployable service or component within a bounded context.
 | `provenance` | `ref → provenance` | — |  | Epistemic provenance for this service (brownfield modeling confidence). |
 
 _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service`_
+
+#### `service_need`
+
+An abstract infrastructure need declared by a service (Score `type`/`class`/`id`/`params` vocabulary, RD15/EVD-C6). Names WHAT the service requires (a resource TYPE) without pinning a concrete resource or platform — a binding (BND###) resolves it per environment (type × env → module). The type-level altitude above `resource_refs` (concrete instance). Substrate-neutral: the same need binds to a cl…
+
+**Required:** `type_ref`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `type_ref` | `ref → resource_type_ref` | ✓ |  | The resource TYPE this need requires (RT### in the resource-type catalog, step-04 profiles). |
+| `class` | `string` | — |  | Optional variant/tier within the type (Score `class`) — e.g. 'managed' vs 'self-hosted', 'standard' vs 'premium', 'read-replica'. Free-text; the catalog/profil… |
+| `id` | `string` | — |  | Optional logical need id distinguishing shared-vs-dedicated instances (EVD-C5). The same id shared across services ⇒ a shared resource; distinct ids ⇒ dedicate… |
+| `params` | `object` | — |  | Optional type-level parameters (Score `params`) — e.g. {version: '16', size: small}. The environment `param_overlay` and the binding `params` refine these at r… |
+| `description` | `string` | — |  | Optional human note on why this need exists. |
+
+_Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service_need`_
 
 #### `contracts`
 
@@ -1176,6 +1311,7 @@ A competency question this domain was created to answer. Questions are first-cla
 | `priority` | `string` | — | `critical`, `high`, `medium`, `low` | Question priority. Critical questions define the domain's raison d'être — if the system can't answer them, the domain has no justification. |
 | `answered_by` | `array<ref → operation_ref>` | — |  | Operations that answer this question. Accepts ANY operation kind (CMD, EVT, QRY, DOC) — not limited to queries. A question about "Can X happen?" may be answere… |
 | `concepts` | `array<ref → concept_ref>` | — |  | Concepts this question is about. Links questions to the ubiquitous language. E.g., a question about "order status" references the Order and OrderStatus concept… |
+| `bounded_context_ref` | `ref → bounded_context_ref` | — |  | The bounded context whose knowledge boundary this competency question defines (v2.7.6, D17). SINGLE-VALUED and EXPLICIT: a competency question is a knowledge r… |
 | `motivated_by` | `array<ref → goal_ref>` | — |  | Goals that motivated this question. Closes the goal→question traceability chain. E.g., goal "Enable real-time order visibility" motivates question "What is the… |
 | `stakeholders` | `array<ref → actor_ref>` | — |  | Actors who need this question answered. Captures the human demand side — who in the organization needs this knowledge and why. |
 | `owner` | `ref → actor_ref` | — |  | Person responsible for driving resolution. Distinct from stakeholders[] (who care about the answer) — owner is who must actually resolve it. |
@@ -1361,7 +1497,7 @@ _Source: `schema/v2.7/design/dynamics.schema.yaml#/$defs/cpu_spec`_
 
 **Blueprint Infrastructure Resources**
 
-Design Plane: Infrastructure resource definitions and deployment topology. Declares platform resources (databases, queues, storage, services), ownership, per-environment configuration, and service placement across tiers.
+Design Plane: Infrastructure resource definitions and deployment topology. Declares platform resources (databases, queues, storage, services), ownership, per-environment configuration, and service placement across tiers. v2.7.7 adds knowledge-graph participation — typed resource ids (IR###), first-class typed Environments (ENV###), TOSCA inter-resource relations, and IaC traceability — all substrate-neutral (cloud, on-premise, hybrid) and strictly additive.
 
 _Source: `schema/v2.7/design/infrastructure.schema.yaml` · root type `object`_
 
@@ -1380,9 +1516,11 @@ _Source: `schema/v2.7/design/infrastructure.schema.yaml` · root type `object`_
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
 | `name` | `string` | — |  | Name of this resource group or service collection. |
 | `description` | `string` | — |  | Purpose and ownership context of these infrastructure resources. |
-| `environments` | `array<string>` | — |  | Declared environment names used across resources (e.g. dev, staging, prod). Validates environment keys in resource configs. |
+| `environments` | `array<union>` | — |  | Declared environments. Legacy form: a plain name string (e.g. dev, staging, prod). v2.7.7 form: a typed Environment object (id ENV###, substrate, target_scope,… |
 | `resources` | `array<ref → resource>` | — |  | Infrastructure resources: databases, queues, caches, storage, external services. |
 | `topology` | `ref → deployment_topology` | — |  | Deployment topology: how services are placed across tiers, regions, and environments. |
+| `bindings` | `array<ref → binding>` | — |  | (resource-type × environment) → implementation bindings (BND###, v2.7.7 CR-2). A binding resolves an abstract need / resource-type in a specific environment to… |
+| `deployment_scopes` | `array<ref → deployment_scope>` | — |  | Deployment scopes (DSC###, v2.7.7) — the management / lifecycle / ownership / billing partitions that OWN resources: Azure Resource Groups + Subscriptions, AWS… |
 
 #### Definitions
 
@@ -1394,7 +1532,7 @@ An infrastructure resource with platform identity and per-environment configurat
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
-| `id` | `string` | ✓ |  | Unique resource identifier (kebab-case). Used in topology tier references. |
+| `id` | `string` | ✓ |  | Unique resource identifier. SHOULD match IR### (metamodel `infra_resource_ref`); a free-string id (kebab-case) stays valid but the validator WARNs (optional in… |
 | `kind` | `string` | ✓ |  | Resource type (e.g. database, queue, storage, cache, api, function, service). |
 | `name` | `string` | ✓ |  | Human-readable resource name. |
 | `summary` | `string` | — |  | One-line summary for listings. |
@@ -1406,6 +1544,20 @@ An infrastructure resource with platform identity and per-environment configurat
 | `properties` | `ref → entity_properties` | — |  | Open metadata bag for resource-level custom attributes. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `type_ref` | `ref → resource_type_ref` | — |  | Optional typed reference to a resource type (RT###) in the resource-type catalog (step 04). Resolves to the type's inputs/outputs contract; the concrete platfo… |
+| `scope_ref` | `ref → deployment_scope_ref` | — |  | Optional management/lifecycle partition (DSC###) this resource is owned in — its resource-group / namespace / host-pool. Distinct from `hosted_on` (runtime pla… |
+| `hosting_model` | `string` | — | `managed-service`, `vm`, `container`, `bare-metal`, `serverless`, `network-link` … (7) | Substrate-neutral realization classifier (RD31): HOW the resource is hosted — a managed cloud/PaaS service, an IaaS/on-prem VM, a container, bare metal, server… |
+| `relations` | `array<ref → infra_relation_edge>` | — |  | Typed inter-resource relations (TOSCA vocabulary, RD11) — the typed replacement for untyped links in the `properties` bag. `hosted_on` is the canonical placeme… |
+| `iac_refs` | `ref → iac_refs` | — |  | Infrastructure-as-Code traceability for this resource — the analogue of code_refs for infra. Spans cloud provisioners AND on-prem config-management (RD31). |
+| `lifecycle` | `ref → lifecycle` | — |  | Optional lifecycle/protection posture (architect-altitude, RD14). |
+| `exposure` | `string` | — | `public`, `internal`, `dmz`, `private`, `air-gapped`, `vpn-only` … (7) | Neutral network-exposure posture (RD31): reachable from the internet (public), internal-only (internal), perimeter (dmz), isolated (private / air-gapped), reac… |
+| `exposure_detail` | `string` | — |  | Optional provider-specific exposure mechanism (free-text): e.g. 'azure-private-endpoint', 'vnet-integrated', 'aws-privatelink', 'on-prem firewall DMZ'. Retains… |
+| `identity` | `ref → resource_identity` | — |  | Optional workload identity this resource runs as (cross-cutting, EVD-B3/B6). Neutral-named — a cloud managed identity OR an on-prem AD / k8s service account (R… |
+| `access` | `array<ref → access_grant>` | — |  | Optional RBAC access grants (identity × target × role triples, EVD-B6). Neutral — cloud IAM OR on-prem AD/LDAP. Semantic level only; mechanics live in the modu… |
+| `observability` | `ref → observability_binding` | — |  | Optional per-resource telemetry wiring — where this resource sends logs/metrics (was AVM 'diagnostics'). Neutral: cloud diagnostics OR on-prem syslog/SNMP/Prom… |
+| `redundancy` | `ref → redundancy` | — |  | Optional availability-domain spread (was AVM 'zones'). Neutral: cloud AZs/regions OR on-prem sites/racks (RD31). |
+| `encryption_key` | `ref → encryption_key` | — |  | Optional encryption-key posture (was AVM 'customer_managed_key'). Neutral: cloud KMS/Key-Vault OR on-prem HSM/Vault. A key REFERENCE, never key material (RD16,… |
+| `deployment_unit` | `ref → deployment_unit` | — |  | Optional deployment-unit boundary (EVD-A7, RD8 continuous-readiness — carried, no generator consumes it in v2.7.7). |
 
 _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/resource`_
 
@@ -1468,17 +1620,249 @@ A deployment tier grouping related services for a specific infrastructure functi
 | --- | --- | --- | --- | --- |
 | `name` | `string` | ✓ |  | Tier name (e.g. web-tier, worker-tier, data-tier). |
 | `description` | `string` | — |  | Purpose of this deployment tier. |
-| `services` | `array<string>` | — |  | Resource IDs or service names deployed in this tier. |
+| `services` | `array<string>` | — |  | Resource IDs or service names deployed in this tier (legacy free-string form). |
+| `resource_refs` | `array<ref → infra_resource_ref>` | — |  | Typed resource references (IR###) deployed in this tier (v2.7.7). Additive alongside the legacy free-string `services`; prefer this for graph participation. A… |
 | `region` | `string` | — |  | Deployment region (e.g. eu-west-1, us-east-2). |
 | `replicas` | `integer` | — |  | Number of replicas for services in this tier. |
 
 _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/deployment_tier`_
+
+#### `environment`
+
+A deployment environment as a first-class, referenceable entity (v2.7.7, ENV###). Environments are a binding dimension (production/staging/dr/…) — each carries its own target scope, credentials, and parameter overlay. Substrate-neutral: cloud, on-premise, and hybrid are equally expressible (RD31).
+
+**Required:** `id`, `name`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `id` | `ref → environment_ref` | ✓ |  | Typed environment id (ENV###). Referenced by bindings (BND###) and per-environment config. |
+| `name` | `string` | ✓ |  | Human-readable environment name (e.g. production, staging, dr-site). |
+| `env_class` | `string` | — | `production`, `staging`, `development`, `test`, `dr`, `sandbox` … (7) | Environment class. Orthogonal to substrate — a `dr` environment may be cloud OR on-prem. |
+| `substrate` | `string` | — | `cloud`, `on-prem`, `hybrid`, `edge` | Where this environment physically runs (RD31). `hybrid` federates cloud + on-prem bindings; `edge` = distributed/edge compute. Makes the cloud-vs-on-prem split… |
+| `provider` | `string` | — |  | Optional platform provider — free-text so on-prem/private-cloud fit: azure, aws, gcp, vmware, openstack, bare-metal, k8s, … A hybrid environment may carry a co… |
+| `target_scope` | `ref → target_scope` | — |  | The deployment partition/boundary this environment maps into (substrate-neutral). |
+| `credential_scope` | `string` | — |  | Optional logical credential/identity scope (e.g. a subscription, a service account, an AD domain). A reference/label, never a secret value (RD16). |
+| `param_overlay` | `object` | — |  | Optional per-environment parameter overlay applied to bindings (RD8 continuous-readiness; carried, unused this round). |
+| `tags` | `ref → tags` | — |  |  |
+
+_Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/environment`_
+
+#### `target_scope_inline`
+
+Inline substrate-neutral scope partition ({kind, name}). The v2.7.7 form promotes this to a reference (target_scope_ref -> DSC###) when the scope is modelled as a first-class DeploymentScope.
+
+**Required:** `kind`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `kind` | `ref → scope_kind` | ✓ |  | Partition type across substrates. Cloud, k8s, and on-prem scopes are all first-class. |
+| `name` | `string` | — |  | Optional concrete scope name/identifier (e.g. a subscription id, an AWS account, a datacenter code 'dc-1'). A reference/label, not a secret. |
+
+_Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/target_scope_inline`_
+
+#### `target_scope_ref`
+
+Reference form (v2.7.7): point an environment's target scope at a first-class DeploymentScope (DSC###) instead of inlining {kind, name}. Additive — the inline form stays valid.
+
+**Required:** `ref`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `ref` | `ref → deployment_scope_ref` | ✓ |  | The DeploymentScope (DSC###) this environment targets. |
+
+_Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/target_scope_ref`_
+
+#### `deployment_scope`
+
+A deployment scope (DSC###, v2.7.7) — a substrate-neutral management / lifecycle / ownership / billing partition. Generalizes an Azure Resource Group or Subscription, an AWS Account / OU, a GCP Project / Folder, a Kubernetes Cluster / Namespace, or an on-prem Datacenter / host-pool. Scopes nest via `parent` (subscription -> resource- group). A resource joins a scope via `resource.scope_ref`. Dist…
+
+**Required:** `id`, `name`, `kind`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `id` | `string` | ✓ |  | Unique scope identifier. SHOULD match DSC### (metamodel `deployment_scope_ref`); a free-string id (kebab-case) stays schema-valid but the validator WARNs (opti… |
+| `name` | `string` | ✓ |  | Human-readable scope name (e.g. the 'prod' subscription, the 'Accounting' resource-group). |
+| `kind` | `ref → scope_kind` | ✓ |  | Partition type (subscription / resource_group / account / project / cluster / namespace / datacenter / host_pool / ...). |
+| `parent` | `ref → deployment_scope_ref` | — |  | Optional parent scope (DSC###) — builds the hierarchy (a resource_group's parent subscription; a namespace's parent cluster). A top-tier scope (subscription/ac… |
+| `substrate` | `string` | — | `cloud`, `on-prem`, `hybrid`, `edge` | Optional substrate this scope lives on (RD31). When present it is the MOST authoritative substrate signal for member resources — stronger than transitive `host… |
+| `provider` | `string` | — |  | Optional platform provider (free-text so on-prem fits): azure, aws, gcp, vmware, openstack, k8s, ... |
+| `owner` | `ref → resource_owner` | — |  | Optional ownership (vendor / team / contact) for this scope. |
+| `region` | `string` | — |  | Optional default region/location for resources in this scope (e.g. westeurope, eu-west-1). |
+| `summary` | `string` | — |  | One-line summary for listings. |
+| `description` | `string` | — |  | Detailed description of this scope's purpose and what it contains. |
+| `tags` | `ref → tags` | — |  |  |
+| `properties` | `ref → entity_properties` | — |  | Open metadata bag for scope-level custom attributes. |
+
+_Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/deployment_scope`_
+
+#### `infra_relation_edge`
+
+A typed inter-resource relation (TOSCA vocabulary, RD11/EVD-D2). `hosted_on` is the canonical placement edge; `connects_to`/`depends_on` may carry attribute-level output refs (EVD-A6); `depends_on` is the ordering-only fallback. A `network-link` resource's connects_to/routes_to targets may sit in a different environment/substrate (the hybrid boundary, RD31).
+
+**Required:** `type`, `target`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `type` | `ref → infra_relation` | ✓ |  | TOSCA relation verb: hosted_on / connects_to / depends_on / attaches_to / routes_to. |
+| `target` | `ref → infra_resource_ref` | ✓ |  | The target resource (IR###). May be in another environment/substrate (hybrid interconnect). |
+| `outputs` | `array<string>` | — |  | Optional attribute-level outputs of the target this resource consumes (EVD-A6) — e.g. host, port, connection-string. Makes connects_to/depends_on wiring explic… |
+| `description` | `string` | — |  | Optional human note on this edge (e.g. 'reads via read-replica'). |
+
+_Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/infra_relation_edge`_
+
+#### `iac_ref`
+
+A single Infrastructure-as-Code reference: which system defines the resource, and where.
+
+**Required:** `system`, `locator`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `system` | `string` | ✓ | `terraform`, `opentofu`, `bicep`, `arm`, `cloudformation`, `pulumi` … (14) | The IaC system. Cloud provisioners (terraform/opentofu/bicep/arm/cloudformation/pulumi/crossplane) and on-prem config-management (ansible/puppet/chef/saltstack… |
+| `locator` | `string` | ✓ |  | Where the resource is defined in that system (e.g. module path, `file:resource` address, Ansible role, Helm chart). |
+| `role` | `string` | — |  | Optional role of this reference (e.g. 'defines', 'configures', 'deploys'). |
+
+_Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/iac_ref`_
+
+#### `lifecycle`
+
+Optional lifecycle/protection posture for a resource (architect-altitude, RD14, EVD-A8). Substrate-neutral: 'protected' means change-guarded whether cloud or on-prem.
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `protected` | `boolean` | — |  | Resource is change-protected (deletion/replacement guarded). |
+| `create_before_destroy` | `boolean` | — |  | Replacements create the new instance before destroying the old. |
+| `retain_on_delete` | `boolean` | — |  | Retain the underlying resource when the model entity is removed. |
+
+_Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/lifecycle`_
+
+#### `binding`
+
+Resolves (resource-type × environment) → a concrete implementation: which platform module realizes the type in that environment, with a pinned version and params. The same neutral type binds differently per environment — an azure module in a `cloud` ENV, an on-prem module in an `on-prem` ENV (hybrid = two bindings, RD31). Resolution is MOST-SPECIFIC-MATCH: a binding with `need_ref` beats one matc…
+
+**Required:** `id`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `id` | `ref → binding_ref` | ✓ |  | Typed binding id (BND###). |
+| `type_ref` | `ref → resource_type_ref` | — |  | The resource TYPE (RT###) this binding realizes. Pair with `environment_ref` for a (type × env) rule. |
+| `need_ref` | `string` | — |  | Optional reference to a service `need` id (the free-string need `id`) this binding satisfies — more specific than binding-by-type. Most-specific-match: a `need… |
+| `environment_ref` | `ref → environment_ref` | — |  | The environment (ENV###) this binding applies to. Omit for an environment-agnostic default (least specific). |
+| `resource_ref` | `ref → infra_resource_ref` | — |  | Optional concrete resource (IR###) this binding produces/targets — closes need → binding → resource. |
+| `module` | `ref → binding_module` | — |  | The concrete platform module/recipe that realizes the type in this environment. |
+| `profile` | `string` | — |  | Optional resource-type profile this binding draws from (neutral/azure/aws/k8s/on-prem/openstack — the step-04 catalog). |
+| `params` | `object` | — |  | Binding-time parameters passed to the module (conceptually merged over need `params` + environment `param_overlay`). |
+| `outputs` | `array<ref → io_field>` | — |  | Outputs this binding exposes (host/port/connection-string/…). A field may be secret-flagged — a reference/flow marker only, never a value (RD16). |
+| `description` | `string` | — |  | Optional human note on this binding. |
+
+_Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/binding`_
+
+#### `binding_module`
+
+A concrete platform module/recipe reference with a pinned version (RD8 continuous-readiness — `version_pin` is carried; no generator consumes it in v2.7.7). Substrate-neutral: AVM is ONE realization vocabulary, not THE vocabulary — a Terraform registry module, a Helm chart, or an Ansible role are equally valid (RD31).
+
+**Required:** `ref`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `ref` | `string` | ✓ |  | Module/recipe locator — e.g. 'br/public:avm/res/db-for-postgre-sql/flexible-server', a Terraform registry path, a Helm chart, an Ansible role. |
+| `version_pin` | `string` | — |  | Optional pinned module version (e.g. '1.2.3', '~> 4.0'). The continuous-readiness field (carried, unused this round). |
+| `system` | `string` | — |  | Optional provisioner hint (free-text: bicep, terraform, helm, ansible, …). Free-text so on-prem systems fit; the authoritative IaC link is `resource.iac_refs`. |
+
+_Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/binding_module`_
+
+#### `io_field`
+
+A typed input or output field of a resource-type contract or a binding (EVD-C4). An output may be secret-flagged — a reference/flow marker only, never a secret VALUE (RD16). Mirrors the `io_field` shape in the resource-type profile schema (`profiles/infrastructure/`).
+
+**Required:** `name`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `name` | `string` | ✓ |  | Field name (e.g. host, port, name, username, password, connection_string, endpoint). |
+| `type` | `string` | — |  | Optional value-type hint (e.g. string, int, hostname, uri). |
+| `secret` | `boolean` | — |  | When true this field is a secret — the model carries the reference/flow, never the value (RD16). |
+| `description` | `string` | — |  | Optional description of the field. |
+
+_Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/io_field`_
+
+#### `resource_identity`
+
+The workload identity a resource runs as / authenticates with — named for the CONCERN, not the Azure product (RD31): a cloud managed identity (system/user-assigned), a Kubernetes or on-prem service account, or an AD service account. Semantic level only (EVD-B6) — mechanics live in the module.
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `kind` | `string` | — | `system-assigned`, `user-assigned`, `service-account`, `ad-service-account`, `none` | Identity kind, substrate-neutral: cloud system/user-assigned managed identity, a k8s service-account, an on-prem AD service account, or none. |
+| `name` | `string` | — |  | Optional identity name/reference (a label, never a secret). |
+
+_Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/resource_identity`_
+
+#### `access_grant`
+
+An RBAC access triple (EVD-B6): which identity may do what to which target. Substrate-neutral — a cloud IAM role assignment OR an on-prem AD/LDAP group grant. Semantic level only.
+
+**Required:** `role`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `identity` | `string` | — |  | The grantee identity (a `resource_identity` name, a group, or a principal label). |
+| `target` | `string` | — |  | What the access is over (a resource, a scope, a data store — free-text/label; may be an IR###). |
+| `role` | `string` | ✓ |  | The role/permission granted (e.g. reader, contributor, db_datawriter, read-only). |
+
+_Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/access_grant`_
+
+#### `observability_binding`
+
+Where this resource sends its telemetry — named for the concern (was AVM 'diagnostics'): logs and metrics sinks. Substrate-neutral: cloud diagnostic settings OR on-prem syslog/SNMP/Prometheus (RD31). Distinct from the quality-layer `observability` STRATEGY (product-wide); this is per-resource wiring.
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `logs_to` | `array<string>` | — |  | Log sink targets (e.g. a log-analytics workspace label, 'syslog://…', a Loki endpoint). |
+| `metrics_to` | `array<string>` | — |  | Metrics sink targets (e.g. a monitor workspace, a Prometheus endpoint, an SNMP collector). |
+
+_Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/observability_binding`_
+
+#### `redundancy`
+
+Availability-domain spread — named for the concern (was AVM 'zones'): the fault domains this resource is replicated across. Substrate-neutral: cloud availability zones/regions OR on-prem sites/racks (RD31).
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `domains` | `array<string>` | — |  | The availability/fault domains (e.g. ['zone-1','zone-2'] cloud, or ['dc-1','dc-2'] / ['rack-a','rack-b'] on-prem). |
+| `strategy` | `string` | — |  | Optional spread strategy note (e.g. 'zone-redundant', 'active-active across sites'). |
+
+_Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/redundancy`_
+
+#### `encryption_key`
+
+Encryption-key posture — named for the concern (was AVM 'customer_managed_key'): a cloud KMS/Key-Vault key OR an on-prem HSM/Vault (RD31). Carries a key REFERENCE, never key material (RD16).
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `managed_by` | `string` | — | `platform`, `customer`, `self-hosted` | Who manages the key: platform-managed, customer-managed (cloud KMS/Key-Vault), or self-hosted (on-prem HSM/Vault). |
+| `key_ref` | `string` | — |  | Optional key reference/label (a vault path or key id — a reference, never the key material). |
+
+_Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/encryption_key`_
+
+#### `deployment_unit`
+
+Optional deployment-unit boundary (EVD-A7, RD8 continuous-readiness — carried, no generator consumes it in v2.7.7): groups resources that deploy together and names the outputs the unit exports to other units.
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `unit_id` | `string` | — |  | Logical deployment-unit id this resource belongs to (resources sharing a unit_id deploy together). |
+| `exported_outputs` | `array<string>` | — |  | Output names this unit exposes to other units (the cross-unit wiring boundary). |
+
+_Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/deployment_unit`_
 
 #### Value definitions
 
 | Definition | Type | Values | Description |
 | --- | --- | --- | --- |
 | `secret_ref` | `union` |  | A secret reference: a plain name string (resolved from default vault) or an object with explicit vault details. |
+| `target_scope` | `union` |  | The deployment partition an environment targets. Two additive forms (v2.7.7): the legacy INLINE `{kind, name}` object OR a REFERENCE `{ ref: DSC### }` to a fir… |
+| `scope_kind` | `string` | `account`, `subscription`, `project`, `resource_group`, `region`, `availability_zone` … (14) | Deployment partition type across substrates (substrate-neutral, RD31): cloud (account/subscription/project/resource_group/region/availability_zone), kubernetes… |
+| `iac_refs` | `array<ref → iac_ref>` |  | Traceability links from a resource to its Infrastructure-as-Code (RD12, EVD-D4) — the infra analogue of code_refs. Spans cloud provisioners AND on-prem config-… |
 
 <a id="design-interactions"></a>
 
@@ -1776,6 +2160,7 @@ Service Level Objective — an internal reliability target the team commits to. 
 | `target` | `string` | ✓ |  | Target value (e.g. '99.9%'). |
 | `window` | `string` | — |  | Measurement window (e.g. '30d rolling'). |
 | `operations` | `array<ref → operation_ref>` | — |  | Operations this SLO constrains. |
+| `resource_refs` | `array<ref → infra_resource_ref>` | — |  | Infrastructure resources (IR###) this SLO targets — an availability/latency objective can bind to a concrete host, store, or estate, not only to operations. Ad… |
 | `error_budget` | `string` | — |  | Acceptable failure rate within the window (e.g. '0.1%' = complement of 99.9%). |
 | `breach` | `object` | — |  | Response when the SLO is breached. |
 | `description` | `string` | — |  | Human-readable description. |
@@ -1868,6 +2253,7 @@ An availability, disaster recovery, or continuity requirement.
 | `rto` | `string` | — |  | Recovery Time Objective — maximum acceptable downtime (e.g. '5min', '1h'). |
 | `rpo` | `string` | — |  | Recovery Point Objective — maximum acceptable data loss (e.g. '0', '1h'). |
 | `strategy` | `string` | — |  | How resilience is achieved (e.g. 'active-passive failover', 'multi-region active-active'). |
+| `resource_refs` | `array<ref → infra_resource_ref>` | — |  | Infrastructure resources (IR###) this resilience requirement applies to — the concrete host/store/failover target the RTO/RPO is measured against. Additive/opt… |
 | `description` | `string` | — |  | Human-readable description. |
 | `properties` | `ref → entity_properties` | — |  |  |
 | `version` | `ref → entity_version` | — |  | Resilience requirement version for lifecycle tracking. |
@@ -2457,7 +2843,7 @@ A prioritized cross-cutting intervention — "the one thing to do for X". Synthe
 | --- | --- | --- | --- | --- |
 | `id` | `ref → leverage_ref` | ✓ |  | Unique leverage-point identifier (LP + 3 digits, optional context prefix). |
 | `title` | `string` | ✓ |  | Short imperative title of the intervention (e.g. 'Isolate reporting workloads from the interactive path'). |
-| `summary` | `string` | — |  | One-line summary for listings (≤120 chars). |
+| `summary` | `string` | — |  | One-line summary for listings (≤200 chars). |
 | `one_thing` | `string` | ✓ |  | The single highest-value thing this intervention achieves, in prose. The definitional core: if you did only one thing here, this is it (e.g. 'make schema evolu… |
 | `rank` | `integer` | — |  | Priority rank (1 = highest). Assigned per `ranking_basis`. Optional. |
 | `area` | `string` | — |  | Concern area this intervention sits in (e.g. 'delivery-data', 'domain-architecture', 'platform'). Free-text label for grouping. |
@@ -2525,6 +2911,7 @@ _Source: `schema/v2.7/governance/motivation.schema.yaml` · root type `object`_
 | `scope` | `ref → context_prefix` | — |  | Bounded context this motivation file belongs to. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
+| `vision` | `ref → vision` | — |  | The product's singular identity claim / north-star — what it fundamentally IS and aspires to become. Distinct from goals (measurable objectives that operationa… |
 | `goals` | `array<ref → goal>` | — |  | What the system aims to achieve. Goals drive decisions and prioritize work. Each goal can be tracked by a KPI in quality.schema.yaml. |
 | `non_goals` | `array<ref → non_goal>` | — |  | Explicit exclusions — what the system intentionally does NOT do. Prevents scope creep and aligns stakeholder expectations. |
 | `risks` | `array<ref → risk>` | — |  | Identified threats to the system's goals. Each risk has likelihood, impact, and mitigation. Risks drive defensive decisions. |
@@ -2533,6 +2920,28 @@ _Source: `schema/v2.7/governance/motivation.schema.yaml` · root type `object`_
 | `inquiries` | `array<ref → inquiry>` | — |  | Governance inquiries — unresolved strategic or stakeholder concerns that need investigation or decision before work can proceed. |
 
 #### Definitions
+
+#### `vision`
+
+The singular identity claim / north-star: what the product fundamentally IS and aspires to become. Distinct from goals (measurable objectives) and from the root description (a summary blurb) — the vision is the 'why we exist' carrier that goals operationalize and value streams deliver.
+
+**Required:** `statement`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `statement` | `string` | ✓ |  | The vision as one or two sentences naming what the product is and aspires to be. |
+| `aspiration` | `string` | — |  | Optional longer-horizon elaboration or north-star framing beyond the core statement. |
+| `advances_goals` | `array<ref → goal_ref>` | — |  | Goals that operationalize this vision (forward links into `goals`). |
+| `capability_refs` | `array<ref → capability_ref>` | — |  | Core capabilities that embody the vision. |
+| `value_stream_refs` | `array<ref → value_stream_ref>` | — |  | Value streams that carry the vision end-to-end. |
+| `discovery_stage` | `ref → discovery_stage` | — |  | Epistemic maturity of the vision. |
+| `certainty` | `ref → certainty` | — |  | Confidence level of the vision assertion. |
+| `evidence` | `ref → evidence` | — |  | Evidence justifying the vision's discovery_stage and certainty. |
+| `owned_by` | `ref → owned_by` | — |  | Vision-level ownership override. |
+| `properties` | `ref → entity_properties` | — |  |  |
+| `tags` | `ref → tags` | — |  |  |
+
+_Source: `schema/v2.7/governance/motivation.schema.yaml#/$defs/vision`_
 
 #### `goal`
 
@@ -2970,6 +3379,7 @@ Typed references to blueprint entities this test validates. Tests OWN these link
 | `ui` | `object` | — |  | UI elements this test validates. |
 | `questions` | `array<ref → question_ref>` | — |  | Questions this test validates the answer quality of. E.g., a test may verify that "What is the current order status?" is answered correctly under various condi… |
 | `ownership` | `array<string>` | — |  | Org ownership refs (party, department, or team) this test validates. |
+| `infrastructure` | `array<ref → infra_resource_ref>` | — |  | Infrastructure resources (IR###) this test validates placement or behaviour of — e.g. a test asserting a service is `hosted_on` the intended tier, or that a DR… |
 
 _Source: `schema/v2.7/governance/test-cases.schema.yaml#/$defs/validates_refs`_
 

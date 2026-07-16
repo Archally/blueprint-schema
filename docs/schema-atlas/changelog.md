@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 6 |
-| Additive (minor) | 43 |
+| Additive (minor) | 71 |
 | Clarification (patch) | 0 |
-| **Total changes** | 49 |
+| **Total changes** | 77 |
 
 ## ⚠ Breaking changes
 
@@ -54,7 +54,7 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 - **[breaking]** `design/arch.schema.yaml#/$defs/context/properties/model_traits` — Property `model_traits` type changed `array<string>` → `array<ref → model_traits_item>`.
   - _Sources: `schema/v2.7/design/arch.schema.yaml#/$defs/context/properties/model_traits`, `schema/v2.6/design/arch.schema.yaml#/$defs/context/properties/model_traits`_
 
-## Added (43)
+## Added (71)
 
 - [additive] `blueprint.schema.yaml#/$defs/repository_config` — New definition `repository_config` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.7/blueprint.schema.yaml#/$defs/repository_config`_
@@ -62,11 +62,41 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 - [additive] `blueprint.schema.yaml#/$defs/slice` — New definition `slice` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.7/blueprint.schema.yaml#/$defs/slice`_
 
+- [additive] `blueprint.schema.yaml#/$defs/tracker_config` — New definition `tracker_config` added to `blueprint.schema.yaml`.
+  - _Source: `schema/v2.7/blueprint.schema.yaml#/$defs/tracker_config`_
+
+- [additive] `blueprint.schema.yaml#/properties/default_tracker` — Property `default_tracker` added (optional).
+  - _Source: `schema/v2.7/blueprint.schema.yaml#/properties/default_tracker`_
+
 - [additive] `blueprint.schema.yaml#/properties/repositories` — Property `repositories` added (optional).
   - _Source: `schema/v2.7/blueprint.schema.yaml#/properties/repositories`_
 
+- [additive] `blueprint.schema.yaml#/properties/trackers` — Property `trackers` added (optional).
+  - _Source: `schema/v2.7/blueprint.schema.yaml#/properties/trackers`_
+
+- [additive] `design/arch.schema.yaml#/$defs/context/properties/id` — Property `id` added (optional).
+  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/context/properties/id`_
+
+- [additive] `design/arch.schema.yaml#/$defs/dependency/properties/bounded_context_ref` — Property `bounded_context_ref` added (optional).
+  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/dependency/properties/bounded_context_ref`_
+
+- [additive] `design/arch.schema.yaml#/$defs/party/properties/id` — Property `id` added (optional).
+  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/party/properties/id`_
+
+- [additive] `design/arch.schema.yaml#/$defs/service_need` — New definition `service_need` added to `design/arch.schema.yaml`.
+  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service_need`_
+
+- [additive] `design/arch.schema.yaml#/$defs/service/properties/id` — Property `id` added (optional).
+  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service/properties/id`_
+
+- [additive] `design/arch.schema.yaml#/$defs/service/properties/needs` — Property `needs` added (optional).
+  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service/properties/needs`_
+
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service/properties/provenance`_
+
+- [additive] `design/arch.schema.yaml#/$defs/service/properties/resource_refs` — Property `resource_refs` added (optional).
+  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service/properties/resource_refs`_
 
 - [additive] `design/concepts.schema.yaml#/$defs/actor/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.7/design/concepts.schema.yaml#/$defs/actor/properties/provenance`_
@@ -86,11 +116,20 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 - [additive] `design/domain.schema.yaml#/$defs/operation/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.7/design/domain.schema.yaml#/$defs/operation/properties/provenance`_
 
+- [additive] `design/domain.schema.yaml#/$defs/question/properties/bounded_context_ref` — Property `bounded_context_ref` added (optional).
+  - _Source: `schema/v2.7/design/domain.schema.yaml#/$defs/question/properties/bounded_context_ref`_
+
 - [additive] `design/models.schema.yaml#/$defs/model_schema/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.7/design/models.schema.yaml#/$defs/model_schema/properties/provenance`_
 
 - [additive] `design/quality.schema.yaml#/$defs/finding` — New definition `finding` added to `design/quality.schema.yaml`.
   - _Source: `schema/v2.7/design/quality.schema.yaml#/$defs/finding`_
+
+- [additive] `design/quality.schema.yaml#/$defs/resilience_requirement/properties/resource_refs` — Property `resource_refs` added (optional).
+  - _Source: `schema/v2.7/design/quality.schema.yaml#/$defs/resilience_requirement/properties/resource_refs`_
+
+- [additive] `design/quality.schema.yaml#/$defs/slo/properties/resource_refs` — Property `resource_refs` added (optional).
+  - _Source: `schema/v2.7/design/quality.schema.yaml#/$defs/slo/properties/resource_refs`_
 
 - [additive] `design/quality.schema.yaml#/properties/findings` — Property `findings` added (optional).
   - _Source: `schema/v2.7/design/quality.schema.yaml#/properties/findings`_
@@ -103,6 +142,12 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 
 - [additive] `governance/leverage.schema.yaml` — New schema file `governance/leverage.schema.yaml` added.
   - _Source: `schema/v2.7/governance/leverage.schema.yaml`_
+
+- [additive] `governance/motivation.schema.yaml#/$defs/vision` — New definition `vision` added to `governance/motivation.schema.yaml`.
+  - _Source: `schema/v2.7/governance/motivation.schema.yaml#/$defs/vision`_
+
+- [additive] `governance/motivation.schema.yaml#/properties/vision` — Property `vision` added (optional).
+  - _Source: `schema/v2.7/governance/motivation.schema.yaml#/properties/vision`_
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/blocker` — New definition `blocker` added to `governance/roadmap.schema.yaml`.
   - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/blocker`_
@@ -158,14 +203,41 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 - [additive] `governance/test-cases.schema.yaml#/$defs/test_case/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.7/governance/test-cases.schema.yaml#/$defs/test_case/properties/provenance`_
 
+- [additive] `governance/test-cases.schema.yaml#/$defs/validates_refs/properties/infrastructure` — Property `infrastructure` added (optional).
+  - _Source: `schema/v2.7/governance/test-cases.schema.yaml#/$defs/validates_refs/properties/infrastructure`_
+
 - [additive] `governance/test-cases.schema.yaml#/$defs/validates_refs/properties/transitions` — Property `transitions` added (optional).
   - _Source: `schema/v2.7/governance/test-cases.schema.yaml#/$defs/validates_refs/properties/transitions`_
+
+- [additive] `metamodel.schema.yaml#/$defs/binding_ref` — New definition `binding_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/binding_ref`_
+
+- [additive] `metamodel.schema.yaml#/$defs/bounded_context_ref` — New definition `bounded_context_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/bounded_context_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/complexity_pattern` — New definition `complexity_pattern` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/complexity_pattern`_
 
+- [additive] `metamodel.schema.yaml#/$defs/deployment_scope_ref` — New definition `deployment_scope_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/deployment_scope_ref`_
+
+- [additive] `metamodel.schema.yaml#/$defs/environment_ref` — New definition `environment_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/environment_ref`_
+
 - [additive] `metamodel.schema.yaml#/$defs/finding_ref` — New definition `finding_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/finding_ref`_
+
+- [additive] `metamodel.schema.yaml#/$defs/impacts_links/properties/environments` — Property `environments` added (optional).
+  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/impacts_links/properties/environments`_
+
+- [additive] `metamodel.schema.yaml#/$defs/impacts_links/properties/infrastructure` — Property `infrastructure` added (optional).
+  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/impacts_links/properties/infrastructure`_
+
+- [additive] `metamodel.schema.yaml#/$defs/infra_relation` — New definition `infra_relation` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/infra_relation`_
+
+- [additive] `metamodel.schema.yaml#/$defs/infra_resource_ref` — New definition `infra_resource_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/infra_resource_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/leverage_ref` — New definition `leverage_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/leverage_ref`_
@@ -182,8 +254,20 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 - [additive] `metamodel.schema.yaml#/$defs/quality_subcharacteristic` — New definition `quality_subcharacteristic` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/quality_subcharacteristic`_
 
+- [additive] `metamodel.schema.yaml#/$defs/resource_type_ref` — New definition `resource_type_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/resource_type_ref`_
+
+- [additive] `metamodel.schema.yaml#/$defs/service_ref` — New definition `service_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/service_ref`_
+
+- [additive] `metamodel.schema.yaml#/$defs/validates_links/properties/infrastructure` — Property `infrastructure` added (optional).
+  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/validates_links/properties/infrastructure`_
+
 - [additive] `metamodel.schema.yaml#/$defs/work_item_ref` — New definition `work_item_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/work_item_ref`_
+
+- [additive] `profiles/infrastructure/profiles.schema.yaml` — New schema file `profiles/infrastructure/profiles.schema.yaml` added.
+  - _Source: `schema/v2.7/profiles/infrastructure/profiles.schema.yaml`_
 
 ---
 

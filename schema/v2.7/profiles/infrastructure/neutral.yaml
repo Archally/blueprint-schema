@@ -1,0 +1,65 @@
+---
+version: "1.0.0"
+profile: neutral
+substrate: neutral
+description: >
+  Substrate-neutral resource-type catalog (v2.7.7 CR-2, RD7/RD15/RD31). Defines the abstract
+  resource TYPES a service `need.type_ref` targets, each with an inputs/outputs contract that every
+  platform realization must honour. These types name WHAT (a relational database, an object store)
+  without pinning a platform — cloud, on-prem, and private-cloud profiles realize them identically.
+resource_types:
+  - id: RT001
+    name: relational-database
+    category: database
+    description: "A transactional relational database (Postgres/MySQL/SQL-Server class)."
+    inputs:
+      - { name: engine, type: string, description: "postgres | mysql | sqlserver" }
+      - { name: version, type: string }
+      - { name: size, type: string, description: "abstract size tier (small/medium/large)" }
+    outputs:
+      - { name: host, type: hostname }
+      - { name: port, type: int }
+      - { name: name, type: string, description: "database name" }
+      - { name: username, type: string }
+      - { name: password, type: string, secret: true }
+
+  - id: RT002
+    name: object-store
+    category: storage
+    description: "A bucket/blob object store for unstructured data."
+    inputs:
+      - { name: redundancy, type: string, description: "abstract durability tier" }
+    outputs:
+      - { name: endpoint, type: uri }
+      - { name: bucket, type: string }
+      - { name: access_key, type: string, secret: true }
+
+  - id: RT003
+    name: message-queue
+    category: messaging
+    description: "A point-to-point / pub-sub message queue."
+    inputs:
+      - { name: mode, type: string, description: "queue | topic" }
+    outputs:
+      - { name: endpoint, type: uri }
+      - { name: queue_name, type: string }
+      - { name: connection_string, type: string, secret: true }
+
+  - id: RT004
+    name: cache
+    category: cache
+    description: "An in-memory key/value cache (Redis class)."
+    inputs:
+      - { name: size, type: string }
+    outputs:
+      - { name: host, type: hostname }
+      - { name: port, type: int }
+      - { name: password, type: string, secret: true }
+
+  - id: RT005
+    name: secret-store
+    category: security
+    description: "A vault for secrets/keys (KMS / Key-Vault / HSM / on-prem Vault class)."
+    inputs: []
+    outputs:
+      - { name: uri, type: uri }

@@ -1,0 +1,30 @@
+---
+version: "1.0.0"
+profile: on-prem
+substrate: on-prem
+description: >
+  On-premise realizations of the neutral resource-type catalog (RD31 substrate-neutrality). Realizes
+  neutral RTs on self-hosted IaaS VMs / bare-metal via config-management (Ansible roles) — no cloud
+  dependency. RT001 realizing here with the SAME outputs contract as azure/aws/k8s is the core
+  proof that on-premise is a first-class substrate, not a second-class afterthought.
+realizations:
+  - realizes: RT001
+    substrate: on-prem
+    module: { ref: "geerlingguy.postgresql", version_pin: "3.5.2", system: ansible }
+    outputs:
+      - { name: host, type: hostname }
+      - { name: port, type: int }
+      - { name: name, type: string }
+      - { name: username, type: string }
+      - { name: password, type: string, secret: true }
+    notes: "Self-hosted PostgreSQL on an IaaS/bare-metal VM, configured by an Ansible role."
+
+  - realizes: RT004
+    substrate: on-prem
+    module: { ref: "geerlingguy.redis", version_pin: "1.9.0", system: ansible }
+    notes: "Self-hosted Redis via Ansible role."
+
+  - realizes: RT005
+    substrate: on-prem
+    module: { ref: "ansible-community/hashi_vault", version_pin: "6.2.0", system: ansible }
+    notes: "Self-hosted HashiCorp Vault (on-prem secret store / HSM front)."

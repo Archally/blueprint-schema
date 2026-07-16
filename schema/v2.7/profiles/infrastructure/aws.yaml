@@ -1,0 +1,29 @@
+---
+version: "1.0.0"
+profile: aws
+substrate: cloud
+description: >
+  AWS realizations of the neutral resource-type catalog (RD7/RD31). Realizes neutral RTs with vetted
+  Terraform registry modules. Proves the same neutral RT001 realizes on a second cloud with an
+  identical outputs contract.
+realizations:
+  - realizes: RT001
+    substrate: cloud
+    module: { ref: "terraform-aws-modules/rds/aws", version_pin: "6.5.0", system: terraform }
+    outputs:
+      - { name: host, type: hostname }
+      - { name: port, type: int }
+      - { name: name, type: string }
+      - { name: username, type: string }
+      - { name: password, type: string, secret: true }
+    notes: "Amazon RDS (Postgres/MySQL)."
+
+  - realizes: RT002
+    substrate: cloud
+    module: { ref: "terraform-aws-modules/s3-bucket/aws", version_pin: "4.1.2", system: terraform }
+    notes: "Amazon S3 bucket."
+
+  - realizes: RT003
+    substrate: cloud
+    module: { ref: "terraform-aws-modules/sqs/aws", version_pin: "4.2.1", system: terraform }
+    notes: "Amazon SQS queue."

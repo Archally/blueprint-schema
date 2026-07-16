@@ -1,0 +1,141 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Infrastructure Resource-Type Profile
+description: >
+  Validates a resource-type catalog profile file (v2.7.7 CR-2, RD7/RD15/RD31). A profile is DATA,
+  not schema: the resource-type catalog is shipped as versioned profile files so new types need no
+  schema change (R12 — catalog is data). The `neutral` profile defines abstract resource TYPES
+  (RT###) with an inputs/outputs contract; platform profiles (azure/aws/k8s/on-prem/openstack)
+  define `realizations` that map each neutral RT### to a concrete module on their substrate. The
+  same neutral RT realizing on cloud AND on-prem/private-cloud with an identical outputs contract is
+  the substrate-neutrality proof (RD31). This schema is intentionally SELF-CONTAINED (it inlines the
+  RT### pattern rather than $ref-ing the metamodel) because `profiles/` is a sibling of `schema/`
+  and follows a different publication/port path (OQ4).
+type: object
+additionalProperties: false
+required:
+  - version
+  - profile
+properties:
+  version:
+    type: string
+    pattern: "^\\d+\\.\\d+\\.\\d+$"
+    description: "Content version of this profile file (semver)."
+  profile:
+    type: string
+    description: "Profile name — neutral, azure, aws, k8s, on-prem, openstack, or another platform key."
+  substrate:
+    type: string
+    enum: [neutral, cloud, on-prem, hybrid, edge]
+    description: "Substrate this profile targets. `neutral` = the abstract catalog; the rest are realizations (RD31)."
+  description:
+    type: string
+    description: "Human-readable purpose of this profile."
+  resource_types:
+    type: array
+    description: "Abstract resource TYPE definitions (used by the neutral profile): the inputs/outputs contract each RT### exposes. `need.type_ref` / `resource.type_ref` resolve here."
+    items:
+      $ref: "#/$defs/resource_type"
+  realizations:
+    type: array
+    description: "Platform realizations (used by platform profiles): how each neutral RT### is realized on this substrate — the concrete module + optional restated outputs contract."
+    items:
+      $ref: "#/$defs/realization"
+
+$defs:
+
+  resource_type:
+    type: object
+    description: "An abstract resource TYPE (RT###) with its inputs/outputs contract — the type-level intent a service `need` targets, independent of platform."
+    additionalProperties: false
+    required:
+      - id
+      - name
+    properties:
+      id:
+        type: string
+        pattern: "^([a-z][a-z0-9-]*\\.)?RT\\d{3,}$"
+        description: "Typed resource-type id (RT###) — mirror of metamodel `resource_type_ref`."
+      name:
+        type: string
+        description: "Neutral type name (e.g. relational-database, object-store, message-queue, cache, secret-store)."
+      category:
+        type: string
+        description: "Coarse category (e.g. database, storage, messaging, cache, security, compute, network)."
+      description:
+        type: string
+        description: "What this resource type provides."
+      inputs:
+        type: array
+        description: "Type-level inputs a consumer may set (e.g. version, size). Environment overlays + bindings refine them."
+        items:
+          $ref: "#/$defs/io_field"
+      outputs:
+        type: array
+        description: "The outputs contract every realization must honour (e.g. host/port/name/username/password:secret). Identical across substrates — the substrate-neutrality invariant (RD31)."
+        items:
+          $ref: "#/$defs/io_field"
+
+  realization:
+    type: object
+    description: "How a neutral resource TYPE is realized on this profile's substrate — the concrete module + (optionally) the restated outputs contract to prove it matches the neutral one."
+    additionalProperties: false
+    required:
+      - realizes
+      - module
+    properties:
+      realizes:
+        type: string
+        pattern: "^([a-z][a-z0-9-]*\\.)?RT\\d{3,}$"
+        description: "The neutral resource TYPE (RT###) this entry realizes."
+      substrate:
+        type: string
+        description: "Optional substrate hint for this realization (e.g. cloud, on-prem, private-cloud)."
+      module:
+        $ref: "#/$defs/module"
+        description: "The concrete platform module/recipe realizing the type (AVM module, Terraform module, Helm chart, Ansible role, …)."
+      outputs:
+        type: array
+        description: "Optional restatement of the outputs contract — MUST match the neutral type's outputs (the identical-contract proof, RD31)."
+        items:
+          $ref: "#/$defs/io_field"
+      notes:
+        type: string
+        description: "Optional note (e.g. 'self-hosted on an IaaS VM', 'managed PaaS')."
+
+  io_field:
+    type: object
+    description: "A typed input or output field. An output may be secret-flagged — a reference/flow marker only, never a value (RD16). Mirrors `infrastructure.schema.yaml#/$defs/io_field`."
+    additionalProperties: false
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: "Field name (e.g. host, port, name, username, password, endpoint, connection_string)."
+      type:
+        type: string
+        description: "Optional value-type hint (e.g. string, int, hostname, uri)."
+      secret:
+        type: boolean
+        description: "When true this field is a secret — reference/flow only, never the value (RD16)."
+      description:
+        type: string
+        description: "Optional description of the field."
+
+  module:
+    type: object
+    description: "A concrete platform module/recipe reference with an optional pinned version (RD8 continuous-readiness). Substrate-neutral — AVM is ONE realization vocabulary, not THE vocabulary (RD31)."
+    additionalProperties: false
+    required:
+      - ref
+    properties:
+      ref:
+        type: string
+        description: "Module/recipe locator (AVM path, Terraform registry module, Helm chart, Ansible role)."
+      version_pin:
+        type: string
+        description: "Optional pinned module version (e.g. '1.2.3', '~> 4.0')."
+      system:
+        type: string
+        description: "Optional provisioner (free-text: bicep, terraform, opentofu, helm, ansible, …)."
