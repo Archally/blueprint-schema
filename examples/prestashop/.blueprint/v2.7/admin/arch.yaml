@@ -1,0 +1,57 @@
+version: 1.0.0
+name: Admin (PrestaShop)
+description: Architecture of the PrestaShop Admin bounded context.
+tags:
+  - prestashop
+  - e-commerce
+  - php
+  - symfony
+parties:
+  - name: PrestaShop
+    kind: system
+    env: production
+    description: PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+    contexts:
+      - id: prestashop.BC001
+        name: Admin
+        kind: generic
+        complexity: crud
+        summary: Employee accounts, profiles, security, API clients, configuration.
+        owned_by:
+          team: TM009
+        responsibilities:
+          - Employee registration and profile/role management
+          - Access control and permission checking
+          - API client (OAuth2) management
+          - Webservice key management
+          - Security audit logging
+          - Shop configuration key-value store
+        services:
+          - id: prestashop.SVC001
+            name: AdminService
+            kind: api
+            summary: REST API for employee, security, and configuration management.
+            servers:
+              - url: https://api.prestashop.example/v1/admin
+                environment: production
+              - url: http://localhost:8080/api/admin
+                environment: development
+            contracts:
+              openapi:
+                output: dist/admin-api.openapi.yaml
+                expose:
+                  - admin:addEmployee
+                  - admin:editProfile
+                  - admin:getEmployeeForEditing
+                  - admin:addApiClient
+              security_schemes:
+                bearer:
+                  type: http
+                  scheme: bearer
+                  bearer_format: JWT
+                admin_oauth2:
+                  type: oauth2
+                  scopes:
+                    admin:read: Read admin data
+                    admin:write: Modify admin data
+                    employees:manage: Manage employee accounts

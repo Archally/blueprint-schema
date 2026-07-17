@@ -1,0 +1,89 @@
+version: 1.0.0
+name: Orders (PrestaShop)
+description: Architecture of the PrestaShop Orders bounded context.
+tags:
+  - prestashop
+  - e-commerce
+  - php
+  - symfony
+parties:
+  - name: PrestaShop
+    kind: system
+    env: production
+    description: PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+    contexts:
+      - id: prestashop.BC008
+        name: Orders
+        kind: core
+        complexity: concurrency
+        summary: Order lifecycle — placement, state management, cancellation, refund, invoice, returns, credit slips.
+        owned_by:
+          team: TM001
+        responsibilities:
+          - Order creation from validated cart
+          - Order state machine (created → paid → shipped → delivered)
+          - Cancellation and refund processing
+          - Invoice and delivery slip generation
+          - Order return and credit slip management
+          - Order messaging between merchant and customer
+          - Payment record tracking
+        dependencies:
+          - name: Checkout
+            type: events
+            relationship: shared-kernel
+            direction: downstream
+            description: Receives cart-to-order transition. Shared cart calculation kernel.
+            language_boundary: false
+            bounded_context_ref: prestashop.BC003
+          - name: Catalog
+            type: api
+            relationship: customer-supplier
+            direction: downstream
+            description: Reads product data for order line items.
+            bounded_context_ref: prestashop.BC002
+          - name: Customers
+            type: api
+            relationship: customer-supplier
+            direction: downstream
+            description: Reads customer and address data for order placement.
+            bounded_context_ref: prestashop.BC005
+          - name: Shipping
+            type: api
+            relationship: customer-supplier
+            direction: downstream
+            description: Reads carrier and shipping cost data for fulfillment.
+            bounded_context_ref: prestashop.BC010
+          - name: International
+            type: api
+            relationship: customer-supplier
+            direction: downstream
+            description: Reads currency and tax rules for order totals.
+            bounded_context_ref: prestashop.BC006
+        services:
+          - id: prestashop.SVC008
+            name: OrderService
+            kind: api
+            summary: REST API for order commands and queries.
+            needs:
+              - { type_ref: RT001, class: self-hosted, id: prestashop-db }
+            servers:
+              - url: https://api.prestashop.example/v1/orders
+                environment: production
+              - url: http://localhost:8080/api/orders
+                environment: development
+            contracts:
+              openapi:
+                output: dist/orders-api.openapi.yaml
+                expose:
+                  - orders:placeOrder
+                  - orders:cancelOrder
+                  - orders:issueStandardRefund
+                  - orders:getOrderForViewing
+              asyncapi:
+                output: dist/orders-events.asyncapi.yaml
+                send:
+                  - orders:orderPlaced
+                  - orders:orderCancelled
+                  - orders:orderRefunded
+                  - orders:orderShipped
+                brokerId: prestashop-event-bus

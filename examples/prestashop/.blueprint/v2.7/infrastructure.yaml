@@ -1,0 +1,257 @@
+version: "1.0.0"
+name: "PrestaShop Runtime Infrastructure (Kubernetes/Helm)"
+description: >
+  Cross-cutting infrastructure layer for the PrestaShop monolith deployed on Kubernetes via Helm.
+  PrestaShop is one PHP application backed by a single shared MySQL/MariaDB database, an in-cluster
+  Redis cache, and an S3-compatible object store for product images and attachments. Infra is
+  root-level (not per bounded context) because the monolith and its data stores are shared across
+  every slice. Substrate-neutral authoring: needs (type-level intent) → bindings (type × env → Helm
+  module) → resources (concrete IR### instances). Public de-branded pilot for the v2.7.7 infra CR;
+  no real endpoints or secrets.
+tags: [infrastructure, kubernetes, helm, monolith, prestashop]
+owned_by:
+  team: TM010
+
+# ---------------------------------------------------------------------------
+# Environments — the binding dimension (production / staging), not forked files.
+# ---------------------------------------------------------------------------
+environments:
+  - id: prestashop.ENV001
+    name: production
+    env_class: production
+    substrate: cloud
+    provider: k8s
+    target_scope: { kind: namespace, name: prestashop-prod }
+    credential_scope: prestashop-prod-identity
+    tags: [production]
+  - id: prestashop.ENV002
+    name: staging
+    env_class: staging
+    substrate: cloud
+    provider: k8s
+    target_scope: { kind: namespace, name: prestashop-staging }
+    credential_scope: prestashop-staging-identity
+    tags: [staging]
+
+# ---------------------------------------------------------------------------
+# Deployment scopes (DSC###, v2.7.7) — the Kubernetes management partition: the
+# cluster is the root, namespaces are its children (the k8s analogue of an Azure
+# subscription → resource-groups). Env-agnostic: the prod/staging split lives in
+# `environments` (each env realizes these namespaces as prestashop-prod /
+# prestashop-staging), exactly as an env names a concrete subscription while the
+# scope names the logical partition. All 4 workloads are `hosted_on` the one
+# cluster (IR005) yet `scope_ref` different namespaces — placement ≠ management.
+# ---------------------------------------------------------------------------
+deployment_scopes:
+  - id: prestashop.DSC001
+    name: "PrestaShop Cluster"
+    kind: cluster
+    substrate: cloud
+    provider: k8s
+    description: "The managed Kubernetes cluster — root of the namespace tree (mirrors the IR005 cluster resource)."
+  - id: prestashop.DSC002
+    name: "prestashop-app"
+    kind: namespace
+    parent: prestashop.DSC001
+    description: "Application-tier namespace: the stateless PrestaShop PHP workload (web + admin + API)."
+  - id: prestashop.DSC003
+    name: "prestashop-data"
+    kind: namespace
+    parent: prestashop.DSC001
+    description: "Data-tier namespace: the stateful MySQL, Redis, and object-store workloads, isolated from the app tier."
+
+# ---------------------------------------------------------------------------
+# Resources — concrete IR### instances, all scope-prefixed. Container-hosted
+# in-cluster; the app connects_to its shared data stores (TOSCA relations).
+# ---------------------------------------------------------------------------
+resources:
+  - id: prestashop.IR001
+    kind: database
+    name: "PrestaShop MySQL"
+    scope_ref: prestashop.DSC003
+    summary: "Single shared MySQL/MariaDB relational database for the whole monolith."
+    description: >
+      The one shared relational database PrestaShop uses for all bounded contexts (catalog, orders,
+      checkout, customers, shop, …). Run in-cluster as a StatefulSet via the Bitnami MySQL Helm chart.
+      A shared database is a deliberate monolith trait — surfaced here as a single IR001 rather than
+      duplicated per service (the shared need id `prestashop-db` reads it as one instance).
+    hosting_model: container
+    type_ref: RT001
+    exposure: internal
+    owner: { vendor: "MySQL", team: "Core Platform", email: "platform@prestashop.example" }
+    relations:
+      - { type: hosted_on, target: prestashop.IR005 }
+    iac_refs:
+      - { system: helm, locator: "deploy/helm/mysql/values-prod.yaml", role: configures }
+      - { system: helm, locator: "deploy/helm/mysql/values-staging.yaml", role: configures }
+    lifecycle: { protected: true, create_before_destroy: true }
+    tags: [data-tier, stateful]
+
+  - id: prestashop.IR002
+    kind: cache
+    name: "PrestaShop Redis"
+    scope_ref: prestashop.DSC003
+    summary: "In-memory cache for sessions, page cache, and query results."
+    description: >
+      Redis cache backing PrestaShop's session storage, page/template cache, and expensive query
+      result caching. Run in-cluster via the Bitnami Redis Helm chart. Shared across the front-office
+      and catalog surfaces (shared need id `prestashop-cache`).
+    hosting_model: container
+    type_ref: RT004
+    exposure: internal
+    owner: { vendor: "Redis", team: "Core Platform", email: "platform@prestashop.example" }
+    relations:
+      - { type: hosted_on, target: prestashop.IR005 }
+    iac_refs:
+      - { system: helm, locator: "deploy/helm/redis/values-prod.yaml", role: configures }
+      - { system: helm, locator: "deploy/helm/redis/values-staging.yaml", role: configures }
+    tags: [data-tier, ephemeral]
+
+  - id: prestashop.IR003
+    kind: storage
+    name: "PrestaShop Object Store"
+    scope_ref: prestashop.DSC003
+    summary: "S3-compatible object store for product images, attachments, and virtual files."
+    description: >
+      MinIO S3-compatible object store holding product images, downloadable/virtual product files,
+      and CMS media attachments. Run in-cluster via the MinIO Helm chart. Shared by the catalog and
+      content surfaces (shared need id `prestashop-assets`).
+    hosting_model: container
+    type_ref: RT002
+    exposure: internal
+    owner: { vendor: "MinIO", team: "Core Platform", email: "platform@prestashop.example" }
+    relations:
+      - { type: hosted_on, target: prestashop.IR005 }
+    iac_refs:
+      - { system: helm, locator: "deploy/helm/minio/values-prod.yaml", role: configures }
+      - { system: helm, locator: "deploy/helm/minio/values-staging.yaml", role: configures }
+    tags: [data-tier, media]
+
+  - id: prestashop.IR004
+    kind: service
+    name: "PrestaShop Application"
+    scope_ref: prestashop.DSC002
+    summary: "The PrestaShop PHP monolith workload (web + admin + API)."
+    description: >
+      The PrestaShop monolith itself — front office, back office, and web-service API served from one
+      PHP-FPM + web deployment. Publicly exposed via an ingress; connects to the shared MySQL database,
+      the Redis cache, and the object store. Deployed via an umbrella PrestaShop Helm chart.
+    hosting_model: container
+    exposure: public
+    exposure_detail: "kubernetes-ingress"
+    owner: { vendor: "PrestaShop", team: "Core Platform", email: "platform@prestashop.example" }
+    relations:
+      - { type: hosted_on, target: prestashop.IR005 }
+      - { type: connects_to, target: prestashop.IR001, outputs: [host, port], description: "Shared relational database" }
+      - { type: connects_to, target: prestashop.IR002, outputs: [host, port], description: "Session and page cache" }
+      - { type: connects_to, target: prestashop.IR003, outputs: [endpoint, bucket], description: "Product image and attachment store" }
+    iac_refs:
+      - { system: helm, locator: "deploy/helm/prestashop/values-prod.yaml", role: deploys }
+      - { system: helm, locator: "deploy/helm/prestashop/values-staging.yaml", role: deploys }
+    tags: [app-tier, workload]
+
+  - id: prestashop.IR005
+    kind: cluster
+    name: "PrestaShop Kubernetes Cluster"
+    scope_ref: prestashop.DSC001
+    summary: "The Kubernetes cluster hosting all PrestaShop workloads."
+    description: >
+      Managed Kubernetes cluster that hosts the PrestaShop application and its in-cluster data stores.
+      The canonical placement root (`hosted_on` target) — a substrate-neutral compute host, not a
+      provider resource in the model.
+    hosting_model: managed-service
+    exposure: private
+    owner: { vendor: "Kubernetes", team: "Core Platform", email: "platform@prestashop.example" }
+    iac_refs:
+      - { system: terraform, locator: "deploy/terraform/cluster", role: defines }
+    tags: [platform, compute]
+
+# ---------------------------------------------------------------------------
+# Bindings — (resource-type × environment) → concrete Helm module. NOTE: RT001
+# binds to bitnami/mysql (MySQL), NOT the k8s profile's default cloudnative-pg
+# (Postgres) — PrestaShop is a MySQL app, so the module is chosen HERE.
+# ---------------------------------------------------------------------------
+bindings:
+  # --- RT001 relational-database → Bitnami MySQL (MySQL, not Postgres) ---
+  - id: prestashop.BND001
+    type_ref: RT001
+    environment_ref: prestashop.ENV001
+    resource_ref: prestashop.IR001
+    profile: k8s
+    module: { ref: "bitnami/mysql", version_pin: "11.1.0", system: helm }
+    params: { engine: mysql, version: "8.0", size: medium }
+    outputs:
+      - { name: host }
+      - { name: port, type: int }
+      - { name: name, description: "database name" }
+      - { name: username }
+      - { name: password, secret: true }
+    description: "Production MySQL via the Bitnami MySQL chart (in-cluster StatefulSet)."
+  - id: prestashop.BND002
+    type_ref: RT001
+    environment_ref: prestashop.ENV002
+    resource_ref: prestashop.IR001
+    profile: k8s
+    module: { ref: "bitnami/mysql", version_pin: "11.1.0", system: helm }
+    params: { engine: mysql, version: "8.0", size: small }
+    outputs:
+      - { name: host }
+      - { name: port, type: int }
+      - { name: name, description: "database name" }
+      - { name: username }
+      - { name: password, secret: true }
+    description: "Staging MySQL — same chart, smaller size tier."
+
+  # --- RT004 cache → Bitnami Redis ---
+  - id: prestashop.BND003
+    type_ref: RT004
+    environment_ref: prestashop.ENV001
+    resource_ref: prestashop.IR002
+    profile: k8s
+    module: { ref: "bitnami/redis", version_pin: "20.1.0", system: helm }
+    params: { size: medium }
+    outputs:
+      - { name: host }
+      - { name: port, type: int }
+      - { name: password, secret: true }
+    description: "Production Redis via the Bitnami Redis chart."
+  - id: prestashop.BND004
+    type_ref: RT004
+    environment_ref: prestashop.ENV002
+    resource_ref: prestashop.IR002
+    profile: k8s
+    module: { ref: "bitnami/redis", version_pin: "20.1.0", system: helm }
+    params: { size: small }
+    outputs:
+      - { name: host }
+      - { name: port, type: int }
+      - { name: password, secret: true }
+    description: "Staging Redis — same chart, smaller size tier."
+
+  # --- RT002 object-store → MinIO ---
+  - id: prestashop.BND005
+    type_ref: RT002
+    environment_ref: prestashop.ENV001
+    resource_ref: prestashop.IR003
+    profile: k8s
+    module: { ref: "minio/minio", version_pin: "5.2.0", system: helm }
+    params: { redundancy: distributed }
+    outputs:
+      - { name: endpoint, type: uri }
+      - { name: bucket }
+      - { name: access_key, secret: true }
+      - { name: secret_key, secret: true }
+    description: "Production MinIO S3-compatible object store (distributed mode)."
+  - id: prestashop.BND006
+    type_ref: RT002
+    environment_ref: prestashop.ENV002
+    resource_ref: prestashop.IR003
+    profile: k8s
+    module: { ref: "minio/minio", version_pin: "5.2.0", system: helm }
+    params: { redundancy: standalone }
+    outputs:
+      - { name: endpoint, type: uri }
+      - { name: bucket }
+      - { name: access_key, secret: true }
+      - { name: secret_key, secret: true }
+    description: "Staging MinIO — standalone (single-node) mode."

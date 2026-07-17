@@ -40,6 +40,17 @@ export const ENTITY_TYPE = {
   Models: 'Models',
   RG: 'RG',
   DeploymentTier: 'DeploymentTier',
+  // v2.7.7 infrastructure layer. InfraResource (IR###) supersedes RG for v2.7
+  // `infrastructure.yaml`; RG stays for v2.6 `rg.yaml` back-compat.
+  InfraResource: 'InfraResource',
+  Environment: 'Environment',
+  Binding: 'Binding',
+  ResourceType: 'ResourceType',
+  // v2.7.7 DeploymentScope: substrate-neutral management/lifecycle partition (DSC###) —
+  // Azure resource-group/subscription, AWS account/OU, GCP project/folder, k8s cluster/
+  // namespace, on-prem datacenter/host-pool. Nests via `parent`; resources join via
+  // `scope_ref`. Lives under `design.infrastructure` (from `deployment_scopes[]`).
+  DeploymentScope: 'DeploymentScope',
   Party: 'Party',
   Department: 'Department',
   Team: 'Team',
@@ -71,6 +82,9 @@ export const SCHEMA_TYPE_TO_LAYER: Record<string, string> = {
   dynamics: 'design.dynamics',
   quality: 'design.quality',
   rg: 'design.rg',
+  // v2.7.7 de-alias: `infrastructure` gets its own layer id (previously aliased to
+  // `design.rg`). `rg` stays `design.rg` for v2.6 back-compat.
+  infrastructure: 'design.infrastructure',
   motivation: 'governance.motivation',
   capability: 'governance.capability',
   decisions: 'governance.decisions',

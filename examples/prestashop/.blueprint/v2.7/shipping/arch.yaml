@@ -1,0 +1,42 @@
+version: 1.0.0
+name: Shipping (PrestaShop)
+description: Architecture of the PrestaShop Shipping bounded context.
+tags:
+  - prestashop
+  - e-commerce
+  - php
+  - symfony
+parties:
+  - name: PrestaShop
+    kind: system
+    env: production
+    description: PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+    contexts:
+      - id: prestashop.BC010
+        name: Shipping
+        kind: support
+        complexity: integration
+        summary: Carrier configuration, shipping cost calculation, shipment tracking.
+        owned_by:
+          team: TM005
+        responsibilities:
+          - Carrier CRUD and zone-based shipping rules
+          - Shipping cost calculation by weight, price, and zone
+          - Shipment creation and tracking number assignment
+        dependencies:
+          - name: International
+            type: api
+            relationship: customer-supplier
+            direction: downstream
+            description: Reads zone and country data for carrier shipping rules.
+            bounded_context_ref: prestashop.BC006
+        services:
+          - id: prestashop.SVC010
+            name: ShippingService
+            kind: api
+            summary: REST API for carrier management and shipping cost calculation.
+            contracts:
+              openapi:
+                output: dist/shipping-api.openapi.yaml
+                expose:
+                  - shipping:getAvailableCarriers

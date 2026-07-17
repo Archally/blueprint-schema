@@ -1,22 +1,38 @@
 # PrestaShop-v9
 
-> Generated from blueprint model. 2050 entities, 2474 relations.
+> Generated from blueprint model. 2072 entities, 3086 relations.
 
 ## Context Map
 
 ```mermaid
 graph LR
-    Catalog["Catalog: Product catalog — CRUD, variants, media, categories, attributes, suppliers, search indexing."]
-    Orders["Orders: Order lifecycle — placement, state management, cancellation, refund, invoice, returns, credit slips."]
-    Checkout["Checkout: Cart management, checkout flow, cart rules, promotions, payment orchestration."]
-    Customers["Customers: Customer accounts, addresses, customer service messaging, titles."]
-    Shipping["Shipping: Carrier configuration, shipping cost calculation, shipment tracking."]
-    International["International: Currencies, countries, zones, languages, tax rules — localization backbone."]
-    Content["Content: CMS pages, page categories, themes, email templates, SEO meta."]
-    Modules["Modules: Module lifecycle, hook system, module marketplace integration."]
     Admin["Admin: Employee accounts, profiles, security, API clients, configuration."]
-    Shop["Shop: Multi-store configuration, physical stores, contacts, search, aliases."]
+    Catalog["Catalog: Product catalog — CRUD, variants, media, categories, attributes, suppliers, search indexing."]
+    Checkout["Checkout: Cart management, checkout flow, cart rules, promotions, payment orchestration."]
+    Content["Content: CMS pages, page categories, themes, email templates, SEO meta."]
+    Customers["Customers: Customer accounts, addresses, customer service messaging, titles."]
+    International["International: Currencies, countries, zones, languages, tax rules — localization backbone."]
+    Modules["Modules: Module lifecycle, hook system, module marketplace integration."]
+    Orders["Orders: Order lifecycle — placement, state management, cancellation, refund, invoice, returns, credit slips."]
     ExternalApiConsumers["ExternalApiConsumers: External systems consuming PrestaShop Admin API via OAuth2."]
+    Shipping["Shipping: Carrier configuration, shipping cost calculation, shipment tracking."]
+    Shop["Shop: Multi-store configuration, physical stores, contacts, search, aliases."]
+    Catalog -->|"depends on"| International
+    Catalog -->|"depends on"| Modules
+    Checkout -->|"depends on"| Catalog
+    Checkout -->|"depends on"| Customers
+    Checkout -->|"depends on"| International
+    Checkout -->|"depends on"| Orders
+    Content -->|"depends on"| International
+    Customers -->|"depends on"| International
+    Modules -->|"depends on"| Admin
+    Orders -->|"depends on"| Checkout
+    Orders -->|"depends on"| Catalog
+    Orders -->|"depends on"| Customers
+    Orders -->|"depends on"| Shipping
+    Orders -->|"depends on"| International
+    Shipping -->|"depends on"| International
+    Shop -->|"depends on"| International
 ```
 
 > *[Archally Pro](https://archally.pro)* — Interactive Context Map with drag-and-drop, filtering, and detail panels.
@@ -1635,6 +1651,57 @@ graph TD
         shop_ERR002["shop.ERR002: SearchEngineNotFound"]
         shop_ERR003["shop.ERR003: AliasNotFound"]
     end
+    subgraph design_arch["design.arch"]
+        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
+        Admin["Admin: Employee accounts, profiles, security, API clients, configuration."]
+        AdminService["AdminService: REST API for employee, security, and configuration management."]
+        AdminService_openapi["AdminService.openapi"]
+        AdminService_security_schemes["AdminService.security_schemes"]
+        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
+        Catalog["Catalog: Product catalog — CRUD, variants, media, categories, attributes, suppliers, search indexing."]
+        CatalogService["CatalogService: REST API for product and category management."]
+        CatalogService_openapi["CatalogService.openapi"]
+        CatalogService_asyncapi["CatalogService.asyncapi"]
+        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
+        Checkout["Checkout: Cart management, checkout flow, cart rules, promotions, payment orchestration."]
+        CheckoutService["CheckoutService: REST API for cart operations and payment initiation."]
+        CheckoutService_openapi["CheckoutService.openapi"]
+        CheckoutService_asyncapi["CheckoutService.asyncapi"]
+        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
+        Content["Content: CMS pages, page categories, themes, email templates, SEO meta."]
+        ContentService["ContentService: REST API for CMS page and theme management."]
+        ContentService_openapi["ContentService.openapi"]
+        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
+        Customers["Customers: Customer accounts, addresses, customer service messaging, titles."]
+        CustomerService["CustomerService: REST API for customer account and address management."]
+        CustomerService_openapi["CustomerService.openapi"]
+        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
+        International["International: Currencies, countries, zones, languages, tax rules — localization backbone."]
+        InternationalService["InternationalService: REST API for currency, tax, country, and language management."]
+        InternationalService_openapi["InternationalService.openapi"]
+        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
+        Modules["Modules: Module lifecycle, hook system, module marketplace integration."]
+        ModuleManager["ModuleManager: Module lifecycle orchestrator with hook execution pipeline."]
+        ModuleManager_openapi["ModuleManager.openapi"]
+        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
+        Orders["Orders: Order lifecycle — placement, state management, cancellation, refund, invoice, returns, credit slips."]
+        OrderService["OrderService: REST API for order commands and queries."]
+        OrderService_openapi["OrderService.openapi"]
+        OrderService_asyncapi["OrderService.asyncapi"]
+        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
+        ExternalApiConsumers["ExternalApiConsumers: External systems consuming PrestaShop Admin API via OAuth2."]
+        AdminApiClient["AdminApiClient: External API consumer using PrestaShop Admin REST API with OAuth2 authentication."]
+        AdminApiClient_httpClient["AdminApiClient.httpClient"]
+        AdminApiClient_security_schemes["AdminApiClient.security_schemes"]
+        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
+        Shipping["Shipping: Carrier configuration, shipping cost calculation, shipment tracking."]
+        ShippingService["ShippingService: REST API for carrier management and shipping cost calculation."]
+        ShippingService_openapi["ShippingService.openapi"]
+        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
+        Shop["Shop: Multi-store configuration, physical stores, contacts, search, aliases."]
+        ShopService["ShopService: REST API for multi-store and shop configuration."]
+        ShopService_openapi["ShopService.openapi"]
+    end
     subgraph design_ui["design.ui"]
         admin_SCR001["admin.SCR001: Grid of employees with status, profile, email, and bulk action controls."]
         admin_SCR002["admin.SCR002: Employee creation/edit form with profile selection and shop association."]
@@ -2328,6 +2395,31 @@ graph TD
         D007["D007: Introduce a modern REST API for back-office operations with OAuth2 authentication, replacing legacy webservice."]
         D008["D008: Support headless commerce by exposing all storefront operations through APIs, enabling decoupled frontends."]
     end
+    subgraph design_infrastructure["design.infrastructure"]
+        prestashop_IR001["prestashop.IR001: Single shared MySQL/MariaDB relational database for the whole monolith."]
+        prestashop_IR002["prestashop.IR002: In-memory cache for sessions, page cache, and query results."]
+        prestashop_IR003["prestashop.IR003: S3-compatible object store for product images, attachments, and virtual files."]
+        prestashop_IR004["prestashop.IR004: The PrestaShop PHP monolith workload (web + admin + API)."]
+        prestashop_IR005["prestashop.IR005: The Kubernetes cluster hosting all PrestaShop workloads."]
+        prestashop_ENV001["prestashop.ENV001: production"]
+        prestashop_ENV002["prestashop.ENV002: staging"]
+        prestashop_DSC001["prestashop.DSC001: PrestaShop Cluster"]
+        prestashop_DSC002["prestashop.DSC002: prestashop-app"]
+        prestashop_DSC003["prestashop.DSC003: prestashop-data"]
+        prestashop_BND001["prestashop.BND001: Production MySQL via the Bitnami MySQL chart (in-cluster StatefulSet)."]
+        prestashop_BND002["prestashop.BND002: Staging MySQL — same chart, smaller size tier."]
+        prestashop_BND003["prestashop.BND003: Production Redis via the Bitnami Redis chart."]
+        prestashop_BND004["prestashop.BND004: Staging Redis — same chart, smaller size tier."]
+        prestashop_BND005["prestashop.BND005: Production MinIO S3-compatible object store (distributed mode)."]
+        prestashop_BND006["prestashop.BND006: Staging MinIO — standalone (single-node) mode."]
+    end
+    subgraph governance_leverage["governance.leverage"]
+        LP001["LP001: Move fulfillment, email, and webhooks off the request thread so checkout stays responsive under load."]
+        LP002["LP002: Draw the payment/shipping module seams as bounded contexts so new providers plug in cleanly."]
+        LP003["LP003: Serve buyer/admin order history from a projection instead of joining live transactional tables."]
+        LP004["LP004: Abstract carrier rate lookups behind a provider interface with an anticorruption layer."]
+        LP005["LP005: Guard the inbound payment-webhook contract with provider-state contract tests."]
+    end
     subgraph governance_org["governance.org"]
         PRT001["PRT001: PrestaShop SA"]
         DPT001["DPT001: Engineering"]
@@ -2344,53 +2436,16 @@ graph TD
         TM009["TM009: Platform Security Team"]
         TM010["TM010: Core Platform Team"]
     end
-    subgraph design_arch["design.arch"]
-        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
-        Catalog["Catalog: Product catalog — CRUD, variants, media, categories, attributes, suppliers, search indexing."]
-        CatalogService["CatalogService: REST API for product and category management."]
-        CatalogService_openapi["CatalogService.openapi"]
-        CatalogService_asyncapi["CatalogService.asyncapi"]
-        Orders["Orders: Order lifecycle — placement, state management, cancellation, refund, invoice, returns, credit slips."]
-        OrderService["OrderService: REST API for order commands and queries."]
-        OrderService_openapi["OrderService.openapi"]
-        OrderService_asyncapi["OrderService.asyncapi"]
-        Checkout["Checkout: Cart management, checkout flow, cart rules, promotions, payment orchestration."]
-        CheckoutService["CheckoutService: REST API for cart operations and payment initiation."]
-        CheckoutService_openapi["CheckoutService.openapi"]
-        CheckoutService_asyncapi["CheckoutService.asyncapi"]
-        Customers["Customers: Customer accounts, addresses, customer service messaging, titles."]
-        CustomerService["CustomerService: REST API for customer account and address management."]
-        CustomerService_openapi["CustomerService.openapi"]
-        Shipping["Shipping: Carrier configuration, shipping cost calculation, shipment tracking."]
-        ShippingService["ShippingService: REST API for carrier management and shipping cost calculation."]
-        ShippingService_openapi["ShippingService.openapi"]
-        International["International: Currencies, countries, zones, languages, tax rules — localization backbone."]
-        InternationalService["InternationalService: REST API for currency, tax, country, and language management."]
-        InternationalService_openapi["InternationalService.openapi"]
-        Content["Content: CMS pages, page categories, themes, email templates, SEO meta."]
-        ContentService["ContentService: REST API for CMS page and theme management."]
-        ContentService_openapi["ContentService.openapi"]
-        Modules["Modules: Module lifecycle, hook system, module marketplace integration."]
-        ModuleManager["ModuleManager: Module lifecycle orchestrator with hook execution pipeline."]
-        ModuleManager_openapi["ModuleManager.openapi"]
-        Admin["Admin: Employee accounts, profiles, security, API clients, configuration."]
-        AdminService["AdminService: REST API for employee, security, and configuration management."]
-        AdminService_openapi["AdminService.openapi"]
-        AdminService_security_schemes["AdminService.security_schemes"]
-        Shop["Shop: Multi-store configuration, physical stores, contacts, search, aliases."]
-        ShopService["ShopService: REST API for multi-store and shop configuration."]
-        ShopService_openapi["ShopService.openapi"]
-        ExternalApiConsumers["ExternalApiConsumers: External systems consuming PrestaShop Admin API via OAuth2."]
-        AdminApiClient["AdminApiClient: External API consumer using PrestaShop Admin REST API with OAuth2 authentication."]
-        AdminApiClient_httpClient["AdminApiClient.httpClient"]
-        AdminApiClient_security_schemes["AdminApiClient.security_schemes"]
-    end
     subgraph governance_roadmap["governance.roadmap"]
         MS001["MS001: MVP — Cart & Checkout"]
         MS002["MS002: Catalog v2 — Search & Filters"]
         MS003["MS003: Scale — Async Orders & Inventory"]
         MS004["MS004: International & Multi-Store"]
         MS005["MS005: API-First & Headless"]
+        WI001["WI001: Cart & Checkout MVP"]
+        WI002["WI002: Cart management"]
+        WI003["WI003: Payment initiation"]
+        WI010["WI010: Search & Filters"]
     end
     subgraph governance_value_stream["governance.value-stream"]
         VS001["VS001: Shop & Buy"]
@@ -2398,61 +2453,44 @@ graph TD
         VS003["VS003: Configure & Scale"]
     end
     subgraph unknown["unknown"]
-        admin_CMD001["admin.CMD001"]
-        admin_CMD013["admin.CMD013"]
-        admin_CMD021["admin.CMD021"]
-        admin_CMD024["admin.CMD024"]
-        admin_CMD019["admin.CMD019"]
-        catalog_CMD001["catalog.CMD001"]
-        catalog_EVT001["catalog.EVT001"]
-        catalog_CMD011["catalog.CMD011"]
-        catalog_EVT004["catalog.EVT004"]
-        catalog_CMD025["catalog.CMD025"]
-        catalog_EVT009["catalog.EVT009"]
-        checkout_CMD009["checkout.CMD009"]
-        checkout_CMD014["checkout.CMD014"]
-        checkout_CMD002["checkout.CMD002"]
-        checkout_CMD016["checkout.CMD016"]
-        checkout_CMD019["checkout.CMD019"]
-        content_CMD001["content.CMD001"]
-        content_CMD019["content.CMD019"]
-        content_QRY001["content.QRY001"]
-        content_CMD013["content.CMD013"]
-        content_CMD014["content.CMD014"]
-        content_CMD017["content.CMD017"]
-        customers_CMD001["customers.CMD001"]
-        customers_CMD012["customers.CMD012"]
-        customers_CMD003["customers.CMD003"]
-        customers_CMD016["customers.CMD016"]
-        customers_CMD017["customers.CMD017"]
-        international_CMD001["international.CMD001"]
-        international_CMD005["international.CMD005"]
-        international_CMD006["international.CMD006"]
-        international_CMD023["international.CMD023"]
-        international_CMD027["international.CMD027"]
-        international_CMD028["international.CMD028"]
-        orders_CMD001["orders.CMD001"]
-        orders_EVT001["orders.EVT001"]
-        orders_CMD002["orders.CMD002"]
-        orders_EVT002["orders.EVT002"]
-        orders_CMD003["orders.CMD003"]
-        orders_EVT003["orders.EVT003"]
-        orders_EVT006["orders.EVT006"]
-        orders_CMD020["orders.CMD020"]
-        orders_EVT009["orders.EVT009"]
-        orders_CMD017["orders.CMD017"]
-        orders_EVT007["orders.EVT007"]
-        orders_CMD019["orders.CMD019"]
-        orders_EVT008["orders.EVT008"]
-        orders_CMD023["orders.CMD023"]
-        orders_EVT010["orders.EVT010"]
-        orders_CMD016["orders.CMD016"]
-        shipping_CMD001["shipping.CMD001"]
-        shipping_CMD008["shipping.CMD008"]
-        shipping_CMD010["shipping.CMD010"]
-        shipping_CMD011["shipping.CMD011"]
-        shipping_CMD013["shipping.CMD013"]
-        shipping_CMD015["shipping.CMD015"]
+        admin_addEmployee["admin:addEmployee"]
+        admin_editProfile["admin:editProfile"]
+        admin_getEmployeeForEditing["admin:getEmployeeForEditing"]
+        admin_addApiClient["admin:addApiClient"]
+        catalog_addProduct["catalog:addProduct"]
+        catalog_updateProduct["catalog:updateProduct"]
+        catalog_searchProducts["catalog:searchProducts"]
+        catalog_getProductDetail["catalog:getProductDetail"]
+        catalog_productCreated["catalog:productCreated"]
+        catalog_productUpdated["catalog:productUpdated"]
+        checkout_addProductToCart["checkout:addProductToCart"]
+        checkout_removeProductFromCart["checkout:removeProductFromCart"]
+        checkout_getCartForViewing["checkout:getCartForViewing"]
+        checkout_cartProductsUpdated["checkout:cartProductsUpdated"]
+        orders_orderPlaced["orders:orderPlaced"]
+        content_addCmsPage["content:addCmsPage"]
+        content_editCmsPage["content:editCmsPage"]
+        customers_addCustomer["customers:addCustomer"]
+        customers_editCustomer["customers:editCustomer"]
+        customers_addCustomerAddress["customers:addCustomerAddress"]
+        customers_getCustomerForViewing["customers:getCustomerForViewing"]
+        international_getCurrencyForEditing["international:getCurrencyForEditing"]
+        international_getTaxRulesGroupForEditing["international:getTaxRulesGroupForEditing"]
+        international_getCountryForEditing["international:getCountryForEditing"]
+        international_getLanguageForEditing["international:getLanguageForEditing"]
+        modules_installModule["modules:installModule"]
+        modules_uninstallModule["modules:uninstallModule"]
+        modules_getModuleInfos["modules:getModuleInfos"]
+        orders_placeOrder["orders:placeOrder"]
+        orders_cancelOrder["orders:cancelOrder"]
+        orders_issueStandardRefund["orders:issueStandardRefund"]
+        orders_getOrderForViewing["orders:getOrderForViewing"]
+        orders_orderCancelled["orders:orderCancelled"]
+        orders_orderRefunded["orders:orderRefunded"]
+        orders_orderShipped["orders:orderShipped"]
+        shipping_getAvailableCarriers["shipping:getAvailableCarriers"]
+        shop_getStoreForEditing["shop:getStoreForEditing"]
+        shop_editContact["shop:editContact"]
         EmployeeList["EmployeeList"]
         EmployeeForm["EmployeeForm"]
         PermissionMatrix["PermissionMatrix"]
@@ -2492,6 +2530,10 @@ graph TD
         SearchEngineList["SearchEngineList"]
         AliasList["AliasList"]
         ContactList["ContactList"]
+        FF001["FF001"]
+        FF003["FF003"]
+        FF004["FF004"]
+        FF005["FF005"]
     end
     subgraph code["code"]
         src_Core_Domain_ApiClient_Command_AddApiClientCommand_php["src/Core/Domain/ApiClient/Command/AddApiClientCommand.php: src/Core/Domain/ApiClient/Command/AddApiClientCommand.php"]
@@ -3986,33 +4028,93 @@ graph TD
     shop_ER001 -.->|"validates"| shop_CMD001
     shop_ER002 -.->|"validates"| shop_VR002
     shop_ER002 -.->|"validates"| shop_CMD010
-    Catalog -.->|"contains"| CatalogService
-    CatalogService -.->|"provides"| CatalogService_openapi
-    CatalogService -.->|"provides"| CatalogService_asyncapi
-    Orders -.->|"contains"| OrderService
-    OrderService -.->|"provides"| OrderService_openapi
-    OrderService -.->|"provides"| OrderService_asyncapi
-    Checkout -.->|"contains"| CheckoutService
-    CheckoutService -.->|"provides"| CheckoutService_openapi
-    CheckoutService -.->|"provides"| CheckoutService_asyncapi
-    Customers -.->|"contains"| CustomerService
-    CustomerService -.->|"provides"| CustomerService_openapi
-    Shipping -.->|"contains"| ShippingService
-    ShippingService -.->|"provides"| ShippingService_openapi
-    International -.->|"contains"| InternationalService
-    InternationalService -.->|"provides"| InternationalService_openapi
-    Content -.->|"contains"| ContentService
-    ContentService -.->|"provides"| ContentService_openapi
-    Modules -.->|"contains"| ModuleManager
-    ModuleManager -.->|"provides"| ModuleManager_openapi
     Admin -.->|"contains"| AdminService
     AdminService -.->|"provides"| AdminService_openapi
     AdminService -.->|"provides"| AdminService_security_schemes
-    Shop -.->|"contains"| ShopService
-    ShopService -.->|"provides"| ShopService_openapi
+    Catalog -.->|"contains"| CatalogService
+    CatalogService -.->|"provides"| CatalogService_openapi
+    CatalogService -.->|"provides"| CatalogService_asyncapi
+    Checkout -.->|"contains"| CheckoutService
+    CheckoutService -.->|"provides"| CheckoutService_openapi
+    CheckoutService -.->|"provides"| CheckoutService_asyncapi
+    Content -.->|"contains"| ContentService
+    ContentService -.->|"provides"| ContentService_openapi
+    Customers -.->|"contains"| CustomerService
+    CustomerService -.->|"provides"| CustomerService_openapi
+    International -.->|"contains"| InternationalService
+    InternationalService -.->|"provides"| InternationalService_openapi
+    Modules -.->|"contains"| ModuleManager
+    ModuleManager -.->|"provides"| ModuleManager_openapi
+    Orders -.->|"contains"| OrderService
+    OrderService -.->|"provides"| OrderService_openapi
+    OrderService -.->|"provides"| OrderService_asyncapi
     ExternalApiConsumers -.->|"contains"| AdminApiClient
     AdminApiClient -.->|"provides"| AdminApiClient_httpClient
     AdminApiClient -.->|"provides"| AdminApiClient_security_schemes
+    Shipping -.->|"contains"| ShippingService
+    ShippingService -.->|"provides"| ShippingService_openapi
+    Shop -.->|"contains"| ShopService
+    ShopService -.->|"provides"| ShopService_openapi
+    AdminService_openapi -.->|"contract_exposes"| admin_addEmployee
+    AdminService_openapi -.->|"contract_exposes"| admin_editProfile
+    AdminService_openapi -.->|"contract_exposes"| admin_getEmployeeForEditing
+    AdminService_openapi -.->|"contract_exposes"| admin_addApiClient
+    CatalogService_openapi -.->|"contract_exposes"| catalog_addProduct
+    CatalogService_openapi -.->|"contract_exposes"| catalog_updateProduct
+    CatalogService_openapi -.->|"contract_exposes"| catalog_searchProducts
+    CatalogService_openapi -.->|"contract_exposes"| catalog_getProductDetail
+    CatalogService_asyncapi -.->|"contract_sends"| catalog_productCreated
+    CatalogService_asyncapi -.->|"contract_sends"| catalog_productUpdated
+    CheckoutService_openapi -.->|"contract_exposes"| checkout_addProductToCart
+    CheckoutService_openapi -.->|"contract_exposes"| checkout_removeProductFromCart
+    CheckoutService_openapi -.->|"contract_exposes"| checkout_getCartForViewing
+    CheckoutService_asyncapi -.->|"contract_sends"| checkout_cartProductsUpdated
+    CheckoutService_asyncapi -.->|"contract_receives"| orders_orderPlaced
+    ContentService_openapi -.->|"contract_exposes"| content_addCmsPage
+    ContentService_openapi -.->|"contract_exposes"| content_editCmsPage
+    CustomerService_openapi -.->|"contract_exposes"| customers_addCustomer
+    CustomerService_openapi -.->|"contract_exposes"| customers_editCustomer
+    CustomerService_openapi -.->|"contract_exposes"| customers_addCustomerAddress
+    CustomerService_openapi -.->|"contract_exposes"| customers_getCustomerForViewing
+    InternationalService_openapi -.->|"contract_exposes"| international_getCurrencyForEditing
+    InternationalService_openapi -.->|"contract_exposes"| international_getTaxRulesGroupForEditing
+    InternationalService_openapi -.->|"contract_exposes"| international_getCountryForEditing
+    InternationalService_openapi -.->|"contract_exposes"| international_getLanguageForEditing
+    ModuleManager_openapi -.->|"contract_exposes"| modules_installModule
+    ModuleManager_openapi -.->|"contract_exposes"| modules_uninstallModule
+    ModuleManager_openapi -.->|"contract_exposes"| modules_getModuleInfos
+    OrderService_openapi -.->|"contract_exposes"| orders_placeOrder
+    OrderService_openapi -.->|"contract_exposes"| orders_cancelOrder
+    OrderService_openapi -.->|"contract_exposes"| orders_issueStandardRefund
+    OrderService_openapi -.->|"contract_exposes"| orders_getOrderForViewing
+    OrderService_asyncapi -.->|"contract_sends"| orders_orderPlaced
+    OrderService_asyncapi -.->|"contract_sends"| orders_orderCancelled
+    OrderService_asyncapi -.->|"contract_sends"| orders_orderRefunded
+    OrderService_asyncapi -.->|"contract_sends"| orders_orderShipped
+    AdminApiClient_httpClient -.->|"contract_calls"| admin_addApiClient
+    AdminApiClient_httpClient -.->|"contract_calls"| admin_getEmployeeForEditing
+    AdminApiClient_httpClient -.->|"contract_calls"| catalog_searchProducts
+    AdminApiClient_httpClient -.->|"contract_calls"| catalog_getProductDetail
+    AdminApiClient_httpClient -.->|"contract_calls"| orders_getOrderForViewing
+    ShippingService_openapi -.->|"contract_exposes"| shipping_getAvailableCarriers
+    ShopService_openapi -.->|"contract_exposes"| shop_getStoreForEditing
+    ShopService_openapi -.->|"contract_exposes"| shop_editContact
+    Catalog -.->|"depends_on"| International
+    Catalog -.->|"depends_on"| Modules
+    Checkout -.->|"depends_on"| Catalog
+    Checkout -.->|"depends_on"| Customers
+    Checkout -.->|"depends_on"| International
+    Checkout -.->|"depends_on"| Orders
+    Content -.->|"depends_on"| International
+    Customers -.->|"depends_on"| International
+    Modules -.->|"depends_on"| Admin
+    Orders -.->|"depends_on"| Checkout
+    Orders -.->|"depends_on"| Catalog
+    Orders -.->|"depends_on"| Customers
+    Orders -.->|"depends_on"| Shipping
+    Orders -.->|"depends_on"| International
+    Shipping -.->|"depends_on"| International
+    Shop -.->|"depends_on"| International
     admin_STR001 -.->|"story_orders_operation"| admin_CMD001
     admin_STR001 -.->|"story_orders_operation"| admin_CMD013
     admin_STR002 -.->|"story_orders_operation"| admin_CMD021
@@ -4689,6 +4791,15 @@ graph TD
     MS005 -.->|"milestone_dependency"| MS003
     MS005 -.->|"milestone_deliverable"| CAP016
     MS005 -.->|"milestone_deliverable"| CAP014
+    WI001 -.->|"roadmap_realizes_decision"| D001
+    WI001 -.->|"roadmap_value_stream"| VS001
+    WI001 -.->|"work_item_milestone"| MS001
+    WI001 -.->|"work_item_child"| WI002
+    WI001 -.->|"work_item_child"| WI003
+    WI003 -.->|"work_item_dependency"| WI002
+    WI010 -.->|"roadmap_value_stream"| VS002
+    WI010 -.->|"work_item_milestone"| MS002
+    WI010 -.->|"work_item_dependency"| WI001
     catalog_R001 -.->|"risk_owner"| orders_ACT002
     catalog_R001 -.->|"risk_goal"| catalog_G001
     catalog_R002 -.->|"risk_goal"| catalog_G001
@@ -4793,6 +4904,549 @@ graph TD
     VS003 -.->|"value_stream_kpi"| modules_KPI001
     VS003 -.->|"value_stream_kpi"| shop_KPI001
     VS003 -.->|"value_stream_actor"| admin_ACT001
+    LP001 -.->|"leverage_decision"| D001
+    LP001 -.->|"leverage_fitness_function"| FF001
+    LP001 -.->|"leverage_realized_by"| WI001
+    LP001 -.->|"leverage_value_stream"| VS001
+    LP001 -.->|"leverage_capability"| CAP003
+    LP003 -.->|"leverage_depends_on"| LP001
+    LP002 -.->|"leverage_decision"| D002
+    LP002 -.->|"leverage_decision"| D003
+    LP002 -.->|"leverage_realized_by"| WI002
+    LP002 -.->|"leverage_value_stream"| VS002
+    LP002 -.->|"leverage_capability"| CAP004
+    LP004 -.->|"leverage_depends_on"| LP002
+    LP003 -.->|"leverage_decision"| D004
+    LP003 -.->|"leverage_fitness_function"| FF003
+    LP003 -.->|"leverage_realized_by"| WI003
+    LP003 -.->|"leverage_value_stream"| VS001
+    LP004 -.->|"leverage_decision"| D005
+    LP004 -.->|"leverage_value_stream"| VS003
+    LP004 -.->|"leverage_capability"| CAP006
+    LP005 -.->|"leverage_decision"| D006
+    LP005 -.->|"leverage_fitness_function"| FF004
+    LP005 -.->|"leverage_fitness_function"| FF005
+    LP005 -.->|"leverage_realized_by"| WI010
+    prestashop_IR001 -.->|"hosted_on"| prestashop_IR005
+    prestashop_IR001 -.->|"grouped_in"| prestashop_DSC003
+    prestashop_IR002 -.->|"hosted_on"| prestashop_IR005
+    prestashop_IR002 -.->|"grouped_in"| prestashop_DSC003
+    prestashop_IR003 -.->|"hosted_on"| prestashop_IR005
+    prestashop_IR003 -.->|"grouped_in"| prestashop_DSC003
+    prestashop_IR004 -.->|"hosted_on"| prestashop_IR005
+    prestashop_IR004 -.->|"connects_to"| prestashop_IR001
+    prestashop_IR004 -.->|"connects_to"| prestashop_IR002
+    prestashop_IR004 -.->|"connects_to"| prestashop_IR003
+    prestashop_IR004 -.->|"grouped_in"| prestashop_DSC002
+    prestashop_IR005 -.->|"grouped_in"| prestashop_DSC001
+    prestashop_DSC002 -.->|"nested_in"| prestashop_DSC001
+    prestashop_DSC003 -.->|"nested_in"| prestashop_DSC001
+    prestashop_BND001 -.->|"binds"| prestashop_ENV001
+    prestashop_BND001 -.->|"binds"| prestashop_IR001
+    prestashop_BND002 -.->|"binds"| prestashop_ENV002
+    prestashop_BND002 -.->|"binds"| prestashop_IR001
+    prestashop_BND003 -.->|"binds"| prestashop_ENV001
+    prestashop_BND003 -.->|"binds"| prestashop_IR002
+    prestashop_BND004 -.->|"binds"| prestashop_ENV002
+    prestashop_BND004 -.->|"binds"| prestashop_IR002
+    prestashop_BND005 -.->|"binds"| prestashop_ENV001
+    prestashop_BND005 -.->|"binds"| prestashop_IR003
+    prestashop_BND006 -.->|"binds"| prestashop_ENV002
+    prestashop_BND006 -.->|"binds"| prestashop_IR003
+    admin_CMD021 -.->|"handled_by"| Admin
+    admin_EVT014 -.->|"handled_by"| Admin
+    admin_CMD022 -.->|"handled_by"| Admin
+    admin_EVT015 -.->|"handled_by"| Admin
+    admin_CMD023 -.->|"handled_by"| Admin
+    admin_EVT016 -.->|"handled_by"| Admin
+    admin_CMD024 -.->|"handled_by"| Admin
+    admin_EVT017 -.->|"handled_by"| Admin
+    admin_QRY005 -.->|"handled_by"| Admin
+    admin_CMD025 -.->|"handled_by"| Admin
+    admin_EVT018 -.->|"handled_by"| Admin
+    admin_CMD026 -.->|"handled_by"| Admin
+    admin_EVT019 -.->|"handled_by"| Admin
+    admin_CMD027 -.->|"handled_by"| Admin
+    admin_EVT020 -.->|"handled_by"| Admin
+    admin_CMD028 -.->|"handled_by"| Admin
+    admin_QRY006 -.->|"handled_by"| Admin
+    admin_CMD029 -.->|"handled_by"| Admin
+    admin_EVT021 -.->|"handled_by"| Admin
+    admin_CMD030 -.->|"handled_by"| Admin
+    admin_EVT022 -.->|"handled_by"| Admin
+    admin_CMD031 -.->|"handled_by"| Admin
+    admin_EVT023 -.->|"handled_by"| Admin
+    admin_CMD032 -.->|"handled_by"| Admin
+    admin_CMD033 -.->|"handled_by"| Admin
+    admin_EVT024 -.->|"handled_by"| Admin
+    admin_QRY007 -.->|"handled_by"| Admin
+    admin_QRY008 -.->|"handled_by"| Admin
+    admin_QRY009 -.->|"handled_by"| Admin
+    admin_CMD034 -.->|"handled_by"| Admin
+    admin_EVT025 -.->|"handled_by"| Admin
+    admin_CMD035 -.->|"handled_by"| Admin
+    admin_EVT026 -.->|"handled_by"| Admin
+    admin_CMD001 -.->|"handled_by"| Admin
+    admin_EVT001 -.->|"handled_by"| Admin
+    admin_CMD002 -.->|"handled_by"| Admin
+    admin_EVT002 -.->|"handled_by"| Admin
+    admin_CMD003 -.->|"handled_by"| Admin
+    admin_EVT003 -.->|"handled_by"| Admin
+    admin_CMD004 -.->|"handled_by"| Admin
+    admin_EVT004 -.->|"handled_by"| Admin
+    admin_CMD005 -.->|"handled_by"| Admin
+    admin_CMD006 -.->|"handled_by"| Admin
+    admin_CMD007 -.->|"handled_by"| Admin
+    admin_EVT005 -.->|"handled_by"| Admin
+    admin_CMD008 -.->|"handled_by"| Admin
+    admin_EVT006 -.->|"handled_by"| Admin
+    admin_QRY001 -.->|"handled_by"| Admin
+    admin_QRY002 -.->|"handled_by"| Admin
+    admin_CMD009 -.->|"handled_by"| Admin
+    admin_EVT007 -.->|"handled_by"| Admin
+    admin_CMD010 -.->|"handled_by"| Admin
+    admin_EVT008 -.->|"handled_by"| Admin
+    admin_CMD011 -.->|"handled_by"| Admin
+    admin_EVT009 -.->|"handled_by"| Admin
+    admin_CMD012 -.->|"handled_by"| Admin
+    admin_QRY003 -.->|"handled_by"| Admin
+    admin_CMD013 -.->|"handled_by"| Admin
+    admin_EVT010 -.->|"handled_by"| Admin
+    admin_CMD014 -.->|"handled_by"| Admin
+    admin_EVT011 -.->|"handled_by"| Admin
+    admin_QRY004 -.->|"handled_by"| Admin
+    admin_CMD015 -.->|"handled_by"| Admin
+    admin_EVT012 -.->|"handled_by"| Admin
+    admin_CMD016 -.->|"handled_by"| Admin
+    admin_EVT013 -.->|"handled_by"| Admin
+    admin_CMD017 -.->|"handled_by"| Admin
+    admin_CMD018 -.->|"handled_by"| Admin
+    admin_CMD019 -.->|"handled_by"| Admin
+    admin_CMD020 -.->|"handled_by"| Admin
+    catalog_CMD025 -.->|"handled_by"| Catalog
+    catalog_CMD026 -.->|"handled_by"| Catalog
+    catalog_CMD027 -.->|"handled_by"| Catalog
+    catalog_CMD028 -.->|"handled_by"| Catalog
+    catalog_CMD029 -.->|"handled_by"| Catalog
+    catalog_QRY005 -.->|"handled_by"| Catalog
+    catalog_QRY006 -.->|"handled_by"| Catalog
+    catalog_EVT009 -.->|"handled_by"| Catalog
+    catalog_EVT010 -.->|"handled_by"| Catalog
+    catalog_CMD030 -.->|"handled_by"| Catalog
+    catalog_CMD031 -.->|"handled_by"| Catalog
+    catalog_CMD032 -.->|"handled_by"| Catalog
+    catalog_CMD033 -.->|"handled_by"| Catalog
+    catalog_QRY007 -.->|"handled_by"| Catalog
+    catalog_QRY008 -.->|"handled_by"| Catalog
+    catalog_CMD011 -.->|"handled_by"| Catalog
+    catalog_CMD012 -.->|"handled_by"| Catalog
+    catalog_CMD013 -.->|"handled_by"| Catalog
+    catalog_CMD014 -.->|"handled_by"| Catalog
+    catalog_CMD015 -.->|"handled_by"| Catalog
+    catalog_QRY003 -.->|"handled_by"| Catalog
+    catalog_QRY004 -.->|"handled_by"| Catalog
+    catalog_EVT004 -.->|"handled_by"| Catalog
+    catalog_EVT005 -.->|"handled_by"| Catalog
+    catalog_CMD040 -.->|"handled_by"| Catalog
+    catalog_CMD041 -.->|"handled_by"| Catalog
+    catalog_CMD016 -.->|"handled_by"| Catalog
+    catalog_CMD017 -.->|"handled_by"| Catalog
+    catalog_CMD018 -.->|"handled_by"| Catalog
+    catalog_CMD019 -.->|"handled_by"| Catalog
+    catalog_CMD020 -.->|"handled_by"| Catalog
+    catalog_EVT006 -.->|"handled_by"| Catalog
+    catalog_CMD021 -.->|"handled_by"| Catalog
+    catalog_CMD022 -.->|"handled_by"| Catalog
+    catalog_CMD023 -.->|"handled_by"| Catalog
+    catalog_CMD024 -.->|"handled_by"| Catalog
+    catalog_EVT007 -.->|"handled_by"| Catalog
+    catalog_CMD001 -.->|"handled_by"| Catalog
+    catalog_CMD002 -.->|"handled_by"| Catalog
+    catalog_CMD003 -.->|"handled_by"| Catalog
+    catalog_CMD004 -.->|"handled_by"| Catalog
+    catalog_CMD005 -.->|"handled_by"| Catalog
+    catalog_CMD006 -.->|"handled_by"| Catalog
+    catalog_CMD007 -.->|"handled_by"| Catalog
+    catalog_CMD008 -.->|"handled_by"| Catalog
+    catalog_CMD009 -.->|"handled_by"| Catalog
+    catalog_CMD010 -.->|"handled_by"| Catalog
+    catalog_QRY001 -.->|"handled_by"| Catalog
+    catalog_QRY002 -.->|"handled_by"| Catalog
+    catalog_QRY009 -.->|"handled_by"| Catalog
+    catalog_EVT001 -.->|"handled_by"| Catalog
+    catalog_EVT002 -.->|"handled_by"| Catalog
+    catalog_EVT003 -.->|"handled_by"| Catalog
+    catalog_EVT008 -.->|"handled_by"| Catalog
+    catalog_CMD034 -.->|"handled_by"| Catalog
+    catalog_CMD035 -.->|"handled_by"| Catalog
+    catalog_CMD036 -.->|"handled_by"| Catalog
+    catalog_CMD037 -.->|"handled_by"| Catalog
+    catalog_CMD038 -.->|"handled_by"| Catalog
+    catalog_CMD039 -.->|"handled_by"| Catalog
+    catalog_QRY010 -.->|"handled_by"| Catalog
+    catalog_QRY011 -.->|"handled_by"| Catalog
+    checkout_CMD001 -.->|"handled_by"| Checkout
+    checkout_CMD002 -.->|"handled_by"| Checkout
+    checkout_CMD003 -.->|"handled_by"| Checkout
+    checkout_CMD004 -.->|"handled_by"| Checkout
+    checkout_CMD005 -.->|"handled_by"| Checkout
+    checkout_CMD006 -.->|"handled_by"| Checkout
+    checkout_CMD007 -.->|"handled_by"| Checkout
+    checkout_CMD008 -.->|"handled_by"| Checkout
+    checkout_EVT001 -.->|"handled_by"| Checkout
+    checkout_EVT002 -.->|"handled_by"| Checkout
+    checkout_EVT003 -.->|"handled_by"| Checkout
+    checkout_QRY001 -.->|"handled_by"| Checkout
+    checkout_QRY002 -.->|"handled_by"| Checkout
+    checkout_QRY003 -.->|"handled_by"| Checkout
+    checkout_CMD009 -.->|"handled_by"| Checkout
+    checkout_CMD010 -.->|"handled_by"| Checkout
+    checkout_CMD011 -.->|"handled_by"| Checkout
+    checkout_CMD012 -.->|"handled_by"| Checkout
+    checkout_CMD013 -.->|"handled_by"| Checkout
+    checkout_EVT004 -.->|"handled_by"| Checkout
+    checkout_CMD014 -.->|"handled_by"| Checkout
+    checkout_CMD015 -.->|"handled_by"| Checkout
+    checkout_QRY004 -.->|"handled_by"| Checkout
+    checkout_EVT005 -.->|"handled_by"| Checkout
+    checkout_EVT006 -.->|"handled_by"| Checkout
+    checkout_CMD016 -.->|"handled_by"| Checkout
+    checkout_CMD017 -.->|"handled_by"| Checkout
+    checkout_CMD018 -.->|"handled_by"| Checkout
+    checkout_CMD019 -.->|"handled_by"| Checkout
+    checkout_CMD020 -.->|"handled_by"| Checkout
+    checkout_QRY005 -.->|"handled_by"| Checkout
+    checkout_QRY006 -.->|"handled_by"| Checkout
+    checkout_EVT007 -.->|"handled_by"| Checkout
+    checkout_EVT008 -.->|"handled_by"| Checkout
+    checkout_EVT009 -.->|"handled_by"| Checkout
+    checkout_CMD021 -.->|"handled_by"| Checkout
+    checkout_CMD022 -.->|"handled_by"| Checkout
+    checkout_CMD023 -.->|"handled_by"| Checkout
+    checkout_QRY007 -.->|"handled_by"| Checkout
+    checkout_QRY008 -.->|"handled_by"| Checkout
+    checkout_EVT010 -.->|"handled_by"| Checkout
+    checkout_EVT011 -.->|"handled_by"| Checkout
+    checkout_EVT012 -.->|"handled_by"| Checkout
+    content_CMD001 -.->|"handled_by"| Content
+    content_CMD002 -.->|"handled_by"| Content
+    content_CMD003 -.->|"handled_by"| Content
+    content_CMD004 -.->|"handled_by"| Content
+    content_CMD005 -.->|"handled_by"| Content
+    content_CMD006 -.->|"handled_by"| Content
+    content_EVT001 -.->|"handled_by"| Content
+    content_EVT002 -.->|"handled_by"| Content
+    content_EVT003 -.->|"handled_by"| Content
+    content_EVT004 -.->|"handled_by"| Content
+    content_QRY001 -.->|"handled_by"| Content
+    content_QRY002 -.->|"handled_by"| Content
+    content_CMD007 -.->|"handled_by"| Content
+    content_CMD008 -.->|"handled_by"| Content
+    content_CMD009 -.->|"handled_by"| Content
+    content_CMD010 -.->|"handled_by"| Content
+    content_CMD011 -.->|"handled_by"| Content
+    content_CMD012 -.->|"handled_by"| Content
+    content_EVT005 -.->|"handled_by"| Content
+    content_EVT006 -.->|"handled_by"| Content
+    content_EVT007 -.->|"handled_by"| Content
+    content_EVT008 -.->|"handled_by"| Content
+    content_QRY003 -.->|"handled_by"| Content
+    content_QRY004 -.->|"handled_by"| Content
+    content_QRY005 -.->|"handled_by"| Content
+    content_QRY006 -.->|"handled_by"| Content
+    content_CMD019 -.->|"handled_by"| Content
+    content_CMD020 -.->|"handled_by"| Content
+    content_EVT015 -.->|"handled_by"| Content
+    content_EVT016 -.->|"handled_by"| Content
+    content_QRY007 -.->|"handled_by"| Content
+    content_QRY008 -.->|"handled_by"| Content
+    content_CMD013 -.->|"handled_by"| Content
+    content_CMD014 -.->|"handled_by"| Content
+    content_CMD015 -.->|"handled_by"| Content
+    content_CMD016 -.->|"handled_by"| Content
+    content_CMD017 -.->|"handled_by"| Content
+    content_CMD018 -.->|"handled_by"| Content
+    content_EVT009 -.->|"handled_by"| Content
+    content_EVT010 -.->|"handled_by"| Content
+    content_EVT011 -.->|"handled_by"| Content
+    content_EVT012 -.->|"handled_by"| Content
+    content_EVT013 -.->|"handled_by"| Content
+    content_EVT014 -.->|"handled_by"| Content
+    customers_CMD012 -.->|"handled_by"| Customers
+    customers_CMD013 -.->|"handled_by"| Customers
+    customers_CMD014 -.->|"handled_by"| Customers
+    customers_CMD015 -.->|"handled_by"| Customers
+    customers_QRY009 -.->|"handled_by"| Customers
+    customers_QRY010 -.->|"handled_by"| Customers
+    customers_EVT007 -.->|"handled_by"| Customers
+    customers_EVT008 -.->|"handled_by"| Customers
+    customers_EVT009 -.->|"handled_by"| Customers
+    customers_CMD001 -.->|"handled_by"| Customers
+    customers_CMD002 -.->|"handled_by"| Customers
+    customers_CMD003 -.->|"handled_by"| Customers
+    customers_CMD004 -.->|"handled_by"| Customers
+    customers_CMD005 -.->|"handled_by"| Customers
+    customers_CMD006 -.->|"handled_by"| Customers
+    customers_CMD007 -.->|"handled_by"| Customers
+    customers_CMD008 -.->|"handled_by"| Customers
+    customers_EVT001 -.->|"handled_by"| Customers
+    customers_EVT002 -.->|"handled_by"| Customers
+    customers_EVT003 -.->|"handled_by"| Customers
+    customers_EVT004 -.->|"handled_by"| Customers
+    customers_QRY001 -.->|"handled_by"| Customers
+    customers_QRY002 -.->|"handled_by"| Customers
+    customers_QRY003 -.->|"handled_by"| Customers
+    customers_QRY004 -.->|"handled_by"| Customers
+    customers_QRY005 -.->|"handled_by"| Customers
+    customers_QRY006 -.->|"handled_by"| Customers
+    customers_QRY007 -.->|"handled_by"| Customers
+    customers_CMD009 -.->|"handled_by"| Customers
+    customers_CMD010 -.->|"handled_by"| Customers
+    customers_CMD011 -.->|"handled_by"| Customers
+    customers_QRY008 -.->|"handled_by"| Customers
+    customers_EVT005 -.->|"handled_by"| Customers
+    customers_EVT006 -.->|"handled_by"| Customers
+    customers_CMD016 -.->|"handled_by"| Customers
+    customers_CMD017 -.->|"handled_by"| Customers
+    customers_CMD018 -.->|"handled_by"| Customers
+    customers_CMD019 -.->|"handled_by"| Customers
+    customers_QRY011 -.->|"handled_by"| Customers
+    customers_QRY012 -.->|"handled_by"| Customers
+    customers_EVT010 -.->|"handled_by"| Customers
+    customers_EVT011 -.->|"handled_by"| Customers
+    customers_EVT012 -.->|"handled_by"| Customers
+    customers_CMD020 -.->|"handled_by"| Customers
+    customers_CMD021 -.->|"handled_by"| Customers
+    customers_CMD022 -.->|"handled_by"| Customers
+    customers_QRY013 -.->|"handled_by"| Customers
+    customers_EVT013 -.->|"handled_by"| Customers
+    customers_EVT014 -.->|"handled_by"| Customers
+    international_CMD001 -.->|"handled_by"| International
+    international_CMD002 -.->|"handled_by"| International
+    international_CMD003 -.->|"handled_by"| International
+    international_CMD004 -.->|"handled_by"| International
+    international_CMD005 -.->|"handled_by"| International
+    international_CMD006 -.->|"handled_by"| International
+    international_EVT001 -.->|"handled_by"| International
+    international_EVT002 -.->|"handled_by"| International
+    international_EVT003 -.->|"handled_by"| International
+    international_EVT004 -.->|"handled_by"| International
+    international_EVT005 -.->|"handled_by"| International
+    international_EVT006 -.->|"handled_by"| International
+    international_QRY001 -.->|"handled_by"| International
+    international_QRY002 -.->|"handled_by"| International
+    international_QRY003 -.->|"handled_by"| International
+    international_CMD011 -.->|"handled_by"| International
+    international_CMD012 -.->|"handled_by"| International
+    international_CMD013 -.->|"handled_by"| International
+    international_CMD014 -.->|"handled_by"| International
+    international_CMD015 -.->|"handled_by"| International
+    international_CMD016 -.->|"handled_by"| International
+    international_CMD017 -.->|"handled_by"| International
+    international_CMD018 -.->|"handled_by"| International
+    international_CMD019 -.->|"handled_by"| International
+    international_CMD020 -.->|"handled_by"| International
+    international_CMD021 -.->|"handled_by"| International
+    international_CMD022 -.->|"handled_by"| International
+    international_EVT011 -.->|"handled_by"| International
+    international_EVT012 -.->|"handled_by"| International
+    international_EVT013 -.->|"handled_by"| International
+    international_EVT014 -.->|"handled_by"| International
+    international_EVT015 -.->|"handled_by"| International
+    international_EVT016 -.->|"handled_by"| International
+    international_EVT017 -.->|"handled_by"| International
+    international_EVT018 -.->|"handled_by"| International
+    international_EVT019 -.->|"handled_by"| International
+    international_EVT020 -.->|"handled_by"| International
+    international_EVT021 -.->|"handled_by"| International
+    international_EVT022 -.->|"handled_by"| International
+    international_QRY005 -.->|"handled_by"| International
+    international_QRY006 -.->|"handled_by"| International
+    international_QRY007 -.->|"handled_by"| International
+    international_QRY008 -.->|"handled_by"| International
+    international_CMD007 -.->|"handled_by"| International
+    international_CMD008 -.->|"handled_by"| International
+    international_CMD009 -.->|"handled_by"| International
+    international_CMD010 -.->|"handled_by"| International
+    international_EVT007 -.->|"handled_by"| International
+    international_EVT008 -.->|"handled_by"| International
+    international_EVT009 -.->|"handled_by"| International
+    international_EVT010 -.->|"handled_by"| International
+    international_QRY004 -.->|"handled_by"| International
+    international_CMD023 -.->|"handled_by"| International
+    international_CMD024 -.->|"handled_by"| International
+    international_CMD025 -.->|"handled_by"| International
+    international_CMD026 -.->|"handled_by"| International
+    international_CMD027 -.->|"handled_by"| International
+    international_CMD028 -.->|"handled_by"| International
+    international_CMD029 -.->|"handled_by"| International
+    international_CMD030 -.->|"handled_by"| International
+    international_EVT023 -.->|"handled_by"| International
+    international_EVT024 -.->|"handled_by"| International
+    international_EVT025 -.->|"handled_by"| International
+    international_EVT026 -.->|"handled_by"| International
+    international_EVT027 -.->|"handled_by"| International
+    international_EVT028 -.->|"handled_by"| International
+    international_EVT029 -.->|"handled_by"| International
+    international_EVT030 -.->|"handled_by"| International
+    international_QRY009 -.->|"handled_by"| International
+    international_QRY010 -.->|"handled_by"| International
+    modules_CMD001 -.->|"handled_by"| Modules
+    modules_CMD002 -.->|"handled_by"| Modules
+    modules_CMD003 -.->|"handled_by"| Modules
+    modules_CMD004 -.->|"handled_by"| Modules
+    modules_CMD005 -.->|"handled_by"| Modules
+    modules_CMD006 -.->|"handled_by"| Modules
+    modules_CMD007 -.->|"handled_by"| Modules
+    modules_CMD008 -.->|"handled_by"| Modules
+    modules_EVT001 -.->|"handled_by"| Modules
+    modules_EVT002 -.->|"handled_by"| Modules
+    modules_EVT003 -.->|"handled_by"| Modules
+    modules_EVT004 -.->|"handled_by"| Modules
+    modules_EVT005 -.->|"handled_by"| Modules
+    modules_EVT006 -.->|"handled_by"| Modules
+    modules_QRY001 -.->|"handled_by"| Modules
+    modules_CMD009 -.->|"handled_by"| Modules
+    modules_EVT007 -.->|"handled_by"| Modules
+    modules_QRY002 -.->|"handled_by"| Modules
+    modules_QRY003 -.->|"handled_by"| Modules
+    orders_CMD017 -.->|"handled_by"| Orders
+    orders_CMD018 -.->|"handled_by"| Orders
+    orders_CMD019 -.->|"handled_by"| Orders
+    orders_EVT007 -.->|"handled_by"| Orders
+    orders_EVT008 -.->|"handled_by"| Orders
+    orders_CMD024 -.->|"handled_by"| Orders
+    orders_CMD025 -.->|"handled_by"| Orders
+    orders_CMD026 -.->|"handled_by"| Orders
+    orders_CMD027 -.->|"handled_by"| Orders
+    orders_CMD028 -.->|"handled_by"| Orders
+    orders_CMD029 -.->|"handled_by"| Orders
+    orders_CMD030 -.->|"handled_by"| Orders
+    orders_CMD031 -.->|"handled_by"| Orders
+    orders_CMD032 -.->|"handled_by"| Orders
+    orders_CMD033 -.->|"handled_by"| Orders
+    orders_CMD034 -.->|"handled_by"| Orders
+    orders_CMD035 -.->|"handled_by"| Orders
+    orders_CMD036 -.->|"handled_by"| Orders
+    orders_QRY005 -.->|"handled_by"| Orders
+    orders_QRY006 -.->|"handled_by"| Orders
+    orders_CMD001 -.->|"handled_by"| Orders
+    orders_CMD004 -.->|"handled_by"| Orders
+    orders_CMD002 -.->|"handled_by"| Orders
+    orders_CMD005 -.->|"handled_by"| Orders
+    orders_CMD006 -.->|"handled_by"| Orders
+    orders_CMD007 -.->|"handled_by"| Orders
+    orders_CMD008 -.->|"handled_by"| Orders
+    orders_CMD009 -.->|"handled_by"| Orders
+    orders_CMD010 -.->|"handled_by"| Orders
+    orders_CMD011 -.->|"handled_by"| Orders
+    orders_CMD012 -.->|"handled_by"| Orders
+    orders_CMD013 -.->|"handled_by"| Orders
+    orders_CMD014 -.->|"handled_by"| Orders
+    orders_EVT001 -.->|"handled_by"| Orders
+    orders_EVT002 -.->|"handled_by"| Orders
+    orders_EVT004 -.->|"handled_by"| Orders
+    orders_EVT005 -.->|"handled_by"| Orders
+    orders_QRY001 -.->|"handled_by"| Orders
+    orders_QRY002 -.->|"handled_by"| Orders
+    orders_QRY003 -.->|"handled_by"| Orders
+    orders_CMD020 -.->|"handled_by"| Orders
+    orders_CMD021 -.->|"handled_by"| Orders
+    orders_CMD022 -.->|"handled_by"| Orders
+    orders_EVT009 -.->|"handled_by"| Orders
+    orders_CMD003 -.->|"handled_by"| Orders
+    orders_CMD015 -.->|"handled_by"| Orders
+    orders_CMD016 -.->|"handled_by"| Orders
+    orders_EVT003 -.->|"handled_by"| Orders
+    orders_EVT006 -.->|"handled_by"| Orders
+    orders_CMD023 -.->|"handled_by"| Orders
+    orders_EVT010 -.->|"handled_by"| Orders
+    orders_QRY004 -.->|"handled_by"| Orders
+    shipping_CMD001 -.->|"handled_by"| Shipping
+    shipping_CMD002 -.->|"handled_by"| Shipping
+    shipping_CMD003 -.->|"handled_by"| Shipping
+    shipping_CMD004 -.->|"handled_by"| Shipping
+    shipping_CMD005 -.->|"handled_by"| Shipping
+    shipping_CMD006 -.->|"handled_by"| Shipping
+    shipping_CMD007 -.->|"handled_by"| Shipping
+    shipping_CMD008 -.->|"handled_by"| Shipping
+    shipping_CMD009 -.->|"handled_by"| Shipping
+    shipping_CMD010 -.->|"handled_by"| Shipping
+    shipping_EVT001 -.->|"handled_by"| Shipping
+    shipping_EVT002 -.->|"handled_by"| Shipping
+    shipping_EVT003 -.->|"handled_by"| Shipping
+    shipping_EVT004 -.->|"handled_by"| Shipping
+    shipping_EVT005 -.->|"handled_by"| Shipping
+    shipping_EVT006 -.->|"handled_by"| Shipping
+    shipping_EVT007 -.->|"handled_by"| Shipping
+    shipping_EVT008 -.->|"handled_by"| Shipping
+    shipping_QRY001 -.->|"handled_by"| Shipping
+    shipping_QRY002 -.->|"handled_by"| Shipping
+    shipping_QRY003 -.->|"handled_by"| Shipping
+    shipping_QRY004 -.->|"handled_by"| Shipping
+    shipping_CMD011 -.->|"handled_by"| Shipping
+    shipping_CMD012 -.->|"handled_by"| Shipping
+    shipping_CMD013 -.->|"handled_by"| Shipping
+    shipping_CMD014 -.->|"handled_by"| Shipping
+    shipping_CMD015 -.->|"handled_by"| Shipping
+    shipping_CMD016 -.->|"handled_by"| Shipping
+    shipping_CMD017 -.->|"handled_by"| Shipping
+    shipping_EVT009 -.->|"handled_by"| Shipping
+    shipping_EVT010 -.->|"handled_by"| Shipping
+    shipping_EVT011 -.->|"handled_by"| Shipping
+    shipping_EVT012 -.->|"handled_by"| Shipping
+    shipping_EVT013 -.->|"handled_by"| Shipping
+    shipping_EVT014 -.->|"handled_by"| Shipping
+    shipping_EVT015 -.->|"handled_by"| Shipping
+    shipping_QRY005 -.->|"handled_by"| Shipping
+    shipping_QRY006 -.->|"handled_by"| Shipping
+    shipping_QRY007 -.->|"handled_by"| Shipping
+    shipping_QRY008 -.->|"handled_by"| Shipping
+    shipping_QRY009 -.->|"handled_by"| Shipping
+    shipping_QRY010 -.->|"handled_by"| Shipping
+    shipping_QRY011 -.->|"handled_by"| Shipping
+    shop_CMD001 -.->|"handled_by"| Shop
+    shop_EVT001 -.->|"handled_by"| Shop
+    shop_QRY001 -.->|"handled_by"| Shop
+    shop_QRY002 -.->|"handled_by"| Shop
+    shop_CMD002 -.->|"handled_by"| Shop
+    shop_EVT002 -.->|"handled_by"| Shop
+    shop_CMD003 -.->|"handled_by"| Shop
+    shop_EVT003 -.->|"handled_by"| Shop
+    shop_CMD004 -.->|"handled_by"| Shop
+    shop_CMD005 -.->|"handled_by"| Shop
+    shop_QRY003 -.->|"handled_by"| Shop
+    shop_CMD006 -.->|"handled_by"| Shop
+    shop_EVT004 -.->|"handled_by"| Shop
+    shop_CMD007 -.->|"handled_by"| Shop
+    shop_EVT005 -.->|"handled_by"| Shop
+    shop_CMD008 -.->|"handled_by"| Shop
+    shop_EVT006 -.->|"handled_by"| Shop
+    shop_CMD009 -.->|"handled_by"| Shop
+    shop_QRY004 -.->|"handled_by"| Shop
+    shop_CMD010 -.->|"handled_by"| Shop
+    shop_EVT007 -.->|"handled_by"| Shop
+    shop_CMD011 -.->|"handled_by"| Shop
+    shop_EVT008 -.->|"handled_by"| Shop
+    shop_CMD012 -.->|"handled_by"| Shop
+    shop_EVT009 -.->|"handled_by"| Shop
+    shop_CMD013 -.->|"handled_by"| Shop
+    shop_QRY005 -.->|"handled_by"| Shop
+    shop_QRY006 -.->|"handled_by"| Shop
+    shop_QRY007 -.->|"handled_by"| Shop
+    shop_CMD014 -.->|"handled_by"| Shop
+    shop_EVT010 -.->|"handled_by"| Shop
+    shop_CMD015 -.->|"handled_by"| Shop
+    shop_EVT011 -.->|"handled_by"| Shop
+    shop_CMD016 -.->|"handled_by"| Shop
+    shop_EVT012 -.->|"handled_by"| Shop
+    shop_QRY008 -.->|"handled_by"| Shop
+    shop_CMD017 -.->|"handled_by"| Shop
+    shop_EVT013 -.->|"handled_by"| Shop
+    shop_QRY009 -.->|"handled_by"| Shop
+    shop_CMD018 -.->|"handled_by"| Shop
+    shop_EVT014 -.->|"handled_by"| Shop
+    shop_QRY010 -.->|"handled_by"| Shop
     admin_CN005 -.->|"code_ref"| src_Core_Domain_ApiClient_Command_AddApiClientCommand_php
     admin_CN005 -.->|"code_ref"| src_Core_Domain_ApiClient_Command_ForceApiClientSecretCommand_php
     admin_CN005 -.->|"code_ref"| src_Core_Domain_ApiClient_Command_GenerateApiClientSecretCommand_php
@@ -5490,7 +6144,7 @@ graph TD
 
 ## Entity Catalog
 
-**2050 entities** across 44 types.
+**2072 entities** across 50 types.
 
 | ID | Type | Name | Layer | Source |
 |----|------|------|-------|--------|
@@ -5551,6 +6205,12 @@ graph TD
 | orders.A002 | Assumption | Stripe and PayPal modules will adopt the new Cart Price API within 6 months | governance.motivation | orders/motivation.yaml |
 | orders.A003 | Assumption | EU VAT rates will not change more than twice per year | governance.motivation | orders/motivation.yaml |
 | shop.A001 | Assumption | MySQL/MariaDB is the only supported RDBMS | governance.motivation | shop/motivation.yaml |
+| prestashop.BND001 | Binding | Production MySQL via the Bitnami MySQL chart (in-cluster StatefulSet). | design.infrastructure | infrastructure.yaml |
+| prestashop.BND002 | Binding | Staging MySQL — same chart, smaller size tier. | design.infrastructure | infrastructure.yaml |
+| prestashop.BND003 | Binding | Production Redis via the Bitnami Redis chart. | design.infrastructure | infrastructure.yaml |
+| prestashop.BND004 | Binding | Staging Redis — same chart, smaller size tier. | design.infrastructure | infrastructure.yaml |
+| prestashop.BND005 | Binding | Production MinIO S3-compatible object store (distributed mode). | design.infrastructure | infrastructure.yaml |
+| prestashop.BND006 | Binding | Staging MinIO — standalone (single-node) mode. | design.infrastructure | infrastructure.yaml |
 | CAP001 | Capability | Order Management | governance.capability | shop-and-buy.capability.yaml |
 | CAP002 | Capability | Cart Calculation | governance.capability | shop-and-buy.capability.yaml |
 | CAP003 | Capability | Checkout Flow | governance.capability | shop-and-buy.capability.yaml |
@@ -6167,33 +6827,33 @@ graph TD
 | shop.CN006 | Concept | Contact | design.concepts | shop/concepts.yaml |
 | shop.CN007 | Concept | Notification | design.concepts | shop/concepts.yaml |
 | shop.CN008 | Concept | ShowcaseCard | design.concepts | shop/concepts.yaml |
-| Admin | Context | Employee accounts, profiles, security, API clients, configuration. | design.arch | prestashop.arch.yaml |
-| Catalog | Context | Product catalog — CRUD, variants, media, categories, attributes, suppliers, search indexing. | design.arch | prestashop.arch.yaml |
-| Checkout | Context | Cart management, checkout flow, cart rules, promotions, payment orchestration. | design.arch | prestashop.arch.yaml |
-| Content | Context | CMS pages, page categories, themes, email templates, SEO meta. | design.arch | prestashop.arch.yaml |
-| Customers | Context | Customer accounts, addresses, customer service messaging, titles. | design.arch | prestashop.arch.yaml |
+| Admin | Context | Employee accounts, profiles, security, API clients, configuration. | design.arch | admin/arch.yaml |
+| Catalog | Context | Product catalog — CRUD, variants, media, categories, attributes, suppliers, search indexing. | design.arch | catalog/arch.yaml |
+| Checkout | Context | Cart management, checkout flow, cart rules, promotions, payment orchestration. | design.arch | checkout/arch.yaml |
+| Content | Context | CMS pages, page categories, themes, email templates, SEO meta. | design.arch | content/arch.yaml |
+| Customers | Context | Customer accounts, addresses, customer service messaging, titles. | design.arch | customers/arch.yaml |
 | ExternalApiConsumers | Context | External systems consuming PrestaShop Admin API via OAuth2. | design.arch | prestashop.arch.yaml |
-| International | Context | Currencies, countries, zones, languages, tax rules — localization backbone. | design.arch | prestashop.arch.yaml |
-| Modules | Context | Module lifecycle, hook system, module marketplace integration. | design.arch | prestashop.arch.yaml |
-| Orders | Context | Order lifecycle — placement, state management, cancellation, refund, invoice, returns, credit slips. | design.arch | prestashop.arch.yaml |
-| Shipping | Context | Carrier configuration, shipping cost calculation, shipment tracking. | design.arch | prestashop.arch.yaml |
-| Shop | Context | Multi-store configuration, physical stores, contacts, search, aliases. | design.arch | prestashop.arch.yaml |
+| International | Context | Currencies, countries, zones, languages, tax rules — localization backbone. | design.arch | international/arch.yaml |
+| Modules | Context | Module lifecycle, hook system, module marketplace integration. | design.arch | modules/arch.yaml |
+| Orders | Context | Order lifecycle — placement, state management, cancellation, refund, invoice, returns, credit slips. | design.arch | orders/arch.yaml |
+| Shipping | Context | Carrier configuration, shipping cost calculation, shipment tracking. | design.arch | shipping/arch.yaml |
+| Shop | Context | Multi-store configuration, physical stores, contacts, search, aliases. | design.arch | shop/arch.yaml |
 | AdminApiClient.httpClient | Contract |  | design.arch | prestashop.arch.yaml |
 | AdminApiClient.security_schemes | Contract |  | design.arch | prestashop.arch.yaml |
-| AdminService.openapi | Contract |  | design.arch | prestashop.arch.yaml |
-| AdminService.security_schemes | Contract |  | design.arch | prestashop.arch.yaml |
-| CatalogService.asyncapi | Contract |  | design.arch | prestashop.arch.yaml |
-| CatalogService.openapi | Contract |  | design.arch | prestashop.arch.yaml |
-| CheckoutService.asyncapi | Contract |  | design.arch | prestashop.arch.yaml |
-| CheckoutService.openapi | Contract |  | design.arch | prestashop.arch.yaml |
-| ContentService.openapi | Contract |  | design.arch | prestashop.arch.yaml |
-| CustomerService.openapi | Contract |  | design.arch | prestashop.arch.yaml |
-| InternationalService.openapi | Contract |  | design.arch | prestashop.arch.yaml |
-| ModuleManager.openapi | Contract |  | design.arch | prestashop.arch.yaml |
-| OrderService.asyncapi | Contract |  | design.arch | prestashop.arch.yaml |
-| OrderService.openapi | Contract |  | design.arch | prestashop.arch.yaml |
-| ShippingService.openapi | Contract |  | design.arch | prestashop.arch.yaml |
-| ShopService.openapi | Contract |  | design.arch | prestashop.arch.yaml |
+| AdminService.openapi | Contract |  | design.arch | admin/arch.yaml |
+| AdminService.security_schemes | Contract |  | design.arch | admin/arch.yaml |
+| CatalogService.asyncapi | Contract |  | design.arch | catalog/arch.yaml |
+| CatalogService.openapi | Contract |  | design.arch | catalog/arch.yaml |
+| CheckoutService.asyncapi | Contract |  | design.arch | checkout/arch.yaml |
+| CheckoutService.openapi | Contract |  | design.arch | checkout/arch.yaml |
+| ContentService.openapi | Contract |  | design.arch | content/arch.yaml |
+| CustomerService.openapi | Contract |  | design.arch | customers/arch.yaml |
+| InternationalService.openapi | Contract |  | design.arch | international/arch.yaml |
+| ModuleManager.openapi | Contract |  | design.arch | modules/arch.yaml |
+| OrderService.asyncapi | Contract |  | design.arch | orders/arch.yaml |
+| OrderService.openapi | Contract |  | design.arch | orders/arch.yaml |
+| ShippingService.openapi | Contract |  | design.arch | shipping/arch.yaml |
+| ShopService.openapi | Contract |  | design.arch | shop/arch.yaml |
 | D001 | Decision | Use domain events to coordinate order state changes across services. | governance.decisions | decisions.yaml |
 | D002 | Decision | Use Elasticsearch as read-optimized search index instead of MySQL LIKE queries. | governance.decisions | decisions.yaml |
 | D003 | Decision | Delegate all payment card handling to certified gateway modules (Stripe, PayPal, Mollie). | governance.decisions | decisions.yaml |
@@ -6205,6 +6865,9 @@ graph TD
 | DPT001 | Department | Engineering | governance.org | organization.yaml |
 | DPT002 | Department | Product & Design | governance.org | organization.yaml |
 | DPT003 | Department | Platform & Ecosystem | governance.org | organization.yaml |
+| prestashop.DSC001 | DeploymentScope | PrestaShop Cluster | design.infrastructure | infrastructure.yaml |
+| prestashop.DSC002 | DeploymentScope | prestashop-app | design.infrastructure | infrastructure.yaml |
+| prestashop.DSC003 | DeploymentScope | prestashop-data | design.infrastructure | infrastructure.yaml |
 | checkout.DR001 | DerivationRule | Cart total derivation | design.rules | checkout/rules.yaml |
 | orders.DR001 | DerivationRule | Estimated delivery from shipping method | design.rules | orders/rules.yaml |
 | admin.EN001 | Enumeration | PermissionLevel | design.concepts | admin/identity.concepts.yaml |
@@ -6227,6 +6890,8 @@ graph TD
 | orders.EN002 | Enumeration | PaymentMethod | design.concepts | orders/order.concepts.yaml |
 | shipping.EN001 | Enumeration | ShippingMethod | design.concepts | shipping/carrier.concepts.yaml |
 | shipping.EN002 | Enumeration | OutOfRangeBehavior | design.concepts | shipping/carrier.concepts.yaml |
+| prestashop.ENV001 | Environment | production | design.infrastructure | infrastructure.yaml |
+| prestashop.ENV002 | Environment | staging | design.infrastructure | infrastructure.yaml |
 | orders.EQ001 | EquivalenceRule | Order total equals sum of line totals | design.rules | orders/rules.yaml |
 | admin.ERR001 | Error | EmployeeNotFound | design.domain | admin/identity.domain.yaml |
 | admin.ERR002 | Error | ProfileNotFound | design.domain | admin/identity.domain.yaml |
@@ -6334,6 +6999,11 @@ graph TD
 | shop.G001 | Goal | Store branding consistency | governance.motivation | shop/motivation.yaml |
 | shop.G002 | Goal | Search alias discoverability | governance.motivation | shop/motivation.yaml |
 | shop.G003 | Goal | SEO referrer analytics | governance.motivation | shop/motivation.yaml |
+| prestashop.IR001 | InfraResource | Single shared MySQL/MariaDB relational database for the whole monolith. | design.infrastructure | infrastructure.yaml |
+| prestashop.IR002 | InfraResource | In-memory cache for sessions, page cache, and query results. | design.infrastructure | infrastructure.yaml |
+| prestashop.IR003 | InfraResource | S3-compatible object store for product images, attachments, and virtual files. | design.infrastructure | infrastructure.yaml |
+| prestashop.IR004 | InfraResource | The PrestaShop PHP monolith workload (web + admin + API). | design.infrastructure | infrastructure.yaml |
+| prestashop.IR005 | InfraResource | The Kubernetes cluster hosting all PrestaShop workloads. | design.infrastructure | infrastructure.yaml |
 | admin.INQ001 | Inquiry | API rate limiting gap | governance.motivation | admin/motivation.yaml |
 | admin.INQ002 | Inquiry | Legacy configuration CQRS gap | governance.motivation | admin/motivation.yaml |
 | catalog.INQ001 | Inquiry | GraphQL for headless catalog | governance.motivation | catalog/motivation.yaml |
@@ -6380,6 +7050,11 @@ graph TD
 | shipping.KPI003 | KPI | Shipment Fulfillment Rate | design.quality | shipping/quality.yaml |
 | shop.KPI001 | KPI | Search Index Freshness | design.quality | shop/quality.yaml |
 | shop.KPI002 | KPI | Search Alias Coverage | design.quality | shop/quality.yaml |
+| LP001 | LeveragePoint | Move fulfillment, email, and webhooks off the request thread so checkout stays responsive under load. | governance.leverage | leverage.yaml |
+| LP002 | LeveragePoint | Draw the payment/shipping module seams as bounded contexts so new providers plug in cleanly. | governance.leverage | leverage.yaml |
+| LP003 | LeveragePoint | Serve buyer/admin order history from a projection instead of joining live transactional tables. | governance.leverage | leverage.yaml |
+| LP004 | LeveragePoint | Abstract carrier rate lookups behind a provider interface with an anticorruption layer. | governance.leverage | leverage.yaml |
+| LP005 | LeveragePoint | Guard the inbound payment-webhook contract with provider-state contract tests. | governance.leverage | leverage.yaml |
 | orders.MT001 | Metric | Order Processing Latency | design.quality | orders/quality.yaml |
 | orders.MT002 | Metric | Refund Processing Time | design.quality | orders/quality.yaml |
 | MS001 | Milestone | MVP — Cart & Checkout | governance.roadmap | roadmap.yaml |
@@ -6387,48 +7062,41 @@ graph TD
 | MS003 | Milestone | Scale — Async Orders & Inventory | governance.roadmap | roadmap.yaml |
 | MS004 | Milestone | International & Multi-Store | governance.roadmap | roadmap.yaml |
 | MS005 | Milestone | API-First & Headless | governance.roadmap | roadmap.yaml |
-| admin.CMD001 | Missing |  | unknown |  |
-| admin.CMD013 | Missing |  | unknown |  |
-| admin.CMD019 | Missing |  | unknown |  |
-| admin.CMD021 | Missing |  | unknown |  |
-| admin.CMD024 | Missing |  | unknown |  |
+| admin:addApiClient | Missing |  | unknown |  |
+| admin:addEmployee | Missing |  | unknown |  |
+| admin:editProfile | Missing |  | unknown |  |
+| admin:getEmployeeForEditing | Missing |  | unknown |  |
 | AliasList | Missing |  | unknown |  |
 | ApiClientList | Missing |  | unknown |  |
 | CarrierForEditing | Missing |  | unknown |  |
 | CarrierList | Missing |  | unknown |  |
 | CartForViewing | Missing |  | unknown |  |
-| catalog.CMD001 | Missing |  | unknown |  |
-| catalog.CMD011 | Missing |  | unknown |  |
-| catalog.CMD025 | Missing |  | unknown |  |
-| catalog.EVT001 | Missing |  | unknown |  |
-| catalog.EVT004 | Missing |  | unknown |  |
-| catalog.EVT009 | Missing |  | unknown |  |
+| catalog:addProduct | Missing |  | unknown |  |
+| catalog:getProductDetail | Missing |  | unknown |  |
+| catalog:productCreated | Missing |  | unknown |  |
+| catalog:productUpdated | Missing |  | unknown |  |
+| catalog:searchProducts | Missing |  | unknown |  |
+| catalog:updateProduct | Missing |  | unknown |  |
 | CatalogPriceRuleList | Missing |  | unknown |  |
-| checkout.CMD002 | Missing |  | unknown |  |
-| checkout.CMD009 | Missing |  | unknown |  |
-| checkout.CMD014 | Missing |  | unknown |  |
-| checkout.CMD016 | Missing |  | unknown |  |
-| checkout.CMD019 | Missing |  | unknown |  |
+| checkout:addProductToCart | Missing |  | unknown |  |
+| checkout:cartProductsUpdated | Missing |  | unknown |  |
+| checkout:getCartForViewing | Missing |  | unknown |  |
+| checkout:removeProductFromCart | Missing |  | unknown |  |
 | CmsPageCategoryList | Missing |  | unknown |  |
 | CmsPageList | Missing |  | unknown |  |
 | ContactList | Missing |  | unknown |  |
-| content.CMD001 | Missing |  | unknown |  |
-| content.CMD013 | Missing |  | unknown |  |
-| content.CMD014 | Missing |  | unknown |  |
-| content.CMD017 | Missing |  | unknown |  |
-| content.CMD019 | Missing |  | unknown |  |
-| content.QRY001 | Missing |  | unknown |  |
+| content:addCmsPage | Missing |  | unknown |  |
+| content:editCmsPage | Missing |  | unknown |  |
 | CountryList | Missing |  | unknown |  |
 | CurrencyForEditing | Missing |  | unknown |  |
 | CurrencyList | Missing |  | unknown |  |
 | CustomerAddressForEditing | Missing |  | unknown |  |
 | CustomerForViewing | Missing |  | unknown |  |
 | CustomerList | Missing |  | unknown |  |
-| customers.CMD001 | Missing |  | unknown |  |
-| customers.CMD003 | Missing |  | unknown |  |
-| customers.CMD012 | Missing |  | unknown |  |
-| customers.CMD016 | Missing |  | unknown |  |
-| customers.CMD017 | Missing |  | unknown |  |
+| customers:addCustomer | Missing |  | unknown |  |
+| customers:addCustomerAddress | Missing |  | unknown |  |
+| customers:editCustomer | Missing |  | unknown |  |
+| customers:getCustomerForViewing | Missing |  | unknown |  |
 | CustomerThreadForViewing | Missing |  | unknown |  |
 | DiscountForEditing | Missing |  | unknown |  |
 | DiscountList | Missing |  | unknown |  |
@@ -6437,44 +7105,38 @@ graph TD
 | EditableMeta | Missing |  | unknown |  |
 | EmployeeForm | Missing |  | unknown |  |
 | EmployeeList | Missing |  | unknown |  |
+| FF001 | Missing |  | unknown |  |
+| FF003 | Missing |  | unknown |  |
+| FF004 | Missing |  | unknown |  |
+| FF005 | Missing |  | unknown |  |
 | HookList | Missing |  | unknown |  |
-| international.CMD001 | Missing |  | unknown |  |
-| international.CMD005 | Missing |  | unknown |  |
-| international.CMD006 | Missing |  | unknown |  |
-| international.CMD023 | Missing |  | unknown |  |
-| international.CMD027 | Missing |  | unknown |  |
-| international.CMD028 | Missing |  | unknown |  |
+| international:getCountryForEditing | Missing |  | unknown |  |
+| international:getCurrencyForEditing | Missing |  | unknown |  |
+| international:getLanguageForEditing | Missing |  | unknown |  |
+| international:getTaxRulesGroupForEditing | Missing |  | unknown |  |
 | LanguageList | Missing |  | unknown |  |
 | MetaList | Missing |  | unknown |  |
 | ModuleList | Missing |  | unknown |  |
+| modules:getModuleInfos | Missing |  | unknown |  |
+| modules:installModule | Missing |  | unknown |  |
+| modules:uninstallModule | Missing |  | unknown |  |
 | ModuleUpload | Missing |  | unknown |  |
-| orders.CMD001 | Missing |  | unknown |  |
-| orders.CMD002 | Missing |  | unknown |  |
-| orders.CMD003 | Missing |  | unknown |  |
-| orders.CMD016 | Missing |  | unknown |  |
-| orders.CMD017 | Missing |  | unknown |  |
-| orders.CMD019 | Missing |  | unknown |  |
-| orders.CMD020 | Missing |  | unknown |  |
-| orders.CMD023 | Missing |  | unknown |  |
-| orders.EVT001 | Missing |  | unknown |  |
-| orders.EVT002 | Missing |  | unknown |  |
-| orders.EVT003 | Missing |  | unknown |  |
-| orders.EVT006 | Missing |  | unknown |  |
-| orders.EVT007 | Missing |  | unknown |  |
-| orders.EVT008 | Missing |  | unknown |  |
-| orders.EVT009 | Missing |  | unknown |  |
-| orders.EVT010 | Missing |  | unknown |  |
+| orders:cancelOrder | Missing |  | unknown |  |
+| orders:getOrderForViewing | Missing |  | unknown |  |
+| orders:issueStandardRefund | Missing |  | unknown |  |
+| orders:orderCancelled | Missing |  | unknown |  |
+| orders:orderPlaced | Missing |  | unknown |  |
+| orders:orderRefunded | Missing |  | unknown |  |
+| orders:orderShipped | Missing |  | unknown |  |
+| orders:placeOrder | Missing |  | unknown |  |
 | OrderShipmentList | Missing |  | unknown |  |
 | PermissionMatrix | Missing |  | unknown |  |
 | SearchEngineList | Missing |  | unknown |  |
 | SessionList | Missing |  | unknown |  |
 | ShipmentForViewing | Missing |  | unknown |  |
-| shipping.CMD001 | Missing |  | unknown |  |
-| shipping.CMD008 | Missing |  | unknown |  |
-| shipping.CMD010 | Missing |  | unknown |  |
-| shipping.CMD011 | Missing |  | unknown |  |
-| shipping.CMD013 | Missing |  | unknown |  |
-| shipping.CMD015 | Missing |  | unknown |  |
+| shipping:getAvailableCarriers | Missing |  | unknown |  |
+| shop:editContact | Missing |  | unknown |  |
+| shop:getStoreForEditing | Missing |  | unknown |  |
 | ShopLogos | Missing |  | unknown |  |
 | SqlRequestList | Missing |  | unknown |  |
 | StoreList | Missing |  | unknown |  |
@@ -7074,7 +7736,17 @@ graph TD
 | shop.QRY008 | Operation | GetContactForEditing | design.domain | shop/domain.yaml |
 | shop.QRY009 | Operation | GetNotificationLastElements | design.domain | shop/domain.yaml |
 | shop.QRY010 | Operation | GetShowcaseCardIsClosed | design.domain | shop/domain.yaml |
+| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | admin/arch.yaml |
+| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | catalog/arch.yaml |
+| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | checkout/arch.yaml |
+| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | content/arch.yaml |
+| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | customers/arch.yaml |
+| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | international/arch.yaml |
+| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | modules/arch.yaml |
+| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | orders/arch.yaml |
 | PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | prestashop.arch.yaml |
+| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | shipping/arch.yaml |
+| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | shop/arch.yaml |
 | PRT001 | Party | PrestaShop SA | governance.org | organization.yaml |
 | catalog.RES001 | Resilience | Search Index Recovery | design.quality | catalog/quality.yaml |
 | admin.R001 | Risk | Privilege escalation risk | governance.motivation | admin/motivation.yaml |
@@ -7153,16 +7825,16 @@ graph TD
 | orders.SEC001 | Security | Order Data Access Control | design.quality | orders/quality.yaml |
 | orders.SEC002 | Security | Refund Authorization | design.quality | orders/quality.yaml |
 | AdminApiClient | Service | External API consumer using PrestaShop Admin REST API with OAuth2 authentication. | design.arch | prestashop.arch.yaml |
-| AdminService | Service | REST API for employee, security, and configuration management. | design.arch | prestashop.arch.yaml |
-| CatalogService | Service | REST API for product and category management. | design.arch | prestashop.arch.yaml |
-| CheckoutService | Service | REST API for cart operations and payment initiation. | design.arch | prestashop.arch.yaml |
-| ContentService | Service | REST API for CMS page and theme management. | design.arch | prestashop.arch.yaml |
-| CustomerService | Service | REST API for customer account and address management. | design.arch | prestashop.arch.yaml |
-| InternationalService | Service | REST API for currency, tax, country, and language management. | design.arch | prestashop.arch.yaml |
-| ModuleManager | Service | Module lifecycle orchestrator with hook execution pipeline. | design.arch | prestashop.arch.yaml |
-| OrderService | Service | REST API for order commands and queries. | design.arch | prestashop.arch.yaml |
-| ShippingService | Service | REST API for carrier management and shipping cost calculation. | design.arch | prestashop.arch.yaml |
-| ShopService | Service | REST API for multi-store and shop configuration. | design.arch | prestashop.arch.yaml |
+| AdminService | Service | REST API for employee, security, and configuration management. | design.arch | admin/arch.yaml |
+| CatalogService | Service | REST API for product and category management. | design.arch | catalog/arch.yaml |
+| CheckoutService | Service | REST API for cart operations and payment initiation. | design.arch | checkout/arch.yaml |
+| ContentService | Service | REST API for CMS page and theme management. | design.arch | content/arch.yaml |
+| CustomerService | Service | REST API for customer account and address management. | design.arch | customers/arch.yaml |
+| InternationalService | Service | REST API for currency, tax, country, and language management. | design.arch | international/arch.yaml |
+| ModuleManager | Service | Module lifecycle orchestrator with hook execution pipeline. | design.arch | modules/arch.yaml |
+| OrderService | Service | REST API for order commands and queries. | design.arch | orders/arch.yaml |
+| ShippingService | Service | REST API for carrier management and shipping cost calculation. | design.arch | shipping/arch.yaml |
+| ShopService | Service | REST API for multi-store and shop configuration. | design.arch | shop/arch.yaml |
 | admin.SLO001 | SLO | Authentication Latency SLO | design.quality | admin/quality.yaml |
 | catalog.SLO001 | SLO | Search API Latency | design.quality | catalog/quality.yaml |
 | catalog.SLO002 | SLO | Product Save Latency | design.quality | catalog/quality.yaml |
@@ -7544,6 +8216,10 @@ graph TD
 | VS001 | ValueStream | Shop & Buy | governance.value-stream | value-stream.yaml |
 | VS002 | ValueStream | Sell & Fulfill | governance.value-stream | value-stream.yaml |
 | VS003 | ValueStream | Configure & Scale | governance.value-stream | value-stream.yaml |
+| WI001 | WorkItem | Cart & Checkout MVP | governance.roadmap | roadmap.yaml |
+| WI002 | WorkItem | Cart management | governance.roadmap | roadmap.yaml |
+| WI003 | WorkItem | Payment initiation | governance.roadmap | roadmap.yaml |
+| WI010 | WorkItem | Search & Filters | governance.roadmap | roadmap.yaml |
 
 ### By Type
 
@@ -7551,9 +8227,9 @@ graph TD
 |------|-------|
 | CodeFile | 515 |
 | Operation | 494 |
-| Missing | 94 |
 | TestCase | 91 |
 | Models | 87 |
+| Missing | 81 |
 | Concept | 73 |
 | Error | 71 |
 | UserStory | 58 |
@@ -7571,9 +8247,10 @@ graph TD
 | SLO | 20 |
 | Inquiry | 19 |
 | Capability | 18 |
-| UINavigation | 16 |
 | Contract | 16 |
+| UINavigation | 16 |
 | StructuralRule | 13 |
+| Party | 12 |
 | NonGoal | 12 |
 | TransitionRule | 12 |
 | Context | 11 |
@@ -7583,20 +8260,25 @@ graph TD
 | TradeOff | 9 |
 | Decision | 8 |
 | ClassificationRule | 6 |
+| Binding | 6 |
+| InfraResource | 5 |
+| LeveragePoint | 5 |
 | Milestone | 5 |
 | Security | 4 |
 | Compliance | 4 |
+| WorkItem | 4 |
+| DeploymentScope | 3 |
 | Department | 3 |
 | ValueStream | 3 |
 | Metric | 2 |
 | DerivationRule | 2 |
-| Party | 2 |
+| Environment | 2 |
 | Resilience | 1 |
 | EquivalenceRule | 1 |
 
 ## Relations
 
-**2474 relations** discovered.
+**3086 relations** discovered.
 
 | Source | Type | Target |
 |--------|------|--------|
@@ -7729,6 +8411,18 @@ graph TD
 | checkout.A001 (Assumption) | assumption_risk | checkout.R001 (Risk) |
 | orders.A001 (Assumption) | assumption_risk | orders.R002 (Risk) |
 | orders.A002 (Assumption) | assumption_risk | orders.R001 (Risk) |
+| prestashop.BND001 (Binding) | binds | prestashop.ENV001 (Environment) |
+| prestashop.BND001 (Binding) | binds | prestashop.IR001 (InfraResource) |
+| prestashop.BND002 (Binding) | binds | prestashop.ENV002 (Environment) |
+| prestashop.BND002 (Binding) | binds | prestashop.IR001 (InfraResource) |
+| prestashop.BND003 (Binding) | binds | prestashop.ENV001 (Environment) |
+| prestashop.BND003 (Binding) | binds | prestashop.IR002 (InfraResource) |
+| prestashop.BND004 (Binding) | binds | prestashop.ENV002 (Environment) |
+| prestashop.BND004 (Binding) | binds | prestashop.IR002 (InfraResource) |
+| prestashop.BND005 (Binding) | binds | prestashop.ENV001 (Environment) |
+| prestashop.BND005 (Binding) | binds | prestashop.IR003 (InfraResource) |
+| prestashop.BND006 (Binding) | binds | prestashop.ENV002 (Environment) |
+| prestashop.BND006 (Binding) | binds | prestashop.IR003 (InfraResource) |
 | CAP005 (Capability) | capability_goal | catalog.G001 (Goal) |
 | CAP005 (Capability) | capability_goal | catalog.G002 (Goal) |
 | CAP011 (Capability) | capability_goal | orders.G002 (Goal) |
@@ -8547,17 +9241,80 @@ graph TD
 | shop.VR002 (ValidationRule) | concepts | shop.CN004 (Concept) |
 | shop.VR003 (ValidationRule) | concepts | shop.CN006 (Concept) |
 | shop.VR004 (ValidationRule) | concepts | shop.CN003 (Concept) |
-| Catalog (Context) | contains | CatalogService (Service) |
-| Orders (Context) | contains | OrderService (Service) |
-| Checkout (Context) | contains | CheckoutService (Service) |
-| Customers (Context) | contains | CustomerService (Service) |
-| Shipping (Context) | contains | ShippingService (Service) |
-| International (Context) | contains | InternationalService (Service) |
-| Content (Context) | contains | ContentService (Service) |
-| Modules (Context) | contains | ModuleManager (Service) |
+| prestashop.IR004 (InfraResource) | connects_to | prestashop.IR001 (InfraResource) |
+| prestashop.IR004 (InfraResource) | connects_to | prestashop.IR002 (InfraResource) |
+| prestashop.IR004 (InfraResource) | connects_to | prestashop.IR003 (InfraResource) |
 | Admin (Context) | contains | AdminService (Service) |
-| Shop (Context) | contains | ShopService (Service) |
+| Catalog (Context) | contains | CatalogService (Service) |
+| Checkout (Context) | contains | CheckoutService (Service) |
+| Content (Context) | contains | ContentService (Service) |
+| Customers (Context) | contains | CustomerService (Service) |
+| International (Context) | contains | InternationalService (Service) |
+| Modules (Context) | contains | ModuleManager (Service) |
+| Orders (Context) | contains | OrderService (Service) |
 | ExternalApiConsumers (Context) | contains | AdminApiClient (Service) |
+| Shipping (Context) | contains | ShippingService (Service) |
+| Shop (Context) | contains | ShopService (Service) |
+| AdminApiClient.httpClient (Contract) | contract_calls | admin:addApiClient (Missing) |
+| AdminApiClient.httpClient (Contract) | contract_calls | admin:getEmployeeForEditing (Missing) |
+| AdminApiClient.httpClient (Contract) | contract_calls | catalog:searchProducts (Missing) |
+| AdminApiClient.httpClient (Contract) | contract_calls | catalog:getProductDetail (Missing) |
+| AdminApiClient.httpClient (Contract) | contract_calls | orders:getOrderForViewing (Missing) |
+| AdminService.openapi (Contract) | contract_exposes | admin:addEmployee (Missing) |
+| AdminService.openapi (Contract) | contract_exposes | admin:editProfile (Missing) |
+| AdminService.openapi (Contract) | contract_exposes | admin:getEmployeeForEditing (Missing) |
+| AdminService.openapi (Contract) | contract_exposes | admin:addApiClient (Missing) |
+| CatalogService.openapi (Contract) | contract_exposes | catalog:addProduct (Missing) |
+| CatalogService.openapi (Contract) | contract_exposes | catalog:updateProduct (Missing) |
+| CatalogService.openapi (Contract) | contract_exposes | catalog:searchProducts (Missing) |
+| CatalogService.openapi (Contract) | contract_exposes | catalog:getProductDetail (Missing) |
+| CheckoutService.openapi (Contract) | contract_exposes | checkout:addProductToCart (Missing) |
+| CheckoutService.openapi (Contract) | contract_exposes | checkout:removeProductFromCart (Missing) |
+| CheckoutService.openapi (Contract) | contract_exposes | checkout:getCartForViewing (Missing) |
+| ContentService.openapi (Contract) | contract_exposes | content:addCmsPage (Missing) |
+| ContentService.openapi (Contract) | contract_exposes | content:editCmsPage (Missing) |
+| CustomerService.openapi (Contract) | contract_exposes | customers:addCustomer (Missing) |
+| CustomerService.openapi (Contract) | contract_exposes | customers:editCustomer (Missing) |
+| CustomerService.openapi (Contract) | contract_exposes | customers:addCustomerAddress (Missing) |
+| CustomerService.openapi (Contract) | contract_exposes | customers:getCustomerForViewing (Missing) |
+| InternationalService.openapi (Contract) | contract_exposes | international:getCurrencyForEditing (Missing) |
+| InternationalService.openapi (Contract) | contract_exposes | international:getTaxRulesGroupForEditing (Missing) |
+| InternationalService.openapi (Contract) | contract_exposes | international:getCountryForEditing (Missing) |
+| InternationalService.openapi (Contract) | contract_exposes | international:getLanguageForEditing (Missing) |
+| ModuleManager.openapi (Contract) | contract_exposes | modules:installModule (Missing) |
+| ModuleManager.openapi (Contract) | contract_exposes | modules:uninstallModule (Missing) |
+| ModuleManager.openapi (Contract) | contract_exposes | modules:getModuleInfos (Missing) |
+| OrderService.openapi (Contract) | contract_exposes | orders:placeOrder (Missing) |
+| OrderService.openapi (Contract) | contract_exposes | orders:cancelOrder (Missing) |
+| OrderService.openapi (Contract) | contract_exposes | orders:issueStandardRefund (Missing) |
+| OrderService.openapi (Contract) | contract_exposes | orders:getOrderForViewing (Missing) |
+| ShippingService.openapi (Contract) | contract_exposes | shipping:getAvailableCarriers (Missing) |
+| ShopService.openapi (Contract) | contract_exposes | shop:getStoreForEditing (Missing) |
+| ShopService.openapi (Contract) | contract_exposes | shop:editContact (Missing) |
+| CheckoutService.asyncapi (Contract) | contract_receives | orders:orderPlaced (Missing) |
+| CatalogService.asyncapi (Contract) | contract_sends | catalog:productCreated (Missing) |
+| CatalogService.asyncapi (Contract) | contract_sends | catalog:productUpdated (Missing) |
+| CheckoutService.asyncapi (Contract) | contract_sends | checkout:cartProductsUpdated (Missing) |
+| OrderService.asyncapi (Contract) | contract_sends | orders:orderPlaced (Missing) |
+| OrderService.asyncapi (Contract) | contract_sends | orders:orderCancelled (Missing) |
+| OrderService.asyncapi (Contract) | contract_sends | orders:orderRefunded (Missing) |
+| OrderService.asyncapi (Contract) | contract_sends | orders:orderShipped (Missing) |
+| Catalog (Context) | depends_on | International (Context) |
+| Catalog (Context) | depends_on | Modules (Context) |
+| Checkout (Context) | depends_on | Catalog (Context) |
+| Checkout (Context) | depends_on | Customers (Context) |
+| Checkout (Context) | depends_on | International (Context) |
+| Checkout (Context) | depends_on | Orders (Context) |
+| Content (Context) | depends_on | International (Context) |
+| Customers (Context) | depends_on | International (Context) |
+| Modules (Context) | depends_on | Admin (Context) |
+| Orders (Context) | depends_on | Checkout (Context) |
+| Orders (Context) | depends_on | Catalog (Context) |
+| Orders (Context) | depends_on | Customers (Context) |
+| Orders (Context) | depends_on | Shipping (Context) |
+| Orders (Context) | depends_on | International (Context) |
+| Shipping (Context) | depends_on | International (Context) |
+| Shop (Context) | depends_on | International (Context) |
 | DPT001 (Department) | dept_has_team | TM001 (Team) |
 | DPT001 (Department) | dept_has_team | TM002 (Team) |
 | DPT001 (Department) | dept_has_team | TM003 (Team) |
@@ -8675,6 +9432,509 @@ graph TD
 | shop.CMD001 (Operation) | governed_by | shop.VR001 (ValidationRule) |
 | shop.CMD010 (Operation) | governed_by | shop.VR002 (ValidationRule) |
 | shop.CMD011 (Operation) | governed_by | shop.VR002 (ValidationRule) |
+| prestashop.IR001 (InfraResource) | grouped_in | prestashop.DSC003 (DeploymentScope) |
+| prestashop.IR002 (InfraResource) | grouped_in | prestashop.DSC003 (DeploymentScope) |
+| prestashop.IR003 (InfraResource) | grouped_in | prestashop.DSC003 (DeploymentScope) |
+| prestashop.IR004 (InfraResource) | grouped_in | prestashop.DSC002 (DeploymentScope) |
+| prestashop.IR005 (InfraResource) | grouped_in | prestashop.DSC001 (DeploymentScope) |
+| admin.CMD021 (Operation) | handled_by | Admin (Context) |
+| admin.EVT014 (Operation) | handled_by | Admin (Context) |
+| admin.CMD022 (Operation) | handled_by | Admin (Context) |
+| admin.EVT015 (Operation) | handled_by | Admin (Context) |
+| admin.CMD023 (Operation) | handled_by | Admin (Context) |
+| admin.EVT016 (Operation) | handled_by | Admin (Context) |
+| admin.CMD024 (Operation) | handled_by | Admin (Context) |
+| admin.EVT017 (Operation) | handled_by | Admin (Context) |
+| admin.QRY005 (Operation) | handled_by | Admin (Context) |
+| admin.CMD025 (Operation) | handled_by | Admin (Context) |
+| admin.EVT018 (Operation) | handled_by | Admin (Context) |
+| admin.CMD026 (Operation) | handled_by | Admin (Context) |
+| admin.EVT019 (Operation) | handled_by | Admin (Context) |
+| admin.CMD027 (Operation) | handled_by | Admin (Context) |
+| admin.EVT020 (Operation) | handled_by | Admin (Context) |
+| admin.CMD028 (Operation) | handled_by | Admin (Context) |
+| admin.QRY006 (Operation) | handled_by | Admin (Context) |
+| admin.CMD029 (Operation) | handled_by | Admin (Context) |
+| admin.EVT021 (Operation) | handled_by | Admin (Context) |
+| admin.CMD030 (Operation) | handled_by | Admin (Context) |
+| admin.EVT022 (Operation) | handled_by | Admin (Context) |
+| admin.CMD031 (Operation) | handled_by | Admin (Context) |
+| admin.EVT023 (Operation) | handled_by | Admin (Context) |
+| admin.CMD032 (Operation) | handled_by | Admin (Context) |
+| admin.CMD033 (Operation) | handled_by | Admin (Context) |
+| admin.EVT024 (Operation) | handled_by | Admin (Context) |
+| admin.QRY007 (Operation) | handled_by | Admin (Context) |
+| admin.QRY008 (Operation) | handled_by | Admin (Context) |
+| admin.QRY009 (Operation) | handled_by | Admin (Context) |
+| admin.CMD034 (Operation) | handled_by | Admin (Context) |
+| admin.EVT025 (Operation) | handled_by | Admin (Context) |
+| admin.CMD035 (Operation) | handled_by | Admin (Context) |
+| admin.EVT026 (Operation) | handled_by | Admin (Context) |
+| admin.CMD001 (Operation) | handled_by | Admin (Context) |
+| admin.EVT001 (Operation) | handled_by | Admin (Context) |
+| admin.CMD002 (Operation) | handled_by | Admin (Context) |
+| admin.EVT002 (Operation) | handled_by | Admin (Context) |
+| admin.CMD003 (Operation) | handled_by | Admin (Context) |
+| admin.EVT003 (Operation) | handled_by | Admin (Context) |
+| admin.CMD004 (Operation) | handled_by | Admin (Context) |
+| admin.EVT004 (Operation) | handled_by | Admin (Context) |
+| admin.CMD005 (Operation) | handled_by | Admin (Context) |
+| admin.CMD006 (Operation) | handled_by | Admin (Context) |
+| admin.CMD007 (Operation) | handled_by | Admin (Context) |
+| admin.EVT005 (Operation) | handled_by | Admin (Context) |
+| admin.CMD008 (Operation) | handled_by | Admin (Context) |
+| admin.EVT006 (Operation) | handled_by | Admin (Context) |
+| admin.QRY001 (Operation) | handled_by | Admin (Context) |
+| admin.QRY002 (Operation) | handled_by | Admin (Context) |
+| admin.CMD009 (Operation) | handled_by | Admin (Context) |
+| admin.EVT007 (Operation) | handled_by | Admin (Context) |
+| admin.CMD010 (Operation) | handled_by | Admin (Context) |
+| admin.EVT008 (Operation) | handled_by | Admin (Context) |
+| admin.CMD011 (Operation) | handled_by | Admin (Context) |
+| admin.EVT009 (Operation) | handled_by | Admin (Context) |
+| admin.CMD012 (Operation) | handled_by | Admin (Context) |
+| admin.QRY003 (Operation) | handled_by | Admin (Context) |
+| admin.CMD013 (Operation) | handled_by | Admin (Context) |
+| admin.EVT010 (Operation) | handled_by | Admin (Context) |
+| admin.CMD014 (Operation) | handled_by | Admin (Context) |
+| admin.EVT011 (Operation) | handled_by | Admin (Context) |
+| admin.QRY004 (Operation) | handled_by | Admin (Context) |
+| admin.CMD015 (Operation) | handled_by | Admin (Context) |
+| admin.EVT012 (Operation) | handled_by | Admin (Context) |
+| admin.CMD016 (Operation) | handled_by | Admin (Context) |
+| admin.EVT013 (Operation) | handled_by | Admin (Context) |
+| admin.CMD017 (Operation) | handled_by | Admin (Context) |
+| admin.CMD018 (Operation) | handled_by | Admin (Context) |
+| admin.CMD019 (Operation) | handled_by | Admin (Context) |
+| admin.CMD020 (Operation) | handled_by | Admin (Context) |
+| catalog.CMD025 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD026 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD027 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD028 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD029 (Operation) | handled_by | Catalog (Context) |
+| catalog.QRY005 (Operation) | handled_by | Catalog (Context) |
+| catalog.QRY006 (Operation) | handled_by | Catalog (Context) |
+| catalog.EVT009 (Operation) | handled_by | Catalog (Context) |
+| catalog.EVT010 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD030 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD031 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD032 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD033 (Operation) | handled_by | Catalog (Context) |
+| catalog.QRY007 (Operation) | handled_by | Catalog (Context) |
+| catalog.QRY008 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD011 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD012 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD013 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD014 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD015 (Operation) | handled_by | Catalog (Context) |
+| catalog.QRY003 (Operation) | handled_by | Catalog (Context) |
+| catalog.QRY004 (Operation) | handled_by | Catalog (Context) |
+| catalog.EVT004 (Operation) | handled_by | Catalog (Context) |
+| catalog.EVT005 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD040 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD041 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD016 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD017 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD018 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD019 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD020 (Operation) | handled_by | Catalog (Context) |
+| catalog.EVT006 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD021 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD022 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD023 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD024 (Operation) | handled_by | Catalog (Context) |
+| catalog.EVT007 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD001 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD002 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD003 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD004 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD005 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD006 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD007 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD008 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD009 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD010 (Operation) | handled_by | Catalog (Context) |
+| catalog.QRY001 (Operation) | handled_by | Catalog (Context) |
+| catalog.QRY002 (Operation) | handled_by | Catalog (Context) |
+| catalog.QRY009 (Operation) | handled_by | Catalog (Context) |
+| catalog.EVT001 (Operation) | handled_by | Catalog (Context) |
+| catalog.EVT002 (Operation) | handled_by | Catalog (Context) |
+| catalog.EVT003 (Operation) | handled_by | Catalog (Context) |
+| catalog.EVT008 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD034 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD035 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD036 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD037 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD038 (Operation) | handled_by | Catalog (Context) |
+| catalog.CMD039 (Operation) | handled_by | Catalog (Context) |
+| catalog.QRY010 (Operation) | handled_by | Catalog (Context) |
+| catalog.QRY011 (Operation) | handled_by | Catalog (Context) |
+| checkout.CMD001 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD002 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD003 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD004 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD005 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD006 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD007 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD008 (Operation) | handled_by | Checkout (Context) |
+| checkout.EVT001 (Operation) | handled_by | Checkout (Context) |
+| checkout.EVT002 (Operation) | handled_by | Checkout (Context) |
+| checkout.EVT003 (Operation) | handled_by | Checkout (Context) |
+| checkout.QRY001 (Operation) | handled_by | Checkout (Context) |
+| checkout.QRY002 (Operation) | handled_by | Checkout (Context) |
+| checkout.QRY003 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD009 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD010 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD011 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD012 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD013 (Operation) | handled_by | Checkout (Context) |
+| checkout.EVT004 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD014 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD015 (Operation) | handled_by | Checkout (Context) |
+| checkout.QRY004 (Operation) | handled_by | Checkout (Context) |
+| checkout.EVT005 (Operation) | handled_by | Checkout (Context) |
+| checkout.EVT006 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD016 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD017 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD018 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD019 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD020 (Operation) | handled_by | Checkout (Context) |
+| checkout.QRY005 (Operation) | handled_by | Checkout (Context) |
+| checkout.QRY006 (Operation) | handled_by | Checkout (Context) |
+| checkout.EVT007 (Operation) | handled_by | Checkout (Context) |
+| checkout.EVT008 (Operation) | handled_by | Checkout (Context) |
+| checkout.EVT009 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD021 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD022 (Operation) | handled_by | Checkout (Context) |
+| checkout.CMD023 (Operation) | handled_by | Checkout (Context) |
+| checkout.QRY007 (Operation) | handled_by | Checkout (Context) |
+| checkout.QRY008 (Operation) | handled_by | Checkout (Context) |
+| checkout.EVT010 (Operation) | handled_by | Checkout (Context) |
+| checkout.EVT011 (Operation) | handled_by | Checkout (Context) |
+| checkout.EVT012 (Operation) | handled_by | Checkout (Context) |
+| content.CMD001 (Operation) | handled_by | Content (Context) |
+| content.CMD002 (Operation) | handled_by | Content (Context) |
+| content.CMD003 (Operation) | handled_by | Content (Context) |
+| content.CMD004 (Operation) | handled_by | Content (Context) |
+| content.CMD005 (Operation) | handled_by | Content (Context) |
+| content.CMD006 (Operation) | handled_by | Content (Context) |
+| content.EVT001 (Operation) | handled_by | Content (Context) |
+| content.EVT002 (Operation) | handled_by | Content (Context) |
+| content.EVT003 (Operation) | handled_by | Content (Context) |
+| content.EVT004 (Operation) | handled_by | Content (Context) |
+| content.QRY001 (Operation) | handled_by | Content (Context) |
+| content.QRY002 (Operation) | handled_by | Content (Context) |
+| content.CMD007 (Operation) | handled_by | Content (Context) |
+| content.CMD008 (Operation) | handled_by | Content (Context) |
+| content.CMD009 (Operation) | handled_by | Content (Context) |
+| content.CMD010 (Operation) | handled_by | Content (Context) |
+| content.CMD011 (Operation) | handled_by | Content (Context) |
+| content.CMD012 (Operation) | handled_by | Content (Context) |
+| content.EVT005 (Operation) | handled_by | Content (Context) |
+| content.EVT006 (Operation) | handled_by | Content (Context) |
+| content.EVT007 (Operation) | handled_by | Content (Context) |
+| content.EVT008 (Operation) | handled_by | Content (Context) |
+| content.QRY003 (Operation) | handled_by | Content (Context) |
+| content.QRY004 (Operation) | handled_by | Content (Context) |
+| content.QRY005 (Operation) | handled_by | Content (Context) |
+| content.QRY006 (Operation) | handled_by | Content (Context) |
+| content.CMD019 (Operation) | handled_by | Content (Context) |
+| content.CMD020 (Operation) | handled_by | Content (Context) |
+| content.EVT015 (Operation) | handled_by | Content (Context) |
+| content.EVT016 (Operation) | handled_by | Content (Context) |
+| content.QRY007 (Operation) | handled_by | Content (Context) |
+| content.QRY008 (Operation) | handled_by | Content (Context) |
+| content.CMD013 (Operation) | handled_by | Content (Context) |
+| content.CMD014 (Operation) | handled_by | Content (Context) |
+| content.CMD015 (Operation) | handled_by | Content (Context) |
+| content.CMD016 (Operation) | handled_by | Content (Context) |
+| content.CMD017 (Operation) | handled_by | Content (Context) |
+| content.CMD018 (Operation) | handled_by | Content (Context) |
+| content.EVT009 (Operation) | handled_by | Content (Context) |
+| content.EVT010 (Operation) | handled_by | Content (Context) |
+| content.EVT011 (Operation) | handled_by | Content (Context) |
+| content.EVT012 (Operation) | handled_by | Content (Context) |
+| content.EVT013 (Operation) | handled_by | Content (Context) |
+| content.EVT014 (Operation) | handled_by | Content (Context) |
+| customers.CMD012 (Operation) | handled_by | Customers (Context) |
+| customers.CMD013 (Operation) | handled_by | Customers (Context) |
+| customers.CMD014 (Operation) | handled_by | Customers (Context) |
+| customers.CMD015 (Operation) | handled_by | Customers (Context) |
+| customers.QRY009 (Operation) | handled_by | Customers (Context) |
+| customers.QRY010 (Operation) | handled_by | Customers (Context) |
+| customers.EVT007 (Operation) | handled_by | Customers (Context) |
+| customers.EVT008 (Operation) | handled_by | Customers (Context) |
+| customers.EVT009 (Operation) | handled_by | Customers (Context) |
+| customers.CMD001 (Operation) | handled_by | Customers (Context) |
+| customers.CMD002 (Operation) | handled_by | Customers (Context) |
+| customers.CMD003 (Operation) | handled_by | Customers (Context) |
+| customers.CMD004 (Operation) | handled_by | Customers (Context) |
+| customers.CMD005 (Operation) | handled_by | Customers (Context) |
+| customers.CMD006 (Operation) | handled_by | Customers (Context) |
+| customers.CMD007 (Operation) | handled_by | Customers (Context) |
+| customers.CMD008 (Operation) | handled_by | Customers (Context) |
+| customers.EVT001 (Operation) | handled_by | Customers (Context) |
+| customers.EVT002 (Operation) | handled_by | Customers (Context) |
+| customers.EVT003 (Operation) | handled_by | Customers (Context) |
+| customers.EVT004 (Operation) | handled_by | Customers (Context) |
+| customers.QRY001 (Operation) | handled_by | Customers (Context) |
+| customers.QRY002 (Operation) | handled_by | Customers (Context) |
+| customers.QRY003 (Operation) | handled_by | Customers (Context) |
+| customers.QRY004 (Operation) | handled_by | Customers (Context) |
+| customers.QRY005 (Operation) | handled_by | Customers (Context) |
+| customers.QRY006 (Operation) | handled_by | Customers (Context) |
+| customers.QRY007 (Operation) | handled_by | Customers (Context) |
+| customers.CMD009 (Operation) | handled_by | Customers (Context) |
+| customers.CMD010 (Operation) | handled_by | Customers (Context) |
+| customers.CMD011 (Operation) | handled_by | Customers (Context) |
+| customers.QRY008 (Operation) | handled_by | Customers (Context) |
+| customers.EVT005 (Operation) | handled_by | Customers (Context) |
+| customers.EVT006 (Operation) | handled_by | Customers (Context) |
+| customers.CMD016 (Operation) | handled_by | Customers (Context) |
+| customers.CMD017 (Operation) | handled_by | Customers (Context) |
+| customers.CMD018 (Operation) | handled_by | Customers (Context) |
+| customers.CMD019 (Operation) | handled_by | Customers (Context) |
+| customers.QRY011 (Operation) | handled_by | Customers (Context) |
+| customers.QRY012 (Operation) | handled_by | Customers (Context) |
+| customers.EVT010 (Operation) | handled_by | Customers (Context) |
+| customers.EVT011 (Operation) | handled_by | Customers (Context) |
+| customers.EVT012 (Operation) | handled_by | Customers (Context) |
+| customers.CMD020 (Operation) | handled_by | Customers (Context) |
+| customers.CMD021 (Operation) | handled_by | Customers (Context) |
+| customers.CMD022 (Operation) | handled_by | Customers (Context) |
+| customers.QRY013 (Operation) | handled_by | Customers (Context) |
+| customers.EVT013 (Operation) | handled_by | Customers (Context) |
+| customers.EVT014 (Operation) | handled_by | Customers (Context) |
+| international.CMD001 (Operation) | handled_by | International (Context) |
+| international.CMD002 (Operation) | handled_by | International (Context) |
+| international.CMD003 (Operation) | handled_by | International (Context) |
+| international.CMD004 (Operation) | handled_by | International (Context) |
+| international.CMD005 (Operation) | handled_by | International (Context) |
+| international.CMD006 (Operation) | handled_by | International (Context) |
+| international.EVT001 (Operation) | handled_by | International (Context) |
+| international.EVT002 (Operation) | handled_by | International (Context) |
+| international.EVT003 (Operation) | handled_by | International (Context) |
+| international.EVT004 (Operation) | handled_by | International (Context) |
+| international.EVT005 (Operation) | handled_by | International (Context) |
+| international.EVT006 (Operation) | handled_by | International (Context) |
+| international.QRY001 (Operation) | handled_by | International (Context) |
+| international.QRY002 (Operation) | handled_by | International (Context) |
+| international.QRY003 (Operation) | handled_by | International (Context) |
+| international.CMD011 (Operation) | handled_by | International (Context) |
+| international.CMD012 (Operation) | handled_by | International (Context) |
+| international.CMD013 (Operation) | handled_by | International (Context) |
+| international.CMD014 (Operation) | handled_by | International (Context) |
+| international.CMD015 (Operation) | handled_by | International (Context) |
+| international.CMD016 (Operation) | handled_by | International (Context) |
+| international.CMD017 (Operation) | handled_by | International (Context) |
+| international.CMD018 (Operation) | handled_by | International (Context) |
+| international.CMD019 (Operation) | handled_by | International (Context) |
+| international.CMD020 (Operation) | handled_by | International (Context) |
+| international.CMD021 (Operation) | handled_by | International (Context) |
+| international.CMD022 (Operation) | handled_by | International (Context) |
+| international.EVT011 (Operation) | handled_by | International (Context) |
+| international.EVT012 (Operation) | handled_by | International (Context) |
+| international.EVT013 (Operation) | handled_by | International (Context) |
+| international.EVT014 (Operation) | handled_by | International (Context) |
+| international.EVT015 (Operation) | handled_by | International (Context) |
+| international.EVT016 (Operation) | handled_by | International (Context) |
+| international.EVT017 (Operation) | handled_by | International (Context) |
+| international.EVT018 (Operation) | handled_by | International (Context) |
+| international.EVT019 (Operation) | handled_by | International (Context) |
+| international.EVT020 (Operation) | handled_by | International (Context) |
+| international.EVT021 (Operation) | handled_by | International (Context) |
+| international.EVT022 (Operation) | handled_by | International (Context) |
+| international.QRY005 (Operation) | handled_by | International (Context) |
+| international.QRY006 (Operation) | handled_by | International (Context) |
+| international.QRY007 (Operation) | handled_by | International (Context) |
+| international.QRY008 (Operation) | handled_by | International (Context) |
+| international.CMD007 (Operation) | handled_by | International (Context) |
+| international.CMD008 (Operation) | handled_by | International (Context) |
+| international.CMD009 (Operation) | handled_by | International (Context) |
+| international.CMD010 (Operation) | handled_by | International (Context) |
+| international.EVT007 (Operation) | handled_by | International (Context) |
+| international.EVT008 (Operation) | handled_by | International (Context) |
+| international.EVT009 (Operation) | handled_by | International (Context) |
+| international.EVT010 (Operation) | handled_by | International (Context) |
+| international.QRY004 (Operation) | handled_by | International (Context) |
+| international.CMD023 (Operation) | handled_by | International (Context) |
+| international.CMD024 (Operation) | handled_by | International (Context) |
+| international.CMD025 (Operation) | handled_by | International (Context) |
+| international.CMD026 (Operation) | handled_by | International (Context) |
+| international.CMD027 (Operation) | handled_by | International (Context) |
+| international.CMD028 (Operation) | handled_by | International (Context) |
+| international.CMD029 (Operation) | handled_by | International (Context) |
+| international.CMD030 (Operation) | handled_by | International (Context) |
+| international.EVT023 (Operation) | handled_by | International (Context) |
+| international.EVT024 (Operation) | handled_by | International (Context) |
+| international.EVT025 (Operation) | handled_by | International (Context) |
+| international.EVT026 (Operation) | handled_by | International (Context) |
+| international.EVT027 (Operation) | handled_by | International (Context) |
+| international.EVT028 (Operation) | handled_by | International (Context) |
+| international.EVT029 (Operation) | handled_by | International (Context) |
+| international.EVT030 (Operation) | handled_by | International (Context) |
+| international.QRY009 (Operation) | handled_by | International (Context) |
+| international.QRY010 (Operation) | handled_by | International (Context) |
+| modules.CMD001 (Operation) | handled_by | Modules (Context) |
+| modules.CMD002 (Operation) | handled_by | Modules (Context) |
+| modules.CMD003 (Operation) | handled_by | Modules (Context) |
+| modules.CMD004 (Operation) | handled_by | Modules (Context) |
+| modules.CMD005 (Operation) | handled_by | Modules (Context) |
+| modules.CMD006 (Operation) | handled_by | Modules (Context) |
+| modules.CMD007 (Operation) | handled_by | Modules (Context) |
+| modules.CMD008 (Operation) | handled_by | Modules (Context) |
+| modules.EVT001 (Operation) | handled_by | Modules (Context) |
+| modules.EVT002 (Operation) | handled_by | Modules (Context) |
+| modules.EVT003 (Operation) | handled_by | Modules (Context) |
+| modules.EVT004 (Operation) | handled_by | Modules (Context) |
+| modules.EVT005 (Operation) | handled_by | Modules (Context) |
+| modules.EVT006 (Operation) | handled_by | Modules (Context) |
+| modules.QRY001 (Operation) | handled_by | Modules (Context) |
+| modules.CMD009 (Operation) | handled_by | Modules (Context) |
+| modules.EVT007 (Operation) | handled_by | Modules (Context) |
+| modules.QRY002 (Operation) | handled_by | Modules (Context) |
+| modules.QRY003 (Operation) | handled_by | Modules (Context) |
+| orders.CMD017 (Operation) | handled_by | Orders (Context) |
+| orders.CMD018 (Operation) | handled_by | Orders (Context) |
+| orders.CMD019 (Operation) | handled_by | Orders (Context) |
+| orders.EVT007 (Operation) | handled_by | Orders (Context) |
+| orders.EVT008 (Operation) | handled_by | Orders (Context) |
+| orders.CMD024 (Operation) | handled_by | Orders (Context) |
+| orders.CMD025 (Operation) | handled_by | Orders (Context) |
+| orders.CMD026 (Operation) | handled_by | Orders (Context) |
+| orders.CMD027 (Operation) | handled_by | Orders (Context) |
+| orders.CMD028 (Operation) | handled_by | Orders (Context) |
+| orders.CMD029 (Operation) | handled_by | Orders (Context) |
+| orders.CMD030 (Operation) | handled_by | Orders (Context) |
+| orders.CMD031 (Operation) | handled_by | Orders (Context) |
+| orders.CMD032 (Operation) | handled_by | Orders (Context) |
+| orders.CMD033 (Operation) | handled_by | Orders (Context) |
+| orders.CMD034 (Operation) | handled_by | Orders (Context) |
+| orders.CMD035 (Operation) | handled_by | Orders (Context) |
+| orders.CMD036 (Operation) | handled_by | Orders (Context) |
+| orders.QRY005 (Operation) | handled_by | Orders (Context) |
+| orders.QRY006 (Operation) | handled_by | Orders (Context) |
+| orders.CMD001 (Operation) | handled_by | Orders (Context) |
+| orders.CMD004 (Operation) | handled_by | Orders (Context) |
+| orders.CMD002 (Operation) | handled_by | Orders (Context) |
+| orders.CMD005 (Operation) | handled_by | Orders (Context) |
+| orders.CMD006 (Operation) | handled_by | Orders (Context) |
+| orders.CMD007 (Operation) | handled_by | Orders (Context) |
+| orders.CMD008 (Operation) | handled_by | Orders (Context) |
+| orders.CMD009 (Operation) | handled_by | Orders (Context) |
+| orders.CMD010 (Operation) | handled_by | Orders (Context) |
+| orders.CMD011 (Operation) | handled_by | Orders (Context) |
+| orders.CMD012 (Operation) | handled_by | Orders (Context) |
+| orders.CMD013 (Operation) | handled_by | Orders (Context) |
+| orders.CMD014 (Operation) | handled_by | Orders (Context) |
+| orders.EVT001 (Operation) | handled_by | Orders (Context) |
+| orders.EVT002 (Operation) | handled_by | Orders (Context) |
+| orders.EVT004 (Operation) | handled_by | Orders (Context) |
+| orders.EVT005 (Operation) | handled_by | Orders (Context) |
+| orders.QRY001 (Operation) | handled_by | Orders (Context) |
+| orders.QRY002 (Operation) | handled_by | Orders (Context) |
+| orders.QRY003 (Operation) | handled_by | Orders (Context) |
+| orders.CMD020 (Operation) | handled_by | Orders (Context) |
+| orders.CMD021 (Operation) | handled_by | Orders (Context) |
+| orders.CMD022 (Operation) | handled_by | Orders (Context) |
+| orders.EVT009 (Operation) | handled_by | Orders (Context) |
+| orders.CMD003 (Operation) | handled_by | Orders (Context) |
+| orders.CMD015 (Operation) | handled_by | Orders (Context) |
+| orders.CMD016 (Operation) | handled_by | Orders (Context) |
+| orders.EVT003 (Operation) | handled_by | Orders (Context) |
+| orders.EVT006 (Operation) | handled_by | Orders (Context) |
+| orders.CMD023 (Operation) | handled_by | Orders (Context) |
+| orders.EVT010 (Operation) | handled_by | Orders (Context) |
+| orders.QRY004 (Operation) | handled_by | Orders (Context) |
+| shipping.CMD001 (Operation) | handled_by | Shipping (Context) |
+| shipping.CMD002 (Operation) | handled_by | Shipping (Context) |
+| shipping.CMD003 (Operation) | handled_by | Shipping (Context) |
+| shipping.CMD004 (Operation) | handled_by | Shipping (Context) |
+| shipping.CMD005 (Operation) | handled_by | Shipping (Context) |
+| shipping.CMD006 (Operation) | handled_by | Shipping (Context) |
+| shipping.CMD007 (Operation) | handled_by | Shipping (Context) |
+| shipping.CMD008 (Operation) | handled_by | Shipping (Context) |
+| shipping.CMD009 (Operation) | handled_by | Shipping (Context) |
+| shipping.CMD010 (Operation) | handled_by | Shipping (Context) |
+| shipping.EVT001 (Operation) | handled_by | Shipping (Context) |
+| shipping.EVT002 (Operation) | handled_by | Shipping (Context) |
+| shipping.EVT003 (Operation) | handled_by | Shipping (Context) |
+| shipping.EVT004 (Operation) | handled_by | Shipping (Context) |
+| shipping.EVT005 (Operation) | handled_by | Shipping (Context) |
+| shipping.EVT006 (Operation) | handled_by | Shipping (Context) |
+| shipping.EVT007 (Operation) | handled_by | Shipping (Context) |
+| shipping.EVT008 (Operation) | handled_by | Shipping (Context) |
+| shipping.QRY001 (Operation) | handled_by | Shipping (Context) |
+| shipping.QRY002 (Operation) | handled_by | Shipping (Context) |
+| shipping.QRY003 (Operation) | handled_by | Shipping (Context) |
+| shipping.QRY004 (Operation) | handled_by | Shipping (Context) |
+| shipping.CMD011 (Operation) | handled_by | Shipping (Context) |
+| shipping.CMD012 (Operation) | handled_by | Shipping (Context) |
+| shipping.CMD013 (Operation) | handled_by | Shipping (Context) |
+| shipping.CMD014 (Operation) | handled_by | Shipping (Context) |
+| shipping.CMD015 (Operation) | handled_by | Shipping (Context) |
+| shipping.CMD016 (Operation) | handled_by | Shipping (Context) |
+| shipping.CMD017 (Operation) | handled_by | Shipping (Context) |
+| shipping.EVT009 (Operation) | handled_by | Shipping (Context) |
+| shipping.EVT010 (Operation) | handled_by | Shipping (Context) |
+| shipping.EVT011 (Operation) | handled_by | Shipping (Context) |
+| shipping.EVT012 (Operation) | handled_by | Shipping (Context) |
+| shipping.EVT013 (Operation) | handled_by | Shipping (Context) |
+| shipping.EVT014 (Operation) | handled_by | Shipping (Context) |
+| shipping.EVT015 (Operation) | handled_by | Shipping (Context) |
+| shipping.QRY005 (Operation) | handled_by | Shipping (Context) |
+| shipping.QRY006 (Operation) | handled_by | Shipping (Context) |
+| shipping.QRY007 (Operation) | handled_by | Shipping (Context) |
+| shipping.QRY008 (Operation) | handled_by | Shipping (Context) |
+| shipping.QRY009 (Operation) | handled_by | Shipping (Context) |
+| shipping.QRY010 (Operation) | handled_by | Shipping (Context) |
+| shipping.QRY011 (Operation) | handled_by | Shipping (Context) |
+| shop.CMD001 (Operation) | handled_by | Shop (Context) |
+| shop.EVT001 (Operation) | handled_by | Shop (Context) |
+| shop.QRY001 (Operation) | handled_by | Shop (Context) |
+| shop.QRY002 (Operation) | handled_by | Shop (Context) |
+| shop.CMD002 (Operation) | handled_by | Shop (Context) |
+| shop.EVT002 (Operation) | handled_by | Shop (Context) |
+| shop.CMD003 (Operation) | handled_by | Shop (Context) |
+| shop.EVT003 (Operation) | handled_by | Shop (Context) |
+| shop.CMD004 (Operation) | handled_by | Shop (Context) |
+| shop.CMD005 (Operation) | handled_by | Shop (Context) |
+| shop.QRY003 (Operation) | handled_by | Shop (Context) |
+| shop.CMD006 (Operation) | handled_by | Shop (Context) |
+| shop.EVT004 (Operation) | handled_by | Shop (Context) |
+| shop.CMD007 (Operation) | handled_by | Shop (Context) |
+| shop.EVT005 (Operation) | handled_by | Shop (Context) |
+| shop.CMD008 (Operation) | handled_by | Shop (Context) |
+| shop.EVT006 (Operation) | handled_by | Shop (Context) |
+| shop.CMD009 (Operation) | handled_by | Shop (Context) |
+| shop.QRY004 (Operation) | handled_by | Shop (Context) |
+| shop.CMD010 (Operation) | handled_by | Shop (Context) |
+| shop.EVT007 (Operation) | handled_by | Shop (Context) |
+| shop.CMD011 (Operation) | handled_by | Shop (Context) |
+| shop.EVT008 (Operation) | handled_by | Shop (Context) |
+| shop.CMD012 (Operation) | handled_by | Shop (Context) |
+| shop.EVT009 (Operation) | handled_by | Shop (Context) |
+| shop.CMD013 (Operation) | handled_by | Shop (Context) |
+| shop.QRY005 (Operation) | handled_by | Shop (Context) |
+| shop.QRY006 (Operation) | handled_by | Shop (Context) |
+| shop.QRY007 (Operation) | handled_by | Shop (Context) |
+| shop.CMD014 (Operation) | handled_by | Shop (Context) |
+| shop.EVT010 (Operation) | handled_by | Shop (Context) |
+| shop.CMD015 (Operation) | handled_by | Shop (Context) |
+| shop.EVT011 (Operation) | handled_by | Shop (Context) |
+| shop.CMD016 (Operation) | handled_by | Shop (Context) |
+| shop.EVT012 (Operation) | handled_by | Shop (Context) |
+| shop.QRY008 (Operation) | handled_by | Shop (Context) |
+| shop.CMD017 (Operation) | handled_by | Shop (Context) |
+| shop.EVT013 (Operation) | handled_by | Shop (Context) |
+| shop.QRY009 (Operation) | handled_by | Shop (Context) |
+| shop.CMD018 (Operation) | handled_by | Shop (Context) |
+| shop.EVT014 (Operation) | handled_by | Shop (Context) |
+| shop.QRY010 (Operation) | handled_by | Shop (Context) |
+| prestashop.IR001 (InfraResource) | hosted_on | prestashop.IR005 (InfraResource) |
+| prestashop.IR002 (InfraResource) | hosted_on | prestashop.IR005 (InfraResource) |
+| prestashop.IR003 (InfraResource) | hosted_on | prestashop.IR005 (InfraResource) |
+| prestashop.IR004 (InfraResource) | hosted_on | prestashop.IR005 (InfraResource) |
 | admin.CMD021 (Operation) | initiated_by | admin.ACT003 (Actor) |
 | admin.CMD022 (Operation) | initiated_by | admin.ACT003 (Actor) |
 | admin.CMD023 (Operation) | initiated_by | admin.ACT003 (Actor) |
@@ -8929,6 +10189,29 @@ graph TD
 | orders.INQ001 (Inquiry) | inquiry_stakeholder | orders.ACT001 (Actor) |
 | orders.INQ001 (Inquiry) | inquiry_stakeholder | orders.ACT002 (Actor) |
 | orders.INQ002 (Inquiry) | inquiry_stakeholder | orders.ACT001 (Actor) |
+| LP001 (LeveragePoint) | leverage_capability | CAP003 (Capability) |
+| LP002 (LeveragePoint) | leverage_capability | CAP004 (Capability) |
+| LP004 (LeveragePoint) | leverage_capability | CAP006 (Capability) |
+| LP001 (LeveragePoint) | leverage_decision | D001 (Decision) |
+| LP002 (LeveragePoint) | leverage_decision | D002 (Decision) |
+| LP002 (LeveragePoint) | leverage_decision | D003 (Decision) |
+| LP003 (LeveragePoint) | leverage_decision | D004 (Decision) |
+| LP004 (LeveragePoint) | leverage_decision | D005 (Decision) |
+| LP005 (LeveragePoint) | leverage_decision | D006 (Decision) |
+| LP003 (LeveragePoint) | leverage_depends_on | LP001 (LeveragePoint) |
+| LP004 (LeveragePoint) | leverage_depends_on | LP002 (LeveragePoint) |
+| LP001 (LeveragePoint) | leverage_fitness_function | FF001 (Missing) |
+| LP003 (LeveragePoint) | leverage_fitness_function | FF003 (Missing) |
+| LP005 (LeveragePoint) | leverage_fitness_function | FF004 (Missing) |
+| LP005 (LeveragePoint) | leverage_fitness_function | FF005 (Missing) |
+| LP001 (LeveragePoint) | leverage_realized_by | WI001 (WorkItem) |
+| LP002 (LeveragePoint) | leverage_realized_by | WI002 (WorkItem) |
+| LP003 (LeveragePoint) | leverage_realized_by | WI003 (WorkItem) |
+| LP005 (LeveragePoint) | leverage_realized_by | WI010 (WorkItem) |
+| LP001 (LeveragePoint) | leverage_value_stream | VS001 (ValueStream) |
+| LP002 (LeveragePoint) | leverage_value_stream | VS002 (ValueStream) |
+| LP003 (LeveragePoint) | leverage_value_stream | VS001 (ValueStream) |
+| LP004 (LeveragePoint) | leverage_value_stream | VS003 (ValueStream) |
 | orders.CMD003 (Operation) | materializes | orders.CN009 (Concept) |
 | orders.CMD015 (Operation) | materializes | orders.CN009 (Concept) |
 | orders.CMD016 (Operation) | materializes | orders.CN009 (Concept) |
@@ -8996,6 +10279,8 @@ graph TD
 | shipping.UNV001 (UINavigation) | nav_to | shipping.SCR002 (Screen) |
 | shipping.UNV002 (UINavigation) | nav_to | shipping.SCR004 (Screen) |
 | shop.UNV001 (UINavigation) | nav_to | shop.SCR004 (Screen) |
+| prestashop.DSC002 (DeploymentScope) | nested_in | prestashop.DSC001 (DeploymentScope) |
+| prestashop.DSC003 (DeploymentScope) | nested_in | prestashop.DSC001 (DeploymentScope) |
 | PRT001 (Party) | org_contains_dept | DPT001 (Department) |
 | PRT001 (Party) | org_contains_dept | DPT002 (Department) |
 | PRT001 (Party) | org_contains_dept | DPT003 (Department) |
@@ -9241,22 +10526,22 @@ graph TD
 | shop.CMD016 (Operation) | produces | shop.EVT012 (Operation) |
 | shop.CMD017 (Operation) | produces | shop.EVT013 (Operation) |
 | shop.CMD018 (Operation) | produces | shop.EVT014 (Operation) |
-| CatalogService (Service) | provides | CatalogService.openapi (Contract) |
-| CatalogService (Service) | provides | CatalogService.asyncapi (Contract) |
-| OrderService (Service) | provides | OrderService.openapi (Contract) |
-| OrderService (Service) | provides | OrderService.asyncapi (Contract) |
-| CheckoutService (Service) | provides | CheckoutService.openapi (Contract) |
-| CheckoutService (Service) | provides | CheckoutService.asyncapi (Contract) |
-| CustomerService (Service) | provides | CustomerService.openapi (Contract) |
-| ShippingService (Service) | provides | ShippingService.openapi (Contract) |
-| InternationalService (Service) | provides | InternationalService.openapi (Contract) |
-| ContentService (Service) | provides | ContentService.openapi (Contract) |
-| ModuleManager (Service) | provides | ModuleManager.openapi (Contract) |
 | AdminService (Service) | provides | AdminService.openapi (Contract) |
 | AdminService (Service) | provides | AdminService.security_schemes (Contract) |
-| ShopService (Service) | provides | ShopService.openapi (Contract) |
+| CatalogService (Service) | provides | CatalogService.openapi (Contract) |
+| CatalogService (Service) | provides | CatalogService.asyncapi (Contract) |
+| CheckoutService (Service) | provides | CheckoutService.openapi (Contract) |
+| CheckoutService (Service) | provides | CheckoutService.asyncapi (Contract) |
+| ContentService (Service) | provides | ContentService.openapi (Contract) |
+| CustomerService (Service) | provides | CustomerService.openapi (Contract) |
+| InternationalService (Service) | provides | InternationalService.openapi (Contract) |
+| ModuleManager (Service) | provides | ModuleManager.openapi (Contract) |
+| OrderService (Service) | provides | OrderService.openapi (Contract) |
+| OrderService (Service) | provides | OrderService.asyncapi (Contract) |
 | AdminApiClient (Service) | provides | AdminApiClient.httpClient (Contract) |
 | AdminApiClient (Service) | provides | AdminApiClient.security_schemes (Contract) |
+| ShippingService (Service) | provides | ShippingService.openapi (Contract) |
+| ShopService (Service) | provides | ShopService.openapi (Contract) |
 | catalog.CN003 (Concept) | relationship | catalog.CN001 (Concept) |
 | catalog.CN004 (Concept) | relationship | catalog.CN001 (Concept) |
 | orders.CN003 (Concept) | relationship | orders.CN002 (Concept) |
@@ -9290,6 +10575,9 @@ graph TD
 | catalog.R001 (Risk) | risk_owner | orders.ACT002 (Actor) |
 | orders.R001 (Risk) | risk_owner | orders.ACT002 (Actor) |
 | orders.R004 (Risk) | risk_owner | orders.ACT002 (Actor) |
+| WI001 (WorkItem) | roadmap_realizes_decision | D001 (Decision) |
+| WI001 (WorkItem) | roadmap_value_stream | VS001 (ValueStream) |
+| WI010 (WorkItem) | roadmap_value_stream | VS002 (ValueStream) |
 | admin.SCR001 (Screen) | screen_motivated_by | admin.G001 (Goal) |
 | admin.SCR003 (Screen) | screen_motivated_by | admin.G001 (Goal) |
 | admin.SCR004 (Screen) | screen_motivated_by | admin.G002 (Goal) |
@@ -9368,68 +10656,68 @@ graph TD
 | shop.SCR003 (Screen) | screen_uses_model | SearchEngineList (Missing) |
 | shop.SCR004 (Screen) | screen_uses_model | AliasList (Missing) |
 | shop.SCR005 (Screen) | screen_uses_model | ContactList (Missing) |
-| admin.STR001 (Story) | story_orders_operation | admin.CMD001 (Missing) |
-| admin.STR001 (Story) | story_orders_operation | admin.CMD013 (Missing) |
-| admin.STR002 (Story) | story_orders_operation | admin.CMD021 (Missing) |
-| admin.STR002 (Story) | story_orders_operation | admin.CMD024 (Missing) |
-| admin.STR003 (Story) | story_orders_operation | admin.CMD019 (Missing) |
-| catalog.STR001 (Story) | story_orders_operation | catalog.CMD001 (Missing) |
-| catalog.STR001 (Story) | story_orders_operation | catalog.EVT001 (Missing) |
-| catalog.STR002 (Story) | story_orders_operation | catalog.CMD011 (Missing) |
-| catalog.STR002 (Story) | story_orders_operation | catalog.EVT004 (Missing) |
-| catalog.STR003 (Story) | story_orders_operation | catalog.CMD025 (Missing) |
-| catalog.STR003 (Story) | story_orders_operation | catalog.EVT009 (Missing) |
-| checkout.STR001 (Story) | story_orders_operation | checkout.CMD009 (Missing) |
-| checkout.STR001 (Story) | story_orders_operation | checkout.CMD014 (Missing) |
-| checkout.STR001 (Story) | story_orders_operation | checkout.CMD002 (Missing) |
-| checkout.STR002 (Story) | story_orders_operation | checkout.CMD016 (Missing) |
-| checkout.STR002 (Story) | story_orders_operation | checkout.CMD019 (Missing) |
-| content.STR001 (Story) | story_orders_operation | content.CMD001 (Missing) |
-| content.STR001 (Story) | story_orders_operation | content.CMD019 (Missing) |
-| content.STR001 (Story) | story_orders_operation | content.QRY001 (Missing) |
-| content.STR002 (Story) | story_orders_operation | content.CMD013 (Missing) |
-| content.STR002 (Story) | story_orders_operation | content.CMD014 (Missing) |
-| content.STR002 (Story) | story_orders_operation | content.CMD017 (Missing) |
-| customers.STR001 (Story) | story_orders_operation | customers.CMD001 (Missing) |
-| customers.STR001 (Story) | story_orders_operation | customers.CMD012 (Missing) |
-| customers.STR001 (Story) | story_orders_operation | customers.CMD003 (Missing) |
-| customers.STR002 (Story) | story_orders_operation | customers.CMD016 (Missing) |
-| customers.STR002 (Story) | story_orders_operation | customers.CMD017 (Missing) |
-| international.STR001 (Story) | story_orders_operation | international.CMD001 (Missing) |
-| international.STR001 (Story) | story_orders_operation | international.CMD005 (Missing) |
-| international.STR001 (Story) | story_orders_operation | international.CMD006 (Missing) |
-| international.STR002 (Story) | story_orders_operation | international.CMD023 (Missing) |
-| international.STR002 (Story) | story_orders_operation | international.CMD027 (Missing) |
-| international.STR002 (Story) | story_orders_operation | international.CMD028 (Missing) |
+| admin.STR001 (Story) | story_orders_operation | admin.CMD001 (Operation) |
+| admin.STR001 (Story) | story_orders_operation | admin.CMD013 (Operation) |
+| admin.STR002 (Story) | story_orders_operation | admin.CMD021 (Operation) |
+| admin.STR002 (Story) | story_orders_operation | admin.CMD024 (Operation) |
+| admin.STR003 (Story) | story_orders_operation | admin.CMD019 (Operation) |
+| catalog.STR001 (Story) | story_orders_operation | catalog.CMD001 (Operation) |
+| catalog.STR001 (Story) | story_orders_operation | catalog.EVT001 (Operation) |
+| catalog.STR002 (Story) | story_orders_operation | catalog.CMD011 (Operation) |
+| catalog.STR002 (Story) | story_orders_operation | catalog.EVT004 (Operation) |
+| catalog.STR003 (Story) | story_orders_operation | catalog.CMD025 (Operation) |
+| catalog.STR003 (Story) | story_orders_operation | catalog.EVT009 (Operation) |
+| checkout.STR001 (Story) | story_orders_operation | checkout.CMD009 (Operation) |
+| checkout.STR001 (Story) | story_orders_operation | checkout.CMD014 (Operation) |
+| checkout.STR001 (Story) | story_orders_operation | checkout.CMD002 (Operation) |
+| checkout.STR002 (Story) | story_orders_operation | checkout.CMD016 (Operation) |
+| checkout.STR002 (Story) | story_orders_operation | checkout.CMD019 (Operation) |
+| content.STR001 (Story) | story_orders_operation | content.CMD001 (Operation) |
+| content.STR001 (Story) | story_orders_operation | content.CMD019 (Operation) |
+| content.STR001 (Story) | story_orders_operation | content.QRY001 (Operation) |
+| content.STR002 (Story) | story_orders_operation | content.CMD013 (Operation) |
+| content.STR002 (Story) | story_orders_operation | content.CMD014 (Operation) |
+| content.STR002 (Story) | story_orders_operation | content.CMD017 (Operation) |
+| customers.STR001 (Story) | story_orders_operation | customers.CMD001 (Operation) |
+| customers.STR001 (Story) | story_orders_operation | customers.CMD012 (Operation) |
+| customers.STR001 (Story) | story_orders_operation | customers.CMD003 (Operation) |
+| customers.STR002 (Story) | story_orders_operation | customers.CMD016 (Operation) |
+| customers.STR002 (Story) | story_orders_operation | customers.CMD017 (Operation) |
+| international.STR001 (Story) | story_orders_operation | international.CMD001 (Operation) |
+| international.STR001 (Story) | story_orders_operation | international.CMD005 (Operation) |
+| international.STR001 (Story) | story_orders_operation | international.CMD006 (Operation) |
+| international.STR002 (Story) | story_orders_operation | international.CMD023 (Operation) |
+| international.STR002 (Story) | story_orders_operation | international.CMD027 (Operation) |
+| international.STR002 (Story) | story_orders_operation | international.CMD028 (Operation) |
 | modules.STR001 (Story) | story_orders_operation | modules.CMD008 (Operation) |
 | modules.STR001 (Story) | story_orders_operation | modules.CMD001 (Operation) |
 | modules.STR001 (Story) | story_orders_operation | modules.QRY001 (Operation) |
 | modules.STR002 (Story) | story_orders_operation | modules.CMD003 (Operation) |
 | modules.STR002 (Story) | story_orders_operation | modules.CMD006 (Operation) |
-| orders.STR001 (Story) | story_orders_operation | orders.CMD001 (Missing) |
-| orders.STR001 (Story) | story_orders_operation | orders.EVT001 (Missing) |
-| orders.STR002 (Story) | story_orders_operation | orders.CMD002 (Missing) |
-| orders.STR002 (Story) | story_orders_operation | orders.EVT002 (Missing) |
-| orders.STR002 (Story) | story_orders_operation | orders.CMD003 (Missing) |
-| orders.STR002 (Story) | story_orders_operation | orders.EVT003 (Missing) |
-| orders.STR002 (Story) | story_orders_operation | orders.EVT006 (Missing) |
-| orders.STR003 (Story) | story_orders_operation | orders.CMD020 (Missing) |
-| orders.STR003 (Story) | story_orders_operation | orders.EVT009 (Missing) |
-| orders.STR004 (Story) | story_orders_operation | orders.CMD017 (Missing) |
-| orders.STR004 (Story) | story_orders_operation | orders.EVT007 (Missing) |
-| orders.STR004 (Story) | story_orders_operation | orders.CMD019 (Missing) |
-| orders.STR004 (Story) | story_orders_operation | orders.EVT008 (Missing) |
-| orders.STR005 (Story) | story_orders_operation | orders.CMD023 (Missing) |
-| orders.STR005 (Story) | story_orders_operation | orders.EVT010 (Missing) |
-| orders.STR005 (Story) | story_orders_operation | orders.CMD016 (Missing) |
-| orders.STR005 (Story) | story_orders_operation | orders.EVT003 (Missing) |
-| orders.STR005 (Story) | story_orders_operation | orders.EVT006 (Missing) |
-| shipping.STR001 (Story) | story_orders_operation | shipping.CMD001 (Missing) |
-| shipping.STR001 (Story) | story_orders_operation | shipping.CMD008 (Missing) |
-| shipping.STR001 (Story) | story_orders_operation | shipping.CMD010 (Missing) |
-| shipping.STR002 (Story) | story_orders_operation | shipping.CMD011 (Missing) |
-| shipping.STR002 (Story) | story_orders_operation | shipping.CMD013 (Missing) |
-| shipping.STR002 (Story) | story_orders_operation | shipping.CMD015 (Missing) |
+| orders.STR001 (Story) | story_orders_operation | orders.CMD001 (Operation) |
+| orders.STR001 (Story) | story_orders_operation | orders.EVT001 (Operation) |
+| orders.STR002 (Story) | story_orders_operation | orders.CMD002 (Operation) |
+| orders.STR002 (Story) | story_orders_operation | orders.EVT002 (Operation) |
+| orders.STR002 (Story) | story_orders_operation | orders.CMD003 (Operation) |
+| orders.STR002 (Story) | story_orders_operation | orders.EVT003 (Operation) |
+| orders.STR002 (Story) | story_orders_operation | orders.EVT006 (Operation) |
+| orders.STR003 (Story) | story_orders_operation | orders.CMD020 (Operation) |
+| orders.STR003 (Story) | story_orders_operation | orders.EVT009 (Operation) |
+| orders.STR004 (Story) | story_orders_operation | orders.CMD017 (Operation) |
+| orders.STR004 (Story) | story_orders_operation | orders.EVT007 (Operation) |
+| orders.STR004 (Story) | story_orders_operation | orders.CMD019 (Operation) |
+| orders.STR004 (Story) | story_orders_operation | orders.EVT008 (Operation) |
+| orders.STR005 (Story) | story_orders_operation | orders.CMD023 (Operation) |
+| orders.STR005 (Story) | story_orders_operation | orders.EVT010 (Operation) |
+| orders.STR005 (Story) | story_orders_operation | orders.CMD016 (Operation) |
+| orders.STR005 (Story) | story_orders_operation | orders.EVT003 (Operation) |
+| orders.STR005 (Story) | story_orders_operation | orders.EVT006 (Operation) |
+| shipping.STR001 (Story) | story_orders_operation | shipping.CMD001 (Operation) |
+| shipping.STR001 (Story) | story_orders_operation | shipping.CMD008 (Operation) |
+| shipping.STR001 (Story) | story_orders_operation | shipping.CMD010 (Operation) |
+| shipping.STR002 (Story) | story_orders_operation | shipping.CMD011 (Operation) |
+| shipping.STR002 (Story) | story_orders_operation | shipping.CMD013 (Operation) |
+| shipping.STR002 (Story) | story_orders_operation | shipping.CMD015 (Operation) |
 | shop.STR001 (Story) | story_orders_operation | shop.CMD001 (Operation) |
 | shop.STR002 (Story) | story_orders_operation | shop.CMD010 (Operation) |
 | orders.CN002 (Concept) | transition_rules | orders.TR001 (TransitionRule) |
@@ -10074,12 +11362,19 @@ graph TD
 | VS003 (ValueStream) | value_stream_kpi | admin.KPI001 (KPI) |
 | VS003 (ValueStream) | value_stream_kpi | modules.KPI001 (KPI) |
 | VS003 (ValueStream) | value_stream_kpi | shop.KPI001 (KPI) |
+| WI001 (WorkItem) | work_item_child | WI002 (WorkItem) |
+| WI001 (WorkItem) | work_item_child | WI003 (WorkItem) |
+| WI003 (WorkItem) | work_item_dependency | WI002 (WorkItem) |
+| WI010 (WorkItem) | work_item_dependency | WI001 (WorkItem) |
+| WI001 (WorkItem) | work_item_milestone | MS001 (Milestone) |
+| WI010 (WorkItem) | work_item_milestone | MS002 (Milestone) |
 
 ### By Type
 
 | Relation Type | Count |
 |---------------|-------|
 | code_ref | 691 |
+| handled_by | 494 |
 | validates | 248 |
 | produces | 232 |
 | initiated_by | 226 |
@@ -10093,6 +11388,7 @@ graph TD
 | action_on_screen | 44 |
 | screen_uses_model | 39 |
 | user_story_test_case | 39 |
+| contract_exposes | 31 |
 | use_case_user_story | 31 |
 | association | 27 |
 | use_case_actor | 25 |
@@ -10102,11 +11398,13 @@ graph TD
 | inquiry_goal | 18 |
 | screen_story | 17 |
 | provides | 16 |
+| depends_on | 16 |
 | nav_from | 16 |
 | nav_to | 16 |
 | milestone_deliverable | 16 |
 | capability_refs | 13 |
 | concept | 12 |
+| binds | 12 |
 | contains | 11 |
 | user_story_use_case | 11 |
 | capability_goal | 11 |
@@ -10114,18 +11412,36 @@ graph TD
 | dept_has_team | 10 |
 | org_contains_team | 10 |
 | value_stream_kpi | 9 |
+| contract_sends | 7 |
 | relationship | 6 |
 | milestone_dependency | 6 |
+| leverage_decision | 6 |
+| contract_calls | 5 |
 | assumption_risk | 5 |
+| grouped_in | 5 |
 | inquiry_stakeholder | 4 |
 | inquiry_risk | 4 |
+| leverage_fitness_function | 4 |
+| leverage_realized_by | 4 |
+| leverage_value_stream | 4 |
+| hosted_on | 4 |
 | materializes | 3 |
 | org_contains_dept | 3 |
 | risk_owner | 3 |
 | value_stream_actor | 3 |
+| leverage_capability | 3 |
+| connects_to | 3 |
+| roadmap_value_stream | 2 |
+| work_item_milestone | 2 |
+| work_item_child | 2 |
+| work_item_dependency | 2 |
 | inquiry_owner | 2 |
+| leverage_depends_on | 2 |
+| nested_in | 2 |
 | transition_rules | 1 |
+| contract_receives | 1 |
 | use_case_story | 1 |
+| roadmap_realizes_decision | 1 |
 
 ## Coverage Gaps
 
@@ -10184,21 +11500,13 @@ Entities with no incoming or outgoing relations:
 - **admin.ERR003** (Error) — ProfileInUse
 - **admin.ERR004** (Error) — EmployeeEmailNotUnique
 - **admin.ERR005** (Error) — PasswordPolicyViolation
-- **catalog.QRY005** (Operation) — GetCategoryTree
-- **catalog.QRY006** (Operation) — GetCategoryProducts
 - **catalog.ERR004** (Error) — CategoryNotFound
 - **catalog.ERR005** (Error) — CategoryTreeDepthExceeded
-- **catalog.QRY007** (Operation) — GetAttributeGroups
-- **catalog.QRY008** (Operation) — GetFeatures
-- **catalog.QRY004** (Operation) — GetCombinationForEditing
 - **catalog.ERR007** (Error) — SpecificPriceConflict
-- **catalog.QRY009** (Operation) — GetProductsList
 - **catalog.ERR001** (Error) — ProductNotFound
 - **catalog.ERR002** (Error) — DuplicateSKU
 - **catalog.ERR003** (Error) — InvalidProductType
 - **catalog.ERR006** (Error) — ImageDimensionsTooSmall
-- **catalog.QRY010** (Operation) — GetManufacturers
-- **catalog.QRY011** (Operation) — GetSuppliers
 - **checkout.ERR006** (Error) — DiscountNotFound
 - **checkout.ERR007** (Error) — InvalidDiscountConfiguration
 - **checkout.ERR008** (Error) — CatalogPriceRuleNotFound
@@ -10234,8 +11542,6 @@ Entities with no incoming or outgoing relations:
 - **modules.ERR005** (Error) — HookNotFound
 - **orders.ERR002** (Error) — PaymentDeclined
 - **orders.ERR006** (Error) — InvoiceAlreadyGenerated
-- **orders.QRY005** (Operation) — GetOrderStateForEditing
-- **orders.QRY006** (Operation) — GetOrderMessageForEditing
 - **orders.ERR003** (Error) — OrderNotFound
 - **orders.ERR004** (Error) — InvalidStateTransition
 - **orders.ERR005** (Error) — RefundExceedsTotal
@@ -10244,6 +11550,17 @@ Entities with no incoming or outgoing relations:
 - **shop.ERR001** (Error) — LogoExtensionNotSupported
 - **shop.ERR002** (Error) — SearchEngineNotFound
 - **shop.ERR003** (Error) — AliasNotFound
+- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
 - **MDL012** (Models) — Partial update payload for an existing category.
 - **MDL014** (Models) — Recursive tree node for category hierarchy display.
 - **MDL016** (Models) — Full attribute group with its values for editing.
@@ -10343,7 +11660,6 @@ Entities with no incoming or outgoing relations:
 - **shipping.SLO002** (SLO) — Shipment Creation Latency
 - **shop.KPI002** (KPI) — Search Alias Coverage
 - **shop.SLO001** (SLO) — Search Indexation Latency
-- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
 
 ### Untested Rules (12)
 

@@ -18,6 +18,7 @@ import { extractRoadmap } from './roadmap.js';
 import { extractValueStream } from './valueStream.js';
 import { extractLeverage } from './leverage.js';
 import { extractRg } from './rg.js';
+import { extractInfrastructure } from './infrastructure.js';
 
 /**
  * Optional extractors (stub: return [] until implemented).
@@ -40,7 +41,11 @@ const EXTRACTORS: Record<string, (doc: ParsedBlueprintDocument) => Entity[]> = {
   story: extractStory,
   dynamics: extractDynamics,
   models: extractModels,
-  infrastructure: extractRg,
+  // v2.7.7 de-alias: `infrastructure.yaml` now routes to the typed infra extractor
+  // (InfraResource/Environment/Binding/DeploymentScope/DeploymentTier under
+  // `design.infrastructure`). `rg` stays wired to `extractRg` for v2.6 back-compat.
+  rg: extractRg,
+  infrastructure: extractInfrastructure,
   organization: extractOrg,
   interactions: extractUI,
   roadmap: extractRoadmap,
@@ -94,4 +99,5 @@ export { extractRoadmap } from './roadmap.js';
 export { extractValueStream } from './valueStream.js';
 export { extractLeverage } from './leverage.js';
 export { extractRg } from './rg.js';
+export { extractInfrastructure } from './infrastructure.js';
 export { makeInternalId, getSchemaTypeFromPath } from './id.js';

@@ -173,6 +173,37 @@ export const RELATION_TYPE = {
   OwnedByTeam: 'owned_by_team',
   // rg.schema (Step 01 / D26): arch service deployed in deployment tier (topology.tiers[].services[] → Service).
   DeployedInTier: 'deployed_in_tier',
+  // infrastructure.schema (v2.7.7): TOSCA-derived inter-resource relations
+  // (resource.relations[] — InfraResource → InfraResource). `hosted_on` is the canonical
+  // placement edge (distinct from the DeploymentTier `contains` grouping VIEW, so the two
+  // never double-count). connects_to/routes_to may cross environments/substrates for a
+  // hybrid network-link interconnect. NOTE: `depends_on` (TOSCA) reuses the existing
+  // `DependsOn` const above (arch context dependencies share the same 'depends_on' value).
+  HostedOn: 'hosted_on',
+  ConnectsTo: 'connects_to',
+  AttachesTo: 'attaches_to',
+  RoutesTo: 'routes_to',
+  // infrastructure.schema (v2.7.7): the three-altitude intent→binding→instance edges.
+  // needs: arch Service → ResourceType (abstract intent, service.needs[].type_ref).
+  Needs: 'needs',
+  // uses_resource: arch Service → InfraResource (concrete intent, service.resource_refs[]).
+  UsesResource: 'uses_resource',
+  // realizes_type: InfraResource/Binding → ResourceType (resource.type_ref / binding.type_ref).
+  RealizesType: 'realizes_type',
+  // binds: Binding → Environment (binding.environment_ref) and Binding → InfraResource
+  // (binding.resource_ref) — the (type × environment) → concrete-resource bridge.
+  Binds: 'binds',
+  // infrastructure.schema (v2.7.7 DeploymentScope): management-grouping edges — the
+  // NON-TOSCA counterpart to `hosted_on` (runtime placement). Extraction-emitted from ref
+  // fields, so the five TOSCA verbs stay frozen. A resource may be BOTH `grouped_in` a
+  // scope (who manages it) and `hosted_on` a host (what it runs on) — distinct, not
+  // double-counted (the resource-group-vs-pool distinction).
+  // grouped_in: InfraResource → DeploymentScope (resource.scope_ref).
+  GroupedIn: 'grouped_in',
+  // nested_in: DeploymentScope → DeploymentScope (scope.parent — subscription→resource-group).
+  NestedIn: 'nested_in',
+  // targets_scope: Environment → DeploymentScope (environment.target_scope.ref — promoted inline scope).
+  TargetsScope: 'targets_scope',
   // roadmap.schema (v2.7.2): work item rolls up to milestone / release (work_item.milestone)
   WorkItemMilestone: 'work_item_milestone',
   // roadmap.schema (v2.7.2): parent work item contains child work item (work_item.children[])

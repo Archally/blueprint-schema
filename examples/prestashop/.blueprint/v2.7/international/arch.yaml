@@ -1,0 +1,40 @@
+version: 1.0.0
+name: International (PrestaShop)
+description: Architecture of the PrestaShop International bounded context.
+tags:
+  - prestashop
+  - e-commerce
+  - php
+  - symfony
+parties:
+  - name: PrestaShop
+    kind: system
+    env: production
+    description: PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+    contexts:
+      - id: prestashop.BC006
+        name: International
+        kind: support
+        complexity: transformation
+        summary: Currencies, countries, zones, languages, tax rules — localization backbone.
+        owned_by:
+          team: TM006
+        responsibilities:
+          - Currency management and exchange rates
+          - Country, state, and zone hierarchies
+          - Language and translation management
+          - Tax rule groups and tax rate configuration
+          - Locale-specific formatting (date, number, address)
+        services:
+          - id: prestashop.SVC006
+            name: InternationalService
+            kind: api
+            summary: REST API for currency, tax, country, and language management.
+            contracts:
+              openapi:
+                output: dist/international-api.openapi.yaml
+                expose:
+                  - international:getCurrencyForEditing
+                  - international:getTaxRulesGroupForEditing
+                  - international:getCountryForEditing
+                  - international:getLanguageForEditing

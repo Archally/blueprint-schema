@@ -1,0 +1,48 @@
+version: 1.0.0
+name: Customers (PrestaShop)
+description: Architecture of the PrestaShop Customers bounded context.
+tags:
+  - prestashop
+  - e-commerce
+  - php
+  - symfony
+parties:
+  - name: PrestaShop
+    kind: system
+    env: production
+    description: PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+    contexts:
+      - id: prestashop.BC005
+        name: Customers
+        kind: support
+        complexity: crud
+        summary: Customer accounts, addresses, customer service messaging, titles.
+        owned_by:
+          team: TM004
+        responsibilities:
+          - Customer registration and account management
+          - Address CRUD (billing, shipping)
+          - Customer service thread management
+          - Customer group and title management
+        dependencies:
+          - name: International
+            type: api
+            relationship: customer-supplier
+            direction: downstream
+            description: Reads country and state data for address validation.
+            bounded_context_ref: prestashop.BC006
+        services:
+          - id: prestashop.SVC005
+            name: CustomerService
+            kind: api
+            summary: REST API for customer account and address management.
+            needs:
+              - { type_ref: RT001, class: self-hosted, id: prestashop-db }
+            contracts:
+              openapi:
+                output: dist/customers-api.openapi.yaml
+                expose:
+                  - customers:addCustomer
+                  - customers:editCustomer
+                  - customers:addCustomerAddress
+                  - customers:getCustomerForViewing

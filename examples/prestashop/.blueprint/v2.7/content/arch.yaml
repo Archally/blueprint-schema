@@ -1,0 +1,46 @@
+version: 1.0.0
+name: Content (PrestaShop)
+description: Architecture of the PrestaShop Content bounded context.
+tags:
+  - prestashop
+  - e-commerce
+  - php
+  - symfony
+parties:
+  - name: PrestaShop
+    kind: system
+    env: production
+    description: PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+    contexts:
+      - id: prestashop.BC004
+        name: Content
+        kind: support
+        complexity: crud
+        summary: CMS pages, page categories, themes, email templates, SEO meta.
+        owned_by:
+          team: TM007
+        responsibilities:
+          - CMS page and page category management
+          - Theme selection and configuration
+          - Email template management (mail themes)
+          - SEO meta (URL rewriting, page titles, descriptions)
+        dependencies:
+          - name: International
+            type: api
+            relationship: customer-supplier
+            direction: downstream
+            description: Reads language data for multilingual CMS content.
+            bounded_context_ref: prestashop.BC006
+        services:
+          - id: prestashop.SVC004
+            name: ContentService
+            kind: api
+            summary: REST API for CMS page and theme management.
+            needs:
+              - { type_ref: RT002, class: self-hosted, id: prestashop-assets }
+            contracts:
+              openapi:
+                output: dist/content-api.openapi.yaml
+                expose:
+                  - content:addCmsPage
+                  - content:editCmsPage

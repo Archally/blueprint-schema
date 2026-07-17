@@ -1,0 +1,71 @@
+version: 1.0.0
+name: Catalog (PrestaShop)
+description: Architecture of the PrestaShop Catalog bounded context.
+tags:
+  - prestashop
+  - e-commerce
+  - php
+  - symfony
+parties:
+  - name: PrestaShop
+    kind: system
+    env: production
+    description: PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+    contexts:
+      - id: prestashop.BC002
+        name: Catalog
+        kind: core
+        complexity: transformation
+        summary: Product catalog — CRUD, variants, media, categories, attributes, suppliers, search indexing.
+        owned_by:
+          team: TM002
+        responsibilities:
+          - Product lifecycle (create, update, activate, discontinue, archive)
+          - Category hierarchy and product assignment
+          - Combination/variant management with own identity
+          - Product media (images, attachments, virtual files)
+          - Specific pricing rules and customizations
+          - Feature and attribute group management
+          - Supplier and manufacturer associations
+          - Search index synchronization
+        dependencies:
+          - name: International
+            type: api
+            relationship: customer-supplier
+            direction: downstream
+            description: Consumes currency, tax, and language data for product pricing and localization.
+            bounded_context_ref: prestashop.BC006
+          - name: Modules
+            type: events
+            relationship: open-host-service
+            direction: upstream
+            description: Exposes hooks for module-driven catalog extensions.
+            bounded_context_ref: prestashop.BC007
+        services:
+          - id: prestashop.SVC002
+            name: CatalogService
+            kind: api
+            summary: REST API for product and category management.
+            needs:
+              - { type_ref: RT001, class: self-hosted, id: prestashop-db }
+              - { type_ref: RT004, class: self-hosted, id: prestashop-cache }
+              - { type_ref: RT002, class: self-hosted, id: prestashop-assets }
+            servers:
+              - url: https://api.prestashop.example/v1/catalog
+                environment: production
+              - url: http://localhost:8080/api/catalog
+                environment: development
+            contracts:
+              openapi:
+                output: dist/catalog-api.openapi.yaml
+                expose:
+                  - catalog:addProduct
+                  - catalog:updateProduct
+                  - catalog:searchProducts
+                  - catalog:getProductDetail
+              asyncapi:
+                output: dist/catalog-events.asyncapi.yaml
+                send:
+                  - catalog:productCreated
+                  - catalog:productUpdated
+                brokerId: prestashop-event-bus

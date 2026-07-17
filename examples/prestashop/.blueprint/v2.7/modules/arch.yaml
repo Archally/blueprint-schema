@@ -1,0 +1,44 @@
+version: 1.0.0
+name: Modules (PrestaShop)
+description: Architecture of the PrestaShop Modules bounded context.
+tags:
+  - prestashop
+  - e-commerce
+  - php
+  - symfony
+parties:
+  - name: PrestaShop
+    kind: system
+    env: production
+    description: PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+    contexts:
+      - id: prestashop.BC007
+        name: Modules
+        kind: generic
+        complexity: integration
+        summary: Module lifecycle, hook system, module marketplace integration.
+        owned_by:
+          team: TM008
+        responsibilities:
+          - Module install, uninstall, enable, disable, upgrade
+          - Hook registration and execution pipeline
+          - Module configuration management
+        dependencies:
+          - name: Admin
+            type: api
+            relationship: customer-supplier
+            direction: downstream
+            description: Reads employee permissions for module management authorization.
+            bounded_context_ref: prestashop.BC001
+        services:
+          - id: prestashop.SVC007
+            name: ModuleManager
+            kind: service
+            summary: Module lifecycle orchestrator with hook execution pipeline.
+            contracts:
+              openapi:
+                output: dist/modules-api.openapi.yaml
+                expose:
+                  - modules:installModule
+                  - modules:uninstallModule
+                  - modules:getModuleInfos

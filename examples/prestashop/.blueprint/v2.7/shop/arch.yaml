@@ -1,0 +1,48 @@
+version: 1.0.0
+name: Shop (PrestaShop)
+description: Architecture of the PrestaShop Shop bounded context.
+tags:
+  - prestashop
+  - e-commerce
+  - php
+  - symfony
+parties:
+  - name: PrestaShop
+    kind: system
+    env: production
+    description: PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+    contexts:
+      - id: prestashop.BC011
+        name: Shop
+        kind: generic
+        complexity: crud
+        summary: Multi-store configuration, physical stores, contacts, search, aliases.
+        owned_by:
+          team: TM010
+        responsibilities:
+          - Multi-store (shop group/shop) configuration
+          - Physical store listing for store locator
+          - Contact form and department management
+          - Search alias and engine configuration
+          - Showcase card and notification management
+        dependencies:
+          - name: International
+            type: api
+            relationship: customer-supplier
+            direction: downstream
+            description: Reads country and language data for multi-store locale assignment.
+            bounded_context_ref: prestashop.BC006
+        services:
+          - id: prestashop.SVC011
+            name: ShopService
+            kind: api
+            summary: REST API for multi-store and shop configuration.
+            needs:
+              - { type_ref: RT001, class: self-hosted, id: prestashop-db }
+              - { type_ref: RT004, class: self-hosted, id: prestashop-cache }
+            contracts:
+              openapi:
+                output: dist/shop-api.openapi.yaml
+                expose:
+                  - shop:getStoreForEditing
+                  - shop:editContact

@@ -88,7 +88,7 @@ entries:
           Validates clean.
   - version: "2.7.6"
     date: "2026-07-09"
-    summary: "Arch hierarchy typed IDs (BC###/SVC###, reusing PRT### for parties) + context-ownership binding — operations bind to bounded contexts via arch service contracts (expose/send), questions via an explicit bounded_context_ref. Coordinated wave with the infrastructure-layer v2.7.6 changes (IR/ENV/RT/BND, appended separately)."
+    summary: "Arch hierarchy typed IDs (BC###/SVC###, reusing PRT### for parties) + context-ownership binding — operations bind to bounded contexts via arch service contracts (expose/send), questions via an explicit bounded_context_ref. (The infrastructure-layer changes originally slated to append here were split out to a standalone v2.7.7 — IR/ENV/RT/BND did NOT ship in 2.7.6.)"
     changes:
       - kind: add
         target: "metamodel.schema.yaml"

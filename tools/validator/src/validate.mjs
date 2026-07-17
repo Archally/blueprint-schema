@@ -82,7 +82,13 @@ export function validateModel(args) {
     warnings.push(`Duplicate ID '${id}' in: ${locs.join(", ")}`);
   }
 
+  // RT### refs (resource `type_ref`, service `needs[].type_ref`, binding `type_ref`) point to the
+  // resource-type CATALOG in the profiles (schema/v2.7/profiles/infrastructure/**), NOT the model —
+  // skip them so a valid `type_ref: RT001` is never falsely flagged "Missing" (mirror of the monorepo
+  // standalone validator, RD34c — the two validator stacks must agree on this).
+  const CATALOG_REF_RE = /^([a-z][a-z0-9-]*\.)?RT\d{3,}$/;
   for (const r of allRefs) {
+    if (CATALOG_REF_RE.test(r.value)) continue;
     if (!allIds.has(r.value)) {
       crossErrors.push(`Missing reference '${r.value}' at ${r.loc}`);
     }
