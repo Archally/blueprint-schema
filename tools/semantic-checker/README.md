@@ -9,7 +9,7 @@ loadFromDirectory ─▶ buildBlueprintModel ─▶ toCheckableModel (adapter) �
    (parse YAML)          (entities+relations)        (normalize)             (loadRules → runChecker)
 ```
 
-The nine rules are declarative YAML (`rules/*.yaml`); the engine, severity handling, and JSON-Schema
+The fourteen rules are declarative YAML (`rules/*.yaml`); the engine, severity handling, and JSON-Schema
 rule validation come from the package. See its
 [`docs/`](https://github.com/archally/semantic-checker/tree/main/docs) for the rule DSL.
 
@@ -35,6 +35,11 @@ npx @archally/blueprint-schema blueprint-check <dir> --config .blueprint-lint.ya
 | `untested-rules` | warn | every business rule has an incoming `validated-by` edge (a test validates it) |
 | `aggregate-root-signals` | info | aggregate-root Concepts have lifecycle states or relationships |
 | `unanswered-questions` | info | every Question has an outgoing `answered-by` edge |
+| `dispatch-with-exchange` | warn | no Operation sets `dispatch: in-process` *and* an `exchange` — they are mutually exclusive |
+| `unbound-operation` | warn | every Operation is provided by some bounded context (a contract `expose`/`send`, or the deprecated name/scope fallback) |
+| `unbound-question` | warn | every competency Question resolves to a bounded context |
+| `leverage-point-no-address` | warn | every LeveragePoint addresses at least one finding, risk or decision |
+| `leverage-point-no-strategic-intent` | info | every LeveragePoint links to a goal or value stream |
 
 The adapter maps `BlueprintModel → CheckableModel` (`term`→`name`, plane derived from the layer
 prefix, `validates`→`validated-by`, `question_answered_by`→`answered-by`). Output is now ordered
@@ -75,7 +80,7 @@ Severities: `error` (fails), `warn`, `info`, `off`.
 |------|----------------|
 | `cli.ts` | thin entry point — load model, adapt, run, format (compiled to `dist/cli.js`) |
 | `adapter.ts` | `BlueprintModel` → engine `CheckableModel` |
-| `rules/*.yaml` | the nine declarative rule packs the CLI loads |
+| `rules/*.yaml` | the fourteen declarative rule packs the CLI loads |
 | `adapter.test.ts` | adapter unit test (field mapping, plane derivation, relation renames) |
 
 ## Custom rules

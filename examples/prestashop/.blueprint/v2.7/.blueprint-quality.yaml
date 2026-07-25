@@ -1,0 +1,21 @@
+# Blueprint quality-gate configuration — prestashop (the in-repo golden reference).
+#
+# This model is the calibration anchor for most dimensions, but it is NOT uniformly
+# strong, and the spec deliberately does not lower its bars to pretend otherwise.
+# Where the golden is genuinely weak, it says so here — visibly, with a reason and an
+# expiry — rather than the corpus threshold being slackened to hide the gap.
+
+deferrals:
+  - metric: domain.command.exchange
+    reason: >-
+      The golden models 251 commands with no exchange/dispatch binding at all (0%),
+      against a corpus median of 75%. This is a real modelling gap in the reference
+      model, not a tooling false positive: the wire binding was simply never authored.
+      Deferred so the corpus-calibrated bar can stay honest while the reference model
+      is backfilled; do NOT resolve this by lowering the threshold.
+    expires: 2026-10-31
+
+# Ratchet — regenerate with `--update-baseline` after an improvement run.
+# Kept empty until the backfill above lands, so the first ratchet does not lock in
+# a score that is about to change.
+baseline: {}

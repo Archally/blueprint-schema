@@ -42,6 +42,8 @@
     "render:prestashop": "node tools/renderer/dist/cli.js examples/prestashop/.blueprint/v2.7 -o examples/prestashop/.blueprint/v2.7/.specs/overview.md -t PrestaShop-v9",
     "check": "node tools/semantic-checker/dist/cli.js",
     "check:examples": "node tools/semantic-checker/dist/cli.js examples/ecommerce/.blueprint/v2.6",
+    "quality": "node tools/quality-gate/cli.mjs",
+    "quality:examples": "node tools/quality-gate/cli.mjs examples/prestashop/.blueprint/v2.7 --strict",
     "atlas": "node tools/schema-atlas/dist/cli.js generate",
     "atlas:check": "node tools/schema-atlas/dist/cli.js check",
     "guides:build": "node tools/guide-publisher/dist/cli.js build",
