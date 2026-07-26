@@ -4,7 +4,9 @@ import type {
   BlueprintFileMetadata,
   DocumentsBySchemaType,
   RepositoryConfig,
+  BuildModelOptions,
 } from './types.js';
+import { fingerprintModel } from './fingerprint.js';
 import { getSchemaTypeFromPath } from '../extraction/entities/id.js';
 import { extractAllEntities } from '../extraction/entities/index.js';
 import { buildRelations } from '../extraction/relations/index.js';
@@ -81,10 +83,18 @@ export function groupDocumentsBySchemaType(
  * Same-type documents (e.g. domain-a/concepts.yaml + domain-b/concepts.yaml) are
  * processed together so their entities end up in a single entity list.
  *
+ * Deterministic by default: `metadata.last_loaded` is `null` unless the caller passes
+ * `options.buildTimestamp`. This used to stamp `new Date()`, which made two builds of identical
+ * source differ and quietly broke content hashes, caching and snapshot stability.
+ *
  * @param documentsByType - Documents grouped by schema type (use groupDocumentsBySchemaType)
+ * @param options - Build-run metadata; see BuildModelOptions. Omit for a deterministic build.
  * @returns BlueprintModel with entities (including Missing placeholders), relations, metadata
  */
-export function buildBlueprintModel(documentsByType: DocumentsBySchemaType): BlueprintModel {
+export function buildBlueprintModel(
+  documentsByType: DocumentsBySchemaType,
+  options: BuildModelOptions = {}
+): BlueprintModel {
   const allDocs = Object.values(documentsByType).flat();
 
   const files: BlueprintFileMetadata[] = allDocs.map((doc) => ({
@@ -104,19 +114,29 @@ export function buildBlueprintModel(documentsByType: DocumentsBySchemaType): Blu
   // has one unified array (frontend renders placeholders as gray nodes).
   const allEntities = [...entities, ...addedEntities];
 
-  return {
+  const model: BlueprintModel = {
     entities: allEntities,
     relations,
     metadata: {
       files,
       total_entities: allEntities.length,
       total_relations: relations.length,
-      last_loaded: new Date().toISOString(),
+      last_loaded: options.buildTimestamp ?? null,
       domain_descriptions: domainDescriptions,
       ...(repository && { repository }),
       ...(repositories && { repositories }),
     },
   };
+
+  if (options.fingerprint) {
+    const fingerprintOptions = options.fingerprint === true ? {} : options.fingerprint;
+    model.metadata.fingerprint = fingerprintModel(model, {
+      ...fingerprintOptions,
+      documentsByType: fingerprintOptions.documentsByType ?? documentsByType,
+    });
+  }
+
+  return model;
 }
 
 function inferDomainFromPath(path: string | undefined): string {

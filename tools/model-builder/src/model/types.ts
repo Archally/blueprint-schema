@@ -1,3 +1,7 @@
+// Type-only import: `fingerprint.ts` imports BlueprintModel from here, so a value import would be
+// circular. `import type` is erased at compile time, so this is safe in both stacks.
+import type { BlueprintFingerprint, FingerprintOptions } from './fingerprint.js';
+
 /**
  * Parsed blueprint document: output of YAML parse, with optional path/scope.
  * Caller (backend or frontend) provides these; core does no I/O.
@@ -76,13 +80,39 @@ export interface RepositoryConfig {
 }
 
 /**
+ * Options for `buildBlueprintModel`. Each stack owns its own `buildModel.ts` (step-11 §7d), so this
+ * shape lives here to keep the two entry points honest about accepting the same inputs.
+ */
+export interface BuildModelOptions {
+  /**
+   * Wall-clock stamp for `metadata.last_loaded`. **Defaults to `null`**, which makes the build
+   * deterministic. Pass `new Date().toISOString()` from a long-running server that wants to show
+   * when it last reloaded; do not pass it from anything whose output is hashed, snapshotted, or
+   * committed.
+   */
+  buildTimestamp?: string | null;
+  /** When set, compute `metadata.fingerprint` (source + model digests). */
+  fingerprint?: boolean | FingerprintOptions;
+}
+
+/**
  * Metadata attached to the blueprint model.
  */
 export interface BlueprintMetadata {
   files: BlueprintFileMetadata[];
   total_entities: number;
   total_relations: number;
+  /**
+   * EXECUTION metadata, not content: the wall-clock time of the build run.
+   *
+   * Excluded from the canonical model form and from digests (see `canonical.ts`), because two
+   * builds of byte-identical source must produce byte-identical canonical output. `null` is the
+   * deterministic default — callers that display "last loaded" pass a timestamp explicitly via
+   * `buildBlueprintModel`'s options rather than having one stamped in for them.
+   */
   last_loaded: string | null;
+  /** Present when the caller requested a fingerprint. Identifies the exact model state (item D). */
+  fingerprint?: BlueprintFingerprint;
   /** Project identifier. Set by backend/export-model when the project is known. */
   project_id?: string;
   /** Aggregated domain-slice descriptions keyed by inferred domain name. */
