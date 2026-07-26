@@ -74,7 +74,9 @@ $defs:
         description: "JSON Schema type (e.g. object, array, string)."
       properties:
         type: object
-        description: "Schema property definitions (JSON Schema object properties)."
+        description: "Schema property definitions (JSON Schema object properties). Each value is a model_property."
+        additionalProperties:
+          $ref: "#/$defs/model_property"
       metadata:
         $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
         description: "Open metadata bag. Named 'metadata' here to avoid conflict with JSON Schema 'properties'."
@@ -106,6 +108,118 @@ $defs:
       provenance:
         $ref: "../metamodel.schema.yaml#/$defs/provenance"
         description: "Epistemic provenance for this model (brownfield modeling confidence)."
+
+  model_property:
+    type: object
+    description: >
+      One field of a data model — an entry in model_schema.properties, expressed in JSON Schema
+      vocabulary. EVERY field is optional and unknown keys are allowed: this def names the shape
+      that tooling and authors already share, without constraining models that exist today.
+      Added in v2.7.8 as a strictly additive def (zero new required fields). It is the anchor the
+      v2.8 required-description promotion attaches to — you cannot require a field on a shape that
+      does not exist — and it gives editors, autocomplete and schema-atlas the property vocabulary.
+      Keep it permissive: the quality-gate measures self-description here, and a schema that
+      rejected an exotic-but-valid property would block authors instead of nudging them.
+    additionalProperties: true
+    properties:
+      type:
+        description: "JSON Schema type. A single name, or a list for a union (e.g. [string, 'null'])."
+        oneOf:
+          - type: string
+          - type: array
+            items:
+              type: string
+      description:
+        type: string
+        description: "What this field means in the domain. The field the v2.8 promotion will require."
+      title:
+        type: string
+      format:
+        type: string
+        description: "Semantic format hint (date-time, uuid, email, decimal, …). Not validated here."
+      nullable:
+        type: boolean
+        description: "OpenAPI 3.0 style nullability, as used across existing models."
+      example:
+        description: "A sample value. Deliberately UNCONSTRAINED — measured usage includes objects, arrays and null, not just scalars."
+      examples:
+        type: array
+        description: "Multiple sample values (JSON Schema 2020-12 style)."
+      default:
+        description: "Default value. Unconstrained for the same reason as example."
+      const:
+        description: "Fixed value. Unconstrained."
+      enum:
+        type: array
+        description: "Permitted values."
+      items:
+        description: "Element shape for an array-typed field; a nested model_property."
+        $ref: "#/$defs/model_property"
+      properties:
+        type: object
+        description: "Nested object fields — recurses into model_property."
+        additionalProperties:
+          $ref: "#/$defs/model_property"
+      required:
+        type: array
+        items:
+          type: string
+        description: "Required nested property names."
+      additionalProperties:
+        description: "Whether/what extra nested keys are allowed — a boolean or a nested schema."
+        oneOf:
+          - type: boolean
+          - type: object
+      $ref:
+        type: string
+        description: "Reference to another model (e.g. '#/components/schemas/Money')."
+      minimum:
+        type: number
+      maximum:
+        type: number
+      exclusiveMinimum:
+        type: number
+      exclusiveMaximum:
+        type: number
+      multipleOf:
+        type: number
+      minLength:
+        type: integer
+        minimum: 0
+      maxLength:
+        type: integer
+        minimum: 0
+      pattern:
+        type: string
+        description: "Regular expression constraint (ECMA-262)."
+      minItems:
+        type: integer
+        minimum: 0
+      maxItems:
+        type: integer
+        minimum: 0
+      uniqueItems:
+        type: boolean
+      readOnly:
+        type: boolean
+      writeOnly:
+        type: boolean
+      deprecated:
+        type: boolean
+      oneOf:
+        type: array
+        items:
+          $ref: "#/$defs/model_property"
+      anyOf:
+        type: array
+        items:
+          $ref: "#/$defs/model_property"
+      allOf:
+        type: array
+        items:
+          $ref: "#/$defs/model_property"
+      not:
+        $ref: "#/$defs/model_property"
 
   represents_entry:
     type: object

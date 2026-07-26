@@ -1,0 +1,17 @@
+engineVersion: "0.1"
+rules:
+  - id: user-story-without-acceptance-criteria
+    severity: info
+    description: >-
+      Acceptance criteria are what a test case is derived from — a story without them states an
+      intent nobody can verify, and it silently blocks the story → test-case chain that
+      `untested-rules` and the test-case provenance metric depend on. Info rather than warn: a story
+      may be a placeholder captured early on purpose, and criteria authored before the story is
+      understood are worse than none. Raise it per-project via `.blueprint-lint.yaml` once the story
+      layer is meant to be complete.
+    find:
+      entity_type: UserStory
+    check:
+      any_non_empty:
+        - data.acceptance_criteria
+    message: 'User story "{displayId}" ({name|''unnamed''}) has no acceptance_criteria — nothing can be derived into a test case.'

@@ -16,11 +16,11 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  *
  * - Service --deployed-in-tier--> DeploymentTier
  *     Match tier.data._tier_services[] entries against arch Service entities
- *     by displayId. Cross-file (arch.yaml services placed in infrastructure.yaml tiers).
+ *     by displayId. Cross-file (arch.yaml services placed in rg.yaml tiers).
  *     Excludes entries already matched as resources in the same file (those
  *     are already covered by the contains edge above).
  *
- * Unresolvable refs are silently dropped (no Missing placeholders) — infrastructure
+ * Unresolvable refs are silently dropped (no Missing placeholders) — rg
  * topology referencing absent services is a soft warning concern handled by
  * the validation layer, not a graph-structural error.
  */

@@ -1,0 +1,288 @@
+# Blueprint quality specification — what "self-described" means, and how good is good enough.
+#
+# Version-agnostic by design (plan D18): metrics declare the schema minor lines they
+# apply to, so ONE spec serves v2.7 and v2.8 rather than forking with the schema tree.
+#
+# Thresholds are calibrated from the in-repo corpus (plan D27), not from a single
+# golden model — a bar set to one model's own score passes that model by construction
+# and says nothing about achievability elsewhere. Every threshold records its source.
+#
+# CALIBRATED 2026-07-25 from 16 in-repo projects (schema v1 → v2.7), metrics with
+# n>=10 observations counted. Distribution archived at
+# .prompts/blueprints/2026-07-25-blueprint-ai-harness-quality-upgrade/assets/
+#   2026-07-25-corpus-calibration.json
+#
+# Two bars per metric, because they answer different questions:
+#   threshold        whole-model release bar — reachable by a real model today
+#   patch_threshold  the bar for entities in CHANGED files (--since). Higher: work
+#                    being authored right now has no legacy excuse.
+# A null bar means the corpus is too thin or too skewed to justify one; the metric
+# still reports and still ratchets against its baseline.
+
+version: 1
+
+# Placeholder strings that "answer" a gate without saying anything.
+_placeholders: &placeholders
+  - TODO
+  - TBD
+  - FIXME
+  - "N/A"
+  - "-"
+  - "?"
+  - none
+  - string
+  - todo describe
+  - description
+
+metrics:
+
+  # ── design plane · models ───────────────────────────────────────────────────
+  # This layer is where the stress test collapsed (19% vs 88%) and where the damage
+  # is most direct: model properties propagate 1:1 into generated OpenAPI contracts,
+  # so an undescribed property becomes a bare field in every downstream viewer.
+
+  model.schema.description:
+    title: Model schema — description
+    layer: models
+    content: &prose_short
+      min_length: 15
+      deny: *placeholders
+      deny_echo_of: [name, title]
+    threshold: 0.95
+    patch_threshold: 1
+    calibration: >-
+      corpus p50=100% (n=11); golden 100%
+
+  model.schema.purpose:
+    title: Model schema — CQRS purpose
+    layer: models
+    # `purpose` classifies a payload (command-payload / event-payload / read-model …).
+    # NOTE: the original stress-test scan reported this at 35% and called payload
+    # classification broken. That number counted GENERATED _artifacts/ OpenAPI
+    # schemas, which cannot carry `purpose`. Authored coverage is 100% across the
+    # corpus — this metric is a regression guard, not a gap to close.
+    threshold: 0.95
+    patch_threshold: 1
+    calibration: >-
+      corpus p50=100% (n=11); golden 100%, largest brownfield model 100% — universally covered, NOT the gap the first scan reported
+
+  model.schema.represents:
+    title: Model schema — represents[] concept mapping
+    layer: models
+    threshold: 0.75
+    patch_threshold: 0.95
+    calibration: >-
+      corpus p50=80% (n=11); golden 99%
+
+  model.property.description:
+    title: Model property — description
+    layer: models
+    content: &prose_property
+      min_length: 15
+      deny: *placeholders
+      deny_echo_of: [name, title]
+    threshold: 0.55
+    patch_threshold: 0.9
+    calibration: >-
+      corpus p50=52% (n=10); golden 84%. The headline dimension — corpus median is barely half, so a golden-set bar would fail 8 of 10 models
+
+  model.property.example:
+    title: Model property — example
+    layer: models
+    # Examples are the single source for generated OpenAPI example payloads. Presence
+    # only: an example's *value* is domain data, not prose, so no content rules apply.
+    threshold: null
+    patch_threshold: 0.75
+    calibration: >-
+      corpus p50=1% (n=10) vs golden 93% — golden is an OUTLIER, not a norm. No whole-model threshold; patch bar only, plus the ratchet
+
+  model.enum_property.description:
+    title: Enum property — description
+    layer: models
+    content: *prose_property
+    threshold: 0.3
+    patch_threshold: 0.9
+    calibration: >-
+      corpus p50=25% (n=5, thin); golden 71%
+
+  # ── design plane · domain ───────────────────────────────────────────────────
+
+  domain.operation.description:
+    title: Operation — description
+    layer: domain
+    content: *prose_short
+    threshold: 0.95
+    patch_threshold: 1
+    calibration: >-
+      corpus p50=100% (n=13); golden 100%
+
+  domain.event.description:
+    title: Event — description
+    layer: domain
+    # The observed failure shape: `one_of` pairs where the happy-path event was
+    # described and its failure counterpart was left bare.
+    content: *prose_short
+    threshold: 0.9
+    patch_threshold: 1
+    calibration: >-
+      corpus p50=100% (n=8); golden 100%, largest brownfield model 51%
+
+  domain.command.produces:
+    title: Command — produces
+    layer: domain
+    threshold: 0.5
+    patch_threshold: 0.85
+    calibration: >-
+      corpus p50=50% (n=10); golden 91%
+
+  domain.command.exchange:
+    title: Command — exchange/dispatch binding
+    layer: domain
+    threshold: 0.7
+    patch_threshold: 0.9
+    calibration: >-
+      corpus p50=75% (n=10), largest brownfield model 100% — calibrated from the CORPUS because golden scores 0% here. Golden carries an explicit expiring deferral rather than the bar being slackened to hide its gap
+
+  domain.error.description:
+    title: Error — description
+    layer: domain
+    content: *prose_short
+    threshold: 0.95
+    patch_threshold: 1
+    calibration: >-
+      corpus p50=100% (n=5); golden 100%
+
+  # ── design plane · concepts ─────────────────────────────────────────────────
+
+  concept.description:
+    title: Concept — description
+    layer: concepts
+    content: *prose_short
+    threshold: 0.95
+    patch_threshold: 1
+    calibration: >-
+      corpus p50=100% (n=11); golden 100%
+
+  concept.attribute.description:
+    title: Concept attribute — description
+    layer: concepts
+    content: *prose_property
+    threshold: 0.9
+    patch_threshold: 1
+    calibration: >-
+      corpus p50=99% (n=9); golden 99%
+
+  concept.attribute.example:
+    title: Concept attribute — example
+    layer: concepts
+    threshold: 0.35
+    patch_threshold: 0.75
+    calibration: >-
+      corpus p50=40% (n=9); golden 40%
+
+  concept.actor.description:
+    title: Actor — description or summary
+    layer: concepts
+    content: *prose_short
+    threshold: 0.95
+    patch_threshold: 1
+    calibration: >-
+      corpus p50=100% (n=9); golden 100%
+
+  concept.enum_value.description:
+    title: Enum value — description
+    layer: concepts
+    content: *prose_property
+    threshold: 0.75
+    patch_threshold: 0.95
+    calibration: >-
+      corpus p50=84% (n=4, thin); golden 95%
+
+  # ── design plane · rules & story ────────────────────────────────────────────
+
+  rule.description:
+    title: Business rule — description or statement
+    layer: rules
+    content: *prose_short
+    threshold: 0.95
+    patch_threshold: 1
+    calibration: >-
+      corpus p50=100% (n=8); golden 100%
+
+  user_story.acceptance_criteria:
+    title: User story — acceptance criteria
+    layer: story
+    # Without criteria there is nothing to derive a test from.
+    threshold: 0.9
+    patch_threshold: 1
+    calibration: >-
+      corpus p50=100% (n=5); golden 100%, largest brownfield model 15%
+
+  story.description:
+    title: Story / use case — description
+    layer: story
+    content: *prose_short
+    threshold: 0.75
+    patch_threshold: 1
+    calibration: >-
+      corpus p50=100% (n=7); golden 78% is the corpus floor
+
+  # ── safety net ──────────────────────────────────────────────────────────────
+
+  entity.description:
+    title: Other typed entity — description
+    layer: other
+    # Catch-all for typed-id entities no specific metric claims. Deliberately broad:
+    # when the schema gains an entity kind, it lands here instead of silently
+    # vanishing from the gate. A rising count here is a signal to add a real metric.
+    content: *prose_short
+    threshold: 0.7
+    patch_threshold: 0.95
+    calibration: >-
+      corpus p50=87% (n=14); golden 78%
+
+  # ── governance plane ────────────────────────────────────────────────────────
+
+  test_case.description:
+    title: Test case — description
+    layer: tests
+    content: *prose_short
+    threshold: 0.9
+    patch_threshold: 1
+    calibration: >-
+      corpus p50=100% (n=7); golden 100%
+
+  test_case.provenance:
+    title: Test case — provenance
+    layer: tests
+    threshold: null
+    patch_threshold: null
+    calibration: >-
+      corpus p50=0% (n=7) — only ONE model in the corpus does this at all. Reported and ratcheted; no bar, because a bar here would fail every model including golden
+
+  decision.description:
+    title: Decision — description or statement
+    layer: governance
+    content: *prose_short
+    threshold: 0.9
+    patch_threshold: 1
+    calibration: >-
+      corpus p50=100% (n=3, thin); golden 100%
+
+  decision.evidence_when_asserted:
+    title: Decision claimed confirmed/validated — evidence[]
+    layer: governance
+    # Only observed on decisions that CLAIM settled status. This is an epistemic
+    # defect rather than a coverage gap: the model asserts something it never sourced.
+    threshold: null
+    patch_threshold: 0.8
+    calibration: >-
+      n=1 (only one corpus model asserts decision status at all) — too thin for a whole-model bar. Reported + ratcheted, and gated on NEW assertions via the patch bar
+
+  risk.mitigation:
+    title: Risk — mitigation or contingency
+    layer: governance
+    threshold: 0.9
+    patch_threshold: 1
+    calibration: >-
+      corpus p50=100% (n=4, thin); golden 100%

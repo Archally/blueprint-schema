@@ -20,14 +20,6 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  * forward mechanism). D17: questions DO carry an explicit `bounded_context_ref`
  * (single-owner, not derivable from any layer). Concepts are intentionally excluded
  * (genuinely m:n — a context-mapping concern).
- *
- * PARITY NOTE: this is a VERBATIM port of the monorepo core
- * `viewer/v2/core/src/extraction/relations/membership.ts` — the two model-builders
- * inject identical `_context`/`_party`/`_scope`/`_context_name`/`data.id` markers, so
- * the edge sets are identical by construction. The public semantic-checker rules
- * (`unbound-operation.yaml`/`unbound-question.yaml`) walk these edges; the monorepo
- * `get_validation` walks `findMembershipGaps`. Keep both files byte-identical
- * (`reference_blueprint_two_validator_stacks`: mirror every rule to both stacks).
  */
 
 function getData(entity: Entity): Record<string, unknown> {

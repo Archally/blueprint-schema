@@ -441,13 +441,17 @@ See [tools/model-builder/README.md](tools/model-builder/README.md) for API, type
 
 ### Semantic Checker
 
-Configurable rule engine that catches modeling issues schema validation cannot detect. Ships with 6 built-in rules, extensible via custom `RuleDefinition` functions and `.blueprint-lint.yaml` configuration.
+Configurable rule engine that catches modeling issues schema validation cannot detect. Extensible via custom `RuleDefinition` functions and `.blueprint-lint.yaml` configuration.
 
 ```bash
 npx @archally/blueprint-schema blueprint-check .blueprint/v2.7
 ```
 
-Built-in rules: orphan entities, missing causal links (commands without produces), events misusing produces, untested rules, aggregate root signal warnings, unanswered domain questions.
+<!-- BEGIN GENERATED: semantic-rules — do not hand-edit; run `npm run port-parity:port` -->
+Ships with **19 built-in rules** (13 warn, 6 info):
+
+`aggregate-root-signals` · `contract-operation-missing-exchange` · `decision-asserted-without-evidence` · `dispatch-with-exchange` · `events-with-produces` · `exchange-missing-payload` · `leverage-point-no-address` · `leverage-point-no-strategic-intent` · `missing-causal-links` · `missing-exchange-binding` · `model-without-purpose` · `model-without-represents` · `orphan-entities` · `unanswered-questions` · `unbound-operation` · `unbound-question` · `undescribed-event` · `untested-rules` · `user-story-without-acceptance-criteria`
+<!-- END GENERATED: semantic-rules -->
 
 See [tools/semantic-checker/README.md](tools/semantic-checker/README.md) for rule reference, configuration, and custom rule API.
 

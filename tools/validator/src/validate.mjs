@@ -3,15 +3,7 @@ import path from "node:path";
 import { toPosixPath, walkFiles, loadYaml } from "./utils.mjs";
 import { loadSchemaRegistry, makeAjv, SCHEMA_BASE_URI } from "./schema-registry.mjs";
 import { FILENAME_TO_SCHEMA, detectSchemaType } from "./schema-types.mjs";
-import { collectIds, collectRefs } from "./references.mjs";
-
-function formatAjvErrors(errors) {
-  if (!errors) return [];
-  return errors.map((e) => {
-    const at = e.instancePath ? e.instancePath : "/";
-    return `${at} -> ${e.message ?? "schema error"}`;
-  });
-}
+import { collectIds, collectRefs, isIdentityOrReferenceViolation } from "./references.mjs";
 
 export function validateModel(args) {
   const { registry } = loadSchemaRegistry(args.schemas);
@@ -27,6 +19,8 @@ export function validateModel(args) {
     : [path.resolve(modelDir)];
 
   const schemaErrors = [];
+  /** Subset of schemaErrors that `--compat` must never relax (see isIdentityOrReferenceViolation). */
+  const nonDemotable = new Set();
   const crossErrors = [];
   const warnings = [];
   const allIds = new Map();
@@ -62,9 +56,16 @@ export function validateModel(args) {
 
     const valid = validate(data);
     if (!valid) {
-      const errs = formatAjvErrors(validate.errors);
-      for (const e of errs) {
-        schemaErrors.push(`[${relFile}] ${e}`);
+      // Iterate the raw Ajv errors (not the pre-formatted strings) so identity/reference
+      // violations can be classified from instancePath + message rather than by re-parsing text.
+      // The rendered form is unchanged — same output, plus a classification.
+      for (const rawError of validate.errors ?? []) {
+        const at = rawError.instancePath ? rawError.instancePath : "/";
+        const text = `[${relFile}] ${at} -> ${rawError.message ?? "schema error"}`;
+        schemaErrors.push(text);
+        if (isIdentityOrReferenceViolation(rawError.instancePath, rawError.message)) {
+          nonDemotable.add(text);
+        }
       }
     }
     filesValidated += 1;
@@ -150,12 +151,24 @@ export function validateModel(args) {
     }
   }
 
+  // Compat mode: demote schema errors to warnings — EXCEPT identity and reference violations,
+  // which stay fatal because a model missing them is not merely out of date, it is unusable.
   if (args.compat && schemaErrors.length > 0) {
-    warnings.push(
-      ...schemaErrors.map((e) => `Compat schema warning: ${e}`),
-      "Compat mode active: schema violations are non-fatal.",
-    );
+    const retained = schemaErrors.filter((e) => nonDemotable.has(e));
+    const demoted = schemaErrors.filter((e) => !nonDemotable.has(e));
+    if (demoted.length > 0) {
+      warnings.push(
+        ...demoted.map((e) => `Compat schema warning: ${e}`),
+        "Compat mode active: schema violations are non-fatal.",
+      );
+    }
+    if (retained.length > 0) {
+      warnings.push(
+        `Compat mode does NOT relax ${retained.length} identity/reference violation(s) — these remain fatal.`,
+      );
+    }
     schemaErrors.length = 0;
+    schemaErrors.push(...retained);
   }
 
   return { schemaErrors, crossErrors, warnings, modelPath: modelDir, filesValidated, filesSkipped };

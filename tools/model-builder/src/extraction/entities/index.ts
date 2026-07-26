@@ -41,12 +41,11 @@ const EXTRACTORS: Record<string, (doc: ParsedBlueprintDocument) => Entity[]> = {
   story: extractStory,
   dynamics: extractDynamics,
   models: extractModels,
-  // v2.7.7 de-alias: `infrastructure.yaml` now routes to the typed infra extractor
-  // (InfraResource/Environment/Binding/DeploymentScope/DeploymentTier under
-  // `design.infrastructure`). `rg` stays wired to `extractRg` for v2.6 back-compat.
   rg: extractRg,
   infrastructure: extractInfrastructure,
+  org: extractOrg,
   organization: extractOrg,
+  ui: extractUI,
   interactions: extractUI,
   roadmap: extractRoadmap,
   'value-stream': extractValueStream,

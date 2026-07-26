@@ -7,7 +7,8 @@ const LAYER = SCHEMA_TYPE_TO_LAYER['leverage']!;
 /**
  * Extract LeveragePoint entities (LP###) from a governance/leverage.yaml document.
  * Leverage points are a flat array (their `depends_on`/`enables` are refs, not nested children),
- * so no recursion is needed. The raw item is preserved on `data` for data-field semantic checks.
+ * so no recursion is needed. The raw item is preserved on `data` for data-field semantic checks
+ * and for relation extraction (see extraction/relations/leverage.ts).
  */
 export function extractLeverage(doc: ParsedBlueprintDocument): Entity[] {
   const entities: Entity[] = [];

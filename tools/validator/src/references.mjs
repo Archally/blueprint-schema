@@ -70,6 +70,59 @@ export function isRefKey(key) {
   return false;
 }
 
+/**
+ * Does this schema error concern an entity's IDENTITY or a typed REFERENCE?
+ *
+ * `--compat` exists so a model authored against an older minor can still be worked with while it is
+ * migrated: a deprecated field or an unknown optional property should not stop the tooling. It was
+ * implemented as a single global demotion of *every* schema failure, which also swallowed the two
+ * classes that leave a model structurally unusable downstream:
+ *
+ *   - **identity** — a missing, malformed or non-string `id`. Every entity in the graph is keyed by
+ *     it; without one the builder cannot address the entity at all.
+ *   - **references** — a `*_ref` / `*_refs[]` that is absent or the wrong shape. Relations are built
+ *     from these, so a demoted reference error becomes a silently missing edge rather than a warning.
+ *
+ * Everything else stays demotable. Reuses `isRefKey` so "what counts as a reference" has exactly one
+ * definition. Mirrored in the monorepo's `validate-blueprint.mjs` (D24 — both stacks or neither).
+ *
+ * @returns true when the error must stay fatal even under --compat.
+ */
+export function isIdentityOrReferenceViolation(instancePath, message) {
+  // A `required` failure is the one case the instancePath cannot classify: Ajv points it at the
+  // PARENT object ("/concepts/0"), never at the missing key, so the key has to come from the text.
+  //
+  // Measured against the pinned Ajv 8.20: the message is `must have required property 'id'` —
+  // single quotes, deterministically, including when the property name itself contains a quote.
+  // (Ajv has no locale mechanism here; ajv-i18n is a separate opt-in package this stack does not use.)
+  //
+  // The parse is therefore correct today, and the guard below is for the day it is not: if a message
+  // announces a missing required property but the key cannot be read out of it, FAIL SAFE and keep
+  // the error fatal. Getting this wrong in the other direction is silent — a missing `id` would be
+  // quietly demoted to a warning under --compat and the model would build with an unaddressable entity.
+  //
+  // The guard covers a change in Ajv's ENGLISH message format (quoting, wording). It cannot cover
+  // localization: a translated message matches nothing here and every required-error would become
+  // demotable. So installing `ajv-i18n` in either validator stack is a decision that has to come
+  // back to this function — it is not a drop-in.
+  const text = String(message ?? "");
+  const required = /must have required property '([^']+)'/.exec(text);
+  if (required) {
+    const key = required[1];
+    if (key === "id" || isRefKey(key)) return true;
+  } else if (/required property/i.test(text)) {
+    return true;
+  }
+
+  // Reduce the Ajv instancePath to its last named segment: "/concepts/0/id" → "id".
+  const segments = String(instancePath ?? "")
+    .split("/")
+    .filter((segment) => segment !== "" && !/^\d+$/.test(segment));
+  const leaf = segments[segments.length - 1];
+  if (!leaf) return false;
+  return leaf === "id" || isRefKey(leaf);
+}
+
 export function collectIds(node, ids = new Map(), duplicates = new Map(), pathStack = []) {
   if (Array.isArray(node)) {
     node.forEach((item, idx) => collectIds(item, ids, duplicates, [...pathStack, `[${idx}]`]));

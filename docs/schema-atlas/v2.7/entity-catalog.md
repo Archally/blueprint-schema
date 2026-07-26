@@ -1993,7 +1993,7 @@ Composite data model with concept traceability via represents[].
 | `represents` | `array<ref → represents_entry>` | — |  | Concept mappings this model represents. |
 | `x-model-id` | `ref → x_model_id` | — |  | Optional typed model ID (MDL###) for viewer graph identity. |
 | `type` | `string` | — |  | JSON Schema type (e.g. object, array, string). |
-| `properties` | `object` | — |  | Schema property definitions (JSON Schema object properties). |
+| `properties` | `object` | — |  | Schema property definitions (JSON Schema object properties). Each value is a model_property. |
 | `metadata` | `ref → entity_properties` | — |  | Open metadata bag. Named 'metadata' here to avoid conflict with JSON Schema 'properties'. |
 | `required` | `array<string>` | — |  | List of required property names. |
 | `compatibility` | `string` | — | `full`, `backward`, `forward`, `none` | Schema evolution compatibility guarantee. full = both forward and backward compatible. backward = new schema can read old data. forward = old schema can read n… |
@@ -2005,6 +2005,48 @@ Composite data model with concept traceability via represents[].
 | `provenance` | `ref → provenance` | — |  | Epistemic provenance for this model (brownfield modeling confidence). |
 
 _Source: `schema/v2.7/design/models.schema.yaml#/$defs/model_schema`_
+
+#### `model_property`
+
+One field of a data model — an entry in model_schema.properties, expressed in JSON Schema vocabulary. EVERY field is optional and unknown keys are allowed: this def names the shape that tooling and authors already share, without constraining models that exist today. Added in v2.7.8 as a strictly additive def (zero new required fields). It is the anchor the v2.8 required-description promotion atta…
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `type` | `union` | — |  | JSON Schema type. A single name, or a list for a union (e.g. [string, 'null']). |
+| `description` | `string` | — |  | What this field means in the domain. The field the v2.8 promotion will require. |
+| `title` | `string` | — |  |  |
+| `format` | `string` | — |  | Semantic format hint (date-time, uuid, email, decimal, …). Not validated here. |
+| `nullable` | `boolean` | — |  | OpenAPI 3.0 style nullability, as used across existing models. |
+| `example` | `any` | — |  | A sample value. Deliberately UNCONSTRAINED — measured usage includes objects, arrays and null, not just scalars. |
+| `examples` | `array` | — |  | Multiple sample values (JSON Schema 2020-12 style). |
+| `default` | `any` | — |  | Default value. Unconstrained for the same reason as example. |
+| `const` | `any` | — |  | Fixed value. Unconstrained. |
+| `enum` | `array` | — |  | Permitted values. |
+| `items` | `ref → model_property` | — |  | Element shape for an array-typed field; a nested model_property. |
+| `properties` | `object` | — |  | Nested object fields — recurses into model_property. |
+| `required` | `array<string>` | — |  | Required nested property names. |
+| `additionalProperties` | `union` | — |  | Whether/what extra nested keys are allowed — a boolean or a nested schema. |
+| `$ref` | `string` | — |  | Reference to another model (e.g. '#/components/schemas/Money'). |
+| `minimum` | `number` | — |  |  |
+| `maximum` | `number` | — |  |  |
+| `exclusiveMinimum` | `number` | — |  |  |
+| `exclusiveMaximum` | `number` | — |  |  |
+| `multipleOf` | `number` | — |  |  |
+| `minLength` | `integer` | — |  |  |
+| `maxLength` | `integer` | — |  |  |
+| `pattern` | `string` | — |  | Regular expression constraint (ECMA-262). |
+| `minItems` | `integer` | — |  |  |
+| `maxItems` | `integer` | — |  |  |
+| `uniqueItems` | `boolean` | — |  |  |
+| `readOnly` | `boolean` | — |  |  |
+| `writeOnly` | `boolean` | — |  |  |
+| `deprecated` | `boolean` | — |  |  |
+| `oneOf` | `array<ref → model_property>` | — |  |  |
+| `anyOf` | `array<ref → model_property>` | — |  |  |
+| `allOf` | `array<ref → model_property>` | — |  |  |
+| `not` | `ref → model_property` | — |  |  |
+
+_Source: `schema/v2.7/design/models.schema.yaml#/$defs/model_property`_
 
 #### `represents_entry`
 

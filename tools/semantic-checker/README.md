@@ -9,7 +9,8 @@ loadFromDirectory ─▶ buildBlueprintModel ─▶ toCheckableModel (adapter) �
    (parse YAML)          (entities+relations)        (normalize)             (loadRules → runChecker)
 ```
 
-The nine rules are declarative YAML (`rules/*.yaml`); the engine, severity handling, and JSON-Schema
+The rules are declarative YAML (`rules/*.yaml`) — the table below is the inventory, and it is
+machine-checked against those files, so it cannot drift. The engine, severity handling, and JSON-Schema
 rule validation come from the package. See its
 [`docs/`](https://github.com/archally/semantic-checker/tree/main/docs) for the rule DSL.
 
@@ -35,6 +36,16 @@ npx @archally/blueprint-schema blueprint-check <dir> --config .blueprint-lint.ya
 | `untested-rules` | warn | every business rule has an incoming `validated-by` edge (a test validates it) |
 | `aggregate-root-signals` | info | aggregate-root Concepts have lifecycle states or relationships |
 | `unanswered-questions` | info | every Question has an outgoing `answered-by` edge |
+| `dispatch-with-exchange` | warn | no Operation sets `dispatch: in-process` *and* an `exchange` — they are mutually exclusive |
+| `unbound-operation` | warn | every Operation is provided by some bounded context (a contract `expose`/`send`, or the deprecated name/scope fallback) |
+| `unbound-question` | warn | every competency Question resolves to a bounded context |
+| `leverage-point-no-address` | warn | every LeveragePoint addresses at least one finding, risk or decision |
+| `leverage-point-no-strategic-intent` | info | every LeveragePoint links to a goal or value stream |
+| `undescribed-event` | warn | every event Operation carries prose (`description` \| `statement` \| `summary`) — catches the asymmetric `one_of` pair, where only the happy-path half is described |
+| `decision-asserted-without-evidence` | warn | every Decision marked `certainty: confirmed` cites `evidence[]` — an evidentiary claim with no source. Speculative/probable decisions are exempt by design |
+| `user-story-without-acceptance-criteria` | info | every UserStory has `acceptance_criteria` — without them nothing can be derived into a test case |
+| `model-without-purpose` | info | every model declares its CQRS `purpose` (`command-payload` \| `event-payload` \| `read-model` \| `shared` \| `dto`) |
+| `model-without-represents` | info | every model maps to the concept(s) it carries via `represents[]`; omit only for envelopes/wrappers |
 
 The adapter maps `BlueprintModel → CheckableModel` (`term`→`name`, plane derived from the layer
 prefix, `validates`→`validated-by`, `question_answered_by`→`answered-by`). Output is now ordered
@@ -75,7 +86,7 @@ Severities: `error` (fails), `warn`, `info`, `off`.
 |------|----------------|
 | `cli.ts` | thin entry point — load model, adapt, run, format (compiled to `dist/cli.js`) |
 | `adapter.ts` | `BlueprintModel` → engine `CheckableModel` |
-| `rules/*.yaml` | the nine declarative rule packs the CLI loads |
+| `rules/*.yaml` | the declarative rule packs the CLI loads (inventory: the Rules table above) |
 | `adapter.test.ts` | adapter unit test (field mapping, plane derivation, relation renames) |
 
 ## Custom rules
