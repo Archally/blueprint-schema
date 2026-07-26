@@ -9,3 +9,7 @@ dist/
 *.js.map
 tools/**/*.js
 docs/handoff-guides/markdown/.build/
+
+# Internal planning docs — never publish (they carry local paths and client context).
+# Archived outside the repo; removed from history 2026-07-26.
+.plans/
