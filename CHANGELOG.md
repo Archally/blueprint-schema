@@ -2,6 +2,36 @@
 # All schema version releases in reverse chronological order.
 ---
 entries:
+  - version: "2.7.8"
+    date: "2026-07-26"
+    summary: >
+      Model properties are now described by the schema. `design/models.schema.yaml` gains a
+      `model_property` `$def`, referenced from `model_schema.properties`, covering the JSON Schema
+      vocabulary models already use: `type` (a name or a union array), `description`, `title`,
+      `format`, `nullable`, `example`, `examples`, `default`, `const`, `enum`, `items`, nested
+      `properties`, `required`, `additionalProperties`, `$ref`, the numeric/string/array bounds,
+      the `readOnly`/`writeOnly`/`deprecated` flags, and the `oneOf`/`anyOf`/`allOf`/`not`
+      combinators (recursive).
+
+      STRICTLY ADDITIVE — every field is optional and unknown keys are still allowed, so this
+      release adds no new validation constraint and no existing model can start failing. Before it,
+      `properties` was declared `{type: object}` with entirely unconstrained values, which meant
+      editors, autocomplete and the schema-atlas had no property vocabulary to offer. The field
+      shapes were chosen from a census of real models rather than from the JSON Schema spec alone —
+      `example` in particular is left unconstrained because models legitimately use objects, arrays
+      and null there, not only scalars.
+
+      It is also the anchor a future release can attach a required `description` to: you cannot
+      require a field on a shape that does not exist.
+    changes:
+      - kind: add
+        target: "schema/v2.7/design/models.schema.yaml"
+        semver: minor
+        notes: >
+          New `$defs/model_property`; `model_schema.properties` now declares
+          `additionalProperties: {$ref: "#/$defs/model_property"}`. All fields optional,
+          `additionalProperties` open.
+
   - version: "2.7.7"
     date: "2026-07-15"
     summary: >

@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 6 |
-| Additive (minor) | 71 |
+| Additive (minor) | 72 |
 | Clarification (patch) | 0 |
-| **Total changes** | 77 |
+| **Total changes** | 78 |
 
 ## ⚠ Breaking changes
 
@@ -54,7 +54,7 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 - **[breaking]** `design/arch.schema.yaml#/$defs/context/properties/model_traits` — Property `model_traits` type changed `array<string>` → `array<ref → model_traits_item>`.
   - _Sources: `schema/v2.7/design/arch.schema.yaml#/$defs/context/properties/model_traits`, `schema/v2.6/design/arch.schema.yaml#/$defs/context/properties/model_traits`_
 
-## Added (71)
+## Added (72)
 
 - [additive] `blueprint.schema.yaml#/$defs/repository_config` — New definition `repository_config` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.7/blueprint.schema.yaml#/$defs/repository_config`_
@@ -118,6 +118,9 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 
 - [additive] `design/domain.schema.yaml#/$defs/question/properties/bounded_context_ref` — Property `bounded_context_ref` added (optional).
   - _Source: `schema/v2.7/design/domain.schema.yaml#/$defs/question/properties/bounded_context_ref`_
+
+- [additive] `design/models.schema.yaml#/$defs/model_property` — New definition `model_property` added to `design/models.schema.yaml`.
+  - _Source: `schema/v2.7/design/models.schema.yaml#/$defs/model_property`_
 
 - [additive] `design/models.schema.yaml#/$defs/model_schema/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.7/design/models.schema.yaml#/$defs/model_schema/properties/provenance`_

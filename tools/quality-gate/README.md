@@ -9,6 +9,14 @@ precisely where a model degrades without ever going red. A model property with n
 `description` is perfectly valid YAML and becomes a bare field in every generated
 OpenAPI contract and every viewer that renders it.
 
+The shape this gate measures is named by the schema as of **v2.7.8**:
+`design/models.schema.yaml` → `$defs/model_property`. That def is deliberately
+all-optional, so it constrains nothing — schema and gate divide the labour cleanly.
+The schema says *what a property may contain*; this gate says *how much of it is
+actually filled in*. (v2.8 is expected to promote `description` there from optional
+to required; when it does, this metric becomes the early-warning signal for that
+break rather than a parallel opinion about it.)
+
 **Design premise:** an authoring loop's output floor is set by what its feedback
 loop measures. Prose guidance raises the ceiling; only a gate raises the floor.
 
@@ -121,7 +129,7 @@ this repo.
 
 ## Why it lives here
 
-`schemas/blueprint/_shared/` is **version-agnostic on purpose**. Schema version
+`schemas/blueprint/.shared/` is **version-agnostic on purpose**. Schema version
 directories get forked (`v2.8/` is already a copy of `v2.7/`), so a tool placed
 inside one would fork with it — recreating, on the version axis, exactly the
 two-source divergence this design exists to avoid. Metrics declare which schema

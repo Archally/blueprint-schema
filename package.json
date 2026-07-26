@@ -41,6 +41,11 @@
     "render:ecommerce": "node tools/renderer/dist/cli.js examples/ecommerce/.blueprint/v2.6 -o examples/ecommerce/.blueprint/v2.6/.specs/overview.md -t E-Commerce",
     "render:prestashop": "node tools/renderer/dist/cli.js examples/prestashop/.blueprint/v2.7 -o examples/prestashop/.blueprint/v2.7/.specs/overview.md -t PrestaShop-v9",
     "check": "node tools/semantic-checker/dist/cli.js",
+    "next-id": "node tools/next-id/cli.mjs",
+    "coverage-check": "node tools/coverage-check/cli.mjs",
+    "entity-query": "node tools/entity-query/cli.mjs",
+    "doc-snippets": "node tools/doc-snippet-validate/cli.mjs docs/modeling-guide.md docs/file-conventions.md docs/schema-reference.md --schemas schema/v2.7",
+    "coverage-check:examples": "node tools/coverage-check/cli.mjs src/Core/Domain/Cart/CartStatus.php src/BrandNew/Feature.php --model examples/prestashop/.blueprint/v2.7",
     "check:examples": "node tools/semantic-checker/dist/cli.js examples/ecommerce/.blueprint/v2.6",
     "quality": "node tools/quality-gate/cli.mjs",
     "quality:examples": "node tools/quality-gate/cli.mjs examples/prestashop/.blueprint/v2.7 --strict",
@@ -59,7 +64,10 @@
     "blueprint-schema-update": "tools/schema-update/dist/cli.js",
     "blueprint-render": "tools/renderer/dist/cli.js",
     "blueprint-atlas": "tools/schema-atlas/dist/cli.js",
-    "blueprint-guides": "tools/guide-publisher/dist/cli.js"
+    "blueprint-guides": "tools/guide-publisher/dist/cli.js",
+    "blueprint-next-id": "tools/next-id/cli.mjs",
+    "blueprint-coverage-check": "tools/coverage-check/cli.mjs",
+    "blueprint-entity-query": "tools/entity-query/cli.mjs"
   },
   "dependencies": {
     "@archally/semantic-checker": "github:archally/semantic-checker#v0.1.0",

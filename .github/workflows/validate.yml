@@ -13,6 +13,23 @@ jobs:
       - run: npm run validate:examples
       - run: npm run check:examples
       - run: npm test
+      # Ported-file integrity. tools/quality-gate/, tools/semantic-checker/rules/ and
+      # tools/port/ are maintained upstream in the Archally monorepo and copied here;
+      # this verifies they still match the PORTED.sha256 published alongside them, so a
+      # local edit is caught here rather than silently diverging from the source.
+      # Hashes are over LF-normalized content — safe on Windows checkouts too.
+      - name: Verify ported files against PORTED.sha256
+        run: node tools/port/verify-ported.mjs
+      - name: Ported-verifier self-tests
+        run: node --test "tools/port/*.test.mjs"
+      # The YAML examples inside the docs, validated as real models. A worked example is the shape
+      # readers copy: when the schema moves and the example does not, the docs teach an invalid
+      # model and nothing notices. The regression tests assert the two historical drift shapes
+      # still FAIL — a gate that cannot fail is not a gate.
+      - name: Validate YAML examples embedded in docs
+        run: npm run doc-snippets
+      - name: Doc-snippet gate self-tests
+        run: node --test "tools/doc-snippet-validate/*.test.mjs"
       # Blueprint Schema Atlas drift check — ADVISORY first (DEC-ATL-20). Reports stale
       # generated docs without failing the build; flip `continue-on-error` to false to
       # enforce once output stability is proven.

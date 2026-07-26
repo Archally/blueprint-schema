@@ -1,0 +1,58 @@
+# PORTED.sha256 — port parity manifest (plan D24).
+# SHA-256 over LF-NORMALIZED content, so it holds on Windows and Linux alike.
+# Canonical source: schemas/blueprint/.shared/ in the Archally monorepo.
+# Regenerate with: node scripts/port-parity.mjs --emit
+#
+# The `job` lines below tell the public-side verifier where each manifest prefix lives,
+# relative to tools/. They are DATA, not decoration: without them the verifier would need a
+# hand-maintained copy of this job list, and adding a job here while forgetting it there
+# reports every file of the new job as 'missing from disk'. (Observed, 2026-07-26.)
+# job quality-gate quality-gate
+# job semantic-rules semantic-checker/rules
+# job next-id next-id
+# job coverage-check coverage-check
+# job entity-query entity-query
+# job doc-snippet-validate doc-snippet-validate
+# job port port
+
+b66659073a484fdfb18cdfa3295061e98f8ffa8a018f2e7b0e5fbf064ee56db1  quality-gate/README.md
+c3d0628d5497550e64e7d1e8a7ce6341a4ef5455d2f8e7d8870a633de398ad7b  quality-gate/cli.mjs
+e35ce615b982992f139b8c21121dd3eb1fd9e56996e42f008fe7773771a9707f  quality-gate/collect.mjs
+e76e7a539ae890a7acdbaca67f553dcb472ca1b0a915397454ff26cbc1f4fb5a  quality-gate/config.mjs
+1a6ed967538e60af589300de6fce0e808afb05793371670d90cfcddc0a477db6  quality-gate/evaluate.mjs
+abb8ce783704bbe3058a9726c67bf56b7dfeb2e8fbf68cf42badd07bb0e78133  quality-gate/gate.test.mjs
+1e392972aecb8580739fe9d96ac33bce6f7f5d18d63cb9649f2ec307b706c62d  quality-gate/git-changes.mjs
+50816aa4832f90890fb9be75574b969e5029e5585ffaa23949cd5b22363da6d9  quality-gate/heuristics.mjs
+6e07fd81be777c60bd4dfd85deabbdc716991e64219c18c26c1e1fa6812ff7cb  quality-gate/heuristics.test.mjs
+c424d285f717098966f5f41bafef59313799adfb04d6a73b55c915b43c0db933  quality-gate/quality-spec.yaml
+94ce3347af068cbf5db965bf850b2918617b12d315822e11ba8b92c07eb5b4f4  quality-gate/report.mjs
+e914277824a29358866d7b626b3e4986d003a79bc1b72a5500931485d3c3aace  semantic-rules/aggregate-root-signals.yaml
+be0ba1effe550a308d9ba225878a1708db03e97487ae681ac6868f26edebf187  semantic-rules/contract-operation-missing-exchange.yaml
+75fd686bced8f93256b103c94290609bac75cf9e52d678ebc57b3f17824478f1  semantic-rules/dispatch-with-exchange.yaml
+a121c5eb3cdc1009b7bcee7ad8a46687e77d8d56f3ade11a8f7f3fd5abfb4a68  semantic-rules/events-with-produces.yaml
+6ad4ea9b4451df0e71f504137e4758795b3d22a31a10c2bd818469483f3aef11  semantic-rules/exchange-missing-payload.yaml
+4f0349895dec8f0b207fb31ccac63b8cf982cfbc39b975b230cebb90cd05b2f7  semantic-rules/leverage-point-no-address.yaml
+85d577a559f8d1037556306480584909efee153d91d2d6fcdbe9a94e16ce8628  semantic-rules/leverage-point-no-strategic-intent.yaml
+11002be3d39a98e20118e4c16a476ef271a4762701614d8d7b7406a40f9cd91f  semantic-rules/missing-causal-links.yaml
+e55147f8531a973652c52681831bf8759a436b966cdbc52095ebd648ab262168  semantic-rules/missing-exchange-binding.yaml
+80cd6e9a32f89a8a2361973056354609722abbf7dae7d091864d6fc09b5fa3aa  semantic-rules/orphan-entities.yaml
+15f250b36b59fff24ac22a6deaf8d9a2cfe02dd19c5cd172ef243fb724ac4d59  semantic-rules/unanswered-questions.yaml
+dff83b8a4374401f38eb5fc302a97a14cf4b8277d6c7defe39a723e14d7bc717  semantic-rules/unbound-operation.yaml
+4d638015c236105ec0cc77df899f33f6f0eabf27e587d9079165798e655d92b3  semantic-rules/unbound-question.yaml
+4c0c7f13446c204cbd238ac4659207b7122ab62bda3b7bef32f8fc028f4edf54  semantic-rules/untested-rules.yaml
+b792e95432615b2586c7f54d4e601f5a1d9ba0bacbf2b45fff66163a990ef0c4  next-id/README.md
+22c847d4fac7b594f7d09a976e31f699ce3d9f7936981b80863c04e16d6033dd  next-id/allocate.mjs
+48d4a19a70a4f98444d68fc3ac852de3600c852005f51c62e0c5ed572e32e6e6  next-id/cli.mjs
+a19e0fe35198436ea16a3bc3708bba7957d93b7e4c3edee2363a794a58dc5551  coverage-check/README.md
+1cc0113cfb4181bb8892df4617fcc742bd98b535dea1bdaa6983136e020fcae8  coverage-check/analyze.mjs
+a7f5e22833f4bff2e8f4b7831c9dfeb12922b4367c6701fa47eb06a315fd1ce5  coverage-check/cli.mjs
+e0081763eca355cd6a5694659ea180d127956d4948496fe07f31a63538d2dc1d  entity-query/README.md
+cdd8714410c5f85653982340c80c91a0eba86f1169f37157a13582f0a047e865  entity-query/cli.mjs
+11e358137c18713bd822b92d5c64772e09486d7e9ff82a337b78f506665da5e0  entity-query/search.mjs
+a89801c4cdf9c4355f7b26450e76a06381d16203ccde6e96208ab5390fecc706  doc-snippet-validate/README.md
+c24d7189189daee0879dc56468c99eb263f0adec70b84ad1dec4ae2a58bae91f  doc-snippet-validate/cli.mjs
+45c58a8df27c6d69c29c764a8ed32163f626cad50b7cb8b03e03a71ae6755cc9  doc-snippet-validate/extract.mjs
+2bb081d18e8e1ca2e1091a6c040087433e828a44fac338a1584c98c8efaf5730  doc-snippet-validate/extract.test.mjs
+fdf60e85506432136153f8368646914cc563583386ba72a9dfc6be37c2ce1b11  doc-snippet-validate/rc5-regression.test.mjs
+00c95bf6038f1692ae6a600273ea8220fb65a9257f61bbc7d528c94a3a63f3c5  port/verify-ported.mjs
+b97feb7e973a062f65dc517c85fa1d54713eee8560618f26f5ab6486e564ec7f  port/verify-ported.test.mjs
