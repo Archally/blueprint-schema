@@ -9,7 +9,8 @@ loadFromDirectory ─▶ buildBlueprintModel ─▶ toCheckableModel (adapter) �
    (parse YAML)          (entities+relations)        (normalize)             (loadRules → runChecker)
 ```
 
-The fourteen rules are declarative YAML (`rules/*.yaml`); the engine, severity handling, and JSON-Schema
+The rules are declarative YAML (`rules/*.yaml`) — the table below is the inventory, and it is
+machine-checked against those files, so it cannot drift. The engine, severity handling, and JSON-Schema
 rule validation come from the package. See its
 [`docs/`](https://github.com/archally/semantic-checker/tree/main/docs) for the rule DSL.
 
@@ -85,7 +86,7 @@ Severities: `error` (fails), `warn`, `info`, `off`.
 |------|----------------|
 | `cli.ts` | thin entry point — load model, adapt, run, format (compiled to `dist/cli.js`) |
 | `adapter.ts` | `BlueprintModel` → engine `CheckableModel` |
-| `rules/*.yaml` | the nineteen declarative rule packs the CLI loads |
+| `rules/*.yaml` | the declarative rule packs the CLI loads (inventory: the Rules table above) |
 | `adapter.test.ts` | adapter unit test (field mapping, plane derivation, relation renames) |
 
 ## Custom rules

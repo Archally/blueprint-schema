@@ -60,7 +60,7 @@ Two planes + one cross-cutting metamodel:
 | `story.schema.yaml` | Design | Domain stories as operation sequences |
 | `dynamics.schema.yaml` | Design | Concurrency, parallelism, ordering, race conditions |
 | `quality.schema.yaml` | Design | Metrics, KPIs, SLOs, SLAs, security, compliance, observability |
-| `motivation.schema.yaml` | Governance | Goals, non-goals, risks, assumptions, trade-offs |
+| `motivation.schema.yaml` | Governance | Vision (identity/north-star), goals, non-goals, risks, assumptions, trade-offs |
 | `capability.schema.yaml` | Governance | Business capability map (hierarchical) |
 | `decisions.schema.yaml` | Governance | Architecture Decision Log (ADR) |
 | `test-cases.schema.yaml` | Governance | Test cases validating rules, operations, concepts |
@@ -980,11 +980,25 @@ Commands typically produce events and/or documents. Events do not produce — th
 
 ---
 
-## 18. Validation Rules
+## 18. Validation and Quality Gates
 
-### Running the validator
+Three deterministic checks, each answering a different question. They are ordered because each one assumes the previous passed — a semantic finding on an unparseable model is noise.
 
-Use the blueprint validator to validate YAML files against schemas:
+```bash
+npm run validate .blueprint/v2.7 --schemas schema/v2.7   # is it legal?
+npm run check    .blueprint/v2.7                          # is it connected?
+npm run quality  .blueprint/v2.7                          # does it say anything?
+```
+
+| Tool | Question | Fails the build on |
+|---|---|---|
+| **validator** | Is this legal? | schema errors, unresolvable references |
+| **semantic checker** | Is this connected? | any finding whose configured severity is `error` (none by default) |
+| **quality gate** | Does it say anything? | nothing by default; threshold or baseline breach under `--strict` |
+
+The default posture is deliberate: only the validator rejects out of the box. A newcomer's first model must be able to be small and thin without three tools shouting at it — the other two report until a project decides to gate.
+
+### Validator — is it legal?
 
 ```bash
 # Validate a blueprint directory
@@ -994,23 +1008,113 @@ blueprint-validate .blueprint/v2.7
 npm run validate -- .blueprint/v2.7
 ```
 
-### Errors (reject blueprint)
+#### Errors (reject blueprint)
 - Duplicate entity IDs within the same schema type in a slice
 - Required fields missing (id, name, entry_operation on activities, etc.)
 - Invalid ref patterns (ID doesn't match expected regex)
 - Unresolvable refs (reference to non-existent entity)
 - Schema validation failures (invalid enum values, wrong types)
 
-### Warnings (report but load)
+#### Warnings (report but load)
 - Story steps that don't match domain causal chain (steps are convenience view, not SoT)
 - Non-conventional produces usage (event producing something, query producing, etc.)
 - Operation with task_type=user-decision but no initiated_by referencing a human actor
 - Orphaned entities (defined but never referenced)
 - Activity with entry_operation that has no produces chain (single-step activity — might be intentional)
 
-### Info (log)
+#### Info (log)
 - File-level tags applied to entities (confirmation of inheritance)
 - Multi-file aggregation count (e.g. "Loaded 3 concepts files into orders slice: 15 concepts total")
+
+### Semantic checker — is it connected?
+
+Structural findings a schema can never express: an entity nothing references, a command that produces no event, a rule no test validates, a question nothing answers. The rules are declarative YAML packs in `tools/semantic-checker/rules/`; that directory's README is the authoritative rule inventory, and it is machine-checked against the rule files themselves.
+
+```bash
+npm run check .blueprint/v2.7
+npm run check .blueprint/v2.7 --config .blueprint-lint.yaml
+node tools/semantic-checker/dist/cli.js --list          # every rule and its default severity
+```
+
+Severity per rule is a project decision, set in `.blueprint-lint.yaml`:
+
+```yaml
+rules:
+  orphan-entities: warn
+  missing-causal-links: error     # this project treats a missing causal link as fatal
+  aggregate-root-signals: off
+```
+
+Four severities: `error` (exit 1), `warn`, `info`, `off`. Exit `0` passed (warnings and info may be present) · `1` at least one `error`-severity finding · `2` runner error.
+
+Raising a rule to `error` is how a mature model locks in an invariant it has already satisfied. Doing it on a model that does not yet satisfy it just blocks the work; fix first, then ratchet.
+
+### Quality gate — does it say anything?
+
+The validator and the checker both pass on a model whose every description is missing. That model is legal, connected, and useless downstream: model properties become fields in generated OpenAPI contracts, so an undescribed property is a bare field in every generated client and every viewer. The quality gate measures **self-description coverage** — see [Self-Description and Examples](modeling-guide.md#self-description-and-examples) for what the bar is per entity type.
+
+```bash
+npm run quality .blueprint/v2.7                       # report; never fails
+npm run quality .blueprint/v2.7 --strict              # release gate
+npm run quality .blueprint/v2.7 --strict --since HEAD~1   # gate only what you changed
+npm run quality .blueprint/v2.7 --json worklist.json  # machine-readable backfill worklist
+```
+
+Exit `0` clean · `1` threshold or baseline breach under `--strict` · `2` usage or configuration error.
+
+#### Covered, filler, missing
+
+Every observed field resolves into exactly one of three states:
+
+| State | Meaning |
+|---|---|
+| **covered** | present and substantive |
+| **filler** | present but says nothing — a placeholder, or prose that merely restates the field name |
+| **missing** | absent or blank |
+
+`filler` exists because a presence-only check is gameable by construction: `description: "The criteria field."` turns a presence check green and leaves the generated contract exactly as bare as before. Filler counts against a metric exactly like missing, and the report keeps them apart because they need different fixes — missing needs authoring, filler needs someone to notice that the gate was answered rather than the question. The rules behind it are deterministic (minimum length, a placeholder denylist, and an echo check that normalizes case, punctuation and articles before comparing prose against the name it describes). No model is involved.
+
+#### Three ways to gate
+
+| Mechanism | Question it answers | Where it is set |
+|---|---|---|
+| `threshold` | Is this model good enough to release? | `quality-spec.yaml`, corpus-calibrated |
+| `patch_threshold` | Is the work being authored *right now* good enough? | `quality-spec.yaml`, higher than `threshold` |
+| `baseline` | Has this model got worse? | `.blueprint-quality.yaml`, ratchets upward only |
+
+The distinction matters most on an existing model. One sitting at 19% property-description coverage can never pass an 85% absolute bar, so an absolute-only gate gets switched off and stops doing anything at all. With `--since`, that same model is still required to write its *next* property properly, and the baseline stops the overall number sliding.
+
+#### Per-project configuration
+
+`.blueprint-quality.yaml`, discovered in the model root or up to three directories above it:
+
+```yaml
+thresholds:
+  model.property.description: 0.70   # this project holds itself to a higher bar
+
+baseline:                            # written by --update-baseline
+  model.property.description: 0.842
+
+deferrals:
+  - metric: domain.command.exchange
+    reason: >-
+      No wire bindings authored yet; backfill tracked in MIG012.
+    expires: 2026-10-31
+```
+
+A deferral **must** carry both a `reason` and an `expires` date. A deferral without a reason is just a disabled check; one without an expiry becomes permanent. Missing either is a configuration error (exit 2). Past its expiry the tool warns loudly but does not fail.
+
+Metrics whose calibration sample was too thin ship with `threshold: null`: they still report and still ratchet, but they do not gate.
+
+#### What the report tells a QA reader
+
+Two metrics are read most often from outside the modeling team. `user_story.acceptance_criteria` is the one that decides whether test cases can be derived at all — a user story without acceptance criteria has nothing a test can assert against, and `user-story-without-acceptance-criteria` names each one. `test_case.provenance` shows whether the test cases in the model record where they came from (derived from a rule, written by hand, imported), which is what makes a coverage claim auditable rather than asserted. `--json` emits per-finding records, so "which stories are not yet testable" is a query, not a reading exercise.
+
+### Definition of done for a slice
+
+> A slice is done when the validator is green, the semantic checker reports no new findings, and the quality gate is clean for the files the slice touched (`--since <base-ref> --strict`) — or every remaining gap is recorded in `.blueprint-quality.yaml` as a deferral with a reason and an expiry date.
+
+Note what that does *not* say: the whole model never has to be clean. On an existing model that bar is unreachable, and an unreachable bar gets switched off. The slice is accountable for the slice. Deferring is legitimate; deferring silently is not.
 
 ---
 

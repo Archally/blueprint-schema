@@ -163,7 +163,8 @@ add a real metric for it.
 ## Tests
 
 ```bash
-npm run test:quality-gate
+node --test <this-directory>/*.test.mjs   # works from either deploy point
+npm run test:quality-gate                 # monorepo shortcut for the same command
 ```
 
 Zero-config `node --test`, matching how other `.mjs` tooling in this repo is tested
