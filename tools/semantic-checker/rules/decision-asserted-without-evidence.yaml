@@ -1,0 +1,29 @@
+engineVersion: "0.1"
+rules:
+  - id: decision-asserted-without-evidence
+    severity: warn
+    description: >-
+      A decision marked `certainty: confirmed` claims its premise is established — that is an
+      evidentiary claim, and one made with an empty `evidence[]` is an epistemic defect rather than
+      a coverage gap: the model asserts something it never sourced. Downstream readers cannot tell
+      a sourced conclusion from an assumption that hardened.
+
+      DELIBERATELY NARROWER than the `decision.evidence_when_asserted` quality-gate metric, which
+      also treats `discovery_stage: validated|committed` as asserting. Two reasons. (1) Semantic:
+      `discovery_stage` is a workflow position — a *committed* decision may legitimately be an
+      un-evidenced bet, and flagging it would punish honest hypothesis-tracking, which is what
+      `discovery_stage` exists for. `confirmed` is the only value that claims truth. (2) Mechanical:
+      the engine's `filter.field_in` ANDs across keys (`primitives/filter.ts` uses `.every`), so
+      "confirmed OR validated OR committed" is not expressible in one rule at engine v0.1.0 — see
+      Engine backlog in the README. Measured cost of the narrowing: zero on the current corpus,
+      where every asserting decision carries `certainty: confirmed` and `discovery_stage: committed`
+      together.
+    find:
+      entity_type: Decision
+    filter:
+      field_in:
+        data.certainty: [confirmed]
+    check:
+      any_non_empty:
+        - data.evidence
+    message: 'Decision "{displayId}" ({name|''unnamed''}) is marked certainty:confirmed but cites no evidence — source the claim, or lower it to probable/speculative.'

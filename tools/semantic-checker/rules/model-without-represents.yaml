@@ -1,0 +1,18 @@
+engineVersion: "0.1"
+rules:
+  - id: model-without-represents
+    severity: info
+    description: >-
+      `represents[]` is the seam between the design plane and the ubiquitous language: it maps a
+      data model back to the concept(s) it carries, so a rename in the domain can be traced into
+      every payload that speaks it. A model with none is a shape floating free of the vocabulary —
+      valid, generatable, and invisible to concept-level impact analysis. Info, not warn: some
+      models legitimately represent nothing in the domain (envelopes, pagination wrappers, error
+      shapes), and the corpus median is ~80%, so a clean run is not the expected state on every
+      model.
+    find:
+      entity_type: Models
+    check:
+      any_non_empty:
+        - data.represents
+    message: 'Model "{displayId}" ({name|''unnamed''}) maps to no concept — add represents[] so concept-level impact analysis can reach it (omit only for envelopes/wrappers).'

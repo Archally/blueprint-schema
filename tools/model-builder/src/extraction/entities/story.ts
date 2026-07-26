@@ -134,9 +134,13 @@ export function extractStory(doc: ParsedBlueprintDocument): Entity[] {
   const entities: Entity[] = [];
   const data = doc.data ?? {};
   const docScope = (doc.scope ?? data.scope) as string | undefined;
-  const stories = data.stories as StoryInput[] | undefined;
-
-  if (!Array.isArray(stories)) return entities;
+  // `stories`, `user_stories` and `use_cases` are INDEPENDENT top-level collections in
+  // story.schema. This used to early-return when `stories` was absent, which silently dropped
+  // every UserStory and UseCase in a file that authored only those — the exact shape a modeller
+  // writes first, since user stories precede process stories in the authoring flow. Kept in
+  // lockstep with the monorepo `viewer/v2/core` extractor (D34); both carried the identical defect
+  // at this line.
+  const stories = Array.isArray(data.stories) ? (data.stories as StoryInput[]) : [];
 
   for (let i = 0; i < stories.length; i++) {
     const s = stories[i]!;

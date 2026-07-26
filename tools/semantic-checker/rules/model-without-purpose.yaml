@@ -1,0 +1,25 @@
+engineVersion: "0.1"
+rules:
+  - id: model-without-purpose
+    severity: info
+    description: >-
+      `purpose` classifies a data model by its role in the CQRS flow. Without it a schema is a shape
+      with no place in the design — generators cannot tell a request body from a projection, and
+      reviewers cannot tell whether a model belongs on the write or read side.
+
+      Unlike `model-without-represents` there is NO legitimate exemption class here: the enum is
+      `[command-payload, event-payload, read-model, shared, dto]`, and `shared`/`dto` exist precisely
+      so reusable scalars and envelopes can classify. Verified against the finding set — the 12
+      `ecommerce` hits are `CategoryName` / `CurrencyCode` / `CustomerId`-style value objects, which
+      are `shared`, not unclassifiable. Info rather than warn only because the dimension is already
+      near-universally covered, so this is a regression guard rather than a gap to close. NOTE the
+      original stress-test scan reported this dimension at 35% and concluded payload classification
+      was broken; that count included GENERATED `_artifacts/` OpenAPI schemas, which cannot carry
+      `purpose`. Authored coverage is 100%. The built model this rule reads excludes generated
+      artifacts, so the number the rule sees is the honest one.
+    find:
+      entity_type: Models
+    check:
+      any_non_empty:
+        - data.purpose
+    message: 'Model "{displayId}" ({name|''unnamed''}) has no purpose — classify it (command-payload / event-payload / read-model / …).'

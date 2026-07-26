@@ -40,6 +40,11 @@ npx @archally/blueprint-schema blueprint-check <dir> --config .blueprint-lint.ya
 | `unbound-question` | warn | every competency Question resolves to a bounded context |
 | `leverage-point-no-address` | warn | every LeveragePoint addresses at least one finding, risk or decision |
 | `leverage-point-no-strategic-intent` | info | every LeveragePoint links to a goal or value stream |
+| `undescribed-event` | warn | every event Operation carries prose (`description` \| `statement` \| `summary`) — catches the asymmetric `one_of` pair, where only the happy-path half is described |
+| `decision-asserted-without-evidence` | warn | every Decision marked `certainty: confirmed` cites `evidence[]` — an evidentiary claim with no source. Speculative/probable decisions are exempt by design |
+| `user-story-without-acceptance-criteria` | info | every UserStory has `acceptance_criteria` — without them nothing can be derived into a test case |
+| `model-without-purpose` | info | every model declares its CQRS `purpose` (`command-payload` \| `event-payload` \| `read-model` \| `shared` \| `dto`) |
+| `model-without-represents` | info | every model maps to the concept(s) it carries via `represents[]`; omit only for envelopes/wrappers |
 
 The adapter maps `BlueprintModel → CheckableModel` (`term`→`name`, plane derived from the layer
 prefix, `validates`→`validated-by`, `question_answered_by`→`answered-by`). Output is now ordered
@@ -80,7 +85,7 @@ Severities: `error` (fails), `warn`, `info`, `off`.
 |------|----------------|
 | `cli.ts` | thin entry point — load model, adapt, run, format (compiled to `dist/cli.js`) |
 | `adapter.ts` | `BlueprintModel` → engine `CheckableModel` |
-| `rules/*.yaml` | the fourteen declarative rule packs the CLI loads |
+| `rules/*.yaml` | the nineteen declarative rule packs the CLI loads |
 | `adapter.test.ts` | adapter unit test (field mapping, plane derivation, relation renames) |
 
 ## Custom rules
