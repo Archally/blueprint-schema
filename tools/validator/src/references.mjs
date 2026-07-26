@@ -89,10 +89,29 @@ export function isRefKey(key) {
  * @returns true when the error must stay fatal even under --compat.
  */
 export function isIdentityOrReferenceViolation(instancePath, message) {
-  const required = /must have required property '([^']+)'/.exec(String(message ?? ""));
+  // A `required` failure is the one case the instancePath cannot classify: Ajv points it at the
+  // PARENT object ("/concepts/0"), never at the missing key, so the key has to come from the text.
+  //
+  // Measured against the pinned Ajv 8.20: the message is `must have required property 'id'` —
+  // single quotes, deterministically, including when the property name itself contains a quote.
+  // (Ajv has no locale mechanism here; ajv-i18n is a separate opt-in package this stack does not use.)
+  //
+  // The parse is therefore correct today, and the guard below is for the day it is not: if a message
+  // announces a missing required property but the key cannot be read out of it, FAIL SAFE and keep
+  // the error fatal. Getting this wrong in the other direction is silent — a missing `id` would be
+  // quietly demoted to a warning under --compat and the model would build with an unaddressable entity.
+  //
+  // The guard covers a change in Ajv's ENGLISH message format (quoting, wording). It cannot cover
+  // localization: a translated message matches nothing here and every required-error would become
+  // demotable. So installing `ajv-i18n` in either validator stack is a decision that has to come
+  // back to this function — it is not a drop-in.
+  const text = String(message ?? "");
+  const required = /must have required property '([^']+)'/.exec(text);
   if (required) {
     const key = required[1];
     if (key === "id" || isRefKey(key)) return true;
+  } else if (/required property/i.test(text)) {
+    return true;
   }
 
   // Reduce the Ajv instancePath to its last named segment: "/concepts/0/id" → "id".

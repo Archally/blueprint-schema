@@ -123,6 +123,15 @@ export interface BlueprintMetadata {
   migrationValidation?: MigrationValidationResult;
   /** Repository config from blueprint root (v2.4). */
   repository?: RepositoryConfig;
+  /**
+   * Per-repo config for cross-repo `code_refs` (v2.7.1), keyed by the ref's `org/repo` prefix.
+   *
+   * Emitted by the public builder and consumed by the VS Code extension's code_ref resolution.
+   * It was undeclared here: the field was written through an object spread, which TypeScript does
+   * not excess-property-check, so the build stayed green while every typed reader saw
+   * "property does not exist". A field that ships but cannot be read is worse than a missing one.
+   */
+  repositories?: Record<string, RepositoryConfig>;
 }
 
 /**

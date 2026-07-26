@@ -19,7 +19,7 @@
 //
 // Zero dependencies, zero build — runnable on a bare `actions/setup-node`.
 //
-// Usage:  node tools/verify-ported.mjs [--json]
+// Usage:  node tools/port/verify-ported.mjs [--json]
 // Exit:   0 ok · 1 mismatch · 2 manifest missing or unreadable
 // ═══════════════════════════════════════════════════════════════════════════════
 

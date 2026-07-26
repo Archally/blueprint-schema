@@ -16,6 +16,11 @@
  *   - `metadata.validation` / `metadata.migrationValidation` — *derived verdicts*, not content.
  *     Including them would give the same source two different digests depending on whether the
  *     caller happened to run validation first.
+ *   - `metadata.fingerprint` — derived FROM this canonical form, so including it would make the
+ *     digest depend on itself. `buildBlueprintModel({fingerprint: true})` attaches it, after which
+ *     `modelDigest(model)` returned a *different* value than the one stored — so the obvious
+ *     verification (`modelDigest(model) === model.metadata.fingerprint.modelDigest`) always failed.
+ *     Measured, not theorised: the two digests differed on a two-line model.
  *
  * Everything else is content and participates. Entities and relations are sorted by `id` and all
  * object keys are emitted in sorted order, so neither file traversal order nor key insertion order
@@ -27,8 +32,12 @@ import type { BlueprintModel } from './types.js';
 /** Metadata keys that describe the build run rather than the model's content. */
 export const EXECUTION_METADATA_KEYS = ['last_loaded'] as const;
 
-/** Derived verdicts attached to metadata by some callers; excluded so digests stay caller-independent. */
-export const DERIVED_METADATA_KEYS = ['validation', 'migrationValidation'] as const;
+/**
+ * Metadata derived FROM the model rather than describing it; excluded so a digest depends only on
+ * content, never on which derivations a caller happened to run first. `fingerprint` is here because
+ * it is derived from this very function — including it would make the digest self-referential.
+ */
+export const DERIVED_METADATA_KEYS = ['validation', 'migrationValidation', 'fingerprint'] as const;
 
 /** Per-file keys that reflect the filesystem rather than file content. */
 const NON_CONTENT_FILE_KEYS = ['lastModified'] as const;
