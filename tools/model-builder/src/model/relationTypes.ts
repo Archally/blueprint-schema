@@ -23,6 +23,23 @@ export const RELATION_TYPE = {
   Postconditions: 'postconditions',
   // domain.schema: operation capability dependency on other operations (operation.requires[])
   Requires: 'requires',
+  // --- Causal chain (domain.schema) -----------------------------------------
+  // The command→event→command backbone. Absent from this builder until 2026-07-25, which made
+  // `bp neighbors`/`subgraph`/`impact` and MCP get_neighbors/get_relations/get_impact_report
+  // silently omit causality; the public model-builder always had them. Values match the public
+  // builder exactly — the two feed one shared semantic-rule pack.
+  // domain.schema: command produces events (operation.produces.operations[])
+  Produces: 'produces',
+  // domain.schema: operation reacts to a triggering operation (operation.reacts_to[].operation)
+  ReactsTo: 'reacts_to',
+  // domain.schema: actors that can trigger this operation (operation.initiated_by[])
+  InitiatedBy: 'initiated_by',
+  // domain.schema: operation's lifecycle effect on a concept (operation.materializes[].concept)
+  Materializes: 'materializes',
+  // domain.schema: operation can raise a catalog error (operation.responses[].error)
+  RaisesError: 'raises_error',
+  // domain.schema: operation payload references a data model (operation.payload.schema → Models)
+  PayloadModel: 'payload_model',
   // decisions.schema: decision motivated by goal/risk/assumption/trade_off
   MotivationRefs: 'motivation_refs',
   // decisions.schema: decision enabling/supporting capabilities (decision.capability_refs[])
@@ -35,15 +52,14 @@ export const RELATION_TYPE = {
   Contains: 'contains',
   // arch.schema: service structurally provides contract (hierarchy from YAML nesting)
   Provides: 'provides',
-  // arch.schema: context depends on another context / external system (context.dependencies[])
-  DependsOn: 'depends_on',
-  // arch.schema: service contract exposes a domain operation (contract.expose[] → Operation)
+  // --- Contract → operation wiring (arch.schema) ----------------------------
+  // Typed operation_refs on a service contract, joining the arch plane to the domain plane.
+  // `handled_by` is DERIVED from these (D13/D15) and was already materialized; the underlying
+  // edges were not, so a contract-wired operation looked unreferenced. Values match the public
+  // builder exactly.
   ContractExposes: 'contract_exposes',
-  // arch.schema: service contract calls a domain operation on a dependency (contract.call[] → Operation)
   ContractCalls: 'contract_calls',
-  // arch.schema: service contract publishes a domain operation as a message (contract.send[] → Operation)
   ContractSends: 'contract_sends',
-  // arch.schema: service contract consumes a domain operation as a message (contract.receive[] → Operation)
   ContractReceives: 'contract_receives',
   // motivation.schema: goal tracked by KPI (goal.kpi)
   GoalKpi: 'goal.kpi',
@@ -127,6 +143,14 @@ export const RELATION_TYPE = {
   InquiryStakeholder: 'inquiry_stakeholder',
   // motivation.schema (v2.5): risk references goal (risk.goal_refs[])
   RiskGoal: 'risk_goal',
+  // motivation.schema (v2.7.7 vision CR, D045): the singular vision's forward-links — the
+  // "identity → objectives → competencies → delivery" chain, made queryable.
+  // vision → goal (vision.advances_goals[])
+  VisionAdvancesGoal: 'vision_advances_goal',
+  // vision → capability (vision.capability_refs[])
+  VisionCapability: 'vision_capability',
+  // vision → value stream (vision.value_stream_refs[])
+  VisionValueStream: 'vision_value_stream',
   // capability.schema (v2.5): capability references goal (capability.goal_refs[])
   CapabilityGoal: 'capability_goal',
   // motivation.schema (v2.5): assumption references risk (assumption.risk_refs[])
@@ -145,45 +169,31 @@ export const RELATION_TYPE = {
   // v2.7.6 (D15): operation handled/produced by a bounded context. Materialized (not
   // authored) — derived from arch service contracts (expose ∪ send = provide, PRIMARY,
   // many-to-many) with the deprecated file name/scope heuristic as FALLBACK. Carries
-  // data.resolution: 'contract' | 'legacy' and data.match: 'exact' | 'loose' (D18).
-  // The resolvability rule (unbound-operation.yaml) walks this edge.
+  // data.resolution: 'contract' | 'legacy'. The context map reads this edge (step-12).
   HandledBy: 'handled_by',
   // v2.7.6 (D17): competency question scoped to the bounded context whose knowledge
   // boundary it defines. Materialized — SINGLE-VALUED, from the question's explicit
   // bounded_context_ref (PRIMARY) with name/scope as FALLBACK. data.resolution: 'ref' | 'legacy'.
-  // The resolvability rule (unbound-question.yaml) walks this edge.
   ScopedTo: 'scoped_to',
   // BCC v5 (v2.6.3): cross-context business-decision policy linkage (BD.linked_contexts[])
   BusinessDecisionLinkedContext: 'business_decision_linked_context',
   // BCC v5 (v2.6.3): business-decision motivated by user story (BD.linked_user_stories[])
   BusinessDecisionLinkedUserStory: 'business_decision_linked_user_story',
-  // domain.schema: command produces event/document (operation.produces.operations[])
-  Produces: 'produces',
-  // domain.schema: command reacts to event (operation.reacts_to[].operation)
-  ReactsTo: 'reacts_to',
-  // domain.schema: operation initiated by actor (operation.initiated_by[])
-  InitiatedBy: 'initiated_by',
-  // domain.schema: operation materializes concept (operation.materializes[].concept)
-  Materializes: 'materializes',
-  // domain.schema: operation can raise a catalog error (operation.responses[].error → Error)
-  RaisesError: 'raises_error',
-  // domain.schema: operation payload references a data model (operation.payload.schema → Models)
-  PayloadModel: 'payload_model',
   // rg.schema (Step 01 / D26): resource owned by org team (resource.owner.team → Team).
   OwnedByTeam: 'owned_by_team',
   // rg.schema (Step 01 / D26): arch service deployed in deployment tier (topology.tiers[].services[] → Service).
   DeployedInTier: 'deployed_in_tier',
-  // infrastructure.schema (v2.7.7): TOSCA-derived inter-resource relations
+  // infrastructure.schema (v2.7.7 CR-1): TOSCA-derived inter-resource relations
   // (resource.relations[] — InfraResource → InfraResource). `hosted_on` is the canonical
   // placement edge (distinct from the DeploymentTier `contains` grouping VIEW, so the two
-  // never double-count). connects_to/routes_to may cross environments/substrates for a
-  // hybrid network-link interconnect. NOTE: `depends_on` (TOSCA) reuses the existing
-  // `DependsOn` const above (arch context dependencies share the same 'depends_on' value).
+  // never double-count, G8). connects_to/routes_to may cross environments/substrates for a
+  // hybrid `network-link` interconnect (RD31).
   HostedOn: 'hosted_on',
   ConnectsTo: 'connects_to',
+  DependsOn: 'depends_on',
   AttachesTo: 'attaches_to',
   RoutesTo: 'routes_to',
-  // infrastructure.schema (v2.7.7): the three-altitude intent→binding→instance edges.
+  // infrastructure.schema (v2.7.7 CR-2): the three-altitude intent→binding→instance edges.
   // needs: arch Service → ResourceType (abstract intent, service.needs[].type_ref).
   Needs: 'needs',
   // uses_resource: arch Service → InfraResource (concrete intent, service.resource_refs[]).
@@ -193,11 +203,11 @@ export const RELATION_TYPE = {
   // binds: Binding → Environment (binding.environment_ref) and Binding → InfraResource
   // (binding.resource_ref) — the (type × environment) → concrete-resource bridge.
   Binds: 'binds',
-  // infrastructure.schema (v2.7.7 DeploymentScope): management-grouping edges — the
+  // infrastructure.schema (v2.7.7 DeploymentScope CR): management-grouping edges — the
   // NON-TOSCA counterpart to `hosted_on` (runtime placement). Extraction-emitted from ref
-  // fields, so the five TOSCA verbs stay frozen. A resource may be BOTH `grouped_in` a
-  // scope (who manages it) and `hosted_on` a host (what it runs on) — distinct, not
-  // double-counted (the resource-group-vs-pool distinction).
+  // fields, so the five TOSCA verbs stay frozen (SD4). A resource may be BOTH `grouped_in`
+  // a scope (who manages it) and `hosted_on` a host (what it runs on) — distinct, not
+  // double-counted (the RG-vs-pool distinction, SD2).
   // grouped_in: InfraResource → DeploymentScope (resource.scope_ref).
   GroupedIn: 'grouped_in',
   // nested_in: DeploymentScope → DeploymentScope (scope.parent — subscription→resource-group).

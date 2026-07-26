@@ -10,13 +10,19 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  * design/arch plane to the design/domain plane so an operation's transport surface is
  * queryable (e.g. an exposed operation should declare an `exchange` binding):
  *
- *   - expose[]  (openapi / rpc)     operations this service exposes    → ContractExposes
- *   - call[]    (http-client / rpc) operations this service calls      → ContractCalls
- *   - send[]    (channel / AsyncAPI) operations this service publishes → ContractSends
- *   - receive[] (channel / AsyncAPI) operations this service consumes  → ContractReceives
+ *   - expose[]  (openapi / rpc)      operations this service exposes    → ContractExposes
+ *   - call[]    (http-client / rpc)  operations this service calls      → ContractCalls
+ *   - send[]    (channel / AsyncAPI) operations this service publishes  → ContractSends
+ *   - receive[] (channel / AsyncAPI) operations this service consumes   → ContractReceives
  *
- * Each operation_ref is an ID-based ref ("orders.CMD001") resolved against operation
- * entities; unresolvable refs become shared Missing placeholders (as elsewhere).
+ * Each operation_ref is an ID-based ref ("orders.CMD001") resolved against operation entities;
+ * unresolvable refs become shared Missing placeholders, as elsewhere.
+ *
+ * `handled_by` (membership.ts) is *derived* from expose ∪ send and was already materialized —
+ * these are the underlying edges it derives from. Without them a contract-wired operation had no
+ * incoming edge from its contract, so `orphan-entities` counted contracts as unreferenced.
+ * Ported from the public `tools/model-builder/src/extraction/relations/archContracts.ts`; keep the
+ * two in lockstep (both stacks run one shared semantic-rule pack).
  */
 const CONTRACT_VERBS: ReadonlyArray<{ field: string; type: string }> = [
   { field: 'expose', type: RELATION_TYPE.ContractExposes },
@@ -27,7 +33,7 @@ const CONTRACT_VERBS: ReadonlyArray<{ field: string; type: string }> = [
 
 export function extractArchContractRelations(
   entities: Entity[],
-  placeholders: Map<string, Entity>
+  placeholders: Map<string, Entity>,
 ): Relation[] {
   const relations: Relation[] = [];
 

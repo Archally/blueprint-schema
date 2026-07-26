@@ -9,11 +9,16 @@ import type { OperationDetail } from '../entities/story.js';
  *
  * Resolution uses the shared displayId-based resolver (`resolveRef`) rather than a
  * reconstructed file-based internal id. This is required by the multi-file convention:
- * operations live in `*.domain.yaml` files (e.g. `order.domain.yaml`), so the internal
+ * operations live in `*.domain.yaml` files (e.g. `product-core.domain.yaml`), so the internal
  * id (which bakes in the file basename) cannot be reconstructed from the ref alone. Matching by
- * displayId (e.g. `ordering.CMD020`) resolves the operation regardless of which file holds it.
+ * displayId (e.g. `catalog.CMD001`) resolves the operation regardless of which file holds it.
  *
- * When the ref does not resolve, a Missing placeholder is created and the step is marked
+ * Before 2026-07-25 this matched on the guessed internal id and fabricated a Missing placeholder
+ * whenever the guess missed — 57 phantom "missing" operations on the prestashop model, every one of
+ * which was present in the model. The public builder had already been fixed; this is that fix
+ * ported back. Keep the two in lockstep.
+ *
+ * When the ref genuinely does not resolve, a Missing placeholder is created and the step is marked
  * resolved: false on the Story.
  */
 export function buildStoryRelations(
@@ -46,6 +51,7 @@ export function buildStoryRelations(
         if (opsDetail && opsDetail[op.position] !== undefined) {
           opsDetail[op.position]!.resolved = false;
         }
+        // Log warning per step: optional in Node (no console in tests is fine)
         if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'test') {
           // eslint-disable-next-line no-console
           console.warn(

@@ -9,6 +9,16 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  * - Operation.preconditions[] → preconditions (operation → rule)
  * - Operation.postconditions[] → postconditions (operation → rule)
  * - Operation.requires[] → requires (operation → operation)
+ * - Operation.produces.operations[] → produces (command → event)
+ * - Operation.reacts_to[].operation → reacts_to (operation → triggering operation)
+ * - Operation.initiated_by[] → initiated_by (operation → actor)
+ * - Operation.materializes[].concept → materializes (operation → concept)
+ * - Operation.responses[].error → raises_error (operation → error)
+ *
+ * The causal five were missing here until 2026-07-25 while the public model-builder had always
+ * emitted them — 458 dropped edges on the prestashop model alone. Keep this list in lockstep with
+ * `tools/model-builder/src/extraction/relations/domain.ts` in the public repo: both builders feed
+ * the same semantic-rule pack, so a divergence makes one rule mean two things.
  */
 export function extractDomainRelations(
   entities: Entity[],
@@ -158,11 +168,11 @@ export function extractDomainRelations(
     const responses = data.responses as Array<Record<string, unknown>> | undefined;
     if (Array.isArray(responses)) {
       const seenErrorTargets = new Set<string>();
-      for (const resp of responses) {
-        const errorRef = (resp?.error as string | undefined) ?? undefined;
+      for (const response of responses) {
+        const errorRef = (response?.error as string | undefined) ?? undefined;
         if (!errorRef) continue;
         const targetId = resolveOrPlaceholder(errorRef, domain, entities, placeholders);
-        if (seenErrorTargets.has(targetId)) continue; // dedupe multiple responses to same error
+        if (seenErrorTargets.has(targetId)) continue; // dedupe multiple responses to the same error
         seenErrorTargets.add(targetId);
         relations.push({
           id: `${entity.id}--${RELATION_TYPE.RaisesError}--${targetId}`,

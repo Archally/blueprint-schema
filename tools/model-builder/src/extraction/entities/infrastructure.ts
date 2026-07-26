@@ -10,15 +10,14 @@ const LAYER = SCHEMA_TYPE_TO_LAYER['infrastructure']!;
  * Extract v2.7.7 infrastructure entities from one `infrastructure.yaml` document.
  *
  * Superset of the legacy `rg` extractor — the v2.7 layer participates in the knowledge
- * graph with typed ids (de-aliased to layer `design.infrastructure`):
+ * graph with typed ids (RD23 de-alias → layer `design.infrastructure`):
  *
- *   resources[]        → InfraResource (IR###)   — typed id, type_ref, relations, lifecycle,
- *                                                   exposure, identity/access/observability/…
- *   environments[]     → Environment (ENV###)    — object form only (string items are legacy
- *                                                   env-name keys, not entities)
- *   deployment_scopes[]→ DeploymentScope (DSC###) — management/lifecycle partition
- *   bindings[]         → Binding (BND###)         — (type × environment) → module
- *   topology.tiers[]   → DeploymentTier           — grouping VIEW (same type as v2.6)
+ *   resources[]     → InfraResource (IR###)   — typed id, type_ref, relations, lifecycle,
+ *                                                exposure, identity/access/observability/…
+ *   environments[]  → Environment (ENV###)    — object form only (string items are legacy
+ *                                                env-name keys, not entities)
+ *   bindings[]      → Binding (BND###)         — (type × environment) → module
+ *   topology.tiers[]→ DeploymentTier           — grouping VIEW (same type as v2.6)
  *
  * Tiers carry `_tier_services` (legacy free-string list), `_tier_resource_refs` (typed IR###
  * list), and `_resource_displayids` on `data` so the relation extractor can resolve

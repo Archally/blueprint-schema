@@ -93,8 +93,6 @@ export interface BlueprintMetadata {
   migrationValidation?: MigrationValidationResult;
   /** Repository config from blueprint root (v2.4). */
   repository?: RepositoryConfig;
-  /** Per-repo config for cross-repo code_refs (v2.7.1), keyed by the code_ref org/repo prefix. */
-  repositories?: Record<string, RepositoryConfig>;
 }
 
 /**

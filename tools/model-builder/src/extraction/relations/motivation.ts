@@ -65,6 +65,29 @@ export function extractMotivationRelations(
         }
       }
     }
+
+    if (entity.type === ENTITY_TYPE.Vision) {
+      // v2.7.7 (D045): the vision's forward-links — identity → objectives → competencies → delivery.
+      const visionRefFields: { field: string; type: string }[] = [
+        { field: 'advances_goals', type: RELATION_TYPE.VisionAdvancesGoal },
+        { field: 'capability_refs', type: RELATION_TYPE.VisionCapability },
+        { field: 'value_stream_refs', type: RELATION_TYPE.VisionValueStream },
+      ];
+      for (const { field, type } of visionRefFields) {
+        const refs = data[field] as string[] | undefined;
+        if (!Array.isArray(refs)) continue;
+        for (const ref of refs) {
+          if (typeof ref !== 'string' || !ref) continue;
+          const targetId = resolveOrPlaceholder(ref, domain, entities, placeholders);
+          relations.push({
+            id: `${entity.id}--${type}--${targetId}`,
+            source_entity_id: entity.id,
+            target_entity_id: targetId,
+            type,
+          });
+        }
+      }
+    }
   }
 
   return relations;

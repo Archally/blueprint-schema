@@ -12,7 +12,7 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  *   InfraResource --{hosted_on|connects_to|depends_on|attaches_to|routes_to}--> InfraResource
  *                                                          (resource.relations[], TOSCA; target
  *                                                           may be in another environment/substrate
- *                                                           for a hybrid network-link)
+ *                                                           for a hybrid network-link, RD31)
  *   InfraResource --realizes_type-->        ResourceType  (resource.type_ref)
  *   Binding       --binds-->                Environment   (binding.environment_ref)
  *   Binding       --binds-->                InfraResource (binding.resource_ref)
@@ -24,17 +24,17 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  *   Service       --deployed_in_tier-->     DeploymentTier(legacy tier.services[] cross-file service)
  *   InfraResource --grouped_in-->           DeploymentScope(resource.scope_ref — management grouping,
  *                                                          the NON-TOSCA counterpart to hosted_on
- *                                                          placement; a resource can be both)
+ *                                                          placement; a resource can be both, SD2/SD4)
  *   DeploymentScope--nested_in-->           DeploymentScope(scope.parent — subscription→resource-group)
  *   Environment   --targets_scope-->        DeploymentScope(environment.target_scope.ref, promoted inline)
  *
  * `hosted_on` (InfraResource→InfraResource) is the canonical PLACEMENT edge; `contains`
  * (DeploymentTier→InfraResource) is a grouping VIEW — distinct types, so a resource that is
- * both `hosted_on` a host and listed in a tier is never double-counted.
+ * both `hosted_on` a host and listed in a tier is never double-counted (G8).
  *
  * ResourceType (RT###) entities are catalog-sourced (profile files, not project models); until
- * profiles load through the model builder, `needs`/`realizes_type` targeting RT### resolve to
- * nothing and are dropped. The edge logic is ready and lights up once RT entities exist.
+ * profiles load through core, `needs`/`realizes_type` targeting RT### resolve to nothing and are
+ * dropped. The edge logic is ready and lights up automatically once RT entities exist.
  */
 
 const TOSCA_RELATION: Record<string, string> = {
@@ -114,7 +114,7 @@ export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
         if (team) push(e, RELATION_TYPE.OwnedByTeam, team);
       }
 
-      // relations[] → TOSCA edges (target may cross environments/substrates)
+      // relations[] → TOSCA edges (target may cross environments/substrates, RD31)
       const rels = data.relations as Array<Record<string, unknown>> | undefined;
       if (Array.isArray(rels)) {
         for (const rel of rels) {
@@ -136,7 +136,7 @@ export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
         if (rt) push(e, RELATION_TYPE.RealizesType, rt);
       }
 
-      // scope_ref → DeploymentScope (management grouping; distinct from hosted_on placement)
+      // scope_ref → DeploymentScope (management grouping; distinct from hosted_on placement, SD2)
       const scopeRef = data.scope_ref as string | undefined;
       if (scopeRef) {
         const scope = resolveByRef(scopeByDisplayId, scopeRef);

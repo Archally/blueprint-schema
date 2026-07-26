@@ -23,6 +23,11 @@ export const ENTITY_TYPE = {
   Assumption: 'Assumption',
   TradeOff: 'TradeOff',
   Inquiry: 'Inquiry',
+  // v2.7.7 vision CR (D045): the product's singular identity claim / north-star — a
+  // first-class governance entity distinct from Goal (measurable) and the root description
+  // (a blurb). Extracted from the singular `motivation.vision` object (at most one per model);
+  // forward-links to the goals/capabilities/value-streams that operationalize it.
+  Vision: 'Vision',
   Decision: 'Decision',
   BusinessDecision: 'BusinessDecision',
   TestCase: 'TestCase',
@@ -40,16 +45,16 @@ export const ENTITY_TYPE = {
   Models: 'Models',
   RG: 'RG',
   DeploymentTier: 'DeploymentTier',
-  // v2.7.7 infrastructure layer. InfraResource (IR###) supersedes RG for v2.7
-  // `infrastructure.yaml`; RG stays for v2.6 `rg.yaml` back-compat.
+  // v2.7.7 infrastructure layer (CR-1/CR-2). InfraResource (IR###) supersedes RG for
+  // v2.7 `infrastructure.yaml`; RG stays for v2.6 `rg.yaml` back-compat (RD23/RD25).
   InfraResource: 'InfraResource',
   Environment: 'Environment',
   Binding: 'Binding',
   ResourceType: 'ResourceType',
-  // v2.7.7 DeploymentScope: substrate-neutral management/lifecycle partition (DSC###) —
-  // Azure resource-group/subscription, AWS account/OU, GCP project/folder, k8s cluster/
-  // namespace, on-prem datacenter/host-pool. Nests via `parent`; resources join via
-  // `scope_ref`. Lives under `design.infrastructure` (from `deployment_scopes[]`).
+  // v2.7.7 DeploymentScope CR: substrate-neutral management/lifecycle partition (DSC###) —
+  // Azure RG/subscription, AWS account/OU, GCP project/folder, k8s cluster/namespace, on-prem
+  // datacenter/host-pool. Nests via `parent`; resources join via `scope_ref`. Under
+  // `design.infrastructure` (from `deployment_scopes[]` in infrastructure.yaml).
   DeploymentScope: 'DeploymentScope',
   Party: 'Party',
   Department: 'Department',
@@ -82,7 +87,7 @@ export const SCHEMA_TYPE_TO_LAYER: Record<string, string> = {
   dynamics: 'design.dynamics',
   quality: 'design.quality',
   rg: 'design.rg',
-  // v2.7.7 de-alias: `infrastructure` gets its own layer id (previously aliased to
+  // v2.7.7 de-alias (RD23): `infrastructure` gets its own layer id (was aliased to
   // `design.rg`). `rg` stays `design.rg` for v2.6 back-compat.
   infrastructure: 'design.infrastructure',
   motivation: 'governance.motivation',
@@ -90,7 +95,9 @@ export const SCHEMA_TYPE_TO_LAYER: Record<string, string> = {
   decisions: 'governance.decisions',
   'test-cases': 'governance.tests',
   org: 'governance.org',
+  organization: 'governance.org',
   ui: 'design.ui',
+  interactions: 'design.ui',
   roadmap: 'governance.roadmap',
   'value-stream': 'governance.value-stream',
   leverage: 'governance.leverage',
