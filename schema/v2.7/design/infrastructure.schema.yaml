@@ -477,7 +477,7 @@ $defs:
         description: "The target resource (IR###). May be in another environment/substrate (hybrid interconnect)."
       outputs:
         type: array
-        description: "Optional attribute-level outputs of the target this resource consumes — e.g. host, port, connection-string. Makes connects_to/depends_on wiring explicit for `bp impact`."
+        description: "Optional attribute-level outputs of the target this resource consumes — e.g. host, port, connection-string. Makes connects_to/depends_on wiring explicit for impact analysis."
         items:
           type: string
       description:

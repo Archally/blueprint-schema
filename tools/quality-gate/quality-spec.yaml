@@ -3,14 +3,12 @@
 # Version-agnostic by design (plan D18): metrics declare the schema minor lines they
 # apply to, so ONE spec serves v2.7 and v2.8 rather than forking with the schema tree.
 #
-# Thresholds are calibrated from the in-repo corpus (plan D27), not from a single
-# golden model — a bar set to one model's own score passes that model by construction
-# and says nothing about achievability elsewhere. Every threshold records its source.
+# Thresholds are calibrated from a corpus of real models, not from a single golden
+# model — a bar set to one model's own score passes that model by construction and
+# says nothing about achievability elsewhere. Every threshold records its source.
 #
-# CALIBRATED 2026-07-25 from 16 in-repo projects (schema v1 → v2.7), metrics with
-# n>=10 observations counted. Distribution archived at
-# .prompts/blueprints/2026-07-25-blueprint-ai-harness-quality-upgrade/assets/
-#   2026-07-25-corpus-calibration.json
+# CALIBRATED 2026-07-25 from 16 projects (schema v1 → v2.7), counting metrics with
+# n>=10 observations.
 #
 # Two bars per metric, because they answer different questions:
 #   threshold        whole-model release bar — reachable by a real model today

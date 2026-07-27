@@ -312,7 +312,7 @@ $defs:
         description: >
           SOFT-DEPRECATED (v2.7.7). Free-string list of infrastructure resource categories this
           service requires (e.g. database, queue, cache). Superseded by typed `resource_refs`
-          (IR###), which makes the service→infrastructure edge a first-class, `bp impact`-traversable
+          (IR###), which makes the service→infrastructure edge a first-class, impact-traversable
           graph link. Kept valid for back-compat; the two may coexist during migration. Removal
           targeted for v2.8.
       resource_refs:
