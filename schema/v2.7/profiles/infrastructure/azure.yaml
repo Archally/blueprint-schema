@@ -3,8 +3,8 @@ version: "1.0.0"
 profile: azure
 substrate: cloud
 description: >
-  Azure realizations of the neutral resource-type catalog (RD7/RD31). Realizes each neutral RT with
-  a vetted Azure Verified Module (AVM) — never raw resources (RD8 scaffold-once). AVM is documented
+  Azure realizations of the neutral resource-type catalog. Realizes each neutral RT with
+  a vetted Azure Verified Module (AVM) — never raw resources. AVM is documented
   here as ONE realization vocabulary, not THE vocabulary; the identical outputs contract is what
   makes the type substrate-neutral.
 realizations:

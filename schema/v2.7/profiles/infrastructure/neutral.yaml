@@ -3,7 +3,7 @@ version: "1.0.0"
 profile: neutral
 substrate: neutral
 description: >
-  Substrate-neutral resource-type catalog (v2.7.7 CR-2, RD7/RD15/RD31). Defines the abstract
+  Substrate-neutral resource-type catalog (v2.7.7). Defines the abstract
   resource TYPES a service `need.type_ref` targets, each with an inputs/outputs contract that every
   platform realization must honour. These types name WHAT (a relational database, an object store)
   without pinning a platform — cloud, on-prem, and private-cloud profiles realize them identically.

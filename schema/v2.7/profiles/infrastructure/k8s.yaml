@@ -3,7 +3,7 @@ version: "1.0.0"
 profile: k8s
 substrate: cloud
 description: >
-  Kubernetes realizations of the neutral resource-type catalog (RD7/RD31). Realizes neutral RTs with
+  Kubernetes realizations of the neutral resource-type catalog. Realizes neutral RTs with
   Helm charts / operators — substrate-portable (runs on any managed or self-hosted cluster). Proves
   the container substrate realizes the same neutral RT001 with an identical outputs contract.
 realizations:

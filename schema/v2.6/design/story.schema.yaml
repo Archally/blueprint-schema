@@ -285,7 +285,7 @@ $defs:
   # ---------------------------------------------------------------------------
   # Use Case (v2.5)
   # Scenario-level requirement with dual-mode steps: functional (operation)
-  # and journey (screen + emotion + pain_point). Merged UJ capabilities (D2).
+  # and journey (screen + emotion + pain_point). Merged UJ capabilities.
   # ---------------------------------------------------------------------------
 
   use_case:

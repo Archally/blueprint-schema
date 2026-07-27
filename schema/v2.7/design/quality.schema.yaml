@@ -263,7 +263,7 @@ $defs:
         description: >
           Infrastructure resources (IR###) this SLO targets — an availability/latency objective
           can bind to a concrete host, store, or estate, not only to operations. Additive/optional
-          (v2.7.7). Distinct from `resilience_ref`/RES### (untouched, RD21).
+          (v2.7.7). Distinct from `resilience_ref`/RES### (untouched).
       error_budget:
         type: string
         description: "Acceptable failure rate within the window (e.g. '0.1%' = complement of 99.9%)."

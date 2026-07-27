@@ -234,7 +234,7 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/bounded_context_ref"
         description: >
           Optional target bounded-context id (BC###) — the id-based inter-context
-          edge (D10), preferred over matching the `name` string (deprecated
+          edge, preferred over matching the `name` string (deprecated
           fallback). Use for dependencies on another bounded context in this model.
       type:
         type: string
@@ -330,12 +330,12 @@ $defs:
         items:
           $ref: "#/$defs/service_need"
         description: >
-          Abstract infrastructure NEEDS (Score `type`/`class`/`id`/`params` vocabulary, RD15/CR-2)
+          Abstract infrastructure NEEDS (Score `type`/`class`/`id`/`params` vocabulary)
           this service declares — TYPE-level intent, resolved to a concrete resource per
           environment by a binding (BND###). The three altitudes: `needs` (type) → binding
           (type × environment) → `resource_refs` / `resource` (IR### instance). A need names WHAT
           the service requires without pinning a platform, so the same need realizes on cloud,
-          on-prem, or hybrid (RD31). Additive/optional (v2.7.7).
+          on-prem, or hybrid. Additive/optional (v2.7.7).
       owned_by:
         $ref: "../metamodel.schema.yaml#/$defs/owned_by"
         description: "Service-level ownership override."
@@ -398,18 +398,18 @@ $defs:
     type: object
     description: >
       An abstract infrastructure need declared by a service (Score `type`/`class`/`id`/`params`
-      vocabulary, RD15/EVD-C6). Names WHAT the service requires (a resource TYPE) without pinning a
+      vocabulary). Names WHAT the service requires (a resource TYPE) without pinning a
       concrete resource or platform — a binding (BND###) resolves it per environment (type × env →
       module). The type-level altitude above `resource_refs` (concrete instance). Substrate-neutral:
       the same need binds to a cloud module in one environment and an on-prem module in another
-      (hybrid, RD31).
+      (hybrid).
     additionalProperties: false
     required:
       - type_ref
     properties:
       type_ref:
         $ref: "../metamodel.schema.yaml#/$defs/resource_type_ref"
-        description: "The resource TYPE this need requires (RT### in the resource-type catalog, step-04 profiles)."
+        description: "The resource TYPE this need requires (RT### in the resource-type catalog profiles)."
       class:
         type: string
         description: >
@@ -418,7 +418,7 @@ $defs:
       id:
         type: string
         description: >
-          Optional logical need id distinguishing shared-vs-dedicated instances (EVD-C5). The same
+          Optional logical need id distinguishing shared-vs-dedicated instances. The same
           id shared across services ⇒ a shared resource; distinct ids ⇒ dedicated. NOT an IR###
           (this is intent, pre-binding) — a free-string handle a binding's `need_ref` can target.
       params:

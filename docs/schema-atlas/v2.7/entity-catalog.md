@@ -421,7 +421,7 @@ _Source: `schema/v2.7/migration.schema.yaml#/$defs/meta_change`_
 
 **Blueprint Infrastructure Resource-Type Profile**
 
-Validates a resource-type catalog profile file (v2.7.7 CR-2, RD7/RD15/RD31). A profile is DATA, not schema: the resource-type catalog is shipped as versioned profile files so new types need no schema change (R12 — catalog is data). The `neutral` profile defines abstract resource TYPES (RT###) with an inputs/outputs contract; platform profiles (azure/aws/k8s/on-prem/openstack) define `realizations` that map each neutral RT### to a concrete module on their substrate. The same neutral RT realizing…
+Validates a resource-type catalog profile file (v2.7.7). A profile is DATA, not schema: the resource-type catalog is shipped as versioned profile files so new types need no schema change. The `neutral` profile defines abstract resource TYPES (RT###) with an inputs/outputs contract; platform profiles (azure/aws/k8s/on-prem/openstack) define `realizations` that map each neutral RT### to a concrete module on their substrate. The same neutral RT realizing on cloud AND on-prem/private-cloud with an…
 
 _Source: `schema/v2.7/profiles/infrastructure/profiles.schema.yaml` · root type `object`_
 
@@ -433,7 +433,7 @@ _Source: `schema/v2.7/profiles/infrastructure/profiles.schema.yaml` · root type
 | --- | --- | --- | --- | --- |
 | `version` | `string` | ✓ |  | Content version of this profile file (semver). |
 | `profile` | `string` | ✓ |  | Profile name — neutral, azure, aws, k8s, on-prem, openstack, or another platform key. |
-| `substrate` | `string` | — | `neutral`, `cloud`, `on-prem`, `hybrid`, `edge` | Substrate this profile targets. `neutral` = the abstract catalog; the rest are realizations (RD31). |
+| `substrate` | `string` | — | `neutral`, `cloud`, `on-prem`, `hybrid`, `edge` | Substrate this profile targets. `neutral` = the abstract catalog; the rest are realizations. |
 | `description` | `string` | — |  | Human-readable purpose of this profile. |
 | `resource_types` | `array<ref → resource_type>` | — |  | Abstract resource TYPE definitions (used by the neutral profile): the inputs/outputs contract each RT### exposes. `need.type_ref` / `resource.type_ref` resolve… |
 | `realizations` | `array<ref → realization>` | — |  | Platform realizations (used by platform profiles): how each neutral RT### is realized on this substrate — the concrete module + optional restated outputs contr… |
@@ -468,14 +468,14 @@ How a neutral resource TYPE is realized on this profile's substrate — the conc
 | `realizes` | `string` | ✓ |  | The neutral resource TYPE (RT###) this entry realizes. |
 | `substrate` | `string` | — |  | Optional substrate hint for this realization (e.g. cloud, on-prem, private-cloud). |
 | `module` | `ref → module` | ✓ |  | The concrete platform module/recipe realizing the type (AVM module, Terraform module, Helm chart, Ansible role, …). |
-| `outputs` | `array<ref → io_field>` | — |  | Optional restatement of the outputs contract — MUST match the neutral type's outputs (the identical-contract proof, RD31). |
+| `outputs` | `array<ref → io_field>` | — |  | Optional restatement of the outputs contract — MUST match the neutral type's outputs (the identical-contract proof). |
 | `notes` | `string` | — |  | Optional note (e.g. 'self-hosted on an IaaS VM', 'managed PaaS'). |
 
 _Source: `schema/v2.7/profiles/infrastructure/profiles.schema.yaml#/$defs/realization`_
 
 #### `io_field`
 
-A typed input or output field. An output may be secret-flagged — a reference/flow marker only, never a value (RD16). Mirrors `infrastructure.schema.yaml#/$defs/io_field`.
+A typed input or output field. An output may be secret-flagged — a reference/flow marker only, never a value. Mirrors `infrastructure.schema.yaml#/$defs/io_field`.
 
 **Required:** `name`
 
@@ -483,14 +483,14 @@ A typed input or output field. An output may be secret-flagged — a reference/f
 | --- | --- | --- | --- | --- |
 | `name` | `string` | ✓ |  | Field name (e.g. host, port, name, username, password, endpoint, connection_string). |
 | `type` | `string` | — |  | Optional value-type hint (e.g. string, int, hostname, uri). |
-| `secret` | `boolean` | — |  | When true this field is a secret — reference/flow only, never the value (RD16). |
+| `secret` | `boolean` | — |  | When true this field is a secret — reference/flow only, never the value. |
 | `description` | `string` | — |  | Optional description of the field. |
 
 _Source: `schema/v2.7/profiles/infrastructure/profiles.schema.yaml#/$defs/io_field`_
 
 #### `module`
 
-A concrete platform module/recipe reference with an optional pinned version (RD8 continuous-readiness). Substrate-neutral — AVM is ONE realization vocabulary, not THE vocabulary (RD31).
+A concrete platform module/recipe reference with an optional pinned version. Substrate-neutral — AVM is ONE realization vocabulary, not THE vocabulary.
 
 **Required:** `ref`
 
@@ -605,7 +605,7 @@ Dependency on another bounded context or external system. Technical connections 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `name` | `string` | ✓ |  | Name of the dependency (context or external system name). |
-| `bounded_context_ref` | `ref → bounded_context_ref` | — |  | Optional target bounded-context id (BC###) — the id-based inter-context edge (D10), preferred over matching the `name` string (deprecated fallback). Use for de… |
+| `bounded_context_ref` | `ref → bounded_context_ref` | — |  | Optional target bounded-context id (BC###) — the id-based inter-context edge, preferred over matching the `name` string (deprecated fallback). Use for dependen… |
 | `type` | `string` | — |  | Technical integration type (e.g. api, events, shared-db, file, grpc). |
 | `relationship` | `ref → context_relationship` | — |  | DDD strategic relationship pattern. Captures architectural intent beyond technical integration. |
 | `direction` | `string` | — | `upstream`, `downstream`, `peer` | This context's role: upstream=we provide, downstream=we consume, peer=bidirectional. |
@@ -647,7 +647,7 @@ A deployable service or component within a bounded context.
 | `vendor` | `array<ref → team>` | — |  | Teams or vendors responsible for this service. |
 | `resources` | `array<string>` | — |  | SOFT-DEPRECATED (v2.7.7). Free-string list of infrastructure resource categories this service requires (e.g. database, queue, cache). Superseded by typed `reso… |
 | `resource_refs` | `array<ref → infra_resource_ref>` | — |  | Typed infrastructure resources this service requires (IR### — `infra_resource_ref`), resolving to `resource` entities in the infrastructure layer. This is the… |
-| `needs` | `array<ref → service_need>` | — |  | Abstract infrastructure NEEDS (Score `type`/`class`/`id`/`params` vocabulary, RD15/CR-2) this service declares — TYPE-level intent, resolved to a concrete reso… |
+| `needs` | `array<ref → service_need>` | — |  | Abstract infrastructure NEEDS (Score `type`/`class`/`id`/`params` vocabulary) this service declares — TYPE-level intent, resolved to a concrete resource per en… |
 | `owned_by` | `ref → owned_by` | — |  | Service-level ownership override. |
 | `servers` | `array<object>` | — |  | Server instances where this service is deployed. Follows OpenAPI server object pattern. |
 | `contracts` | `ref → contracts` | — |  | External contracts exposing and consuming interfaces for this service. |
@@ -660,15 +660,15 @@ _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service`_
 
 #### `service_need`
 
-An abstract infrastructure need declared by a service (Score `type`/`class`/`id`/`params` vocabulary, RD15/EVD-C6). Names WHAT the service requires (a resource TYPE) without pinning a concrete resource or platform — a binding (BND###) resolves it per environment (type × env → module). The type-level altitude above `resource_refs` (concrete instance). Substrate-neutral: the same need binds to a cl…
+An abstract infrastructure need declared by a service (Score `type`/`class`/`id`/`params` vocabulary). Names WHAT the service requires (a resource TYPE) without pinning a concrete resource or platform — a binding (BND###) resolves it per environment (type × env → module). The type-level altitude above `resource_refs` (concrete instance). Substrate-neutral: the same need binds to a cloud module in…
 
 **Required:** `type_ref`
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
-| `type_ref` | `ref → resource_type_ref` | ✓ |  | The resource TYPE this need requires (RT### in the resource-type catalog, step-04 profiles). |
+| `type_ref` | `ref → resource_type_ref` | ✓ |  | The resource TYPE this need requires (RT### in the resource-type catalog profiles). |
 | `class` | `string` | — |  | Optional variant/tier within the type (Score `class`) — e.g. 'managed' vs 'self-hosted', 'standard' vs 'premium', 'read-replica'. Free-text; the catalog/profil… |
-| `id` | `string` | — |  | Optional logical need id distinguishing shared-vs-dedicated instances (EVD-C5). The same id shared across services ⇒ a shared resource; distinct ids ⇒ dedicate… |
+| `id` | `string` | — |  | Optional logical need id distinguishing shared-vs-dedicated instances. The same id shared across services ⇒ a shared resource; distinct ids ⇒ dedicated. NOT an… |
 | `params` | `object` | — |  | Optional type-level parameters (Score `params`) — e.g. {version: '16', size: small}. The environment `param_overlay` and the binding `params` refine these at r… |
 | `description` | `string` | — |  | Optional human note on why this need exists. |
 
@@ -1519,7 +1519,7 @@ _Source: `schema/v2.7/design/infrastructure.schema.yaml` · root type `object`_
 | `environments` | `array<union>` | — |  | Declared environments. Legacy form: a plain name string (e.g. dev, staging, prod). v2.7.7 form: a typed Environment object (id ENV###, substrate, target_scope,… |
 | `resources` | `array<ref → resource>` | — |  | Infrastructure resources: databases, queues, caches, storage, external services. |
 | `topology` | `ref → deployment_topology` | — |  | Deployment topology: how services are placed across tiers, regions, and environments. |
-| `bindings` | `array<ref → binding>` | — |  | (resource-type × environment) → implementation bindings (BND###, v2.7.7 CR-2). A binding resolves an abstract need / resource-type in a specific environment to… |
+| `bindings` | `array<ref → binding>` | — |  | (resource-type × environment) → implementation bindings (BND###, v2.7.7). A binding resolves an abstract need / resource-type in a specific environment to a co… |
 | `deployment_scopes` | `array<ref → deployment_scope>` | — |  | Deployment scopes (DSC###, v2.7.7) — the management / lifecycle / ownership / billing partitions that OWN resources: Azure Resource Groups + Subscriptions, AWS… |
 
 #### Definitions
@@ -1546,18 +1546,18 @@ An infrastructure resource with platform identity and per-environment configurat
 | `code_refs` | `ref → code_refs` | — |  |  |
 | `type_ref` | `ref → resource_type_ref` | — |  | Optional typed reference to a resource type (RT###) in the resource-type catalog (step 04). Resolves to the type's inputs/outputs contract; the concrete platfo… |
 | `scope_ref` | `ref → deployment_scope_ref` | — |  | Optional management/lifecycle partition (DSC###) this resource is owned in — its resource-group / namespace / host-pool. Distinct from `hosted_on` (runtime pla… |
-| `hosting_model` | `string` | — | `managed-service`, `vm`, `container`, `bare-metal`, `serverless`, `network-link` … (7) | Substrate-neutral realization classifier (RD31): HOW the resource is hosted — a managed cloud/PaaS service, an IaaS/on-prem VM, a container, bare metal, server… |
-| `relations` | `array<ref → infra_relation_edge>` | — |  | Typed inter-resource relations (TOSCA vocabulary, RD11) — the typed replacement for untyped links in the `properties` bag. `hosted_on` is the canonical placeme… |
-| `iac_refs` | `ref → iac_refs` | — |  | Infrastructure-as-Code traceability for this resource — the analogue of code_refs for infra. Spans cloud provisioners AND on-prem config-management (RD31). |
-| `lifecycle` | `ref → lifecycle` | — |  | Optional lifecycle/protection posture (architect-altitude, RD14). |
-| `exposure` | `string` | — | `public`, `internal`, `dmz`, `private`, `air-gapped`, `vpn-only` … (7) | Neutral network-exposure posture (RD31): reachable from the internet (public), internal-only (internal), perimeter (dmz), isolated (private / air-gapped), reac… |
+| `hosting_model` | `string` | — | `managed-service`, `vm`, `container`, `bare-metal`, `serverless`, `network-link` … (7) | Substrate-neutral realization classifier: HOW the resource is hosted — a managed cloud/PaaS service, an IaaS/on-prem VM, a container, bare metal, serverless, a… |
+| `relations` | `array<ref → infra_relation_edge>` | — |  | Typed inter-resource relations (TOSCA vocabulary) — the typed replacement for untyped links in the `properties` bag. `hosted_on` is the canonical placement edg… |
+| `iac_refs` | `ref → iac_refs` | — |  | Infrastructure-as-Code traceability for this resource — the analogue of code_refs for infra. Spans cloud provisioners AND on-prem config-management. |
+| `lifecycle` | `ref → lifecycle` | — |  | Optional lifecycle/protection posture (architect-altitude). |
+| `exposure` | `string` | — | `public`, `internal`, `dmz`, `private`, `air-gapped`, `vpn-only` … (7) | Neutral network-exposure posture: reachable from the internet (public), internal-only (internal), perimeter (dmz), isolated (private / air-gapped), reachable o… |
 | `exposure_detail` | `string` | — |  | Optional provider-specific exposure mechanism (free-text): e.g. 'azure-private-endpoint', 'vnet-integrated', 'aws-privatelink', 'on-prem firewall DMZ'. Retains… |
-| `identity` | `ref → resource_identity` | — |  | Optional workload identity this resource runs as (cross-cutting, EVD-B3/B6). Neutral-named — a cloud managed identity OR an on-prem AD / k8s service account (R… |
-| `access` | `array<ref → access_grant>` | — |  | Optional RBAC access grants (identity × target × role triples, EVD-B6). Neutral — cloud IAM OR on-prem AD/LDAP. Semantic level only; mechanics live in the modu… |
-| `observability` | `ref → observability_binding` | — |  | Optional per-resource telemetry wiring — where this resource sends logs/metrics (was AVM 'diagnostics'). Neutral: cloud diagnostics OR on-prem syslog/SNMP/Prom… |
-| `redundancy` | `ref → redundancy` | — |  | Optional availability-domain spread (was AVM 'zones'). Neutral: cloud AZs/regions OR on-prem sites/racks (RD31). |
-| `encryption_key` | `ref → encryption_key` | — |  | Optional encryption-key posture (was AVM 'customer_managed_key'). Neutral: cloud KMS/Key-Vault OR on-prem HSM/Vault. A key REFERENCE, never key material (RD16,… |
-| `deployment_unit` | `ref → deployment_unit` | — |  | Optional deployment-unit boundary (EVD-A7, RD8 continuous-readiness — carried, no generator consumes it in v2.7.7). |
+| `identity` | `ref → resource_identity` | — |  | Optional workload identity this resource runs as (cross-cutting). Neutral-named — a cloud managed identity OR an on-prem AD / k8s service account. |
+| `access` | `array<ref → access_grant>` | — |  | Optional RBAC access grants (identity × target × role triples). Neutral — cloud IAM OR on-prem AD/LDAP. Semantic level only; mechanics live in the module. |
+| `observability` | `ref → observability_binding` | — |  | Optional per-resource telemetry wiring — where this resource sends logs/metrics (AVM calls this 'diagnostics'). Neutral: cloud diagnostics OR on-prem syslog/SN… |
+| `redundancy` | `ref → redundancy` | — |  | Optional availability-domain spread (AVM calls this 'zones'). Neutral: cloud AZs/regions OR on-prem sites/racks. |
+| `encryption_key` | `ref → encryption_key` | — |  | Optional encryption-key posture (AVM calls this 'customer_managed_key'). Neutral: cloud KMS/Key-Vault OR on-prem HSM/Vault. A key REFERENCE, never key material. |
+| `deployment_unit` | `ref → deployment_unit` | — |  | Optional deployment-unit boundary (carried; no generator consumes it in v2.7.7). |
 
 _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/resource`_
 
@@ -1629,7 +1629,7 @@ _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/deployment_tier`_
 
 #### `environment`
 
-A deployment environment as a first-class, referenceable entity (v2.7.7, ENV###). Environments are a binding dimension (production/staging/dr/…) — each carries its own target scope, credentials, and parameter overlay. Substrate-neutral: cloud, on-premise, and hybrid are equally expressible (RD31).
+A deployment environment as a first-class, referenceable entity (v2.7.7, ENV###). Environments are a binding dimension (production/staging/dr/…) — each carries its own target scope, credentials, and parameter overlay. Substrate-neutral: cloud, on-premise, and hybrid are equally expressible.
 
 **Required:** `id`, `name`
 
@@ -1638,11 +1638,11 @@ A deployment environment as a first-class, referenceable entity (v2.7.7, ENV###)
 | `id` | `ref → environment_ref` | ✓ |  | Typed environment id (ENV###). Referenced by bindings (BND###) and per-environment config. |
 | `name` | `string` | ✓ |  | Human-readable environment name (e.g. production, staging, dr-site). |
 | `env_class` | `string` | — | `production`, `staging`, `development`, `test`, `dr`, `sandbox` … (7) | Environment class. Orthogonal to substrate — a `dr` environment may be cloud OR on-prem. |
-| `substrate` | `string` | — | `cloud`, `on-prem`, `hybrid`, `edge` | Where this environment physically runs (RD31). `hybrid` federates cloud + on-prem bindings; `edge` = distributed/edge compute. Makes the cloud-vs-on-prem split… |
+| `substrate` | `string` | — | `cloud`, `on-prem`, `hybrid`, `edge` | Where this environment physically runs. `hybrid` federates cloud + on-prem bindings; `edge` = distributed/edge compute. Makes the cloud-vs-on-prem split legibl… |
 | `provider` | `string` | — |  | Optional platform provider — free-text so on-prem/private-cloud fit: azure, aws, gcp, vmware, openstack, bare-metal, k8s, … A hybrid environment may carry a co… |
 | `target_scope` | `ref → target_scope` | — |  | The deployment partition/boundary this environment maps into (substrate-neutral). |
-| `credential_scope` | `string` | — |  | Optional logical credential/identity scope (e.g. a subscription, a service account, an AD domain). A reference/label, never a secret value (RD16). |
-| `param_overlay` | `object` | — |  | Optional per-environment parameter overlay applied to bindings (RD8 continuous-readiness; carried, unused this round). |
+| `credential_scope` | `string` | — |  | Optional logical credential/identity scope (e.g. a subscription, a service account, an AD domain). A reference/label, never a secret value. |
+| `param_overlay` | `object` | — |  | Optional per-environment parameter overlay applied to bindings (carried; not yet consumed). |
 | `tags` | `ref → tags` | — |  |  |
 
 _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/environment`_
@@ -1684,7 +1684,7 @@ A deployment scope (DSC###, v2.7.7) — a substrate-neutral management / lifecyc
 | `name` | `string` | ✓ |  | Human-readable scope name (e.g. the 'prod' subscription, the 'Accounting' resource-group). |
 | `kind` | `ref → scope_kind` | ✓ |  | Partition type (subscription / resource_group / account / project / cluster / namespace / datacenter / host_pool / ...). |
 | `parent` | `ref → deployment_scope_ref` | — |  | Optional parent scope (DSC###) — builds the hierarchy (a resource_group's parent subscription; a namespace's parent cluster). A top-tier scope (subscription/ac… |
-| `substrate` | `string` | — | `cloud`, `on-prem`, `hybrid`, `edge` | Optional substrate this scope lives on (RD31). When present it is the MOST authoritative substrate signal for member resources — stronger than transitive `host… |
+| `substrate` | `string` | — | `cloud`, `on-prem`, `hybrid`, `edge` | Optional substrate this scope lives on. When present it is the MOST authoritative substrate signal for member resources — stronger than transitive `hosted_on`… |
 | `provider` | `string` | — |  | Optional platform provider (free-text so on-prem fits): azure, aws, gcp, vmware, openstack, k8s, ... |
 | `owner` | `ref → resource_owner` | — |  | Optional ownership (vendor / team / contact) for this scope. |
 | `region` | `string` | — |  | Optional default region/location for resources in this scope (e.g. westeurope, eu-west-1). |
@@ -1697,7 +1697,7 @@ _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/deployment_scope`
 
 #### `infra_relation_edge`
 
-A typed inter-resource relation (TOSCA vocabulary, RD11/EVD-D2). `hosted_on` is the canonical placement edge; `connects_to`/`depends_on` may carry attribute-level output refs (EVD-A6); `depends_on` is the ordering-only fallback. A `network-link` resource's connects_to/routes_to targets may sit in a different environment/substrate (the hybrid boundary, RD31).
+A typed inter-resource relation (TOSCA vocabulary). `hosted_on` is the canonical placement edge; `connects_to`/`depends_on` may carry attribute-level output refs; `depends_on` is the ordering-only fallback. A `network-link` resource's connects_to/routes_to targets may sit in a different environment/substrate (the hybrid boundary).
 
 **Required:** `type`, `target`
 
@@ -1705,7 +1705,7 @@ A typed inter-resource relation (TOSCA vocabulary, RD11/EVD-D2). `hosted_on` is 
 | --- | --- | --- | --- | --- |
 | `type` | `ref → infra_relation` | ✓ |  | TOSCA relation verb: hosted_on / connects_to / depends_on / attaches_to / routes_to. |
 | `target` | `ref → infra_resource_ref` | ✓ |  | The target resource (IR###). May be in another environment/substrate (hybrid interconnect). |
-| `outputs` | `array<string>` | — |  | Optional attribute-level outputs of the target this resource consumes (EVD-A6) — e.g. host, port, connection-string. Makes connects_to/depends_on wiring explic… |
+| `outputs` | `array<string>` | — |  | Optional attribute-level outputs of the target this resource consumes — e.g. host, port, connection-string. Makes connects_to/depends_on wiring explicit for `b… |
 | `description` | `string` | — |  | Optional human note on this edge (e.g. 'reads via read-replica'). |
 
 _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/infra_relation_edge`_
@@ -1726,7 +1726,7 @@ _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/iac_ref`_
 
 #### `lifecycle`
 
-Optional lifecycle/protection posture for a resource (architect-altitude, RD14, EVD-A8). Substrate-neutral: 'protected' means change-guarded whether cloud or on-prem.
+Optional lifecycle/protection posture for a resource (architect-altitude). Substrate-neutral: 'protected' means change-guarded whether cloud or on-prem.
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
@@ -1738,7 +1738,7 @@ _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/lifecycle`_
 
 #### `binding`
 
-Resolves (resource-type × environment) → a concrete implementation: which platform module realizes the type in that environment, with a pinned version and params. The same neutral type binds differently per environment — an azure module in a `cloud` ENV, an on-prem module in an `on-prem` ENV (hybrid = two bindings, RD31). Resolution is MOST-SPECIFIC-MATCH: a binding with `need_ref` beats one matc…
+Resolves (resource-type × environment) → a concrete implementation: which platform module realizes the type in that environment, with a pinned version and params. The same neutral type binds differently per environment — an azure module in a `cloud` ENV, an on-prem module in an `on-prem` ENV (hybrid = two bindings). Resolution is MOST-SPECIFIC-MATCH: a binding with `need_ref` beats one matching b…
 
 **Required:** `id`
 
@@ -1750,16 +1750,16 @@ Resolves (resource-type × environment) → a concrete implementation: which pla
 | `environment_ref` | `ref → environment_ref` | — |  | The environment (ENV###) this binding applies to. Omit for an environment-agnostic default (least specific). |
 | `resource_ref` | `ref → infra_resource_ref` | — |  | Optional concrete resource (IR###) this binding produces/targets — closes need → binding → resource. |
 | `module` | `ref → binding_module` | — |  | The concrete platform module/recipe that realizes the type in this environment. |
-| `profile` | `string` | — |  | Optional resource-type profile this binding draws from (neutral/azure/aws/k8s/on-prem/openstack — the step-04 catalog). |
+| `profile` | `string` | — |  | Optional resource-type profile this binding draws from (neutral/azure/aws/k8s/on-prem/openstack — the resource-type catalog). |
 | `params` | `object` | — |  | Binding-time parameters passed to the module (conceptually merged over need `params` + environment `param_overlay`). |
-| `outputs` | `array<ref → io_field>` | — |  | Outputs this binding exposes (host/port/connection-string/…). A field may be secret-flagged — a reference/flow marker only, never a value (RD16). |
+| `outputs` | `array<ref → io_field>` | — |  | Outputs this binding exposes (host/port/connection-string/…). A field may be secret-flagged — a reference/flow marker only, never a value. |
 | `description` | `string` | — |  | Optional human note on this binding. |
 
 _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/binding`_
 
 #### `binding_module`
 
-A concrete platform module/recipe reference with a pinned version (RD8 continuous-readiness — `version_pin` is carried; no generator consumes it in v2.7.7). Substrate-neutral: AVM is ONE realization vocabulary, not THE vocabulary — a Terraform registry module, a Helm chart, or an Ansible role are equally valid (RD31).
+A concrete platform module/recipe reference with a pinned version (`version_pin` is carried; no generator consumes it in v2.7.7). Substrate-neutral: AVM is ONE realization vocabulary, not THE vocabulary — a Terraform registry module, a Helm chart, or an Ansible role are equally valid.
 
 **Required:** `ref`
 
@@ -1773,7 +1773,7 @@ _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/binding_module`_
 
 #### `io_field`
 
-A typed input or output field of a resource-type contract or a binding (EVD-C4). An output may be secret-flagged — a reference/flow marker only, never a secret VALUE (RD16). Mirrors the `io_field` shape in the resource-type profile schema (`profiles/infrastructure/`).
+A typed input or output field of a resource-type contract or a binding. An output may be secret-flagged — a reference/flow marker only, never a secret VALUE. Mirrors the `io_field` shape in the resource-type profile schema (`profiles/infrastructure/`).
 
 **Required:** `name`
 
@@ -1781,14 +1781,14 @@ A typed input or output field of a resource-type contract or a binding (EVD-C4).
 | --- | --- | --- | --- | --- |
 | `name` | `string` | ✓ |  | Field name (e.g. host, port, name, username, password, connection_string, endpoint). |
 | `type` | `string` | — |  | Optional value-type hint (e.g. string, int, hostname, uri). |
-| `secret` | `boolean` | — |  | When true this field is a secret — the model carries the reference/flow, never the value (RD16). |
+| `secret` | `boolean` | — |  | When true this field is a secret — the model carries the reference/flow, never the value. |
 | `description` | `string` | — |  | Optional description of the field. |
 
 _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/io_field`_
 
 #### `resource_identity`
 
-The workload identity a resource runs as / authenticates with — named for the CONCERN, not the Azure product (RD31): a cloud managed identity (system/user-assigned), a Kubernetes or on-prem service account, or an AD service account. Semantic level only (EVD-B6) — mechanics live in the module.
+The workload identity a resource runs as / authenticates with — named for the CONCERN, not the Azure product: a cloud managed identity (system/user-assigned), a Kubernetes or on-prem service account, or an AD service account. Semantic level only — mechanics live in the module.
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
@@ -1799,7 +1799,7 @@ _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/resource_identity
 
 #### `access_grant`
 
-An RBAC access triple (EVD-B6): which identity may do what to which target. Substrate-neutral — a cloud IAM role assignment OR an on-prem AD/LDAP group grant. Semantic level only.
+An RBAC access triple: which identity may do what to which target. Substrate-neutral — a cloud IAM role assignment OR an on-prem AD/LDAP group grant. Semantic level only.
 
 **Required:** `role`
 
@@ -1813,7 +1813,7 @@ _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/access_grant`_
 
 #### `observability_binding`
 
-Where this resource sends its telemetry — named for the concern (was AVM 'diagnostics'): logs and metrics sinks. Substrate-neutral: cloud diagnostic settings OR on-prem syslog/SNMP/Prometheus (RD31). Distinct from the quality-layer `observability` STRATEGY (product-wide); this is per-resource wiring.
+Where this resource sends its telemetry — named for the concern (AVM calls this 'diagnostics'): logs and metrics sinks. Substrate-neutral: cloud diagnostic settings OR on-prem syslog/SNMP/Prometheus. Distinct from the quality-layer `observability` STRATEGY (product-wide); this is per-resource wiring.
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
@@ -1824,7 +1824,7 @@ _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/observability_bin
 
 #### `redundancy`
 
-Availability-domain spread — named for the concern (was AVM 'zones'): the fault domains this resource is replicated across. Substrate-neutral: cloud availability zones/regions OR on-prem sites/racks (RD31).
+Availability-domain spread — named for the concern (AVM calls this 'zones'): the fault domains this resource is replicated across. Substrate-neutral: cloud availability zones/regions OR on-prem sites/racks.
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
@@ -1835,7 +1835,7 @@ _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/redundancy`_
 
 #### `encryption_key`
 
-Encryption-key posture — named for the concern (was AVM 'customer_managed_key'): a cloud KMS/Key-Vault key OR an on-prem HSM/Vault (RD31). Carries a key REFERENCE, never key material (RD16).
+Encryption-key posture — named for the concern (AVM calls this 'customer_managed_key'): a cloud KMS/Key-Vault key OR an on-prem HSM/Vault. Carries a key REFERENCE, never key material.
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
@@ -1846,7 +1846,7 @@ _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/encryption_key`_
 
 #### `deployment_unit`
 
-Optional deployment-unit boundary (EVD-A7, RD8 continuous-readiness — carried, no generator consumes it in v2.7.7): groups resources that deploy together and names the outputs the unit exports to other units.
+Optional deployment-unit boundary (carried; no generator consumes it in v2.7.7): groups resources that deploy together and names the outputs the unit exports to other units.
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
@@ -1861,8 +1861,8 @@ _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/deployment_unit`_
 | --- | --- | --- | --- |
 | `secret_ref` | `union` |  | A secret reference: a plain name string (resolved from default vault) or an object with explicit vault details. |
 | `target_scope` | `union` |  | The deployment partition an environment targets. Two additive forms (v2.7.7): the legacy INLINE `{kind, name}` object OR a REFERENCE `{ ref: DSC### }` to a fir… |
-| `scope_kind` | `string` | `account`, `subscription`, `project`, `resource_group`, `region`, `availability_zone` … (14) | Deployment partition type across substrates (substrate-neutral, RD31): cloud (account/subscription/project/resource_group/region/availability_zone), kubernetes… |
-| `iac_refs` | `array<ref → iac_ref>` |  | Traceability links from a resource to its Infrastructure-as-Code (RD12, EVD-D4) — the infra analogue of code_refs. Spans cloud provisioners AND on-prem config-… |
+| `scope_kind` | `string` | `account`, `subscription`, `project`, `resource_group`, `region`, `availability_zone` … (14) | Deployment partition type across substrates (substrate-neutral): cloud (account/subscription/project/resource_group/region/availability_zone), kubernetes (clus… |
+| `iac_refs` | `array<ref → iac_ref>` |  | Traceability links from a resource to its Infrastructure-as-Code — the infra analogue of code_refs. Spans cloud provisioners AND on-prem config-management so o… |
 
 <a id="design-interactions"></a>
 

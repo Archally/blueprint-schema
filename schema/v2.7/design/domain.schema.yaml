@@ -914,7 +914,7 @@ $defs:
           legacy kebab-context-name is a deprecated compat shim). When absent, the
           owning BC falls back to the deprecated file `name`/`scope` heuristic; an
           op-less, ref-less question resolves to 0 contexts → resolvability WARN
-          (step-12). Strongly encouraged in v2.7.x, aligned to required in v2.8 (D12).
+          Strongly encouraged in v2.7.x, aligned to required in v2.8.
       motivated_by:
         type: array
         items:

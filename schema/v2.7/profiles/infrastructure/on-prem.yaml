@@ -3,7 +3,7 @@ version: "1.0.0"
 profile: on-prem
 substrate: on-prem
 description: >
-  On-premise realizations of the neutral resource-type catalog (RD31 substrate-neutrality). Realizes
+  On-premise realizations of the neutral resource-type catalog (substrate-neutrality). Realizes
   neutral RTs on self-hosted IaaS VMs / bare-metal via config-management (Ansible roles) — no cloud
   dependency. RT001 realizing here with the SAME outputs contract as azure/aws/k8s is the core
   proof that on-premise is a first-class substrate, not a second-class afterthought.

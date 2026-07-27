@@ -337,7 +337,7 @@ $defs:
       (id-based context-map edges), and by BCC entities (business decisions /
       assumptions / KPIs). Operation→bounded-context membership is NOT declared with
       this ref — it is derived from arch service contracts (`expose`/`send` = handled
-      / produced), so there is no `bounded_context_ref` on domain files (D13/D14). A
+      / produced), so there is no `bounded_context_ref` on domain files. A
       ref to an unknown BC### is a resolvability WARNING (promoted to error in v2.8,
       when BC###/SVC### become required). The legacy kebab-context-name form (e.g.
       `customer-management`) is a deprecated compatibility shim for existing BCC refs;
@@ -564,7 +564,7 @@ $defs:
   # (ex-`rg`, frozen since v2.0.0) participates in the knowledge graph. The new
   # prefixes IR/ENV/RT/BND are collision-free and pattern-distinct from their
   # visual neighbours (ENV != EN, BND != BD, RT != R / rule refs). RES### stays
-  # `resilience_ref` (RD21) — the infra resource is IR###, not RES###.
+  # `resilience_ref` — the infra resource is IR###, not RES###.
   # All typed IDs are STRONGLY ENCOURAGED but OPTIONAL in v2.7.x: a free-string
   # id stays schema-valid; the validator WARNs when it doesn't match the prefix.
   # They become REQUIRED in v2.8 (with resolvability warn->error), joining the
@@ -581,7 +581,7 @@ $defs:
       store / network / compute node in the infrastructure layer. SHOULD match
       IR###; a free-string id (e.g. `prod-web-hosting`) stays schema-valid but
       the validator WARNs (optional in v2.7.x, REQUIRED from v2.8). Distinct from
-      `resilience_ref` (RES###) — the infra resource is IR###, not RES### (RD21).
+      `resilience_ref` (RES###) — the infra resource is IR###, not RES###.
 
   environment_ref:
     type: string
@@ -882,7 +882,7 @@ $defs:
   # NOTE (v2.7.7): validates_links / impacts_links are shared TEMPLATE $defs — the consuming
   # schemas carry their own local copies (test-cases `validates_refs`, decisions
   # `impact_declaration.direct`) which are the authoritative, validated structures. These
-  # templates are kept in sync as a reference shape (RD32); editing them alone is
+  # templates are kept in sync as a reference shape; editing them alone is
   # validation-inert.
   validates_links:
     type: object

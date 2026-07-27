@@ -3,7 +3,7 @@ version: "1.0.0"
 profile: openstack
 substrate: on-prem
 description: >
-  OpenStack (private-cloud IaaS) realizations of the neutral resource-type catalog (RD31). Realizes
+  OpenStack (private-cloud IaaS) realizations of the neutral resource-type catalog. Realizes
   neutral RTs on a self-run OpenStack cloud via the Terraform OpenStack provider — private-cloud is
   a distinct substrate from public cloud and from bare-metal on-prem, yet realizes the same neutral
   RT001 with an identical outputs contract.

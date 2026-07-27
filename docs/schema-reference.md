@@ -636,7 +636,7 @@ concepts:
 ### Progressive Enrichment (domain, rules)
 - `exchange` made optional on operations (events are domain facts, not API endpoints)
 - `logic` made optional on rules (enables Phase 1 sketching with just name + description)
-- `summary` made optional where previously required
+- `summary` made optional where previously required <!-- public-docs-scan:allow version-history is user-facing migration guidance -->
 - `operation.properties` renamed to `operation.traits` (frees `properties` for extension bag)
 
 ---

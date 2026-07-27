@@ -3,7 +3,7 @@ version: "1.0.0"
 profile: aws
 substrate: cloud
 description: >
-  AWS realizations of the neutral resource-type catalog (RD7/RD31). Realizes neutral RTs with vetted
+  AWS realizations of the neutral resource-type catalog. Realizes neutral RTs with vetted
   Terraform registry modules. Proves the same neutral RT001 realizes on a second cloud with an
   identical outputs contract.
 realizations:
