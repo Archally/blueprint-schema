@@ -23,6 +23,13 @@ entries:
 
       It is also the anchor a future release can attach a required `description` to: you cannot
       require a field on a shape that does not exist.
+
+      This release also carries two things that are NOT new work but reach this package for the
+      first time: the **infrastructure resource-type profile catalog** (`schema/v2.7/profiles/**`),
+      a v2.7.7 feature the port missed because `profiles/` is a sibling of `schema/` rather than a
+      child; and **four early-adopter tools** (`next-id`, `coverage-check`, `entity-query`,
+      `doc-snippet-validate`) with their bins and scripts. Both are additive — no existing model or
+      command changes behaviour.
     changes:
       - kind: add
         target: "schema/v2.7/design/models.schema.yaml"
@@ -31,6 +38,33 @@ entries:
           New `$defs/model_property`; `model_schema.properties` now declares
           `additionalProperties: {$ref: "#/$defs/model_property"}`. All fields optional,
           `additionalProperties` open.
+      - kind: add
+        target: "schema/v2.7/profiles/infrastructure/**"
+        semver: minor
+        notes: >
+          FIRST PUBLICATION of the infrastructure resource-type profile catalog. It is a v2.7.7
+          feature, not a new one — it shipped with the infra layer but did not reach this package,
+          because `profiles/` is a SIBLING of `schema/` and the port synced only `schema/**` and
+          `docs/**`. `profiles.schema.yaml` defines the profile shape. `neutral.yaml` declares 5
+          abstract resource types with an inputs/outputs contract — RT001 `relational-database`,
+          RT002 `object-store`, RT003 `message-queue`, RT004 `cache`, RT005 `secret-store` — and
+          five substrate profiles realize them: `azure` (5, via Azure Verified Modules), `aws` (3),
+          `k8s` (3), `on-prem` (3), `openstack` (2). RT001 is realized on ALL five with an
+          IDENTICAL outputs contract; that identity is what makes a `type_ref` substrate-neutral,
+          and it is the point of the catalog. Modules are referenced with version pins — vetted
+          modules, never raw resources. Additive: nothing references a profile unless a model opts
+          in via `type_ref`/`needs`, and RT### refs resolve against this catalog rather than the
+          model, so validators skip them in cross-reference checks.
+      - kind: add
+        target: "tools/{next-id,coverage-check,entity-query,doc-snippet-validate}"
+        semver: minor
+        notes: >
+          Four early-adopter tools, published with `blueprint-next-id`,
+          `blueprint-coverage-check` and `blueprint-entity-query` bins plus `npm run` scripts
+          (`next-id`, `coverage-check`, `entity-query`, `doc-snippets`, `quality`). All are zero-build
+          `.mjs` sharing a single implementation with their monorepo counterparts — parity is
+          enforced by a checked-in `PORTED.sha256` manifest, so a drifted copy fails the gate rather
+          than diverging silently.
 
   - version: "2.7.7"
     date: "2026-07-15"

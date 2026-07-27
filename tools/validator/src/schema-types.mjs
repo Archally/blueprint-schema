@@ -25,8 +25,21 @@ export const FILENAME_TO_SCHEMA = {
 
 export function detectSchemaType(filePath) {
   const basename = path.basename(filePath, path.extname(filePath));
+
+  // Dotfiles are TOOL CONFIGURATION colocated with the model, never model content — a blueprint
+  // layer file is `{layer}.yaml` or `{name}.{layer}.yaml`, never `.{something}.yaml`. Without this
+  // guard the quality gate's own `.blueprint-quality.yaml` matched the `-${key}` branch below
+  // (`.blueprint-quality`.endsWith('-quality')) and was validated against the quality LAYER schema,
+  // producing 3 spurious schema errors on an otherwise-clean model. The monorepo stack never saw
+  // this: its rule is dot-only (`^[^/\\]+\.(<types>)\.(yaml|yml)$`), so the same file is skipped
+  // there and the two stacks disagreed on identical input.
+  if (basename.startsWith(".")) return null;
+
   if (FILENAME_TO_SCHEMA[basename]) return basename;
   for (const key of Object.keys(FILENAME_TO_SCHEMA)) {
+    // NOTE: the `-${key}` form is a divergence from the monorepo's dot-only pattern, kept because
+    // a downstream model may already rely on it. It matches nothing in this repo's 182 example
+    // YAMLs. If it is ever retired, retire it in both stacks at once.
     if (basename.endsWith(`-${key}`) || basename.endsWith(`.${key}`)) {
       return key;
     }

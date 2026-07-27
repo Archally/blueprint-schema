@@ -1,0 +1,23 @@
+# Line endings: LF everywhere.
+#
+# This package is published to npm and consumed on Linux, macOS and Windows, so the
+# checked-out bytes should not depend on the machine that cloned it. Without this file,
+# `core.autocrlf=true` (the Windows default) rewrites every text file to CRLF on checkout.
+#
+# That is not cosmetic here. Several trees are PORTED byte-for-byte from the monorepo's
+# canonical `schemas/blueprint/.shared/` and verified by `npm run port-parity` there,
+# against a checked-in `PORTED.sha256` manifest:
+#
+#   tools/quality-gate/  tools/next-id/  tools/coverage-check/  tools/entity-query/
+#   tools/doc-snippet-validate/  tools/model-builder/  tools/port/
+#   the semantic-checker rule pack, and the rule-summary section of README.md
+#
+# The monorepo already pins its side (`schemas/blueprint/.shared/** text eol=lf`). Pinning
+# only the source half is what left this repo drifting: on 2026-07-27 `port-parity` reported
+# the README rule summary "stale" when the content was in fact identical — the mismatch was
+# CRLF, and re-porting rewrote one line as LF into a CRLF file, leaving it mixed. The manifest
+# hashes NORMALIZED content so the check stays honest either way; this pin keeps the working
+# copies clean so a plain `diff -r` between the two repos means what it appears to mean.
+#
+# `text=auto` still lets git detect and leave binaries alone.
+* text=auto eol=lf
