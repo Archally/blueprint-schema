@@ -57,6 +57,8 @@ The `matched` column is printed for every row, so you can see why something surf
 
 ## Relationship to `bp query`
 
-The filtering and ranking are the same code. `search.mjs` is **generated** by `tsc` from
-`servers/blueprint/cli/src/verbs/entity-search.ts` — the module `bp query` imports — and copied
-here by the monorepo's port step. Do not edit `search.mjs`.
+`bp` is the **Archally Pro** CLI ([archally.pro](https://archally.pro)) — a separate commercial
+product, not part of this package. It exposes the same search as a verb.
+
+The filtering and ranking are the same code: `search.mjs` is **generated** from the very module
+the Pro CLI imports, so the two cannot rank results differently. Do not edit `search.mjs`.

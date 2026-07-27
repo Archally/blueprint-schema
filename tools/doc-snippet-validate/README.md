@@ -59,16 +59,17 @@ one would ever be validated.
 
 ## Why the validator is a parameter
 
-There are two validator stacks — this repo's zero-build `tools/validator`, and the monorepo's shim
-over its TypeScript core. They are kept in agreement deliberately, but this tool must never *guess*
-which one is authoritative for the repo it is running in. Hence an explicit template:
+More than one validator can check a blueprint model — this package's zero-build `tools/validator`,
+and the schema-version validators shipped alongside each schema tree. They agree by design, but this
+tool must never *guess* which one is authoritative where it happens to be running. Hence an explicit
+template, with `{model}` and `{schemas}` substituted per snippet:
 
 ```bash
-# public repo (the default)
+# the default
 --validator "node tools/validator/src/cli.mjs {model} --schemas {schemas}"
 
-# monorepo
---validator "node schemas/blueprint/v2.7/validation/validate-blueprint.mjs --model {model} --schemas {schemas}"
+# a version-specific validator alongside the schema tree
+--validator "node <schema-tree>/validation/validate-blueprint.mjs --model {model} --schemas {schemas}"
 ```
 
 ## Tests
@@ -76,7 +77,7 @@ which one is authoritative for the repo it is running in. Hence an explicit temp
 `extract.test.mjs` covers the association rules — what claims a fence and what does not, since a
 block that is silently skipped is an unvalidated example that still teaches.
 
-`rc5-regression.test.mjs` runs the two historical drift shapes end to end and asserts they **fail**,
+`rc5-regression.test.mjs` runs two known-bad snippet shapes end to end and asserts they **fail**,
 with the corrected forms passing. It needs a schema tree:
 
 ```bash

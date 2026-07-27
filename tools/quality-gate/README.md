@@ -24,18 +24,21 @@ loop measures. Prose guidance raises the ceiling; only a gate raises the floor.
 
 ```bash
 # Report (never fails — this is the default)
-npm run quality projects/prestashop/.blueprint/v2.7
-bp quality prestashop
+npm run quality <model-dir>
 
 # Release gate
-bp quality prestashop --strict
+npm run quality <model-dir> --strict
 
 # Gate only what you just changed — the brownfield mode
-bp quality <project> --strict --since HEAD~1
+npm run quality <model-dir> --strict --since HEAD~1
 
 # Machine-readable: per-finding records, usable directly as a backfill worklist
-bp quality <project> --json worklist.json
+npm run quality <model-dir> --json worklist.json
 ```
+
+The same gate is also a verb on the **Archally Pro** CLI (`bp quality <project>`), which
+resolves projects by name and shares this tool's spec and thresholds — see
+[archally.pro](https://archally.pro).
 
 Exit codes: `0` clean · `1` threshold or baseline breach under `--strict` · `2`
 usage error or invalid configuration.
@@ -55,8 +58,8 @@ The slice is accountable for the slice.
 
 | Harness | Trio |
 |---|---|
-| monorepo | `bp validate <p>` → `bp check <p>` → `bp quality <p> --since <ref> --strict` |
-| public kit | `npm run validate <model>` → `npm run check <model>` → `npm run quality <model> --since <ref> --strict` |
+| this repo | `npm run validate <model>` → `npm run check <model>` → `npm run quality <model> --since <ref> --strict` |
+| Archally Pro CLI | `bp validate <p>` → `bp check <p>` → `bp quality <p> --since <ref> --strict` |
 
 ## What it measures
 
@@ -127,17 +130,15 @@ Missing either is a configuration error (exit 2). Past its expiry the tool warns
 loudly but does not fail, mirroring how evidence freshness is handled elsewhere in
 this repo.
 
-## Why it lives here
+## Version-agnostic by design
 
-`schemas/blueprint/.shared/` is **version-agnostic on purpose**. Schema version
-directories get forked (`v2.8/` is already a copy of `v2.7/`), so a tool placed
-inside one would fork with it — recreating, on the version axis, exactly the
-two-source divergence this design exists to avoid. Metrics declare which schema
-minor lines they apply to instead.
+This tool is **not** tied to a schema version directory. Version directories get forked
+whole when a new schema minor opens, and a tool placed inside one would fork with it —
+producing two copies that drift apart. Instead, each metric declares which schema minor
+lines it applies to, and the tool runs against any of them.
 
-The same property makes the public port a copy: nothing resolves relative to the
-tool's own location except the default spec, and the model root always arrives as an
-argument.
+Nothing resolves relative to the tool's own location except the default spec; the model
+root always arrives as an argument. That is what lets one copy serve every version.
 
 ## Files
 
@@ -163,12 +164,10 @@ add a real metric for it.
 ## Tests
 
 ```bash
-node --test <this-directory>/*.test.mjs   # works from either deploy point
-npm run test:quality-gate                 # monorepo shortcut for the same command
+node --test <this-directory>/*.test.mjs
 ```
 
-Zero-config `node --test`, matching how other `.mjs` tooling in this repo is tested
-and keeping the public port free of any test-runner configuration. Fixtures are
+Zero-config `node --test`, so the tool carries no test-runner configuration. Fixtures are
 modelled on real observed failure shapes — undescribed `one_of` counterpart events,
 actors documented via `summary` rather than `description`, map-form collections,
 scope-prefixed ids — plus false-positive guards built from genuinely terse

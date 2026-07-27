@@ -57,10 +57,12 @@ Reporting an unreachable file as "missing" would make the whole audit untrustwor
 
 ## Relationship to `bp coverage-check`
 
-The analysis is the same code. `analyze.mjs` is **generated** by `tsc` from
-`servers/blueprint/cli/src/verbs/code-refs-coverage.ts` — the module `bp coverage-check` itself
-imports — and copied here by the monorepo's port step. Neither tool can drift into a different
-verdict, because there is only one implementation. Do not edit `analyze.mjs`.
+`bp` is the **Archally Pro** CLI ([archally.pro](https://archally.pro)) — a separate commercial
+product, not part of this package. It exposes the same coverage analysis as a verb.
+
+The analysis is the same code: `analyze.mjs` is **generated** from the very module the Pro CLI
+imports, so neither tool can drift into a different verdict — there is only one implementation.
+Do not edit `analyze.mjs`.
 
 The shared core guarantees the same *analysis*, not the same *corpus*, and the two callers feed it
 differently:

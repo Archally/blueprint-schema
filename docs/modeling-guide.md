@@ -155,7 +155,7 @@ A blueprint that validates can still be worthless downstream. Model properties b
 
 None of that is advice you have to take on trust — every row is measured by a named check, so you can see where you stand before anyone reviews the model:
 
-<!-- BEGIN CITATIONS: rules + metrics — ids verified against the rule pack and quality-spec by `npm run port-parity` -->
+<!-- BEGIN CITATIONS: rules + metrics — ids verified against the rule pack and quality-spec -->
 
 | Row | Quality-gate metric | Semantic-checker rule |
 |---|---|---|

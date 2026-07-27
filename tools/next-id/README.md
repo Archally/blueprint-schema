@@ -44,10 +44,9 @@ identifiers, and reissuing one would silently rebind every dangling reference to
 
 ## One implementation, two callers
 
-`allocate.mjs` is **generated** — do not edit it. Its source is
-`packages/cli-shared/src/id-allocator/allocator.ts` in the Archally monorepo, the same module the
-monorepo CLIs (`bp`/`bv`/`rl`/`cstd`) and the blueprint MCP import directly. `tsc` emits the plain
-ESM form this zero-build tool runs, and `scripts/port-parity.mjs` copies it here.
+`allocate.mjs` is **generated** — do not edit it. Its source is the shared id-allocator module that
+the **Archally Pro** CLI ([archally.pro](https://archally.pro)) and the Blueprint MCP server import
+directly; the generated file is the plain ESM form this zero-build tool runs.
 
 So `bp next-id` and this tool are not two implementations kept in agreement by a test — they are one
 implementation with two front ends. Verified on a 172-file model: identical answers for bare, scoped,

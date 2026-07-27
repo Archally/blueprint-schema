@@ -447,7 +447,7 @@ Configurable rule engine that catches modeling issues schema validation cannot d
 npx @archally/blueprint-schema blueprint-check .blueprint/v2.7
 ```
 
-<!-- BEGIN GENERATED: semantic-rules — do not hand-edit; run `npm run port-parity:port` -->
+<!-- BEGIN GENERATED: semantic-rules — generated from the rule pack; do not hand-edit -->
 Ships with **19 built-in rules** (13 warn, 6 info):
 
 `aggregate-root-signals` · `contract-operation-missing-exchange` · `decision-asserted-without-evidence` · `dispatch-with-exchange` · `events-with-produces` · `exchange-missing-payload` · `leverage-point-no-address` · `leverage-point-no-strategic-intent` · `missing-causal-links` · `missing-exchange-binding` · `model-without-purpose` · `model-without-represents` · `orphan-entities` · `unanswered-questions` · `unbound-operation` · `unbound-question` · `undescribed-event` · `untested-rules` · `user-story-without-acceptance-criteria`
@@ -504,12 +504,14 @@ Commercial tools that consume this schema — available at [archally.pro](https:
 
 | Category | Capabilities |
 |----------|-------------|
-| **Interactive Viewers** | Entity graph with force-directed layout, node search, layer filtering, and relation inspector. Causal chain explorer with animated event flow and impact highlighting. Bounded Context Canvas. |
-| **Specification Generators** | OpenAPI 3.1, AsyncAPI 2.6, Arazzo 1.0 — generated from blueprint operations, models, and contracts. Always in sync with the model. |
-| **PRD & Documentation** | Product Requirements Documents, Event Storming boards, architecture decision exports — generated from governance and story layers. |
-| **MCP Servers** | Structured grounding for Claude, Cursor, and other AI agents. Deterministic graph queries against validated domain models at inference time. |
-| **Blueprint CLI** | Query, mutate, validate, and migrate blueprint models from the terminal. Impact analysis, coverage checks, migration lifecycle management. |
-| **Schema Update Automation** | Tracked migrations with dry-run, rollback, variant comparison, and dependency resolution across schema versions. |
+| **Change Impact Analysis** | The blast radius *before* you commit: which services, resources, contracts and tests a change touches directly vs transitively, and which teams must coordinate. Available as `bp impact` on the CLI and `get_impact_report` over MCP. |
+| **Blueprint MCP Server** | Structured grounding for Claude, Cursor and other AI agents — deterministic graph queries against a validated domain model at inference time, not retrieval over prose. Entity/relation queries, subgraphs, neighbours, layer views, impact reports, typed-id allocation, and live validation. |
+| **Blueprint CLI (`bp`)** | Query, mutate, validate and migrate models from the terminal. Semantic checks, quality gates, coverage checks, typed-id allocation, and a tracked migration lifecycle with dry-run, rollback, variant comparison and dependency resolution. |
+| **Interactive Viewers** | Architecture Viewer — entity graph with multiple layouts, search, layer filtering and a relation inspector. Blueprint Studio — read-only project navigation with migration-chapter scrubbing and a validation dock. |
+| **Deterministic Renderers** | Standalone artifact generators over a canonical model: roadmap Gantt, leverage map, risk map, infrastructure map, topic impact dossier, API-contract tree, and a test-case coverage PDF. Same model in, reproducible artifact out. |
+| **Specification Generators** | OpenAPI 3.1, AsyncAPI 2.6, Arazzo 1.0, OpenRPC, Pact and Mermaid — generated from blueprint operations, models and contracts, so they cannot drift from the model. |
+| **PRD & Documentation** | Product Requirements Documents, Event Storming boards (big-picture, process and software-design levels), and architecture decision exports — generated from the governance and story layers. |
+| **Confluence Mirror** | Publish model-derived pages into Atlassian Confluence so non-technical stakeholders read the same source of truth. |
 
 ## Contributing
 
