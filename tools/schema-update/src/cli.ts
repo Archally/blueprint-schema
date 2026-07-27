@@ -1,6 +1,6 @@
 import path from 'node:path';
 import process from 'node:process';
-import { detectVersion, findUpdate, listUpdates } from './runner.js';
+import { applyChain, detectVersion, listUpdates, resolveChain } from './runner.js';
 
 function printUsage() {
   const lines = [
@@ -69,8 +69,8 @@ function main() {
     process.exit(1);
   }
 
-  const update = findUpdate(version);
-  if (!update) {
+  const chain = resolveChain(version);
+  if (chain.length === 0) {
     console.error(`No update available for v${version}.`);
     const available = listUpdates();
     if (available.length > 0) {
@@ -79,65 +79,70 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`Schema update: v${update.sourceVersion} → v${update.targetVersion}`);
-  console.log(`Description:   ${update.description}`);
+  const route = [version, ...chain.map((u) => u.targetVersion)].map((v) => `v${v}`).join(' → ');
+  console.log(`Schema update: ${route}${chain.length > 1 ? `  (${chain.length} hops)` : ''}`);
   console.log(`Directory:     ${resolvedDir}`);
   console.log(`Mode:          ${dryRun ? 'dry-run (no changes)' : 'apply'}`);
   console.log('');
 
   if (dryRun) {
-    const plan = update.plan(resolvedDir);
+    // Only the FIRST hop can be planned truthfully. A later hop runs against the tree the
+    // earlier one produces — `001` even renames the version directory — so planning it against
+    // the current tree would print changes for files that will not be in that state. Later hops
+    // are announced, not fabricated.
+    const [first, ...rest] = chain;
+    const plan = first!.plan(resolvedDir);
 
+    console.log(`Hop 1 — v${first!.sourceVersion} → v${first!.targetVersion}: ${first!.description}`);
     if (plan.warnings.length > 0) {
-      console.log('Warnings:');
-      for (const warning of plan.warnings) {
-        console.log(`  ⚠ ${warning}`);
-      }
-      console.log('');
+      console.log('  Warnings:');
+      for (const warning of plan.warnings) console.log(`    ⚠ ${warning}`);
     }
-
     if (plan.changes.length === 0) {
-      console.log('No changes needed.');
+      console.log('  No changes needed.');
     } else {
-      console.log(`Planned changes (${plan.changes.length}):`);
-      for (const change of plan.changes) {
-        console.log(formatChange(change));
-      }
+      console.log(`  Planned changes (${plan.changes.length}):`);
+      for (const change of plan.changes) console.log(`  ${formatChange(change)}`);
     }
+
+    rest.forEach((update, index) => {
+      console.log('');
+      console.log(`Hop ${index + 2} — v${update.sourceVersion} → v${update.targetVersion}: ${update.description}`);
+      console.log('  Planned once the previous hop has applied (it transforms that hop\'s output).');
+    });
+
     console.log('');
-    console.log('Run without --dry-run to apply.');
+    console.log('Run without --dry-run to apply the whole chain.');
   } else {
-    const result = update.apply(resolvedDir);
+    const outcome = applyChain(resolvedDir);
 
-    if (result.warnings.length > 0) {
-      console.log('Warnings:');
-      for (const warning of result.warnings) {
-        console.log(`  ⚠ ${warning}`);
+    outcome.hops.forEach((hop, index) => {
+      const { update, result } = hop;
+      console.log(`Hop ${index + 1} — v${update.sourceVersion} → v${update.targetVersion}: ${update.description}`);
+      for (const warning of result.warnings) console.log(`    ⚠ ${warning}`);
+      if (result.changes.length === 0) {
+        console.log('  No changes needed.');
+      } else {
+        console.log(`  Applied changes (${result.changes.length}):`);
+        for (const change of result.changes) console.log(`  ${formatChange(change)}`);
       }
+      for (const error of result.errors) console.log(`    ✗ ${error}`);
       console.log('');
-    }
+    });
 
-    if (result.changes.length === 0) {
-      console.log('No changes needed.');
-      process.exit(0);
-    }
-
-    console.log(`Applied changes (${result.changes.length}):`);
-    for (const change of result.changes) {
-      console.log(formatChange(change));
-    }
-
-    if (result.errors.length > 0) {
-      console.log('');
-      console.log('Errors:');
-      for (const error of result.errors) {
-        console.log(`  ✗ ${error}`);
+    if (outcome.error) {
+      console.error(outcome.error);
+      if (outcome.hops.length > 1) {
+        console.error('Earlier hops DID apply — re-run against the current directory to resume.');
       }
       process.exit(1);
     }
 
-    console.log('');
-    console.log('Update complete. Run blueprint-schema-validate to verify the result.');
+    console.log(`Update complete (${outcome.hops.length} hop${outcome.hops.length === 1 ? '' : 's'}).`);
+    if (outcome.finalDirectory !== resolvedDir) {
+      console.log(`Model is now at: ${outcome.finalDirectory}`);
+    }
+    console.log('Run blueprint-schema-validate to verify the result.');
   }
 }
 

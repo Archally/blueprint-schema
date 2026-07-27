@@ -21,7 +21,10 @@
   "type": "module",
   "exports": {
     "./schema/v2.7/*": "./schema/v2.7/schema/*",
-    "./model": "./tools/model-builder/dist/index.js"
+    "./model": {
+      "types": "./tools/model-builder/dist/index.d.ts",
+      "import": "./tools/model-builder/dist/index.js"
+    }
   },
   "files": [
     "schema/",

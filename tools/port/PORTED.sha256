@@ -14,6 +14,7 @@
 # job entity-query entity-query
 # job doc-snippet-validate doc-snippet-validate
 # job model-builder model-builder/src
+# job schema-update schema-update/src
 # job port port
 
 93a72bb84e8ffae93622bf993034e8b466fb42dfd76194dcb81b000f489f3900  quality-gate/README.md
@@ -116,5 +117,10 @@ d7b7c5bb8a1dd54fb35d13595e7684733fe13316fa1f39f21b19631f2ea75e6b  model-builder/
 c54320248fe49b397c7b99ae2fe7566444d92bb9648e529232e38b54cabbb262  model-builder/model/sha256.ts
 66699736b39b458b819968a90432da6c0c9687218273423b9db60092cbfe924c  model-builder/model/types.ts
 c0e9dd0852d08503df9d78859e26f18dfa6e702bb66d4ac22e8399e2fa6c3f66  model-builder/model/validity.ts
+295bac6eeed4de80bbac7797cbdc604e590675b656e4d1d18c02330a686e33b6  schema-update/cli.ts
+b444332bb9a001d67969805327c133dbc2765c307a777d1bed2d8c91696b4441  schema-update/runner.ts
+d11fe8557b9d55bc593ed412bad9d4e9e224368dfc6e11f6e7680090668e7462  schema-update/types.ts
+532b296f3a234bd7541d3a6a9bbfa09d4e4357e410fb02737a6a12aae469e30b  schema-update/updates/001-rename-acronym-schemas.ts
+deb507863d32d9c1634ddcc01dc136e1bed58ee26434d77716757b30aaf86336  schema-update/updates/002-quality-characteristic-two-level.ts
 599383a6eb81f2a3dab9b047a10b879ebe63824a55ebef12024e09e08659b28e  port/verify-ported.mjs
 b97feb7e973a062f65dc517c85fa1d54713eee8560618f26f5ab6486e564ec7f  port/verify-ported.test.mjs
