@@ -13,6 +13,7 @@
 # job coverage-check coverage-check
 # job entity-query entity-query
 # job doc-snippet-validate doc-snippet-validate
+# job validator validator/src
 # job model-builder model-builder/src
 # job schema-update schema-update/src
 # job port port
@@ -61,6 +62,12 @@ c24d7189189daee0879dc56468c99eb263f0adec70b84ad1dec4ae2a58bae91f  doc-snippet-va
 45c58a8df27c6d69c29c764a8ed32163f626cad50b7cb8b03e03a71ae6755cc9  doc-snippet-validate/extract.mjs
 2bb081d18e8e1ca2e1091a6c040087433e828a44fac338a1584c98c8efaf5730  doc-snippet-validate/extract.test.mjs
 fdf60e85506432136153f8368646914cc563583386ba72a9dfc6be37c2ce1b11  doc-snippet-validate/rc5-regression.test.mjs
+934103a5f439ff239628a325ff171cca9599d4b02b50b8a4d265c5cafea37711  validator/cli.mjs
+cf0a53c9403ed9a17f6e664ecf242f9084ff5022ffe398d1481a1311c45b01b0  validator/core/references.mjs
+8552cdde994153cad0157f675aed4c98bcc2c7f2e854a9e4005d0cdc5698c2a9  validator/core/schema-registry.mjs
+b2dc0df34b7457f9a0515fc1c5fa3321878f9106c4f2d610766cf864c3f44b37  validator/core/schema-types.mjs
+e90c1ba19e81bce0bc4a42c16cf0ef61a7bcdb0db3eccd04f2b71a8297e7289f  validator/core/utils.mjs
+a56870ccd5ac602b61b5b276057e5950e8db65b50270d7d2b530a73964226d0a  validator/core/validate.mjs
 1267d82e74e3b83df4eff8782e2cac140776f8a14e590a3af9d2345bcd02e7ab  model-builder/extraction/entities/arch.ts
 a13ce9d29eb7732ea390272e07efe499143e7b77f314125c6283dde2fd8045eb  model-builder/extraction/entities/capability.ts
 727385d73f3eac2142618711dc4b8d680df8f87c3c970c1bb562994f946f6392  model-builder/extraction/entities/concepts.ts

@@ -36,6 +36,9 @@ const LIKELY_REF_KEYS = new Set([
   "dependencies",
   "ref",
   "stakeholders",
+  // `target` names the endpoint of a directed relation and carries a typed id, so it takes part
+  // in reference integrity like any other ref key.
+  "target",
 ]);
 
 const NON_REF_KEYS = new Set([
