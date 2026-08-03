@@ -1,5 +1,6 @@
 import type { Entity, Relation } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
+import { getSchemaForFile } from '../../schemaTypes.js';
 
 /**
  * Party identity — the rule, shared; the call site, per stack.
@@ -39,6 +40,60 @@ export function partyIdentityKey(entity: Entity): string {
   }
   const scope = (entity.data as Record<string, unknown> | undefined)?._scope;
   return `name:${typeof scope === 'string' ? scope : ''}::${entity.displayId ?? ''}`;
+}
+
+/**
+ * ─── Reading a folded party ──────────────────────────────────────────────────────────────────────
+ *
+ * The fold keeps the FIRST part it meets and unions the rest into it, and `extractAllEntities`
+ * walks `documentsByType` in **file order**. So the survivor's `layer` and `displayId` come from
+ * whichever part the directory walk reached first, which depends on how the model's files sort:
+ *
+ *   arch.ts  →  displayId = the party NAME     layer = design.arch
+ *   org.ts   →  displayId = the PRT###         layer = governance.org
+ *
+ * Both are correct descriptions of *a part*; neither is a property of the party, because under the
+ * partial-class rule no part is authoritative. **Do not branch on either field.** Two consumers did,
+ * and both failed silently when the org part happened to sort first — one dropped the party from
+ * every architecture diagram, the other resolved its typed id to null. Renaming a slice folder was
+ * enough to trigger it.
+ *
+ * These helpers read what the fold makes stable instead. Prefer them over touching a Party's
+ * `displayId` or `layer` directly.
+ */
+
+/** Files that declared this party — `data._sources` after a fold, else its own origin. */
+export function partySourceFiles(entity: Entity): string[] {
+  const listed = (entity.data as Record<string, unknown> | undefined)?._sources;
+  if (Array.isArray(listed)) return listed.filter((file): file is string => typeof file === 'string');
+  return entity.fileOrigin ? [entity.fileOrigin] : [];
+}
+
+/**
+ * The party's human name — stable across the fold, unlike `displayId`.
+ *
+ * `name` is an identity key, so it is never overwritten by a union, and both parts of one party
+ * carry the same value by definition. This is what `Context.data._party` holds, so it is also the
+ * correct key for joining contexts to their owning party.
+ */
+export function partyDisplayName(entity: Entity): string {
+  const declared = (entity.data as Record<string, unknown> | undefined)?.name;
+  if (typeof declared === 'string' && declared.length > 0) return declared;
+  return entity.displayId ?? '';
+}
+
+/**
+ * Does this party appear in the ARCHITECTURE — did an arch document declare it?
+ *
+ * The honest form of the `layer === 'design.arch'` test a folded party can no longer answer, since
+ * one node now spans both layers. `_sources` is unioned by the fold, so this holds whichever part
+ * survived, and `getSchemaForFile` is the canonical filename map — `vendors.arch.yaml` counts too.
+ *
+ * Deliberately NOT "has a non-empty `contexts`": `arch.ts` emits a Party with no contexts on purpose,
+ * so external parties (a CRM, an ESB) render as actor nodes. Keying on contexts would delete them.
+ */
+export function partyHasArchFacet(entity: Entity): boolean {
+  return partySourceFiles(entity).some((file) => getSchemaForFile(file) === 'arch');
 }
 
 /** A merge the rule performed on a guess rather than on a declared id. */
