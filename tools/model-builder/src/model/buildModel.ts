@@ -3,60 +3,18 @@ import type {
   BlueprintModel,
   BlueprintFileMetadata,
   DocumentsBySchemaType,
-  RepositoryConfig,
   BuildModelOptions,
 } from './types.js';
 import { fingerprintModel } from './fingerprint.js';
 import { getSchemaTypeFromPath } from '../extraction/entities/id.js';
 import { extractAllEntities } from '../extraction/entities/index.js';
 import { buildRelations } from '../extraction/relations/index.js';
-import { ENTITY_TYPE } from './entityTypes.js';
-import type { Entity } from './types.js';
-
-/**
- * Merge Party entities that share the same (scope, name) across multiple arch files.
- *
- * A root context map may be split into several `*.arch.yaml` files, each of which must
- * re-declare its `parties: [{ name, env, contexts }]` wrapper to be schema-valid. The arch
- * extractor emits one Party entity per file (its id is file-scoped), so the same party would
- * otherwise appear N times. Collapse them into the first occurrence, unioning their
- * `data.contexts` (by context name). Context/Service/Contract entities are emitted separately
- * and are unaffected; no relation builder resolves against Party, so this is purely de-duplication.
- */
-function mergeArchParties(entities: Entity[]): Entity[] {
-  const byKey = new Map<string, Entity>();
-  const result: Entity[] = [];
-  for (const entity of entities) {
-    if (entity.type !== ENTITY_TYPE.Party) {
-      result.push(entity);
-      continue;
-    }
-    const scope = (entity.data?._scope as string | undefined) ?? '';
-    const key = `${scope}::${entity.displayId}`;
-    const existing = byKey.get(key);
-    if (!existing) {
-      byKey.set(key, entity);
-      result.push(entity);
-      continue;
-    }
-    // Fold this party's contexts into the first one; drop the duplicate Party entity.
-    const target = (existing.data ??= {});
-    const existingContexts = Array.isArray(target.contexts) ? (target.contexts as unknown[]) : [];
-    const incoming = Array.isArray(entity.data?.contexts) ? (entity.data!.contexts as unknown[]) : [];
-    const seen = new Set(
-      existingContexts.map((c) => (c as { name?: string } | null)?.name).filter(Boolean)
-    );
-    for (const ctx of incoming) {
-      const name = (ctx as { name?: string } | null)?.name;
-      if (name && !seen.has(name)) {
-        existingContexts.push(ctx);
-        seen.add(name);
-      }
-    }
-    target.contexts = existingContexts;
-  }
-  return result;
-}
+import { mergeParties, remapRelationEndpoints } from '../extraction/entities/partyIdentity.js';
+import {
+  extractDomainDescriptions,
+  extractRepositoryConfig,
+  extractRepositoriesConfig,
+} from './metadata.js';
 
 /**
  * Group parsed documents by schema type (derived from file path).
@@ -104,15 +62,22 @@ export function buildBlueprintModel(
     lastModified: undefined,
   }));
 
-  const entities = mergeArchParties(extractAllEntities(documentsByType));
-  const { relations, addedEntities } = buildRelations(entities, documentsByType);
+  // A party is a partial class: `arch.yaml` and `organization.yaml` each declare a part, and the
+  // shared `PRT###` is what makes them one node. Relations are built FIRST and their endpoints
+  // rewritten after the fold — an org party owns departments and teams, so it IS an edge endpoint,
+  // and folding before would drop those edges with no error. (Arch parties are not endpoints, which
+  // is why the older arch-only merge could ignore this.)
+  const extracted = extractAllEntities(documentsByType);
+  const { relations: rawRelations, addedEntities } = buildRelations(extracted, documentsByType);
+  const { entities, idRemap } = mergeParties([...extracted, ...addedEntities]);
+  const relations = remapRelationEndpoints(rawRelations, idRemap);
   const domainDescriptions = extractDomainDescriptions(documentsByType);
   const repository = extractRepositoryConfig(documentsByType.blueprint);
   const repositories = extractRepositoriesConfig(documentsByType.blueprint);
 
-  // Merge placeholder "Missing" entities into the entity list so the model
-  // has one unified array (frontend renders placeholders as gray nodes).
-  const allEntities = [...entities, ...addedEntities];
+  // Placeholder "Missing" entities are already part of `entities` — they were folded in above so
+  // the model has one unified array (frontend renders placeholders as gray nodes).
+  const allEntities = entities;
 
   const model: BlueprintModel = {
     entities: allEntities,
@@ -137,97 +102,4 @@ export function buildBlueprintModel(
   }
 
   return model;
-}
-
-function inferDomainFromPath(path: string | undefined): string {
-  if (!path) return 'Global';
-  const normalized = path.replace(/\\/g, '/');
-  const seg = normalized.split('/').filter(Boolean)[0];
-  if (!seg || seg === '.' || seg === '..') return 'Global';
-  if (seg === 'default') return 'Global';
-  return seg;
-}
-
-function extractDomainDescriptions(
-  documentsByType: DocumentsBySchemaType
-): Record<string, string> {
-  const domainDocs = documentsByType.domain ?? [];
-  if (domainDocs.length === 0) return {};
-
-  const rows = domainDocs
-    .map((doc) => {
-      const raw = doc.data?.description;
-      if (typeof raw !== 'string') return null;
-      const description = raw.trim();
-      if (!description) return null;
-      return {
-        path: doc.filePath ?? '',
-        domain: inferDomainFromPath(doc.filePath),
-        description,
-      };
-    })
-    .filter((r): r is { path: string; domain: string; description: string } => r !== null)
-    .sort((a, b) => a.path.localeCompare(b.path));
-
-  const grouped = new Map<string, string[]>();
-  for (const row of rows) {
-    (grouped.get(row.domain) ?? grouped.set(row.domain, []).get(row.domain)!).push(
-      row.description
-    );
-  }
-
-  const out: Record<string, string> = {};
-  for (const [domain, parts] of grouped) {
-    out[domain] = parts.join('\n\n');
-  }
-  return out;
-}
-
-/**
- * Extract repository config from blueprint root documents (v2.4).
- * Returns the first repository config found, or undefined.
- */
-function extractRepositoryConfig(
-  blueprintDocs?: ParsedBlueprintDocument[]
-): RepositoryConfig | undefined {
-  if (!blueprintDocs) return undefined;
-  for (const doc of blueprintDocs) {
-    const repo = doc.data?.repository as Record<string, unknown> | undefined;
-    if (!repo || typeof repo !== 'object') continue;
-    const url = repo.url as string | undefined;
-    if (!url) continue;
-    return {
-      url,
-      branch: repo.branch != null ? String(repo.branch) : undefined,
-      provider: repo.provider != null ? String(repo.provider) : undefined,
-    };
-  }
-  return undefined;
-}
-
-/**
- * Extract the multi-repository config map from blueprint root documents (v2.7.1).
- * Keyed by the code_ref org/repo prefix. Returns undefined when absent/empty.
- */
-function extractRepositoriesConfig(
-  blueprintDocs?: ParsedBlueprintDocument[]
-): Record<string, RepositoryConfig> | undefined {
-  if (!blueprintDocs) return undefined;
-  for (const doc of blueprintDocs) {
-    const repos = doc.data?.repositories as Record<string, unknown> | undefined;
-    if (!repos || typeof repos !== 'object') continue;
-    const out: Record<string, RepositoryConfig> = {};
-    for (const [key, value] of Object.entries(repos)) {
-      const repo = value as Record<string, unknown> | undefined;
-      const url = repo?.url as string | undefined;
-      if (!url) continue;
-      out[key] = {
-        url,
-        branch: repo!.branch != null ? String(repo!.branch) : undefined,
-        provider: repo!.provider != null ? String(repo!.provider) : undefined,
-      };
-    }
-    if (Object.keys(out).length > 0) return out;
-  }
-  return undefined;
 }

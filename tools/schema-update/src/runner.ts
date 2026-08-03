@@ -4,8 +4,11 @@ import type { PlannedChange, SchemaUpdate, UpdatePlan, UpdateResult } from './ty
 
 import { update as update001 } from './updates/001-rename-acronym-schemas.js';
 import { update as update002 } from './updates/002-quality-characteristic-two-level.js';
+import { update as update004 } from './updates/004-arch-party-ids.js';
 
-const ALL_UPDATES: SchemaUpdate[] = [update001, update002];
+// Version order, single pass — see resolveChain. `004` follows `002`: both are in-place 2.7
+// restructures, and a v2.6 model must receive 001 → 002 → 004 in one run.
+const ALL_UPDATES: SchemaUpdate[] = [update001, update002, update004];
 
 export function detectVersion(blueprintDir: string): string | null {
   const dirName = path.basename(path.resolve(blueprintDir));

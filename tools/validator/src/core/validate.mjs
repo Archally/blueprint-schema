@@ -3,7 +3,12 @@ import path from "node:path";
 import { toPosixPath, walkFiles, loadYaml } from "./utils.mjs";
 import { loadSchemaRegistry, makeAjv, SCHEMA_BASE_URI } from "./schema-registry.mjs";
 import { FILENAME_TO_SCHEMA, detectSchemaType } from "./schema-types.mjs";
-import { collectIds, collectRefs, isIdentityOrReferenceViolation } from "./references.mjs";
+import {
+  collectIds,
+  collectRefs,
+  isIdentityOrReferenceViolation,
+  isPartyRedeclaration,
+} from "./references.mjs";
 
 /** `RT###` refs point to the resource-type CATALOG in the profiles, never into the model. */
 const CATALOG_REF_RE = /^([a-z][a-z0-9-]*\.)?RT\d{3,}$/;
@@ -135,6 +140,8 @@ export function validateModel(args) {
   }
 
   for (const [id, locs] of allDuplicates.entries()) {
+    // A party re-declared across arch slices and the org layer shares one id BY DESIGN.
+    if (isPartyRedeclaration(locs)) continue;
     warnings.push(`Duplicate ID '${id}' in: ${locs.join(", ")}`);
   }
 

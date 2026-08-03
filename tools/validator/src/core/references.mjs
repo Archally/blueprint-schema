@@ -150,6 +150,29 @@ export function collectIds(node, ids = new Map(), duplicates = new Map(), pathSt
   return { ids, duplicates };
 }
 
+/**
+ * A location that declares a party — `…parties.[3]`, at any depth.
+ *
+ * Also matches the `parties[3]` spelling, so a caller that joins its path stack without a separator
+ * before the index is covered too.
+ */
+const PARTY_DECLARATION = /(?:^|\.)parties\.?\[\d+\]$/;
+
+/**
+ * Is this repeated id a party declared in several files rather than a genuine duplicate?
+ *
+ * A party is dual-sourced and re-declared by design: an arch document requires `parties` at its
+ * root, so a context map split across slice folders re-states the party in every slice, and the
+ * org layer states it again. The shared `PRT###` is what makes those declarations ONE party — so
+ * repeating it is the correct, intended state, not a collision.
+ *
+ * The exemption is deliberately narrow: EVERY location must be a party declaration. An id used once
+ * as a party and once as anything else is still a duplicate, and still reported.
+ */
+export function isPartyRedeclaration(locations) {
+  return locations.length > 1 && locations.every((loc) => PARTY_DECLARATION.test(loc));
+}
+
 export function collectRefs(node, refs = [], pathStack = []) {
   if (Array.isArray(node)) {
     node.forEach((item, idx) => collectRefs(item, refs, [...pathStack, `[${idx}]`]));
