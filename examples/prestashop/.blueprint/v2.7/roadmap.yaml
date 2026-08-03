@@ -178,3 +178,51 @@ work_items:
       team: TM002
     value_streams: [VS002]
     depends_on: [WI001]
+
+  # Placed by explicit dates rather than by sprint. Carrier integration is bound to contract
+  # renewal dates, not to the delivery cadence — which is exactly the case `start_date`/`end_date`
+  # exist for, and `start_date` overrides `start_sprint` when both are present.
+  - id: WI011
+    kind: epic
+    name: "Shipping provider seam"
+    description: >
+      Abstract carrier rate lookups behind a provider interface with an anticorruption layer,
+      so a new carrier ships as configuration plus a small adapter instead of an edit inside
+      the checkout context.
+    milestone: MS004
+    status: planned
+    confidence: estimated
+    start_date: "2027-01-06"
+    end_date: "2027-03-26"
+    progress: 0
+    owned_by:
+      team: TM006
+    realizes_decisions: [D005]
+    value_streams: [VS003]
+    depends_on: [WI001]
+    children:
+      - id: WI012
+        kind: subscope
+        name: "Carrier rate provider interface"
+        start_date: "2027-01-06"
+        end_date: "2027-02-12"
+        confidence: estimated
+        progress: 0
+      - id: WI013
+        kind: subscope
+        name: "Anticorruption layer for carrier APIs"
+        start_date: "2027-02-15"
+        end_date: "2027-03-26"
+        confidence: tentative
+        progress: 0
+        depends_on: [WI012]
+      # Deliberately OVERLAPS WI012 and WI013 and depends on neither — rate caching is
+      # independent of the adapter work. This is the corpus's only pair of concurrent work
+      # items, so it is the only fixture an interval-packing renderer can be tested against.
+      - id: WI014
+        kind: subscope
+        name: "Carrier rate caching"
+        start_date: "2027-01-20"
+        end_date: "2027-02-26"
+        confidence: estimated
+        progress: 0

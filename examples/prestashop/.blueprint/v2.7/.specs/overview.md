@@ -1,6 +1,6 @@
 # PrestaShop-v9
 
-> Generated from blueprint model. 2072 entities, 3086 relations.
+> Generated from blueprint model. 2066 entities, 3094 relations.
 
 ## Context Map
 
@@ -1657,47 +1657,37 @@ graph TD
         AdminService["AdminService: REST API for employee, security, and configuration management."]
         AdminService_openapi["AdminService.openapi"]
         AdminService_security_schemes["AdminService.security_schemes"]
-        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
         Catalog["Catalog: Product catalog — CRUD, variants, media, categories, attributes, suppliers, search indexing."]
         CatalogService["CatalogService: REST API for product and category management."]
         CatalogService_openapi["CatalogService.openapi"]
         CatalogService_asyncapi["CatalogService.asyncapi"]
-        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
         Checkout["Checkout: Cart management, checkout flow, cart rules, promotions, payment orchestration."]
         CheckoutService["CheckoutService: REST API for cart operations and payment initiation."]
         CheckoutService_openapi["CheckoutService.openapi"]
         CheckoutService_asyncapi["CheckoutService.asyncapi"]
-        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
         Content["Content: CMS pages, page categories, themes, email templates, SEO meta."]
         ContentService["ContentService: REST API for CMS page and theme management."]
         ContentService_openapi["ContentService.openapi"]
-        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
         Customers["Customers: Customer accounts, addresses, customer service messaging, titles."]
         CustomerService["CustomerService: REST API for customer account and address management."]
         CustomerService_openapi["CustomerService.openapi"]
-        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
         International["International: Currencies, countries, zones, languages, tax rules — localization backbone."]
         InternationalService["InternationalService: REST API for currency, tax, country, and language management."]
         InternationalService_openapi["InternationalService.openapi"]
-        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
         Modules["Modules: Module lifecycle, hook system, module marketplace integration."]
         ModuleManager["ModuleManager: Module lifecycle orchestrator with hook execution pipeline."]
         ModuleManager_openapi["ModuleManager.openapi"]
-        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
         Orders["Orders: Order lifecycle — placement, state management, cancellation, refund, invoice, returns, credit slips."]
         OrderService["OrderService: REST API for order commands and queries."]
         OrderService_openapi["OrderService.openapi"]
         OrderService_asyncapi["OrderService.asyncapi"]
-        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
         ExternalApiConsumers["ExternalApiConsumers: External systems consuming PrestaShop Admin API via OAuth2."]
         AdminApiClient["AdminApiClient: External API consumer using PrestaShop Admin REST API with OAuth2 authentication."]
         AdminApiClient_httpClient["AdminApiClient.httpClient"]
         AdminApiClient_security_schemes["AdminApiClient.security_schemes"]
-        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
         Shipping["Shipping: Carrier configuration, shipping cost calculation, shipment tracking."]
         ShippingService["ShippingService: REST API for carrier management and shipping cost calculation."]
         ShippingService_openapi["ShippingService.openapi"]
-        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
         Shop["Shop: Multi-store configuration, physical stores, contacts, search, aliases."]
         ShopService["ShopService: REST API for multi-store and shop configuration."]
         ShopService_openapi["ShopService.openapi"]
@@ -2446,6 +2436,10 @@ graph TD
         WI002["WI002: Cart management"]
         WI003["WI003: Payment initiation"]
         WI010["WI010: Search & Filters"]
+        WI011["WI011: Shipping provider seam"]
+        WI012["WI012: Carrier rate provider interface"]
+        WI013["WI013: Anticorruption layer for carrier APIs"]
+        WI014["WI014: Carrier rate caching"]
     end
     subgraph governance_value_stream["governance.value-stream"]
         VS001["VS001: Shop & Buy"]
@@ -3063,7 +3057,6 @@ graph TD
     checkout_CN001 -.->|"association"| checkout_CN003
     checkout_CN004 -.->|"association"| checkout_CN005
     content_CN001 -.->|"association"| content_CN002
-    content_CN002 -.->|"association"| content_CN002
     customers_CN001 -.->|"association"| customers_CN004
     customers_CN001 -.->|"association"| customers_CN005
     customers_CN001 -.->|"association"| customers_CN002
@@ -4800,6 +4793,14 @@ graph TD
     WI010 -.->|"roadmap_value_stream"| VS002
     WI010 -.->|"work_item_milestone"| MS002
     WI010 -.->|"work_item_dependency"| WI001
+    WI011 -.->|"roadmap_realizes_decision"| D005
+    WI011 -.->|"roadmap_value_stream"| VS003
+    WI011 -.->|"work_item_milestone"| MS004
+    WI011 -.->|"work_item_child"| WI012
+    WI011 -.->|"work_item_child"| WI013
+    WI011 -.->|"work_item_child"| WI014
+    WI011 -.->|"work_item_dependency"| WI001
+    WI013 -.->|"work_item_dependency"| WI012
     catalog_R001 -.->|"risk_owner"| orders_ACT002
     catalog_R001 -.->|"risk_goal"| catalog_G001
     catalog_R002 -.->|"risk_goal"| catalog_G001
@@ -4921,6 +4922,7 @@ graph TD
     LP003 -.->|"leverage_realized_by"| WI003
     LP003 -.->|"leverage_value_stream"| VS001
     LP004 -.->|"leverage_decision"| D005
+    LP004 -.->|"leverage_realized_by"| WI011
     LP004 -.->|"leverage_value_stream"| VS003
     LP004 -.->|"leverage_capability"| CAP006
     LP005 -.->|"leverage_decision"| D006
@@ -6144,7 +6146,7 @@ graph TD
 
 ## Entity Catalog
 
-**2072 entities** across 50 types.
+**2066 entities** across 50 types.
 
 | ID | Type | Name | Layer | Source |
 |----|------|------|-------|--------|
@@ -7737,16 +7739,6 @@ graph TD
 | shop.QRY009 | Operation | GetNotificationLastElements | design.domain | shop/domain.yaml |
 | shop.QRY010 | Operation | GetShowcaseCardIsClosed | design.domain | shop/domain.yaml |
 | PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | admin/arch.yaml |
-| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | catalog/arch.yaml |
-| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | checkout/arch.yaml |
-| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | content/arch.yaml |
-| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | customers/arch.yaml |
-| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | international/arch.yaml |
-| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | modules/arch.yaml |
-| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | orders/arch.yaml |
-| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | prestashop.arch.yaml |
-| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | shipping/arch.yaml |
-| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | shop/arch.yaml |
 | PRT001 | Party | PrestaShop SA | governance.org | organization.yaml |
 | catalog.RES001 | Resilience | Search Index Recovery | design.quality | catalog/quality.yaml |
 | admin.R001 | Risk | Privilege escalation risk | governance.motivation | admin/motivation.yaml |
@@ -8220,6 +8212,10 @@ graph TD
 | WI002 | WorkItem | Cart management | governance.roadmap | roadmap.yaml |
 | WI003 | WorkItem | Payment initiation | governance.roadmap | roadmap.yaml |
 | WI010 | WorkItem | Search & Filters | governance.roadmap | roadmap.yaml |
+| WI011 | WorkItem | Shipping provider seam | governance.roadmap | roadmap.yaml |
+| WI012 | WorkItem | Carrier rate provider interface | governance.roadmap | roadmap.yaml |
+| WI013 | WorkItem | Anticorruption layer for carrier APIs | governance.roadmap | roadmap.yaml |
+| WI014 | WorkItem | Carrier rate caching | governance.roadmap | roadmap.yaml |
 
 ### By Type
 
@@ -8250,7 +8246,6 @@ graph TD
 | Contract | 16 |
 | UINavigation | 16 |
 | StructuralRule | 13 |
-| Party | 12 |
 | NonGoal | 12 |
 | TransitionRule | 12 |
 | Context | 11 |
@@ -8259,6 +8254,7 @@ graph TD
 | Team | 10 |
 | TradeOff | 9 |
 | Decision | 8 |
+| WorkItem | 8 |
 | ClassificationRule | 6 |
 | Binding | 6 |
 | InfraResource | 5 |
@@ -8266,10 +8262,10 @@ graph TD
 | Milestone | 5 |
 | Security | 4 |
 | Compliance | 4 |
-| WorkItem | 4 |
 | DeploymentScope | 3 |
 | Department | 3 |
 | ValueStream | 3 |
+| Party | 2 |
 | Metric | 2 |
 | DerivationRule | 2 |
 | Environment | 2 |
@@ -8278,7 +8274,7 @@ graph TD
 
 ## Relations
 
-**3086 relations** discovered.
+**3094 relations** discovered.
 
 | Source | Type | Target |
 |--------|------|--------|
@@ -8388,7 +8384,6 @@ graph TD
 | checkout.CN001 (Concept) | association | checkout.CN003 (Concept) |
 | checkout.CN004 (Concept) | association | checkout.CN005 (Concept) |
 | content.CN001 (Concept) | association | content.CN002 (Concept) |
-| content.CN002 (Concept) | association | content.CN002 (Concept) |
 | customers.CN001 (Concept) | association | customers.CN004 (Concept) |
 | customers.CN001 (Concept) | association | customers.CN005 (Concept) |
 | customers.CN001 (Concept) | association | customers.CN002 (Concept) |
@@ -10207,6 +10202,7 @@ graph TD
 | LP001 (LeveragePoint) | leverage_realized_by | WI001 (WorkItem) |
 | LP002 (LeveragePoint) | leverage_realized_by | WI002 (WorkItem) |
 | LP003 (LeveragePoint) | leverage_realized_by | WI003 (WorkItem) |
+| LP004 (LeveragePoint) | leverage_realized_by | WI011 (WorkItem) |
 | LP005 (LeveragePoint) | leverage_realized_by | WI010 (WorkItem) |
 | LP001 (LeveragePoint) | leverage_value_stream | VS001 (ValueStream) |
 | LP002 (LeveragePoint) | leverage_value_stream | VS002 (ValueStream) |
@@ -10576,8 +10572,10 @@ graph TD
 | orders.R001 (Risk) | risk_owner | orders.ACT002 (Actor) |
 | orders.R004 (Risk) | risk_owner | orders.ACT002 (Actor) |
 | WI001 (WorkItem) | roadmap_realizes_decision | D001 (Decision) |
+| WI011 (WorkItem) | roadmap_realizes_decision | D005 (Decision) |
 | WI001 (WorkItem) | roadmap_value_stream | VS001 (ValueStream) |
 | WI010 (WorkItem) | roadmap_value_stream | VS002 (ValueStream) |
+| WI011 (WorkItem) | roadmap_value_stream | VS003 (ValueStream) |
 | admin.SCR001 (Screen) | screen_motivated_by | admin.G001 (Goal) |
 | admin.SCR003 (Screen) | screen_motivated_by | admin.G001 (Goal) |
 | admin.SCR004 (Screen) | screen_motivated_by | admin.G002 (Goal) |
@@ -11364,10 +11362,16 @@ graph TD
 | VS003 (ValueStream) | value_stream_kpi | shop.KPI001 (KPI) |
 | WI001 (WorkItem) | work_item_child | WI002 (WorkItem) |
 | WI001 (WorkItem) | work_item_child | WI003 (WorkItem) |
+| WI011 (WorkItem) | work_item_child | WI012 (WorkItem) |
+| WI011 (WorkItem) | work_item_child | WI013 (WorkItem) |
+| WI011 (WorkItem) | work_item_child | WI014 (WorkItem) |
 | WI003 (WorkItem) | work_item_dependency | WI002 (WorkItem) |
 | WI010 (WorkItem) | work_item_dependency | WI001 (WorkItem) |
+| WI011 (WorkItem) | work_item_dependency | WI001 (WorkItem) |
+| WI013 (WorkItem) | work_item_dependency | WI012 (WorkItem) |
 | WI001 (WorkItem) | work_item_milestone | MS001 (Milestone) |
 | WI010 (WorkItem) | work_item_milestone | MS002 (Milestone) |
+| WI011 (WorkItem) | work_item_milestone | MS004 (Milestone) |
 
 ### By Type
 
@@ -11390,7 +11394,7 @@ graph TD
 | user_story_test_case | 39 |
 | contract_exposes | 31 |
 | use_case_user_story | 31 |
-| association | 27 |
+| association | 26 |
 | use_case_actor | 25 |
 | risk_goal | 24 |
 | screen_motivated_by | 22 |
@@ -11417,35 +11421,35 @@ graph TD
 | milestone_dependency | 6 |
 | leverage_decision | 6 |
 | contract_calls | 5 |
+| work_item_child | 5 |
 | assumption_risk | 5 |
+| leverage_realized_by | 5 |
 | grouped_in | 5 |
+| work_item_dependency | 4 |
 | inquiry_stakeholder | 4 |
 | inquiry_risk | 4 |
 | leverage_fitness_function | 4 |
-| leverage_realized_by | 4 |
 | leverage_value_stream | 4 |
 | hosted_on | 4 |
 | materializes | 3 |
 | org_contains_dept | 3 |
+| roadmap_value_stream | 3 |
+| work_item_milestone | 3 |
 | risk_owner | 3 |
 | value_stream_actor | 3 |
 | leverage_capability | 3 |
 | connects_to | 3 |
-| roadmap_value_stream | 2 |
-| work_item_milestone | 2 |
-| work_item_child | 2 |
-| work_item_dependency | 2 |
+| roadmap_realizes_decision | 2 |
 | inquiry_owner | 2 |
 | leverage_depends_on | 2 |
 | nested_in | 2 |
 | transition_rules | 1 |
 | contract_receives | 1 |
 | use_case_story | 1 |
-| roadmap_realizes_decision | 1 |
 
 ## Coverage Gaps
 
-### Orphan Entities (211)
+### Orphan Entities (201)
 
 Entities with no incoming or outgoing relations:
 
@@ -11550,16 +11554,6 @@ Entities with no incoming or outgoing relations:
 - **shop.ERR001** (Error) — LogoExtensionNotSupported
 - **shop.ERR002** (Error) — SearchEngineNotFound
 - **shop.ERR003** (Error) — AliasNotFound
-- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
-- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
-- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
-- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
-- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
-- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
-- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
-- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
-- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
-- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
 - **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
 - **MDL012** (Models) — Partial update payload for an existing category.
 - **MDL014** (Models) — Recursive tree node for category hierarchy display.

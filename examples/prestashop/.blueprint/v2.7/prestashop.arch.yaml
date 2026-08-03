@@ -8,7 +8,8 @@ tags:
   - php
   - symfony
 parties:
-  - name: PrestaShop
+  - id: PRT002
+    name: PrestaShop
     kind: system
     env: production
     description: PrestaShop v9 monolith with CQRS domain layer and Symfony framework.

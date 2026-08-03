@@ -43,6 +43,7 @@
     "render": "node tools/renderer/dist/cli.js",
     "render:ecommerce": "node tools/renderer/dist/cli.js examples/ecommerce/.blueprint/v2.6 -o examples/ecommerce/.blueprint/v2.6/.specs/overview.md -t E-Commerce",
     "render:prestashop": "node tools/renderer/dist/cli.js examples/prestashop/.blueprint/v2.7 -o examples/prestashop/.blueprint/v2.7/.specs/overview.md -t PrestaShop-v9",
+    "render:check": "node tools/renderer/dist/cli.js examples/prestashop/.blueprint/v2.7 -o examples/prestashop/.blueprint/v2.7/.specs/overview.md -t PrestaShop-v9 --check",
     "check": "node tools/semantic-checker/dist/cli.js",
     "next-id": "node tools/next-id/cli.mjs",
     "coverage-check": "node tools/coverage-check/cli.mjs",
@@ -57,7 +58,7 @@
     "guides:build": "node tools/guide-publisher/dist/cli.js build",
     "guides:pdf": "node tools/guide-publisher/dist/cli.js pdf",
     "guides:check": "node tools/guide-publisher/dist/cli.js check",
-    "test": "vitest run --config tools/model-builder/vitest.config.ts && vitest run --config tools/semantic-checker/vitest.config.ts && vitest run --config tools/schema-atlas/vitest.config.ts && vitest run --config tools/guide-publisher/vitest.config.ts",
+    "test": "vitest run --config tools/model-builder/vitest.config.ts && vitest run --config tools/semantic-checker/vitest.config.ts && vitest run --config tools/renderer/vitest.config.ts && vitest run --config tools/schema-atlas/vitest.config.ts && vitest run --config tools/guide-publisher/vitest.config.ts",
     "prepublishOnly": "npm run build"
   },
   "bin": {

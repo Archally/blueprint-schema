@@ -86,6 +86,7 @@ leverage_points:
     advances_value_streams: [VS003]
     capability_refs: [CAP006]
     depends_on: [LP002]
+    realized_by: [WI011]
     consequences_if_done:
       - "New carriers ship as configuration + a small adapter."
     consequences_if_not_done:

@@ -28,10 +28,12 @@ stories:
       - id: checkout.SA001
         name: "Add products to cart"
         entry_operation: checkout.CMD009
+        next_activities: [checkout.SA002]
         path_type: happy
       - id: checkout.SA002
         name: "Apply voucher code"
         entry_operation: checkout.CMD014
+        next_activities: [checkout.SA003]
         path_type: happy
       - id: checkout.SA003
         name: "Configure cart for checkout"
