@@ -15,6 +15,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
+import { sliceOf } from './slice.mjs';
 
 /** Generated/derived trees are reported on but never authored — skip them entirely. */
 const EXCLUDE_DIRS = new Set([
@@ -34,6 +35,7 @@ const TEST_CASE_CATEGORIES = ['happy_path', 'edge_cases', 'error_cases', 'fitnes
  * @typedef {object} Observation
  * @property {string} metric      metric id, e.g. `model.property.description`
  * @property {string} file        absolute path of the source file
+ * @property {string} [slice]     architectural slice (first path segment under the model root)
  * @property {string} [entityId]  typed id when the subject has one
  * @property {string} subject     human locator, e.g. `JustifyPayGapPayload.criteria`
  * @property {unknown} value      the collected value (undefined when absent)
@@ -411,6 +413,12 @@ export function collectObservations(modelRoot) {
       continue;
     }
     if (doc && typeof doc === 'object') collector.collectFile(file, doc);
+  }
+  // Stamp each observation with the slice its file belongs to, so evaluate.mjs can
+  // scope a run to one slice without re-deriving paths.
+  const resolvedRoot = path.resolve(modelRoot);
+  for (const observation of collector.observations) {
+    observation.slice = sliceOf(resolvedRoot, observation.file);
   }
   return {
     observations: collector.observations,

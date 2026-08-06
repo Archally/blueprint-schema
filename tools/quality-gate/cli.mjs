@@ -13,6 +13,8 @@
  * Options:
  *   --strict              exit 1 on any threshold or baseline breach
  *   --since <git-ref>     patch mode: score only entities in files changed since ref
+ *   --slice <name>        slice mode: score only one slice (first path segment),
+ *                         against the whole-model bar and its per-slice baseline
  *   --json [file]         machine-readable output (stdout when no file given)
  *   --spec <file>         alternative quality spec
  *   --config <file>       alternative project config (default: .blueprint-quality.yaml)
@@ -30,12 +32,13 @@ import { evaluate, nextBaseline } from './evaluate.mjs';
 import { renderReport } from './report.mjs';
 import { changedFilesSince } from './git-changes.mjs';
 import { loadSpec, loadProjectConfig, writeBaseline, PROJECT_CONFIG_NAME } from './config.mjs';
+import { normalizeSliceArg } from './slice.mjs';
 
-const USAGE = 'usage: node cli.mjs <modelRoot> [more roots] [--strict] [--since <ref>] [--json [file]] [--spec <file>] [--config <file>] [--update-baseline] [--worst <n>] [--quiet]';
+const USAGE = 'usage: node cli.mjs <modelRoot> [more roots] [--strict] [--since <ref>] [--slice <name>] [--json [file]] [--spec <file>] [--config <file>] [--update-baseline] [--worst <n>] [--quiet]';
 
 /** @param {string[]} argv */
 export function parseArguments(argv) {
-  /** @type {{roots: string[], strict: boolean, since?: string, json: boolean, jsonFile?: string, spec?: string, config?: string, updateBaseline: boolean, worst: number, quiet: boolean}} */
+  /** @type {{roots: string[], strict: boolean, since?: string, slice?: string, json: boolean, jsonFile?: string, spec?: string, config?: string, updateBaseline: boolean, worst: number, quiet: boolean}} */
   const options = { roots: [], strict: false, json: false, updateBaseline: false, worst: 15, quiet: false };
   for (let index = 0; index < argv.length; index++) {
     const argument = argv[index];
@@ -44,6 +47,7 @@ export function parseArguments(argv) {
       case '--update-baseline': options.updateBaseline = true; break;
       case '--quiet': options.quiet = true; break;
       case '--since': options.since = argv[++index]; break;
+      case '--slice': options.slice = normalizeSliceArg(argv[++index]); break;
       case '--spec': options.spec = argv[++index]; break;
       case '--config': options.config = argv[++index]; break;
       case '--worst': options.worst = Number(argv[++index]); break;
@@ -64,6 +68,9 @@ export function parseArguments(argv) {
   if (options.since && options.updateBaseline) {
     throw new Error('--update-baseline measures the whole model and cannot be combined with --since');
   }
+  if (options.since && options.slice) {
+    throw new Error('--since and --slice are both scoping modes and cannot be combined');
+  }
   return options;
 }
 
@@ -81,12 +88,20 @@ function runOne(modelRoot, options, spec) {
   const { config, path: configPath } = loadProjectConfig(resolvedRoot, options.config);
   const changedFiles = options.since ? changedFilesSince(resolvedRoot, options.since) : undefined;
 
-  const result = evaluate({ observations, spec, config, changedFiles, schemaVersion });
+  const result = evaluate({ observations, spec, config, changedFiles, slice: options.slice, schemaVersion });
 
   if (options.updateBaseline) {
     const target = configPath ?? path.join(resolvedRoot, PROJECT_CONFIG_NAME);
-    writeBaseline(target, nextBaseline(result, config.baseline ?? {}));
-    if (!options.quiet) console.log(`  baseline written: ${target}`);
+    // A slice update ratchets that slice's own floor; a whole-model update the flat
+    // one. The flat map's reserved `slices` key is not a metric, so keep it out of
+    // the ratchet math — writeBaseline preserves it separately.
+    const existing = options.slice
+      ? (config.baseline?.slices ?? {})[options.slice] ?? {}
+      : (({ slices, ...flat }) => flat)(config.baseline ?? {});
+    writeBaseline(target, nextBaseline(result, existing), options.slice);
+    if (!options.quiet) {
+      console.log(`  baseline written: ${target}${options.slice ? ` (slice: ${options.slice})` : ''}`);
+    }
   }
 
   return { modelRoot: resolvedRoot, result, fileCount, parseErrors, configPath };
@@ -140,6 +155,7 @@ function main() {
         fileCount: run.fileCount,
         schemaVersion: run.result.schemaVersion,
         patchMode: run.result.patchMode,
+        sliceMode: run.result.sliceMode,
         parseErrors: run.parseErrors,
         metrics: run.result.metrics,
         findings: run.result.findings.map((finding) => ({
