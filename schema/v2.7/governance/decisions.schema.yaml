@@ -74,7 +74,7 @@ $defs:
         $ref: "#/$defs/rationale"
         description: "The reasoning behind this decision. Answers 'why' for future readers."
       version:
-        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        ref: "../metamodel.schema.yaml#/$defs/entity_version"
         description: "Decision version for individual lifecycle tracking."
       decision_scope:
         type: string
@@ -354,6 +354,11 @@ $defs:
         items:
           type: string
         description: "Documentation references."
+      related:
+        type: array
+        items:
+          type: string
+        description: "Related decisions or ADRs (URLs or IDs)."
       supersedes:
         type: array
         items:
