@@ -17,6 +17,7 @@ parties:
         name: Customers
         kind: support
         complexity: crud
+        evolution: commodity
         summary: Customer accounts, addresses, customer service messaging, titles.
         owned_by:
           team: TM004

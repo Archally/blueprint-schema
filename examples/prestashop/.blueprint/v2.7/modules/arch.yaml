@@ -17,6 +17,7 @@ parties:
         name: Modules
         kind: generic
         complexity: integration
+        evolution: custom
         summary: Module lifecycle, hook system, module marketplace integration.
         owned_by:
           team: TM008

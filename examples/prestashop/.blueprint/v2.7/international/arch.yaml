@@ -17,6 +17,7 @@ parties:
         name: International
         kind: support
         complexity: transformation
+        evolution: product
         summary: Currencies, countries, zones, languages, tax rules — localization backbone.
         owned_by:
           team: TM006

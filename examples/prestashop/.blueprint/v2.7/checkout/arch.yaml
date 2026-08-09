@@ -17,6 +17,7 @@ parties:
         name: Checkout
         kind: core
         complexity: concurrency
+        evolution: product
         summary: Cart management, checkout flow, cart rules, promotions, payment orchestration.
         owned_by:
           team: TM003

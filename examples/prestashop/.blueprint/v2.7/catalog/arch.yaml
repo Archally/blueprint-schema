@@ -17,6 +17,7 @@ parties:
         name: Catalog
         kind: core
         complexity: transformation
+        evolution: product
         summary: Product catalog — CRUD, variants, media, categories, attributes, suppliers, search indexing.
         owned_by:
           team: TM002

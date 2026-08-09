@@ -17,6 +17,7 @@ parties:
         name: Orders
         kind: core
         complexity: concurrency
+        evolution: product
         summary: Order lifecycle — placement, state management, cancellation, refund, invoice, returns, credit slips.
         owned_by:
           team: TM001

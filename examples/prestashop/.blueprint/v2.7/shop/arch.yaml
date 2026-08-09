@@ -17,6 +17,7 @@ parties:
         name: Shop
         kind: generic
         complexity: crud
+        evolution: commodity
         summary: Multi-store configuration, physical stores, contacts, search, aliases.
         owned_by:
           team: TM010

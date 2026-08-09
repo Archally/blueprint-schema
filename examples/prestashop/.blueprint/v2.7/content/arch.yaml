@@ -17,6 +17,7 @@ parties:
         name: Content
         kind: support
         complexity: crud
+        evolution: commodity
         summary: CMS pages, page categories, themes, email templates, SEO meta.
         owned_by:
           team: TM007

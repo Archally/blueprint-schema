@@ -18,6 +18,7 @@ parties:
         name: ExternalApiConsumers
         kind: generic
         complexity: integration
+        evolution: commodity
         summary: External systems consuming PrestaShop Admin API via OAuth2.
         services:
           - id: prestashop.SVC009

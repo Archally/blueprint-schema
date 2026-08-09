@@ -17,6 +17,7 @@ parties:
         name: Admin
         kind: generic
         complexity: crud
+        evolution: commodity
         summary: Employee accounts, profiles, security, API clients, configuration.
         owned_by:
           team: TM009
