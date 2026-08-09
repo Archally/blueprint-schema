@@ -55,14 +55,27 @@ function checkDeferral(deferral, metricId, now) {
  * @param {object} input.spec
  * @param {object} [input.config]           project `.blueprint-quality.yaml`
  * @param {Set<string>} [input.changedFiles] absolute paths; when present, patch mode
+ * @param {string} [input.slice]            slice name; when present, slice mode
  * @param {string} [input.schemaVersion]
  * @param {Date} [input.now]
  */
-export function evaluate({ observations, spec, config = {}, changedFiles, schemaVersion, now = new Date() }) {
+export function evaluate({ observations, spec, config = {}, changedFiles, slice, schemaVersion, now = new Date() }) {
   const thresholdOverrides = config.thresholds ?? {};
-  const baselines = config.baseline ?? {};
+  // Per-slice baselines live under `baseline.slices.<name>`; a slice run ratchets
+  // against its own floor, a whole-model run against the flat `baseline` map. The two
+  // never mix — a slice's baseline is a claim about that slice, nothing else.
+  const flatBaselines = config.baseline ?? {};
+  const sliceBaselines = (config.baseline?.slices ?? {})[slice ?? ''] ?? {};
+  const baselines = slice ? sliceBaselines : flatBaselines;
+
+  // Deferrals: global `deferrals` apply in every scope; `slice_deferrals.<name>` apply
+  // ONLY in that slice's run, so an un-enriched slice can carry its own expiring
+  // suppression without hiding the same gap in a slice that IS done. A slice-scoped
+  // deferral takes precedence over a global one for the same metric in a slice run.
+  const globalDeferrals = config.deferrals ?? [];
+  const sliceDeferrals = slice ? (config.slice_deferrals ?? {})[slice] ?? [] : [];
   const deferralsByMetric = new Map(
-    (config.deferrals ?? []).map((deferral) => [deferral.metric, deferral]),
+    [...globalDeferrals, ...sliceDeferrals].map((deferral) => [deferral.metric, deferral]),
   );
 
   /** @type {string[]} */
@@ -71,7 +84,9 @@ export function evaluate({ observations, spec, config = {}, changedFiles, schema
   const warnings = [];
   const scopedObservations = changedFiles
     ? observations.filter((observation) => changedFiles.has(observation.file))
-    : observations;
+    : slice
+      ? observations.filter((observation) => observation.slice === slice)
+      : observations;
 
   const observationsByMetric = new Map();
   for (const observation of scopedObservations) {
@@ -127,7 +142,8 @@ export function evaluate({ observations, spec, config = {}, changedFiles, schema
       ? (metricSpec.patch_threshold ?? metricSpec.threshold ?? null)
       : (metricSpec.threshold ?? null);
     const threshold = thresholdOverrides[metricId] ?? specThreshold;
-    const baseline = baselines[metricId] ?? null;
+    // `baselines` may be the flat map, whose reserved `slices` key is not a metric.
+    const baseline = metricId === 'slices' ? null : (baselines[metricId] ?? null);
     const deferral = deferralsByMetric.get(metricId);
 
     let status;
@@ -147,7 +163,10 @@ export function evaluate({ observations, spec, config = {}, changedFiles, schema
       }
     } else if (!changedFiles && baseline !== null && score !== null && score < baseline - 1e-9) {
       // The ratchet is a whole-model claim ("this model never gets worse"); comparing
-      // a changed-file subset against it would fire on any edit to a weak area.
+      // a changed-file subset (patch mode) against it would fire on any edit to a weak
+      // area, so patch mode is exempt. Slice mode is NOT — a slice's baseline is a
+      // claim about the whole slice, measured against the whole slice, so it ratchets
+      // exactly as the whole-model run does.
       status = 'below-baseline';
     } else if (threshold !== null && score !== null && score < threshold - 1e-9) {
       status = 'below-threshold';
@@ -174,10 +193,17 @@ export function evaluate({ observations, spec, config = {}, changedFiles, schema
     .map((entry) => ({ ...entry, score: entry.missing + entry.filler }))
     .sort((a, b) => b.score - a.score);
 
+  const scopedFileCount = changedFiles
+    ? changedFiles.size
+    : slice
+      ? new Set(scopedObservations.map((observation) => observation.file)).size
+      : undefined;
+
   return {
     schemaVersion,
     patchMode: Boolean(changedFiles),
-    scopedFileCount: changedFiles ? changedFiles.size : undefined,
+    sliceMode: slice ? slice : undefined,
+    scopedFileCount,
     metrics,
     findings,
     worstFiles,

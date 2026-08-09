@@ -46,7 +46,9 @@ export function renderReport({ modelRoot, result, fileCount, parseErrors, worstL
   const lines = [];
   const scope = result.patchMode
     ? `patch mode — ${result.scopedFileCount} changed file(s) of ${fileCount}`
-    : `whole model — ${fileCount} file(s)`;
+    : result.sliceMode
+      ? `slice "${result.sliceMode}" — ${result.scopedFileCount} file(s) of ${fileCount}`
+      : `whole model — ${fileCount} file(s)`;
 
   lines.push('');
   lines.push(`Blueprint quality — ${modelRoot}`);

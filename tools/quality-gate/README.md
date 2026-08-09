@@ -29,12 +29,21 @@ npm run quality <model-dir>
 # Release gate
 npm run quality <model-dir> --strict
 
-# Gate only what you just changed — the brownfield mode
+# Gate only what you just changed — the brownfield PATCH mode
 npm run quality <model-dir> --strict --since HEAD~1
+
+# Gate ONE slice as its own unit — the brownfield VERTICAL mode
+npm run quality <model-dir> --slice payroll --strict
+
+# Record a slice's current scores as its own ratchet floor
+npm run quality <model-dir> --slice payroll --update-baseline
 
 # Machine-readable: per-finding records, usable directly as a backfill worklist
 npm run quality <model-dir> --json worklist.json
 ```
+
+`--since` and `--slice` are the two scoping modes and are mutually exclusive: one
+scopes by git history, the other by folder.
 
 The same gate is also a verb on the **Archally Pro** CLI (`bp quality <project>`), which
 resolves projects by name and shares this tool's spec and thresholds — see
@@ -98,6 +107,23 @@ coverage can never pass an 85% absolute bar, so an absolute-only gate gets defer
 off and stops doing anything. With `--since`, that same model is still required to
 write its *next* property properly, and the ratchet stops the overall number sliding.
 
+## Two scoping modes: patch and slice
+
+A brownfield model is not remediated in one pass — it is enriched one architectural
+**slice** at a time. The gate offers two orthogonal ways to scope a run below the
+whole model:
+
+| Mode | Flag | Scopes by | Bar it applies | Ratchet |
+|---|---|---|---|---|
+| **patch** | `--since <ref>` | files changed since a git ref | `patch_threshold` (higher — new work has no legacy excuse) | off (a changed-file subset is not a whole-model claim) |
+| **slice** | `--slice <name>` | first path segment (`payroll/`, `recruitment/`, …) | `threshold` (the slice measured as its own steady-state unit) | the slice's own baseline |
+
+A slice is the first path segment under the model root; files that sit directly in
+the root belong to a synthetic `(root)` slice. Slice mode is what makes a *vertical*
+remediation plan measurable: `--slice payroll --strict` answers "is the payroll
+slice at its bar yet?" and `--slice payroll --update-baseline` records payroll's own
+floor so it ratchets independently of every other slice.
+
 ## Configuration
 
 Thresholds ship in `quality-spec.yaml`, calibrated from the whole in-repo corpus
@@ -115,14 +141,41 @@ thresholds:
   model.property.description: 0.70   # this project holds itself to a higher bar
 
 baseline:                            # written by --update-baseline
-  model.property.description: 0.842
+  model.property.description: 0.842  # flat: the whole-model ratchet
+  slices:                            # written by --update-baseline --slice <name>
+    payroll:                         # per-slice ratchet — payroll never gets worse
+      model.property.description: 0.61
+    recruitment:
+      model.property.description: 0.44
 
-deferrals:
+deferrals:                           # global — apply in every scope
   - metric: domain.command.exchange
     reason: >-
       No wire bindings authored yet; backfill tracked in MIG012.
     expires: 2026-10-31
+
+slice_deferrals:                     # scoped — apply only in that slice's run
+  payroll:
+    - metric: model.property.description
+      reason: >-
+        Payroll schemas not yet enriched; scheduled in the vertical plan.
+      expires: 2026-12-31
 ```
+
+The flat `baseline` map is the whole-model ratchet; `baseline.slices.<name>` holds a
+slice's own floor, consulted only under `--slice <name>`. The two are independent
+claims and never clobber each other — a whole-model `--update-baseline` leaves the
+`slices` block untouched, and a `--slice … --update-baseline` writes only that slice.
+
+Deferrals work the same way in two tiers. A `deferrals` entry suppresses a
+below-threshold metric in **every** scope; a `slice_deferrals.<name>` entry
+suppresses it **only** in that slice's run. That is what lets a vertical plan keep
+every slice's gate green *honestly* while it works through them one at a time: an
+un-enriched slice carries its own expiring deferral, and enriching the slice (so it
+meets the real threshold) is what removes it. A slice-scoped deferral is validated
+exactly like a global one — reason and expiry are mandatory. The ratchet is not an
+escape from a threshold; a deferral is the only sanctioned way to be green while
+genuinely below the bar.
 
 A deferral **must** carry both a `reason` and an `expires` date — a deferral without
 a reason is just a disabled check, and one without an expiry becomes permanent.
@@ -150,7 +203,8 @@ root always arrives as an argument. That is what lets one copy serve every versi
 | `evaluate.mjs` | observations + spec + config → scores, findings, breaches |
 | `report.mjs` | text rendering |
 | `git-changes.mjs` | `--since` changed-file resolution |
-| `config.mjs` | spec + project-config loading, baseline writing |
+| `slice.mjs` | `--slice` scoping — derives a file's slice from its path |
+| `config.mjs` | spec + project-config loading, baseline writing (flat + per-slice) |
 | `quality-spec.yaml` | metric definitions, content rules, calibrated thresholds |
 
 Adding a **threshold, content rule or deferral** is a YAML edit. Teaching the tool a

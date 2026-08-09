@@ -63,15 +63,38 @@ export function loadProjectConfig(modelRoot, explicitPath) {
 }
 
 /**
- * Persist an updated `baseline:` block, preserving everything else in the file
- * (including comments where the file already existed).
+ * Persist an updated baseline, preserving everything else in the file (including
+ * comments where the file already existed).
+ *
+ * A whole-model update writes the flat `baseline.<metric>` entries and leaves any
+ * per-slice `baseline.slices` untouched; a slice update writes only
+ * `baseline.slices.<slice>.<metric>` and leaves the flat entries and its sibling
+ * slices untouched. The two ratchets are independent claims and must not clobber
+ * each other.
  * @param {string} configPath
- * @param {Record<string, number>} baseline
+ * @param {Record<string, number>} baseline metric → score for the run being ratcheted
+ * @param {string} [slice] when given, write under `baseline.slices.<slice>` instead
  */
-export function writeBaseline(configPath, baseline) {
+export function writeBaseline(configPath, baseline, slice) {
   const document = fs.existsSync(configPath)
     ? YAML.parseDocument(fs.readFileSync(configPath, 'utf8'))
     : YAML.parseDocument('# Blueprint quality-gate project configuration\n');
-  document.set('baseline', baseline);
+
+  // Read the existing baseline as a plain JS value so flat entries and the per-slice
+  // block can be recombined and written back as a single node — setting the node and
+  // then reaching back into it with setIn fights the YAML document model.
+  const existing = document.get('baseline');
+  const existingObject = existing && typeof existing.toJSON === 'function' ? existing.toJSON() : (existing ?? {});
+  const { slices: existingSlices, ...existingFlat } = existingObject;
+
+  let nextBaselineBlock;
+  if (slice) {
+    nextBaselineBlock = { ...existingFlat, slices: { ...(existingSlices ?? {}), [slice]: baseline } };
+  } else {
+    nextBaselineBlock = { ...baseline };
+    if (existingSlices !== undefined) nextBaselineBlock.slices = existingSlices;
+  }
+
+  document.set('baseline', nextBaselineBlock);
   fs.writeFileSync(configPath, String(document));
 }

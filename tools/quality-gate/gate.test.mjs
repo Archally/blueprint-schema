@@ -15,7 +15,8 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { collectObservations } from './collect.mjs';
 import { evaluate, nextBaseline } from './evaluate.mjs';
-import { loadSpec } from './config.mjs';
+import { loadSpec, loadProjectConfig, writeBaseline } from './config.mjs';
+import { sliceOf, normalizeSliceArg, ROOT_SLICE } from './slice.mjs';
 
 const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const CLI = path.join(TOOL_DIR, 'cli.mjs');
@@ -115,6 +116,24 @@ leverage_points:
   - id: shop.LP01
     title: Checkout latency
 `,
+  // A SECOND slice — needed to prove slice scoping isolates one folder from another.
+  // Its property descriptions are deliberately bare so the two slices score differently.
+  'warehouse/models.yaml': `
+schemaVersion: "2.7.0"
+components:
+  schemas:
+    RestockPayload:
+      description: "Wire payload accepted by the Restock command endpoint."
+      purpose: command-payload
+      type: object
+      properties:
+        sku:
+          type: string
+          description: "Stock-keeping unit identifying the product line to restock."
+        quantity:
+          type: integer
+          description: "Number of units to add to on-hand inventory for the SKU."
+`,
 };
 
 before(() => {
@@ -204,8 +223,8 @@ describe('evaluation — missing vs filler', () => {
     const result = evaluate({ observations, spec, schemaVersion });
     const metric = scoreOf(result, 'model.property.description');
 
-    assert.equal(metric.total, 4, 'orderId, criteria, note, currency');
-    assert.equal(metric.covered, 1, 'only orderId is substantive');
+    assert.equal(metric.total, 6, 'shop: orderId, criteria, note, currency; warehouse: sku, quantity');
+    assert.equal(metric.covered, 3, 'shop orderId + warehouse sku & quantity are substantive');
     assert.equal(metric.filler, 2, '"The criteria field." echoes the name; "TODO" is a placeholder');
     assert.equal(metric.missing, 1, 'note has no description at all');
   });
@@ -252,6 +271,163 @@ describe('patch mode — the brownfield mechanism', () => {
   });
 });
 
+describe('slice mode — the vertical mechanism', () => {
+  test('sliceOf derives the first path segment; root files get ROOT_SLICE', () => {
+    assert.equal(sliceOf(fixtureRoot, path.join(fixtureRoot, 'shop', 'models.yaml')), 'shop');
+    assert.equal(sliceOf(fixtureRoot, path.join(fixtureRoot, 'blueprint.yaml')), ROOT_SLICE);
+  });
+
+  test('normalizeSliceArg tolerates trailing slashes and path-like input', () => {
+    assert.equal(normalizeSliceArg('warehouse/'), 'warehouse');
+    assert.equal(normalizeSliceArg('warehouse/models.yaml'), 'warehouse');
+    assert.equal(normalizeSliceArg('.'), ROOT_SLICE);
+  });
+
+  test('observations are stamped with their slice', () => {
+    const { observations } = collectObservations(fixtureRoot);
+    const shopProp = observations.find((o) => o.subject === 'PlaceOrderPayload.orderId');
+    const warehouseProp = observations.find((o) => o.subject === 'RestockPayload.sku');
+    assert.equal(shopProp?.slice, 'shop');
+    assert.equal(warehouseProp?.slice, 'warehouse');
+  });
+
+  test('scores only the named slice, against the whole-model bar (not patch)', () => {
+    const { spec } = loadSpec();
+    const { observations, schemaVersion } = collectObservations(fixtureRoot);
+
+    const warehouse = evaluate({ observations, spec, slice: 'warehouse', schemaVersion });
+    const metric = scoreOf(warehouse, 'model.property.description');
+
+    assert.equal(metric.total, 2, 'only warehouse RestockPayload.sku & .quantity');
+    assert.equal(metric.covered, 2, 'both warehouse properties are described');
+    assert.equal(metric.threshold, spec.metrics['model.property.description'].threshold,
+      'slice mode uses the whole-model threshold, not patch_threshold');
+    assert.equal(warehouse.sliceMode, 'warehouse');
+  });
+
+  test('a slice run isolates one folder from another', () => {
+    const { spec } = loadSpec();
+    const { observations, schemaVersion } = collectObservations(fixtureRoot);
+    const shop = evaluate({ observations, spec, slice: 'shop', schemaVersion });
+    const shopProps = scoreOf(shop, 'model.property.description');
+    assert.equal(shopProps.total, 4, 'shop payload properties only, warehouse excluded');
+  });
+
+  test('the ratchet fires in slice mode against the per-slice baseline', () => {
+    const { spec } = loadSpec();
+    const { observations, schemaVersion } = collectObservations(fixtureRoot);
+    // shop scores 1/4 = 0.25 on property descriptions; a 0.5 slice floor is a regression.
+    const regressed = { baseline: { slices: { shop: { 'model.property.description': 0.5 } } } };
+    const held = { baseline: { slices: { shop: { 'model.property.description': 0.2 } } } };
+
+    const below = evaluate({ observations, spec, config: regressed, slice: 'shop', schemaVersion });
+    assert.equal(scoreOf(below, 'model.property.description').status, 'below-baseline',
+      'shop at 0.25 is below its 0.5 slice floor — the slice ratchet must fire');
+
+    const ok = evaluate({ observations, spec, config: held, slice: 'shop', schemaVersion });
+    assert.notEqual(scoreOf(ok, 'model.property.description').status, 'below-baseline',
+      'shop at 0.25 clears a 0.2 slice floor');
+  });
+
+  test('a per-slice baseline does not affect a whole-model run', () => {
+    const { spec } = loadSpec();
+    const { observations, schemaVersion } = collectObservations(fixtureRoot);
+    const config = { baseline: { slices: { shop: { 'model.property.description': 0.99 } } } };
+
+    const whole = evaluate({ observations, spec, config, schemaVersion });
+    // Whole-model shop-inclusive score is 3/6 = 0.5, with no flat baseline set → not
+    // ratcheted. The reserved `slices` key must not be read as a flat metric floor.
+    assert.notEqual(scoreOf(whole, 'model.property.description').status, 'below-baseline',
+      'the reserved `slices` key is not a flat metric baseline');
+  });
+
+  test('--update-baseline --slice writes only that slice, preserving flat + siblings', () => {
+    const configPath = path.join(fixtureRoot, 'roundtrip.blueprint-quality.yaml');
+    fs.writeFileSync(configPath, [
+      'baseline:',
+      '  model.property.description: 0.5',
+      '  slices:',
+      '    shop:',
+      '      model.property.description: 0.25',
+      '',
+    ].join('\n'));
+
+    writeBaseline(configPath, { 'model.property.description': 1 }, 'warehouse');
+
+    const { config } = loadProjectConfig(fixtureRoot, configPath);
+    assert.equal(config.baseline['model.property.description'], 0.5, 'flat entry preserved');
+    assert.equal(config.baseline.slices.shop['model.property.description'], 0.25, 'sibling slice preserved');
+    assert.equal(config.baseline.slices.warehouse['model.property.description'], 1, 'target slice written');
+    fs.rmSync(configPath);
+  });
+
+  test('a slice-scoped deferral suppresses that slice only', () => {
+    const { spec } = loadSpec();
+    const { observations, schemaVersion } = collectObservations(fixtureRoot);
+    // shop is below the property-description threshold (0.25). Defer it FOR SHOP ONLY.
+    const config = {
+      slice_deferrals: {
+        shop: [{ metric: 'model.property.description', reason: 'shop not yet enriched', expires: '2099-01-01' }],
+      },
+    };
+
+    const shop = evaluate({ observations, spec, config, slice: 'shop', schemaVersion });
+    assert.equal(scoreOf(shop, 'model.property.description').status, 'deferred',
+      'the shop-scoped deferral suppresses shop');
+    assert.ok(!shop.breaches.some((breach) => breach.id === 'model.property.description'));
+
+    // A DIFFERENT slice must not be suppressed by shop's deferral.
+    const warehouse = evaluate({ observations, spec, config, slice: 'warehouse', schemaVersion });
+    assert.notEqual(scoreOf(warehouse, 'model.property.description').status, 'deferred',
+      'warehouse must not inherit shop\'s slice-scoped deferral');
+
+    // Nor the whole-model run.
+    const whole = evaluate({ observations, spec, config, schemaVersion });
+    assert.notEqual(scoreOf(whole, 'model.property.description').status, 'deferred',
+      'a slice-scoped deferral must not apply whole-model');
+  });
+
+  test('a global deferral still applies inside a slice run', () => {
+    const { spec } = loadSpec();
+    const { observations, schemaVersion } = collectObservations(fixtureRoot);
+    const config = {
+      deferrals: [{ metric: 'model.property.description', reason: 'global backfill', expires: '2099-01-01' }],
+    };
+    const shop = evaluate({ observations, spec, config, slice: 'shop', schemaVersion });
+    assert.equal(scoreOf(shop, 'model.property.description').status, 'deferred',
+      'a global deferral covers every scope, including a slice run');
+  });
+
+  test('a slice-scoped deferral is validated like any other (reason + expiry)', () => {
+    const { spec } = loadSpec();
+    const { observations, schemaVersion } = collectObservations(fixtureRoot);
+    const config = {
+      slice_deferrals: { shop: [{ metric: 'model.property.description', expires: '2099-01-01' }] },
+    };
+    const shop = evaluate({ observations, spec, config, slice: 'shop', schemaVersion });
+    assert.match(shop.configErrors.join(' '), /has no reason/,
+      'a slice-scoped deferral without a reason is still a configuration error');
+  });
+
+  test('a whole-model --update-baseline preserves an existing slices block', () => {
+    const configPath = path.join(fixtureRoot, 'roundtrip2.blueprint-quality.yaml');
+    fs.writeFileSync(configPath, [
+      'baseline:',
+      '  slices:',
+      '    shop:',
+      '      model.property.description: 0.25',
+      '',
+    ].join('\n'));
+
+    writeBaseline(configPath, { 'model.property.description': 0.42 });
+
+    const { config } = loadProjectConfig(fixtureRoot, configPath);
+    assert.equal(config.baseline['model.property.description'], 0.42, 'flat entry written');
+    assert.equal(config.baseline.slices.shop['model.property.description'], 0.25, 'slices block preserved');
+    fs.rmSync(configPath);
+  });
+});
+
 describe('baseline ratchet', () => {
   test('records current scores and never lowers an existing floor', () => {
     const { spec } = loadSpec();
@@ -279,7 +455,7 @@ describe('deferrals', () => {
     const result = evaluate({ observations, spec, config, schemaVersion });
     const metric = scoreOf(result, 'model.property.description');
     assert.equal(metric.status, 'deferred');
-    assert.equal(metric.total, 4, 'still measured and reported');
+    assert.equal(metric.total, 6, 'still measured and reported');
     assert.ok(!result.breaches.some((breach) => breach.id === 'model.property.description'));
   });
 
@@ -347,5 +523,26 @@ describe('CLI contract', () => {
     const { code, stdout } = runCli([fixtureRoot, '--since', 'HEAD', '--update-baseline']);
     assert.equal(code, 2);
     assert.match(stdout, /cannot be combined/);
+  });
+
+  test('--since and --slice cannot be combined', () => {
+    const { code, stdout } = runCli([fixtureRoot, '--since', 'HEAD', '--slice', 'shop']);
+    assert.equal(code, 2);
+    assert.match(stdout, /both scoping modes/);
+  });
+
+  test('--slice scopes the report to one slice', () => {
+    const { code, stdout } = runCli([fixtureRoot, '--slice', 'warehouse']);
+    assert.equal(code, 0);
+    assert.match(stdout, /slice "warehouse"/);
+  });
+
+  test('--slice --json surfaces sliceMode', () => {
+    const { code, stdout } = runCli([fixtureRoot, '--slice', 'shop', '--json']);
+    assert.equal(code, 0);
+    const [run] = JSON.parse(stdout).runs;
+    assert.equal(run.sliceMode, 'shop');
+    assert.ok(run.findings.every((finding) => finding.file.startsWith('shop' + path.sep)),
+      'a slice run must only surface findings from that slice');
   });
 });
