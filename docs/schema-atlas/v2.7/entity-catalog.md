@@ -4,7 +4,7 @@
 
 Every schema file, its root object, and its definitions — with types, requiredness, enums, and deprecation read directly from JSON Schema. Overlay notes are labeled non-authoritative (DEC-ATL-17).
 
-**Cross-cutting:** [`blueprint.schema.yaml`](#blueprint) · [`metamodel.schema.yaml`](#metamodel) · [`migration.schema.yaml`](#migration) · [`profiles/infrastructure/profiles.schema.yaml`](#profiles-infrastructure-profiles)
+**Cross-cutting:** [`blueprint.schema.yaml`](#blueprint) · [`metamodel.schema.yaml`](#metamodel) · [`migration.schema.yaml`](#migration) · [`profiles/infrastructure/profiles.schema.yaml`](#profiles-infrastructure-profiles) · [`render.manifest.schema.yaml`](#render-manifest)
 
 **Design Plane:** [`design/arch.schema.yaml`](#design-arch) · [`design/concepts.schema.yaml`](#design-concepts) · [`design/domain.schema.yaml`](#design-domain) · [`design/dynamics.schema.yaml`](#design-dynamics) · [`design/infrastructure.schema.yaml`](#design-infrastructure) · [`design/interactions.schema.yaml`](#design-interactions) · [`design/models.schema.yaml`](#design-models) · [`design/quality.schema.yaml`](#design-quality) · [`design/rules.schema.yaml`](#design-rules) · [`design/story.schema.yaml`](#design-story)
 
@@ -502,6 +502,55 @@ A concrete platform module/recipe reference with an optional pinned version. Sub
 
 _Source: `schema/v2.7/profiles/infrastructure/profiles.schema.yaml#/$defs/module`_
 
+<a id="render-manifest"></a>
+
+### `render.manifest.schema.yaml`
+
+**Blueprint Render Manifest**
+
+Declares one project's full artifact set for the `bp render` command: which renderer targets to produce, where their output lands, and the single build stamp shared by the whole run. Lives in the project's `.artifacts/` folder, alongside the `renderers/` view-configs it points at and the `.generated/` output — beside the model directory, never inside it, since a manifest is configuration and not model data. A manifest at the project root is also read; `bp render` prefers `.artifacts/` and repor…
+
+_Source: `schema/v2.7/render.manifest.schema.yaml` · root type `object`_
+
+**Root required:** `model`, `stamp`, `targets`
+
+**Root properties:**
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `model` | `string` | ✓ |  | Path to the project's model directory, relative to this file. |
+| `out` | `string` | — |  | Artifact root directory, relative to this file and living beside the model directory, not inside it. `.generated` is the conventional value for a manifest in `… |
+| `stamp` | `string` | ✓ |  | The single build stamp ("as of" date or instant) shared by every target in the run, so a partial re-render overwrites the same files a full run would rather th… |
+| `build_id` | `string` | — |  | Provenance token folded into output filenames. The literal value `auto` resolves to the current git SHA at render time; any other string is used as-is. |
+| `link_template` | `string` | — |  | Optional source-link URL template with `{file}`/`{line}` placeholders, passed through to every target whose renderer supports one. |
+| `contact` | `object` | — |  | Contact details stamped into generated contract specs (`info.contact`). Set this so a deliverable carries the owning organisation's identity rather than the ge… |
+| `license` | `boolean` | — |  | Set to `false` to omit `info.license` from generated contract specs. Omit the key to keep the generator's configured license. |
+| `defaults` | `object` | — |  | Values applied to every target unless the target overrides them. |
+| `targets` | `array<ref → target>` | ✓ |  | The project's full artifact set, one entry per renderer invocation. |
+| `groups` | `object` | — |  | Optional named sets of target ids, selectable together — e.g. the subset of targets that make up a single deliverable pack. |
+
+#### Definitions
+
+#### `target`
+
+**Required:** `id`, `tool`, `kind`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `id` | `string` | ✓ |  | Unique target id, filename-safe. A `tool:instance` form (e.g. `gantt:equal-pay`) maps to a nested output subfolder (`gantt/equal-pay/`). |
+| `tool` | `string` | ✓ |  | Which renderer produces this target. |
+| `kind` | `string` | ✓ | `glob`, `selector`, `instance`, `contexts` | How this target may be narrowed to a slice — see the top-level description for what each of the four values means. |
+| `view` | `string` | — |  | Path to the tool's own view-config file, relative to this manifest, for tools that take one. |
+| `manifest` | `string` | — |  | Path to the tool's own batch/cluster manifest, relative to this manifest, for tools that own their own slice vocabulary. |
+| `slice` | `string` | — |  | The slice this target's artifacts belong to. Placement only — it files the output under that slice instead of the cross-cutting folder, and never narrows what… |
+| `kinds` | `array<string>` | — |  | Sub-kinds to generate, for a target whose tool emits more than one artifact kind per invocation (for example: openapi, asyncapi, pact). Distinct from this targ… |
+| `version` | `string` | — |  | A MIGRATION selector — which point in the model's history to generate from (`AS-IS`, `TO-BE`, or a migration id). It is NOT a slice selector and NOT a schema v… |
+| `stories` | `array<string>` | — |  | Story ids for a target whose tool renders one story per invocation. The target fans out to one run per id, each with its own output folder. Only meaningful on… |
+| `formats` | `array<string>` | — |  | Output formats for this target, overriding the manifest's `defaults.formats`. |
+| `slices` | `array<string>` | — |  | Narrow this target to the named slices. Only meaningful on `glob`, `selector`, and `contexts` targets — a schema error on an `instance` target. |
+
+_Source: `schema/v2.7/render.manifest.schema.yaml#/$defs/target`_
+
 ## Design Plane
 
 <a id="design-arch"></a>
@@ -567,6 +616,7 @@ A bounded context with its domain model, services, and dependencies.
 | `id` | `ref → bounded_context_ref` | — |  | Stable bounded-context id (BC###) — the target of inter-context `dependency.bounded_context_ref` edges, the DERIVED operation→context membership (`handled-by`,… |
 | `name` | `string` | ✓ |  | Context name (unique within this party). |
 | `kind` | `string` | ✓ | `core`, `generic-core`, `support`, `generic` | DDD context classification: core=competitive advantage, support=enables core, generic=commodity. Maps to BCC v5 Strategic Classification — Domain Importance. |
+| `domain_ref` | `string` | — |  | The domain this bounded context belongs to, naming a slice the model declares in `blueprint.yaml`'s `layout.slices`. Optional. Used to draw the domain map — an… |
 | `complexity` | `ref → complexity_pattern` | — |  | Dominant implementation-complexity / problem-type pattern. Distinct from `model_traits` (behavioural archetype) and `kind` (strategic value). |
 | `business_model_role` | `string` | — | `revenue-generator`, `engagement-creator`, `compliance-enforcer` | BCC v5 Strategic Classification — Business Model Role. Captures HOW the context contributes to the business. Distinct from `kind` (which captures WHETHER the c… |
 | `evolution` | `string` | — | `genesis`, `custom`, `product`, `commodity` | BCC v5 Strategic Classification — Wardley Evolution stage. Used in the dedicated Wardley map view (step-10a) and as a third badge in the BCC node's strategic h… |
@@ -700,7 +750,7 @@ OpenAPI endpoint contract: what the service exposes over HTTP.
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `file` | `string` | — |  | Path to the OpenAPI specification file. |
-| `output` | `string` | ✓ |  | Generated output path or artifact for this contract. |
+| `output` | `string` | ✓ |  | Identity of the generated contract artifact: `<name>`, `<slice>/<name>`, or `_global/<name>`. Two services declaring the same value contribute to ONE artifact… |
 | `expose` | `array<ref → operation_ref>` | — |  | Operations exposed by this HTTP contract. |
 | `input_structures` | `ref → contract_structures` | — |  | Named input data structures accepted by this contract. |
 | `output_structures` | `ref → contract_structures` | — |  | Named output data structures produced by this contract. |
@@ -716,7 +766,7 @@ Outbound HTTP client contract: what endpoints this service calls.
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `file` | `string` | — |  | Path to the OpenAPI or .http file describing outbound calls. |
-| `output` | `string` | ✓ |  | Generated client output path. |
+| `output` | `string` | ✓ |  | Identity of the generated client artifact, in the same form as a contract `output:`: `<name>`, `<slice>/<name>`, or `_global/<name>`. |
 | `call` | `array<ref → operation_ref>` | — |  | Operations this service calls via HTTP. |
 | `input_structures` | `ref → contract_structures` | — |  | Named input structures sent to the dependency. |
 | `output_structures` | `ref → contract_structures` | — |  | Named output structures received from the dependency. |
@@ -1705,7 +1755,7 @@ A typed inter-resource relation (TOSCA vocabulary). `hosted_on` is the canonical
 | --- | --- | --- | --- | --- |
 | `type` | `ref → infra_relation` | ✓ |  | TOSCA relation verb: hosted_on / connects_to / depends_on / attaches_to / routes_to. |
 | `target` | `ref → infra_resource_ref` | ✓ |  | The target resource (IR###). May be in another environment/substrate (hybrid interconnect). |
-| `outputs` | `array<string>` | — |  | Optional attribute-level outputs of the target this resource consumes — e.g. host, port, connection-string. Makes connects_to/depends_on wiring explicit for `b… |
+| `outputs` | `array<string>` | — |  | Optional attribute-level outputs of the target this resource consumes — e.g. host, port, connection-string. Makes connects_to/depends_on wiring explicit for im… |
 | `description` | `string` | — |  | Optional human note on this edge (e.g. 'reads via read-replica'). |
 
 _Source: `schema/v2.7/design/infrastructure.schema.yaml#/$defs/infra_relation_edge`_
@@ -2705,7 +2755,7 @@ An Architecture Decision Record (ADR). Minimum: id, title, summary, date, status
 | `date` | `string` | ✓ |  | Date proposed or accepted. Format: YYYY-MM or YYYY-MM-DD. |
 | `status` | `ref → decision_status` | ✓ |  | Lifecycle status: proposed→accepted→landed; rejected or deprecated at any stage. |
 | `rationale` | `ref → rationale` | ✓ |  | The reasoning behind this decision. Answers 'why' for future readers. |
-| `version` | `ref → entity_version` | — |  | Decision version for individual lifecycle tracking. |
+| `version` | `any` | — |  | Decision version for individual lifecycle tracking. |
 | `decision_scope` | `string` | — |  | Context, component, or SpecPath prefix this decision applies to (e.g. billing, billing.rules, order-api). |
 | `motivation_refs` | `ref → motivation_links` | — |  | Motivation entities driving this decision: goals served, risks mitigated, assumptions, trade-offs accepted. |
 | `capability_refs` | `array<ref → capability_ref>` | — |  | Business capabilities this decision supports or enables. |
@@ -2803,6 +2853,7 @@ External references and decision chain links.
 | `issues` | `array<string>` | — |  | Issue tracker references (URLs or IDs). |
 | `prs` | `array<string>` | — |  | Pull request references. |
 | `docs` | `array<string>` | — |  | Documentation references. |
+| `related` | `array<string>` | — |  | Related decisions or ADRs (URLs or IDs). |
 | `supersedes` | `array<ref → decision_ref>` | — |  | Decisions this one replaces. Array supports many-to-one merge (multiple old decisions consolidated). |
 | `superseded_by` | `array<ref → decision_ref>` | — |  | Decisions that replace this one. Array supports one-to-many split (one decision divided). |
 

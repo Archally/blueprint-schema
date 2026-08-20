@@ -6,9 +6,9 @@ A generated, human-readable projection of the JSON Schema. **JSON Schema remains
 
 | Metric | Count |
 | --- | --- |
-| Schema files | 22 |
+| Schema files | 23 |
 | Planes | 3 |
-| Object definitions | 147 |
+| Object definitions | 148 |
 | Typed-ID entity types | 60 |
 | Cross-file reference edges | 39 |
 
@@ -17,7 +17,7 @@ A generated, human-readable projection of the JSON Schema. **JSON Schema remains
 ```mermaid
 graph TD
     ROOT["Blueprint v2.7"]
-    cross_cutting["Cross-cutting<br/>4 schema files"]
+    cross_cutting["Cross-cutting<br/>5 schema files"]
     ROOT --> cross_cutting
     design["Design Plane<br/>10 schema files"]
     ROOT --> design
@@ -35,6 +35,7 @@ Version-root schemas that belong to neither plane and apply across every layer: 
 | [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | Blueprint Metamodel | Cross-cutting definitions for all blueprint layers. Provides typed ID refs, versioning, SpecPath, and shared vocabulary. Consumed by all de… |
 | [`migration.schema.yaml`](./entity-catalog.md#migration) | Blueprint Migration Schema | Versioned, ordered changes to a blueprint model instance. Enables AS-IS to TO-BE model transformation with traceability and rollback. |
 | [`profiles/infrastructure/profiles.schema.yaml`](./entity-catalog.md#profiles-infrastructure-profiles) | Blueprint Infrastructure Resource-Type Profile | Validates a resource-type catalog profile file (v2.7.7). A profile is DATA, not schema: the resource-type catalog is shipped as versioned p… |
+| [`render.manifest.schema.yaml`](./entity-catalog.md#render-manifest) | Blueprint Render Manifest | Declares one project's full artifact set for the `bp render` command: which renderer targets to produce, where their output lands, and the… |
 
 ## Design Plane
 

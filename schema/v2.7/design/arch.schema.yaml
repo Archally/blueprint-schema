@@ -136,6 +136,21 @@ $defs:
         type: string
         enum: [core, generic-core, support, generic]
         description: "DDD context classification: core=competitive advantage, support=enables core, generic=commodity. Maps to BCC v5 Strategic Classification — Domain Importance."
+      domain_ref:
+        type: string
+        description: >
+          The domain this bounded context belongs to, naming a slice the model
+          declares in `blueprint.yaml`'s `layout.slices`. Optional. Used to draw
+          the domain map — an overview that groups contexts into domains and
+          aggregates the dependencies between them, which is the readable view
+          of a model with more contexts than one diagram can show.
+
+          Declaring it OVERRIDES the fallback, which is the folder the context's
+          file sits in. State it when a context belongs to a domain other than the
+          one its location implies, or when the file sits at the model root and so
+          implies none — a context that resolves to no domain is left out of the
+          domain map and counted in its caption. A value naming a slice the model
+          does not declare is an error, not a new domain.
       complexity:
         $ref: "../metamodel.schema.yaml#/$defs/complexity_pattern"
         description: "Dominant implementation-complexity / problem-type pattern. Distinct from `model_traits` (behavioural archetype) and `kind` (strategic value)."
@@ -466,7 +481,13 @@ $defs:
             description: "Path to the GraphQL schema definition file (.graphql)."
           output:
             type: string
-            description: "Generated output path or artifact."
+            description: >-
+              Identity of the generated contract artifact: `<name>`, `<slice>/<name>`, or
+              `_global/<name>`. Two services declaring the same value contribute to ONE artifact —
+              their specs are merged additively — so this names the physical contract, not one
+              service's copy of it. A leading slice name places the artifact in that slice;
+              `_global/` marks it cross-cutting; a bare name is placed by the declaring file. A
+              first segment that names no declared slice is kept as a subdirectory and reported.
           queries:
             type: array
             items:
@@ -522,7 +543,13 @@ $defs:
         description: "Path to the OpenAPI specification file."
       output:
         type: string
-        description: "Generated output path or artifact for this contract."
+        description: >-
+          Identity of the generated contract artifact: `<name>`, `<slice>/<name>`, or
+          `_global/<name>`. Two services declaring the same value contribute to ONE artifact —
+          their specs are merged additively — so this names the physical contract, not one
+          service's copy of it. A leading slice name places the artifact in that slice;
+          `_global/` marks it cross-cutting; a bare name is placed by the declaring file. A
+          first segment that names no declared slice is kept as a subdirectory and reported.
       expose:
         type: array
         items:
@@ -547,7 +574,9 @@ $defs:
         description: "Path to the OpenAPI or .http file describing outbound calls."
       output:
         type: string
-        description: "Generated client output path."
+        description: >-
+          Identity of the generated client artifact, in the same form as a contract `output:`:
+          `<name>`, `<slice>/<name>`, or `_global/<name>`.
       call:
         type: array
         items:

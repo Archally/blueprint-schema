@@ -100,6 +100,11 @@ When `layout.mode: slices` is set in `blueprint.yaml`, domain slices are **busin
     ...
 ```
 
+A context declares which slice owns it with `domain_ref` on the context, naming a slice from
+`layout.slices`. It is optional: a context whose `arch.yaml` sits in a slice directory belongs to
+that slice already. Declare it when a context belongs to a slice other than the one its location
+implies, or when the file sits at the model root and so implies none.
+
 - **Slices:** Each subfolder is a full artifact set. Use `{slice}.{PREFIX}{NNN}` IDs (e.g. `adventure.CN001`, `identity.CMD001`).
 - **Root files:** Only add root-level design/governance files for **shared entities** (used by multiple slices) or **system-level content** (arch, goals, quality). Do not create root `concepts.yaml`, `rules.yaml`, etc. if they would only duplicate slice content.
 - **Note:** A "domain slice" is a business domain directory (subfolder); the file `domain.yaml` is a blueprint artifact — the two are unrelated. Bounded contexts are defined in `arch.yaml`.

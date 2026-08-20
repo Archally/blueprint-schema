@@ -2,6 +2,26 @@
 # All schema version releases in reverse chronological order.
 ---
 entries:
+  - version: "2.7.9"
+    date: "2026-08-20"
+    summary: >
+      A bounded context can name the domain it belongs to. `design/arch.schema.yaml` gains an
+      optional `domain_ref` on the context: a name from `layout.slices` in `blueprint.yaml`.
+      Without it, a context belongs to the slice directory its `arch.yaml` sits in — which is
+      positional, so moving a file moves the context, and a file at the model root belongs to no
+      slice at all. Declaring `domain_ref` makes the assignment explicit and independent of
+      location. A value naming a slice the model does not declare is an error rather than a new
+      domain, so a typo cannot invent one. Strictly additive: a model that omits it is unaffected.
+
+      Also published for the first time: `render.manifest.schema.yaml`, which describes a project's
+      render manifest — the file declaring which artifacts to produce, where their output lands, and
+      the single build stamp the whole run shares. Editor validation is wired the same way as any
+      other schema here, with a `# yaml-language-server: $schema=` line at the top of the manifest.
+
+      Three `output:` descriptions in `design/arch.schema.yaml` now state what the field actually
+      identifies: a contract artifact's identity (`<name>`, `<slice>/<name>` or `_global/<name>`),
+      not one service's copy of it. Two services declaring the same value contribute to one merged
+      artifact, which the previous one-line description did not say.
   - version: "2.7.8"
     date: "2026-07-26"
     summary: >

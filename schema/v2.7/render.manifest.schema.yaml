@@ -1,0 +1,177 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://archally.dev/schemas/blueprint/render.manifest.schema.yaml"
+title: Blueprint Render Manifest
+description: >
+  Declares one project's full artifact set for the `bp render` command: which renderer targets to
+  produce, where their output lands, and the single build stamp shared by the whole run.
+
+  Lives in the project's `.artifacts/` folder, alongside the `renderers/` view-configs it points at
+  and the `.generated/` output — beside the model directory, never inside it, since a manifest is
+  configuration and not model data. A manifest at the project root is also read; `bp render` prefers
+  `.artifacts/` and reports which file it used.
+
+  Every relative path here — `model`, `out`, and each target's `view` and `manifest` — resolves
+  against THIS file's own location, so a manifest can be moved without its contents changing
+  meaning.
+
+  Wire editor validation by putting this line at the TOP of a render.manifest.yaml:
+    # yaml-language-server: $schema=<path-to>/render.manifest.schema.yaml
+
+  A target's `kind` says how it may be narrowed to a slice:
+    - glob      — the target's own file selection may be narrowed to one slice's files.
+    - selector  — the target tool owns its own slice vocabulary; this manifest only names its
+                  own config file for the tool to read.
+    - instance  — a human-authored unit (one roadmap, one story, ...); narrowing by slice does
+                  not apply, since there is no larger set to narrow.
+    - contexts  — the target may be narrowed to a list of bounded contexts.
+  Only glob, selector and contexts targets accept `slices`; an instance target does not.
+type: object
+additionalProperties: false
+required: [model, stamp, targets]
+properties:
+  model:
+    type: string
+    description: "Path to the project's model directory, relative to this file."
+  out:
+    type: string
+    default: _artifacts
+    description: >
+      Artifact root directory, relative to this file and living beside the model directory, not
+      inside it. `.generated` is the conventional value for a manifest in `.artifacts/`, whose name
+      states that nothing inside was written by hand. Defaults to `_artifacts` when omitted, which
+      suits a manifest at the project root; declare it explicitly anywhere else.
+  stamp:
+    type: string
+    description: >
+      The single build stamp ("as of" date or instant) shared by every target in the run, so a
+      partial re-render overwrites the same files a full run would rather than adding new
+      timestamped copies beside them. Required — there is no clock fallback.
+  build_id:
+    type: string
+    description: >
+      Provenance token folded into output filenames. The literal value `auto` resolves to the
+      current git SHA at render time; any other string is used as-is.
+  link_template:
+    type: string
+    description: >
+      Optional source-link URL template with `{file}`/`{line}` placeholders, passed through to
+      every target whose renderer supports one.
+  contact:
+    type: object
+    additionalProperties: false
+    properties:
+      name: { type: string }
+      url: { type: string }
+      email: { type: string }
+    description: >
+      Contact details stamped into generated contract specs (`info.contact`). Set this so a
+      deliverable carries the owning organisation's identity rather than the generator's default.
+  license:
+    type: boolean
+    description: >
+      Set to `false` to omit `info.license` from generated contract specs. Omit the key to keep the
+      generator's configured license.
+  defaults:
+    type: object
+    additionalProperties: false
+    properties:
+      formats:
+        type: array
+        items: { type: string }
+        description: "Output formats applied to every target unless a target overrides them."
+    description: "Values applied to every target unless the target overrides them."
+  targets:
+    type: array
+    minItems: 1
+    items: { $ref: "#/$defs/target" }
+    description: "The project's full artifact set, one entry per renderer invocation."
+  groups:
+    type: object
+    additionalProperties:
+      type: array
+      items: { type: string }
+    description: >
+      Optional named sets of target ids, selectable together — e.g. the subset of targets that
+      make up a single deliverable pack.
+$defs:
+  target:
+    type: object
+    additionalProperties: false
+    required: [id, tool, kind]
+    properties:
+      id:
+        type: string
+        pattern: "^[A-Za-z0-9._-]+(:[A-Za-z0-9._-]+)?$"
+        description: >
+          Unique target id, filename-safe. A `tool:instance` form (e.g. `gantt:equal-pay`) maps
+          to a nested output subfolder (`gantt/equal-pay/`).
+      tool:
+        type: string
+        description: "Which renderer produces this target."
+      kind:
+        type: string
+        enum: [glob, selector, instance, contexts]
+        description: >
+          How this target may be narrowed to a slice — see the top-level description for what
+          each of the four values means.
+      view:
+        type: string
+        description: >
+          Path to the tool's own view-config file, relative to this manifest, for tools that take
+          one.
+      manifest:
+        type: string
+        description: >
+          Path to the tool's own batch/cluster manifest, relative to this manifest, for tools
+          that own their own slice vocabulary.
+      slice:
+        type: string
+        description: >
+          The slice this target's artifacts belong to. Placement only — it files the output under
+          that slice instead of the cross-cutting folder, and never narrows what is rendered. Use it
+          for a human-authored unit whose subject is one slice, such as a roadmap authored inside
+          that slice's folder. Distinct from `slices`, which lists the slices a narrowable target may
+          be asked to render.
+      kinds:
+        type: array
+        items: { type: string }
+        description: >
+          Sub-kinds to generate, for a target whose tool emits more than one artifact kind per
+          invocation (for example: openapi, asyncapi, pact). Distinct from this target's own
+          `kind` field above, which selects slicing behaviour, not output kind.
+
+          Not every sub-kind narrows the same way. `c4` and `mermaid` are views over the whole
+          model, so a narrowed run excludes them and reports it; keep them in their own target so
+          that exclusion is clean rather than partial.
+      version:
+        type: string
+        description: >
+          A MIGRATION selector — which point in the model's history to generate from
+          (`AS-IS`, `TO-BE`, or a migration id). It is NOT a slice selector and NOT a schema
+          version, despite the name. To narrow a run to part of the model, use the slice axis:
+          that is what a `contexts` target's bounded contexts do. The two are orthogonal and
+          compose — "the Orders area, as of MIG003" sets both.
+      stories:
+        type: array
+        items: { type: string }
+        description: >
+          Story ids for a target whose tool renders one story per invocation. The target fans out
+          to one run per id, each with its own output folder. Only meaningful on an `instance`
+          target — each story is a human-authored unit, not a slice.
+      formats:
+        type: array
+        items: { type: string }
+        description: "Output formats for this target, overriding the manifest's `defaults.formats`."
+      slices:
+        type: array
+        items: { type: string }
+        description: >
+          Narrow this target to the named slices. Only meaningful on `glob`, `selector`, and
+          `contexts` targets — a schema error on an `instance` target.
+    if:
+      required: [kind]
+      properties:
+        kind: { const: instance }
+    then:
+      not:
+        required: [slices]
