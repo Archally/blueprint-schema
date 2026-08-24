@@ -4,7 +4,7 @@ scope: checkout
 
 happy_path:
   - id: checkout.TC001
-    name: "Add product to cart — happy path"
+    name: "Add product to cart - happy path"
     summary: "Add an in-stock product to an empty cart."
     validates:
       operations: [checkout.CMD009, checkout.EVT004]
@@ -23,7 +23,7 @@ happy_path:
       code: 200
 
   - id: checkout.TC002
-    name: "Apply valid voucher code — happy path"
+    name: "Apply valid voucher code - happy path"
     summary: "Apply a valid voucher code to a cart meeting all conditions."
     validates:
       operations: [checkout.CMD014, checkout.EVT005]
@@ -41,7 +41,7 @@ happy_path:
       code: 200
 
   - id: checkout.TC003
-    name: "Create discount campaign — happy path"
+    name: "Create discount campaign - happy path"
     summary: "Create a percentage discount with date range and usage limits."
     validates:
       operations: [checkout.CMD016, checkout.EVT007]
@@ -58,7 +58,7 @@ happy_path:
       status: success
 
   - id: checkout.TC004
-    name: "Create catalog price rule — happy path"
+    name: "Create catalog price rule - happy path"
     summary: "Create a B2B quantity discount for bulk purchases."
     validates:
       operations: [checkout.CMD021, checkout.EVT010]
@@ -111,7 +111,7 @@ error_cases:
       operations: [checkout.CMD007]
       rules: [checkout.VR005]
     given:
-      description: "Cart ID 42 has status 'completed' — order was placed."
+      description: "Cart ID 42 has status 'completed' - order was placed."
       state:
         cartStatus: "completed"
     expected_result:

@@ -4,7 +4,7 @@ scope: international
 
 happy_path:
   - id: international.TC001
-    name: "Add official currency — happy path"
+    name: "Add official currency - happy path"
     summary: "Create a new official currency with valid ISO code and exchange rate."
     validates:
       operations: [international.CMD001, international.EVT001]
@@ -23,7 +23,7 @@ happy_path:
       code: 200
 
   - id: international.TC002
-    name: "Refresh exchange rates — happy path"
+    name: "Refresh exchange rates - happy path"
     summary: "Refresh all exchange rates from external provider."
     validates:
       operations: [international.CMD005, international.EVT005]
@@ -35,7 +35,7 @@ happy_path:
       status: success
 
   - id: international.TC003
-    name: "Create tax rules group with rules — happy path"
+    name: "Create tax rules group with rules - happy path"
     summary: "Create a tax rules group and assign a tax rate to a zone."
     validates:
       operations: [international.CMD027, international.EVT027]
@@ -51,7 +51,7 @@ happy_path:
       code: 200
 
   - id: international.TC004
-    name: "Configure EU VAT across countries — happy path"
+    name: "Configure EU VAT across countries - happy path"
     summary: "Set up different VAT rates per EU country within a tax rules group."
     validates:
       operations: [international.CMD023, international.CMD027, international.CMD028]

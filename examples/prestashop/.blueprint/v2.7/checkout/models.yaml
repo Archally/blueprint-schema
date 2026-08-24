@@ -229,7 +229,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Cart/QueryResult/CartForViewing.php"
           role: schema
-          description: "CartForViewing QueryResult — the master cart read model"
+          description: "CartForViewing QueryResult - the master cart read model"
 
     CartItem:
       x-model-id: MDL203
@@ -346,7 +346,7 @@ components:
         description:
           type: string
           description: "Internal description visible only in back-office."
-          example: "Spring campaign 2026 — 10% off orders over 50 EUR"
+          example: "Spring campaign 2026 - 10% off orders over 50 EUR"
         reductionType:
           type: string
           enum: [percentage, amount]
@@ -483,7 +483,7 @@ components:
         description:
           type: string
           description: "Internal description."
-          example: "Spring campaign 2026 — 10% off orders over 50 EUR"
+          example: "Spring campaign 2026 - 10% off orders over 50 EUR"
         code:
           type: string
           description: "Voucher code. Empty for automatic discounts."
@@ -581,7 +581,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Discount/Query/GetDiscountForEditing.php"
           role: schema
-          description: "GetDiscountForEditing QueryResult — master discount read model"
+          description: "GetDiscountForEditing QueryResult - master discount read model"
 
     CreateCatalogPriceRulePayload:
       x-model-id: MDL206
@@ -759,4 +759,4 @@ components:
       code_refs:
         - path: "src/Core/Domain/CatalogPriceRule/Query/GetCatalogPriceRuleForEditing.php"
           role: schema
-          description: "GetCatalogPriceRuleForEditing QueryResult — master catalog price rule read model"
+          description: "GetCatalogPriceRuleForEditing QueryResult - master catalog price rule read model"

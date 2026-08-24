@@ -35,16 +35,23 @@ function makeFixture(files, manifestOverride) {
   mkdirSync(join(toolsDir, "semantic-checker", "rules"), { recursive: true });
   mkdirSync(portDir, { recursive: true });
 
+  const exampleDir = join(root, "examples", "prestashop", ".blueprint", "v2.7");
+  mkdirSync(exampleDir, { recursive: true });
+
   const dirFor = {
     "quality-gate": join(toolsDir, "quality-gate"),
     "semantic-rules": join(toolsDir, "semantic-checker", "rules"),
     port: portDir,
+    "example-model": exampleDir,
   };
 
   const lines = [];
   for (const [key, content] of Object.entries(files)) {
-    const [job, name] = key.split("/");
-    writeFileSync(join(dirFor[job], name), content, "utf8");
+    const slash = key.indexOf("/");
+    const [job, name] = [key.slice(0, slash), key.slice(slash + 1)];
+    const target = join(dirFor[job], name);
+    mkdirSync(join(target, ".."), { recursive: true });
+    writeFileSync(target, content, "utf8");
     lines.push(`${hash(content)}  ${key}`);
   }
 
@@ -55,11 +62,16 @@ function makeFixture(files, manifestOverride) {
 
   // The verifier reads its job→directory map from these header lines, exactly as the real
   // manifest carries them — so a fixture without them is testing a manifest that cannot be read.
+  // Job directories are relative to the REPO ROOT, so a unit outside `tools/` is expressible.
+  // `example-model` is that case, and it is the one the old fixture could not write down: every
+  // job it declared lived under `tools/`, so a verifier that resolved everything under `tools/`
+  // passed every test while reporting a real unit's entire contents as missing from disk.
   const header = [
     "# PORTED.sha256 — test fixture",
-    "# job quality-gate quality-gate",
-    "# job semantic-rules semantic-checker/rules",
-    "# job port port",
+    "# job quality-gate tools/quality-gate",
+    "# job semantic-rules tools/semantic-checker/rules",
+    "# job port tools/port",
+    "# job example-model examples/prestashop/.blueprint/v2.7",
   ];
   writeFileSync(
     join(portDir, "PORTED.sha256"),
@@ -77,6 +89,14 @@ function run(verifier) {
 const BASE = {
   "quality-gate/collect.mjs": "export const collect = () => [];\n",
   "semantic-rules/orphan-entities.yaml": "rules:\n  - id: orphan-entities\n    severity: warn\n",
+  // A unit deployed OUTSIDE `tools/`. Present in BASE rather than in one dedicated test, so every
+  // assertion below covers it: the failure it guards against was not that the outside-tools case
+  // behaved wrongly, but that no case exercised it at all.
+  "example-model/blueprint.yaml": "schemaVersion: '2.7.0'\n",
+  // NESTED, because the manifest keys nested paths and a flat walk sees none of them - it reports
+  // every nested file as missing from disk and every top-level one as added locally, which is a
+  // report about the walk rather than about the repo.
+  "example-model/orders/story.yaml": "stories: []\n",
 };
 
 test("clean fixture verifies", () => {
@@ -84,7 +104,66 @@ test("clean fixture verifies", () => {
   try {
     const { code, out } = run(verifier);
     assert.equal(code, 0, out);
-    assert.match(out, /3 ported file\(s\) match/);
+    assert.match(out, /5 ported file\(s\) match/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test("a nested file is checked, not reported as missing", () => {
+  const { root, verifier, dirFor } = makeFixture(BASE);
+  try {
+    writeFileSync(join(dirFor["example-model"], "orders", "story.yaml"), "stories: [tampered]\n", "utf8");
+    const { code, out } = run(verifier);
+    assert.equal(code, 1);
+    assert.match(out, /example-model\/orders\/story\.yaml has been modified/);
+    assert.doesNotMatch(out, /missing from disk/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+// A unit WITHOUT `extras-ok` must still report a stray file - otherwise the flag would be doing
+// nothing and the test above would pass with the check removed entirely.
+test("a file with no manifest entry is reported when the unit is not extras-ok", () => {
+  const { root, verifier, dirFor } = makeFixture(BASE);
+  try {
+    writeFileSync(join(dirFor["quality-gate"], "local-only.mjs"), "export const x = 1;\n", "utf8");
+    const { code, out } = run(verifier);
+    assert.equal(code, 1);
+    assert.match(out, /quality-gate\/local-only\.mjs is present but not in the manifest/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test("a unit marked extras-ok may ship files the manifest does not name", () => {
+  const { root, verifier, dirFor, portDir } = makeFixture(BASE);
+  try {
+    const manifest = join(portDir, "PORTED.sha256");
+    writeFileSync(manifest,
+      readFileSync(manifest, "utf8").replace("# job example-model examples/prestashop/.blueprint/v2.7",
+        "# job example-model examples/prestashop/.blueprint/v2.7 extras-ok"), "utf8");
+    writeFileSync(join(dirFor["example-model"], "cli.ts"), "export {};\n", "utf8");
+    const { code, out } = run(verifier);
+    assert.equal(code, 0, out);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test("a content edit is caught in a unit deployed OUTSIDE tools/", () => {
+  const { root, verifier, dirFor } = makeFixture(BASE);
+  try {
+    writeFileSync(join(dirFor["example-model"], "blueprint.yaml"), "schemaVersion: '9.9.9'\n", "utf8");
+    const { code, out } = run(verifier);
+    assert.equal(code, 1);
+    assert.match(out, /example-model\/blueprint\.yaml has been modified/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+// A job directory that is not there is a broken manifest, and used to be skipped in silence - which
+// is how a path-resolution bug presented as every file of the unit "missing from disk", with nothing
+// naming the directory that was never looked in.
+test("a job directory that does not exist is named, not skipped", () => {
+  const { root, verifier } = makeFixture(BASE);
+  try {
+    rmSync(join(root, "examples"), { recursive: true, force: true });
+    const { code, out } = run(verifier);
+    assert.equal(code, 1);
+    assert.match(out, /job directory does not exist: example-model/);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 

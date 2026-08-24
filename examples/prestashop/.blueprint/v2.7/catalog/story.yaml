@@ -20,7 +20,7 @@ stories:
           description: "Product created in draft status, search index updated."
         - name: "Creation failed"
           type: error
-          description: "Validation failure — missing required fields or duplicate reference."
+          description: "Validation failure - missing required fields or duplicate reference."
       lanes:
         - actor: catalog.ACT001
           operations: [catalog.CMD001]

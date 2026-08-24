@@ -75,12 +75,12 @@ concepts:
     code_refs:
       - path: "src/Core/Domain/Combination/"
         role: model
-        description: "Combination domain — child aggregate with own identity"
+        description: "Combination domain - child aggregate with own identity"
     tags: [aggregate-root]
 
   - id: catalog.CN004
     name: "ProductImage"
-    description: "Media asset associated with a product — main image, gallery images, or combination-specific images."
+    description: "Media asset associated with a product - main image, gallery images, or combination-specific images."
     stereotype: value-object
     attributes:
       imageId:
@@ -160,17 +160,17 @@ actors:
       - "Manage seasonal product visibility"
     personas:
       - name: "Typical CategoryManager"
-        quote: "I spend hours fixing CSV import errors — give me a tool that validates before importing."
+        quote: "I spend hours fixing CSV import errors - give me a tool that validates before importing."
         goals:
           - "Import 1000 products in under 5 minutes"
           - "Maintain consistent category hierarchy across 10+ languages"
           - "Ensure every product has at least one image"
         pain_points:
-          - "CSV import fails silently — missing SKUs not reported until customers complain"
+          - "CSV import fails silently - missing SKUs not reported until customers complain"
           - "Category hierarchy sync between back-office and Elasticsearch is unreliable"
-          - "No bulk image upload — one product at a time"
+          - "No bulk image upload - one product at a time"
         behaviors:
-          - "Works in bulk — processes 100+ products per session"
+          - "Works in bulk - processes 100+ products per session"
           - "Uses CSV templates for product data"
           - "Reviews catalog completeness weekly"
         tech_savviness: medium

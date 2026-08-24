@@ -7,7 +7,7 @@ concepts:
   - id: content.CN003
     name: "Theme"
     stereotype: aggregate-root
-    description: "A front-office visual theme defining the storefront's appearance. Themes are imported from archives/URLs/FTP, enabled per shop (only one active at a time), and can be adapted for RTL languages. Theme has no CQRS queries — all operations are write-side (import, enable, delete, reset, adapt)."
+    description: "A front-office visual theme defining the storefront's appearance. Themes are imported from archives/URLs/FTP, enabled per shop (only one active at a time), and can be adapted for RTL languages. Theme has no CQRS queries - all operations are write-side (import, enable, delete, reset, adapt)."
     tags: [aggregate-root, presentation]
     attributes:
       name:
@@ -37,12 +37,12 @@ concepts:
   - id: content.CN004
     name: "ThemeImportSource"
     stereotype: value-object
-    description: "Polymorphic value object defining where to import a theme from — file archive upload, web URL download, or FTP path. Has three factory methods (fromArchive, fromWeb, fromFtp)."
+    description: "Polymorphic value object defining where to import a theme from - file archive upload, web URL download, or FTP path. Has three factory methods (fromArchive, fromWeb, fromFtp)."
     tags: [value-object, within:content.CN003]
     attributes:
       sourceType:
         id: CAT621
-        description: "Import source type — archive (file upload), web (URL), or ftp (path)"
+        description: "Import source type - archive (file upload), web (URL), or ftp (path)"
         example: "archive"
       sourcePath:
         id: CAT622
@@ -57,10 +57,10 @@ actors:
   - id: content.ACT002
     name: "StoreDesigner"
     type: human
-    description: "Back-office operator responsible for managing the storefront's visual appearance — importing themes, enabling them per shop, resetting layouts, and adapting themes for RTL languages."
+    description: "Back-office operator responsible for managing the storefront's visual appearance - importing themes, enabling them per shop, resetting layouts, and adapting themes for RTL languages."
     personas:
       - name: "Typical StoreDesigner"
-        quote: "The storefront must look professional and consistent. Theme changes are high-risk — I need to preview and test before going live."
+        quote: "The storefront must look professional and consistent. Theme changes are high-risk - I need to preview and test before going live."
         goals: ["Maintain consistent brand appearance", "Switch themes safely without downtime", "Support RTL languages when needed"]
         pain_points: ["Theme import failures from incompatible archives", "No preview before enabling a theme", "RTL adaptation quality varies"]
         behaviors: ["Tests themes in staging before production", "Resets layouts after major theme updates"]

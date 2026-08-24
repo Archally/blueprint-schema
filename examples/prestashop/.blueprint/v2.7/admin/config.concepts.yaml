@@ -30,7 +30,7 @@ concepts:
   - id: admin.CN008
     name: "Configuration"
     stereotype: entity
-    description: "System-level configuration with minimal CQRS coverage. Only SwitchDebugMode is modeled in the domain layer — most configuration is handled by the legacy Configuration class outside the CQRS architecture."
+    description: "System-level configuration with minimal CQRS coverage. Only SwitchDebugMode is modeled in the domain layer - most configuration is handled by the legacy Configuration class outside the CQRS architecture."
     tags: [entity, system-config]
     attributes:
       debugMode:
@@ -45,7 +45,7 @@ concepts:
   - id: admin.CN009
     name: "Tab"
     stereotype: entity
-    description: "A back-office admin menu tab whose visibility can be toggled by class name. Only 1 CQRS command exists (UpdateTabStatusByClassName) — full tab management is handled outside the domain layer."
+    description: "A back-office admin menu tab whose visibility can be toggled by class name. Only 1 CQRS command exists (UpdateTabStatusByClassName) - full tab management is handled outside the domain layer."
     tags: [entity, system-config]
     attributes:
       className:

@@ -28,7 +28,7 @@ operations:
     id: content.CMD014
     kind: command
     name: "EnableTheme"
-    description: "Activate a front-office theme for the current shop context. Only one theme can be active per shop — enabling a theme implicitly deactivates the current one."
+    description: "Activate a front-office theme for the current shop context. Only one theme can be active per shop - enabling a theme implicitly deactivates the current one."
     delivery_priority: must-have
     initiated_by: [content.ACT002]
     produces:
@@ -97,7 +97,7 @@ operations:
     id: content.CMD018
     kind: command
     name: "GenerateThemeMailTemplates"
-    description: "Generate email templates for a given theme and language. Service operation — not a CRUD lifecycle command. Can optionally overwrite existing templates and specify custom output folders for core and module emails."
+    description: "Generate email templates for a given theme and language. Service operation - not a CRUD lifecycle command. Can optionally overwrite existing templates and specify custom output folders for core and module emails."
     delivery_priority: should-have
     initiated_by: [content.ACT002]
     produces:
@@ -159,7 +159,7 @@ errors:
   themeImportFailed:
     id: content.ERR005
     name: "ThemeImportFailed"
-    description: "Theme import failed — invalid archive, unreachable URL, or incompatible theme package."
+    description: "Theme import failed - invalid archive, unreachable URL, or incompatible theme package."
     category: external
     severity: error
     http_status: 422

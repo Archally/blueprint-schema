@@ -114,7 +114,7 @@ leverage_points:
 watchlist:
   - id: W001
     title: "Retire compatibility-only legacy admin controllers"
-    note: "Monitored, not yet acted on — promote to a leverage point once a slice depends on removing them."
+    note: "Monitored, not yet acted on - promote to a leverage point once a slice depends on removing them."
     decision_refs: [D007]
   - id: W002
     title: "Third-party module coupling growth"

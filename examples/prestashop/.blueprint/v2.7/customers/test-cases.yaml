@@ -4,7 +4,7 @@ scope: customers
 
 happy_path:
   - id: customers.TC001
-    name: "Register customer — happy path"
+    name: "Register customer - happy path"
     summary: "Register a new customer with valid email and password."
     validates:
       operations: [customers.CMD001, customers.EVT001]
@@ -24,7 +24,7 @@ happy_path:
       code: 200
 
   - id: customers.TC002
-    name: "Add customer address — happy path"
+    name: "Add customer address - happy path"
     summary: "Add a delivery address with all required fields for France."
     validates:
       operations: [customers.CMD012, customers.EVT007]
@@ -42,7 +42,7 @@ happy_path:
       code: 200
 
   - id: customers.TC003
-    name: "Transform guest to customer — happy path"
+    name: "Transform guest to customer - happy path"
     summary: "Convert a guest account to registered customer."
     validates:
       operations: [customers.CMD008, customers.EVT004]
@@ -56,7 +56,7 @@ happy_path:
       status: success
 
   - id: customers.TC004
-    name: "Reply to customer service thread — happy path"
+    name: "Reply to customer service thread - happy path"
     summary: "Agent replies to an open service thread."
     validates:
       operations: [customers.CMD016, customers.EVT010]

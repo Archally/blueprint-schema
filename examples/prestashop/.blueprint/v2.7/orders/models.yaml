@@ -262,7 +262,7 @@ components:
         note:
           type: string
           description: "Internal order note."
-          example: "VIP customer — expedite shipping."
+          example: "VIP customer - expedite shipping."
         paymentMethod:
           type: string
           description: "Payment method display name."
@@ -359,7 +359,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Order/QueryResult/OrderForViewing.php"
           role: schema
-          description: "OrderForViewing — 36 constructor params, 14 sub-objects"
+          description: "OrderForViewing - 36 constructor params, 14 sub-objects"
 
     OrderListItem:
       x-model-id: MDL104
@@ -424,7 +424,7 @@ components:
     OrderProductItem:
       x-model-id: MDL105
       purpose: dto
-      description: "Single order line item — product, quantity, unit price, and line total."
+      description: "Single order line item - product, quantity, unit price, and line total."
       represents:
         - concept: orders.CN003
           kind: api
@@ -494,7 +494,7 @@ components:
     OrderPricesInfo:
       x-model-id: MDL106
       purpose: dto
-      description: "Order pricing summary — products total, shipping, discounts, tax, and grand total."
+      description: "Order pricing summary - products total, shipping, discounts, tax, and grand total."
       represents:
         - concept: orders.CN002
           kind: api

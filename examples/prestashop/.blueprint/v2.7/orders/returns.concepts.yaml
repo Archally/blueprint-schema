@@ -20,7 +20,7 @@ concepts:
 
   - id: orders.CN008
     name: "OrderReturnState"
-    description: "Defines the possible states in the return lifecycle. Admin-configurable — merchants can add custom return states with labels and colors per language."
+    description: "Defines the possible states in the return lifecycle. Admin-configurable - merchants can add custom return states with labels and colors per language."
     stereotype: value-object
     code_refs:
       - path: "src/Core/Domain/OrderReturnState/"
@@ -30,7 +30,7 @@ concepts:
 
   - id: orders.CN009
     name: "CreditSlip"
-    description: "A financial document recording a refund or credit issued to a customer. Created as a side effect of IssuePartialRefund or IssueStandardRefund commands — has no commands of its own. Query-only read model."
+    description: "A financial document recording a refund or credit issued to a customer. Created as a side effect of IssuePartialRefund or IssueStandardRefund commands - has no commands of its own. Query-only read model."
     stereotype: read-model
     attributes:
       creditSlipId:

@@ -35,7 +35,7 @@ components:
         email:
           type: string
           format: email
-          description: "Email address — must be unique per shop."
+          description: "Email address - must be unique per shop."
           example: "jean.dupont@example.com"
         password:
           type: string
@@ -80,7 +80,7 @@ components:
     UpdateCustomerPayload:
       x-model-id: MDL301
       purpose: command-payload
-      description: "Request body for updating an existing customer's profile data. All fields except customerId are optional — only provided fields are updated."
+      description: "Request body for updating an existing customer's profile data. All fields except customerId are optional - only provided fields are updated."
       represents:
         - concept: customers.CN001
           kind: api
@@ -110,7 +110,7 @@ components:
         email:
           type: string
           format: email
-          description: "Updated email address — must remain unique per shop."
+          description: "Updated email address - must remain unique per shop."
           example: "jp.dupont@example.com"
         password:
           type: string
@@ -237,7 +237,7 @@ components:
         privateNote:
           type: string
           description: "Internal note visible only to back-office employees."
-          example: "VIP customer — priority support."
+          example: "VIP customer - priority support."
       code_refs:
         - path: "src/Core/Domain/Customer/Query/GetCustomerForEditing.php"
           role: schema

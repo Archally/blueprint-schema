@@ -74,7 +74,7 @@ $defs:
         $ref: "#/$defs/rationale"
         description: "The reasoning behind this decision. Answers 'why' for future readers."
       version:
-        ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
         description: "Decision version for individual lifecycle tracking."
       decision_scope:
         type: string
@@ -358,7 +358,7 @@ $defs:
         type: array
         items:
           type: string
-        description: "Related decisions or ADRs (URLs or IDs)."
+        description: "Related decisions or ADRs (URLs or IDs). Relevance without replacement — use supersedes/superseded_by when one decision actually replaces another."
       supersedes:
         type: array
         items:

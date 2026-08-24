@@ -232,10 +232,7 @@ $defs:
         description: "Human owner(s) responsible — free-text names/teams, distinct from the typed `owned_by`."
         examples: [["Jane Doe"], ["Backend Team"]]
       tracker_ref:
-        type: string
-        description: >
-          External issue-tracker key or URL (e.g. a Jira key 'ABC-1234'). The base URL /
-          link construction is a view concern (Gantt view-config), not modelled here.
+        $ref: "../metamodel.schema.yaml#/$defs/tracker_ref"
       note:
         type: string
         description: "Free-text planning note (e.g. a scheduling caveat)."
@@ -289,8 +286,7 @@ $defs:
             type: string
             description: "Human description of the blocker."
           tracker_ref:
-            type: string
-            description: "External tracker key or URL for the blocking issue."
+            $ref: "../metamodel.schema.yaml#/$defs/tracker_ref"
           blocked_by:
             type: array
             description: "Typed references to what is blocking this item."

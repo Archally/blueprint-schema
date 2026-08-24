@@ -7,7 +7,7 @@ concepts:
   - id: shipping.CN001
     name: "Carrier"
     stereotype: aggregate-root
-    description: "A shipping provider configuration defining delivery methods, zones, cost ranges, and dimensional constraints. Carriers are versioned internally via CarrierReferenceId — edits create new versions rather than mutating existing records."
+    description: "A shipping provider configuration defining delivery methods, zones, cost ranges, and dimensional constraints. Carriers are versioned internally via CarrierReferenceId - edits create new versions rather than mutating existing records."
     tags: [aggregate-root, core-domain]
     attributes:
       name:
@@ -36,11 +36,11 @@ concepts:
         example: "false"
       shippingMethod:
         id: CAT406
-        description: "Cost calculation method — by weight or by price"
+        description: "Cost calculation method - by weight or by price"
         example: "by_weight"
       rangeBehavior:
         id: CAT407
-        description: "Behavior when order exceeds maximum range — use highest range or disable carrier"
+        description: "Behavior when order exceeds maximum range - use highest range or disable carrier"
         example: "use_highest_range"
       hasAdditionalHandlingFee:
         id: CAT408
@@ -78,12 +78,12 @@ concepts:
         role: model
       - path: "src/Core/Domain/Carrier/ValueObject/CarrierReferenceId.php"
         role: model
-        description: "Versioning identity — stable across carrier edits"
+        description: "Versioning identity - stable across carrier edits"
 
   - id: shipping.CN002
     name: "ShippingRange"
     stereotype: value-object
-    description: "A cost range defining shipping price for a zone within a weight or price bracket. Ranges are managed as a collection — SetCarrierRanges replaces all ranges atomically."
+    description: "A cost range defining shipping price for a zone within a weight or price bracket. Ranges are managed as a collection - SetCarrierRanges replaces all ranges atomically."
     tags: [value-object, within:shipping.CN001]
     attributes:
       zoneId:
@@ -160,7 +160,7 @@ enumerations:
       - name: use_highest_range
         description: "Apply the price from the highest defined range"
       - name: disabled
-        description: "Hide the carrier — it becomes unavailable for selection"
+        description: "Hide the carrier - it becomes unavailable for selection"
     code_refs:
       - path: "src/Core/Domain/Carrier/ValueObject/OutOfRangeBehavior.php"
         role: model

@@ -39,7 +39,7 @@ concepts:
   - id: shop.CN002
     name: "Store"
     stereotype: aggregate-root
-    description: "A physical retail location (brick-and-mortar store) with address, hours, and geographic coordinates. The CQRS layer only exposes delete, toggle status, and bulk operations — store creation and editing are managed outside the domain layer."
+    description: "A physical retail location (brick-and-mortar store) with address, hours, and geographic coordinates. The CQRS layer only exposes delete, toggle status, and bulk operations - store creation and editing are managed outside the domain layer."
     tags: [aggregate-root, multi-store]
     attributes:
       name:
@@ -60,7 +60,7 @@ concepts:
   - id: shop.CN003
     name: "SearchEngine"
     stereotype: aggregate-root
-    description: "An SEO referrer configuration entry — NOT the product search engine. SearchEngine tracks external search engine referrers (Google, Bing, etc.) for analytics and SEO purposes. Supports CRUD and bulk delete."
+    description: "An SEO referrer configuration entry - NOT the product search engine. SearchEngine tracks external search engine referrers (Google, Bing, etc.) for analytics and SEO purposes. Supports CRUD and bulk delete."
     tags: [aggregate-root, discovery]
     attributes:
       server:
@@ -103,7 +103,7 @@ concepts:
   - id: shop.CN005
     name: "SearchIndex"
     stereotype: domain-service
-    description: "Service responsible for rebuilding the product search index. Only one CQRS command exists (SearchIndexationCommand) with no queries — the search index is an infrastructure concern surfaced to the domain layer."
+    description: "Service responsible for rebuilding the product search index. Only one CQRS command exists (SearchIndexationCommand) with no queries - the search index is an infrastructure concern surfaced to the domain layer."
     tags: [domain-service, discovery]
     code_refs:
       - path: "src/Core/Domain/Search/Command/SearchIndexationCommand.php"
@@ -114,7 +114,7 @@ concepts:
   - id: shop.CN006
     name: "Contact"
     stereotype: aggregate-root
-    description: "A 'Contact Us' form department (e.g., Sales, Technical Support). Each contact has a localized name, email, and description. Only Add and Edit commands exist in the CQRS layer — no Delete."
+    description: "A 'Contact Us' form department (e.g., Sales, Technical Support). Each contact has a localized name, email, and description. Only Add and Edit commands exist in the CQRS layer - no Delete."
     tags: [aggregate-root, communication]
     attributes:
       name:
@@ -189,7 +189,7 @@ actors:
     description: "Marketing team member responsible for SEO referrer tracking, search optimization through aliases, and storefront branding."
     personas:
       - name: "Typical MarketingManager"
-        quote: "I need search to work well for customers — aliases fix the gap between what people type and what we call things."
+        quote: "I need search to work well for customers - aliases fix the gap between what people type and what we call things."
         goals: ["Optimize search relevance", "Track SEO referrers", "Maintain store branding"]
         pain_points: ["No bulk alias import", "Cannot preview alias effects before saving"]
         behaviors: ["Regularly reviews search analytics", "Adds aliases based on customer search patterns"]

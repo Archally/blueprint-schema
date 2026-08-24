@@ -102,7 +102,7 @@ non_goals:
     reason: >
       Customer authentication is email/password with optional social login
       via modules. Enterprise SSO (SAML, OIDC) is handled by dedicated
-      modules — core has no SSO commands or identity provider integration.
+      modules - core has no SSO commands or identity provider integration.
     discovery_stage: committed
     certainty: confirmed
 

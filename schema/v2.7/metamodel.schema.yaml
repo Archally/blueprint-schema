@@ -56,6 +56,14 @@ $defs:
       definition (formal glossary entry). Custom keys are preserved in the
       model and available to viewers and generators.
 
+  tracker_ref:
+    type: string
+    description: >
+      External issue-tracker or document reference. A bare key (e.g. 'ABC-1234') resolves through
+      the blueprint's `trackers` registry using `default_tracker`; a '<tracker>:<key>' pair selects
+      a named tracker; a full URL is used verbatim. Rendered as a link where the registry can form
+      one, and as plain text otherwise.
+
   # ---------------------------------------------------------------------------
   # Bounded Context
   # ---------------------------------------------------------------------------

@@ -77,6 +77,8 @@ $defs:
         description: "Narrative description of this story's context and goal."
       properties:
         $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tracker_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/tracker_ref"
       initiated_by:
         type: array
         description: "Optional list of actor refs that can initiate this story (human, system, or time). Used for Event Storming lane-start actor stickies."
@@ -277,6 +279,8 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/owned_by"
       properties:
         $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tracker_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/tracker_ref"
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
@@ -398,6 +402,8 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/owned_by"
       properties:
         $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tracker_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/tracker_ref"
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:

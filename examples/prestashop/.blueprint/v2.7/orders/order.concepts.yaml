@@ -87,7 +87,7 @@ concepts:
 
   - id: orders.CN003
     name: "OrderLine"
-    description: "A single line item in an order — product reference, quantity, unit price, and line total. Managed through addProductToOrder, removeProductFromOrder, and updateOrderProduct commands."
+    description: "A single line item in an order - product reference, quantity, unit price, and line total. Managed through addProductToOrder, removeProductFromOrder, and updateOrderProduct commands."
     stereotype: entity
     attributes:
       orderDetailId:
@@ -144,7 +144,7 @@ concepts:
 
   - id: orders.CN005
     name: "PaymentRecord"
-    description: "Captures a payment transaction — gateway, amount, currency, transaction ID, and status. Multiple payments may exist for a single order (e.g. split payment, partial refund credits)."
+    description: "Captures a payment transaction - gateway, amount, currency, transaction ID, and status. Multiple payments may exist for a single order (e.g. split payment, partial refund credits)."
     stereotype: entity
     attributes:
       paymentId:
@@ -221,7 +221,7 @@ actors:
           - "Too many checkout steps"
         behaviors:
           - "Shops on mobile during commute (60% mobile traffic)"
-          - "Rarely compares prices — buys on impulse"
+          - "Rarely compares prices - buys on impulse"
           - "Abandons cart if checkout requires more than 2 steps"
         tech_savviness: high
         job_to_be_done: "Purchase products instantly with zero friction."
@@ -239,7 +239,7 @@ actors:
           - "No way to compare products side-by-side"
           - "Unexpected shipping costs revealed only at checkout"
         behaviors:
-          - "Desktop user — opens 10+ tabs"
+          - "Desktop user - opens 10+ tabs"
           - "Spends 30+ minutes researching before purchase"
           - "Compares prices across 2-3 stores"
         tech_savviness: high
@@ -276,7 +276,7 @@ actors:
   - id: orders.ACT003
     name: "Merchant"
     type: human
-    description: "Business owner managing daily PrestaShop store operations — products, orders, returns."
+    description: "Business owner managing daily PrestaShop store operations - products, orders, returns."
     summary: "Store owner and operator."
     responsibilities:
       - "Manage product listings and pricing"
@@ -305,13 +305,13 @@ actors:
           industry: "Retail"
           team_size: "1-10"
       - name: "Enterprise Catalog Manager"
-        quote: "I manage 50,000 SKUs across 3 stores — I need bulk tools and reliable imports."
+        quote: "I manage 50,000 SKUs across 3 stores - I need bulk tools and reliable imports."
         goals:
           - "Bulk order processing across multiple stores"
           - "Automated order routing by warehouse location"
           - "Real-time inventory sync across channels"
         pain_points:
-          - "No bulk status update — must process orders one by one"
+          - "No bulk status update - must process orders one by one"
           - "Multi-store order visibility requires switching contexts"
           - "CSV import breaks on large datasets"
         behaviors:

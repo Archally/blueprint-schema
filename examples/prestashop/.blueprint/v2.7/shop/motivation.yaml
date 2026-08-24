@@ -69,7 +69,7 @@ non_goals:
       PrestaShop is a single-merchant platform. Multi-store shares one merchant
       identity across storefronts. Marketplace features (vendor onboarding,
       per-vendor commission, vendor dashboards) require dedicated marketplace
-      modules — there are no VendorCommand or SellerCommand classes in core.
+      modules - there are no VendorCommand or SellerCommand classes in core.
     discovery_stage: committed
     certainty: confirmed
 
@@ -89,7 +89,7 @@ trade_offs:
     selected: "Shared database with shop_id column filtering"
     rejected: "Separate database per shop (simpler isolation but harder shared catalog)"
     rationale: >
-      Shared catalog across shops is a core multi-store feature — merchants
+      Shared catalog across shops is a core multi-store feature - merchants
       want one product in multiple shops. Separate databases would require
       cross-database joins or catalog sync, adding massive complexity.
       Shop_id filtering keeps data co-located and queryable.

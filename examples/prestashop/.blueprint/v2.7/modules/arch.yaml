@@ -39,7 +39,7 @@ parties:
             summary: Module lifecycle orchestrator with hook execution pipeline.
             contracts:
               openapi:
-                output: dist/modules-api.openapi.yaml
+                output: modules/modules-api.openapi.yaml
                 expose:
                   - modules:installModule
                   - modules:uninstallModule

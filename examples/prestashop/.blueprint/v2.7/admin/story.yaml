@@ -112,7 +112,7 @@ user_stories:
   - id: admin.US002
     actor: admin.ACT001
     goal: "manage access control profiles and their permission matrices"
-    benefit: "each role has precisely the access needed — no more, no less"
+    benefit: "each role has precisely the access needed - no more, no less"
     acceptance_criteria:
       - "Profile CRUD operations working"
       - "Tab permissions configurable per profile"

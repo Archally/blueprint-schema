@@ -51,7 +51,7 @@ concepts:
   - id: international.CN009
     name: "TaxRule"
     stereotype: entity
-    description: "A binding record within a TaxRulesGroup that maps a Tax rate to a Zone and optionally a Country/State. Determines which tax rate applies for a given geographic location. Has database identity but no independent CQRS lifecycle — managed through TaxRulesGroup configuration."
+    description: "A binding record within a TaxRulesGroup that maps a Tax rate to a Zone and optionally a Country/State. Determines which tax rate applies for a given geographic location. Has database identity but no independent CQRS lifecycle - managed through TaxRulesGroup configuration."
     tags: [entity, within:international.CN008, taxation]
     attributes:
       taxId:
@@ -62,10 +62,10 @@ concepts:
         description: "Reference to the Zone this rule applies to"
       countryId:
         id: CAT539
-        description: "Reference to the Country (optional — zone-level if omitted)"
+        description: "Reference to the Country (optional - zone-level if omitted)"
       stateId:
         id: CAT540
-        description: "Reference to the State (optional — country/zone-level if omitted)"
+        description: "Reference to the State (optional - country/zone-level if omitted)"
       behavior:
         id: CAT541
         description: "Tax combination behavior when multiple rules match"
@@ -77,7 +77,7 @@ actors:
     description: "Specialist responsible for configuring tax rates, tax rules groups, and ensuring compliance with regional tax regulations (VAT, sales tax)."
     personas:
       - name: "Typical TaxAccountant"
-        quote: "Tax rules must be correct for every zone and country — errors mean regulatory penalties or customer overcharging."
+        quote: "Tax rules must be correct for every zone and country - errors mean regulatory penalties or customer overcharging."
         goals: ["Configure accurate tax rates", "Map tax rules to zones/countries", "Ensure VAT compliance"]
         pain_points: ["Complex multi-country VAT rules", "Tax rule gaps causing zero-tax charges", "Regulatory changes requiring updates"]
         behaviors: ["Reviews tax configuration quarterly", "Validates tax calculations against invoices"]

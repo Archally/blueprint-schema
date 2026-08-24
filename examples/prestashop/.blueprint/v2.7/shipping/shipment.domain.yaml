@@ -154,7 +154,7 @@ operations:
     id: shipping.EVT013
     kind: event
     name: "ShipmentSplit"
-    description: "A shipment has been split — products moved to a new shipment."
+    description: "A shipment has been split - products moved to a new shipment."
 
   shipmentsMerged:
     id: shipping.EVT014

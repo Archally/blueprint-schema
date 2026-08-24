@@ -6,7 +6,7 @@ tags: [discount, promotions]
 concepts:
   - id: checkout.CN004
     name: "Discount"
-    description: "Promotion rule engine — the v9 CQRS domain for managing voucher codes, automatic discounts, free shipping, and BOGO offers. Wraps the legacy CartRule table with a modern command/query interface."
+    description: "Promotion rule engine - the v9 CQRS domain for managing voucher codes, automatic discounts, free shipping, and BOGO offers. Wraps the legacy CartRule table with a modern command/query interface."
     stereotype: aggregate-root
     attributes:
       discountId:

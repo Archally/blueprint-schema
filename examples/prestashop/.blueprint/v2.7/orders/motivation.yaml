@@ -60,7 +60,7 @@ non_goals:
     reason: >
       Payment processing is handled by third-party modules (Stripe, PayPal,
       Mollie). Building a proprietary gateway would require PCI DSS Level 1
-      compliance — cost and liability outweigh benefits.
+      compliance - cost and liability outweigh benefits.
     discovery_stage: committed
     certainty: confirmed
 
@@ -154,7 +154,7 @@ assumptions:
     statement: "PrestaShop will continue to support shared hosting (no container-only requirement)"
     consequence: >
       If PrestaShop drops shared-hosting support, the multi-currency cron-based
-      rate refresh and file-based caching strategies become unnecessary — we could
+      rate refresh and file-based caching strategies become unnecessary - we could
       use Redis pub/sub and container sidecars instead.
     risk_refs:
       - orders.R002
@@ -165,7 +165,7 @@ assumptions:
     statement: "Stripe and PayPal modules will adopt the new Cart Price API within 6 months"
     consequence: >
       If payment modules don't adopt the new API, the dual calculation path
-      (R001) cannot be fully eliminated — the old path must remain for backward
+      (R001) cannot be fully eliminated - the old path must remain for backward
       compatibility, defeating the mitigation.
     risk_refs:
       - orders.R001
@@ -267,7 +267,7 @@ inquiries:
     resolved: true
     resolution: >
       Benchmark on PrestaShop 8.x shows Smarty checkout renders in 180ms vs
-      Twig at 140ms. The 40ms difference is not the bottleneck — database
+      Twig at 140ms. The 40ms difference is not the bottleneck - database
       queries and cart recalculation dominate. No Twig migration needed for G001.
     status: resolved
     discovery_stage: validated

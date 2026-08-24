@@ -41,7 +41,7 @@ concepts:
 
   - id: checkout.CN002
     name: "CartItem"
-    description: "A single product selection in the cart — product reference, variant, quantity, and computed price."
+    description: "A single product selection in the cart - product reference, variant, quantity, and computed price."
     stereotype: entity
     attributes:
       productId:

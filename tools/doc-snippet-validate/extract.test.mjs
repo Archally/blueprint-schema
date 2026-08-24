@@ -8,8 +8,11 @@
 // End-to-end validation of the two historical RC5 shapes lives in `rc5-regression.test.mjs`, which
 // needs a real schema tree.
 
-import { test } from "node:test";
+import { test, describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { extractBlocks, modelRelativePath } from "./extract.mjs";
 
 test("associates a fence with the heading that names a file", () => {
@@ -90,4 +93,38 @@ test("strips the .blueprint/ prefix so the temp dir is the model root", () => {
   assert.equal(modelRelativePath("./.blueprint/blueprint.yaml"), "blueprint.yaml");
   assert.equal(modelRelativePath("blueprint.yaml"), "blueprint.yaml");
   assert.equal(modelRelativePath(".blueprint\\a\\b.yaml"), "a/b.yaml");
+});
+
+// `--optional` exists because some listed documents live in a BUILD PRODUCT (the exported agent
+// kit) rather than in this repository, so they are absent in every fresh checkout and in CI.
+//
+// The distinction it draws is the whole point. A blanket "missing means skip" would let a typo in
+// the flagship document — the one this gate exists for — pass as a skip, which is precisely the
+// silent-omission failure the gate prevents. So an absent TREE is forgiven and an absent FILE
+// inside a tree that exists is not.
+describe("--optional forgives an absent tree, never a mistyped path", () => {
+  const CLI = join(dirname(fileURLToPath(import.meta.url)), "cli.mjs");
+  const SCHEMAS = resolve(dirname(fileURLToPath(import.meta.url)), "../../v2.7");
+
+  function run(args) {
+    const result = spawnSync(process.execPath, [CLI, ...args, "--schemas", SCHEMAS], { encoding: "utf8" });
+    return { code: result.status, out: (result.stdout ?? "") + (result.stderr ?? "") };
+  }
+
+  it("skips a document whose top-level tree is not checked out", () => {
+    const result = run(["no-such-tree-here/claude-code/agent.md", "--optional"]);
+    assert.equal(result.code, 0);
+    assert.match(result.out, /no-such-tree-here\/ in this checkout/);
+  });
+
+  it("STILL fails on a missing file inside a tree that exists, even with --optional", () => {
+    const result = run([".agents/agents/blueprint/does-not-exist.md", "--optional"]);
+    assert.equal(result.code, 2);
+    assert.match(result.out, /not found/);
+  });
+
+  it("without --optional an absent tree is fatal too", () => {
+    const result = run(["no-such-tree-here/claude-code/agent.md"]);
+    assert.equal(result.code, 2);
+  });
 });

@@ -6,7 +6,7 @@ tags: [address]
 concepts:
   - id: customers.CN004
     name: "Address"
-    description: "Physical address associated with a customer for delivery or invoicing. Address is a polymorphic aggregate in PrestaShop — also used by Manufacturers (catalog), Carts (checkout), and Orders (orders). Only customer-scoped operations are modeled here."
+    description: "Physical address associated with a customer for delivery or invoicing. Address is a polymorphic aggregate in PrestaShop - also used by Manufacturers (catalog), Carts (checkout), and Orders (orders). Only customer-scoped operations are modeled here."
     stereotype: aggregate-root
     attributes:
       addressId:

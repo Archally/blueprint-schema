@@ -46,3 +46,17 @@ export function normalizeSliceArg(raw) {
   const [head] = trimmed.split(/[\\/]/);
   return head;
 }
+
+/**
+ * The slices that actually carry measurable content, sorted.
+ *
+ * Derived from the observations rather than from the directory listing, because the
+ * question a caller needs answered is "did `--slice X` select anything the gate can
+ * score?" — a folder holding no measurable YAML answers that no, exactly as a
+ * misspelled name does.
+ * @param {{slice?: string}[]} observations
+ * @returns {string[]}
+ */
+export function observedSlices(observations) {
+  return [...new Set(observations.map((observation) => observation.slice).filter(Boolean))].sort();
+}

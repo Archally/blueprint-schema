@@ -89,7 +89,7 @@ non_goals:
       Shipping is limited to carrier configuration, cost calculation by
       weight/price/zone, and tracking number assignment. Route optimization,
       driver dispatch, and fleet management are logistics operations outside
-      PrestaShop's scope — handled by carrier APIs and third-party logistics.
+      PrestaShop's scope - handled by carrier APIs and third-party logistics.
     discovery_stage: committed
     certainty: confirmed
 

@@ -395,6 +395,19 @@ $defs:
                     items:
                       type: string
                     description: "Allowed values for this variable."
+      handles:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: >-
+          Operations this service handles in-process, with no transport asserted. Provider-side,
+          like a contract's `expose:`/`send:`, and it materializes the same `handled_by` binding -
+          but it names no channel, because an in-process call has none. The opposite of a
+          `call:` list, which names operations this service DEPENDS ON rather than owns.
+          Several services in different bounded contexts may each declare the same operation, and
+          each declaration is one binding: an operation the domain shares is genuinely handled in
+          more than one place. Declared on the service rather than under `contracts:` because every
+          key there names a protocol with a generated specification, and this has neither.
       contracts:
         $ref: "#/$defs/contracts"
         description: "External contracts exposing and consuming interfaces for this service."

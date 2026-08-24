@@ -73,7 +73,7 @@ concepts:
   - id: admin.CN003
     name: "Permission"
     stereotype: entity
-    description: "Permission entries within a Profile that control access to back-office tabs and module features. Permissions are managed via UpdateTabPermissions and UpdateModulePermissions commands — separate from the Profile CRUD lifecycle."
+    description: "Permission entries within a Profile that control access to back-office tabs and module features. Permissions are managed via UpdateTabPermissions and UpdateModulePermissions commands - separate from the Profile CRUD lifecycle."
     tags: [entity, within:admin.CN002, identity]
     attributes:
       tabPermissions:

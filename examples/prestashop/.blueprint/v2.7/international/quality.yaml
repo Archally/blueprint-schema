@@ -33,7 +33,7 @@ slos:
     target: "100% of orders produce correct tax amounts matching configured rules"
     window: "weekly"
     operations: [international.QRY010]
-    error_budget: "0% — tax errors have regulatory consequences"
+    error_budget: "0% - tax errors have regulatory consequences"
 
   - id: international.SLO002
     name: "Exchange Rate Refresh Latency"

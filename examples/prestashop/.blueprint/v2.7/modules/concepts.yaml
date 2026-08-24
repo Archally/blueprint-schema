@@ -49,7 +49,7 @@ concepts:
   - id: modules.CN002
     name: "Hook"
     stereotype: aggregate-root
-    description: "An extension point in the PrestaShop system where modules can register callbacks. Hooks have a name, title, description, and active status. Hook-module position management is not in the CQRS domain layer — only hook activation/deactivation is modeled."
+    description: "An extension point in the PrestaShop system where modules can register callbacks. Hooks have a name, title, description, and active status. Hook-module position management is not in the CQRS domain layer - only hook activation/deactivation is modeled."
     tags: [aggregate-root, extension-system]
     attributes:
       name:
@@ -132,4 +132,4 @@ associations:
     predicate: depends-on
     object: modules.CN002
     cardinality: "0..*"
-    description: "A module registers against zero or more hooks. Hook-module binding occurs as a side effect of install/uninstall — not modeled as a separate CQRS operation."
+    description: "A module registers against zero or more hooks. Hook-module binding occurs as a side effect of install/uninstall - not modeled as a separate CQRS operation."

@@ -31,7 +31,7 @@ operations:
     id: content.CMD002
     kind: command
     name: "EditCmsPage"
-    description: "Update an existing CMS page. All fields are optional via fluent setters — only changed fields need to be provided."
+    description: "Update an existing CMS page. All fields are optional via fluent setters - only changed fields need to be provided."
     delivery_priority: must-have
     initiated_by: [content.ACT001]
     produces:
@@ -93,7 +93,7 @@ operations:
     id: content.CMD006
     kind: command
     name: "BulkSetCmsPageStatus"
-    description: "Enable or disable multiple CMS pages. Virtual command combining BulkEnableCmsPage and BulkDisableCmsPage — in code these are separate commands but share the same semantic: set status on a collection."
+    description: "Enable or disable multiple CMS pages. Virtual command combining BulkEnableCmsPage and BulkDisableCmsPage - in code these are separate commands but share the same semantic: set status on a collection."
     delivery_priority: could-have
     initiated_by: [content.ACT001]
     produces:
@@ -163,7 +163,7 @@ operations:
     id: content.CMD007
     kind: command
     name: "AddCmsPageCategory"
-    description: "Create a new CMS page category with localized name, description, SEO metadata, friendly URL, parent assignment, and shop association. Parent ID is required — root-level categories reference the system root."
+    description: "Create a new CMS page category with localized name, description, SEO metadata, friendly URL, parent assignment, and shop association. Parent ID is required - root-level categories reference the system root."
     delivery_priority: must-have
     initiated_by: [content.ACT001]
     produces:
@@ -182,7 +182,7 @@ operations:
     id: content.CMD008
     kind: command
     name: "EditCmsPageCategory"
-    description: "Update an existing CMS page category. Includes parent reassignment (hierarchy changes) — setting a new parentId moves the category in the tree. All fields optional via setters."
+    description: "Update an existing CMS page category. Includes parent reassignment (hierarchy changes) - setting a new parentId moves the category in the tree. All fields optional via setters."
     delivery_priority: must-have
     initiated_by: [content.ACT001]
     produces:

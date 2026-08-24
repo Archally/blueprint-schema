@@ -28,10 +28,13 @@ import { createHash } from "node:crypto";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Published to <repo>/tools/port/ — the manifest sits beside this file, and the
-// ported job directories are siblings one level up under tools/.
+// Published to <repo>/tools/port/ — the manifest sits beside this file. Job directories are
+// resolved from the REPO ROOT, not from tools/: most ported units land under tools/, and at least
+// one (the worked example model) does not. Resolving everything under tools/ silently sent every
+// file of that unit to a path that cannot exist.
 const PORT_DIR = dirname(fileURLToPath(import.meta.url));
 const TOOLS_DIR = resolve(PORT_DIR, "..");
+const REPO_ROOT = resolve(TOOLS_DIR, "..");
 const MANIFEST_PATH = join(PORT_DIR, "PORTED.sha256");
 
 /**
@@ -46,8 +49,11 @@ const MANIFEST_PATH = join(PORT_DIR, "PORTED.sha256");
 function readJobDirs(manifestText) {
   const dirs = {};
   for (const line of manifestText.split(/\r?\n/)) {
-    const match = /^#\s*job\s+(\S+)\s+(\S+)\s*$/.exec(line.trim());
-    if (match) dirs[match[1]] = match[2];
+    const match = /^#\s*job\s+(\S+)\s+(\S+)(\s+extras-ok)?\s*$/.exec(line.trim());
+    // `extras-ok` marks a unit that legitimately ships files this repo owns beside the ported ones
+    // (a CLI entrypoint, a local index). Without it the verifier reports every such file as an
+    // unauthorised local edit, and a gate that is wrong about known-good files gets switched off.
+    if (match) dirs[match[1]] = { dir: match[2], extrasOk: Boolean(match[3]) };
   }
   return dirs;
 }
@@ -85,19 +91,42 @@ for (const line of manifestText.split(/\r?\n/)) {
 }
 
 const actual = new Map();
-for (const [jobName, relativeDir] of Object.entries(JOB_DIRS)) {
-  const dir = resolve(TOOLS_DIR, relativeDir);
-  if (!existsSync(dir)) continue;
-  for (const name of readdirSync(dir).sort()) {
-    if (name === "PORTED.sha256") continue; // the manifest is not one of its own entries
-    const path = join(dir, name);
-    if (statSync(path).isFile()) actual.set(`${jobName}/${name}`, hashNormalized(path));
+const missingJobDirs = [];
+for (const [jobName, { dir: relativeDir }] of Object.entries(JOB_DIRS)) {
+  const dir = resolve(REPO_ROOT, relativeDir);
+  // A declared job whose directory is absent is a BROKEN MANIFEST, not an empty job. Skipping it
+  // quietly is what turned a path-resolution bug into 78 files reported as "missing from disk",
+  // with nothing pointing at the directory that was never looked in.
+  if (!existsSync(dir)) {
+    missingJobDirs.push(`${jobName} -> ${relativeDir}`);
+    continue;
   }
+  // RECURSIVE, because the manifest is: a job's entries are keyed by the path relative to its own
+  // directory (`model-builder/extraction/entities/arch.ts`), and a flat walk sees none of them.
+  // A flat walk reports every nested file as missing from disk and every top-level file as added
+  // locally, which is a report about the walk rather than about the repo.
+  const walk = (current, prefix) => {
+    for (const name of readdirSync(current).sort()) {
+      if (name === "PORTED.sha256") continue; // the manifest is not one of its own entries
+      const path = join(current, name);
+      const key = prefix ? `${prefix}/${name}` : name;
+      if (statSync(path).isDirectory()) walk(path, key);
+      else actual.set(`${jobName}/${key}`, hashNormalized(path));
+    }
+  };
+  walk(dir, "");
 }
 
 const problems = [];
+for (const job of missingJobDirs) {
+  problems.push(`job directory does not exist: ${job} — the manifest names a unit this repo does not have`);
+}
 for (const [file, hash] of actual) {
-  if (!expected.has(file)) problems.push(`${file} is present but not in the manifest — added locally?`);
+  if (!expected.has(file)) {
+    if (!JOB_DIRS[file.slice(0, file.indexOf("/"))]?.extrasOk) {
+      problems.push(`${file} is present but not in the manifest — added locally?`);
+    }
+  }
   else if (expected.get(file) !== hash) problems.push(`${file} has been modified since it was ported`);
 }
 for (const file of expected.keys()) {

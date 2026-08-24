@@ -1,7 +1,7 @@
 ---
 version: "1.0.0"
 
-# Sprint cadence anchor (v2.7.2) — enables sprint-based placement on work_items below.
+# Sprint cadence anchor (v2.7.2) - enables sprint-based placement on work_items below.
 cadence:
   anchor_sprint: 1
   anchor_start: "2026-01-07"     # Wed; sprint 1 start
@@ -9,17 +9,17 @@ cadence:
 
 milestones:
   - id: MS001
-    name: "MVP — Cart & Checkout"
+    name: "MVP - Cart & Checkout"
     description: "Minimal viable checkout: cart management, order placement, payment integration."
     target_date: "2026-06-30"
     status: in-progress
     deliverables:
       - kind: capability
         ref: CAP001
-        description: "Order Management — place, cancel, refund."
+        description: "Order Management - place, cancel, refund."
       - kind: capability
         ref: CAP003
-        description: "Checkout Flow — cart + payment initiation."
+        description: "Checkout Flow - cart + payment initiation."
       - kind: user-story
         ref: orders.US001
         description: "Shopper places an order."
@@ -37,17 +37,17 @@ milestones:
       team: TM001
 
   - id: MS002
-    name: "Catalog v2 — Search & Filters"
+    name: "Catalog v2 - Search & Filters"
     description: "Elasticsearch-powered search, faceted filters, and bulk product import."
     target_date: "2026-09-30"
     status: planned
     deliverables:
       - kind: capability
         ref: CAP005
-        description: "Catalog Management — full CRUD + search."
+        description: "Catalog Management - full CRUD + search."
       - kind: capability
         ref: CAP018
-        description: "Search & Discovery — faceted search with ES."
+        description: "Search & Discovery - faceted search with ES."
       - kind: user-story
         ref: catalog.US001
         description: "CategoryManager creates a product."
@@ -62,14 +62,14 @@ milestones:
       team: TM002
 
   - id: MS003
-    name: "Scale — Async Orders & Inventory"
+    name: "Scale - Async Orders & Inventory"
     description: "Event-driven order processing with async stock reservation for flash-sale volumes."
     target_date: "2026-12-31"
     status: planned
     deliverables:
       - kind: capability
         ref: CAP004
-        description: "Stock Reservation — pessimistic locking under concurrency."
+        description: "Stock Reservation - pessimistic locking under concurrency."
       - kind: operation
         ref: orders.EVT001
         description: "OrderPlaced event triggers async downstream."
@@ -90,13 +90,13 @@ milestones:
     deliverables:
       - kind: capability
         ref: CAP011
-        description: "Multi-Currency & Tax — global compliance."
+        description: "Multi-Currency & Tax - global compliance."
       - kind: capability
         ref: CAP012
-        description: "Localization — multi-language support."
+        description: "Localization - multi-language support."
       - kind: capability
         ref: CAP017
-        description: "Multi-Store Management — shared/independent configs."
+        description: "Multi-Store Management - shared/independent configs."
     success_criteria:
       - "Support 10+ currencies with daily exchange rate updates"
       - "Tax calculation compliant with EU VAT rules for 5+ countries"
@@ -115,10 +115,10 @@ milestones:
     deliverables:
       - kind: capability
         ref: CAP016
-        description: "API & Integration Platform — OAuth2 Admin API."
+        description: "API & Integration Platform - OAuth2 Admin API."
       - kind: capability
         ref: CAP014
-        description: "Module Ecosystem — API-compatible module hooks."
+        description: "Module Ecosystem - API-compatible module hooks."
     success_criteria:
       - "100% of CQRS commands accessible via Admin API"
       - "OAuth2 token issuance < 200ms p95"
@@ -127,7 +127,7 @@ milestones:
     owned_by:
       team: TM009
 
-# ── Execution-tier work breakdown (WBS, v2.7.2) — epics/subscopes rolling up to
+# ── Execution-tier work breakdown (WBS, v2.7.2) - epics/subscopes rolling up to
 #    milestones, placed by sprint, with typed traceability to decisions/value-streams.
 work_items:
   - id: WI001
@@ -180,7 +180,7 @@ work_items:
     depends_on: [WI001]
 
   # Placed by explicit dates rather than by sprint. Carrier integration is bound to contract
-  # renewal dates, not to the delivery cadence — which is exactly the case `start_date`/`end_date`
+  # renewal dates, not to the delivery cadence - which is exactly the case `start_date`/`end_date`
   # exist for, and `start_date` overrides `start_sprint` when both are present.
   - id: WI011
     kind: epic
@@ -216,7 +216,7 @@ work_items:
         confidence: tentative
         progress: 0
         depends_on: [WI012]
-      # Deliberately OVERLAPS WI012 and WI013 and depends on neither — rate caching is
+      # Deliberately OVERLAPS WI012 and WI013 and depends on neither - rate caching is
       # independent of the adapter work. This is the corpus's only pair of concurrent work
       # items, so it is the only fixture an interval-packing renderer can be tested against.
       - id: WI014

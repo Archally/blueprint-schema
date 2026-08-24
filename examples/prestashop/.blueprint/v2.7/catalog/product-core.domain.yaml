@@ -27,7 +27,7 @@ operations:
     id: catalog.CMD002
     kind: command
     name: "UpdateProduct"
-    description: "Update product basic information — name, description, prices, SEO, options."
+    description: "Update product basic information - name, description, prices, SEO, options."
     delivery_priority: must-have
     produces:
       operations: [catalog.EVT002]

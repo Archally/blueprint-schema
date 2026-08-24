@@ -5,13 +5,13 @@ scope: modules
 execution:
   model: sequential
   description: "Module lifecycle operations are serialized to prevent conflicting state transitions."
-  rationale: "Module install/uninstall modifies shared hook registry and filesystem — concurrent operations cause corruption."
+  rationale: "Module install/uninstall modifies shared hook registry and filesystem - concurrent operations cause corruption."
 
 race_conditions:
   - id: modules.RC001
     name: "Concurrent module state change"
     scenario: "Admin enables a module while another admin simultaneously uninstalls it."
-    impact: "Module left in inconsistent state — hooks registered but files removed."
+    impact: "Module left in inconsistent state - hooks registered but files removed."
     likelihood: very-low
     mitigation: "Global module operation lock prevents concurrent lifecycle changes."
     affects: [modules.CMD001, modules.CMD002, modules.CMD003]

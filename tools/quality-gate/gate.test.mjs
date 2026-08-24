@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { collectObservations } from './collect.mjs';
 import { evaluate, nextBaseline } from './evaluate.mjs';
 import { loadSpec, loadProjectConfig, writeBaseline } from './config.mjs';
-import { sliceOf, normalizeSliceArg, ROOT_SLICE } from './slice.mjs';
+import { sliceOf, normalizeSliceArg, observedSlices, ROOT_SLICE } from './slice.mjs';
 
 const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const CLI = path.join(TOOL_DIR, 'cli.mjs');
@@ -544,5 +544,32 @@ describe('CLI contract', () => {
     assert.equal(run.sliceMode, 'shop');
     assert.ok(run.findings.every((finding) => finding.file.startsWith('shop' + path.sep)),
       'a slice run must only surface findings from that slice');
+  });
+});
+
+describe('slice scoping refuses a selection that measures nothing', () => {
+  test('observedSlices lists only slices carrying measurable content', () => {
+    const { observations } = collectObservations(fixtureRoot);
+    const slices = observedSlices(observations);
+    assert.ok(slices.includes('shop'), 'shop carries observations');
+    assert.ok(slices.includes('warehouse'), 'warehouse carries observations');
+    assert.deepEqual(slices, [...slices].sort(), 'returned in sorted order');
+  });
+
+  test('a misspelled slice fails as usage, and never passes over zero files', () => {
+    const { code, stdout } = runCli([fixtureRoot, '--slice', 'wharehouse', '--strict']);
+    assert.equal(code, 2, 'a typo is a usage error, not a green run');
+    assert.match(stdout, /selects nothing measurable/);
+  });
+
+  test('the refusal names the slices that would have worked', () => {
+    const { stdout } = runCli([fixtureRoot, '--slice', 'nope']);
+    assert.match(stdout, /Available slices:.*warehouse/);
+  });
+
+  test('a real slice still scores and still exits clean', () => {
+    const { code, stdout } = runCli([fixtureRoot, '--slice', 'warehouse']);
+    assert.equal(code, 0);
+    assert.match(stdout, /slice "warehouse"/);
   });
 });

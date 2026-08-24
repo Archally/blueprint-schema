@@ -21,10 +21,10 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Currency/Command/AddCurrencyCommand.php"
         role: implementation
-        description: "Official currency — ISO code validated against CLDR"
+        description: "Official currency - ISO code validated against CLDR"
       - path: "src/Core/Domain/Currency/Command/AddUnofficialCurrencyCommand.php"
         role: implementation
-        description: "Unofficial currency — custom ISO code allowed"
+        description: "Unofficial currency - custom ISO code allowed"
       - path: "src/Core/Domain/Currency/Command/AbstractAddCurrencyCommand.php"
         role: implementation
         description: "Shared attribute definitions"
@@ -99,7 +99,7 @@ operations:
     id: international.CMD006
     kind: command
     name: "SetDefaultCurrency"
-    description: "Designate a currency as the store's default (reference) currency. All exchange rates are relative to this currency. Modeled as a virtual operation — in code, default currency is managed through shop configuration."
+    description: "Designate a currency as the store's default (reference) currency. All exchange rates are relative to this currency. Modeled as a virtual operation - in code, default currency is managed through shop configuration."
     delivery_priority: must-have
     initiated_by: [international.ACT001]
     produces:

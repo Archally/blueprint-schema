@@ -177,7 +177,7 @@ use_cases:
     extensions:
       - step: 3
         condition: "No zones selected"
-        action: "System rejects — carrier requires at least one zone"
+        action: "System rejects - carrier requires at least one zone"
       - step: 4
         condition: "Ranges overlap within a zone"
         action: "System rejects with overlap validation error"
@@ -209,5 +209,5 @@ use_cases:
         action: "Manager splits shipment or creates additional shipment"
       - step: 4
         condition: "Shipment already shipped"
-        action: "System rejects edit — shipped shipments are immutable"
+        action: "System rejects edit - shipped shipments are immutable"
     user_stories: [shipping.US004, shipping.US005, shipping.US006]

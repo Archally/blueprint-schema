@@ -45,12 +45,23 @@ properties:
     description: >
       The single build stamp ("as of" date or instant) shared by every target in the run, so a
       partial re-render overwrites the same files a full run would rather than adding new
-      timestamped copies beside them. Required — there is no clock fallback.
+      timestamped copies beside them. Its date leads every artifact filename, which is what makes a
+      re-rendered delivery replace itself rather than accumulate beside its predecessor. Required —
+      there is no clock fallback.
+  archive:
+    type: boolean
+    default: false
+    description: >
+      Keep every delivery instead of replacing the last one. Each run then writes beneath a folder
+      named for its own stamp, so two deliveries never share a directory. Omitted or false, the
+      artifact root holds exactly one delivery: a run replaces the artifacts of any earlier stamp
+      it finds in the scope it rendered, and reports what it removed.
   build_id:
     type: string
     description: >
-      Provenance token folded into output filenames. The literal value `auto` resolves to the
-      current git SHA at render time; any other string is used as-is.
+      Provenance token recorded INSIDE each artifact — its drawn footer and its machine-readable
+      provenance block — identifying the code that produced it. The literal value `auto` resolves
+      to the current git SHA at render time; any other string is used as-is.
   link_template:
     type: string
     description: >
@@ -168,6 +179,24 @@ $defs:
         description: >
           Narrow this target to the named slices. Only meaningful on `glob`, `selector`, and
           `contexts` targets — a schema error on an `instance` target.
+      options:
+        type: object
+        minProperties: 1
+        description: >
+          Tool-specific rendering options, for a tool that has nowhere else to put them.
+
+          Not a general pass-through. Most renderers already take a `view:` config validated by
+          their own `*.view.schema.yaml`, and that file is where their rendering choices belong -
+          two targets of one tool are configured differently by pointing at two views. A bag here
+          for a tool that has a view would give one fact two homes.
+
+          So the vocabulary is the tool adapter's to state. An option the tool does not accept is
+          refused before anything is rendered, naming what it does accept - or naming the view key
+          to set instead, when the tool has a view. `bp render --dry-run` shows the resolved
+          command line, so what an option did is inspectable without rendering.
+
+          A key that restates a target field (`formats`, `slice`, `version`, ...) is refused: set
+          it at the top level of the target.
     if:
       required: [kind]
       properties:

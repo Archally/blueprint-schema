@@ -608,6 +608,7 @@ Service contracts use typed protocol sections with `operation_ref[]`:
 services:
   - name: order-api
     kind: api              # service | worker | api | webapp | cli | library | function
+    handles: [pricing:recalculateTotals]   # in-process; no transport asserted
     contracts:
       openapi:
         expose: [orders:submitOrder, orders:getOrder]
@@ -615,6 +616,30 @@ services:
         send: [orders:orderSubmitted]
         receive: [orders:sendConfirmation]
 ```
+
+An operation belongs to the bounded context(s) whose services provide it, and there are three ways
+to say so. `expose:` and `send:` sit inside a contract, so declaring either asserts a channel.
+`handles:` sits on the service and asserts none: it is for an operation called in-process, which has
+no protocol and therefore no contract to put it in.
+
+| Key | Where | Direction | Asserts a transport |
+|---|---|---|---|
+| `expose:` | inside a contract | provider | yes, the contract's protocol |
+| `send:` | inside a contract | provider | yes, the contract's protocol |
+| `handles:` | on the service | provider | no |
+| `call:` | inside a contract | **consumer** | yes |
+
+`call:` is the one to be careful with. It reads like a sibling of the other three and is the
+opposite direction: it names operations this service DEPENDS ON, not ones it owns. Binding a
+service to an operation it merely calls would record the caller as the handler.
+
+All three provider keys are m:n. Two services in different bounded contexts may each declare the
+same operation, and each declaration produces its own binding, because an operation the domain
+shares really is handled in more than one place.
+
+Never add a channel an operation does not have in order to silence the `unbound-operation` rule: the
+model then states a transport that does not exist, and every diagram generated from it draws that
+transport as fact. `handles:` exists so the honest answer is expressible.
 
 ---
 

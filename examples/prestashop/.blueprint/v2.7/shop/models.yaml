@@ -8,7 +8,7 @@ components:
     UploadLogosPayload:
       x-model-id: MDL900
       purpose: command-payload
-      description: "Request body for uploading store branding images. Each file type has extension validation — logos accept jpg/gif/png, favicon accepts ico only."
+      description: "Request body for uploading store branding images. Each file type has extension validation - logos accept jpg/gif/png, favicon accepts ico only."
       represents:
         - concept: shop.CN001
           kind: api
@@ -89,7 +89,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Shop/Query/SearchShops.php"
           role: schema
-          description: "SearchShops query result — shop data for multi-store selection"
+          description: "SearchShops query result - shop data for multi-store selection"
 
     CreateStorePayload:
       x-model-id: MDL902
@@ -155,7 +155,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Store/Command/"
           role: schema
-          description: "Store creation — CQRS layer covers delete/toggle only; creation implied by domain model"
+          description: "Store creation - CQRS layer covers delete/toggle only; creation implied by domain model"
 
     StoreResource:
       x-model-id: MDL903
@@ -228,7 +228,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Store/Query/GetStoreForEditing.php"
           role: schema
-          description: "GetStoreForEditing query result — populates the store edit form"
+          description: "GetStoreForEditing query result - populates the store edit form"
 
     CreateSearchEnginePayload:
       x-model-id: MDL904
@@ -286,7 +286,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/SearchEngine/Query/GetSearchEngineForEditing.php"
           role: schema
-          description: "GetSearchEngineForEditing query result — populates the search engine edit form"
+          description: "GetSearchEngineForEditing query result - populates the search engine edit form"
 
     CreateAliasPayload:
       x-model-id: MDL906
@@ -367,4 +367,4 @@ components:
       code_refs:
         - path: "src/Core/Domain/Contact/Query/GetContactForEditing.php"
           role: schema
-          description: "GetContactForEditing query result — populates the contact edit form"
+          description: "GetContactForEditing query result - populates the contact edit form"

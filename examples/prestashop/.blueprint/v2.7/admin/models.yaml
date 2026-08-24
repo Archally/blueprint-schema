@@ -37,7 +37,7 @@ components:
         email:
           type: string
           format: email
-          description: "Employee email address — must be unique across all employees."
+          description: "Employee email address - must be unique across all employees."
           example: "john.smith@store.com"
         password:
           type: string
@@ -139,7 +139,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Employee/Query/GetEmployeeForEditing.php"
           role: schema
-          description: "GetEmployeeForEditing query result — populates the employee edit form"
+          description: "GetEmployeeForEditing query result - populates the employee edit form"
 
     CreateProfilePayload:
       x-model-id: MDL802
@@ -195,7 +195,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Profile/Query/GetProfileForEditing.php"
           role: schema
-          description: "GetProfileForEditing query result — populates the profile edit form"
+          description: "GetProfileForEditing query result - populates the profile edit form"
 
     CreateApiClientPayload:
       x-model-id: MDL804
@@ -218,7 +218,7 @@ components:
       properties:
         clientId:
           type: string
-          description: "OAuth2 client identifier — unique across all API clients."
+          description: "OAuth2 client identifier - unique across all API clients."
           example: "erp-sync-client"
         clientName:
           type: string
@@ -249,7 +249,7 @@ components:
     ApiClientResource:
       x-model-id: MDL805
       purpose: read-model
-      description: "API client details for the back-office edit form. One of only 2 Admin API resources exposed in core — the other is the ApiClient list endpoint."
+      description: "API client details for the back-office edit form. One of only 2 Admin API resources exposed in core - the other is the ApiClient list endpoint."
       represents:
         - concept: admin.CN005
           kind: api
@@ -301,7 +301,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/ApiClient/Query/GetApiClientForEditing.php"
           role: schema
-          description: "GetApiClientForEditing query result — populates the API client edit form"
+          description: "GetApiClientForEditing query result - populates the API client edit form"
 
     CreateWebserviceKeyPayload:
       x-model-id: MDL806
@@ -326,10 +326,10 @@ components:
         description:
           type: string
           description: "Purpose description for the webservice key."
-          example: "Legacy ERP integration — read-only product access"
+          example: "Legacy ERP integration - read-only product access"
         permissions:
           type: object
-          description: "Resource-level permission matrix — keys are resource names, values are permission arrays."
+          description: "Resource-level permission matrix - keys are resource names, values are permission arrays."
           additionalProperties:
             type: array
             items:
@@ -374,7 +374,7 @@ components:
         description:
           type: string
           description: "Purpose description."
-          example: "Legacy ERP integration — read-only product access"
+          example: "Legacy ERP integration - read-only product access"
         permissions:
           type: object
           description: "Resource-level permission matrix."
@@ -395,4 +395,4 @@ components:
       code_refs:
         - path: "src/Core/Domain/Webservice/Query/GetWebserviceKeyForEditing.php"
           role: schema
-          description: "GetWebserviceKeyForEditing query result — populates the webservice key edit form"
+          description: "GetWebserviceKeyForEditing query result - populates the webservice key edit form"

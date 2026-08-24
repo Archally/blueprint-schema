@@ -34,8 +34,8 @@ export function extractArch(doc: ParsedBlueprintDocument): Entity[] {
 
     // Emit Party entity (DQ-ARCH-16, step-08c). Always emitted, even when
     // `contexts` is empty — supports external-party rendering for parties
-    // declared as known integration partners (e.g. root-level
-    // parties: CRM, ESB or a document-management system).
+    // declared as known integration partners (e.g. root-level parties such as
+    // CRM, ESB or a document-management system that own no context of their own).
     const partyId = makeInternalId(doc.scope, doc.filePath, partyName);
     entities.push({
       id: partyId,

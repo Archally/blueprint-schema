@@ -4,7 +4,7 @@ scope: shipping
 
 happy_path:
   - id: shipping.TC001
-    name: "Create carrier with zones and ranges — happy path"
+    name: "Create carrier with zones and ranges - happy path"
     summary: "Create a new carrier with valid configuration including zones, ranges, and shipping method."
     validates:
       operations: [shipping.CMD001, shipping.EVT001]
@@ -28,7 +28,7 @@ happy_path:
       code: 200
 
   - id: shipping.TC002
-    name: "Toggle carrier free shipping — happy path"
+    name: "Toggle carrier free shipping - happy path"
     summary: "Enable free shipping on a carrier, bypassing range-based pricing."
     validates:
       operations: [shipping.CMD007, shipping.EVT005]
@@ -43,7 +43,7 @@ happy_path:
       status: success
 
   - id: shipping.TC003
-    name: "Create shipment for order — happy path"
+    name: "Create shipment for order - happy path"
     summary: "Create a new shipment for an existing order with a valid carrier and product."
     validates:
       operations: [shipping.CMD011, shipping.EVT009]
@@ -60,7 +60,7 @@ happy_path:
       code: 200
 
   - id: shipping.TC004
-    name: "Split shipment — happy path"
+    name: "Split shipment - happy path"
     summary: "Split a shipment, moving some products to a new shipment with a different carrier."
     validates:
       operations: [shipping.CMD015, shipping.EVT013]

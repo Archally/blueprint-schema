@@ -66,7 +66,7 @@ risks:
     statement: "Elasticsearch index drift after bulk product updates"
     description: >
       Bulk CSV imports update MySQL directly. If the ES re-indexing job
-      fails or lags, search results become stale — customers see products
+      fails or lags, search results become stale - customers see products
       that are out of stock or prices that are wrong.
     summary: "Search index staleness after bulk ops"
     likelihood: high
@@ -138,7 +138,7 @@ assumptions:
     statement: "Elasticsearch is available for stores with >10,000 products"
     consequence: >
       Without Elasticsearch, product search falls back to MySQL FULLTEXT
-      or LIKE queries — acceptable for small catalogs but causes severe
+      or LIKE queries - acceptable for small catalogs but causes severe
       performance degradation for large catalogs (>10k products, <1s
       search response target).
     risk_refs:
@@ -151,7 +151,7 @@ non_goals:
     statement: "No built-in B2B tiered/volume pricing engine"
     reason: >
       Pricing is per-customer-group with specific prices per product. B2B volume
-      pricing requires contract-based pricing engines beyond this scope — handled
+      pricing requires contract-based pricing engines beyond this scope - handled
       by dedicated B2B modules (e.g., Agile B2B).
     discovery_stage: committed
     certainty: confirmed
@@ -202,7 +202,7 @@ inquiries:
     statement: "Should product import support asynchronous processing with progress tracking?"
     summary: "Async bulk import with progress"
     description: >
-      Current CSV import is synchronous — the HTTP request blocks until
+      Current CSV import is synchronous - the HTTP request blocks until
       completion. For 10k+ row imports, this times out. Async processing
       with a progress endpoint would solve this.
     category: technical

@@ -79,7 +79,7 @@ components:
       properties:
         source:
           type: string
-          description: "Module package source — file path to a zip archive or download URL."
+          description: "Module package source - file path to a zip archive or download URL."
           example: "/tmp/ps_emailsubscription-2.8.1.zip"
       code_refs:
         - path: "src/Core/Domain/Module/Command/UploadModuleCommand.php"

@@ -16,7 +16,7 @@ concepts:
         description: "Unique customer identifier"
       email:
         id: CAT301
-        description: "Email address — unique per shop, used for authentication"
+        description: "Email address - unique per shop, used for authentication"
       firstName:
         id: CAT302
         description: "Customer first name"
@@ -87,7 +87,7 @@ actors:
   - id: customers.ACT001
     name: "Customer"
     type: human
-    description: "Registered customer managing their account profile, addresses, and privacy settings. Distinct from the ordering perspective (orders.ACT001 Shopper) — same person, different bounded context."
+    description: "Registered customer managing their account profile, addresses, and privacy settings. Distinct from the ordering perspective (orders.ACT001 Shopper) - same person, different bounded context."
     responsibilities:
       - "Register and manage account profile"
       - "Add and update delivery/invoice addresses"

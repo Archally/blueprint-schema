@@ -143,13 +143,13 @@ operations:
       - path: "src/Core/Domain/OrderReturnState/Command/BulkDeleteOrderReturnStateCommand.php"
         role: implementation
 
-  # --- CustomerMessage (from Domain/CustomerMessage/ — order-scoped customer messages) ---
+  # --- CustomerMessage (from Domain/CustomerMessage/ - order-scoped customer messages) ---
 
   addOrderCustomerMessage:
     id: orders.CMD036
     kind: command
     name: "AddOrderCustomerMessage"
-    description: "Add a customer-initiated message to an order. Distinct from OrderMessage templates — this is an actual message attached to a specific order."
+    description: "Add a customer-initiated message to an order. Distinct from OrderMessage templates - this is an actual message attached to a specific order."
     delivery_priority: should-have
     initiated_by: [orders.ACT001]
     code_refs:

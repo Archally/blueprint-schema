@@ -147,7 +147,7 @@ operations:
     id: checkout.QRY002
     kind: query
     name: "GetCartForOrderCreation"
-    description: "Retrieve cart data structured for order creation — includes computed totals, addresses, and carrier selection."
+    description: "Retrieve cart data structured for order creation - includes computed totals, addresses, and carrier selection."
     delivery_priority: must-have
     code_refs:
       - path: "src/Core/Domain/Cart/Query/GetCartForOrderCreation.php"

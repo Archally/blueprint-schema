@@ -21,6 +21,7 @@ node tools/doc-snippet-validate/cli.mjs guide.md --schemas schema/v2.7 --keep   
 | `--validator "<tpl>"` | Command template; `{model}` and `{schemas}` are substituted. Defaults to the zero-build validator |
 | `--keep` | Keep the extracted model directory and print its path — the first thing to look at when a failure is puzzling |
 | `--json` | Machine-readable report |
+| `--optional` | A listed document whose whole tree is absent from this checkout is reported as a skip instead of an error. It forgives a missing *tree*, never a missing file inside a tree that exists — so a mistyped path is still fatal. |
 
 Exit `0` all documents valid · `1` a document failed · `2` usage or IO error.
 

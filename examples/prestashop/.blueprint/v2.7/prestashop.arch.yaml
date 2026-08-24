@@ -27,7 +27,9 @@ parties:
             summary: External API consumer using PrestaShop Admin REST API with OAuth2 authentication.
             contracts:
               httpClient:
-                output: dist/admin-api-client.http
+                # Declared at the model ROOT: an external consumer of the Admin API, belonging to
+                # no single slice. `_global/` says that outright rather than leaving it inferred.
+                output: _global/admin-api-client.http
                 call:
                   - admin:addApiClient
                   - admin:getEmployeeForEditing

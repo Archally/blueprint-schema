@@ -8,7 +8,7 @@ components:
     CreateProductPayload:
       x-model-id: MDL001
       purpose: command-payload
-      description: "Request body for creating a new product. Minimal fields — product starts in draft status."
+      description: "Request body for creating a new product. Minimal fields - product starts in draft status."
       represents:
         - concept: catalog.CN001
           kind: api
@@ -414,7 +414,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Product/QueryResult/ProductForEditing.php"
           role: schema
-          description: "ProductForEditing QueryResult — the master read model"
+          description: "ProductForEditing QueryResult - the master read model"
 
     ProductListItem:
       x-model-id: MDL004
@@ -485,7 +485,7 @@ components:
     ProductPricesInfo:
       x-model-id: MDL005
       purpose: dto
-      description: "Product pricing subsection — base price, tax, ecotax, wholesale, unit price."
+      description: "Product pricing subsection - base price, tax, ecotax, wholesale, unit price."
       represents:
         - concept: catalog.CN001
           kind: api
@@ -546,7 +546,7 @@ components:
     ProductStockInfo:
       x-model-id: MDL006
       purpose: dto
-      description: "Product stock subsection — quantity, minimum order, low stock alert, availability labels."
+      description: "Product stock subsection - quantity, minimum order, low stock alert, availability labels."
       type: object
       properties:
         quantity:

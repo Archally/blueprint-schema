@@ -6,7 +6,7 @@ tags: [customer-service, support]
 concepts:
   - id: customers.CN005
     name: "CustomerThread"
-    description: "Customer service thread — a support conversation initiated by a customer or employee. Tracks status, assigned employee, and message history."
+    description: "Customer service thread - a support conversation initiated by a customer or employee. Tracks status, assigned employee, and message history."
     stereotype: aggregate-root
     states: [open, pending_customer, pending_employee, closed]
     initial_state: open

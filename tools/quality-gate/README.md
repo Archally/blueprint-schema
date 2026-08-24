@@ -119,7 +119,10 @@ whole model:
 | **slice** | `--slice <name>` | first path segment (`payroll/`, `recruitment/`, …) | `threshold` (the slice measured as its own steady-state unit) | the slice's own baseline |
 
 A slice is the first path segment under the model root; files that sit directly in
-the root belong to a synthetic `(root)` slice. Slice mode is what makes a *vertical*
+the root belong to a synthetic `(root)` slice. A `--slice` that selects nothing
+measurable — a misspelled name, or a folder holding no scorable YAML — is a usage
+error (exit 2) that lists the slices which would have worked. A gate cannot pass over
+zero files: that verdict would be green and meaningless. Slice mode is what makes a *vertical*
 remediation plan measurable: `--slice payroll --strict` answers "is the payroll
 slice at its bar yet?" and `--slice payroll --update-baseline` records payroll's own
 floor so it ratchets independently of every other slice.

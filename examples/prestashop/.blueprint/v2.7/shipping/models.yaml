@@ -421,7 +421,7 @@ components:
     CarrierZoneConfig:
       x-model-id: MDL405
       purpose: dto
-      description: "Zone-based shipping configuration — defines cost ranges for a carrier within a specific delivery zone."
+      description: "Zone-based shipping configuration - defines cost ranges for a carrier within a specific delivery zone."
       represents:
         - concept: shipping.CN002
           kind: api

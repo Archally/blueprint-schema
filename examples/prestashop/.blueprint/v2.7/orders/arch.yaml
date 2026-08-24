@@ -18,7 +18,7 @@ parties:
         kind: core
         complexity: concurrency
         evolution: product
-        summary: Order lifecycle — placement, state management, cancellation, refund, invoice, returns, credit slips.
+        summary: Order lifecycle - placement, state management, cancellation, refund, invoice, returns, credit slips.
         owned_by:
           team: TM001
         responsibilities:
@@ -75,14 +75,14 @@ parties:
                 environment: development
             contracts:
               openapi:
-                output: dist/orders-api.openapi.yaml
+                output: orders/orders-api.openapi.yaml
                 expose:
                   - orders:placeOrder
                   - orders:cancelOrder
                   - orders:issueStandardRefund
                   - orders:getOrderForViewing
               asyncapi:
-                output: dist/orders-events.asyncapi.yaml
+                output: orders/orders-events.asyncapi.yaml
                 send:
                   - orders:orderPlaced
                   - orders:orderCancelled

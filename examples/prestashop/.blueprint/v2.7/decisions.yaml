@@ -20,7 +20,7 @@ decisions:
     consequences:
       positive:
         - "Services remain independently deployable"
-        - "Failures are isolated — stock reservation failure does not block order creation"
+        - "Failures are isolated - stock reservation failure does not block order creation"
       negative:
         - "Eventual consistency requires compensating transactions for rollback"
         - "Debugging distributed flows is harder than single-process"
@@ -58,12 +58,12 @@ decisions:
     date: "2025-11"
     status: landed
     rationale:
-      problem: "Handling card data directly requires PCI DSS Level 1 compliance — annual audits costing $50k+ and specialized infrastructure."
+      problem: "Handling card data directly requires PCI DSS Level 1 compliance - annual audits costing $50k+ and specialized infrastructure."
       options:
         - "Build in-house payment processing (PCI Level 1)"
         - "Use tokenized gateway modules (PCI SAQ-A)"
         - "Redirect to hosted payment pages only"
-      chosen: "Tokenized gateway modules — card data never touches PrestaShop servers"
+      chosen: "Tokenized gateway modules - card data never touches PrestaShop servers"
     motivation_refs:
       goals: [checkout.G002]
       risks: [checkout.R002]
@@ -90,7 +90,7 @@ decisions:
         - "Client-side cart (localStorage + cookies)"
         - "Server-side cart (database, session-keyed)"
         - "Hybrid (local for speed, server for persistence)"
-      chosen: "Server-side cart — single source of truth, tamper-proof"
+      chosen: "Server-side cart - single source of truth, tamper-proof"
     motivation_refs:
       goals: [orders.G001, checkout.G001]
       risks: [orders.R003]
@@ -118,7 +118,7 @@ decisions:
         - "Continue with ObjectModel for all operations"
         - "CQRS with separate command/query handlers"
         - "Event sourcing with command/event store"
-      chosen: "CQRS with separate command/query handlers — pragmatic write/read split without event sourcing complexity"
+      chosen: "CQRS with separate command/query handlers - pragmatic write/read split without event sourcing complexity"
     motivation_refs:
       goals: [orders.G003]
     capability_refs: [CAP001, CAP005]
@@ -129,11 +129,11 @@ decisions:
         - "Handler classes are small, focused, testable"
       negative:
         - "More classes per operation (Command + Handler + DTO)"
-        - "Migration from ObjectModel is gradual — dual-path during transition"
+        - "Migration from ObjectModel is gradual - dual-path during transition"
     code_refs:
       - path: "src/Core/Domain/"
         role: implementation
-        description: "CQRS domain layer root — all aggregates follow Command/CommandHandler pattern"
+        description: "CQRS domain layer root - all aggregates follow Command/CommandHandler pattern"
       - path: "https://github.com/PrestaShop/docs/blob/9.x/development/architecture/domain/_index.md"
         role: documentation
         description: "CQRS architecture documentation"
@@ -149,7 +149,7 @@ decisions:
         - "Continue custom MVC framework"
         - "Migrate to Symfony (gradual)"
         - "Rewrite as headless SPA"
-      chosen: "Gradual Symfony migration — new pages in Symfony, legacy pages migrated incrementally"
+      chosen: "Gradual Symfony migration - new pages in Symfony, legacy pages migrated incrementally"
     capability_refs: [CAP015, CAP016]
     consequences:
       positive:
@@ -178,7 +178,7 @@ decisions:
         - "Extend legacy webservice API"
         - "New Admin API with OAuth2 and resource-based design"
         - "GraphQL API"
-      chosen: "New Admin API — resource-oriented REST with OAuth2 scopes and proper versioning"
+      chosen: "New Admin API - resource-oriented REST with OAuth2 scopes and proper versioning"
     capability_refs: [CAP016]
     consequences:
       positive:
@@ -207,7 +207,7 @@ decisions:
         - "Keep monolithic server-rendered frontend only"
         - "Add REST API layer for headless alongside existing frontend"
         - "Full headless-only (drop server-rendered frontend)"
-      chosen: "Add REST API layer — support headless while maintaining traditional frontend for backwards compatibility"
+      chosen: "Add REST API layer - support headless while maintaining traditional frontend for backwards compatibility"
     motivation_refs:
       goals: [catalog.G001]
     capability_refs: [CAP016, CAP005]

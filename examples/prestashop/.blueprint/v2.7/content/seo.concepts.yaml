@@ -7,7 +7,7 @@ concepts:
   - id: content.CN005
     name: "Meta"
     stereotype: entity
-    description: "SEO metadata configuration for a specific page type (e.g., 'category', 'product', 'cms'). Defines localized page titles, meta descriptions, and URL rewrite rules. Meta entries map internal page names to SEO-friendly URLs. Note: Meta has no delete command in the CQRS layer — entries are managed through add and edit only."
+    description: "SEO metadata configuration for a specific page type (e.g., 'category', 'product', 'cms'). Defines localized page titles, meta descriptions, and URL rewrite rules. Meta entries map internal page names to SEO-friendly URLs. Note: Meta has no delete command in the CQRS layer - entries are managed through add and edit only."
     tags: [entity, seo]
     attributes:
       pageName:

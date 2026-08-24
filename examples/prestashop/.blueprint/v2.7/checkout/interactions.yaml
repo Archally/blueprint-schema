@@ -23,7 +23,7 @@ screens:
 
   - id: checkout.SCR003
     name: "Discount Edit"
-    summary: "Form for creating and editing discounts — conditions, actions, validity, usage limits, and product rule groups."
+    summary: "Form for creating and editing discounts - conditions, actions, validity, usage limits, and product rule groups."
     uses_models: ["DiscountForEditing"]
     stories: [checkout.STR002]
 

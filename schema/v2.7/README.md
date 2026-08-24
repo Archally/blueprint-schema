@@ -11,7 +11,7 @@ A blueprint is organized into **two planes** plus **cross-cutting schemas**. Eac
 
 ## Cross-cutting schemas
 
-These three files sit at the version root — they belong to neither plane and are imported (or applied) across every layer.
+These four files sit at the version root — they belong to neither plane and are imported (or applied) across every layer.
 
 ### [`blueprint.schema.yaml`](./blueprint.schema.yaml) — root composition
 
@@ -19,9 +19,9 @@ The entry-point schema: it composes the design and governance layers into one mo
 
 ### [`metamodel.schema.yaml`](./metamodel.schema.yaml) — the shared vocabulary (the model's *legend*)
 
-Cross-cutting definitions for all blueprint layers. Every design and governance schema imports from it, so identifiers and shared shapes mean the same thing in every layer. It defines **92 shared definitions**, including:
+Cross-cutting definitions for all blueprint layers. Every design and governance schema imports from it, so identifiers and shared shapes mean the same thing in every layer. It defines **93 shared definitions**, including:
 
-- **Typed ID references** (60 forms) — one per entity type (`CN001` concept, `CMD001` command, `EVT001` event …), optionally context-prefixed (`billing.CN001`). These turn the model into a navigable graph.
+- **Typed ID references** (61 forms) — one per entity type (`CN001` concept, `CMD001` command, `EVT001` event …), optionally context-prefixed (`billing.CN001`). These turn the model into a navigable graph.
 - **Versioning** — `semver` content versions plus `schema_version`, which also accepts older document versions for forward-compatibility.
 - **Evidence chains** — `discovery_stage`, `certainty`, `evidence`, `provenance` track how claims mature from hypothesis to confirmed.
 - **Code references** — `code_refs` bridge an entity to the source files that implement it.
@@ -36,6 +36,10 @@ Versioned, ordered changes to a blueprint model instance. A migration records or
 - **property** — A change to individual properties on an existing entity.
 - **relationship** — A change to a relationship (edge) between two entities.
 - **meta** — Cross-cutting changes: tags, file restructuring, bulk operations, constitution amendments.
+
+### [`render.manifest.schema.yaml`](./render.manifest.schema.yaml) — render manifest
+
+Declares one project's full artifact set for the `bp render` command: which renderer targets to produce, where their output lands, and the single build stamp shared by the whole run.
 
 ---
 

@@ -94,7 +94,7 @@ security:
 compliance:
   - id: orders.CMP001
     name: "GDPR Order Data Retention"
-    regulation: "GDPR Article 17 — Right to Erasure"
+    regulation: "GDPR Article 17 - Right to Erasure"
     requirement: "Customer order data must be anonymizable upon request. Retention period for completed orders is 7 years (tax compliance)."
     concepts: [orders.CN002, orders.CN004]
     retention:
@@ -102,7 +102,7 @@ compliance:
       action: anonymize
 
   - id: orders.CMP002
-    name: "EU Consumer Rights — 14-day Return Window"
+    name: "EU Consumer Rights - 14-day Return Window"
     regulation: "EU Consumer Rights Directive 2011/83/EU"
     requirement: "All EU orders must allow returns within a minimum of 14 days from delivery. Merchants may offer longer windows."
     concepts: [orders.CN002, orders.CN007]

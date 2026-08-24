@@ -63,7 +63,7 @@ validation:
 transition:
   - id: content.TR001
     name: "Theme Enable Deactivates Current"
-    description: "Enabling a theme must deactivate the currently active theme for the shop. This is an automatic side effect — the system ensures exclusivity."
+    description: "Enabling a theme must deactivate the currently active theme for the shop. This is an automatic side effect - the system ensures exclusivity."
     concept: content.CN003
     guard:
       when: "A different theme is currently active for the shop"

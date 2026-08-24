@@ -49,7 +49,7 @@ concepts:
   - id: content.CN002
     name: "CmsPageCategory"
     stereotype: aggregate-root
-    description: "A hierarchical category for organizing CMS pages. Categories form a tree via parent references. Supports localized name, description, SEO metadata, and friendly URL. No dedicated move/reorder command exists — hierarchy changes are made through parent reassignment on edit."
+    description: "A hierarchical category for organizing CMS pages. Categories form a tree via parent references. Supports localized name, description, SEO metadata, and friendly URL. No dedicated move/reorder command exists - hierarchy changes are made through parent reassignment on edit."
     tags: [aggregate-root, core-domain]
     attributes:
       localizedName:

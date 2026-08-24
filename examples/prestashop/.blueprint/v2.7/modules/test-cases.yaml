@@ -4,7 +4,7 @@ scope: modules
 
 happy_path:
   - id: modules.TC001
-    name: "Install module — happy path"
+    name: "Install module - happy path"
     summary: "Verify that a module can be installed by technical name and transitions to installed_enabled state."
     validates:
       operations: [modules.CMD001, modules.EVT001]
@@ -22,7 +22,7 @@ happy_path:
       status: success
 
   - id: modules.TC002
-    name: "Disable and re-enable module — happy path"
+    name: "Disable and re-enable module - happy path"
     summary: "Verify that a module can be disabled and re-enabled without losing configuration."
     validates:
       operations: [modules.CMD003, modules.EVT003]
@@ -38,7 +38,7 @@ happy_path:
       status: success
 
   - id: modules.TC003
-    name: "Upgrade module — happy path"
+    name: "Upgrade module - happy path"
     summary: "Verify that an installed module can be upgraded to a newer version."
     validates:
       operations: [modules.CMD007, modules.EVT005]
@@ -54,7 +54,7 @@ happy_path:
       status: success
 
   - id: modules.TC004
-    name: "Toggle hook status — happy path"
+    name: "Toggle hook status - happy path"
     summary: "Verify that a hook can be disabled and re-enabled."
     validates:
       operations: [modules.CMD009, modules.EVT007]

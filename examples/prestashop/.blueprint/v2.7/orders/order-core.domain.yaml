@@ -178,7 +178,7 @@ operations:
     id: orders.CMD014
     kind: command
     name: "UpdateShippingDetails"
-    description: "Update shipping details — tracking number, carrier, and shipping cost — on an order."
+    description: "Update shipping details - tracking number, carrier, and shipping cost - on an order."
     delivery_priority: must-have
     initiated_by: [orders.ACT003]
     produces:
@@ -220,7 +220,7 @@ operations:
     id: orders.QRY001
     kind: query
     name: "GetOrderForViewing"
-    description: "Retrieve comprehensive order data for back-office viewing — line items, payments, invoices, status history, messages, and shipping details."
+    description: "Retrieve comprehensive order data for back-office viewing - line items, payments, invoices, status history, messages, and shipping details."
     delivery_priority: must-have
     code_refs:
       - path: "src/Core/Domain/Order/Query/GetOrderForViewing.php"
@@ -232,7 +232,7 @@ operations:
     id: orders.QRY002
     kind: query
     name: "GetOrderPreview"
-    description: "Retrieve lightweight order preview for list views — summary data without full detail."
+    description: "Retrieve lightweight order preview for list views - summary data without full detail."
     delivery_priority: should-have
     code_refs:
       - path: "src/Core/Domain/Order/Query/GetOrderPreview.php"

@@ -13,7 +13,7 @@ owned_by:
   team: TM010
 
 # ---------------------------------------------------------------------------
-# Environments — the binding dimension (production / staging), not forked files.
+# Environments - the binding dimension (production / staging), not forked files.
 # ---------------------------------------------------------------------------
 environments:
   - id: prestashop.ENV001
@@ -34,13 +34,13 @@ environments:
     tags: [staging]
 
 # ---------------------------------------------------------------------------
-# Deployment scopes (DSC###, v2.7.7) — the Kubernetes management partition: the
+# Deployment scopes (DSC###, v2.7.7) - the Kubernetes management partition: the
 # cluster is the root, namespaces are its children (the k8s analogue of an Azure
 # subscription → resource-groups). Env-agnostic: the prod/staging split lives in
 # `environments` (each env realizes these namespaces as prestashop-prod /
 # prestashop-staging), exactly as an env names a concrete subscription while the
 # scope names the logical partition. All 4 workloads are `hosted_on` the one
-# cluster (IR005) yet `scope_ref` different namespaces — placement ≠ management.
+# cluster (IR005) yet `scope_ref` different namespaces - placement ≠ management.
 # ---------------------------------------------------------------------------
 deployment_scopes:
   - id: prestashop.DSC001
@@ -48,7 +48,7 @@ deployment_scopes:
     kind: cluster
     substrate: cloud
     provider: k8s
-    description: "The managed Kubernetes cluster — root of the namespace tree (mirrors the IR005 cluster resource)."
+    description: "The managed Kubernetes cluster - root of the namespace tree (mirrors the IR005 cluster resource)."
   - id: prestashop.DSC002
     name: "prestashop-app"
     kind: namespace
@@ -61,7 +61,7 @@ deployment_scopes:
     description: "Data-tier namespace: the stateful MySQL, Redis, and object-store workloads, isolated from the app tier."
 
 # ---------------------------------------------------------------------------
-# Resources — concrete IR### instances, all scope-prefixed. Container-hosted
+# Resources - concrete IR### instances, all scope-prefixed. Container-hosted
 # in-cluster; the app connects_to its shared data stores (TOSCA relations).
 # ---------------------------------------------------------------------------
 resources:
@@ -73,7 +73,7 @@ resources:
     description: >
       The one shared relational database PrestaShop uses for all bounded contexts (catalog, orders,
       checkout, customers, shop, …). Run in-cluster as a StatefulSet via the Bitnami MySQL Helm chart.
-      A shared database is a deliberate monolith trait — surfaced here as a single IR001 rather than
+      A shared database is a deliberate monolith trait - surfaced here as a single IR001 rather than
       duplicated per service (the shared need id `prestashop-db` reads it as one instance).
     hosting_model: container
     type_ref: RT001
@@ -133,7 +133,7 @@ resources:
     scope_ref: prestashop.DSC002
     summary: "The PrestaShop PHP monolith workload (web + admin + API)."
     description: >
-      The PrestaShop monolith itself — front office, back office, and web-service API served from one
+      The PrestaShop monolith itself - front office, back office, and web-service API served from one
       PHP-FPM + web deployment. Publicly exposed via an ingress; connects to the shared MySQL database,
       the Redis cache, and the object store. Deployed via an umbrella PrestaShop Helm chart.
     hosting_model: container
@@ -157,7 +157,7 @@ resources:
     summary: "The Kubernetes cluster hosting all PrestaShop workloads."
     description: >
       Managed Kubernetes cluster that hosts the PrestaShop application and its in-cluster data stores.
-      The canonical placement root (`hosted_on` target) — a substrate-neutral compute host, not a
+      The canonical placement root (`hosted_on` target) - a substrate-neutral compute host, not a
       provider resource in the model.
     hosting_model: managed-service
     exposure: private
@@ -167,9 +167,9 @@ resources:
     tags: [platform, compute]
 
 # ---------------------------------------------------------------------------
-# Bindings — (resource-type × environment) → concrete Helm module. NOTE: RT001
+# Bindings - (resource-type × environment) → concrete Helm module. NOTE: RT001
 # binds to bitnami/mysql (MySQL), NOT the k8s profile's default cloudnative-pg
-# (Postgres) — PrestaShop is a MySQL app, so the module is chosen HERE.
+# (Postgres) - PrestaShop is a MySQL app, so the module is chosen HERE.
 # ---------------------------------------------------------------------------
 bindings:
   # --- RT001 relational-database → Bitnami MySQL (MySQL, not Postgres) ---
@@ -200,7 +200,7 @@ bindings:
       - { name: name, description: "database name" }
       - { name: username }
       - { name: password, secret: true }
-    description: "Staging MySQL — same chart, smaller size tier."
+    description: "Staging MySQL - same chart, smaller size tier."
 
   # --- RT004 cache → Bitnami Redis ---
   - id: prestashop.BND003
@@ -226,7 +226,7 @@ bindings:
       - { name: host }
       - { name: port, type: int }
       - { name: password, secret: true }
-    description: "Staging Redis — same chart, smaller size tier."
+    description: "Staging Redis - same chart, smaller size tier."
 
   # --- RT002 object-store → MinIO ---
   - id: prestashop.BND005
@@ -254,4 +254,4 @@ bindings:
       - { name: bucket }
       - { name: access_key, secret: true }
       - { name: secret_key, secret: true }
-    description: "Staging MinIO — standalone (single-node) mode."
+    description: "Staging MinIO - standalone (single-node) mode."

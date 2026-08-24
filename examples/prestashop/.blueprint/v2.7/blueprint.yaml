@@ -1,6 +1,6 @@
 ---
 version: "1.0.0"
-schemaVersion: "2.6.0"
+schemaVersion: "2.7.0"
 name: "PrestaShop E-Commerce Platform"
 description: >
   Blueprint model of the PrestaShop v9 open-source e-commerce platform covering
@@ -10,3 +10,41 @@ repository:
   url: "https://github.com/PrestaShop/PrestaShop"
   branch: "develop"
   provider: "github"
+
+# Declares what was already true on disk: this model is organised as ten slice subfolders, one per
+# bounded context. Without this block the layout was implicitly the legacy single-folder one, so
+# `bp render --list-slices` had nothing to list and `--slice` could not be checked for typos - the
+# folders existed but nothing said they were the slice vocabulary rather than incidental directories.
+layout:
+  mode: slices
+  slices:
+    - name: admin
+      description: "Back-office: employees, permissions, API clients, and the administration shell."
+      type: supporting-domain
+    - name: catalog
+      description: "Products, categories, attributes, combinations, stock and pricing rules."
+      type: core-domain
+    - name: checkout
+      description: "Cart, address and carrier selection, payment initiation and order placement."
+      type: core-domain
+    - name: content
+      description: "CMS pages, blocks and static content served alongside the storefront."
+      type: supporting-domain
+    - name: customers
+      description: "Customer accounts, addresses, groups, and consent/PII handling."
+      type: core-domain
+    - name: international
+      description: "Languages, currencies, countries, zones, taxes and translation."
+      type: supporting-domain
+    - name: modules
+      description: "The module/hook extension system: install, configure, upgrade, and hook dispatch."
+      type: technical-capability
+    - name: orders
+      description: "Order lifecycle, statuses, invoices, credit slips, refunds and returns."
+      type: core-domain
+    - name: shipping
+      description: "Carriers, zones, weight/price ranges and delivery-cost computation."
+      type: supporting-domain
+    - name: shop
+      description: "Multistore: shop groups, shops, per-shop configuration and URL routing."
+      type: supporting-domain

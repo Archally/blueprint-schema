@@ -98,7 +98,7 @@ trade_offs:
       A typed event dispatcher would provide compile-time safety and IDE
       autocompletion, but would break every existing module that registers
       hooks by string name. The hook system is PrestaShop's most fundamental
-      extension point — changing it means breaking the entire module ecosystem.
+      extension point - changing it means breaking the entire module ecosystem.
     accepted_risk: "String-based hooks are error-prone (typos, missing hooks). No compile-time verification."
     discovery_stage: committed
     certainty: confirmed

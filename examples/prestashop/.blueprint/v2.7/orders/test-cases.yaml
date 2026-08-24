@@ -4,7 +4,7 @@ scope: orders
 
 happy_path:
   - id: orders.TC001
-    name: "Place order — happy path"
+    name: "Place order - happy path"
     summary: "Valid cart, sufficient stock, payment succeeds."
     validates:
       operations: [orders.CMD001, orders.EVT001]
@@ -23,7 +23,7 @@ happy_path:
       code: 201
 
   - id: orders.TC002
-    name: "Cancel order — happy path"
+    name: "Cancel order - happy path"
     summary: "Order in payment-accepted status, not yet shipped."
     validates:
       operations: [orders.CMD002, orders.EVT002]
@@ -36,7 +36,7 @@ happy_path:
       status: success
 
   - id: orders.TC003
-    name: "Generate invoice — happy path"
+    name: "Generate invoice - happy path"
     summary: "Order with payment-accepted status, no existing invoice."
     validates:
       operations: [orders.CMD017, orders.EVT007]
@@ -51,7 +51,7 @@ happy_path:
       code: 201
 
   - id: orders.TC004
-    name: "Add payment — happy path"
+    name: "Add payment - happy path"
     summary: "Manually add a bank transfer payment to an order."
     validates:
       operations: [orders.CMD019, orders.EVT008]
@@ -67,7 +67,7 @@ happy_path:
 
 edge_cases:
   - id: orders.EC001
-    name: "Place order — insufficient stock"
+    name: "Place order - insufficient stock"
     summary: "Cart item exceeds available stock during checkout."
     validates:
       operations: [orders.CMD001]
@@ -82,7 +82,7 @@ edge_cases:
       code: 409
 
   - id: orders.EC002
-    name: "Partial refund — maximum refundable amount"
+    name: "Partial refund - maximum refundable amount"
     summary: "Partial refund for the exact remaining refundable amount after a previous partial refund."
     validates:
       operations: [orders.CMD015]
@@ -98,7 +98,7 @@ edge_cases:
 
 error_cases:
   - id: orders.ER001
-    name: "Place order — payment gateway timeout"
+    name: "Place order - payment gateway timeout"
     summary: "Payment gateway does not respond within SLA timeout."
     validates:
       operations: [orders.CMD001]
@@ -111,7 +111,7 @@ error_cases:
       code: 504
 
   - id: orders.ER002
-    name: "Return after window — eligibility expired"
+    name: "Return after window - eligibility expired"
     summary: "Customer attempts to return an order after the 14-day return window."
     validates:
       operations: [orders.CMD016]
@@ -126,7 +126,7 @@ error_cases:
       code: 422
 
   - id: orders.ER003
-    name: "Invalid state transition — refunded to processing"
+    name: "Invalid state transition - refunded to processing"
     summary: "Attempt to transition a refunded order back to processing."
     validates:
       operations: [orders.CMD004]

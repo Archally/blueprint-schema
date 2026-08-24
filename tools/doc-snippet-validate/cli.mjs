@@ -46,7 +46,7 @@ import { extractBlocks, modelRelativePath } from "./extract.mjs";
 
 const DEFAULT_VALIDATOR = "node tools/validator/src/cli.mjs {model} --schemas {schemas}";
 const USAGE =
-  'usage: doc-snippet-validate <markdown...> --schemas <dir> [--validator "<template>"] [--keep] [--json]';
+  'usage: doc-snippet-validate <markdown...> --schemas <dir> [--validator "<template>"] [--keep] [--json] [--optional]';
 
 function fail(message) {
   console.error(`doc-snippet-validate: ${message}\n${USAGE}`);
@@ -54,10 +54,11 @@ function fail(message) {
 }
 
 function parseArgs(argv) {
-  const args = { docs: [], schemas: undefined, validator: DEFAULT_VALIDATOR, keep: false, json: false };
+  const args = { docs: [], schemas: undefined, validator: DEFAULT_VALIDATOR, keep: false, json: false, optional: false };
   for (let i = 0; i < argv.length; i++) {
     const token = argv[i];
-    if (token === "--keep") args.keep = true;
+    if (token === "--optional") args.optional = true;
+    else if (token === "--keep") args.keep = true;
     else if (token === "--json") args.json = true;
     else if (token === "--schemas") args.schemas = argv[++i];
     else if (token === "--validator") args.validator = argv[++i];
@@ -78,7 +79,22 @@ const results = [];
 let failed = 0;
 
 for (const doc of args.docs) {
-  if (!existsSync(doc)) fail(`not found: ${doc}`);
+  if (!existsSync(doc)) {
+    // Some listed documents live in a BUILD PRODUCT (the exported agent kit), not in this
+    // repository — so they are absent in a fresh checkout and always absent in CI.
+    //
+    // `--optional` forgives an ABSENT TREE, never an absent file inside a tree that exists.
+    // A blanket "missing means skip" would let a typo in the flagship document — the one this
+    // gate exists for — pass as a skip, which is the silent-omission failure the gate prevents.
+    // So the test is on the FIRST path segment: no `blueprint-ai-agent-kit/` at all means the kit
+    // was never built here; a missing file under an existing `.agents/` means someone mistyped.
+    const treeRoot = doc.split(/[\\/]/)[0];
+    if (args.optional && treeRoot && !existsSync(treeRoot)) {
+      results.push({ doc, status: "skipped", reason: `no ${treeRoot}/ in this checkout (--optional)`, blocks: 0, unnamed: [] });
+      continue;
+    }
+    fail(`not found: ${doc}`);
+  }
   const { blocks, unnamed } = extractBlocks(readFileSync(doc, "utf8"));
 
   if (blocks.length === 0) {

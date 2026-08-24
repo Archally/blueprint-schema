@@ -7,7 +7,7 @@ goals:
     statement: "Secure role-based access control for all back-office users"
     description: >
       Ensure every back-office user has precisely the permissions required for
-      their role — no more, no less. Profile-based RBAC with tab and module
+      their role - no more, no less. Profile-based RBAC with tab and module
       permission matrices.
     summary: "Secure RBAC"
     priority: high
@@ -87,7 +87,7 @@ non_goals:
     statement: "No LDAP/Active Directory integration for employee authentication"
     reason: >
       Employee authentication uses database-stored credentials only. Enterprise
-      directory integration (LDAP, AD, OIDC) is not part of core — would require
+      directory integration (LDAP, AD, OIDC) is not part of core - would require
       authentication provider abstraction that doesn't exist in the current architecture.
     discovery_stage: committed
     certainty: confirmed
@@ -98,7 +98,7 @@ assumptions:
     consequence: >
       If PHP 7.4 support is reintroduced, typed properties, enums, fibers,
       and readonly classes used throughout the CQRS domain layer become
-      unusable — requiring significant codebase regression.
+      unusable - requiring significant codebase regression.
     discovery_stage: committed
     certainty: confirmed
 

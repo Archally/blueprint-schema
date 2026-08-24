@@ -140,7 +140,8 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
   }
 
   // Context owner resolution for contracts — composite (party, contextName) key, since
-  // context names collide across parties (measured: one context name owned by three parties).
+  // context names collide across parties: one model was measured with the same context name
+  // owned by three different parties, so a name-only key resolves to whichever was seen first.
   const contextsByPartyAndName = new Map<string, Entity>();
   for (const ctx of contexts) {
     const party = typeof getData(ctx)._party === 'string' ? (getData(ctx)._party as string) : '';
@@ -148,7 +149,7 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
     contextsByPartyAndName.set(`${party}::${name}`, ctx);
   }
 
-  // Contract PROVIDE-membership: contextId → op-refs its services provide (expose ∪ send).
+  // PROVIDE-membership: contextId → op-refs its services provide (expose ∪ send ∪ handles).
   // Kept in BOTH exact case (for `exact` binds) and case-folded (for `loose` binds —
   // contract refs are commonly camelCase `catalog:addProduct` while operation names are
   // PascalCase `AddProduct`, an inherent API↔domain convention gap the binder bridges).
@@ -163,22 +164,45 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
     }
     return set;
   };
-  for (const contract of entities) {
-    if (contract.type !== ENTITY_TYPE.Contract) continue;
-    const data = getData(contract);
+  const addProvided = (entity: Entity, refs: string[]): void => {
+    if (!refs.length) return;
+    const data = getData(entity);
     const ownerName = typeof data._context === 'string' ? data._context : null;
-    if (!ownerName) continue;
+    if (!ownerName) return;
     const party = typeof data._party === 'string' ? data._party : '';
     const owner = contextsByPartyAndName.get(`${party}::${ownerName}`);
-    if (!owner) continue;
+    if (!owner) return;
     const exactSet = ensure(providedExactByContextId, owner.id);
     const foldedSet = ensure(providedFoldedByContextId, owner.id);
-    for (const ref of [...asStringArray(data.expose), ...asStringArray(data.send)]) {
+    for (const ref of refs) {
       exactSet.add(ref);
       const folded = ref.toLowerCase();
       foldedSet.add(folded);
       allProvidedFolded.add(folded);
     }
+  };
+
+  for (const contract of entities) {
+    if (contract.type !== ENTITY_TYPE.Contract) continue;
+    const data = getData(contract);
+    addProvided(contract, [...asStringArray(data.expose), ...asStringArray(data.send)]);
+  }
+
+  // ── Service `handles:` — provide-membership with no transport asserted ────────
+  //
+  // The third binding source, and the only one that is not a contract. `expose:` and `send:` both
+  // sit inside a contract, and a contract names a protocol: declaring either asserts a channel that
+  // an in-process call does not have. Faking one to satisfy the binder is worse than the unbound
+  // report it silences, because the model then states a transport that does not exist and every
+  // downstream diagram draws it.
+  //
+  // Read from the SERVICE rather than a contract, which is why it needs its own pass. Everything
+  // after this point is shared: the same exact/loose fold, the same m:n behaviour, and the same
+  // `resolution: 'contract'` tag - a `handles:` bind is declared by the author in the model, so it
+  // is a real declaration and not the deprecated name/scope fallback.
+  for (const service of entities) {
+    if (service.type !== ENTITY_TYPE.Service) continue;
+    addProvided(service, asStringArray(getData(service).handles));
   }
 
   // Name/scope fallback (deprecated) — mirrors resolver `ownedBy`.

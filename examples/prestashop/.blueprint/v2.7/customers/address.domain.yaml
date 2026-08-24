@@ -57,7 +57,7 @@ operations:
     id: customers.CMD015
     kind: command
     name: "SetRequiredFieldsForAddress"
-    description: "Configure which address fields are mandatory. Applies globally — affects customer, cart, and order addresses."
+    description: "Configure which address fields are mandatory. Applies globally - affects customer, cart, and order addresses."
     delivery_priority: should-have
     initiated_by: [orders.ACT004]
     produces:

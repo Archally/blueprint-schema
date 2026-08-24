@@ -45,6 +45,51 @@ function atLeast(version, major, minor) {
   return version.major > major || (version.major === major && version.minor >= minor);
 }
 
+/**
+ * The slices this model declares, from the root file's `layout.slices[].name`.
+ *
+ * The DECLARED list, deliberately — not the directories on disk. A contract naming a slice the
+ * model never declared is the defect this rule reports; deriving the vocabulary from the filesystem
+ * would make that case unreportable, because the typo'd directory would vote for itself.
+ */
+export function declaredSlices(parsedFiles) {
+  const names = new Set();
+  for (const { schemaType, data } of parsedFiles) {
+    if (schemaType !== "blueprint") continue;
+    for (const slice of data?.layout?.slices ?? []) {
+      if (slice && typeof slice.name === "string") names.add(slice.name);
+    }
+  }
+  return names;
+}
+
+/**
+ * Check a contract's declared `output:` prefix against the slice vocabulary.
+ *
+ * `output:` is a contract's IDENTITY — the key `multi-service-merge` groups on, which is why two
+ * services may legitimately declare the same value. By convention its first segment may name the
+ * slice the artifact belongs to; `_global/` marks it explicitly cross-cutting.
+ *
+ * Warning, never an error: `output:` has always permitted "a filename, optionally under clean
+ * subdirs", and models predating this convention prefix with build folders such as `dist/`. Those
+ * still render exactly as before — but a prefix that merely LOOKS like a slice and is not one would
+ * otherwise be indistinguishable from correct placement, which is the whole failure this reports.
+ */
+export function checkContractOutputSlice(relFile, serviceName, kind, output, slices) {
+  if (typeof output !== "string" || output.trim() === "") return null;
+  const cut = output.replace(/\\/g, "/").indexOf("/");
+  if (cut <= 0) return null;
+  const prefix = output.replace(/\\/g, "/").slice(0, cut);
+  if (prefix === "_global" || slices.has(prefix)) return null;
+  const known = [...slices].sort().join(", ") || "(none declared)";
+  return (
+    `[${relFile}] Service "${serviceName}" ${kind} output "${output}" begins with "${prefix}/", ` +
+    `which is not a declared slice — the artifact stays under that subdirectory rather than being ` +
+    `placed in a slice. Declared slices: ${known}. Use "<slice>/<name>", or "_global/<name>" to ` +
+    `mark it cross-cutting.`
+  );
+}
+
 export function validateModel(args) {
   const { registry } = loadSchemaRegistry(args.schemas);
   const ajv = makeAjv(registry);
@@ -155,6 +200,8 @@ export function validateModel(args) {
   // Gap warnings and typed-id warnings are emitted in ONE per-file pass, so all findings for a
   // file appear together and in file order. Consumers render this array verbatim, which makes
   // its order part of the contract.
+  const sliceNames = declaredSlices(parsedFiles);
+
   for (const { relFile, schemaType, data } of parsedFiles) {
     if (schemaType === "domain" && data?.operations) {
       for (const [key, op] of Object.entries(data.operations)) {
@@ -177,6 +224,13 @@ export function validateModel(args) {
               warnings.push(
                 `[${relFile}] Service "${service.name}" in party "${party.name}" has no contracts block`,
               );
+              continue;
+            }
+            for (const [kind, contract] of Object.entries(service.contracts)) {
+              const finding = checkContractOutputSlice(
+                relFile, service.name, kind, contract?.output, sliceNames,
+              );
+              if (finding) warnings.push(finding);
             }
           }
         }

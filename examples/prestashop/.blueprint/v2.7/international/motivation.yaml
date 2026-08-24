@@ -30,7 +30,7 @@ goals:
     statement: "Complete localization coverage for target markets"
     description: >
       Every target market has its language, currency, and geographic
-      configuration complete — enabling the store to serve international
+      configuration complete - enabling the store to serve international
       customers without gaps.
     summary: "Localization completeness"
     priority: high
@@ -127,7 +127,7 @@ inquiries:
     description: >
       EU VAT MOSS requires charging VAT based on the customer's country
       (not the seller's). This requires customer geolocation and dynamic
-      tax rate selection at checkout — beyond the current zone-based model.
+      tax rate selection at checkout - beyond the current zone-based model.
     category: business
     goal_refs:
       - international.G002

@@ -20,7 +20,7 @@ stories:
           description: "Order created with payment recorded and stock reserved."
         - name: "Order rejected"
           type: error
-          description: "Validation failure — insufficient stock, invalid address, or payment declined."
+          description: "Validation failure - insufficient stock, invalid address, or payment declined."
       lanes:
         - actor: orders.ACT001
           operations: [orders.CMD001]
@@ -89,7 +89,7 @@ stories:
 
   - id: orders.STR003
     title: "Manage order products"
-    description: "Merchant modifies order contents — adding, removing, or updating product lines."
+    description: "Merchant modifies order contents - adding, removing, or updating product lines."
     initiated_by: [orders.ACT003]
     process:
       id: orders.SP003

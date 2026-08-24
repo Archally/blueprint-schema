@@ -4,7 +4,7 @@ scope: catalog
 
 happy_path:
   - id: catalog.TC001
-    name: "Create product — happy path"
+    name: "Create product - happy path"
     summary: "Valid product data creates product with draft status successfully."
     validates:
       operations: [catalog.CMD001, catalog.EVT001]
@@ -19,7 +19,7 @@ happy_path:
       code: 201
 
   - id: catalog.TC002
-    name: "Search products — keyword match"
+    name: "Search products - keyword match"
     summary: "Search by product name returns matching results within SLO."
     validates:
       operations: [catalog.QRY001]
@@ -32,7 +32,7 @@ happy_path:
       status: success
 
   - id: catalog.TC003
-    name: "Generate combinations — happy path"
+    name: "Generate combinations - happy path"
     summary: "Generating combinations for a valid product creates all permutations."
     validates:
       operations: [catalog.CMD011, catalog.EVT004]
@@ -47,7 +47,7 @@ happy_path:
       status: success
 
   - id: catalog.TC004
-    name: "Add category — happy path"
+    name: "Add category - happy path"
     summary: "Creating a category within valid depth succeeds."
     validates:
       operations: [catalog.CMD025, catalog.EVT009]
@@ -59,7 +59,7 @@ happy_path:
       code: 201
 
   - id: catalog.TC005
-    name: "Add specific price — percentage discount"
+    name: "Add specific price - percentage discount"
     summary: "Creating a 20% discount specific price succeeds."
     validates:
       operations: [catalog.CMD021, catalog.EVT007]
@@ -71,7 +71,7 @@ happy_path:
 
 edge_cases:
   - id: catalog.EC001
-    name: "Create product — duplicate SKU"
+    name: "Create product - duplicate SKU"
     summary: "Attempting to create a combination with existing attribute values."
     validates:
       operations: [catalog.CMD011]

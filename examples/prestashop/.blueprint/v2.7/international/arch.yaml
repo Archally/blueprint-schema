@@ -18,7 +18,7 @@ parties:
         kind: support
         complexity: transformation
         evolution: product
-        summary: Currencies, countries, zones, languages, tax rules — localization backbone.
+        summary: Currencies, countries, zones, languages, tax rules - localization backbone.
         owned_by:
           team: TM006
         responsibilities:
@@ -34,7 +34,7 @@ parties:
             summary: REST API for currency, tax, country, and language management.
             contracts:
               openapi:
-                output: dist/international-api.openapi.yaml
+                output: international/international-api.openapi.yaml
                 expose:
                   - international:getCurrencyForEditing
                   - international:getTaxRulesGroupForEditing

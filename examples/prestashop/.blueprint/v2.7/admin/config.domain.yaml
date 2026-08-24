@@ -144,7 +144,7 @@ operations:
     id: admin.CMD034
     kind: command
     name: "SwitchDebugMode"
-    description: "Toggle debug mode on/off for the store. Only CQRS command in the Configuration aggregate — most config is handled by legacy infrastructure."
+    description: "Toggle debug mode on/off for the store. Only CQRS command in the Configuration aggregate - most config is handled by legacy infrastructure."
     delivery_priority: should-have
     initiated_by: [admin.ACT001]
     produces:

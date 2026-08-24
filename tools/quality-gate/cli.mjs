@@ -32,7 +32,7 @@ import { evaluate, nextBaseline } from './evaluate.mjs';
 import { renderReport } from './report.mjs';
 import { changedFilesSince } from './git-changes.mjs';
 import { loadSpec, loadProjectConfig, writeBaseline, PROJECT_CONFIG_NAME } from './config.mjs';
-import { normalizeSliceArg } from './slice.mjs';
+import { normalizeSliceArg, observedSlices } from './slice.mjs';
 
 const USAGE = 'usage: node cli.mjs <modelRoot> [more roots] [--strict] [--since <ref>] [--slice <name>] [--json [file]] [--spec <file>] [--config <file>] [--update-baseline] [--worst <n>] [--quiet]';
 
@@ -85,6 +85,18 @@ function runOne(modelRoot, options, spec) {
   if (!fs.existsSync(resolvedRoot)) throw new Error(`model root does not exist: ${resolvedRoot}`);
 
   const { observations, parseErrors, fileCount, schemaVersion } = collectObservations(resolvedRoot);
+  // A slice that selects nothing scores nothing, and a gate that passes over nothing is
+  // worse than one that fails: it reports a green verdict the caller will believe. A
+  // misspelled slice and an empty one are the same mistake from here, so both refuse.
+  if (options.slice) {
+    const available = observedSlices(observations);
+    if (!available.includes(options.slice)) {
+      throw new Error(
+        `--slice ${options.slice} selects nothing measurable. Available slices: ${available.join(', ')}`,
+      );
+    }
+  }
+
   const { config, path: configPath } = loadProjectConfig(resolvedRoot, options.config);
   const changedFiles = options.since ? changedFilesSince(resolvedRoot, options.since) : undefined;
 
