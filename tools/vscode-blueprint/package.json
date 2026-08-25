@@ -49,7 +49,13 @@
         },
         "archallyBlueprint.highlight.fontStyle": {
           "type": "string",
-          "enum": ["normal", "bold", "italic", "underline", "bold-underline"],
+          "enum": [
+            "normal",
+            "bold",
+            "italic",
+            "underline",
+            "bold-underline"
+          ],
           "default": "bold",
           "description": "Font style for highlighted IDs. Note: the editor font FAMILY cannot be changed per token — only weight/style/underline."
         },
@@ -68,7 +74,11 @@
         },
         "archallyBlueprint.codeRef.openBehavior": {
           "type": "string",
-          "enum": ["localThenBrowser", "browser", "local"],
+          "enum": [
+            "localThenBrowser",
+            "browser",
+            "local"
+          ],
           "enumDescriptions": [
             "Open the local clone when the file exists (via codeRef.localRoots); otherwise open the git host in the browser.",
             "Always open the git host in the browser (ignore local clones).",
@@ -89,7 +99,13 @@
         },
         "archallyBlueprint.codeRef.highlight.fontStyle": {
           "type": "string",
-          "enum": ["normal", "bold", "italic", "underline", "bold-underline"],
+          "enum": [
+            "normal",
+            "bold",
+            "italic",
+            "underline",
+            "bold-underline"
+          ],
           "default": "underline",
           "description": "Font style for highlighted code_ref paths. Default underline (a link affordance)."
         },
@@ -127,17 +143,195 @@
         "command": "archallyBlueprint.reindex",
         "title": "Archally Blueprint: Re-index IDs"
       }
+    ],
+    "yamlValidation": [
+      {
+        "fileMatch": [
+          "**/.blueprint/**/arch.yaml",
+          "**/.blueprint/**/*.arch.yaml",
+          "**/.blueprint/**/arch.yml",
+          "**/.blueprint/**/*.arch.yml"
+        ],
+        "url": "./schema/design/arch.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/blueprint.yaml",
+          "**/.blueprint/**/*.blueprint.yaml",
+          "**/.blueprint/**/blueprint.yml",
+          "**/.blueprint/**/*.blueprint.yml"
+        ],
+        "url": "./schema/blueprint.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/capability.yaml",
+          "**/.blueprint/**/*.capability.yaml",
+          "**/.blueprint/**/capability.yml",
+          "**/.blueprint/**/*.capability.yml"
+        ],
+        "url": "./schema/governance/capability.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/concepts.yaml",
+          "**/.blueprint/**/*.concepts.yaml",
+          "**/.blueprint/**/concepts.yml",
+          "**/.blueprint/**/*.concepts.yml"
+        ],
+        "url": "./schema/design/concepts.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/decisions.yaml",
+          "**/.blueprint/**/*.decisions.yaml",
+          "**/.blueprint/**/decisions.yml",
+          "**/.blueprint/**/*.decisions.yml"
+        ],
+        "url": "./schema/governance/decisions.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/domain.yaml",
+          "**/.blueprint/**/*.domain.yaml",
+          "**/.blueprint/**/domain.yml",
+          "**/.blueprint/**/*.domain.yml"
+        ],
+        "url": "./schema/design/domain.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/dynamics.yaml",
+          "**/.blueprint/**/*.dynamics.yaml",
+          "**/.blueprint/**/dynamics.yml",
+          "**/.blueprint/**/*.dynamics.yml"
+        ],
+        "url": "./schema/design/dynamics.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/infrastructure.yaml",
+          "**/.blueprint/**/*.infrastructure.yaml",
+          "**/.blueprint/**/infrastructure.yml",
+          "**/.blueprint/**/*.infrastructure.yml"
+        ],
+        "url": "./schema/design/infrastructure.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/interactions.yaml",
+          "**/.blueprint/**/*.interactions.yaml",
+          "**/.blueprint/**/interactions.yml",
+          "**/.blueprint/**/*.interactions.yml"
+        ],
+        "url": "./schema/design/interactions.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/leverage.yaml",
+          "**/.blueprint/**/*.leverage.yaml",
+          "**/.blueprint/**/leverage.yml",
+          "**/.blueprint/**/*.leverage.yml"
+        ],
+        "url": "./schema/governance/leverage.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/models.yaml",
+          "**/.blueprint/**/*.models.yaml",
+          "**/.blueprint/**/models.yml",
+          "**/.blueprint/**/*.models.yml"
+        ],
+        "url": "./schema/design/models.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/motivation.yaml",
+          "**/.blueprint/**/*.motivation.yaml",
+          "**/.blueprint/**/motivation.yml",
+          "**/.blueprint/**/*.motivation.yml"
+        ],
+        "url": "./schema/governance/motivation.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/organization.yaml",
+          "**/.blueprint/**/*.organization.yaml",
+          "**/.blueprint/**/organization.yml",
+          "**/.blueprint/**/*.organization.yml"
+        ],
+        "url": "./schema/governance/organization.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/quality.yaml",
+          "**/.blueprint/**/*.quality.yaml",
+          "**/.blueprint/**/quality.yml",
+          "**/.blueprint/**/*.quality.yml"
+        ],
+        "url": "./schema/design/quality.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/roadmap.yaml",
+          "**/.blueprint/**/*.roadmap.yaml",
+          "**/.blueprint/**/roadmap.yml",
+          "**/.blueprint/**/*.roadmap.yml"
+        ],
+        "url": "./schema/governance/roadmap.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/rules.yaml",
+          "**/.blueprint/**/*.rules.yaml",
+          "**/.blueprint/**/rules.yml",
+          "**/.blueprint/**/*.rules.yml"
+        ],
+        "url": "./schema/design/rules.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/story.yaml",
+          "**/.blueprint/**/*.story.yaml",
+          "**/.blueprint/**/story.yml",
+          "**/.blueprint/**/*.story.yml"
+        ],
+        "url": "./schema/design/story.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/test-cases.yaml",
+          "**/.blueprint/**/*.test-cases.yaml",
+          "**/.blueprint/**/test-cases.yml",
+          "**/.blueprint/**/*.test-cases.yml"
+        ],
+        "url": "./schema/governance/test-cases.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/value-stream.yaml",
+          "**/.blueprint/**/*.value-stream.yaml",
+          "**/.blueprint/**/value-stream.yml",
+          "**/.blueprint/**/*.value-stream.yml"
+        ],
+        "url": "./schema/governance/value-stream.schema.yaml"
+      }
     ]
   },
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "test": "npm run compile && node --test ./out/codeRef.test.js ./out/codeRef.local.test.js ./out/codeRef.hover.test.js",
-    "vscode:prepublish": "npm run compile"
+    "vscode:prepublish": "npm run sync-schema && npm run compile",
+    "sync-schema": "node sync-schema.mjs",
+    "sync-schema:check": "node sync-schema.mjs --check"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.75.0",
     "typescript": "^5.7.0"
-  }
+  },
+  "extensionDependencies": [
+    "redhat.vscode-yaml"
+  ]
 }

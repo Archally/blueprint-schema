@@ -2,6 +2,53 @@
 # All schema version releases in reverse chronological order.
 ---
 entries:
+  - version: "2.7.11"
+    date: "2026-08-24"
+    summary: >
+      An operation key is constrained to the identifier it was always meant to be. The
+      `operations:` and `errors:` dictionaries in `design/domain.schema.yaml` gain
+      `propertyNames` with the pattern `^[a-z][A-Za-z0-9]*$`: a key starts lowercase and
+      carries only letters and digits.
+
+      This is a NEW CONSTRAINT rather than a new field: a model holding a key with a space or a
+      punctuation mark is invalid under 2.7.11 and the key has to be renamed, along with every
+      `<slice>:<key>` reference to it. The key is an address, not a label: contract lists in `arch.yaml` name an operation as
+      `<slice>:<key>`, so a key that cannot be written into a reference is a broken reference
+      rather than a formatting preference, and nothing enforced it. Uniqueness needs no rule
+      at either level, because YAML rejects a mapping with two identical keys before a
+      validator sees the file.
+
+      `name` stays deliberately unconstrained. It is prose for a reader and most names contain
+      spaces; the two fields answer different questions. The key is also not required to be
+      derived from `name`, and the descriptions of both fields are corrected in the same
+      release to stop saying that it is. A key is free to shorten a long name
+      (`exportEventIcs` for "Export Event As ICS"), so a tool that computes a key from a name
+      will disagree with the model. Read the key from the model.
+
+  - version: "2.7.10"
+    date: "2026-08-24"
+    summary: >
+      A service can say which operations it handles in-process, asserting no transport:
+      optional `handles:` operation-ref array on the service in `design/arch.schema.yaml`.
+      Strictly additive and optional.
+
+      An operation belongs to the bounded context(s) whose services provide it, and the other
+      two ways to provide one both name a protocol: a contract's `expose:` or `send:`. An
+      operation called in-process has no protocol, which left a model with a large in-process
+      surface choosing between declaring a channel that does not exist, and which every
+      generated diagram then draws as fact, or falling back on the deprecated domain-file
+      name/scope heuristic, which is single-valued and so cannot express one operation handled
+      in several contexts. `handles:` is the provider-side declaration for exactly that case.
+
+      It is not `call:`, which points the other way: `call:` lists operations a service depends
+      on, and binding a service to one would record the caller as the handler. `handles:` is
+      declared on the service rather than under `contracts:`, because every key there names a
+      protocol with a generated specification and this has neither. Services in different
+      contexts may each declare the same operation, and each declaration is its own binding, so
+      an operation genuinely handled in several places needs no winner. The `unbound-operation`
+      check now names all three provider sources, and says plainly that an operation with no
+      channel must never be given one to silence it.
+
   - version: "2.7.9"
     date: "2026-08-20"
     summary: >

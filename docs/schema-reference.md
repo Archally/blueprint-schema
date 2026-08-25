@@ -402,13 +402,25 @@ Enforcement levels:
 ## 10. v2.1 New Fields
 
 ### Domain (domain.schema.yaml)
-- **operations**: Dictionary keyed by camelCase name (e.g. `submitOrder`). Each operation has required `id` (CMD/EVT/QRY/DOC + number). Keys provide human-readable references in arch.yaml expose lists (e.g. `orders:submitOrder`).
+- **operations**: Dictionary keyed by a camelCase identifier (e.g. `submitOrder`). Each operation has required `id` (CMD/EVT/QRY/DOC + number). Keys provide human-readable references in arch.yaml expose lists (e.g. `orders:submitOrder`).
 - **produces**: Optional object with `operations[]` (operation_ref) and `mode` (any|one_of|all). Commands typically produce events/documents.
 - **reacts_to**: Optional array of `{ operation, policy?, condition?, rule? }` — events this operation reacts to.
 - **task_type**: Optional enum (automated|manual|user-decision|external).
 - **errors[]**: Optional top-level catalog of domain errors (ERR001, etc.) with category, severity, http_status.
 - **response.error**: Optional error_ref linking to errors catalog.
 - **tags**: Root and entity level.
+
+An `operations` or `errors` key is validated against `^[a-z][A-Za-z0-9]*$`: it starts lowercase and
+carries only letters and digits. The key is an ADDRESS, not a label. Contract lists in arch.yaml name
+an operation as `<slice>:<key>`, so a key with a space or a punctuation mark cannot be written into a
+reference at all, and what looks like a formatting preference is a reference that no tool can
+resolve. Uniqueness needs no rule: YAML rejects a mapping with two identical keys before a validator
+sees the file.
+
+The key does not have to be derived from `name`. `name` is prose for a reader and may say whatever
+reads best; a key is free to be a shortening of it (`exportEventIcs` for "Export Event As ICS"), and
+models in practice shorten roughly one key in ten. Read the key from the model rather than computing
+it from the name.
 
 ### Story (story.schema.yaml)
 - **activities[]**: Replaces operations[]. Each activity has required `id` (SA001), `name`, `entry_operation`.
@@ -1441,8 +1453,8 @@ rollback:
 - **All 28 eligible entities**: Optional `code_refs[]` linking blueprint entities to source code (excludes motivation, capability, org entities)
 
 ### Domain Dictionaries & Arch Restructure
-- **Domain**: `operations` changed from array to **dictionary** keyed by camelCase name (e.g. `submitOrder: { id: CMD001, ... }`). Keys derived from operation `name` field. Each operation retains required `id` for machine-stable cross-file references.
-- **Domain**: `errors` changed from array to **dictionary** keyed by camelCase name (e.g. `orderValidationFailed: { id: ERR001, ... }`). Same dual-ref pattern as operations.
+- **Domain**: `operations` changed from array to **dictionary** keyed by a camelCase identifier (e.g. `submitOrder: { id: CMD001, ... }`). Each operation retains required `id` for machine-stable cross-file references.
+- **Domain**: `errors` changed from array to **dictionary** keyed by a camelCase identifier (e.g. `orderValidationFailed: { id: ERR001, ... }`). Same dual-ref pattern as operations.
 - **Metamodel**: `operation_ref` supports **dual format** — ID-based (`orders.CMD001`) and domain:key (`orders:submitOrder`). Both are valid; ID-based is machine-stable, domain:key is human-readable.
 - **Metamodel**: `error_ref` supports the same dual format as `operation_ref`.
 - **Arch**: Root-level arch files describe systems and MUST NOT declare `scope`. File name identifies the system (e.g. `eshop.arch.yaml`).
@@ -1450,11 +1462,11 @@ rollback:
 - **Quality**: SLO and metric `operations` arrays migrated to domain:key format.
 
 ### Breaking Changes
-- **Domain**: `operations` and `errors` changed from array to dictionary. Existing array-format files must be converted. The `id` field is preserved on each entry; camelCase keys are derived from the `name` field.
+- **Domain**: `operations` and `errors` changed from array to dictionary. Existing array-format files must be converted. The `id` field is preserved on each entry; each entry gains a camelCase key matching `^[a-z][A-Za-z0-9]*$`.
 - **Arch**: Expose/send/receive/call refs in arch contracts changed from `{context}.{ID}` format to `{domain}:{key}` format. Both formats validate against the updated `operation_ref` schema, but all example and project files have been migrated.
 
 ### Migration Notes
-**Operations/errors**: Convert array items to dictionary entries. For each operation, derive a camelCase key from the `name` field (e.g. "Submit Order" -> `submitOrder`), then nest the operation under that key. The `id` field is preserved.
+**Operations/errors**: Convert array items to dictionary entries. For each operation, derive a starting camelCase key from the `name` field (e.g. "Submit Order" -> `submitOrder`), then nest the operation under that key. The `id` field is preserved. Shorten the key where the name is long, since the key is what every reference has to spell; it must match `^[a-z][A-Za-z0-9]*$`. Once written, the key is read from the model, not recomputed from the name.
 
 **Arch refs**: Update all `expose`, `send`, `receive`, and `call` arrays from `{context}.{ID}` to `{domain}:{key}` format (e.g. `orders.CMD001` -> `orders:submitOrder`). Build the mapping from domain.yaml operation keys.
 

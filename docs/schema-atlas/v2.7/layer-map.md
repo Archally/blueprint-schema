@@ -14,7 +14,7 @@ Version-root schemas that belong to neither plane and apply across every layer: 
 | [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | Blueprint Metamodel | 0 | 8 | Cross-cutting definitions for all blueprint layers. Provides typed ID refs, versioning, SpecPath, and shared vocabulary… |
 | [`migration.schema.yaml`](./entity-catalog.md#migration) | Blueprint Migration Schema | 4 | 4 | Versioned, ordered changes to a blueprint model instance. Enables AS-IS to TO-BE model transformation with traceability… |
 | [`profiles/infrastructure/profiles.schema.yaml`](./entity-catalog.md#profiles-infrastructure-profiles) | Blueprint Infrastructure Resource-Type Profile | 6 | 4 | Validates a resource-type catalog profile file (v2.7.7). A profile is DATA, not schema: the resource-type catalog is sh… |
-| [`render.manifest.schema.yaml`](./entity-catalog.md#render-manifest) | Blueprint Render Manifest | 10 | 1 | Declares one project's full artifact set for the `bp render` command: which renderer targets to produce, where their ou… |
+| [`render.manifest.schema.yaml`](./entity-catalog.md#render-manifest) | Blueprint Render Manifest | 11 | 1 | Declares one project's full artifact set for the `bp render` command: which renderer targets to produce, where their ou… |
 
 ### Cross-cutting — reference dependencies
 
@@ -102,7 +102,7 @@ graph LR
         design_story_schema_yaml["story"]
     end
     metamodel_schema_yaml(["metamodel"])
-    design_arch_schema_yaml -->|35| metamodel_schema_yaml
+    design_arch_schema_yaml -->|36| metamodel_schema_yaml
     design_concepts_schema_yaml -->|36| metamodel_schema_yaml
     design_domain_schema_yaml -->|47| metamodel_schema_yaml
     design_dynamics_schema_yaml -->|22| metamodel_schema_yaml
@@ -111,7 +111,7 @@ graph LR
     design_models_schema_yaml -->|13| metamodel_schema_yaml
     design_quality_schema_yaml -->|71| metamodel_schema_yaml
     design_rules_schema_yaml -->|24| metamodel_schema_yaml
-    design_story_schema_yaml -->|48| metamodel_schema_yaml
+    design_story_schema_yaml -->|51| metamodel_schema_yaml
 ```
 
 ## Governance Plane
@@ -145,11 +145,11 @@ graph LR
     end
     metamodel_schema_yaml(["metamodel"])
     governance_capability_schema_yaml -->|19| metamodel_schema_yaml
-    governance_decisions_schema_yaml -->|46| metamodel_schema_yaml
+    governance_decisions_schema_yaml -->|47| metamodel_schema_yaml
     governance_leverage_schema_yaml -->|30| metamodel_schema_yaml
     governance_motivation_schema_yaml -->|68| metamodel_schema_yaml
     governance_organization_schema_yaml -->|15| metamodel_schema_yaml
-    governance_roadmap_schema_yaml -->|28| metamodel_schema_yaml
+    governance_roadmap_schema_yaml -->|30| metamodel_schema_yaml
     governance_test_cases_schema_yaml -->|27| metamodel_schema_yaml
     governance_value_stream_schema_yaml -->|19| metamodel_schema_yaml
 ```

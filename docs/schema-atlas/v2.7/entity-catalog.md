@@ -227,6 +227,7 @@ _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/impacts_links`_
 | `semver` | `string` |  | Semantic version string (MAJOR.MINOR.PATCH). Used at schema, document, and entity levels. |
 | `entity_version` | `ref → semver` |  | Optional SemVer for individual entity lifecycle tracking. |
 | `schema_version` | `string` | `2.7.0`, `2.6.0`, `2.5.0`, `2.4.0`, `2.3.0`, `2.2.0` | Blueprint schema version. v2.7 schemas accept v2.6, v2.5, v2.4, v2.3, and v2.2 documents for backward compatibility. |
+| `tracker_ref` | `string` |  | External issue-tracker or document reference. A bare key (e.g. 'ABC-1234') resolves through the blueprint's `trackers` registry using `default_tracker`; a '<tr… |
 | `context_prefix` | `string` |  | Bounded context name in kebab-case (e.g. billing, order-mgmt). |
 | `tags` | `array<string>` |  | Free-form tags for grouping. Root-level inherited by entities; entity-level merged with root during loading. |
 | `concept_ref` | `string` |  | Reference to a concept (e.g. CN001 or billing.CN001). |
@@ -521,7 +522,8 @@ _Source: `schema/v2.7/render.manifest.schema.yaml` · root type `object`_
 | `model` | `string` | ✓ |  | Path to the project's model directory, relative to this file. |
 | `out` | `string` | — |  | Artifact root directory, relative to this file and living beside the model directory, not inside it. `.generated` is the conventional value for a manifest in `… |
 | `stamp` | `string` | ✓ |  | The single build stamp ("as of" date or instant) shared by every target in the run, so a partial re-render overwrites the same files a full run would rather th… |
-| `build_id` | `string` | — |  | Provenance token folded into output filenames. The literal value `auto` resolves to the current git SHA at render time; any other string is used as-is. |
+| `archive` | `boolean` | — |  | Keep every delivery instead of replacing the last one. Each run then writes beneath a folder named for its own stamp, so two deliveries never share a directory… |
+| `build_id` | `string` | — |  | Provenance token recorded INSIDE each artifact — its drawn footer and its machine-readable provenance block — identifying the code that produced it. The litera… |
 | `link_template` | `string` | — |  | Optional source-link URL template with `{file}`/`{line}` placeholders, passed through to every target whose renderer supports one. |
 | `contact` | `object` | — |  | Contact details stamped into generated contract specs (`info.contact`). Set this so a deliverable carries the owning organisation's identity rather than the ge… |
 | `license` | `boolean` | — |  | Set to `false` to omit `info.license` from generated contract specs. Omit the key to keep the generator's configured license. |
@@ -548,6 +550,7 @@ _Source: `schema/v2.7/render.manifest.schema.yaml` · root type `object`_
 | `stories` | `array<string>` | — |  | Story ids for a target whose tool renders one story per invocation. The target fans out to one run per id, each with its own output folder. Only meaningful on… |
 | `formats` | `array<string>` | — |  | Output formats for this target, overriding the manifest's `defaults.formats`. |
 | `slices` | `array<string>` | — |  | Narrow this target to the named slices. Only meaningful on `glob`, `selector`, and `contexts` targets — a schema error on an `instance` target. |
+| `options` | `object` | — |  | Tool-specific rendering options, for a tool that has nowhere else to put them. Not a general pass-through. Most renderers already take a `view:` config validat… |
 
 _Source: `schema/v2.7/render.manifest.schema.yaml#/$defs/target`_
 
@@ -700,6 +703,7 @@ A deployable service or component within a bounded context.
 | `needs` | `array<ref → service_need>` | — |  | Abstract infrastructure NEEDS (Score `type`/`class`/`id`/`params` vocabulary) this service declares — TYPE-level intent, resolved to a concrete resource per en… |
 | `owned_by` | `ref → owned_by` | — |  | Service-level ownership override. |
 | `servers` | `array<object>` | — |  | Server instances where this service is deployed. Follows OpenAPI server object pattern. |
+| `handles` | `array<ref → operation_ref>` | — |  | Operations this service handles in-process, with no transport asserted. Provider-side, like a contract's `expose:`/`send:`, and it materializes the same `handl… |
 | `contracts` | `ref → contracts` | — |  | External contracts exposing and consuming interfaces for this service. |
 | `side_effects` | `ref → service_side_effects` | — |  | Observable side effects beyond request/response: filesystem, stdout, stderr. |
 | `tags` | `ref → tags` | — |  |  |
@@ -1052,8 +1056,8 @@ _Source: `schema/v2.7/design/domain.schema.yaml` · root type `object`_
 | `scope` | `ref → context_prefix` | — |  | Bounded context this domain belongs to. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
-| `operations` | `object` | ✓ |  | Domain operations as a dictionary. Keys are camelCase identifiers derived from the operation name (e.g., "Submit Order" → submitOrder). Keys provide immediate… |
-| `errors` | `object` | — |  | Unified error type catalog as a dictionary. Keys are camelCase identifiers derived from the error name (e.g., "Order Validation Failed" → orderValidationFailed… |
+| `operations` | `object` | ✓ |  | Domain operations as a dictionary. The key is a camelCase identifier and is the operation's readable address: `arch.yaml` contract lists name it as `<slice>:<k… |
+| `errors` | `object` | — |  | Unified error type catalog as a dictionary. The key is a camelCase identifier chosen by the author, in the same idiom operations use, and each error also carri… |
 | `questions` | `array<ref → question>` | — |  | Competency questions this domain was created to answer. Each question represents an independent knowledge requirement that the domain must satisfy. Questions e… |
 
 #### Definitions
@@ -2564,6 +2568,7 @@ A domain story: named narrative of actor-operation collaboration.
 | `status` | `string` | — |  | Story status (e.g. draft, approved, implemented). |
 | `description` | `string` | — |  | Narrative description of this story's context and goal. |
 | `properties` | `ref → entity_properties` | — |  |  |
+| `tracker_ref` | `ref → tracker_ref` | — |  |  |
 | `initiated_by` | `array<ref → actor_ref>` | — |  | Optional list of actor refs that can initiate this story (human, system, or time). Used for Event Storming lane-start actor stickies. |
 | `activities` | `array<ref → story_activity>` | — |  | Process activities composing this story. Each activity is an asynchronous phase containing synchronous steps. |
 | `process` | `object` | — |  | Process metadata when this story represents a business process. Enables BPMN generation. When absent, story is a lightweight interaction sequence. |
@@ -2619,6 +2624,7 @@ Agile user story — a PRD building block capturing a user-level goal. Format: A
 | `version` | `ref → entity_version` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  |  |
 | `properties` | `ref → entity_properties` | — |  |  |
+| `tracker_ref` | `ref → tracker_ref` | — |  |  |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
 
@@ -2650,6 +2656,7 @@ Use case — a scenario-level requirement describing actor interaction with the 
 | `version` | `ref → entity_version` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  |  |
 | `properties` | `ref → entity_properties` | — |  |  |
+| `tracker_ref` | `ref → tracker_ref` | — |  |  |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
 
@@ -2755,7 +2762,7 @@ An Architecture Decision Record (ADR). Minimum: id, title, summary, date, status
 | `date` | `string` | ✓ |  | Date proposed or accepted. Format: YYYY-MM or YYYY-MM-DD. |
 | `status` | `ref → decision_status` | ✓ |  | Lifecycle status: proposed→accepted→landed; rejected or deprecated at any stage. |
 | `rationale` | `ref → rationale` | ✓ |  | The reasoning behind this decision. Answers 'why' for future readers. |
-| `version` | `any` | — |  | Decision version for individual lifecycle tracking. |
+| `version` | `ref → entity_version` | — |  | Decision version for individual lifecycle tracking. |
 | `decision_scope` | `string` | — |  | Context, component, or SpecPath prefix this decision applies to (e.g. billing, billing.rules, order-api). |
 | `motivation_refs` | `ref → motivation_links` | — |  | Motivation entities driving this decision: goals served, risks mitigated, assumptions, trade-offs accepted. |
 | `capability_refs` | `array<ref → capability_ref>` | — |  | Business capabilities this decision supports or enables. |
@@ -2853,7 +2860,7 @@ External references and decision chain links.
 | `issues` | `array<string>` | — |  | Issue tracker references (URLs or IDs). |
 | `prs` | `array<string>` | — |  | Pull request references. |
 | `docs` | `array<string>` | — |  | Documentation references. |
-| `related` | `array<string>` | — |  | Related decisions or ADRs (URLs or IDs). |
+| `related` | `array<string>` | — |  | Related decisions or ADRs (URLs or IDs). Relevance without replacement — use supersedes/superseded_by when one decision actually replaces another. |
 | `supersedes` | `array<ref → decision_ref>` | — |  | Decisions this one replaces. Array supports many-to-one merge (multiple old decisions consolidated). |
 | `superseded_by` | `array<ref → decision_ref>` | — |  | Decisions that replace this one. Array supports one-to-many split (one decision divided). |
 
@@ -3351,7 +3358,7 @@ A roadmap work-breakdown node: an epic, phase, or foundation lane, or a nested s
 | `buffer_end` | `string` | — |  | Explicit buffer right edge. Overrides buffer_end_sprint. |
 | `owned_by` | `ref → owned_by` | — |  | Owning team/department/party (typed org reference). |
 | `executor` | `array<string>` | — |  | Human owner(s) responsible — free-text names/teams, distinct from the typed `owned_by`. |
-| `tracker_ref` | `string` | — |  | External issue-tracker key or URL (e.g. a Jira key 'ABC-1234'). The base URL / link construction is a view concern (Gantt view-config), not modelled here. |
+| `tracker_ref` | `ref → tracker_ref` | — |  |  |
 | `note` | `string` | — |  | Free-text planning note (e.g. a scheduling caveat). |
 | `advances_goals` | `ref → goal_ref_list` | — |  |  |
 | `mitigates_risks` | `ref → risk_ref_list` | — |  |  |

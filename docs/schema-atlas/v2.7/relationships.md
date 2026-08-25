@@ -81,7 +81,7 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub â€
 
 | Schema file | Inbound refs |
 | --- | --- |
-| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 613 |
+| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 620 |
 | [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | 1 |
 | [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | 1 |
 | [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | 1 |
@@ -114,7 +114,7 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub â€
 | `blueprint.schema.yaml` | `governance/value-stream.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `metamodel.schema.yaml` | 7 |
 | `blueprint.schema.yaml` | `migration.schema.yaml` | 1 |
-| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 35 |
+| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 36 |
 | `design/concepts.schema.yaml` | `metamodel.schema.yaml` | 36 |
 | `design/domain.schema.yaml` | `metamodel.schema.yaml` | 47 |
 | `design/dynamics.schema.yaml` | `metamodel.schema.yaml` | 22 |
@@ -123,13 +123,13 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub â€
 | `design/models.schema.yaml` | `metamodel.schema.yaml` | 13 |
 | `design/quality.schema.yaml` | `metamodel.schema.yaml` | 71 |
 | `design/rules.schema.yaml` | `metamodel.schema.yaml` | 24 |
-| `design/story.schema.yaml` | `metamodel.schema.yaml` | 48 |
+| `design/story.schema.yaml` | `metamodel.schema.yaml` | 51 |
 | `governance/capability.schema.yaml` | `metamodel.schema.yaml` | 19 |
-| `governance/decisions.schema.yaml` | `metamodel.schema.yaml` | 46 |
+| `governance/decisions.schema.yaml` | `metamodel.schema.yaml` | 47 |
 | `governance/leverage.schema.yaml` | `metamodel.schema.yaml` | 30 |
 | `governance/motivation.schema.yaml` | `metamodel.schema.yaml` | 68 |
 | `governance/organization.schema.yaml` | `metamodel.schema.yaml` | 15 |
-| `governance/roadmap.schema.yaml` | `metamodel.schema.yaml` | 28 |
+| `governance/roadmap.schema.yaml` | `metamodel.schema.yaml` | 30 |
 | `governance/test-cases.schema.yaml` | `metamodel.schema.yaml` | 27 |
 | `governance/value-stream.schema.yaml` | `metamodel.schema.yaml` | 19 |
 | `migration.schema.yaml` | `metamodel.schema.yaml` | 5 |

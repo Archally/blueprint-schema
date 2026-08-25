@@ -32,18 +32,41 @@ properties:
   operations:
     type: object
     description: >
-      Domain operations as a dictionary. Keys are camelCase identifiers derived
-      from the operation name (e.g., "Submit Order" → submitOrder). Keys provide
-      immediate readability in YAML and in arch.yaml expose lists. Each operation
-      retains a required `id` field for machine-stable cross-file references.
+      Domain operations as a dictionary. The key is a camelCase identifier and is the
+      operation's readable address: `arch.yaml` contract lists name it as `<slice>:<key>`.
+      It is chosen by the author rather than computed from `name` - measured across this
+      repo's models, 291 of 3294 keys are a deliberate shortening of the name
+      (`getVacancyFromTemplate` for "Get Vacancy Prefilled From Template"), so a tool that
+      derived one would disagree with the model in roughly one operation in eleven. Each
+      operation also carries a required `id` for machine-stable cross-file references.
+    propertyNames:
+      pattern: "^[a-z][A-Za-z0-9]*$"
+      description: >-
+        The key is an identifier, not a label: contracts address an operation as `<slice>:<key>`,
+        so a key that cannot be written in a ref is a broken address rather than a formatting
+        slip. Derived from the corpus rather than chosen - measured 2026-08-24 across every model
+        in the repo, all 3678 operation and error keys already match this and none carries a
+        space. Duplicate keys need no rule here: YAML itself refuses a map with two of the same.
+        `name` is the human label and is deliberately unconstrained; the two answer different
+        questions, and 2744 of the 3294 names contain spaces precisely because they are prose.
     additionalProperties:
       $ref: "#/$defs/operation"
   errors:
     type: object
     description: >
-      Unified error type catalog as a dictionary. Keys are camelCase identifiers
-      derived from the error name (e.g., "Order Validation Failed" → orderValidationFailed).
-      Each error retains a required `id` field for machine-stable references.
+      Unified error type catalog as a dictionary. The key is a camelCase identifier chosen
+      by the author, in the same idiom operations use, and each error also carries a required
+      `id` for machine-stable references.
+    propertyNames:
+      pattern: "^[a-z][A-Za-z0-9]*$"
+      description: >-
+        The key is an identifier, not a label: contracts address an operation as `<slice>:<key>`,
+        so a key that cannot be written in a ref is a broken address rather than a formatting
+        slip. Derived from the corpus rather than chosen - measured 2026-08-24 across every model
+        in the repo, all 3678 operation and error keys already match this and none carries a
+        space. Duplicate keys need no rule here: YAML itself refuses a map with two of the same.
+        `name` is the human label and is deliberately unconstrained; the two answer different
+        questions, and 2744 of the 3294 names contain spaces precisely because they are prose.
     additionalProperties:
       $ref: "#/$defs/error_entry"
   questions:

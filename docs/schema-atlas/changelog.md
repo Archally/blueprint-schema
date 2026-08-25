@@ -10,10 +10,10 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 
 | Impact | Count |
 | --- | --- |
-| Breaking (major) | 7 |
-| Additive (minor) | 75 |
+| Breaking (major) | 6 |
+| Additive (minor) | 80 |
 | Clarification (patch) | 0 |
-| **Total changes** | 82 |
+| **Total changes** | 86 |
 
 ## ⚠ Breaking changes
 
@@ -25,7 +25,6 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 | Modified | blueprint.schema.yaml#/properties/repository | Property repository type changed object → ref → repository_config. |
 | Modified | design/arch.schema.yaml#/$defs/context/properties/complexity | Property complexity type changed string → ref → complexity_pattern. |
 | Modified | design/arch.schema.yaml#/$defs/context/properties/model_traits | Property model_traits type changed array<string> → array<ref → model_traits_item>. |
-| Modified | governance/decisions.schema.yaml#/$defs/decision/properties/version | Property version type changed ref → entity_version → any. |
 
 ## Renamed (3)
 
@@ -44,7 +43,7 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
   - _Note: Renamed org.schema.yaml → organization.schema.yaml for naming consistency._
   - _Sources: `schema/v2.6/governance/org.schema.yaml`, `schema/v2.7/governance/organization.schema.yaml`_
 
-## Modified (4)
+## Modified (3)
 
 - **[breaking]** `blueprint.schema.yaml#/properties/repository` — Property `repository` type changed `object` → `ref → repository_config`.
   - _Sources: `schema/v2.7/blueprint.schema.yaml#/properties/repository`, `schema/v2.6/blueprint.schema.yaml#/properties/repository`_
@@ -55,10 +54,7 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 - **[breaking]** `design/arch.schema.yaml#/$defs/context/properties/model_traits` — Property `model_traits` type changed `array<string>` → `array<ref → model_traits_item>`.
   - _Sources: `schema/v2.7/design/arch.schema.yaml#/$defs/context/properties/model_traits`, `schema/v2.6/design/arch.schema.yaml#/$defs/context/properties/model_traits`_
 
-- **[breaking]** `governance/decisions.schema.yaml#/$defs/decision/properties/version` — Property `version` type changed `ref → entity_version` → `any`.
-  - _Sources: `schema/v2.7/governance/decisions.schema.yaml#/$defs/decision/properties/version`, `schema/v2.6/governance/decisions.schema.yaml#/$defs/decision/properties/version`_
-
-## Added (75)
+## Added (80)
 
 - [additive] `blueprint.schema.yaml#/$defs/repository_config` — New definition `repository_config` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.7/blueprint.schema.yaml#/$defs/repository_config`_
@@ -92,6 +88,9 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 
 - [additive] `design/arch.schema.yaml#/$defs/service_need` — New definition `service_need` added to `design/arch.schema.yaml`.
   - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service_need`_
+
+- [additive] `design/arch.schema.yaml#/$defs/service/properties/handles` — Property `handles` added (optional).
+  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service/properties/handles`_
 
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/id` — Property `id` added (optional).
   - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service/properties/id`_
@@ -149,6 +148,15 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 
 - [additive] `design/rules.schema.yaml#/$defs/transition_rule/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.7/design/rules.schema.yaml#/$defs/transition_rule/properties/provenance`_
+
+- [additive] `design/story.schema.yaml#/$defs/story/properties/tracker_ref` — Property `tracker_ref` added (optional).
+  - _Source: `schema/v2.7/design/story.schema.yaml#/$defs/story/properties/tracker_ref`_
+
+- [additive] `design/story.schema.yaml#/$defs/use_case/properties/tracker_ref` — Property `tracker_ref` added (optional).
+  - _Source: `schema/v2.7/design/story.schema.yaml#/$defs/use_case/properties/tracker_ref`_
+
+- [additive] `design/story.schema.yaml#/$defs/user_story/properties/tracker_ref` — Property `tracker_ref` added (optional).
+  - _Source: `schema/v2.7/design/story.schema.yaml#/$defs/user_story/properties/tracker_ref`_
 
 - [additive] `governance/decisions.schema.yaml#/$defs/decision_links/properties/related` — Property `related` added (optional).
   - _Source: `schema/v2.7/governance/decisions.schema.yaml#/$defs/decision_links/properties/related`_
@@ -272,6 +280,9 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 
 - [additive] `metamodel.schema.yaml#/$defs/service_ref` — New definition `service_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/service_ref`_
+
+- [additive] `metamodel.schema.yaml#/$defs/tracker_ref` — New definition `tracker_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/tracker_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/validates_links/properties/infrastructure` — Property `infrastructure` added (optional).
   - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/validates_links/properties/infrastructure`_
