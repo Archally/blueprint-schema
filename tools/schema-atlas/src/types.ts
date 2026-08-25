@@ -39,6 +39,9 @@ export interface TypeInfo {
   label: string;
   /** Raw `$ref` when the type is a reference. */
   ref?: string;
+  /** Raw `$ref` of an array's `items`, when the items are a reference. Rendering is unaffected -
+   *  the label already reads `array<ref -> x>`; this carries the address so a consumer can follow it. */
+  itemRef?: string;
   /** Target entity-type name when the ref resolves to a typed-ID vocabulary entry. */
   refEntityType?: string;
 }

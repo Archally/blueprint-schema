@@ -85,8 +85,8 @@ function resolveType(
   if (type === 'array') {
     const items = node['items'];
     if (items && typeof items === 'object' && !Array.isArray(items)) {
-      const itemLabel = resolveType(items as Record<string, unknown>, fromRelPath, entityTypeByDef).label;
-      return { label: `array<${itemLabel}>` };
+      const itemType = resolveType(items as Record<string, unknown>, fromRelPath, entityTypeByDef);
+      return { label: `array<${itemType.label}>`, itemRef: itemType.ref };
     }
     return { label: 'array' };
   }

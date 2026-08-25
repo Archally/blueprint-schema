@@ -10,10 +10,10 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 
 | Impact | Count |
 | --- | --- |
-| Breaking (major) | 6 |
-| Additive (minor) | 80 |
+| Breaking (major) | 3 |
+| Additive (minor) | 97 |
 | Clarification (patch) | 0 |
-| **Total changes** | 86 |
+| **Total changes** | 100 |
 
 ## ⚠ Breaking changes
 
@@ -22,9 +22,6 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 | Renamed | design/rg.schema.yaml → design/infrastructure.schema.yaml | Schema file renamed from design/rg.schema.yaml to design/infrastructure.schema.yaml. |
 | Renamed | design/ui.schema.yaml → design/interactions.schema.yaml | Schema file renamed from design/ui.schema.yaml to design/interactions.schema.yaml. |
 | Renamed | governance/org.schema.yaml → governance/organization.schema.yaml | Schema file renamed from governance/org.schema.yaml to governance/organization.schema.yaml. |
-| Modified | blueprint.schema.yaml#/properties/repository | Property repository type changed object → ref → repository_config. |
-| Modified | design/arch.schema.yaml#/$defs/context/properties/complexity | Property complexity type changed string → ref → complexity_pattern. |
-| Modified | design/arch.schema.yaml#/$defs/context/properties/model_traits | Property model_traits type changed array<string> → array<ref → model_traits_item>. |
 
 ## Renamed (3)
 
@@ -43,16 +40,58 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
   - _Note: Renamed org.schema.yaml → organization.schema.yaml for naming consistency._
   - _Sources: `schema/v2.6/governance/org.schema.yaml`, `schema/v2.7/governance/organization.schema.yaml`_
 
-## Modified (3)
+## Modified (17)
 
-- **[breaking]** `blueprint.schema.yaml#/properties/repository` — Property `repository` type changed `object` → `ref → repository_config`.
-  - _Sources: `schema/v2.7/blueprint.schema.yaml#/properties/repository`, `schema/v2.6/blueprint.schema.yaml#/properties/repository`_
+- [additive] `blueprint.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
+  - _Sources: `schema/v2.7/blueprint.schema.yaml#/properties/schemaVersion`, `schema/v2.6/blueprint.schema.yaml#/properties/schemaVersion`_
 
-- **[breaking]** `design/arch.schema.yaml#/$defs/context/properties/complexity` — Property `complexity` type changed `string` → `ref → complexity_pattern`.
+- [additive] `design/arch.schema.yaml#/$defs/context/properties/complexity` — Property `complexity` enum values added: `state-management`.
   - _Sources: `schema/v2.7/design/arch.schema.yaml#/$defs/context/properties/complexity`, `schema/v2.6/design/arch.schema.yaml#/$defs/context/properties/complexity`_
 
-- **[breaking]** `design/arch.schema.yaml#/$defs/context/properties/model_traits` — Property `model_traits` type changed `array<string>` → `array<ref → model_traits_item>`.
-  - _Sources: `schema/v2.7/design/arch.schema.yaml#/$defs/context/properties/model_traits`, `schema/v2.6/design/arch.schema.yaml#/$defs/context/properties/model_traits`_
+- [additive] `design/arch.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
+  - _Sources: `schema/v2.7/design/arch.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/arch.schema.yaml#/properties/schemaVersion`_
+
+- [additive] `design/concepts.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
+  - _Sources: `schema/v2.7/design/concepts.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/concepts.schema.yaml#/properties/schemaVersion`_
+
+- [additive] `design/domain.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
+  - _Sources: `schema/v2.7/design/domain.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/domain.schema.yaml#/properties/schemaVersion`_
+
+- [additive] `design/dynamics.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
+  - _Sources: `schema/v2.7/design/dynamics.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/dynamics.schema.yaml#/properties/schemaVersion`_
+
+- [additive] `design/models.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
+  - _Sources: `schema/v2.7/design/models.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/models.schema.yaml#/properties/schemaVersion`_
+
+- [additive] `design/quality.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
+  - _Sources: `schema/v2.7/design/quality.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/quality.schema.yaml#/properties/schemaVersion`_
+
+- [additive] `design/rules.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
+  - _Sources: `schema/v2.7/design/rules.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/rules.schema.yaml#/properties/schemaVersion`_
+
+- [additive] `design/story.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
+  - _Sources: `schema/v2.7/design/story.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/story.schema.yaml#/properties/schemaVersion`_
+
+- [additive] `governance/capability.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
+  - _Sources: `schema/v2.7/governance/capability.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/capability.schema.yaml#/properties/schemaVersion`_
+
+- [additive] `governance/decisions.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
+  - _Sources: `schema/v2.7/governance/decisions.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/decisions.schema.yaml#/properties/schemaVersion`_
+
+- [additive] `governance/motivation.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
+  - _Sources: `schema/v2.7/governance/motivation.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/motivation.schema.yaml#/properties/schemaVersion`_
+
+- [additive] `governance/roadmap.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
+  - _Sources: `schema/v2.7/governance/roadmap.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/roadmap.schema.yaml#/properties/schemaVersion`_
+
+- [additive] `governance/test-cases.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
+  - _Sources: `schema/v2.7/governance/test-cases.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/test-cases.schema.yaml#/properties/schemaVersion`_
+
+- [additive] `governance/value-stream.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
+  - _Sources: `schema/v2.7/governance/value-stream.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/value-stream.schema.yaml#/properties/schemaVersion`_
+
+- [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
+  - _Sources: `schema/v2.7/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
 ## Added (80)
 
