@@ -8,11 +8,17 @@ tags:
   - php
   - symfony
 parties:
-  - id: PRT002
-    name: PrestaShop
+  # Third-party systems that CONSUME the Admin API - ERPs, CRMs, PIMs, marketplaces. Declared as a
+  # party of their own rather than under PrestaShop (PRT002, `kind: system`), because an external
+  # consumer is not part of the PrestaShop monolith whatever a diagram does with it. PRT002 keeps the
+  # ten contexts the platform actually implements, each declared in its own slice file.
+  - id: PRT003
+    name: ApiIntegrators
     kind: system
     env: production
-    description: PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+    description: >-
+      Third-party systems integrating with PrestaShop over the Admin REST API using OAuth2. Not built
+      or operated by PrestaShop; modelled so the dependency on the Admin API surface is visible.
     contexts:
       - id: prestashop.BC009
         name: ExternalApiConsumers

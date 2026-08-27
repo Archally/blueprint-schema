@@ -46,6 +46,7 @@ npx @archally/blueprint-schema blueprint-check <dir> --config .blueprint-lint.ya
 | `user-story-without-acceptance-criteria` | info | every UserStory has `acceptance_criteria` — without them nothing can be derived into a test case |
 | `model-without-purpose` | info | every model declares its CQRS `purpose` (`command-payload` \| `event-payload` \| `read-model` \| `shared` \| `dto`) |
 | `model-without-represents` | info | every model maps to the concept(s) it carries via `represents[]`; omit only for envelopes/wrappers |
+| `payload-model-unbound` | info | every payload model (`command-payload` \| `event-payload` \| `read-model`) is referenced by some Operation's `payload:`; `shared`/`dto` are exempt, being referenced by models rather than operations |
 
 The adapter maps `BlueprintModel → CheckableModel` (`term`→`name`, plane derived from the layer
 prefix, `validates`→`validated-by`, `question_answered_by`→`answered-by`). Output is now ordered

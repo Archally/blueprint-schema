@@ -1,0 +1,45 @@
+engineVersion: "0.1"
+rules:
+  - id: payload-model-unbound
+    severity: info
+    description: >-
+      A payload model exists to be the wire shape of an operation. This one is authored, classified
+      and generated into `components:`, and no operation points at it - so it ships in every contract
+      artifact while describing nothing the reader can reach.
+
+      The edge is `payload_model`, materialized from `operation.payload.schema`. It is the second
+      half of a pair the checker already covers from the other side: `exchange-missing-payload` asks
+      whether an operation that declares a transport also declares its shape. Nothing asked the
+      reverse until now, and the reverse is where a model drifts quietly - authoring a payload is
+      cheap and satisfying, binding it is the part that gets deferred.
+
+      NOT covered by `orphan-entities`, which is why this is its own rule rather than a filter on
+      that one. `orphan-entities` uses `direction: any`, and a payload model almost always carries an
+      outgoing `represents[]` edge to a concept, so it already counts as reachable and never
+      surfaces - a model can have every payload unbound and no orphan reported.
+
+      Scoped to the three purposes that describe an operation's wire shape. `shared` and `dto` are
+      excluded on purpose - a reusable scalar or an envelope is referenced by other models rather
+      than by an operation, so requiring an operation edge would report correct modelling as a gap.
+
+      Info, not warn: a payload authored before its binding is a normal intermediate state, and the
+      rule's job is to stop that state from becoming permanent silently. The count is a progress
+      measure rather than a defect list - it falls to zero as bindings are added, and a model that
+      binds every payload reports nothing.
+
+      One caveat worth knowing when reading a result: `payload.schema` accepts four reference forms,
+      and a reference that does not resolve is replaced by a placeholder rather than reported. A
+      model bound through a form the builder does not resolve is therefore reported here as unbound,
+      which is the honest answer - nothing reaches it - but the fix is the reference, not the
+      binding.
+    find:
+      entity_type: Models
+    filter:
+      field_in:
+        data.purpose: [command-payload, event-payload, read-model]
+    check:
+      has_relation:
+        direction: in
+        type: payload_model
+        exists: true
+    message: 'Payload model "{displayId}" ({name|''unnamed''}) is referenced by no operation - bind it via the operation''s `payload:` so the contract it describes reaches a reader.'

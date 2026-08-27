@@ -103,7 +103,11 @@ leverage_points:
     status: proposed
     decision_refs: [D006]
     fitness_function_refs: [FF004, FF005]
-    realized_by: [WI010]
+    # Guards the payment leg of the checkout flow: CAP003 names payment initiation, and the inbound
+    # webhook is its return leg. No work item realizes it yet - it is `proposed` / `exploring`, so an
+    # empty realization is the true state rather than a gap.
+    advances_value_streams: [VS001]
+    capability_refs: [CAP003]
     consequences_if_done:
       - "A provider changing its webhook shape fails a contract test, not a payment."
     consequences_if_not_done:
