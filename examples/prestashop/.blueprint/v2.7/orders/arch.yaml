@@ -69,9 +69,9 @@ parties:
             needs:
               - { type_ref: RT001, class: self-hosted, id: prestashop-db }
             servers:
-              - url: https://api.prestashop.example/v1/orders
+              - url: https://api.prestashop.example/v1
                 environment: production
-              - url: http://localhost:8080/api/orders
+              - url: http://localhost:8080/api
                 environment: development
             contracts:
               openapi:

@@ -8,6 +8,18 @@ operations:
   issueStandardRefund:
     id: orders.CMD003
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /orders/{orderId}/refunds
+        method: POST
+        group: orders
+    responses:
+      - code: "200"
+        type: success
+        description: "The order as it stands after the refund."
+        schema: OrderResource
+        contentType: application/json
     name: "IssueStandardRefund"
     description: "Process a full refund for an order. Generates a credit slip and optionally re-stocks returned products."
     delivery_priority: must-have

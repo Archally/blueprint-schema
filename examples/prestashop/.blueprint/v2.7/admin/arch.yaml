@@ -34,9 +34,9 @@ parties:
             kind: api
             summary: REST API for employee, security, and configuration management.
             servers:
-              - url: https://api.prestashop.example/v1/admin
+              - url: https://api.prestashop.example/v1
                 environment: production
-              - url: http://localhost:8080/api/admin
+              - url: http://localhost:8080/api
                 environment: development
             contracts:
               openapi:

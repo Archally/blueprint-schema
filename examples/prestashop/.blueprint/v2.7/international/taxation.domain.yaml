@@ -197,6 +197,18 @@ operations:
   getTaxRulesGroupForEditing:
     id: international.QRY010
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /international/tax-rules-groups/{taxRulesGroupId}
+        method: GET
+        group: international
+    responses:
+      - code: "200"
+        type: success
+        description: "The tax rules group, in the shape the edit form needs."
+        schema: TaxRulesGroupResource
+        contentType: application/json
     name: "GetTaxRulesGroupForEditing"
     description: "Retrieve a tax rules group with all its tax rule bindings for the edit form."
     delivery_priority: must-have

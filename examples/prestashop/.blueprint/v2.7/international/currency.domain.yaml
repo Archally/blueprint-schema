@@ -151,6 +151,18 @@ operations:
   getCurrencyForEditing:
     id: international.QRY001
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /international/currencies/{currencyId}
+        method: GET
+        group: international
+    responses:
+      - code: "200"
+        type: success
+        description: "The currency, in the shape the edit form needs."
+        schema: CurrencyResource
+        contentType: application/json
     name: "GetCurrencyForEditing"
     description: "Retrieve a currency's full configuration for the edit form."
     delivery_priority: must-have

@@ -136,6 +136,18 @@ operations:
   getCartForViewing:
     id: checkout.QRY001
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /checkout/carts/{cartId}
+        method: GET
+        group: checkout
+    responses:
+      - code: "200"
+        type: success
+        description: "The cart and its lines."
+        schema: CartResource
+        contentType: application/json
     name: "GetCartForViewing"
     description: "Retrieve cart details for back-office viewing including products, totals, applied rules, and customer info."
     delivery_priority: must-have

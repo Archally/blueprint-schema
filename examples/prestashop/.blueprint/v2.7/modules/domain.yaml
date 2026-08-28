@@ -11,6 +11,18 @@ operations:
   installModule:
     id: modules.CMD001
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /modules/{moduleName}/install
+        method: POST
+        group: modules
+    responses:
+      - code: "200"
+        type: success
+        description: "The module after installation."
+        schema: ModuleResource
+        contentType: application/json
     name: "InstallModule"
     description: "Install a module by technical name. Triggers dependency resolution, database schema setup, and hook registration as side effects. Module must not already be installed."
     delivery_priority: must-have
@@ -30,6 +42,18 @@ operations:
   uninstallModule:
     id: modules.CMD002
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /modules/{moduleName}/uninstall
+        method: POST
+        group: modules
+    responses:
+      - code: "200"
+        type: success
+        description: "The module after uninstallation."
+        schema: ModuleResource
+        contentType: application/json
     name: "UninstallModule"
     description: "Uninstall a module. Optionally deletes module files (deleteFiles=false by default). Cascades hook unregistration."
     delivery_priority: must-have
@@ -198,6 +222,18 @@ operations:
   getModuleInfos:
     id: modules.QRY001
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /modules
+        method: GET
+        group: modules
+    responses:
+      - code: "200"
+        type: success
+        description: "The installed modules and their state."
+        schema: ModuleResource
+        contentType: application/json
     name: "GetModuleInfos"
     description: "Retrieve module information by technical name. Returns moduleId, technicalName, moduleVersion, installedVersion, enabled, installed."
     delivery_priority: must-have

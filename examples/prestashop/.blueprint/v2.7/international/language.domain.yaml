@@ -101,6 +101,18 @@ operations:
   getLanguageForEditing:
     id: international.QRY004
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /international/languages/{languageId}
+        method: GET
+        group: international
+    responses:
+      - code: "200"
+        type: success
+        description: "The language, in the shape the edit form needs."
+        schema: LanguageResource
+        contentType: application/json
     name: "GetLanguageForEditing"
     description: "Retrieve a language's full configuration for the edit form."
     delivery_priority: must-have

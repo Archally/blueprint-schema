@@ -269,6 +269,18 @@ operations:
   getCountryForEditing:
     id: international.QRY005
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /international/countries/{countryId}
+        method: GET
+        group: international
+    responses:
+      - code: "200"
+        type: success
+        description: "The country, in the shape the edit form needs."
+        schema: CountryResource
+        contentType: application/json
     name: "GetCountryForEditing"
     description: "Retrieve a country's full configuration for the edit form."
     delivery_priority: must-have

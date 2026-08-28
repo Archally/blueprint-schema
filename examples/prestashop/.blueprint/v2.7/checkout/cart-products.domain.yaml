@@ -8,6 +8,21 @@ operations:
   addProductToCart:
     id: checkout.CMD009
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /checkout/carts/{cartId}/items
+        method: POST
+        group: checkout
+    payload:
+      schema: AddToCartPayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The cart as it stands after the addition."
+        schema: CartResource
+        contentType: application/json
     idempotent: true
     idempotency_key: "$.body.cartId+$.body.productId+$.body.combinationId"
     name: "AddProductToCart"
@@ -26,6 +41,18 @@ operations:
   removeProductFromCart:
     id: checkout.CMD010
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /checkout/carts/{cartId}/items/{productId}
+        method: DELETE
+        group: checkout
+    responses:
+      - code: "200"
+        type: success
+        description: "The cart as it stands after the removal."
+        schema: CartResource
+        contentType: application/json
     name: "RemoveProductFromCart"
     description: "Remove a product line from the cart entirely."
     delivery_priority: must-have

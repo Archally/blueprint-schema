@@ -11,6 +11,21 @@ operations:
   addApiClient:
     id: admin.CMD021
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /admin/api-clients
+        method: POST
+        group: admin
+    payload:
+      schema: CreateApiClientPayload
+      contentType: application/json
+    responses:
+      - code: "201"
+        type: success
+        description: "The API client was created."
+        schema: ApiClientResource
+        contentType: application/json
     name: "AddApiClient"
     description: "Create a new OAuth2 API client with name, client ID, scopes, lifetime, and enabled status."
     delivery_priority: must-have

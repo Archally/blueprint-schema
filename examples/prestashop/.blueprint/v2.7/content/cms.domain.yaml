@@ -11,6 +11,21 @@ operations:
   addCmsPage:
     id: content.CMD001
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /content/cms-pages
+        method: POST
+        group: content
+    payload:
+      schema: CreateCmsPagePayload
+      contentType: application/json
+    responses:
+      - code: "201"
+        type: success
+        description: "The CMS page was created."
+        schema: CmsPageResource
+        contentType: application/json
     name: "AddCmsPage"
     description: "Create a new CMS page with localized title, content, SEO metadata, friendly URL, and category assignment. All localized fields accept per-language values."
     delivery_priority: must-have
@@ -30,6 +45,21 @@ operations:
   editCmsPage:
     id: content.CMD002
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /content/cms-pages/{cmsPageId}
+        method: PUT
+        group: content
+    payload:
+      schema: CreateCmsPagePayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The CMS page as stored after the edit."
+        schema: CmsPageResource
+        contentType: application/json
     name: "EditCmsPage"
     description: "Update an existing CMS page. All fields are optional via fluent setters - only changed fields need to be provided."
     delivery_priority: must-have

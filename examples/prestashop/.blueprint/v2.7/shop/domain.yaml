@@ -123,6 +123,18 @@ operations:
   getStoreForEditing:
     id: shop.QRY003
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /shop/stores/{storeId}
+        method: GET
+        group: shop
+    responses:
+      - code: "200"
+        type: success
+        description: "The store, in the shape the edit form needs."
+        schema: StoreResource
+        contentType: application/json
     name: "GetStoreForEditing"
     description: "Retrieve store details for the edit form."
     delivery_priority: should-have
@@ -374,6 +386,18 @@ operations:
   editContact:
     id: shop.CMD016
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /shop/contacts/{contactId}
+        method: PUT
+        group: shop
+    responses:
+      - code: "200"
+        type: success
+        description: "The contact as stored after the edit."
+        schema: ContactResource
+        contentType: application/json
     name: "EditContact"
     description: "Update a 'Contact Us' department's name, email, or description."
     delivery_priority: should-have

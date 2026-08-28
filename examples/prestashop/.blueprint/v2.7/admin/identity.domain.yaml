@@ -11,6 +11,21 @@ operations:
   addEmployee:
     id: admin.CMD001
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /admin/employees
+        method: POST
+        group: admin
+    payload:
+      schema: CreateEmployeePayload
+      contentType: application/json
+    responses:
+      - code: "201"
+        type: success
+        description: "The employee was created."
+        schema: EmployeeResource
+        contentType: application/json
     name: "AddEmployee"
     description: "Create a new back-office employee with profile assignment, password policy, and multi-store shop association."
     delivery_priority: must-have
@@ -168,6 +183,18 @@ operations:
   getEmployeeForEditing:
     id: admin.QRY001
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /admin/employees/{employeeId}
+        method: GET
+        group: admin
+    responses:
+      - code: "200"
+        type: success
+        description: "The employee, in the shape the edit form needs."
+        schema: EmployeeResource
+        contentType: application/json
     name: "GetEmployeeForEditing"
     description: "Retrieve employee details for the edit form."
     delivery_priority: must-have
@@ -210,6 +237,21 @@ operations:
   editProfile:
     id: admin.CMD010
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /admin/profiles/{profileId}
+        method: PUT
+        group: admin
+    payload:
+      schema: CreateProfilePayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The profile as stored after the edit."
+        schema: ProfileResource
+        contentType: application/json
     name: "EditProfile"
     description: "Update a profile's localized name."
     delivery_priority: must-have

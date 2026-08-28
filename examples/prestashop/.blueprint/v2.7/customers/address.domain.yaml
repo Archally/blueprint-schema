@@ -8,6 +8,21 @@ operations:
   addCustomerAddress:
     id: customers.CMD012
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /customers/{customerId}/addresses
+        method: POST
+        group: customers
+    payload:
+      schema: CreateAddressPayload
+      contentType: application/json
+    responses:
+      - code: "201"
+        type: success
+        description: "The address was created for this customer."
+        schema: AddressResource
+        contentType: application/json
     name: "AddCustomerAddress"
     description: "Create a new address for a customer with alias, street, city, postcode, country, and phone."
     delivery_priority: must-have

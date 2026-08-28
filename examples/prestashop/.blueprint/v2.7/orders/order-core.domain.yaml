@@ -8,6 +8,21 @@ operations:
   placeOrder:
     id: orders.CMD001
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /orders
+        method: POST
+        group: orders
+    payload:
+      schema: PlaceOrderPayload
+      contentType: application/json
+    responses:
+      - code: "201"
+        type: success
+        description: "The order was placed."
+        schema: OrderResource
+        contentType: application/json
     idempotent: true
     idempotency_key: "$.body.cartId"
     correlation_id:
@@ -55,6 +70,18 @@ operations:
   cancelOrder:
     id: orders.CMD002
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /orders/{orderId}/cancel
+        method: POST
+        group: orders
+    responses:
+      - code: "200"
+        type: success
+        description: "The order as it stands after cancellation."
+        schema: OrderResource
+        contentType: application/json
     name: "CancelOrder"
     description: "Cancel an order before shipment. Releases reserved stock and initiates payment reversal if payment was captured."
     delivery_priority: must-have
@@ -219,6 +246,18 @@ operations:
   getOrderForViewing:
     id: orders.QRY001
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /orders/{orderId}
+        method: GET
+        group: orders
+    responses:
+      - code: "200"
+        type: success
+        description: "The order, its lines and its totals."
+        schema: OrderResource
+        contentType: application/json
     name: "GetOrderForViewing"
     description: "Retrieve comprehensive order data for back-office viewing - line items, payments, invoices, status history, messages, and shipping details."
     delivery_priority: must-have

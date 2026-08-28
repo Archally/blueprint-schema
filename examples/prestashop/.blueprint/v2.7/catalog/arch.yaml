@@ -53,9 +53,9 @@ parties:
               - { type_ref: RT004, class: self-hosted, id: prestashop-cache }
               - { type_ref: RT002, class: self-hosted, id: prestashop-assets }
             servers:
-              - url: https://api.prestashop.example/v1/catalog
+              - url: https://api.prestashop.example/v1
                 environment: production
-              - url: http://localhost:8080/api/catalog
+              - url: http://localhost:8080/api
                 environment: development
             contracts:
               openapi:

@@ -8,6 +8,21 @@ operations:
   addProduct:
     id: catalog.CMD001
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /catalog/products
+        method: POST
+        group: catalog
+    payload:
+      schema: CreateProductPayload
+      contentType: application/json
+    responses:
+      - code: "201"
+        type: success
+        description: "The product was created."
+        schema: ProductResource
+        contentType: application/json
     name: "AddProduct"
     description: "Create a new product with basic data (name, type, tax rules group). Product starts in draft status."
     delivery_priority: must-have
@@ -26,6 +41,21 @@ operations:
   updateProduct:
     id: catalog.CMD002
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /catalog/products/{productId}
+        method: PUT
+        group: catalog
+    payload:
+      schema: UpdateProductPayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The product as stored after the update."
+        schema: ProductResource
+        contentType: application/json
     name: "UpdateProduct"
     description: "Update product basic information - name, description, prices, SEO, options."
     delivery_priority: must-have
@@ -132,6 +162,18 @@ operations:
   searchProducts:
     id: catalog.QRY001
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /catalog/products
+        method: GET
+        group: catalog
+    responses:
+      - code: "200"
+        type: success
+        description: "Products matching the search and its facets."
+        schema: ProductListItem
+        contentType: application/json
     name: "SearchProducts"
     description: "Full-text search with faceted filtering (category, price range, attributes). Backed by Elasticsearch."
     delivery_priority: must-have
@@ -142,6 +184,18 @@ operations:
   getProductDetail:
     id: catalog.QRY002
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /catalog/products/{productId}
+        method: GET
+        group: catalog
+    responses:
+      - code: "200"
+        type: success
+        description: "One product in full detail."
+        schema: ProductResource
+        contentType: application/json
     name: "GetProductDetail"
     description: "Retrieve full product detail including all combinations, images, features, and computed fields."
     delivery_priority: must-have

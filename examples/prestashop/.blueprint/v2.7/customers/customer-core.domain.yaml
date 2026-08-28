@@ -8,6 +8,21 @@ operations:
   addCustomer:
     id: customers.CMD001
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /customers
+        method: POST
+        group: customers
+    payload:
+      schema: CreateCustomerPayload
+      contentType: application/json
+    responses:
+      - code: "201"
+        type: success
+        description: "The customer was created."
+        schema: CustomerResource
+        contentType: application/json
     name: "AddCustomer"
     description: "Register a new customer account with profile data, group assignment, and shop association."
     delivery_priority: must-have
@@ -25,6 +40,21 @@ operations:
   editCustomer:
     id: customers.CMD002
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /customers/{customerId}
+        method: PUT
+        group: customers
+    payload:
+      schema: UpdateCustomerPayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The customer as stored after the edit."
+        schema: CustomerResource
+        contentType: application/json
     name: "EditCustomer"
     description: "Update customer profile data (name, email, group, newsletter, active status)."
     delivery_priority: must-have
@@ -163,6 +193,18 @@ operations:
   getCustomerForViewing:
     id: customers.QRY002
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /customers/{customerId}
+        method: GET
+        group: customers
+    responses:
+      - code: "200"
+        type: success
+        description: "The customer, in the shape the detail view needs."
+        schema: CustomerResource
+        contentType: application/json
     name: "GetCustomerForViewing"
     description: "Retrieve full customer details for back-office viewing (profile, orders, carts, addresses, groups)."
     delivery_priority: must-have

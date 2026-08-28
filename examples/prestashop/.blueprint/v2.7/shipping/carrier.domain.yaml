@@ -253,6 +253,18 @@ operations:
   getAvailableCarriers:
     id: shipping.QRY003
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /shipping/carriers
+        method: GET
+        group: shipping
+    responses:
+      - code: "200"
+        type: success
+        description: "The carriers available for the given destination and cart."
+        schema: CarrierListItem
+        contentType: application/json
     name: "GetAvailableCarriers"
     description: "List carriers available for a given context (checkout, shipment assignment). Filters by active status, zone, and weight/price applicability."
     delivery_priority: must-have

@@ -50,6 +50,15 @@ entries:
       addresses a caller, not a channel, so either the exchange gains a topic or a queue, or the
       operation belongs in `expose` or `call` instead. Silent on every bundled example.
 
+      The bundled PrestaShop example also gains a real API surface. Its 31 contract-exposed
+      operations now declare an `exchange` with an HTTP endpoint, twelve declare a request
+      `payload`, and every one declares a typed response, so `blueprint-check` and any generator
+      reading the model see a boundary that was previously described only by the contract lists.
+      Until now no bundled example produced an OpenAPI document with paths in it. Seven events are
+      deliberately left without a transport: all three AsyncAPI contracts name a broker that no
+      infrastructure resource declares, and choosing a protocol for it would be inventing
+      infrastructure the model does not state.
+
       A NOTE ON THIS VERSION NUMBER. The channel rule was added to 2.7.12 after 2.7.12 had already
       been published, so two states of this repository carry that version: the earlier ships 21
       built-in semantic rules, this one ships 22. The version was never tagged and the addition is
