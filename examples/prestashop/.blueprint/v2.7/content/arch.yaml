@@ -42,7 +42,7 @@ parties:
               - { type_ref: RT002, class: self-hosted, id: prestashop-assets }
             contracts:
               openapi:
-                output: content/content-api.openapi.yaml
+                output: content/content-api.openapi
                 expose:
                   - content:addCmsPage
                   - content:editCmsPage

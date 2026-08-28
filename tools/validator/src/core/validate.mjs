@@ -9,6 +9,7 @@ import {
   isIdentityOrReferenceViolation,
   isPartyRedeclaration,
 } from "./references.mjs";
+import { SECTION_TO_CATEGORY, resolvesAgainst } from "./model-ref-match.mjs";
 
 /** `RT###` refs point to the resource-type CATALOG in the profiles, never into the model. */
 const CATALOG_REF_RE = /^([a-z][a-z0-9-]*\.)?RT\d{3,}$/;
@@ -87,6 +88,117 @@ export function checkContractOutputSlice(relFile, serviceName, kind, output, sli
     `which is not a declared slice — the artifact stays under that subdirectory rather than being ` +
     `placed in a slice. Declared slices: ${known}. Use "<slice>/<name>", or "_global/<name>" to ` +
     `mark it cross-cutting.`
+  );
+}
+
+/**
+ * Every contract `output:` the model declares, across all services.
+ *
+ * The counterpart vocabulary to `declaredSlices`: where that one answers "is this prefix a slice",
+ * this answers "is this path a contract this model actually produces".
+ */
+export function declaredContractOutputs(parsedFiles) {
+  const outputs = new Set();
+  for (const { schemaType, data } of parsedFiles) {
+    if (schemaType !== "arch" || !Array.isArray(data?.parties)) continue;
+    for (const party of data.parties) {
+      for (const context of party?.contexts ?? []) {
+        for (const service of context?.services ?? []) {
+          for (const contract of Object.values(service?.contracts ?? {})) {
+            if (contract && typeof contract.output === "string") outputs.add(contract.output);
+          }
+        }
+      }
+    }
+  }
+  return outputs;
+}
+
+/**
+ * Check a test case's `contract.file` against the contract outputs the model declares.
+ *
+ * The CONSUMER side of the path `checkContractOutputSlice` guards on the producer side. A test case
+ * says "I validate against this contract"; the arch layer says where that contract is written. Until
+ * 2026-08-27 nothing compared the two, and the field is a plain string with no schema constraint
+ * beyond being one - so all 10 of prestashop's pointed at a `dist/` directory that no arch block, no
+ * render manifest and no renderer declared, and every gate stayed green. Correcting them moved no
+ * measurement, which is the tell that nothing was ever asking.
+ *
+ * Warning, never an error, and it reports the EMPTY case separately: a model that declares no
+ * contract outputs at all is a different statement from one whose declared outputs do not include
+ * this path, and collapsing the two would let "nothing to compare against" read as "compared and
+ * fine".
+ */
+export function checkTestCaseContractFile(relFile, testCaseId, file, outputs) {
+  if (typeof file !== "string" || file.trim() === "") return null;
+  if (outputs.has(file)) return null;
+  const who = `[${relFile}] Test case "${testCaseId ?? "no-id"}" names contract file "${file}"`;
+  if (outputs.size === 0) {
+    return (
+      `${who}, but this model declares no contract outputs at all - nothing produces that file, ` +
+      `so the reference cannot be satisfied by anything in the model.`
+    );
+  }
+  const known = [...outputs].sort().join(", ");
+  return (
+    `${who}, which no service declares as a contract output - the test validates against an ` +
+    `artifact the model never produces. Declared outputs: ${known}.`
+  );
+}
+
+/**
+ * Every model component the blueprint declares, in the shape the shared `model_ref` form rules take.
+ *
+ * Walks the three `components.*` sections a blueprint materializes. `x-model-id` is carried so a
+ * form-1 reference resolves here exactly as it does in the graph builder.
+ */
+export function declaredModelComponents(parsedFiles) {
+  const components = [];
+  for (const { relFile, data } of parsedFiles) {
+    const sections = data?.components;
+    if (!sections || typeof sections !== "object") continue;
+    for (const [section, category] of Object.entries(SECTION_TO_CATEGORY)) {
+      const entries = sections[section];
+      if (!entries || typeof entries !== "object") continue;
+      for (const [name, item] of Object.entries(entries)) {
+        const modelId = item && typeof item === "object" ? item["x-model-id"] : undefined;
+        components.push({
+          name,
+          category,
+          modelId: typeof modelId === "string" ? modelId : undefined,
+          file: relFile,
+        });
+      }
+    }
+  }
+  return components;
+}
+
+/**
+ * Check an operation's `payload.schema` against the components the model declares.
+ *
+ * `payload.schema` is a `model_ref` and cannot go through the generic reference walk: that walk
+ * records a reference only when the value looks like a TYPED ID, and three of the four documented
+ * forms are not typed ids. Nor can `schema` become a generic reference key - it is the commonest key
+ * in a JSON Schema body, where it means a type definition rather than a reference.
+ *
+ * The form rules are NOT reimplemented here. `model-ref-match.mjs` is emitted from the module the
+ * graph builder imports, so the validator and the builder cannot disagree about what a reference
+ * addresses - which matters, because the semantic rule `payload-schema-unresolved` reports the same
+ * defect from the graph side, and two definitions of "resolves" would make the two contradict each
+ * other on the same file.
+ *
+ * Warning rather than error: a dangling reference is the same class as a missing typed-id reference,
+ * which IS an error, but promoting it would hard-fail existing models on upgrade. Promotion is its
+ * own decision, as `unbound-operation`'s was.
+ */
+export function checkPayloadSchemaResolvable(relFile, operationKey, operationId, ref, components) {
+  if (typeof ref !== "string" || ref.trim() === "") return null;
+  if (resolvesAgainst(ref, components)) return null;
+  return (
+    `[${relFile}] Operation "${operationKey}" (${operationId ?? "no-id"}) has \`payload.schema: ` +
+    `${ref}\` and no model component answers it - declare it under \`components.schemas\` ` +
+    `(or \`x-field\` / \`x-parameter\`) in a models file, or correct the reference.`
   );
 }
 
@@ -201,10 +313,16 @@ export function validateModel(args) {
   // file appear together and in file order. Consumers render this array verbatim, which makes
   // its order part of the contract.
   const sliceNames = declaredSlices(parsedFiles);
+  const contractOutputs = declaredContractOutputs(parsedFiles);
+  const modelComponents = declaredModelComponents(parsedFiles);
 
   for (const { relFile, schemaType, data } of parsedFiles) {
     if (schemaType === "domain" && data?.operations) {
       for (const [key, op] of Object.entries(data.operations)) {
+        const payloadFinding = checkPayloadSchemaResolvable(
+          relFile, key, op.id, op.payload?.schema, modelComponents,
+        );
+        if (payloadFinding) warnings.push(payloadFinding);
         const missingExchange = eventsExemptFromExchange
           ? (op.kind === "command" || op.kind === "query") && !op.exchange && op.dispatch !== "in-process"
           : !op.exchange;
@@ -233,6 +351,18 @@ export function validateModel(args) {
               if (finding) warnings.push(finding);
             }
           }
+        }
+      }
+    }
+
+    if (schemaType === "test-cases" && data && typeof data === "object") {
+      for (const group of ["happy_path", "edge_cases", "error_cases"]) {
+        for (const testCase of Array.isArray(data[group]) ? data[group] : []) {
+          if (!testCase || typeof testCase !== "object") continue;
+          const finding = checkTestCaseContractFile(
+            relFile, testCase.id, testCase.contract?.file, contractOutputs,
+          );
+          if (finding) warnings.push(finding);
         }
       }
     }

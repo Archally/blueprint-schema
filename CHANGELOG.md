@@ -2,6 +2,37 @@
 # All schema version releases in reverse chronological order.
 ---
 entries:
+  - version: "2.7.12"
+    date: "2026-08-28"
+    summary: >
+      An operation's `payload.schema` becomes a reference that is actually checked, and every
+      reference form the schema documents now resolves.
+
+      `model_ref` has always admitted four forms: a typed id (`MDL013`), a component name
+      (`OrderSchema`), a JSON Pointer (`#/components/schemas/OrderSchema`) and a file-relative
+      pointer (`./models.yaml#/components/schemas/OrderSchema`). The first two resolved; the two
+      pointer forms did not. A model written in pointer form therefore declared a payload that
+      nothing reached: the graph recorded the edge, and the far end of it was a placeholder. That
+      is fixed, so a model using pointers gains the bindings it already declared, with no edit.
+
+      A pointer is matched as a PATH, not as a name with decoration. `#/components/schemas/X` does
+      not address an `X` declared under `x-field`, and a pointer into a section that carries no
+      models resolves to nothing rather than falling back to matching the name alone. A
+      file-relative pointer prefers a component from the file it names, which is what the file part
+      is for when two files declare the same name.
+
+      Two checks now report a reference that names a component nobody declared. The semantic checker
+      gains `payload-schema-unresolved` (warn), and `blueprint-check` reports it from the model
+      graph; the validator reports the same reference from the files, because a `payload.schema` is
+      not a typed id and the general reference check cannot carry it. Both are silent on every
+      bundled example. If either starts reporting on a model that was quiet before, the reference
+      was already reaching nothing and the report is the first time anything said so.
+
+      `payload-model-unbound` is unchanged in behaviour and corrected in its description: it used to
+      warn that a reference written in an unresolvable form would be counted as an unbound model,
+      and that can no longer happen. The two rules now divide the question cleanly - one reports a
+      model nothing references, the other a reference that names no model.
+
   - version: "2.7.11"
     date: "2026-08-24"
     summary: >

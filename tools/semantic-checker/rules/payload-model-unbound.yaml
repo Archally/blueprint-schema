@@ -28,10 +28,13 @@ rules:
       binds every payload reports nothing.
 
       One caveat worth knowing when reading a result: `payload.schema` accepts four reference forms,
-      and a reference that does not resolve is replaced by a placeholder rather than reported. A
-      model bound through a form the builder does not resolve is therefore reported here as unbound,
-      which is the honest answer - nothing reaches it - but the fix is the reference, not the
-      binding.
+      and a reference that does not resolve is replaced by a placeholder rather than counted here. A
+      model whose only inbound reference is dangling is therefore reported as unbound, which is the
+      honest answer - nothing reaches it - but the fix is the reference, not the binding.
+      `payload-schema-unresolved` reports that dangling reference from the other side, so the two
+      rules together separate "nobody bound it" from "somebody bound it wrongly". All four reference
+      forms have resolved since 2026-08-28; before then a correct reference in an unimplemented form
+      also landed here, and that is no longer a way to reach this rule.
     find:
       entity_type: Models
     filter:

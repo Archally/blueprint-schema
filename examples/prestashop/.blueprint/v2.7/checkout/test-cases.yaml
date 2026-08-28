@@ -11,7 +11,7 @@ happy_path:
       rules: [checkout.SR001]
     contract:
       kind: openapi
-      file: dist/checkout-api.openapi.yaml
+      file: checkout/checkout-api.openapi
     given:
       description: "Product SKU-001 in stock (qty: 10). Cart is empty."
       state:

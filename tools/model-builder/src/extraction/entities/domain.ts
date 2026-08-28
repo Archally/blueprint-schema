@@ -7,10 +7,21 @@ import { makeInternalId } from './id.js';
 const LAYER = SCHEMA_TYPE_TO_LAYER['domain']!;
 const QUESTION_TYPE = ENTITY_TYPE.Question;
 
-/** Normalize operations to [{op, displayId}, ...] for both v2.0 (map) and v2.1 (array). */
+/**
+ * Normalize operations to [{op, displayId, key}, ...] for both v2.0 (map) and v2.1 (array).
+ *
+ * `key` is the MAP KEY, and it is carried out of here rather than discarded because it is half of a
+ * ref form the schema documents: `metamodel.schema.yaml`'s `operation_ref` accepts both
+ * `orders.CMD001` and `orders:placeOrder`, and the second is exactly `<domainRef>:<this key>`.
+ * When `op.id` is present the key used to be dropped on the floor, which left every format-2 ref in
+ * the model resolving to a Missing placeholder. Deriving it back from `name` is possible and is the
+ * wrong repair - see `relations/operationRef.ts`.
+ *
+ * Undefined for the v2.1 array form, which has no key to carry.
+ */
 function iterateOperations(
   operations: unknown
-): Array<{ op: Record<string, unknown>; displayId: string }> {
+): Array<{ op: Record<string, unknown>; displayId: string; key?: string }> {
   if (!operations) return [];
   if (Array.isArray(operations)) {
     return operations
@@ -24,7 +35,7 @@ function iterateOperations(
     return Object.entries(operations).map(([key, op]) => {
       const record = op != null && typeof op === 'object' ? (op as Record<string, unknown>) : {};
       const displayId = record.id != null ? String(record.id) : key;
-      return { op: record, displayId };
+      return { op: record, displayId, key };
     });
   }
   return [];
@@ -64,7 +75,7 @@ export function extractDomain(doc: ParsedBlueprintDocument): Entity[] {
   // Operations
   const operations = data.operations;
   const entries = iterateOperations(operations);
-  for (const { op, displayId } of entries) {
+  for (const { op, displayId, key } of entries) {
     if (!op || typeof op !== 'object') continue;
     const id = makeInternalId(doc.scope, doc.filePath, displayId);
     const name = op.name != null ? String(op.name) : displayId;
@@ -79,7 +90,10 @@ export function extractDomain(doc: ParsedBlueprintDocument): Entity[] {
       summary,
       term: name,
       description,
-      data: { ...op, ...contextLink },
+      // `_operation_key` follows the `_context_name` / `_scope` convention: an underscore marks a
+      // value the extractor injected rather than one the author wrote. It carries the dictionary key
+      // so a `<domain>:<key>` operation_ref can be resolved without deriving anything.
+      data: key != null ? { ...op, ...contextLink, _operation_key: key } : { ...op, ...contextLink },
     });
   }
 

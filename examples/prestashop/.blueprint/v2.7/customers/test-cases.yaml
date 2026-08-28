@@ -11,7 +11,7 @@ happy_path:
       rules: [customers.VR001, customers.VR002]
     contract:
       kind: openapi
-      file: dist/customers-api.openapi.yaml
+      file: customers/customers-api.openapi
     given:
       description: "Email john@example.com not yet registered. Password meets policy."
       state:

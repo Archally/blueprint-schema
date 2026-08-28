@@ -42,7 +42,7 @@ parties:
               - { type_ref: RT001, class: self-hosted, id: prestashop-db }
             contracts:
               openapi:
-                output: customers/customers-api.openapi.yaml
+                output: customers/customers-api.openapi
                 expose:
                   - customers:addCustomer
                   - customers:editCustomer

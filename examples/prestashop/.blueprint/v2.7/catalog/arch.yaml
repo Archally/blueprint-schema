@@ -59,14 +59,14 @@ parties:
                 environment: development
             contracts:
               openapi:
-                output: catalog/catalog-api.openapi.yaml
+                output: catalog/catalog-api.openapi
                 expose:
                   - catalog:addProduct
                   - catalog:updateProduct
                   - catalog:searchProducts
                   - catalog:getProductDetail
               asyncapi:
-                output: catalog/catalog-events.asyncapi.yaml
+                output: catalog/catalog-events.asyncapi
                 send:
                   - catalog:productCreated
                   - catalog:productUpdated

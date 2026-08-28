@@ -11,7 +11,7 @@ happy_path:
       rules: [catalog.SR001]
     contract:
       kind: openapi
-      file: dist/catalog-api.openapi.yaml
+      file: catalog/catalog-api.openapi
     given:
       description: "Product with name, description, price=999.99, type=standard."
     expected_result:

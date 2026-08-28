@@ -68,13 +68,13 @@ parties:
                 environment: development
             contracts:
               openapi:
-                output: checkout/checkout-api.openapi.yaml
+                output: checkout/checkout-api.openapi
                 expose:
                   - checkout:addProductToCart
                   - checkout:removeProductFromCart
                   - checkout:getCartForViewing
               asyncapi:
-                output: checkout/checkout-events.asyncapi.yaml
+                output: checkout/checkout-events.asyncapi
                 send:
                   - checkout:cartProductsUpdated
                 receive:

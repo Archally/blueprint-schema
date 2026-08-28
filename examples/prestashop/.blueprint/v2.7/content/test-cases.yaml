@@ -12,7 +12,7 @@ happy_path:
       concepts: [content.CN001]
     contract:
       kind: openapi
-      file: dist/content-api.openapi.yaml
+      file: content/content-api.openapi
     given:
       description: "A CMS page category exists."
       state:

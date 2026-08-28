@@ -19,7 +19,7 @@ happy_path:
       concepts: [admin.CN001]
     contract:
       kind: openapi
-      file: dist/admin-api.openapi.yaml
+      file: admin/admin-api.openapi
 
   - id: admin.TC002
     name: "Update tab permissions for profile"

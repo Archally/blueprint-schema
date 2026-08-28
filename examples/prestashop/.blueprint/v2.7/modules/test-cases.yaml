@@ -12,7 +12,7 @@ happy_path:
       concepts: [modules.CN001]
     contract:
       kind: openapi
-      file: dist/modules-api.openapi.yaml
+      file: modules/modules-api.openapi
     given:
       description: "Module 'ps_emailsubscription' exists but is not installed."
       state:

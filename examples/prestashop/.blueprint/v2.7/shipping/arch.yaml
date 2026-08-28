@@ -39,6 +39,6 @@ parties:
             summary: REST API for carrier management and shipping cost calculation.
             contracts:
               openapi:
-                output: shipping/shipping-api.openapi.yaml
+                output: shipping/shipping-api.openapi
                 expose:
                   - shipping:getAvailableCarriers

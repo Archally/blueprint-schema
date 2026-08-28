@@ -1,7 +1,8 @@
 import type { Entity, Relation } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
-import { entityDomain, resolveOrPlaceholder } from './resolver.js';
+import { entityDomain } from './resolver.js';
+import { buildOperationKeyIndex, resolveOperationRefOrPlaceholder } from './operationRef.js';
 
 /**
  * Extract contract → operation relations from arch Contract entities.
@@ -15,8 +16,16 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  *   - send[]    (channel / AsyncAPI) operations this service publishes  → ContractSends
  *   - receive[] (channel / AsyncAPI) operations this service consumes   → ContractReceives
  *
- * Each operation_ref is an ID-based ref ("orders.CMD001") resolved against operation entities;
- * unresolvable refs become shared Missing placeholders, as elsewhere.
+ * Each operation_ref is resolved in BOTH formats the schema documents - the ID-based
+ * "orders.CMD001" and the human-readable "orders:placeOrder" (see `operationRef.ts`, which explains
+ * why the second lives there and not in the generic `resolveRef`). Genuinely unresolvable refs
+ * become shared Missing placeholders, as elsewhere.
+ *
+ * Format 2 was unimplemented until 2026-08-27, and the cost was not a missing edge but a blind gate:
+ * prestashop wires all 38 of its contracts that way, so `contract-operation-missing-exchange` -
+ * which fires only for contract-wired operations - reported zero on a model with zero exchange
+ * blocks. realestate-en, which writes format 1, had working `contract_sends` / `contract_receives`
+ * edges the whole time, so the extractor was never the suspect.
  *
  * `handled_by` (membership.ts) is *derived* from expose ∪ send and was already materialized —
  * these are the underlying edges it derives from. Without them a contract-wired operation had no
@@ -36,6 +45,7 @@ export function extractArchContractRelations(
   placeholders: Map<string, Entity>,
 ): Relation[] {
   const relations: Relation[] = [];
+  const keyIndex = buildOperationKeyIndex(entities);
 
   for (const entity of entities) {
     if (entity.type !== ENTITY_TYPE.Contract) continue;
@@ -49,7 +59,7 @@ export function extractArchContractRelations(
       if (!Array.isArray(refs)) continue;
       for (const ref of refs) {
         if (typeof ref !== 'string' || !ref) continue;
-        const targetId = resolveOrPlaceholder(ref, domain, entities, placeholders);
+        const targetId = resolveOperationRefOrPlaceholder(ref, domain, entities, placeholders, keyIndex);
         relations.push({
           id: `${entity.id}--${type}--${targetId}`,
           source_entity_id: entity.id,

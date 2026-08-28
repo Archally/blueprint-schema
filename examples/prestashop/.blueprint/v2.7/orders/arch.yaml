@@ -75,14 +75,14 @@ parties:
                 environment: development
             contracts:
               openapi:
-                output: orders/orders-api.openapi.yaml
+                output: orders/orders-api.openapi
                 expose:
                   - orders:placeOrder
                   - orders:cancelOrder
                   - orders:issueStandardRefund
                   - orders:getOrderForViewing
               asyncapi:
-                output: orders/orders-events.asyncapi.yaml
+                output: orders/orders-events.asyncapi
                 send:
                   - orders:orderPlaced
                   - orders:orderCancelled

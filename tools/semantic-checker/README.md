@@ -47,6 +47,7 @@ npx @archally/blueprint-schema blueprint-check <dir> --config .blueprint-lint.ya
 | `model-without-purpose` | info | every model declares its CQRS `purpose` (`command-payload` \| `event-payload` \| `read-model` \| `shared` \| `dto`) |
 | `model-without-represents` | info | every model maps to the concept(s) it carries via `represents[]`; omit only for envelopes/wrappers |
 | `payload-model-unbound` | info | every payload model (`command-payload` \| `event-payload` \| `read-model`) is referenced by some Operation's `payload:`; `shared`/`dto` are exempt, being referenced by models rather than operations |
+| `payload-schema-unresolved` | warn | every Operation's `payload.schema` resolves to a model component that exists - a reference naming nothing becomes a `Missing` placeholder, which no other rule reports; the sibling `payload-model-unbound` asks the reverse question, whether an authored model is referenced at all |
 
 The adapter maps `BlueprintModel → CheckableModel` (`term`→`name`, plane derived from the layer
 prefix, `validates`→`validated-by`, `question_answered_by`→`answered-by`). Output is now ordered

@@ -1,0 +1,45 @@
+engineVersion: "0.1"
+rules:
+  - id: payload-schema-unresolved
+    severity: warn
+    description: >-
+      An operation's `payload.schema` names a model component that does not exist. The operation
+      claims a wire shape, every contract artifact generated from it carries that claim, and there is
+      nothing behind it.
+
+      The signal was already in the graph and every rule looked away from it. `payload.schema` is
+      materialized as an `Operation --payload_model--> Models` edge, and a reference that resolves to
+      nothing gets a shared `Missing` placeholder on the far end instead - a first-class entity whose
+      `displayId` IS the unresolved reference. `orphan-entities` is the only other rule that touches
+      `Missing` and it excludes the type outright, so a dangling payload reference could not surface
+      anywhere.
+
+      It is the third side of a triangle. `exchange-missing-payload` asks whether an operation that
+      declares a transport also declares a shape. `payload-model-unbound` asks the reverse, whether
+      an authored payload is pointed at by anything. Neither can see a reference that points at a
+      name nobody defined, because one looks at operations and the other at models, and this defect
+      lives in the gap between them.
+
+      Warn rather than info, and the distinction is deliberate: an unbound payload is a normal
+      intermediate state that resolves as binding proceeds, while an unresolvable reference is broken
+      at the moment it is written. It does not become correct by waiting.
+
+      Reported from the Missing side, so the message names the reference rather than the operation
+      that carries it. That is a property of the engine, not an oversight - a rule finds one entity
+      type and messages about it, and the operations are on the far end of an incoming edge. To find
+      them: `bp neighbors <project> "<reference>"` lists every operation pointing at the name.
+
+      All four documented `model_ref` forms resolve, so a placeholder now means the reference is
+      genuinely dangling rather than merely written in a form the builder did not implement. Before
+      2026-08-28 that was not true, and this rule would have reported six correct references in the
+      `ecommerce` example - the resolver was fixed first, on purpose, because a rule that reports a
+      tooling gap as an authoring defect teaches the wrong lesson.
+    find:
+      entity_type: Missing
+    check:
+      not:
+        has_relation:
+          direction: in
+          type: payload_model
+          exists: true
+    message: '`payload.schema` reference "{displayId}" resolves to no model component - define it under `components.schemas` (or `x-field` / `x-parameter`) in a models file, or correct the name. Run `bp neighbors <project> "{displayId}"` to list the operations that carry it.'

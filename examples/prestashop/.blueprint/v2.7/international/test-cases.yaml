@@ -11,7 +11,7 @@ happy_path:
       rules: [international.VR001, international.SR001]
     contract:
       kind: openapi
-      file: dist/international-api.openapi.yaml
+      file: international/international-api.openapi
     given:
       description: "ISO code 'GBP' not yet in store. Exchange rate 0.85."
       state:

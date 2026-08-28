@@ -40,7 +40,7 @@ parties:
                 environment: development
             contracts:
               openapi:
-                output: admin/admin-api.openapi.yaml
+                output: admin/admin-api.openapi
                 expose:
                   - admin:addEmployee
                   - admin:editProfile

@@ -448,9 +448,9 @@ npx @archally/blueprint-schema blueprint-check .blueprint/v2.7
 ```
 
 <!-- BEGIN GENERATED: semantic-rules — generated from the rule pack; do not hand-edit -->
-Ships with **20 built-in rules** (13 warn, 7 info):
+Ships with **21 built-in rules** (14 warn, 7 info):
 
-`aggregate-root-signals` · `contract-operation-missing-exchange` · `decision-asserted-without-evidence` · `dispatch-with-exchange` · `events-with-produces` · `exchange-missing-payload` · `leverage-point-no-address` · `leverage-point-no-strategic-intent` · `missing-causal-links` · `missing-exchange-binding` · `model-without-purpose` · `model-without-represents` · `orphan-entities` · `payload-model-unbound` · `unanswered-questions` · `unbound-operation` · `unbound-question` · `undescribed-event` · `untested-rules` · `user-story-without-acceptance-criteria`
+`aggregate-root-signals` · `contract-operation-missing-exchange` · `decision-asserted-without-evidence` · `dispatch-with-exchange` · `events-with-produces` · `exchange-missing-payload` · `leverage-point-no-address` · `leverage-point-no-strategic-intent` · `missing-causal-links` · `missing-exchange-binding` · `model-without-purpose` · `model-without-represents` · `orphan-entities` · `payload-model-unbound` · `payload-schema-unresolved` · `unanswered-questions` · `unbound-operation` · `unbound-question` · `undescribed-event` · `untested-rules` · `user-story-without-acceptance-criteria`
 <!-- END GENERATED: semantic-rules -->
 
 See [tools/semantic-checker/README.md](tools/semantic-checker/README.md) for rule reference, configuration, and custom rule API.

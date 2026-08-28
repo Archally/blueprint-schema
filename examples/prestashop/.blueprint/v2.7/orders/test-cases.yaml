@@ -11,7 +11,7 @@ happy_path:
       rules: [orders.SR001, orders.VR001]
     contract:
       kind: openapi
-      file: dist/orders-api.openapi.yaml
+      file: orders/orders-api.openapi
     given:
       description: "Cart with 2 items, both in stock. Shipping address provided."
       state:

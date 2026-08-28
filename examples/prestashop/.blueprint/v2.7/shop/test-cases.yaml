@@ -18,7 +18,7 @@ happy_path:
       concepts: [shop.CN001]
     contract:
       kind: openapi
-      file: dist/shop-api.openapi.yaml
+      file: shop/shop-api.openapi
 
   - id: shop.TC002
     name: "Add search term alias"

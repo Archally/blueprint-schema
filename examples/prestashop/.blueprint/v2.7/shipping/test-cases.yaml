@@ -11,7 +11,7 @@ happy_path:
       rules: [shipping.SR001, shipping.VR002]
     contract:
       kind: openapi
-      file: dist/shipping-api.openapi.yaml
+      file: shipping/shipping-api.openapi
     given:
       description: "Zone 1 (Europe) exists. Shipping method is by_weight. One range defined."
       state:

@@ -44,7 +44,7 @@ parties:
               - { type_ref: RT004, class: self-hosted, id: prestashop-cache }
             contracts:
               openapi:
-                output: shop/shop-api.openapi.yaml
+                output: shop/shop-api.openapi
                 expose:
                   - shop:getStoreForEditing
                   - shop:editContact

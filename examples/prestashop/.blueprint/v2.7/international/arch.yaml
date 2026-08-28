@@ -34,7 +34,7 @@ parties:
             summary: REST API for currency, tax, country, and language management.
             contracts:
               openapi:
-                output: international/international-api.openapi.yaml
+                output: international/international-api.openapi
                 expose:
                   - international:getCurrencyForEditing
                   - international:getTaxRulesGroupForEditing
