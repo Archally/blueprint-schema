@@ -33,6 +33,30 @@ entries:
       and that can no longer happen. The two rules now divide the question cleanly - one reports a
       model nothing references, the other a reference that names no model.
 
+      This release ALSO requires an operation carried over a message channel to name the channel.
+      The semantic checker gains `contract-operation-missing-channel-address` (warn). It reports an
+      operation that appears in a service contract's `send` or `receive` list whose `exchange`
+      supplies neither `topic.name` nor `queue.name`. Those two fields are what an AsyncAPI channel
+      is addressed by, so an operation that supplies neither cannot become a channel: the contract
+      renders one channel short, or, when it was the only operation, does not render at all. An
+      absent file looks exactly like a file nobody asked for, which is why this went unreported.
+
+      It is the companion of `contract-operation-missing-exchange`, and the two divide one question.
+      That rule asks whether a contract-wired operation declares a transport at all; this one asks
+      whether an operation carried over a channel names the channel. An operation with no `exchange`
+      is left to the first rule, so one defect is reported once rather than twice - which also means
+      the two are meant to be enabled together. The commonest shape it finds is an operation whose
+      exchange describes an HTTP request/response endpoint sitting in a `send` list; an endpoint
+      addresses a caller, not a channel, so either the exchange gains a topic or a queue, or the
+      operation belongs in `expose` or `call` instead. Silent on every bundled example.
+
+      A NOTE ON THIS VERSION NUMBER. The channel rule was added to 2.7.12 after 2.7.12 had already
+      been published, so two states of this repository carry that version: the earlier ships 21
+      built-in semantic rules, this one ships 22. The version was never tagged and the addition is
+      additive - a model valid under the earlier 2.7.12 stays valid - so the two are told apart by
+      the rule count rather than by the version number. Stated here rather than left to be
+      discovered.
+
   - version: "2.7.11"
     date: "2026-08-24"
     summary: >

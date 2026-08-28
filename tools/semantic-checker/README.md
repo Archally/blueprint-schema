@@ -31,6 +31,7 @@ npx @archally/blueprint-schema blueprint-check <dir> --config .blueprint-lint.ya
 | `missing-causal-links` | warn | every command Operation has a `produces` edge to an event |
 | `missing-exchange-binding` | warn | every command/query Operation declares an `exchange` (transport binding); events exempt |
 | `contract-operation-missing-exchange` | warn | every Operation wired to a service contract (`expose`/`call`/`send`/`receive`) declares an `exchange` |
+| `contract-operation-missing-channel-address` | warn | every Operation wired into a contract's `send`/`receive` list names a channel - `exchange.topic.name` or `exchange.queue.name`; one that declares no `exchange` at all is left to the rule above |
 | `exchange-missing-payload` | warn | every Operation with an `exchange` also declares a `payload.schema` (the data model on the wire) |
 | `events-with-produces` | warn | no event Operation is the source of a `produces` edge (anti-pattern) |
 | `untested-rules` | warn | every business rule has an incoming `validated-by` edge (a test validates it) |

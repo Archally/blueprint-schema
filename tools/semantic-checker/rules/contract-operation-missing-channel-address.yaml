@@ -1,0 +1,35 @@
+engineVersion: "0.1"
+rules:
+  - id: contract-operation-missing-channel-address
+    severity: warn
+    description: >-
+      Channel companion to contract-operation-missing-exchange, and the second half of one question.
+      That rule asks whether a contract-wired operation declares a transport at all; this one asks
+      whether an operation carried over a MESSAGE CHANNEL names the channel. An operation in a
+      contract's `send` or `receive` list is published or consumed asynchronously, so its exchange
+      must supply an address - `exchange.topic.name` or `exchange.queue.name`. An exchange that
+      describes only a request/response endpoint addresses no channel.
+      The cost of the gap is silence rather than a wrong artifact. The AsyncAPI generator derives
+      every channel from those two fields and skips any operation supplying neither, so the contract
+      renders one channel short - or, when it was the only operation, does not render at all, and an
+      absent file is indistinguishable from one nobody asked for.
+      The two rules divide the space deliberately and must ship together: an operation with NO
+      exchange is left to the sibling, so a defect is reported once rather than twice. Silencing the
+      sibling per-project therefore reopens that half.
+    # Subjects: every Operation. Healthy = the op is NOT channel-wired, OR it declares no exchange at
+    # all (the sibling's half), OR its exchange names a topic or a queue.
+    find:
+      entity_type: Operation
+    check:
+      any_of:
+        - has_relation:
+            direction: any
+            type: [contract_sends, contract_receives]
+            exists: false
+        - not:
+            any_non_empty:
+              - data.exchange
+        - any_non_empty:
+            - data.exchange.topic.name
+            - data.exchange.queue.name
+    message: 'Operation "{displayId}" ({name|''unnamed''}) is wired into a contract''s send/receive list but its exchange names no channel - add `exchange.topic.name` or `exchange.queue.name`, or move it to `expose`/`call` if it is request/response rather than a message.'
