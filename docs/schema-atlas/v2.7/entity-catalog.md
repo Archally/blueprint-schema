@@ -539,10 +539,10 @@ _Source: `schema/v2.7/render.manifest.schema.yaml` · root type `object`_
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
-| `id` | `string` | ✓ |  | Unique target id, filename-safe. A `tool:instance` form (e.g. `gantt:equal-pay`) maps to a nested output subfolder (`gantt/equal-pay/`). |
+| `id` | `string` | ✓ |  | Unique target id, filename-safe. A `tool:instance` form (e.g. `gantt:checkout`) maps to a nested output subfolder (`gantt/checkout/`). |
 | `tool` | `string` | ✓ |  | Which renderer produces this target. |
-| `kind` | `string` | ✓ | `glob`, `selector`, `instance`, `contexts` | How this target may be narrowed to a slice — see the top-level description for what each of the four values means. |
-| `view` | `string` | — |  | Path to the tool's own view-config file, relative to this manifest, for tools that take one. |
+| `kind` | `string` | ✓ | `glob`, `selector`, `instance`, `contexts`, `per-file` | How this target may be narrowed to a slice - see the top-level description for what each value means. `per-file` is the one kind that EXPANDS: the target decla… |
+| `view` | `string` | — |  | Path to the tool's own view-config file, relative to this manifest, for tools that take one. A `#section` suffix selects one named entry from a file's `views:`… |
 | `manifest` | `string` | — |  | Path to the tool's own batch/cluster manifest, relative to this manifest, for tools that own their own slice vocabulary. |
 | `slice` | `string` | — |  | The slice this target's artifacts belong to. Placement only — it files the output under that slice instead of the cross-cutting folder, and never narrows what… |
 | `kinds` | `array<string>` | — |  | Sub-kinds to generate, for a target whose tool emits more than one artifact kind per invocation (for example: openapi, asyncapi, pact). Distinct from this targ… |
@@ -550,6 +550,9 @@ _Source: `schema/v2.7/render.manifest.schema.yaml` · root type `object`_
 | `stories` | `array<string>` | — |  | Story ids for a target whose tool renders one story per invocation. The target fans out to one run per id, each with its own output folder. Only meaningful on… |
 | `formats` | `array<string>` | — |  | Output formats for this target, overriding the manifest's `defaults.formats`. |
 | `slices` | `array<string>` | — |  | Narrow this target to the named slices. Only meaningful on `glob`, `selector`, and `contexts` targets — a schema error on an `instance` target. |
+| `files` | `string` | — |  | `kind: per-file` only. Model-relative glob whose every match becomes one instance of this target, id `<id>:<file basename>`. Required for `per-file` and refuse… |
+| `title_from` | `string` | — |  | `kind: per-file` only. Which top-level key of each matched file supplies that instance's title, so the name is read from the model rather than restated in a vi… |
+| `view_overrides` | `object` | — |  | View-config keys that override this target's own `view:` file. The strongest of the three composition layers (`defaults.view.<tool>` < the `view:` file < these… |
 | `options` | `object` | — |  | Tool-specific rendering options, for a tool that has nowhere else to put them. Not a general pass-through. Most renderers already take a `view:` config validat… |
 
 _Source: `schema/v2.7/render.manifest.schema.yaml#/$defs/target`_

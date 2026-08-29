@@ -90,6 +90,17 @@ properties:
         type: array
         items: { type: string }
         description: "Output formats applied to every target unless a target overrides them."
+      view:
+        type: object
+        minProperties: 1
+        additionalProperties:
+          type: object
+          minProperties: 1
+        description: >
+          View-config keys shared by every target of one tool, keyed by tool name. These are VIEW
+          keys such as `scope` or `arch_base`, not command-line flags, so they are composed into the
+          target's view rather than passed on a command line. A target's own `view:` file overrides
+          them, and `view_overrides` on the target overrides both.
     description: "Values applied to every target unless the target overrides them."
   targets:
     type: array
@@ -114,22 +125,26 @@ $defs:
         type: string
         pattern: "^[A-Za-z0-9._-]+(:[A-Za-z0-9._-]+)?$"
         description: >
-          Unique target id, filename-safe. A `tool:instance` form (e.g. `gantt:equal-pay`) maps
-          to a nested output subfolder (`gantt/equal-pay/`).
+          Unique target id, filename-safe. A `tool:instance` form (e.g. `gantt:checkout`) maps
+          to a nested output subfolder (`gantt/checkout/`).
       tool:
         type: string
         description: "Which renderer produces this target."
       kind:
         type: string
-        enum: [glob, selector, instance, contexts]
+        enum: [glob, selector, instance, contexts, per-file]
         description: >
-          How this target may be narrowed to a slice — see the top-level description for what
-          each of the four values means.
+          How this target may be narrowed to a slice - see the top-level description for what
+          each value means. `per-file` is the one kind that EXPANDS: the target declares a glob
+          in `files`, and every match becomes its own instance, so a model file that joins the
+          project joins the delivery rather than waiting for a hand-written wrapper.
       view:
         type: string
         description: >
           Path to the tool's own view-config file, relative to this manifest, for tools that take
-          one.
+          one. A `#section` suffix selects one named entry from a file's `views:` map
+          (`gantt.view.yaml#checkout`), so one file can hold every view a renderer needs: the file's
+          top-level keys are shared by all of them, and each section carries only what is its own.
       manifest:
         type: string
         description: >
@@ -179,6 +194,24 @@ $defs:
         description: >
           Narrow this target to the named slices. Only meaningful on `glob`, `selector`, and
           `contexts` targets — a schema error on an `instance` target.
+      files:
+        type: string
+        description: >
+          `kind: per-file` only. Model-relative glob whose every match becomes one instance of this
+          target, id `<id>:<file basename>`. Required for `per-file` and refused for every other
+          kind - a glob on a target that cannot expand would silently render nothing.
+      title_from:
+        type: string
+        description: >
+          `kind: per-file` only. Which top-level key of each matched file supplies that instance's
+          title, so the name is read from the model rather than restated in a view config.
+      view_overrides:
+        type: object
+        minProperties: 1
+        description: >
+          View-config keys that override this target's own `view:` file. The strongest of the three
+          composition layers (`defaults.view.<tool>` < the `view:` file < these), for a value that
+          is genuinely this instance's rather than the tool's or the project's.
       options:
         type: object
         minProperties: 1

@@ -1,19 +1,19 @@
 # PrestaShop-v9
 
-> Generated from blueprint model. 2066 entities, 3094 relations.
+> Generated from blueprint model. 2029 entities, 3107 relations.
 
 ## Context Map
 
 ```mermaid
 graph LR
     Admin["Admin: Employee accounts, profiles, security, API clients, configuration."]
-    Catalog["Catalog: Product catalog — CRUD, variants, media, categories, attributes, suppliers, search indexing."]
+    Catalog["Catalog: Product catalog - CRUD, variants, media, categories, attributes, suppliers, search indexing."]
     Checkout["Checkout: Cart management, checkout flow, cart rules, promotions, payment orchestration."]
     Content["Content: CMS pages, page categories, themes, email templates, SEO meta."]
     Customers["Customers: Customer accounts, addresses, customer service messaging, titles."]
-    International["International: Currencies, countries, zones, languages, tax rules — localization backbone."]
+    International["International: Currencies, countries, zones, languages, tax rules - localization backbone."]
     Modules["Modules: Module lifecycle, hook system, module marketplace integration."]
-    Orders["Orders: Order lifecycle — placement, state management, cancellation, refund, invoice, returns, credit slips."]
+    Orders["Orders: Order lifecycle - placement, state management, cancellation, refund, invoice, returns, credit slips."]
     ExternalApiConsumers["ExternalApiConsumers: External systems consuming PrestaShop Admin API via OAuth2."]
     Shipping["Shipping: Carrier configuration, shipping cost calculation, shipment tracking."]
     Shop["Shop: Multi-store configuration, physical stores, contacts, search, aliases."]
@@ -1657,7 +1657,7 @@ graph TD
         AdminService["AdminService: REST API for employee, security, and configuration management."]
         AdminService_openapi["AdminService.openapi"]
         AdminService_security_schemes["AdminService.security_schemes"]
-        Catalog["Catalog: Product catalog — CRUD, variants, media, categories, attributes, suppliers, search indexing."]
+        Catalog["Catalog: Product catalog - CRUD, variants, media, categories, attributes, suppliers, search indexing."]
         CatalogService["CatalogService: REST API for product and category management."]
         CatalogService_openapi["CatalogService.openapi"]
         CatalogService_asyncapi["CatalogService.asyncapi"]
@@ -1671,16 +1671,17 @@ graph TD
         Customers["Customers: Customer accounts, addresses, customer service messaging, titles."]
         CustomerService["CustomerService: REST API for customer account and address management."]
         CustomerService_openapi["CustomerService.openapi"]
-        International["International: Currencies, countries, zones, languages, tax rules — localization backbone."]
+        International["International: Currencies, countries, zones, languages, tax rules - localization backbone."]
         InternationalService["InternationalService: REST API for currency, tax, country, and language management."]
         InternationalService_openapi["InternationalService.openapi"]
         Modules["Modules: Module lifecycle, hook system, module marketplace integration."]
         ModuleManager["ModuleManager: Module lifecycle orchestrator with hook execution pipeline."]
         ModuleManager_openapi["ModuleManager.openapi"]
-        Orders["Orders: Order lifecycle — placement, state management, cancellation, refund, invoice, returns, credit slips."]
+        Orders["Orders: Order lifecycle - placement, state management, cancellation, refund, invoice, returns, credit slips."]
         OrderService["OrderService: REST API for order commands and queries."]
         OrderService_openapi["OrderService.openapi"]
         OrderService_asyncapi["OrderService.asyncapi"]
+        ApiIntegrators["ApiIntegrators: Third-party systems integrating with PrestaShop over the Admin REST API using OAuth2. Not built or operated by PrestaShop; modelled so the dependency on the Admin API surface is visible."]
         ExternalApiConsumers["ExternalApiConsumers: External systems consuming PrestaShop Admin API via OAuth2."]
         AdminApiClient["AdminApiClient: External API consumer using PrestaShop Admin REST API with OAuth2 authentication."]
         AdminApiClient_httpClient["AdminApiClient.httpClient"]
@@ -1709,7 +1710,7 @@ graph TD
         admin_UNV002["admin.UNV002: Navigate to permission matrix editor."]
         checkout_SCR001["checkout.SCR001: Back-office view of a cart session with products, totals, applied discounts, and customer info."]
         checkout_SCR002["checkout.SCR002: Paginated list of all discounts with status filters (active, scheduled, expired), search, and bulk actions."]
-        checkout_SCR003["checkout.SCR003: Form for creating and editing discounts — conditions, actions, validity, usage limits, and product rule groups."]
+        checkout_SCR003["checkout.SCR003: Form for creating and editing discounts - conditions, actions, validity, usage limits, and product rule groups."]
         checkout_SCR004["checkout.SCR004: List of catalog price rules with bulk delete and status management."]
         checkout_UAC001["checkout.UAC001: Add Product to Cart"]
         checkout_UAC002["checkout.UAC002: Apply Cart Rule"]
@@ -1801,7 +1802,7 @@ graph TD
         MDL802["MDL802: Request body for creating a new RBAC access control profile with localized names."]
         MDL803["MDL803: Profile details for the back-office edit form. Includes localized names and the profile identifier."]
         MDL804["MDL804: Request body for registering a new OAuth2 API client for the PrestaShop Admin API."]
-        MDL805["MDL805: API client details for the back-office edit form. One of only 2 Admin API resources exposed in core — the other is the ApiClient list endpoint."]
+        MDL805["MDL805: API client details for the back-office edit form. One of only 2 Admin API resources exposed in core - the other is the ApiClient list endpoint."]
         MDL806["MDL806: Request body for creating a legacy XML webservice access key with resource-level permissions."]
         MDL807["MDL807: Webservice key details for the back-office edit form. Legacy XML API access configuration."]
         MDL011["MDL011: Request body for creating a new category."]
@@ -1816,12 +1817,12 @@ graph TD
         MDL008["MDL008: Partial update payload for a combination's price impact, stock, reference, EAN, weight."]
         MDL009["MDL009: Full combination representation for editing form."]
         MDL010["MDL010: Lightweight combination summary for paginated lists."]
-        MDL001["MDL001: Request body for creating a new product. Minimal fields — product starts in draft status."]
+        MDL001["MDL001: Request body for creating a new product. Minimal fields - product starts in draft status."]
         MDL002["MDL002: Partial update payload for product. All fields optional except productId. Covers name, description, prices, SEO, options, shipping."]
         MDL003["MDL003: Full product representation for editing. Composite model with nested sub-objects for prices, stock, SEO, shipping, and options."]
         MDL004["MDL004: Lightweight product summary for paginated list views and search results."]
-        MDL005["MDL005: Product pricing subsection — base price, tax, ecotax, wholesale, unit price."]
-        MDL006["MDL006: Product stock subsection — quantity, minimum order, low stock alert, availability labels."]
+        MDL005["MDL005: Product pricing subsection - base price, tax, ecotax, wholesale, unit price."]
+        MDL006["MDL006: Product stock subsection - quantity, minimum order, low stock alert, availability labels."]
         MDL019["MDL019: Request body for creating a specific price rule on a product."]
         MDL020["MDL020: Request body for registering a new manufacturer/brand."]
         MDL021["MDL021: Request body for registering a new product supplier."]
@@ -1840,7 +1841,7 @@ graph TD
         MDL604["MDL604: Theme representation for back-office listing and management. Exposes theme identity, version, active status, and preview information."]
         MDL605["MDL605: SEO metadata entry for a page type. Maps internal page names to localized titles, meta descriptions, and URL rewrite rules."]
         MDL300["MDL300: Request body for registering a new customer account with profile, group assignment, and shop association."]
-        MDL301["MDL301: Request body for updating an existing customer's profile data. All fields except customerId are optional — only provided fields are updated."]
+        MDL301["MDL301: Request body for updating an existing customer's profile data. All fields except customerId are optional - only provided fields are updated."]
         MDL302["MDL302: Full customer profile for back-office editing form. Includes identity, group assignments, newsletter preference, and account metadata."]
         MDL303["MDL303: Request body for creating a new customer address for delivery or invoicing."]
         MDL304["MDL304: Customer address representation for the back-office editing form."]
@@ -1867,15 +1868,15 @@ graph TD
         MDL108["MDL108: Request body for issuing a partial refund on specific order lines."]
         MDL103["MDL103: Comprehensive order representation for back-office viewing. Composite model with 14+ sub-objects covering products, payments, history, documents, and messaging."]
         MDL104["MDL104: Lightweight order summary for paginated list views."]
-        MDL105["MDL105: Single order line item — product, quantity, unit price, and line total."]
-        MDL106["MDL106: Order pricing summary — products total, shipping, discounts, tax, and grand total."]
+        MDL105["MDL105: Single order line item - product, quantity, unit price, and line total."]
+        MDL106["MDL106: Order pricing summary - products total, shipping, discounts, tax, and grand total."]
         MDL400["MDL400: Request body for creating a new carrier with delivery configuration, zone assignments, dimensional constraints, and shop associations."]
         MDL401["MDL401: Full carrier configuration for the back-office editing form including zones, ranges, dimensional constraints, and versioning metadata."]
         MDL402["MDL402: Lightweight carrier summary for paginated back-office list views."]
         MDL403["MDL403: Full shipment details for back-office viewing including carrier, tracking, products, and delivery status."]
         MDL404["MDL404: Computed shipping cost for a carrier in a given context (zone, weight/price bracket, tax rule)."]
-        MDL405["MDL405: Zone-based shipping configuration — defines cost ranges for a carrier within a specific delivery zone."]
-        MDL900["MDL900: Request body for uploading store branding images. Each file type has extension validation — logos accept jpg/gif/png, favicon accepts ico only."]
+        MDL405["MDL405: Zone-based shipping configuration - defines cost ranges for a carrier within a specific delivery zone."]
+        MDL900["MDL900: Request body for uploading store branding images. Each file type has extension validation - logos accept jpg/gif/png, favicon accepts ico only."]
         MDL901["MDL901: Shop details for multi-store management. Represents a single storefront instance in PrestaShop's multi-store architecture."]
         MDL902["MDL902: Request body for creating a physical retail store location with address, coordinates, and operating hours."]
         MDL903["MDL903: Physical store location details for the back-office edit form."]
@@ -2051,7 +2052,7 @@ graph TD
         orders_SEC001["orders.SEC001: Order Data Access Control"]
         orders_SEC002["orders.SEC002: Refund Authorization"]
         orders_CMP001["orders.CMP001: GDPR Order Data Retention"]
-        orders_CMP002["orders.CMP002: EU Consumer Rights — 14-day Return Window"]
+        orders_CMP002["orders.CMP002: EU Consumer Rights - 14-day Return Window"]
         shipping_KPI001["shipping.KPI001: Shipping Cost Accuracy"]
         shipping_KPI002["shipping.KPI002: Zone Coverage Completeness"]
         shipping_KPI003["shipping.KPI003: Shipment Fulfillment Rate"]
@@ -2397,11 +2398,11 @@ graph TD
         prestashop_DSC002["prestashop.DSC002: prestashop-app"]
         prestashop_DSC003["prestashop.DSC003: prestashop-data"]
         prestashop_BND001["prestashop.BND001: Production MySQL via the Bitnami MySQL chart (in-cluster StatefulSet)."]
-        prestashop_BND002["prestashop.BND002: Staging MySQL — same chart, smaller size tier."]
+        prestashop_BND002["prestashop.BND002: Staging MySQL - same chart, smaller size tier."]
         prestashop_BND003["prestashop.BND003: Production Redis via the Bitnami Redis chart."]
-        prestashop_BND004["prestashop.BND004: Staging Redis — same chart, smaller size tier."]
+        prestashop_BND004["prestashop.BND004: Staging Redis - same chart, smaller size tier."]
         prestashop_BND005["prestashop.BND005: Production MinIO S3-compatible object store (distributed mode)."]
-        prestashop_BND006["prestashop.BND006: Staging MinIO — standalone (single-node) mode."]
+        prestashop_BND006["prestashop.BND006: Staging MinIO - standalone (single-node) mode."]
     end
     subgraph governance_leverage["governance.leverage"]
         LP001["LP001: Move fulfillment, email, and webhooks off the request thread so checkout stays responsive under load."]
@@ -2427,9 +2428,9 @@ graph TD
         TM010["TM010: Core Platform Team"]
     end
     subgraph governance_roadmap["governance.roadmap"]
-        MS001["MS001: MVP — Cart & Checkout"]
-        MS002["MS002: Catalog v2 — Search & Filters"]
-        MS003["MS003: Scale — Async Orders & Inventory"]
+        MS001["MS001: MVP - Cart & Checkout"]
+        MS002["MS002: Catalog v2 - Search & Filters"]
+        MS003["MS003: Scale - Async Orders & Inventory"]
         MS004["MS004: International & Multi-Store"]
         MS005["MS005: API-First & Headless"]
         WI001["WI001: Cart & Checkout MVP"]
@@ -2447,44 +2448,6 @@ graph TD
         VS003["VS003: Configure & Scale"]
     end
     subgraph unknown["unknown"]
-        admin_addEmployee["admin:addEmployee"]
-        admin_editProfile["admin:editProfile"]
-        admin_getEmployeeForEditing["admin:getEmployeeForEditing"]
-        admin_addApiClient["admin:addApiClient"]
-        catalog_addProduct["catalog:addProduct"]
-        catalog_updateProduct["catalog:updateProduct"]
-        catalog_searchProducts["catalog:searchProducts"]
-        catalog_getProductDetail["catalog:getProductDetail"]
-        catalog_productCreated["catalog:productCreated"]
-        catalog_productUpdated["catalog:productUpdated"]
-        checkout_addProductToCart["checkout:addProductToCart"]
-        checkout_removeProductFromCart["checkout:removeProductFromCart"]
-        checkout_getCartForViewing["checkout:getCartForViewing"]
-        checkout_cartProductsUpdated["checkout:cartProductsUpdated"]
-        orders_orderPlaced["orders:orderPlaced"]
-        content_addCmsPage["content:addCmsPage"]
-        content_editCmsPage["content:editCmsPage"]
-        customers_addCustomer["customers:addCustomer"]
-        customers_editCustomer["customers:editCustomer"]
-        customers_addCustomerAddress["customers:addCustomerAddress"]
-        customers_getCustomerForViewing["customers:getCustomerForViewing"]
-        international_getCurrencyForEditing["international:getCurrencyForEditing"]
-        international_getTaxRulesGroupForEditing["international:getTaxRulesGroupForEditing"]
-        international_getCountryForEditing["international:getCountryForEditing"]
-        international_getLanguageForEditing["international:getLanguageForEditing"]
-        modules_installModule["modules:installModule"]
-        modules_uninstallModule["modules:uninstallModule"]
-        modules_getModuleInfos["modules:getModuleInfos"]
-        orders_placeOrder["orders:placeOrder"]
-        orders_cancelOrder["orders:cancelOrder"]
-        orders_issueStandardRefund["orders:issueStandardRefund"]
-        orders_getOrderForViewing["orders:getOrderForViewing"]
-        orders_orderCancelled["orders:orderCancelled"]
-        orders_orderRefunded["orders:orderRefunded"]
-        orders_orderShipped["orders:orderShipped"]
-        shipping_getAvailableCarriers["shipping:getAvailableCarriers"]
-        shop_getStoreForEditing["shop:getStoreForEditing"]
-        shop_editContact["shop:editContact"]
         EmployeeList["EmployeeList"]
         EmployeeForm["EmployeeForm"]
         PermissionMatrix["PermissionMatrix"]
@@ -3750,6 +3713,18 @@ graph TD
     shop_CMD016 -.->|"initiated_by"| shop_ACT001
     shop_CMD017 -.->|"produces"| shop_EVT013
     shop_CMD018 -.->|"produces"| shop_EVT014
+    admin_CMD021 -.->|"payload_model"| MDL804
+    admin_CMD001 -.->|"payload_model"| MDL800
+    admin_CMD010 -.->|"payload_model"| MDL802
+    catalog_CMD001 -.->|"payload_model"| MDL001
+    catalog_CMD002 -.->|"payload_model"| MDL002
+    checkout_CMD009 -.->|"payload_model"| MDL200
+    content_CMD001 -.->|"payload_model"| MDL600
+    content_CMD002 -.->|"payload_model"| MDL600
+    customers_CMD012 -.->|"payload_model"| MDL303
+    customers_CMD001 -.->|"payload_model"| MDL300
+    customers_CMD002 -.->|"payload_model"| MDL301
+    orders_CMD001 -.->|"payload_model"| MDL100
     D001 -.->|"motivation_refs"| orders_G003
     D001 -.->|"motivation_refs"| orders_R001
     D001 -.->|"capability_refs"| CAP001
@@ -4048,50 +4023,50 @@ graph TD
     ShippingService -.->|"provides"| ShippingService_openapi
     Shop -.->|"contains"| ShopService
     ShopService -.->|"provides"| ShopService_openapi
-    AdminService_openapi -.->|"contract_exposes"| admin_addEmployee
-    AdminService_openapi -.->|"contract_exposes"| admin_editProfile
-    AdminService_openapi -.->|"contract_exposes"| admin_getEmployeeForEditing
-    AdminService_openapi -.->|"contract_exposes"| admin_addApiClient
-    CatalogService_openapi -.->|"contract_exposes"| catalog_addProduct
-    CatalogService_openapi -.->|"contract_exposes"| catalog_updateProduct
-    CatalogService_openapi -.->|"contract_exposes"| catalog_searchProducts
-    CatalogService_openapi -.->|"contract_exposes"| catalog_getProductDetail
-    CatalogService_asyncapi -.->|"contract_sends"| catalog_productCreated
-    CatalogService_asyncapi -.->|"contract_sends"| catalog_productUpdated
-    CheckoutService_openapi -.->|"contract_exposes"| checkout_addProductToCart
-    CheckoutService_openapi -.->|"contract_exposes"| checkout_removeProductFromCart
-    CheckoutService_openapi -.->|"contract_exposes"| checkout_getCartForViewing
-    CheckoutService_asyncapi -.->|"contract_sends"| checkout_cartProductsUpdated
-    CheckoutService_asyncapi -.->|"contract_receives"| orders_orderPlaced
-    ContentService_openapi -.->|"contract_exposes"| content_addCmsPage
-    ContentService_openapi -.->|"contract_exposes"| content_editCmsPage
-    CustomerService_openapi -.->|"contract_exposes"| customers_addCustomer
-    CustomerService_openapi -.->|"contract_exposes"| customers_editCustomer
-    CustomerService_openapi -.->|"contract_exposes"| customers_addCustomerAddress
-    CustomerService_openapi -.->|"contract_exposes"| customers_getCustomerForViewing
-    InternationalService_openapi -.->|"contract_exposes"| international_getCurrencyForEditing
-    InternationalService_openapi -.->|"contract_exposes"| international_getTaxRulesGroupForEditing
-    InternationalService_openapi -.->|"contract_exposes"| international_getCountryForEditing
-    InternationalService_openapi -.->|"contract_exposes"| international_getLanguageForEditing
-    ModuleManager_openapi -.->|"contract_exposes"| modules_installModule
-    ModuleManager_openapi -.->|"contract_exposes"| modules_uninstallModule
-    ModuleManager_openapi -.->|"contract_exposes"| modules_getModuleInfos
-    OrderService_openapi -.->|"contract_exposes"| orders_placeOrder
-    OrderService_openapi -.->|"contract_exposes"| orders_cancelOrder
-    OrderService_openapi -.->|"contract_exposes"| orders_issueStandardRefund
-    OrderService_openapi -.->|"contract_exposes"| orders_getOrderForViewing
-    OrderService_asyncapi -.->|"contract_sends"| orders_orderPlaced
-    OrderService_asyncapi -.->|"contract_sends"| orders_orderCancelled
-    OrderService_asyncapi -.->|"contract_sends"| orders_orderRefunded
-    OrderService_asyncapi -.->|"contract_sends"| orders_orderShipped
-    AdminApiClient_httpClient -.->|"contract_calls"| admin_addApiClient
-    AdminApiClient_httpClient -.->|"contract_calls"| admin_getEmployeeForEditing
-    AdminApiClient_httpClient -.->|"contract_calls"| catalog_searchProducts
-    AdminApiClient_httpClient -.->|"contract_calls"| catalog_getProductDetail
-    AdminApiClient_httpClient -.->|"contract_calls"| orders_getOrderForViewing
-    ShippingService_openapi -.->|"contract_exposes"| shipping_getAvailableCarriers
-    ShopService_openapi -.->|"contract_exposes"| shop_getStoreForEditing
-    ShopService_openapi -.->|"contract_exposes"| shop_editContact
+    AdminService_openapi -.->|"contract_exposes"| admin_CMD001
+    AdminService_openapi -.->|"contract_exposes"| admin_CMD010
+    AdminService_openapi -.->|"contract_exposes"| admin_QRY001
+    AdminService_openapi -.->|"contract_exposes"| admin_CMD021
+    CatalogService_openapi -.->|"contract_exposes"| catalog_CMD001
+    CatalogService_openapi -.->|"contract_exposes"| catalog_CMD002
+    CatalogService_openapi -.->|"contract_exposes"| catalog_QRY001
+    CatalogService_openapi -.->|"contract_exposes"| catalog_QRY002
+    CatalogService_asyncapi -.->|"contract_sends"| catalog_EVT001
+    CatalogService_asyncapi -.->|"contract_sends"| catalog_EVT002
+    CheckoutService_openapi -.->|"contract_exposes"| checkout_CMD009
+    CheckoutService_openapi -.->|"contract_exposes"| checkout_CMD010
+    CheckoutService_openapi -.->|"contract_exposes"| checkout_QRY001
+    CheckoutService_asyncapi -.->|"contract_sends"| checkout_EVT004
+    CheckoutService_asyncapi -.->|"contract_receives"| orders_EVT001
+    ContentService_openapi -.->|"contract_exposes"| content_CMD001
+    ContentService_openapi -.->|"contract_exposes"| content_CMD002
+    CustomerService_openapi -.->|"contract_exposes"| customers_CMD001
+    CustomerService_openapi -.->|"contract_exposes"| customers_CMD002
+    CustomerService_openapi -.->|"contract_exposes"| customers_CMD012
+    CustomerService_openapi -.->|"contract_exposes"| customers_QRY002
+    InternationalService_openapi -.->|"contract_exposes"| international_QRY001
+    InternationalService_openapi -.->|"contract_exposes"| international_QRY010
+    InternationalService_openapi -.->|"contract_exposes"| international_QRY005
+    InternationalService_openapi -.->|"contract_exposes"| international_QRY004
+    ModuleManager_openapi -.->|"contract_exposes"| modules_CMD001
+    ModuleManager_openapi -.->|"contract_exposes"| modules_CMD002
+    ModuleManager_openapi -.->|"contract_exposes"| modules_QRY001
+    OrderService_openapi -.->|"contract_exposes"| orders_CMD001
+    OrderService_openapi -.->|"contract_exposes"| orders_CMD002
+    OrderService_openapi -.->|"contract_exposes"| orders_CMD003
+    OrderService_openapi -.->|"contract_exposes"| orders_QRY001
+    OrderService_asyncapi -.->|"contract_sends"| orders_EVT001
+    OrderService_asyncapi -.->|"contract_sends"| orders_EVT002
+    OrderService_asyncapi -.->|"contract_sends"| orders_EVT003
+    OrderService_asyncapi -.->|"contract_sends"| orders_EVT004
+    AdminApiClient_httpClient -.->|"contract_calls"| admin_CMD021
+    AdminApiClient_httpClient -.->|"contract_calls"| admin_QRY001
+    AdminApiClient_httpClient -.->|"contract_calls"| catalog_QRY001
+    AdminApiClient_httpClient -.->|"contract_calls"| catalog_QRY002
+    AdminApiClient_httpClient -.->|"contract_calls"| orders_QRY001
+    ShippingService_openapi -.->|"contract_exposes"| shipping_QRY003
+    ShopService_openapi -.->|"contract_exposes"| shop_QRY003
+    ShopService_openapi -.->|"contract_exposes"| shop_CMD016
     Catalog -.->|"depends_on"| International
     Catalog -.->|"depends_on"| Modules
     Checkout -.->|"depends_on"| Catalog
@@ -4928,7 +4903,8 @@ graph TD
     LP005 -.->|"leverage_decision"| D006
     LP005 -.->|"leverage_fitness_function"| FF004
     LP005 -.->|"leverage_fitness_function"| FF005
-    LP005 -.->|"leverage_realized_by"| WI010
+    LP005 -.->|"leverage_value_stream"| VS001
+    LP005 -.->|"leverage_capability"| CAP003
     prestashop_IR001 -.->|"hosted_on"| prestashop_IR005
     prestashop_IR001 -.->|"grouped_in"| prestashop_DSC003
     prestashop_IR002 -.->|"hosted_on"| prestashop_IR005
@@ -6146,7 +6122,7 @@ graph TD
 
 ## Entity Catalog
 
-**2066 entities** across 50 types.
+**2029 entities** across 50 types.
 
 | ID | Type | Name | Layer | Source |
 |----|------|------|-------|--------|
@@ -6208,11 +6184,11 @@ graph TD
 | orders.A003 | Assumption | EU VAT rates will not change more than twice per year | governance.motivation | orders/motivation.yaml |
 | shop.A001 | Assumption | MySQL/MariaDB is the only supported RDBMS | governance.motivation | shop/motivation.yaml |
 | prestashop.BND001 | Binding | Production MySQL via the Bitnami MySQL chart (in-cluster StatefulSet). | design.infrastructure | infrastructure.yaml |
-| prestashop.BND002 | Binding | Staging MySQL — same chart, smaller size tier. | design.infrastructure | infrastructure.yaml |
+| prestashop.BND002 | Binding | Staging MySQL - same chart, smaller size tier. | design.infrastructure | infrastructure.yaml |
 | prestashop.BND003 | Binding | Production Redis via the Bitnami Redis chart. | design.infrastructure | infrastructure.yaml |
-| prestashop.BND004 | Binding | Staging Redis — same chart, smaller size tier. | design.infrastructure | infrastructure.yaml |
+| prestashop.BND004 | Binding | Staging Redis - same chart, smaller size tier. | design.infrastructure | infrastructure.yaml |
 | prestashop.BND005 | Binding | Production MinIO S3-compatible object store (distributed mode). | design.infrastructure | infrastructure.yaml |
-| prestashop.BND006 | Binding | Staging MinIO — standalone (single-node) mode. | design.infrastructure | infrastructure.yaml |
+| prestashop.BND006 | Binding | Staging MinIO - standalone (single-node) mode. | design.infrastructure | infrastructure.yaml |
 | CAP001 | Capability | Order Management | governance.capability | shop-and-buy.capability.yaml |
 | CAP002 | Capability | Cart Calculation | governance.capability | shop-and-buy.capability.yaml |
 | CAP003 | Capability | Checkout Flow | governance.capability | shop-and-buy.capability.yaml |
@@ -6755,7 +6731,7 @@ graph TD
 | checkout.CMP001 | Compliance | Promotion Transparency | design.quality | checkout/quality.yaml |
 | customers.CMP001 | Compliance | GDPR Data Subject Rights | design.quality | customers/quality.yaml |
 | orders.CMP001 | Compliance | GDPR Order Data Retention | design.quality | orders/quality.yaml |
-| orders.CMP002 | Compliance | EU Consumer Rights — 14-day Return Window | design.quality | orders/quality.yaml |
+| orders.CMP002 | Compliance | EU Consumer Rights - 14-day Return Window | design.quality | orders/quality.yaml |
 | admin.CN001 | Concept | Employee | design.concepts | admin/identity.concepts.yaml |
 | admin.CN002 | Concept | Profile | design.concepts | admin/identity.concepts.yaml |
 | admin.CN003 | Concept | Permission | design.concepts | admin/identity.concepts.yaml |
@@ -6830,14 +6806,14 @@ graph TD
 | shop.CN007 | Concept | Notification | design.concepts | shop/concepts.yaml |
 | shop.CN008 | Concept | ShowcaseCard | design.concepts | shop/concepts.yaml |
 | Admin | Context | Employee accounts, profiles, security, API clients, configuration. | design.arch | admin/arch.yaml |
-| Catalog | Context | Product catalog — CRUD, variants, media, categories, attributes, suppliers, search indexing. | design.arch | catalog/arch.yaml |
+| Catalog | Context | Product catalog - CRUD, variants, media, categories, attributes, suppliers, search indexing. | design.arch | catalog/arch.yaml |
 | Checkout | Context | Cart management, checkout flow, cart rules, promotions, payment orchestration. | design.arch | checkout/arch.yaml |
 | Content | Context | CMS pages, page categories, themes, email templates, SEO meta. | design.arch | content/arch.yaml |
 | Customers | Context | Customer accounts, addresses, customer service messaging, titles. | design.arch | customers/arch.yaml |
 | ExternalApiConsumers | Context | External systems consuming PrestaShop Admin API via OAuth2. | design.arch | prestashop.arch.yaml |
-| International | Context | Currencies, countries, zones, languages, tax rules — localization backbone. | design.arch | international/arch.yaml |
+| International | Context | Currencies, countries, zones, languages, tax rules - localization backbone. | design.arch | international/arch.yaml |
 | Modules | Context | Module lifecycle, hook system, module marketplace integration. | design.arch | modules/arch.yaml |
-| Orders | Context | Order lifecycle — placement, state management, cancellation, refund, invoice, returns, credit slips. | design.arch | orders/arch.yaml |
+| Orders | Context | Order lifecycle - placement, state management, cancellation, refund, invoice, returns, credit slips. | design.arch | orders/arch.yaml |
 | Shipping | Context | Carrier configuration, shipping cost calculation, shipment tracking. | design.arch | shipping/arch.yaml |
 | Shop | Context | Multi-store configuration, physical stores, contacts, search, aliases. | design.arch | shop/arch.yaml |
 | AdminApiClient.httpClient | Contract |  | design.arch | prestashop.arch.yaml |
@@ -7059,46 +7035,26 @@ graph TD
 | LP005 | LeveragePoint | Guard the inbound payment-webhook contract with provider-state contract tests. | governance.leverage | leverage.yaml |
 | orders.MT001 | Metric | Order Processing Latency | design.quality | orders/quality.yaml |
 | orders.MT002 | Metric | Refund Processing Time | design.quality | orders/quality.yaml |
-| MS001 | Milestone | MVP — Cart & Checkout | governance.roadmap | roadmap.yaml |
-| MS002 | Milestone | Catalog v2 — Search & Filters | governance.roadmap | roadmap.yaml |
-| MS003 | Milestone | Scale — Async Orders & Inventory | governance.roadmap | roadmap.yaml |
+| MS001 | Milestone | MVP - Cart & Checkout | governance.roadmap | roadmap.yaml |
+| MS002 | Milestone | Catalog v2 - Search & Filters | governance.roadmap | roadmap.yaml |
+| MS003 | Milestone | Scale - Async Orders & Inventory | governance.roadmap | roadmap.yaml |
 | MS004 | Milestone | International & Multi-Store | governance.roadmap | roadmap.yaml |
 | MS005 | Milestone | API-First & Headless | governance.roadmap | roadmap.yaml |
-| admin:addApiClient | Missing |  | unknown |  |
-| admin:addEmployee | Missing |  | unknown |  |
-| admin:editProfile | Missing |  | unknown |  |
-| admin:getEmployeeForEditing | Missing |  | unknown |  |
 | AliasList | Missing |  | unknown |  |
 | ApiClientList | Missing |  | unknown |  |
 | CarrierForEditing | Missing |  | unknown |  |
 | CarrierList | Missing |  | unknown |  |
 | CartForViewing | Missing |  | unknown |  |
-| catalog:addProduct | Missing |  | unknown |  |
-| catalog:getProductDetail | Missing |  | unknown |  |
-| catalog:productCreated | Missing |  | unknown |  |
-| catalog:productUpdated | Missing |  | unknown |  |
-| catalog:searchProducts | Missing |  | unknown |  |
-| catalog:updateProduct | Missing |  | unknown |  |
 | CatalogPriceRuleList | Missing |  | unknown |  |
-| checkout:addProductToCart | Missing |  | unknown |  |
-| checkout:cartProductsUpdated | Missing |  | unknown |  |
-| checkout:getCartForViewing | Missing |  | unknown |  |
-| checkout:removeProductFromCart | Missing |  | unknown |  |
 | CmsPageCategoryList | Missing |  | unknown |  |
 | CmsPageList | Missing |  | unknown |  |
 | ContactList | Missing |  | unknown |  |
-| content:addCmsPage | Missing |  | unknown |  |
-| content:editCmsPage | Missing |  | unknown |  |
 | CountryList | Missing |  | unknown |  |
 | CurrencyForEditing | Missing |  | unknown |  |
 | CurrencyList | Missing |  | unknown |  |
 | CustomerAddressForEditing | Missing |  | unknown |  |
 | CustomerForViewing | Missing |  | unknown |  |
 | CustomerList | Missing |  | unknown |  |
-| customers:addCustomer | Missing |  | unknown |  |
-| customers:addCustomerAddress | Missing |  | unknown |  |
-| customers:editCustomer | Missing |  | unknown |  |
-| customers:getCustomerForViewing | Missing |  | unknown |  |
 | CustomerThreadForViewing | Missing |  | unknown |  |
 | DiscountForEditing | Missing |  | unknown |  |
 | DiscountList | Missing |  | unknown |  |
@@ -7112,45 +7068,27 @@ graph TD
 | FF004 | Missing |  | unknown |  |
 | FF005 | Missing |  | unknown |  |
 | HookList | Missing |  | unknown |  |
-| international:getCountryForEditing | Missing |  | unknown |  |
-| international:getCurrencyForEditing | Missing |  | unknown |  |
-| international:getLanguageForEditing | Missing |  | unknown |  |
-| international:getTaxRulesGroupForEditing | Missing |  | unknown |  |
 | LanguageList | Missing |  | unknown |  |
 | MetaList | Missing |  | unknown |  |
 | ModuleList | Missing |  | unknown |  |
-| modules:getModuleInfos | Missing |  | unknown |  |
-| modules:installModule | Missing |  | unknown |  |
-| modules:uninstallModule | Missing |  | unknown |  |
 | ModuleUpload | Missing |  | unknown |  |
-| orders:cancelOrder | Missing |  | unknown |  |
-| orders:getOrderForViewing | Missing |  | unknown |  |
-| orders:issueStandardRefund | Missing |  | unknown |  |
-| orders:orderCancelled | Missing |  | unknown |  |
-| orders:orderPlaced | Missing |  | unknown |  |
-| orders:orderRefunded | Missing |  | unknown |  |
-| orders:orderShipped | Missing |  | unknown |  |
-| orders:placeOrder | Missing |  | unknown |  |
 | OrderShipmentList | Missing |  | unknown |  |
 | PermissionMatrix | Missing |  | unknown |  |
 | SearchEngineList | Missing |  | unknown |  |
 | SessionList | Missing |  | unknown |  |
 | ShipmentForViewing | Missing |  | unknown |  |
-| shipping:getAvailableCarriers | Missing |  | unknown |  |
-| shop:editContact | Missing |  | unknown |  |
-| shop:getStoreForEditing | Missing |  | unknown |  |
 | ShopLogos | Missing |  | unknown |  |
 | SqlRequestList | Missing |  | unknown |  |
 | StoreList | Missing |  | unknown |  |
 | TaxRulesGroupForEditing | Missing |  | unknown |  |
 | ThemeList | Missing |  | unknown |  |
 | ZoneList | Missing |  | unknown |  |
-| MDL001 | Models | Request body for creating a new product. Minimal fields — product starts in draft status. | design.models | catalog/product.models.yaml |
+| MDL001 | Models | Request body for creating a new product. Minimal fields - product starts in draft status. | design.models | catalog/product.models.yaml |
 | MDL002 | Models | Partial update payload for product. All fields optional except productId. Covers name, description, prices, SEO, options, shipping. | design.models | catalog/product.models.yaml |
 | MDL003 | Models | Full product representation for editing. Composite model with nested sub-objects for prices, stock, SEO, shipping, and options. | design.models | catalog/product.models.yaml |
 | MDL004 | Models | Lightweight product summary for paginated list views and search results. | design.models | catalog/product.models.yaml |
-| MDL005 | Models | Product pricing subsection — base price, tax, ecotax, wholesale, unit price. | design.models | catalog/product.models.yaml |
-| MDL006 | Models | Product stock subsection — quantity, minimum order, low stock alert, availability labels. | design.models | catalog/product.models.yaml |
+| MDL005 | Models | Product pricing subsection - base price, tax, ecotax, wholesale, unit price. | design.models | catalog/product.models.yaml |
+| MDL006 | Models | Product stock subsection - quantity, minimum order, low stock alert, availability labels. | design.models | catalog/product.models.yaml |
 | MDL007 | Models | Request body for generating product combinations from selected attribute groups and values. | design.models | catalog/combination.models.yaml |
 | MDL008 | Models | Partial update payload for a combination's price impact, stock, reference, EAN, weight. | design.models | catalog/combination.models.yaml |
 | MDL009 | Models | Full combination representation for editing form. | design.models | catalog/combination.models.yaml |
@@ -7171,8 +7109,8 @@ graph TD
 | MDL102 | Models | Request body for changing the delivery address on an order. | design.models | orders/models.yaml |
 | MDL103 | Models | Comprehensive order representation for back-office viewing. Composite model with 14+ sub-objects covering products, payments, history, documents, and messaging. | design.models | orders/models.yaml |
 | MDL104 | Models | Lightweight order summary for paginated list views. | design.models | orders/models.yaml |
-| MDL105 | Models | Single order line item — product, quantity, unit price, and line total. | design.models | orders/models.yaml |
-| MDL106 | Models | Order pricing summary — products total, shipping, discounts, tax, and grand total. | design.models | orders/models.yaml |
+| MDL105 | Models | Single order line item - product, quantity, unit price, and line total. | design.models | orders/models.yaml |
+| MDL106 | Models | Order pricing summary - products total, shipping, discounts, tax, and grand total. | design.models | orders/models.yaml |
 | MDL107 | Models | Request body for manually recording a payment on an order. | design.models | orders/models.yaml |
 | MDL108 | Models | Request body for issuing a partial refund on specific order lines. | design.models | orders/models.yaml |
 | MDL200 | Models | Request body for adding a product to a cart. Creates cart session if none exists. Supports product variants (combinations) and customizations. | design.models | checkout/models.yaml |
@@ -7184,7 +7122,7 @@ graph TD
 | MDL206 | Models | Request body for creating a catalog price rule. Bulk price reductions for product selections based on quantity thresholds, customer groups, or date ranges. | design.models | checkout/models.yaml |
 | MDL207 | Models | Full catalog price rule representation for the editing form. Includes conditions, reduction settings, and applicable product filters. | design.models | checkout/models.yaml |
 | MDL300 | Models | Request body for registering a new customer account with profile, group assignment, and shop association. | design.models | customers/models.yaml |
-| MDL301 | Models | Request body for updating an existing customer's profile data. All fields except customerId are optional — only provided fields are updated. | design.models | customers/models.yaml |
+| MDL301 | Models | Request body for updating an existing customer's profile data. All fields except customerId are optional - only provided fields are updated. | design.models | customers/models.yaml |
 | MDL302 | Models | Full customer profile for back-office editing form. Includes identity, group assignments, newsletter preference, and account metadata. | design.models | customers/models.yaml |
 | MDL303 | Models | Request body for creating a new customer address for delivery or invoicing. | design.models | customers/models.yaml |
 | MDL304 | Models | Customer address representation for the back-office editing form. | design.models | customers/models.yaml |
@@ -7196,7 +7134,7 @@ graph TD
 | MDL402 | Models | Lightweight carrier summary for paginated back-office list views. | design.models | shipping/models.yaml |
 | MDL403 | Models | Full shipment details for back-office viewing including carrier, tracking, products, and delivery status. | design.models | shipping/models.yaml |
 | MDL404 | Models | Computed shipping cost for a carrier in a given context (zone, weight/price bracket, tax rule). | design.models | shipping/models.yaml |
-| MDL405 | Models | Zone-based shipping configuration — defines cost ranges for a carrier within a specific delivery zone. | design.models | shipping/models.yaml |
+| MDL405 | Models | Zone-based shipping configuration - defines cost ranges for a carrier within a specific delivery zone. | design.models | shipping/models.yaml |
 | MDL500 | Models | Request body for creating a new currency (official or unofficial) with ISO code, exchange rate, precision, and localized names. | design.models | international/models.yaml |
 | MDL501 | Models | Currency representation for back-office editing. Exposes the full attribute set including localized names, symbols, transformations, and exchange rate. | design.models | international/models.yaml |
 | MDL502 | Models | Request body for creating a new tax rate definition with localized name and percentage. | design.models | international/models.yaml |
@@ -7221,10 +7159,10 @@ graph TD
 | MDL802 | Models | Request body for creating a new RBAC access control profile with localized names. | design.models | admin/models.yaml |
 | MDL803 | Models | Profile details for the back-office edit form. Includes localized names and the profile identifier. | design.models | admin/models.yaml |
 | MDL804 | Models | Request body for registering a new OAuth2 API client for the PrestaShop Admin API. | design.models | admin/models.yaml |
-| MDL805 | Models | API client details for the back-office edit form. One of only 2 Admin API resources exposed in core — the other is the ApiClient list endpoint. | design.models | admin/models.yaml |
+| MDL805 | Models | API client details for the back-office edit form. One of only 2 Admin API resources exposed in core - the other is the ApiClient list endpoint. | design.models | admin/models.yaml |
 | MDL806 | Models | Request body for creating a legacy XML webservice access key with resource-level permissions. | design.models | admin/models.yaml |
 | MDL807 | Models | Webservice key details for the back-office edit form. Legacy XML API access configuration. | design.models | admin/models.yaml |
-| MDL900 | Models | Request body for uploading store branding images. Each file type has extension validation — logos accept jpg/gif/png, favicon accepts ico only. | design.models | shop/models.yaml |
+| MDL900 | Models | Request body for uploading store branding images. Each file type has extension validation - logos accept jpg/gif/png, favicon accepts ico only. | design.models | shop/models.yaml |
 | MDL901 | Models | Shop details for multi-store management. Represents a single storefront instance in PrestaShop's multi-store architecture. | design.models | shop/models.yaml |
 | MDL902 | Models | Request body for creating a physical retail store location with address, coordinates, and operating hours. | design.models | shop/models.yaml |
 | MDL903 | Models | Physical store location details for the back-office edit form. | design.models | shop/models.yaml |
@@ -7738,6 +7676,7 @@ graph TD
 | shop.QRY008 | Operation | GetContactForEditing | design.domain | shop/domain.yaml |
 | shop.QRY009 | Operation | GetNotificationLastElements | design.domain | shop/domain.yaml |
 | shop.QRY010 | Operation | GetShowcaseCardIsClosed | design.domain | shop/domain.yaml |
+| ApiIntegrators | Party | Third-party systems integrating with PrestaShop over the Admin REST API using OAuth2. Not built or operated by PrestaShop; modelled so the dependency on the Admin API surface is visible. | design.arch | prestashop.arch.yaml |
 | PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | admin/arch.yaml |
 | PRT001 | Party | PrestaShop SA | governance.org | organization.yaml |
 | catalog.RES001 | Resilience | Search Index Recovery | design.quality | catalog/quality.yaml |
@@ -7779,7 +7718,7 @@ graph TD
 | admin.SCR006 | Screen | Saved SQL query list with add, edit, execute, and export controls. | design.ui | admin/interactions.yaml |
 | checkout.SCR001 | Screen | Back-office view of a cart session with products, totals, applied discounts, and customer info. | design.ui | checkout/interactions.yaml |
 | checkout.SCR002 | Screen | Paginated list of all discounts with status filters (active, scheduled, expired), search, and bulk actions. | design.ui | checkout/interactions.yaml |
-| checkout.SCR003 | Screen | Form for creating and editing discounts — conditions, actions, validity, usage limits, and product rule groups. | design.ui | checkout/interactions.yaml |
+| checkout.SCR003 | Screen | Form for creating and editing discounts - conditions, actions, validity, usage limits, and product rule groups. | design.ui | checkout/interactions.yaml |
 | checkout.SCR004 | Screen | List of catalog price rules with bulk delete and status management. | design.ui | checkout/interactions.yaml |
 | content.SCR001 | Screen | Paginated grid of CMS pages with title, category, status, and bulk action controls. | design.ui | content/interactions.yaml |
 | content.SCR002 | Screen | CMS page add/edit form with localized title, content editor, SEO metadata, category selector, and display toggle. | design.ui | content/interactions.yaml |
@@ -8225,12 +8164,12 @@ graph TD
 | Operation | 494 |
 | TestCase | 91 |
 | Models | 87 |
-| Missing | 81 |
 | Concept | 73 |
 | Error | 71 |
 | UserStory | 58 |
 | ValidationRule | 55 |
 | UIAction | 44 |
+| Missing | 43 |
 | Screen | 41 |
 | Goal | 35 |
 | Risk | 30 |
@@ -8262,10 +8201,10 @@ graph TD
 | Milestone | 5 |
 | Security | 4 |
 | Compliance | 4 |
+| Party | 3 |
 | DeploymentScope | 3 |
 | Department | 3 |
 | ValueStream | 3 |
-| Party | 2 |
 | Metric | 2 |
 | DerivationRule | 2 |
 | Environment | 2 |
@@ -8274,7 +8213,7 @@ graph TD
 
 ## Relations
 
-**3094 relations** discovered.
+**3107 relations** discovered.
 
 | Source | Type | Target |
 |--------|------|--------|
@@ -9250,50 +9189,50 @@ graph TD
 | ExternalApiConsumers (Context) | contains | AdminApiClient (Service) |
 | Shipping (Context) | contains | ShippingService (Service) |
 | Shop (Context) | contains | ShopService (Service) |
-| AdminApiClient.httpClient (Contract) | contract_calls | admin:addApiClient (Missing) |
-| AdminApiClient.httpClient (Contract) | contract_calls | admin:getEmployeeForEditing (Missing) |
-| AdminApiClient.httpClient (Contract) | contract_calls | catalog:searchProducts (Missing) |
-| AdminApiClient.httpClient (Contract) | contract_calls | catalog:getProductDetail (Missing) |
-| AdminApiClient.httpClient (Contract) | contract_calls | orders:getOrderForViewing (Missing) |
-| AdminService.openapi (Contract) | contract_exposes | admin:addEmployee (Missing) |
-| AdminService.openapi (Contract) | contract_exposes | admin:editProfile (Missing) |
-| AdminService.openapi (Contract) | contract_exposes | admin:getEmployeeForEditing (Missing) |
-| AdminService.openapi (Contract) | contract_exposes | admin:addApiClient (Missing) |
-| CatalogService.openapi (Contract) | contract_exposes | catalog:addProduct (Missing) |
-| CatalogService.openapi (Contract) | contract_exposes | catalog:updateProduct (Missing) |
-| CatalogService.openapi (Contract) | contract_exposes | catalog:searchProducts (Missing) |
-| CatalogService.openapi (Contract) | contract_exposes | catalog:getProductDetail (Missing) |
-| CheckoutService.openapi (Contract) | contract_exposes | checkout:addProductToCart (Missing) |
-| CheckoutService.openapi (Contract) | contract_exposes | checkout:removeProductFromCart (Missing) |
-| CheckoutService.openapi (Contract) | contract_exposes | checkout:getCartForViewing (Missing) |
-| ContentService.openapi (Contract) | contract_exposes | content:addCmsPage (Missing) |
-| ContentService.openapi (Contract) | contract_exposes | content:editCmsPage (Missing) |
-| CustomerService.openapi (Contract) | contract_exposes | customers:addCustomer (Missing) |
-| CustomerService.openapi (Contract) | contract_exposes | customers:editCustomer (Missing) |
-| CustomerService.openapi (Contract) | contract_exposes | customers:addCustomerAddress (Missing) |
-| CustomerService.openapi (Contract) | contract_exposes | customers:getCustomerForViewing (Missing) |
-| InternationalService.openapi (Contract) | contract_exposes | international:getCurrencyForEditing (Missing) |
-| InternationalService.openapi (Contract) | contract_exposes | international:getTaxRulesGroupForEditing (Missing) |
-| InternationalService.openapi (Contract) | contract_exposes | international:getCountryForEditing (Missing) |
-| InternationalService.openapi (Contract) | contract_exposes | international:getLanguageForEditing (Missing) |
-| ModuleManager.openapi (Contract) | contract_exposes | modules:installModule (Missing) |
-| ModuleManager.openapi (Contract) | contract_exposes | modules:uninstallModule (Missing) |
-| ModuleManager.openapi (Contract) | contract_exposes | modules:getModuleInfos (Missing) |
-| OrderService.openapi (Contract) | contract_exposes | orders:placeOrder (Missing) |
-| OrderService.openapi (Contract) | contract_exposes | orders:cancelOrder (Missing) |
-| OrderService.openapi (Contract) | contract_exposes | orders:issueStandardRefund (Missing) |
-| OrderService.openapi (Contract) | contract_exposes | orders:getOrderForViewing (Missing) |
-| ShippingService.openapi (Contract) | contract_exposes | shipping:getAvailableCarriers (Missing) |
-| ShopService.openapi (Contract) | contract_exposes | shop:getStoreForEditing (Missing) |
-| ShopService.openapi (Contract) | contract_exposes | shop:editContact (Missing) |
-| CheckoutService.asyncapi (Contract) | contract_receives | orders:orderPlaced (Missing) |
-| CatalogService.asyncapi (Contract) | contract_sends | catalog:productCreated (Missing) |
-| CatalogService.asyncapi (Contract) | contract_sends | catalog:productUpdated (Missing) |
-| CheckoutService.asyncapi (Contract) | contract_sends | checkout:cartProductsUpdated (Missing) |
-| OrderService.asyncapi (Contract) | contract_sends | orders:orderPlaced (Missing) |
-| OrderService.asyncapi (Contract) | contract_sends | orders:orderCancelled (Missing) |
-| OrderService.asyncapi (Contract) | contract_sends | orders:orderRefunded (Missing) |
-| OrderService.asyncapi (Contract) | contract_sends | orders:orderShipped (Missing) |
+| AdminApiClient.httpClient (Contract) | contract_calls | admin.CMD021 (Operation) |
+| AdminApiClient.httpClient (Contract) | contract_calls | admin.QRY001 (Operation) |
+| AdminApiClient.httpClient (Contract) | contract_calls | catalog.QRY001 (Operation) |
+| AdminApiClient.httpClient (Contract) | contract_calls | catalog.QRY002 (Operation) |
+| AdminApiClient.httpClient (Contract) | contract_calls | orders.QRY001 (Operation) |
+| AdminService.openapi (Contract) | contract_exposes | admin.CMD001 (Operation) |
+| AdminService.openapi (Contract) | contract_exposes | admin.CMD010 (Operation) |
+| AdminService.openapi (Contract) | contract_exposes | admin.QRY001 (Operation) |
+| AdminService.openapi (Contract) | contract_exposes | admin.CMD021 (Operation) |
+| CatalogService.openapi (Contract) | contract_exposes | catalog.CMD001 (Operation) |
+| CatalogService.openapi (Contract) | contract_exposes | catalog.CMD002 (Operation) |
+| CatalogService.openapi (Contract) | contract_exposes | catalog.QRY001 (Operation) |
+| CatalogService.openapi (Contract) | contract_exposes | catalog.QRY002 (Operation) |
+| CheckoutService.openapi (Contract) | contract_exposes | checkout.CMD009 (Operation) |
+| CheckoutService.openapi (Contract) | contract_exposes | checkout.CMD010 (Operation) |
+| CheckoutService.openapi (Contract) | contract_exposes | checkout.QRY001 (Operation) |
+| ContentService.openapi (Contract) | contract_exposes | content.CMD001 (Operation) |
+| ContentService.openapi (Contract) | contract_exposes | content.CMD002 (Operation) |
+| CustomerService.openapi (Contract) | contract_exposes | customers.CMD001 (Operation) |
+| CustomerService.openapi (Contract) | contract_exposes | customers.CMD002 (Operation) |
+| CustomerService.openapi (Contract) | contract_exposes | customers.CMD012 (Operation) |
+| CustomerService.openapi (Contract) | contract_exposes | customers.QRY002 (Operation) |
+| InternationalService.openapi (Contract) | contract_exposes | international.QRY001 (Operation) |
+| InternationalService.openapi (Contract) | contract_exposes | international.QRY010 (Operation) |
+| InternationalService.openapi (Contract) | contract_exposes | international.QRY005 (Operation) |
+| InternationalService.openapi (Contract) | contract_exposes | international.QRY004 (Operation) |
+| ModuleManager.openapi (Contract) | contract_exposes | modules.CMD001 (Operation) |
+| ModuleManager.openapi (Contract) | contract_exposes | modules.CMD002 (Operation) |
+| ModuleManager.openapi (Contract) | contract_exposes | modules.QRY001 (Operation) |
+| OrderService.openapi (Contract) | contract_exposes | orders.CMD001 (Operation) |
+| OrderService.openapi (Contract) | contract_exposes | orders.CMD002 (Operation) |
+| OrderService.openapi (Contract) | contract_exposes | orders.CMD003 (Operation) |
+| OrderService.openapi (Contract) | contract_exposes | orders.QRY001 (Operation) |
+| ShippingService.openapi (Contract) | contract_exposes | shipping.QRY003 (Operation) |
+| ShopService.openapi (Contract) | contract_exposes | shop.QRY003 (Operation) |
+| ShopService.openapi (Contract) | contract_exposes | shop.CMD016 (Operation) |
+| CheckoutService.asyncapi (Contract) | contract_receives | orders.EVT001 (Operation) |
+| CatalogService.asyncapi (Contract) | contract_sends | catalog.EVT001 (Operation) |
+| CatalogService.asyncapi (Contract) | contract_sends | catalog.EVT002 (Operation) |
+| CheckoutService.asyncapi (Contract) | contract_sends | checkout.EVT004 (Operation) |
+| OrderService.asyncapi (Contract) | contract_sends | orders.EVT001 (Operation) |
+| OrderService.asyncapi (Contract) | contract_sends | orders.EVT002 (Operation) |
+| OrderService.asyncapi (Contract) | contract_sends | orders.EVT003 (Operation) |
+| OrderService.asyncapi (Contract) | contract_sends | orders.EVT004 (Operation) |
 | Catalog (Context) | depends_on | International (Context) |
 | Catalog (Context) | depends_on | Modules (Context) |
 | Checkout (Context) | depends_on | Catalog (Context) |
@@ -10187,6 +10126,7 @@ graph TD
 | LP001 (LeveragePoint) | leverage_capability | CAP003 (Capability) |
 | LP002 (LeveragePoint) | leverage_capability | CAP004 (Capability) |
 | LP004 (LeveragePoint) | leverage_capability | CAP006 (Capability) |
+| LP005 (LeveragePoint) | leverage_capability | CAP003 (Capability) |
 | LP001 (LeveragePoint) | leverage_decision | D001 (Decision) |
 | LP002 (LeveragePoint) | leverage_decision | D002 (Decision) |
 | LP002 (LeveragePoint) | leverage_decision | D003 (Decision) |
@@ -10203,11 +10143,11 @@ graph TD
 | LP002 (LeveragePoint) | leverage_realized_by | WI002 (WorkItem) |
 | LP003 (LeveragePoint) | leverage_realized_by | WI003 (WorkItem) |
 | LP004 (LeveragePoint) | leverage_realized_by | WI011 (WorkItem) |
-| LP005 (LeveragePoint) | leverage_realized_by | WI010 (WorkItem) |
 | LP001 (LeveragePoint) | leverage_value_stream | VS001 (ValueStream) |
 | LP002 (LeveragePoint) | leverage_value_stream | VS002 (ValueStream) |
 | LP003 (LeveragePoint) | leverage_value_stream | VS001 (ValueStream) |
 | LP004 (LeveragePoint) | leverage_value_stream | VS003 (ValueStream) |
+| LP005 (LeveragePoint) | leverage_value_stream | VS001 (ValueStream) |
 | orders.CMD003 (Operation) | materializes | orders.CN009 (Concept) |
 | orders.CMD015 (Operation) | materializes | orders.CN009 (Concept) |
 | orders.CMD016 (Operation) | materializes | orders.CN009 (Concept) |
@@ -10290,6 +10230,18 @@ graph TD
 | PRT001 (Party) | org_contains_team | TM008 (Team) |
 | PRT001 (Party) | org_contains_team | TM009 (Team) |
 | PRT001 (Party) | org_contains_team | TM010 (Team) |
+| admin.CMD021 (Operation) | payload_model | MDL804 (Models) |
+| admin.CMD001 (Operation) | payload_model | MDL800 (Models) |
+| admin.CMD010 (Operation) | payload_model | MDL802 (Models) |
+| catalog.CMD001 (Operation) | payload_model | MDL001 (Models) |
+| catalog.CMD002 (Operation) | payload_model | MDL002 (Models) |
+| checkout.CMD009 (Operation) | payload_model | MDL200 (Models) |
+| content.CMD001 (Operation) | payload_model | MDL600 (Models) |
+| content.CMD002 (Operation) | payload_model | MDL600 (Models) |
+| customers.CMD012 (Operation) | payload_model | MDL303 (Models) |
+| customers.CMD001 (Operation) | payload_model | MDL300 (Models) |
+| customers.CMD002 (Operation) | payload_model | MDL301 (Models) |
+| orders.CMD001 (Operation) | payload_model | MDL100 (Models) |
 | admin.CMD021 (Operation) | produces | admin.EVT014 (Operation) |
 | admin.CMD022 (Operation) | produces | admin.EVT015 (Operation) |
 | admin.CMD023 (Operation) | produces | admin.EVT016 (Operation) |
@@ -11408,6 +11360,7 @@ graph TD
 | milestone_deliverable | 16 |
 | capability_refs | 13 |
 | concept | 12 |
+| payload_model | 12 |
 | binds | 12 |
 | contains | 11 |
 | user_story_use_case | 11 |
@@ -11423,13 +11376,14 @@ graph TD
 | contract_calls | 5 |
 | work_item_child | 5 |
 | assumption_risk | 5 |
-| leverage_realized_by | 5 |
+| leverage_value_stream | 5 |
 | grouped_in | 5 |
 | work_item_dependency | 4 |
 | inquiry_stakeholder | 4 |
 | inquiry_risk | 4 |
 | leverage_fitness_function | 4 |
-| leverage_value_stream | 4 |
+| leverage_realized_by | 4 |
+| leverage_capability | 4 |
 | hosted_on | 4 |
 | materializes | 3 |
 | org_contains_dept | 3 |
@@ -11437,7 +11391,6 @@ graph TD
 | work_item_milestone | 3 |
 | risk_owner | 3 |
 | value_stream_actor | 3 |
-| leverage_capability | 3 |
 | connects_to | 3 |
 | roadmap_realizes_decision | 2 |
 | inquiry_owner | 2 |
@@ -11449,7 +11402,7 @@ graph TD
 
 ## Coverage Gaps
 
-### Orphan Entities (201)
+### Orphan Entities (202)
 
 Entities with no incoming or outgoing relations:
 
@@ -11555,6 +11508,7 @@ Entities with no incoming or outgoing relations:
 - **shop.ERR002** (Error) — SearchEngineNotFound
 - **shop.ERR003** (Error) — AliasNotFound
 - **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+- **ApiIntegrators** (Party) — Third-party systems integrating with PrestaShop over the Admin REST API using OAuth2. Not built or operated by PrestaShop; modelled so the dependency on the Admin API surface is visible.
 - **MDL012** (Models) — Partial update payload for an existing category.
 - **MDL014** (Models) — Recursive tree node for category hierarchy display.
 - **MDL016** (Models) — Full attribute group with its values for editing.
@@ -11562,8 +11516,8 @@ Entities with no incoming or outgoing relations:
 - **MDL010** (Models) — Lightweight combination summary for paginated lists.
 - **MDL203** (Models) — Single cart line item with product details, variant, quantity, and computed price.
 - **MDL108** (Models) — Request body for issuing a partial refund on specific order lines.
-- **MDL105** (Models) — Single order line item — product, quantity, unit price, and line total.
-- **MDL106** (Models) — Order pricing summary — products total, shipping, discounts, tax, and grand total.
+- **MDL105** (Models) — Single order line item - product, quantity, unit price, and line total.
+- **MDL106** (Models) — Order pricing summary - products total, shipping, discounts, tax, and grand total.
 - **admin.NG001** (NonGoal) — No LDAP/Active Directory integration for employee authentication
 - **admin.R001** (Risk) — Privilege escalation risk
 - **admin.R002** (Risk) — SQL injection risk
@@ -11647,7 +11601,7 @@ Entities with no incoming or outgoing relations:
 - **orders.SEC001** (Security) — Order Data Access Control
 - **orders.SEC002** (Security) — Refund Authorization
 - **orders.CMP001** (Compliance) — GDPR Order Data Retention
-- **orders.CMP002** (Compliance) — EU Consumer Rights — 14-day Return Window
+- **orders.CMP002** (Compliance) — EU Consumer Rights - 14-day Return Window
 - **shipping.KPI002** (KPI) — Zone Coverage Completeness
 - **shipping.KPI003** (KPI) — Shipment Fulfillment Rate
 - **shipping.SLO001** (SLO) — Carrier Configuration API Latency

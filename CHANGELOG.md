@@ -2,6 +2,40 @@
 # All schema version releases in reverse chronological order.
 ---
 entries:
+  - version: "2.7.13"
+    date: "2026-08-28"
+    summary: >
+      A render manifest can describe a whole artifact set without one view-config file per target.
+
+      Three additions to `render.manifest.schema.yaml`, all optional: a manifest valid under 2.7.12
+      is valid under 2.7.13 unchanged.
+
+      `defaults.view` holds view-config keys shared by every target of one tool, keyed by tool name.
+      These are view keys such as `scope` or `arch_base` rather than command-line settings, so a
+      project states them once instead of repeating them in each target's own view file.
+
+      A target's `view:` accepts a `#section` suffix - `gantt.view.yaml#checkout` - selecting one
+      named entry from that file's `views:` map. The file's top-level keys are shared by every
+      section, and each section carries only what is its own, so one file can hold every view a
+      renderer needs. Relative paths inside a section still resolve against the file that declares
+      them.
+
+      `kind: per-file` is a new target kind, and the only one that expands rather than narrows. The
+      target names a glob in `files`, and every model file matching it becomes its own instance,
+      identified `<target id>:<file stem>`. A target may point at one view file whose `views:` map is
+      keyed by the same stems, so each instance picks up its own title; a model file with no section
+      still renders. `title_from` names a key to read a title from the model file itself, for models
+      whose own naming is short enough to be a label. A glob matching nothing is reported rather than
+      rendered as an empty artifact.
+
+      Targets also accept `view_overrides`, view keys that override the target's own view file. The
+      three sources combine in a fixed order: `defaults.view` for the tool, then the target's `view:`
+      file, then `view_overrides`. A target that uses none of them behaves exactly as before.
+
+      These fields describe rendering, which Archally Pro's `bp render` performs; the schema is
+      published so that a manifest can be validated and completed in an editor, and reviewed
+      alongside the model it renders.
+
   - version: "2.7.12"
     date: "2026-08-28"
     summary: >
@@ -53,7 +87,7 @@ entries:
       The bundled PrestaShop example also gains a real API surface. Its 31 contract-exposed
       operations now declare an `exchange` with an HTTP endpoint, twelve declare a request
       `payload`, and every one declares a typed response, so `blueprint-check` and any generator
-      reading the model see a boundary that was previously described only by the contract lists.
+      reading the model see the boundary the contract lists name.
       Until now no bundled example produced an OpenAPI document with paths in it. Seven events are
       deliberately left without a transport: all three AsyncAPI contracts name a broker that no
       infrastructure resource declares, and choosing a protocol for it would be inventing
