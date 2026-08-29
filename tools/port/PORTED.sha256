@@ -10,6 +10,7 @@
 # job quality-gate tools/quality-gate
 # job semantic-rules tools/semantic-checker/rules extras-ok
 # job next-id tools/next-id
+# job build-stamp tools/build-stamp
 # job coverage-check tools/coverage-check
 # job entity-query tools/entity-query
 # job doc-snippet-validate tools/doc-snippet-validate
@@ -58,6 +59,8 @@ ff25510f8be813cb15c2c1b6da3720dfec53d3613932fb66da23adec94c6b843  semantic-rules
 6a9f904a4aa1b1fe854716bd9fe1f488d904ce0091c343c1c7470d352b8e045b  next-id/README.md
 22c847d4fac7b594f7d09a976e31f699ce3d9f7936981b80863c04e16d6033dd  next-id/allocate.mjs
 48d4a19a70a4f98444d68fc3ac852de3600c852005f51c62e0c5ed572e32e6e6  next-id/cli.mjs
+49ebd0d15a8ac9c8401e5a2d2c1b7ff88376295c690b55d9dd48cb78ef815b85  build-stamp/README.md
+7c403d323e0440a0e75367367db347c0b9a6382a6c49be1d67edae772d71cfd3  build-stamp/src/cli.mjs
 05daac09daeb7d8416e9527a5e31c53e853355d063dbf9cd41389749fa923c26  coverage-check/README.md
 1cc0113cfb4181bb8892df4617fcc742bd98b535dea1bdaa6983136e020fcae8  coverage-check/analyze.mjs
 a7f5e22833f4bff2e8f4b7831c9dfeb12922b4367c6701fa47eb06a315fd1ce5  coverage-check/cli.mjs
