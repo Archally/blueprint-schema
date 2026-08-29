@@ -71,6 +71,51 @@ Root-level files are for content that spans multiple slices or describes the sys
 
 **When the same type appears at both levels:** root `arch.yaml` defines the system context map and inter-domain dependencies; `orders/arch.yaml` defines the services, contracts, and internal dependencies within that domain. They complement each other — root describes the forest, slices describe the trees.
 
+## Where a Declaration Lives Is Part of What It Means
+
+A model is read as a tree, and the first directory level is the slice. So a declaration's location is
+not just filing: it states which slice owns the thing being declared.
+
+- `orders/arch.yaml` declares services that belong to `orders`.
+- A file at the model root belongs to **no** slice. That is what makes root-level content
+  cross-cutting, and it is the point of the table above.
+
+The consequence is worth stating plainly, because it is easy to meet by accident: **anything derived
+from a declaration inherits that ownership.** A service declared at the root is owned by no slice, so
+the contracts, models and diagrams derived from it are cross-cutting too, however domain-specific
+their subject matter is.
+
+That is correct when a root file genuinely describes the system. It is surprising when a root file
+was chosen for a different reason, such as one architecture file per system in a large model, where
+each file describes several slices at once.
+
+### Saying it explicitly
+
+A contract does not have to inherit. Its `output:` accepts three forms, and the schema carries the
+full rule on the field itself:
+
+| `output:` | Meaning |
+|---|---|
+| `orders-api.openapi` | belongs wherever the declaring file belongs |
+| `orders/orders-api.openapi` | belongs to the `orders` slice, whatever file declares it |
+| `_global/shared-events.asyncapi` | cross-cutting, stated rather than inferred |
+
+A first segment naming no declared slice is reported rather than silently accepted, so a typo is
+visible.
+
+### Two ways to fix a root file that describes several slices
+
+**Split it.** One architecture file per slice, each inside its slice directory. Ownership then
+follows from the layout with nothing else to maintain, and every derived artifact is attributed
+without a per-contract decision.
+
+**Or state the exception.** Keep the file where it is and give each contract an explicit `output:`
+prefix. Fewer files to move, but the ownership now lives in a field rather than in the structure, so
+it has to be repeated for every contract added later.
+
+Prefer the split when the file describes several slices. Prefer the prefix when one contract is the
+exception to an otherwise cross-cutting file.
+
 ## Naming Conventions
 
 | Element | Convention | Example |
