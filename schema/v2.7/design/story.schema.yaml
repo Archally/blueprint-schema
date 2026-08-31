@@ -378,6 +378,12 @@ $defs:
             action:
               type: string
               description: "What happens in the extension path."
+            operation:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+              description: "Domain operation performed in this alternative flow. Its initiator is the performer of the branch."
+            actor:
+              $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+              description: "Actor who performs this alternative flow, when the branch is not a modelled operation. Consulted only when `operation` is absent."
       user_stories:
         type: array
         items:

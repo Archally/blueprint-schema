@@ -111,7 +111,7 @@ graph LR
     design_models_schema_yaml -->|13| metamodel_schema_yaml
     design_quality_schema_yaml -->|71| metamodel_schema_yaml
     design_rules_schema_yaml -->|24| metamodel_schema_yaml
-    design_story_schema_yaml -->|51| metamodel_schema_yaml
+    design_story_schema_yaml -->|53| metamodel_schema_yaml
 ```
 
 ## Governance Plane

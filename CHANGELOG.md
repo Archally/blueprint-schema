@@ -2,6 +2,30 @@
 # All schema version releases in reverse chronological order.
 ---
 entries:
+  - version: "2.7.14"
+    date: "2026-08-31"
+    summary: >
+      A use-case extension can name who performs it.
+
+      Two additions to `design/story.schema.yaml`, both optional: a model valid under 2.7.13 is
+      valid under 2.7.14 unchanged.
+
+      An entry in a use case's `extensions:` list states the condition that triggers an alternative
+      flow and the action taken in it. It now also accepts `operation`, the domain operation that
+      alternative performs, and `actor`, naming the performer directly for a branch that is not a
+      modelled operation. `operation` takes precedence: an operation already names its initiators,
+      so `actor` is read only where `operation` is absent. Both are checked references, so a name
+      that does not resolve is reported like any other dangling reference.
+
+      An alternative flow is often performed by someone other than the participant of the step it
+      branches off - a reviewer who requests changes, an approver who returns a submission. Naming
+      the performer puts that in the model, where a reader or a diagram generator can use it,
+      instead of leaving it to be inferred from the branching step.
+
+      These fields describe a sequence a diagram generator can draw, which Archally Pro's renderers
+      perform; the schema is published so that a use case can be validated and completed in an
+      editor, and reviewed alongside the model it belongs to.
+
   - version: "2.7.13"
     date: "2026-08-28"
     summary: >
