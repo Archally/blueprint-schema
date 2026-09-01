@@ -2,6 +2,42 @@
 # All schema version releases in reverse chronological order.
 ---
 entries:
+  - version: "2.7.15"
+    date: "2026-09-01"
+    summary: >
+      An artifact set can be named without a delivery date, for a tree that lives in a repository.
+
+      Two additions to `render.manifest.schema.yaml`. A manifest valid under 2.7.14 is valid under
+      2.7.15 unchanged; a manifest using either new form needs 2.7.15, because the file does not
+      accept keys it has not declared.
+
+      `stamp_in_filename` says whether the delivery date leads each artifact's filename. The
+      default, true, names an artifact `<stamp>-<scope>-<target>.<view>.<ext>`, so a basename still
+      says which delivery it belongs to once it has been separated from its folder. False names it
+      `<scope>-<target>.<view>.<ext>`. Everything else about the stamp is unchanged: it is still
+      declared in `stamp`, still required, still pinned for the whole run, and still reported in
+      every artifact's provenance footer and `x-generated-for` fields. Set it false when the tree is
+      committed to a repository, where the history already records when each version landed and a
+      dated name makes a re-stamped delivery read as a wholly new set of files rather than as
+      changes to the ones already there. One consequence is worth knowing before setting it: a run
+      replaces the previous delivery by removing files whose name carries a different stamp, so an
+      undated tree gives it nothing to compare - re-rendering overwrites the same names, and
+      removing an artifact the manifest no longer produces takes an explicit clean.
+
+      `license` accepts a mapping with `name`, and optionally `url`, as well as the boolean it
+      already took. It states the licence that generated contract specs carry in `info.license`, so
+      a deliverable can name the licence of whoever owns it rather than the generator's default -
+      the same reason `contact` exists. `false` still omits `info.license` entirely, and omitting
+      the key still keeps whatever the generator is configured with.
+
+      A generated contract spec also carries its delivery inside the document, in `info.description`,
+      which is one of the few fields an API documentation viewer renders. That matters more once a
+      filename no longer carries the date.
+
+      Rendering an artifact set from a manifest is what Archally Pro's `bp render` does; the schema
+      is published so that a manifest can be validated and completed in an editor, and reviewed
+      alongside the model it describes.
+
   - version: "2.7.14"
     date: "2026-08-31"
     summary: >

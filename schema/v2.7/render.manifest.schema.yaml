@@ -48,6 +48,20 @@ properties:
       timestamped copies beside them. Its date leads every artifact filename, which is what makes a
       re-rendered delivery replace itself rather than accumulate beside its predecessor. Required —
       there is no clock fallback.
+  stamp_in_filename:
+    type: boolean
+    default: true
+    description: >
+      Whether the delivery date leads each artifact's filename. True, the default, names an artifact
+      `<stamp date>-<scope>-<target>.<view>.<ext>`, so a basename says which delivery it belongs to
+      once it is separated from its folder. False names it `<scope>-<target>.<view>.<ext>`; the
+      delivery date is still declared in `stamp`, still pinned for the whole run, and still reported
+      in every artifact's provenance footer and `x-generated-for`.
+      Set it false when the artifact tree is committed to a repository, where the history already
+      records when each version landed and a dated name makes a re-stamped delivery read as a wholly
+      new set of files. Replacement works by comparing the date in a filename against the run's
+      stamp, so under false there is no such date: re-rendering overwrites the same names, and
+      `--clean` is what removes an artifact the manifest no longer produces.
   archive:
     type: boolean
     default: false
@@ -78,10 +92,19 @@ properties:
       Contact details stamped into generated contract specs (`info.contact`). Set this so a
       deliverable carries the owning organisation's identity rather than the generator's default.
   license:
-    type: boolean
+    oneOf:
+      - type: boolean
+      - type: object
+        additionalProperties: false
+        properties:
+          name: { type: string }
+          url: { type: string }
+        required: [name]
     description: >
-      Set to `false` to omit `info.license` from generated contract specs. Omit the key to keep the
-      generator's configured license.
+      What `info.license` says in generated contract specs. A mapping with `name` (and optionally
+      `url`) states the licence the delivery is under - set it so a deliverable carries the owning
+      organisation's licence rather than the generator's default, the same reason `contact` exists.
+      `false` omits `info.license` entirely. Omit the key to keep the generator's configured licence.
   defaults:
     type: object
     additionalProperties: false
