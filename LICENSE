@@ -18,6 +18,9 @@ The following are licensed under the Apache License, Version 2.0
   - examples/          example blueprints
   - docs/              documentation, including the Schema Atlas
   - tools/validator/   the reference conformance validator
+  - tools/doc-snippet-validate/  validates the YAML examples inside the docs
+  - tools/port/        verifies the shipped files against the manifest published
+                       with them; it describes no blueprint and reads no model
   - tools/vscode-blueprint/   the editor navigation extension
                               (see its own tools/vscode-blueprint/LICENSE)
 
@@ -32,11 +35,18 @@ terms of the Apache License, Version 2.0.
 The following are licensed under the Functional Source License, Version 1.1,
 with an Apache 2.0 future grant (full text: ./LICENSE-FSL, SPDX: FSL-1.1-ALv2):
 
-  - tools/model-builder/
-  - tools/semantic-checker/
-  - tools/renderer/
-  - tools/schema-update/
-  - tools/schema-atlas/
+  - tools/model-builder/       the model graph, and the vocabulary typing its edges
+  - tools/semantic-checker/    the semantic rule pack
+  - tools/quality-gate/        self-description coverage
+  - tools/coverage-check/      drift between a model's code_refs and the source tree
+  - tools/model-query/         the reuse audit over a built model
+  - tools/entity-query/        search before you mint
+  - tools/next-id/             typed id allocation
+  - tools/build-stamp/         build identity for generated artifacts
+  - tools/renderer/            markdown and Mermaid documents
+  - tools/schema-update/       versioned model migrations
+  - tools/schema-atlas/        the generated schema reference
+  - tools/guide-publisher/     the guide atlas, built for publication
 
 You may use, modify, and redistribute this code for any Permitted Purpose —
 which includes internal use, non-commercial education and research, and
@@ -48,6 +58,23 @@ the Software or any product or service Archally offers using it.
 Each version becomes available under the Apache License, Version 2.0 on the
 SECOND ANNIVERSARY of the date that version was first made available. See
 LICENSE-FSL for the exact terms.
+
+
+Where the line falls
+--------------------
+
+Apache-2.0 covers the FORMAT and what is needed to adopt it: the schema, the
+worked examples, the documentation, the reference validator that answers whether
+a model is legal, the checker that keeps the documented examples honest, and the
+tool that verifies this distribution's own integrity. A schema whose only
+complete definition is a tool you cannot freely run is not an open format.
+
+FSL covers everything that READS a model for a purpose other than validating it.
+Building the graph, naming what its edges mean, judging whether it says enough,
+querying it for reuse, allocating into its id space, and turning it into
+documents are all positions about what a good model is, not properties of the
+format. A tool added later belongs on this side unless it is needed to establish
+conformance.
 
 
 Scope note

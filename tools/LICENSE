@@ -2,19 +2,50 @@ Licensing for tools/
 =====================
 
 The tools in this directory are NOT all under the same license. See the
-repository-root LICENSE for the authoritative map.
+repository-root LICENSE for the authoritative map. Every directory here is
+named below; a tool that appears in neither list is an omission, not a
+permission.
 
-Functional Source License 1.1 (ALv2 Future License) — see ../LICENSE-FSL
-  - model-builder/
-  - semantic-checker/
-  - renderer/
-  - schema-update/
-  - schema-atlas/
+Where the line falls: Apache-2.0 covers what is needed to ESTABLISH CONFORMANCE
+with the format and to verify this distribution. FSL covers everything that
+reads a model for a purpose other than validating it - building its graph,
+naming what its edges mean, judging whether it says enough, querying it,
+allocating into its id space, rendering it. Those are positions about what a
+good model is, not properties of the format.
+
+Apache License, Version 2.0 - see ../LICENSE-APACHE
+
+  - validator/              the reference conformance validator
+  - doc-snippet-validate/   validates the YAML examples inside the docs
+  - port/                   verifies the shipped files against the manifest
+                            published with them; it describes no blueprint and
+                            reads no model
+  - vscode-blueprint/       the editor navigation extension
+                            (see its own vscode-blueprint/LICENSE)
+
+  Free to use, modify and redistribute, including in commercial and proprietary
+  products. Conformance belongs with the format: a schema whose only complete
+  definition is a tool you cannot freely run is not an open format.
+
+Functional Source License 1.1 (ALv2 Future License) - see ../LICENSE-FSL
+
+  - model-builder/          the model graph, and the vocabulary typing its edges
+  - semantic-checker/       the semantic rule pack
+  - quality-gate/           self-description coverage
+  - coverage-check/         drift between a model's code_refs and the source tree
+  - model-query/            the reuse audit over a built model
+  - entity-query/           search before you mint
+  - next-id/                typed id allocation
+  - build-stamp/            build identity for generated artifacts
+  - renderer/               markdown and Mermaid documents
+  - schema-update/          versioned model migrations
+  - schema-atlas/           the generated schema reference
+  - guide-publisher/        the guide atlas, built for publication
 
   Free for any Permitted Purpose (internal use, non-commercial education and
   research, and professional services you provide to others). NOT for a
   Competing Use. Each version converts to Apache-2.0 two years after release.
 
-Apache License, Version 2.0 — see ../LICENSE-APACHE
-  - validator/            (the reference conformance validator)
-  - vscode-blueprint/     (see its own vscode-blueprint/LICENSE)
+  The rule ENGINE is not in this directory and is not covered here: it is the
+  separate Apache-2.0 package @archally/semantic-checker. What is licensed above
+  is the blueprint rule set and the adapter - the opinions, not the machinery.
