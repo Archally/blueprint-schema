@@ -68,6 +68,86 @@ function findSchemaRoot(version, from) {
   return null;
 }
 
+/**
+ * A version named as a whole path segment, minor optional. Anchored on a separator and a literal
+ * `v` so a number anywhere else in the path - a build id, a temp directory - is never read as one.
+ */
+const VERSION_SEGMENT = /(?:^|[/\\])v(\d+)(?:\.(\d+))?(?=[/\\]|$)/g;
+
+/** The LAST such segment: the version directory is the deepest part of a model path. */
+function versionFromPath(value) {
+  let found = null;
+  if (typeof value !== "string") return null;
+  for (const match of value.matchAll(VERSION_SEGMENT)) {
+    found = { major: Number(match[1]), minor: match[2] === undefined ? null : Number(match[2]) };
+  }
+  return found;
+}
+
+/** The version a model DECLARES in its root file, or null. */
+function versionFromDeclaration(modelDir) {
+  try {
+    const rootFile = path.join(modelDir, "blueprint.yaml");
+    if (!fs.existsSync(rootFile)) return null;
+    const declared = /^schemaVersion:\s*["']?(\d+)\.(\d+)/m.exec(fs.readFileSync(rootFile, "utf8"));
+    return declared ? { major: Number(declared[1]), minor: Number(declared[2]) } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Which version this run judges the model by, and where that came from.
+ *
+ * Precedence, and the reason for each rung:
+ *   1. `--schema-version`      an explicit caller override outranks anything discovered.
+ *   2. the model path, WHEN it names a major AND a minor. A directory `v2.6` is a precise filing
+ *      statement, and a declaration disagreeing with it is a defect for `bp validate` to WARN
+ *      about, not something to silently resolve here.
+ *   3. the model's own `schemaVersion:`, when the path names only a major. `.blueprint/v2` holding
+ *      a model that declares `2.4.0` IS a 2.4 model - the declaration is the more specific fact and
+ *      the directory is a legacy filing convention. Measured 2026-09-02: seven such models were
+ *      being validated against a schema tree missing the very files they contain.
+ *   4. the path's bare major, when nothing is declared.
+ *
+ * Returns null only when neither the path nor the model names one; the core then assumes current
+ * semantics, and the header says so.
+ */
+function resolveVersion(modelDir, override) {
+  const named = (v) => `v${v.major}.${v.minor}`;
+
+  if (override) {
+    return {
+      version: { major: override.major, minor: override.minor },
+      treeName: override.minorGiven ? named(override) : `v${override.major}`,
+      source: "--schema-version",
+    };
+  }
+
+  const fromPath = versionFromPath(modelDir);
+  if (fromPath && fromPath.minor !== null) {
+    return { version: fromPath, treeName: named(fromPath), source: "model path" };
+  }
+
+  const declared = versionFromDeclaration(modelDir);
+  if (declared) {
+    return {
+      version: declared,
+      treeName: named(declared),
+      source: fromPath ? `blueprint.yaml (the path names only v${fromPath.major})` : "blueprint.yaml",
+    };
+  }
+
+  if (fromPath) {
+    return {
+      version: { major: fromPath.major, minor: 0 },
+      treeName: `v${fromPath.major}`,
+      source: "model path (names no minor, and the model declares none)",
+    };
+  }
+  return { version: null, treeName: null, source: "nothing declares one - current semantics assumed" };
+}
+
 const CONFIG_FILENAME = "validator.config.json";
 
 /**
@@ -143,8 +223,9 @@ function pickVersionDir(base, version) {
 }
 
 function parseArgs(argv) {
-  const args = { model: path.resolve(".blueprint/v2.7"), schemas: null, compat: false };
+  const args = { model: path.resolve(".blueprint/v2.7"), schemas: null, compat: false, schemaVersion: null };
   let schemasExplicit = false;
+  let versionOverride = null;
 
   for (let i = 2; i < argv.length; i += 1) {
     const token = argv[i];
@@ -158,6 +239,15 @@ function parseArgs(argv) {
     } else if (token === "--help" || token === "-h") {
       printHelp();
       process.exit(0);
+    } else if (token === "--schema-version" && argv[i + 1]) {
+      const parsed = /^v?(\d+)(?:\.(\d+))?/.exec(argv[i + 1]);
+      if (!parsed) fail(`--schema-version expects a version like "2.6" or "v2.6", got "${argv[i + 1]}"`);
+      versionOverride = {
+        major: Number(parsed[1]),
+        minor: parsed[2] === undefined ? 0 : Number(parsed[2]),
+        minorGiven: parsed[2] !== undefined,
+      };
+      i += 1;
     } else if (token === "--compat" || token === "-c") {
       args.compat = true;
     } else if (!token.startsWith("-")) {
@@ -165,9 +255,16 @@ function parseArgs(argv) {
     }
   }
 
+  // The version is resolved ONCE and drives both halves: which schema tree validates the model and
+  // which version-conditioned rules fire. Deriving them separately is how they came to disagree -
+  // this file matched a major-only directory and the core did not, so a `v2` model got the v2 tree
+  // and current rules.
+  const resolvedVersion = resolveVersion(args.model, versionOverride);
+  args.schemaVersion = resolvedVersion.version;
+  args.schemaVersionSource = resolvedVersion.source;
+
   if (!schemasExplicit) {
-    const match = args.model.match(/v(\d+(?:\.\d+)?)/);
-    const version = match ? `v${match[1]}` : null;
+    const version = resolvedVersion.treeName;
     const resolved = resolveSchemaSource(args.model, version);
     if (!resolved) {
       fail(
@@ -181,6 +278,12 @@ function parseArgs(argv) {
       );
     }
     args.schemas = resolved.root;
+  } else {
+    // An explicit --schemas may name a DIRECTORY OF VERSIONS or a version root, exactly as every
+    // other source may. It used to be passed straight through: a container resolved to nothing,
+    // every file was skipped, and the run reported PASSED on zero files validated. `pickVersionDir`
+    // was already the answer and was simply not reached on this branch.
+    args.schemas = pickVersionDir(args.schemas, resolvedVersion.treeName) ?? args.schemas;
   }
   return args;
 }
@@ -195,6 +298,7 @@ function printHelp() {
       "Options:",
       "  --model, -m    Blueprint directory to validate (default: .blueprint/v2.7)",
       "  --schemas, -s  Schema version root (default: resolved from the model's declared version)",
+      "  --schema-version  Judge the model as this version (e.g. 2.6), overriding path and declaration",
       "  --compat, -c   Relax schema failures to warnings — EXCEPT identity (`id`) and typed",
       "                 reference (`*_ref`) violations, which stay fatal in every mode",
       "  --help, -h     Show this help",
@@ -219,6 +323,11 @@ function main() {
 
   console.log(`${cyan("Model:")}     ${result.modelPath}`);
   console.log(`${cyan("Schemas:")}   ${args.schemas}`);
+  console.log(
+    `${cyan("Version:")}   ${
+      args.schemaVersion ? `${args.schemaVersion.major}.${args.schemaVersion.minor}` : yellow("undetermined")
+    } (${args.schemaVersionSource})`,
+  );
   console.log(`${cyan("Mode:")}      ${args.compat ? yellow("compat") : "strict"}`);
   console.log(`${cyan("Files:")}     ${green(result.filesValidated)} validated, ${result.filesSkipped} skipped`);
   console.log("");
@@ -236,6 +345,23 @@ function main() {
   section("Schema Errors", result.schemaErrors, red, redBold);
   section("Cross-Reference Errors", result.crossErrors, red, redBold);
   section("Gap Warnings", result.warnings, yellow, yellowBold);
+
+  // A run that recognised NO file shape has checked nothing, and "PASSED with 0 warnings" is the
+  // wrong thing to tell its caller: the two outcomes are indistinguishable from the exit code, and
+  // the silent one is the dangerous one. Measured 2026-09-02 on `.blueprint/v1` models: 0 validated,
+  // 7 skipped, PASSED, exit 0.
+  if (result.filesValidated === 0) {
+    console.log(
+      redBold(
+        result.filesSkipped > 0
+          ? `NO FILE VALIDATED. ${result.filesSkipped} file(s) were skipped because no schema in ` +
+            `${args.schemas} matches their shape. This is not a pass - nothing was checked.`
+          : `NO FILE VALIDATED. The model directory holds no file this validator recognises. ` +
+            `This is not a pass - nothing was checked.`,
+      ),
+    );
+    process.exit(2);
+  }
 
   const errorCount = result.schemaErrors.length + result.crossErrors.length;
   if (errorCount > 0) {

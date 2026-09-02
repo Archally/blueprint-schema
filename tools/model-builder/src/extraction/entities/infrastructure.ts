@@ -10,7 +10,7 @@ const LAYER = SCHEMA_TYPE_TO_LAYER['infrastructure']!;
  * Extract v2.7.7 infrastructure entities from one `infrastructure.yaml` document.
  *
  * Superset of the legacy `rg` extractor — the v2.7 layer participates in the knowledge
- * graph with typed ids (RD23 de-alias → layer `design.infrastructure`):
+ * graph with typed ids, under its own layer `design.infrastructure`:
  *
  *   resources[]     → InfraResource (IR###)   — typed id, type_ref, relations, lifecycle,
  *                                                exposure, identity/access/observability/…

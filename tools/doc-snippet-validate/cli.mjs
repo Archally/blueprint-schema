@@ -32,8 +32,9 @@
 //   node cli.mjs <markdown...> --schemas <dir> [--validator "<template>"] [--keep] [--json]
 //
 // `--validator` is a command template; `{model}` and `{schemas}` are substituted. It defaults to
-// the public repo's zero-build validator. Pass the monorepo's shim explicitly — there are two
-// validator stacks and this tool must never guess which one is authoritative.
+// the zero-build validator at `tools/validator/src/cli.mjs`; pass the path a checkout actually
+// uses. Named explicitly rather than discovered: this tool must never guess which validator is
+// authoritative for a checkout it did not lay out.
 //
 // Exit codes: 0 all documents valid · 1 a document failed · 2 usage/IO error
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -87,7 +88,7 @@ for (const doc of args.docs) {
     // A blanket "missing means skip" would let a typo in the flagship document — the one this
     // gate exists for — pass as a skip, which is the silent-omission failure the gate prevents.
     // So the test is on the FIRST path segment: no `blueprint-ai-agent-kit/` at all means the kit
-    // was never built here; a missing file under an existing `.agents/` means someone mistyped.
+    // was never built here; a missing file inside a tree that DOES exist means a mistyped path.
     const treeRoot = doc.split(/[\\/]/)[0];
     if (args.optional && treeRoot && !existsSync(treeRoot)) {
       results.push({ doc, status: "skipped", reason: `no ${treeRoot}/ in this checkout (--optional)`, blocks: 0, unnamed: [] });

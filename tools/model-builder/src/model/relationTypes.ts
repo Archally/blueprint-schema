@@ -187,7 +187,7 @@ export const RELATION_TYPE = {
   // (resource.relations[] — InfraResource → InfraResource). `hosted_on` is the canonical
   // placement edge (distinct from the DeploymentTier `contains` grouping VIEW, so the two
   // never double-count, G8). connects_to/routes_to may cross environments/substrates for a
-  // hybrid `network-link` interconnect (RD31).
+  // hybrid `network-link` interconnect.
   HostedOn: 'hosted_on',
   ConnectsTo: 'connects_to',
   DependsOn: 'depends_on',

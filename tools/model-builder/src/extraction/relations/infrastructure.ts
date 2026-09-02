@@ -12,7 +12,7 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  *   InfraResource --{hosted_on|connects_to|depends_on|attaches_to|routes_to}--> InfraResource
  *                                                          (resource.relations[], TOSCA; target
  *                                                           may be in another environment/substrate
- *                                                           for a hybrid network-link, RD31)
+ *                                                           for a hybrid network-link)
  *   InfraResource --realizes_type-->        ResourceType  (resource.type_ref)
  *   Binding       --binds-->                Environment   (binding.environment_ref)
  *   Binding       --binds-->                InfraResource (binding.resource_ref)
@@ -114,7 +114,7 @@ export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
         if (team) push(e, RELATION_TYPE.OwnedByTeam, team);
       }
 
-      // relations[] → TOSCA edges (target may cross environments/substrates, RD31)
+      // relations[] → TOSCA edges (target may cross environments/substrates)
       const rels = data.relations as Array<Record<string, unknown>> | undefined;
       if (Array.isArray(rels)) {
         for (const rel of rels) {

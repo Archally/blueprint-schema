@@ -44,7 +44,12 @@ export function allocateNextId(options) {
     if (band && band.max < band.min)
         throw new Error(`invalid band [${band.min}..${band.max}]`);
     const nsPrefix = namespace ? `${escapeRegExp(namespace)}\\.` : '';
-    const pattern = new RegExp(`^${nsPrefix}${escapeRegExp(prefix)}(\\d+)$`);
+    // The optional trailing letter addresses one member of a family of related entities
+    // (realm's `ECH009a`..`ECH009d`). A member occupies its family's number, so counting
+    // it is what stops the allocator handing that number to something unrelated - before
+    // this, `ECH049` was offered while `ECH049a`..`ECH049e` already existed. Domains
+    // without suffixed ids are unaffected: the branch simply never matches.
+    const pattern = new RegExp(`^${nsPrefix}${escapeRegExp(prefix)}(\\d+)[a-z]?$`);
     // Banded requests start their counter at the band floor; bare requests at 0 (→ first id is 1).
     let maxNum = band ? band.min - 1 : 0;
     let maxWidth = 0;
@@ -77,9 +82,13 @@ export function allocateNextId(options) {
         out.push(render(num));
     return out;
 }
-// Pre-filter: `[<namespace>.]<PREFIX><digits>` (2–6 upper-case prefix letters). False positives are
-// harmless — {@link allocateNextId} re-filters by the exact requested prefix/namespace.
-const ID_LIKE = /^(?:[A-Za-z0-9-]+\.)?[A-Z]{2,6}\d+$/;
+// Pre-filter: `[<namespace>.]<PREFIX><digits>[<member letter>]` (2-6 upper-case prefix letters).
+// False positives are harmless - {@link allocateNextId} re-filters by the exact requested
+// prefix/namespace. The trailing letter MUST be admitted here for the same branch in
+// `allocateNextId` to be reachable at all: a pre-filter narrower than the check behind it
+// makes that check unable to fire, and the result reads as "nothing to count" rather than as
+// a fault. The two patterns move together or not at all.
+const ID_LIKE = /^(?:[A-Za-z0-9-]+\.)?[A-Z]{2,6}\d+[a-z]?$/;
 /**
  * Recursively harvest id-like strings from a parsed model (any object/array tree) so the allocator
  * can scan them. Collects string leaves matching `[<namespace>.]<PREFIX><digits>`. Pure; no I/O.

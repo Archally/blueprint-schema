@@ -46,7 +46,7 @@ export const ENTITY_TYPE = {
   RG: 'RG',
   DeploymentTier: 'DeploymentTier',
   // v2.7.7 infrastructure layer (CR-1/CR-2). InfraResource (IR###) supersedes RG for
-  // v2.7 `infrastructure.yaml`; RG stays for v2.6 `rg.yaml` back-compat (RD23/RD25).
+  // v2.7 `infrastructure.yaml`; RG stays for v2.6 `rg.yaml` back-compat.
   InfraResource: 'InfraResource',
   Environment: 'Environment',
   Binding: 'Binding',
@@ -87,7 +87,7 @@ export const SCHEMA_TYPE_TO_LAYER: Record<string, string> = {
   dynamics: 'design.dynamics',
   quality: 'design.quality',
   rg: 'design.rg',
-  // v2.7.7 de-alias (RD23): `infrastructure` gets its own layer id (was aliased to
+  // v2.7.7: `infrastructure` has its own layer id (in v2.6 it was aliased to
   // `design.rg`). `rg` stays `design.rg` for v2.6 back-compat.
   infrastructure: 'design.infrastructure',
   motivation: 'governance.motivation',

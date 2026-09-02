@@ -11,6 +11,8 @@ const LIKELY_REF_KEYS = new Set([
   "rule",
   "story",
   "concept",
+  // Plural form on a structural rule, typed `concept_ref[]` by the rules schema.
+  "concepts",
   "decision",
   "capability",
   "test_case",
@@ -87,7 +89,7 @@ export function isRefKey(key) {
  *     from these, so a demoted reference error becomes a silently missing edge rather than a warning.
  *
  * Everything else stays demotable. Reuses `isRefKey` so "what counts as a reference" has exactly one
- * definition. Mirrored in the monorepo's `validate-blueprint.mjs` (D24 — both stacks or neither).
+ * definition. Was mirrored in the per-version `validate-blueprint.mjs` copies (D24); those are retired, so this is the one definition.
  *
  * @returns true when the error must stay fatal even under --compat.
  */

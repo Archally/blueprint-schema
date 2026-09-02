@@ -60,18 +60,20 @@ one would ever be validated.
 
 ## Why the validator is a parameter
 
-More than one validator can check a blueprint model — this package's zero-build `tools/validator`,
-and the schema-version validators shipped alongside each schema tree. They agree by design, but this
-tool must never *guess* which one is authoritative where it happens to be running. Hence an explicit
-template, with `{model}` and `{schemas}` substituted per snippet:
+One validator checks a blueprint model: the zero-build `tools/validator`, which reads the schema
+version a model declares and applies that version's rules. It is named explicitly rather than
+discovered, with `{model}` and `{schemas}` substituted per snippet:
 
 ```bash
 # the default
 --validator "node tools/validator/src/cli.mjs {model} --schemas {schemas}"
 
-# a version-specific validator alongside the schema tree
---validator "node <schema-tree>/validation/validate-blueprint.mjs --model {model} --schemas {schemas}"
+# a validator installed somewhere else in the checkout
+--validator "node /path/to/validator/cli.mjs --model {model} --schemas {schemas}"
 ```
+
+A checkout this tool did not lay out may keep its validator anywhere, and guessing would mean
+checking a snippet against something other than the schema the guide documents.
 
 ## Tests
 

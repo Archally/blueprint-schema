@@ -15,7 +15,7 @@ import { SECTION_TO_CATEGORY, resolvesAgainst } from "./model-ref-match.mjs";
 const CATALOG_REF_RE = /^([a-z][a-z0-9-]*\.)?RT\d{3,}$/;
 
 /**
- * v2.7.7 typed-id conventions (RD25). A free-string id stays schema-VALID but SHOULD carry the
+ * v2.7.7 typed-id conventions. A free-string id stays schema-VALID but SHOULD carry the
  * typed prefix; enforcement lands in v2.8. Warn only — never an error.
  */
 const TYPED_ID = [
@@ -26,21 +26,74 @@ const TYPED_ID = [
 ];
 
 /**
- * The schema version a run is operating under, read from what the caller supplied and otherwise
- * from the model path (a model directory names its own version, e.g. `.blueprint/v2.6`).
- * Returns null when nothing declares one.
+ * A version named as a whole PATH SEGMENT: `.blueprint/v2.6`, `schemas/blueprint/v2`. The minor is
+ * optional, because the legacy directories carry none (`v1`, `v2`) and a directory that names only
+ * a major still names a major.
+ *
+ * Anchored on a separator and a literal `v` deliberately. A pattern that accepted bare digits would
+ * read a version out of any path holding a number - a build id, a temp directory, a port - and be
+ * wrong silently, which is the failure mode this whole function exists to remove.
+ */
+const VERSION_SEGMENT = /(?:^|[/\\])v(\d+)(?:\.(\d+))?(?=[/\\]|$)/g;
+
+/** The LAST such segment, since the version directory is the deepest part of a model path. */
+function versionFromPath(value) {
+  if (typeof value !== "string") return null;
+  let found = null;
+  for (const match of value.matchAll(VERSION_SEGMENT)) {
+    found = { major: Number(match[1]), minor: match[2] === undefined ? 0 : Number(match[2]) };
+  }
+  return found;
+}
+
+/**
+ * The schema version a run is operating under.
+ *
+ * `args.schemaVersion` is consulted FIRST and is how the CLI supplies the version it resolved -
+ * which may come from the model's own `schemaVersion:` declaration rather than from a path. A model
+ * filed under a directory that names only a major (`.blueprint/v2`) while declaring `2.4.0` is
+ * a 2.4 model: the declaration is the more specific fact, and the directory is a filing convention.
+ * The path sources below remain for callers that reach the core directly.
+ *
+ * Returns null when nothing declares one, and `atLeast` then assumes current semantics.
  */
 function detectSchemaVersion(args) {
-  const sources = [args.schemaVersion, args.model, args.schemas];
-  for (const source of sources) {
-    if (typeof source !== "string") continue;
-    const match = source.match(/v?(\d+)\.(\d+)/);
-    if (match) return { major: Number(match[1]), minor: Number(match[2]) };
+  const supplied = args.schemaVersion;
+  // The CLI supplies {major, minor}; a direct caller may pass a bare string ("2.7", "v2.7"). Both
+  // are a STATEMENT of the version, so neither is parsed as a path.
+  if (supplied && typeof supplied === "object" && Number.isFinite(supplied.major)) {
+    return { major: supplied.major, minor: Number.isFinite(supplied.minor) ? supplied.minor : 0 };
+  }
+  if (typeof supplied === "string") {
+    const bare = /^v?(\d+)(?:\.(\d+))?/.exec(supplied.trim());
+    if (bare) return { major: Number(bare[1]), minor: bare[2] === undefined ? 0 : Number(bare[2]) };
+  }
+  for (const source of [args.model, args.schemas]) {
+    const found = versionFromPath(source);
+    if (found) return found;
   }
   return null;
 }
 
-/** `a >= b` over {major, minor}. */
+/**
+ * `a >= b` over {major, minor}.
+ *
+ * ONE rule branches on this today, and that is a deliberate state rather than an unfinished one.
+ * Before adding a second, apply the test that settled the two candidates examined on 2026-09-02:
+ *
+ *   Did the version's OWN schema declare the thing being checked?
+ *     YES -> a validator that missed it had a DEFECT. Fix it for every version; no branch.
+ *            (`operations[]`/`concepts[]` are `operation_ref[]`/`concept_ref[]` in
+ *             `governance/capability.schema.yaml:60-73` as far back as v2.2, so walking them is
+ *             retroactive correctness, not a new rule.)
+ *     NO  -> the rule is newer than the model and needs a branch here.
+ *
+ * A third possibility is worth naming because it caught out the first attempt: the rule may have an
+ * unstated PRECONDITION rather than a version boundary. The contract-output-slice rule looked
+ * version-specific because one per-version copy carried it and another did not; measured, it fired
+ * identically at v2.6 and v2.7 and its real precondition was "the model declares slices at all".
+ * Check that before reaching for a version number.
+ */
 function atLeast(version, major, minor) {
   if (!version) return true; // nothing declared → assume current semantics
   return version.major > major || (version.major === major && version.minor >= minor);
@@ -78,6 +131,13 @@ export function declaredSlices(parsedFiles) {
  */
 export function checkContractOutputSlice(relFile, serviceName, kind, output, slices) {
   if (typeof output !== "string" || output.trim() === "") return null;
+  // A model that declares NO slices cannot commit the defect above: with no vocabulary, no prefix
+  // can look like a slice and fail to be one. Firing here produced an unactionable warning - "use
+  // <slice>/<name>" told to a model that has no slices - and it was the ONLY thing this rule ever
+  // said. Measured 2026-09-02 over the whole corpus: 82 of 82 findings landed on models declaring
+  // zero slices, none against a real vocabulary, across v2, v2.6 AND v2.7 alike. So this is not a
+  // version boundary; it is a precondition the rule always had and never stated.
+  if (slices.size === 0) return null;
   const cut = output.replace(/\\/g, "/").indexOf("/");
   if (cut <= 0) return null;
   const prefix = output.replace(/\\/g, "/").slice(0, cut);
@@ -202,6 +262,31 @@ export function checkPayloadSchemaResolvable(relFile, operationKey, operationId,
   );
 }
 
+/**
+ * The message a schema error prints.
+ *
+ * Two of Ajv's default messages name no subject: a rejected extra property is reported
+ * as "must NOT have additional properties" without saying which one, and a value outside
+ * an enum as "must be equal to one of the allowed values" without listing them. Both
+ * facts are already computed and sit in the error's `params`, so they are appended here.
+ * Every other message already names its subject and passes through unchanged.
+ *
+ * The allowed values are printed in full. A reader who hits an enum error needs the value
+ * they meant, and shortening the list hides exactly the candidate that ends the search.
+ */
+function describeError(rawError) {
+  const base = rawError.message ?? "schema error";
+  const params = rawError.params;
+  if (!params) return base;
+  if (rawError.keyword === "additionalProperties" && typeof params.additionalProperty === "string") {
+    return `${base}: ${params.additionalProperty}`;
+  }
+  if (rawError.keyword === "enum" && Array.isArray(params.allowedValues)) {
+    return `${base}: ${params.allowedValues.join(", ")}`;
+  }
+  return base;
+}
+
 export function validateModel(args) {
   const { registry } = loadSchemaRegistry(args.schemas);
   const ajv = makeAjv(registry);
@@ -267,7 +352,12 @@ export function validateModel(args) {
     // references through unreported.
     parsedFiles.push({ relFile, schemaType, data });
     collectIds(data, allIds, allDuplicates, [relFile]);
-    collectRefs(data, allRefs, [relFile]);
+    // Each ref carries the scope ITS OWN file declares, so a bare id can be resolved against
+    // that scope and only that one. Tagging at the call site keeps `collectRefs` unchanged.
+    const declaredScope = typeof data.scope === "string" ? data.scope : null;
+    for (const ref of collectRefs(data, [], [relFile])) {
+      allRefs.push({ ...ref, scope: declaredScope });
+    }
 
     // Schema validation, on the other hand, needs a schema. Unrecognised files are counted as
     // skipped and reported as such, never validated against an unrelated schema.
@@ -286,7 +376,7 @@ export function validateModel(args) {
       // violations can be classified from instancePath + message rather than by re-parsing text.
       for (const rawError of validate.errors ?? []) {
         const at = rawError.instancePath ? rawError.instancePath : "/";
-        const text = `[${relFile}] ${at} -> ${rawError.message ?? "schema error"}`;
+        const text = `[${relFile}] ${at} -> ${describeError(rawError)}`;
         schemaErrors.push(text);
         if (isIdentityOrReferenceViolation(rawError.instancePath, rawError.message)) {
           nonDemotable.add(text);
@@ -304,9 +394,13 @@ export function validateModel(args) {
 
   for (const r of allRefs) {
     if (CATALOG_REF_RE.test(r.value)) continue;
-    if (!allIds.has(r.value)) {
-      crossErrors.push(`Missing reference '${r.value}' at ${r.loc}`);
-    }
+    if (allIds.has(r.value)) continue;
+    // The scope prefix is OPTIONAL by schema (`^([a-z][a-z0-9-]*\.)?CN\d{3}$` and its siblings),
+    // so a bare id inside a scoped file names that file's own scope. It is resolved against THAT
+    // scope alone, never against every scope: a bare id is ambiguous across contexts, and a
+    // search that accepted any match would resolve a typo to whichever slice happened to own it.
+    if (!r.value.includes(".") && r.scope && allIds.has(`${r.scope}.${r.value}`)) continue;
+    crossErrors.push(`Missing reference '${r.value}' at ${r.loc}`);
   }
 
   // Gap warnings and typed-id warnings are emitted in ONE per-file pass, so all findings for a
@@ -375,7 +469,7 @@ export function validateModel(args) {
           if (!item || typeof item !== "object") continue;
           if (typeof item.id === "string" && !re.test(item.id)) {
             warnings.push(
-              `[${relFile}] ${kind} id "${item.id}" SHOULD match ${expected} (v2.7.7 typed-id convention, RD25) — free-string is valid but discouraged; required in v2.8`,
+              `[${relFile}] ${kind} id "${item.id}" SHOULD match ${expected} (v2.7.7 typed-id convention) — free-string is valid but discouraged; required in v2.8`,
             );
           }
         }

@@ -50,10 +50,10 @@ function detectStack() {
       template: "node tools/validator/src/cli.mjs {model} --schemas {schemas}",
     },
     {
-      validatorPath: join(root, "schemas/blueprint/v2.7/validation/validate-blueprint.mjs"),
+      validatorPath: join(root, "schemas/blueprint/.shared/validator/cli.mjs"),
       schemas: join(root, "schemas/blueprint/v2.7"),
       template:
-        "node schemas/blueprint/v2.7/validation/validate-blueprint.mjs --model {model} --schemas {schemas}",
+        "node schemas/blueprint/.shared/validator/cli.mjs --model {model} --schemas {schemas}",
     },
   ];
   for (const candidate of candidates) {
