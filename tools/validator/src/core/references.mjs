@@ -26,6 +26,10 @@ const LIKELY_REF_KEYS = new Set([
   "consumes",
   "contains",
   "owned_by",
+  // `staffed_by` names the team whose members perform an actor's role. Unlike `owned_by`, whose
+  // value is an object and whose arms are therefore never reached from here, it carries the id
+  // directly, so listing it is all it takes for the reference to resolve.
+  "staffed_by",
   "served_by",
   "actor",
   "primary_actor",

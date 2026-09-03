@@ -10,6 +10,7 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  * - stories[] → UseCaseStory (use_case → story STR###)
  * - main_scenario[].screen → UseCaseScreen (use_case → screen)
  * - main_scenario[].operation → UseCaseOperation (use_case → operation)
+ * - main_scenario[].actor, extensions[].actor → UseCaseActor (use_case → actor)
  */
 export function extractUseCaseRelations(
   entities: Entity[],
@@ -66,11 +67,41 @@ export function extractUseCaseRelations(
       }
     }
 
-    // main_scenario[]: extract screen and operation refs from steps
+    // main_scenario[] and extensions[]: screen, operation and actor refs from each step.
+    //
+    // A step names its performer one of two ways, and only one of them at a time: through the
+    // `operation` it carries, whose `initiated_by` says who runs it, or through `actor` when the
+    // step is a human act no operation describes. Both spellings reach the same `UseCaseActor`
+    // edge that `primary_actor` already produces, because "this use case involves this actor" is
+    // the same statement wherever in the use case it is made.
+    //
+    // Extensions are read here for the first time. Their `actor` has been schema-valid and
+    // reference-resolved since it was added, and reached no edge, so a branch performed by someone
+    // was invisible to every graph consumer while looking correct in the document.
     const scenario = data.main_scenario as Array<Record<string, unknown>> | undefined;
-    if (Array.isArray(scenario)) {
-      for (const step of scenario) {
+    const extensions = data.extensions as Array<Record<string, unknown>> | undefined;
+    const steps = [
+      ...(Array.isArray(scenario) ? scenario : []),
+      ...(Array.isArray(extensions) ? extensions : []),
+    ];
+    if (steps.length > 0) {
+      for (const step of steps) {
         if (!step || typeof step !== 'object') continue;
+
+        // "Consulted only when `operation` is absent" is the schema's rule for both spellings, and
+        // it is enforced here rather than assumed: a step carrying both would otherwise put two
+        // answers in the graph for one performer, and the one derived from `initiated_by` is the
+        // one the rule keeps.
+        const actor = step.operation ? undefined : (step.actor as string | undefined);
+        if (typeof actor === 'string' && actor) {
+          const targetId = resolveOrPlaceholder(actor, domain, entities, placeholders);
+          relations.push({
+            id: `${entity.id}--${RELATION_TYPE.UseCaseActor}--${targetId}`,
+            source_entity_id: entity.id,
+            target_entity_id: targetId,
+            type: RELATION_TYPE.UseCaseActor,
+          });
+        }
 
         const screen = step.screen as string | undefined;
         if (typeof screen === 'string' && screen) {
