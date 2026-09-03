@@ -1,6 +1,6 @@
 # PrestaShop-v9
 
-> Generated from blueprint model. 2029 entities, 3107 relations.
+> Generated from blueprint model. 2049 entities, 3138 relations.
 
 ## Context Map
 
@@ -1692,6 +1692,28 @@ graph TD
         Shop["Shop: Multi-store configuration, physical stores, contacts, search, aliases."]
         ShopService["ShopService: REST API for multi-store and shop configuration."]
         ShopService_openapi["ShopService.openapi"]
+    end
+    subgraph design_dynamics["design.dynamics"]
+        admin_RC001["admin.RC001: Concurrent employee profile edit"]
+        catalog_PAR001["catalog.PAR001: Bulk product import"]
+        catalog_ORD001["catalog.ORD001: Search index update must follow product creation, not precede it."]
+        catalog_RC001["catalog.RC001: Concurrent product edit"]
+        checkout_ORD001["checkout.ORD001: Cart must have items before voucher can be applied."]
+        checkout_RC001["checkout.RC001: Concurrent cart modification"]
+        checkout_RC002["checkout.RC002: Voucher usage race"]
+        content_ORD001["content.ORD001: CMS page must be created before SEO metadata can be configured."]
+        customers_RC001["customers.RC001: Duplicate email registration"]
+        international_PAR001["international.PAR001: Bulk exchange rate refresh"]
+        international_RC001["international.RC001: Exchange rate update during order"]
+        modules_ORD001["modules.ORD001: Module must be uploaded before it can be installed."]
+        modules_RC001["modules.RC001: Concurrent module state change"]
+        orders_PAR001["orders.PAR001: Parallel event dispatch"]
+        orders_ORD001["orders.ORD001: Payment can only be recorded after order is placed."]
+        orders_RC001["orders.RC001: Double-submit order"]
+        orders_RC002["orders.RC002: Concurrent order status update"]
+        orders_RC003["orders.RC003: Refund during cancellation"]
+        shipping_ORD001["shipping.ORD001: Shipment must exist before products can be assigned to it."]
+        shipping_RC001["shipping.RC001: Concurrent shipment product assignment"]
     end
     subgraph design_ui["design.ui"]
         admin_SCR001["admin.SCR001: Grid of employees with status, profile, email, and bulk action controls."]
@@ -5425,6 +5447,37 @@ graph TD
     shop_CMD018 -.->|"handled_by"| Shop
     shop_EVT014 -.->|"handled_by"| Shop
     shop_QRY010 -.->|"handled_by"| Shop
+    admin_RC001 -.->|"race_condition_affects"| admin_CMD002
+    catalog_PAR001 -.->|"parallelism_operation"| catalog_CMD001
+    catalog_ORD001 -.->|"ordering_operation"| catalog_EVT001
+    catalog_ORD001 -.->|"ordering_requires"| catalog_CMD001
+    catalog_RC001 -.->|"race_condition_affects"| catalog_CMD002
+    checkout_ORD001 -.->|"ordering_operation"| checkout_CMD014
+    checkout_ORD001 -.->|"ordering_requires"| checkout_CMD009
+    checkout_RC001 -.->|"race_condition_affects"| checkout_CMD009
+    checkout_RC001 -.->|"race_condition_affects"| checkout_CMD010
+    checkout_RC002 -.->|"race_condition_affects"| checkout_CMD014
+    content_ORD001 -.->|"ordering_operation"| content_CMD019
+    content_ORD001 -.->|"ordering_requires"| content_CMD001
+    customers_RC001 -.->|"race_condition_affects"| customers_CMD001
+    international_PAR001 -.->|"parallelism_operation"| international_CMD005
+    international_RC001 -.->|"race_condition_affects"| international_CMD005
+    modules_ORD001 -.->|"ordering_operation"| modules_CMD001
+    modules_ORD001 -.->|"ordering_requires"| modules_CMD008
+    modules_RC001 -.->|"race_condition_affects"| modules_CMD001
+    modules_RC001 -.->|"race_condition_affects"| modules_CMD002
+    modules_RC001 -.->|"race_condition_affects"| modules_CMD003
+    orders_PAR001 -.->|"parallelism_operation"| orders_EVT001
+    orders_PAR001 -.->|"parallelism_operation"| orders_EVT005
+    orders_ORD001 -.->|"ordering_operation"| orders_CMD019
+    orders_ORD001 -.->|"ordering_requires"| orders_CMD001
+    orders_RC001 -.->|"race_condition_affects"| orders_CMD001
+    orders_RC002 -.->|"race_condition_affects"| orders_CMD004
+    orders_RC003 -.->|"race_condition_affects"| orders_CMD002
+    orders_RC003 -.->|"race_condition_affects"| orders_CMD015
+    shipping_ORD001 -.->|"ordering_operation"| shipping_CMD013
+    shipping_ORD001 -.->|"ordering_requires"| shipping_CMD011
+    shipping_RC001 -.->|"race_condition_affects"| shipping_CMD013
     admin_CN005 -.->|"code_ref"| src_Core_Domain_ApiClient_Command_AddApiClientCommand_php
     admin_CN005 -.->|"code_ref"| src_Core_Domain_ApiClient_Command_ForceApiClientSecretCommand_php
     admin_CN005 -.->|"code_ref"| src_Core_Domain_ApiClient_Command_GenerateApiClientSecretCommand_php
@@ -6122,7 +6175,7 @@ graph TD
 
 ## Entity Catalog
 
-**2029 entities** across 50 types.
+**2049 entities** across 51 types.
 
 | ID | Type | Name | Layer | Source |
 |----|------|------|-------|--------|
@@ -6848,6 +6901,26 @@ graph TD
 | prestashop.DSC003 | DeploymentScope | prestashop-data | design.infrastructure | infrastructure.yaml |
 | checkout.DR001 | DerivationRule | Cart total derivation | design.rules | checkout/rules.yaml |
 | orders.DR001 | DerivationRule | Estimated delivery from shipping method | design.rules | orders/rules.yaml |
+| admin.RC001 | Dynamics | Concurrent employee profile edit | design.dynamics | admin/dynamics.yaml |
+| catalog.ORD001 | Dynamics | Search index update must follow product creation, not precede it. | design.dynamics | catalog/dynamics.yaml |
+| catalog.PAR001 | Dynamics | Bulk product import | design.dynamics | catalog/dynamics.yaml |
+| catalog.RC001 | Dynamics | Concurrent product edit | design.dynamics | catalog/dynamics.yaml |
+| checkout.ORD001 | Dynamics | Cart must have items before voucher can be applied. | design.dynamics | checkout/dynamics.yaml |
+| checkout.RC001 | Dynamics | Concurrent cart modification | design.dynamics | checkout/dynamics.yaml |
+| checkout.RC002 | Dynamics | Voucher usage race | design.dynamics | checkout/dynamics.yaml |
+| content.ORD001 | Dynamics | CMS page must be created before SEO metadata can be configured. | design.dynamics | content/dynamics.yaml |
+| customers.RC001 | Dynamics | Duplicate email registration | design.dynamics | customers/dynamics.yaml |
+| international.PAR001 | Dynamics | Bulk exchange rate refresh | design.dynamics | international/dynamics.yaml |
+| international.RC001 | Dynamics | Exchange rate update during order | design.dynamics | international/dynamics.yaml |
+| modules.ORD001 | Dynamics | Module must be uploaded before it can be installed. | design.dynamics | modules/dynamics.yaml |
+| modules.RC001 | Dynamics | Concurrent module state change | design.dynamics | modules/dynamics.yaml |
+| orders.ORD001 | Dynamics | Payment can only be recorded after order is placed. | design.dynamics | orders/dynamics.yaml |
+| orders.PAR001 | Dynamics | Parallel event dispatch | design.dynamics | orders/dynamics.yaml |
+| orders.RC001 | Dynamics | Double-submit order | design.dynamics | orders/dynamics.yaml |
+| orders.RC002 | Dynamics | Concurrent order status update | design.dynamics | orders/dynamics.yaml |
+| orders.RC003 | Dynamics | Refund during cancellation | design.dynamics | orders/dynamics.yaml |
+| shipping.ORD001 | Dynamics | Shipment must exist before products can be assigned to it. | design.dynamics | shipping/dynamics.yaml |
+| shipping.RC001 | Dynamics | Concurrent shipment product assignment | design.dynamics | shipping/dynamics.yaml |
 | admin.EN001 | Enumeration | PermissionLevel | design.concepts | admin/identity.concepts.yaml |
 | catalog.EN001 | Enumeration | ProductStatus | design.concepts | catalog/product.concepts.yaml |
 | catalog.EN002 | Enumeration | ProductType | design.concepts | catalog/product.concepts.yaml |
@@ -8179,6 +8252,7 @@ graph TD
 | UseCase | 25 |
 | Actor | 20 |
 | Enumeration | 20 |
+| Dynamics | 20 |
 | SLO | 20 |
 | Inquiry | 19 |
 | Capability | 18 |
@@ -8213,7 +8287,7 @@ graph TD
 
 ## Relations
 
-**3107 relations** discovered.
+**3138 relations** discovered.
 
 | Source | Type | Target |
 |--------|------|--------|
@@ -10217,6 +10291,18 @@ graph TD
 | shop.UNV001 (UINavigation) | nav_to | shop.SCR004 (Screen) |
 | prestashop.DSC002 (DeploymentScope) | nested_in | prestashop.DSC001 (DeploymentScope) |
 | prestashop.DSC003 (DeploymentScope) | nested_in | prestashop.DSC001 (DeploymentScope) |
+| catalog.ORD001 (Dynamics) | ordering_operation | catalog.EVT001 (Operation) |
+| checkout.ORD001 (Dynamics) | ordering_operation | checkout.CMD014 (Operation) |
+| content.ORD001 (Dynamics) | ordering_operation | content.CMD019 (Operation) |
+| modules.ORD001 (Dynamics) | ordering_operation | modules.CMD001 (Operation) |
+| orders.ORD001 (Dynamics) | ordering_operation | orders.CMD019 (Operation) |
+| shipping.ORD001 (Dynamics) | ordering_operation | shipping.CMD013 (Operation) |
+| catalog.ORD001 (Dynamics) | ordering_requires | catalog.CMD001 (Operation) |
+| checkout.ORD001 (Dynamics) | ordering_requires | checkout.CMD009 (Operation) |
+| content.ORD001 (Dynamics) | ordering_requires | content.CMD001 (Operation) |
+| modules.ORD001 (Dynamics) | ordering_requires | modules.CMD008 (Operation) |
+| orders.ORD001 (Dynamics) | ordering_requires | orders.CMD001 (Operation) |
+| shipping.ORD001 (Dynamics) | ordering_requires | shipping.CMD011 (Operation) |
 | PRT001 (Party) | org_contains_dept | DPT001 (Department) |
 | PRT001 (Party) | org_contains_dept | DPT002 (Department) |
 | PRT001 (Party) | org_contains_dept | DPT003 (Department) |
@@ -10230,6 +10316,10 @@ graph TD
 | PRT001 (Party) | org_contains_team | TM008 (Team) |
 | PRT001 (Party) | org_contains_team | TM009 (Team) |
 | PRT001 (Party) | org_contains_team | TM010 (Team) |
+| catalog.PAR001 (Dynamics) | parallelism_operation | catalog.CMD001 (Operation) |
+| international.PAR001 (Dynamics) | parallelism_operation | international.CMD005 (Operation) |
+| orders.PAR001 (Dynamics) | parallelism_operation | orders.EVT001 (Operation) |
+| orders.PAR001 (Dynamics) | parallelism_operation | orders.EVT005 (Operation) |
 | admin.CMD021 (Operation) | payload_model | MDL804 (Models) |
 | admin.CMD001 (Operation) | payload_model | MDL800 (Models) |
 | admin.CMD010 (Operation) | payload_model | MDL802 (Models) |
@@ -10490,6 +10580,21 @@ graph TD
 | AdminApiClient (Service) | provides | AdminApiClient.security_schemes (Contract) |
 | ShippingService (Service) | provides | ShippingService.openapi (Contract) |
 | ShopService (Service) | provides | ShopService.openapi (Contract) |
+| admin.RC001 (Dynamics) | race_condition_affects | admin.CMD002 (Operation) |
+| catalog.RC001 (Dynamics) | race_condition_affects | catalog.CMD002 (Operation) |
+| checkout.RC001 (Dynamics) | race_condition_affects | checkout.CMD009 (Operation) |
+| checkout.RC001 (Dynamics) | race_condition_affects | checkout.CMD010 (Operation) |
+| checkout.RC002 (Dynamics) | race_condition_affects | checkout.CMD014 (Operation) |
+| customers.RC001 (Dynamics) | race_condition_affects | customers.CMD001 (Operation) |
+| international.RC001 (Dynamics) | race_condition_affects | international.CMD005 (Operation) |
+| modules.RC001 (Dynamics) | race_condition_affects | modules.CMD001 (Operation) |
+| modules.RC001 (Dynamics) | race_condition_affects | modules.CMD002 (Operation) |
+| modules.RC001 (Dynamics) | race_condition_affects | modules.CMD003 (Operation) |
+| orders.RC001 (Dynamics) | race_condition_affects | orders.CMD001 (Operation) |
+| orders.RC002 (Dynamics) | race_condition_affects | orders.CMD004 (Operation) |
+| orders.RC003 (Dynamics) | race_condition_affects | orders.CMD002 (Operation) |
+| orders.RC003 (Dynamics) | race_condition_affects | orders.CMD015 (Operation) |
+| shipping.RC001 (Dynamics) | race_condition_affects | shipping.CMD013 (Operation) |
 | catalog.CN003 (Concept) | relationship | catalog.CN001 (Concept) |
 | catalog.CN004 (Concept) | relationship | catalog.CN001 (Concept) |
 | orders.CN003 (Concept) | relationship | orders.CN002 (Concept) |
@@ -11358,6 +11463,7 @@ graph TD
 | nav_from | 16 |
 | nav_to | 16 |
 | milestone_deliverable | 16 |
+| race_condition_affects | 15 |
 | capability_refs | 13 |
 | concept | 12 |
 | payload_model | 12 |
@@ -11373,6 +11479,8 @@ graph TD
 | relationship | 6 |
 | milestone_dependency | 6 |
 | leverage_decision | 6 |
+| ordering_operation | 6 |
+| ordering_requires | 6 |
 | contract_calls | 5 |
 | work_item_child | 5 |
 | assumption_risk | 5 |
@@ -11385,6 +11493,7 @@ graph TD
 | leverage_realized_by | 4 |
 | leverage_capability | 4 |
 | hosted_on | 4 |
+| parallelism_operation | 4 |
 | materializes | 3 |
 | org_contains_dept | 3 |
 | roadmap_value_stream | 3 |

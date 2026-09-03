@@ -26,6 +26,7 @@ import { extractBccRelations } from './bcc.js';
 import { extractRgRelations } from './rg.js';
 import { extractInfrastructureRelations } from './infrastructure.js';
 import { extractMembershipRelations } from './membership.js';
+import { extractDynamicsRelations } from './dynamics.js';
 
 /**
  * Build all relations from the entity list.
@@ -76,6 +77,7 @@ export function buildRelations(
     ...extractRgRelations(entities),
     ...extractInfrastructureRelations(entities),
     ...extractMembershipRelations(entities),
+    ...extractDynamicsRelations(entities, placeholders),
     ...codeRefRelations,
   ];
 

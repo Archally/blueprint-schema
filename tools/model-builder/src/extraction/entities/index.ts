@@ -19,14 +19,7 @@ import { extractValueStream } from './valueStream.js';
 import { extractLeverage } from './leverage.js';
 import { extractRg } from './rg.js';
 import { extractInfrastructure } from './infrastructure.js';
-
-/**
- * Optional extractors (stub: return [] until implemented).
- * dynamics
- */
-function extractDynamics(_doc: ParsedBlueprintDocument): Entity[] {
-  return [];
-}
+import { extractDynamics } from './dynamics.js';
 
 const EXTRACTORS: Record<string, (doc: ParsedBlueprintDocument) => Entity[]> = {
   concepts: extractConcepts,
@@ -99,4 +92,5 @@ export { extractValueStream } from './valueStream.js';
 export { extractLeverage } from './leverage.js';
 export { extractRg } from './rg.js';
 export { extractInfrastructure } from './infrastructure.js';
+export { extractDynamics } from './dynamics.js';
 export { makeInternalId, getSchemaTypeFromPath } from './id.js';

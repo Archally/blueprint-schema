@@ -254,6 +254,27 @@ export const RELATION_TYPE = {
   LeverageCapability: 'leverage_capability',
   // leverage.schema (v2.7.4): leverage DAG — dependent LP → prerequisite LP (depends_on[] + inverse of enables[])
   LeverageDependsOn: 'leverage_depends_on',
+  // dynamics.schema: the runtime-behaviour layer's edges, all of them Dynamics → Operation.
+  //
+  // Every name here is PREFIXED with its family, and that is not decoration. `Requires: 'requires'`
+  // already exists above for domain preconditions, so an `ordering[].requires[]` edge typed
+  // `requires` would be one type name covering two ontologically different relations - a
+  // precondition on an operation and a runtime prerequisite between operations - and any
+  // declarative rule matching the string would match both. `LeverageDependsOn` is the precedent in
+  // this same file; `DependsOn` is the counter-example it was created to avoid becoming.
+  //
+  // parallelism_opportunity.operations[]: these may run concurrently within the opportunity
+  ParallelismOperation: 'parallelism_operation',
+  // ordering_constraint.operations[]: the operations the constraint is ABOUT
+  OrderingOperation: 'ordering_operation',
+  // ordering_constraint.requires[]: must complete BEFORE the constraint's subject can start
+  OrderingRequires: 'ordering_requires',
+  // ordering_constraint.enables[]: becomes eligible AFTER the constraint's subject completes
+  OrderingEnables: 'ordering_enables',
+  // ordering_constraint.can_parallel_with[]: declared safe concurrency (zero corpus instances)
+  OrderingParallelWith: 'ordering_parallel_with',
+  // race_condition.affects[]: the operation or concept the hazard touches
+  RaceConditionAffects: 'race_condition_affects',
 } as const;
 
 export type RelationType = (typeof RELATION_TYPE)[keyof typeof RELATION_TYPE];
