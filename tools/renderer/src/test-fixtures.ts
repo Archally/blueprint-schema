@@ -45,4 +45,4 @@ export const PRODUCES = makeRelation({ source_entity_id: 'CMD001', target_entity
 export const REACTS_TO = makeRelation({ source_entity_id: 'CMD002', target_entity_id: 'EVT001', type: 'reacts_to' });
 export const INITIATED_BY = makeRelation({ source_entity_id: 'CMD001', target_entity_id: 'ACT001', type: 'initiated_by' });
 export const VALIDATES = makeRelation({ source_entity_id: 'TC001', target_entity_id: 'SR001', type: 'validates' });
-export const CTX_REL = makeRelation({ source_entity_id: 'CTX001', target_entity_id: 'CTX002', type: 'depends_on' });
+export const CTX_REL = makeRelation({ source_entity_id: 'CTX001', target_entity_id: 'CTX002', type: 'context_depends_on' });

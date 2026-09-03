@@ -47,10 +47,10 @@ export function extractArchDependencyRelations(
       }
       if (targetId === entity.id) continue; // ignore self-dependency
       relations.push({
-        id: `${entity.id}--${RELATION_TYPE.DependsOn}--${targetId}`,
+        id: `${entity.id}--${RELATION_TYPE.ContextDependsOn}--${targetId}`,
         source_entity_id: entity.id,
         target_entity_id: targetId,
-        type: RELATION_TYPE.DependsOn,
+        type: RELATION_TYPE.ContextDependsOn,
         data: {
           ...(dependency.relationship != null ? { relationship: dependency.relationship } : {}),
           ...(dependency.direction != null ? { direction: dependency.direction } : {}),

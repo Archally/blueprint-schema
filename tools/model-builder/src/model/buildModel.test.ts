@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { buildBlueprintModel, groupDocumentsBySchemaType } from './buildModel.js';
 import type { ParsedBlueprintDocument } from './types.js';
 import { ENTITY_TYPE } from './entityTypes.js';
+import { RELATION_TYPE } from './relationTypes.js';
 
 describe('buildBlueprintModel', () => {
   it('merges same-name parties declared across multiple arch files', () => {
@@ -38,7 +39,7 @@ describe('buildBlueprintModel', () => {
     ).toEqual(['Catalog', 'Checkout']);
   });
 
-  it('builds Context->Context depends_on relations from dependencies[]', () => {
+  it('builds Context->Context context_depends_on relations from dependencies[]', () => {
     const documents: ParsedBlueprintDocument[] = [
       {
         data: {
@@ -68,10 +69,18 @@ describe('buildBlueprintModel', () => {
     const checkout = model.entities.find((e) => e.type === ENTITY_TYPE.Context && e.displayId === 'Checkout')!;
     const catalog = model.entities.find((e) => e.type === ENTITY_TYPE.Context && e.displayId === 'Catalog')!;
     const dep = model.relations.find(
-      (r) => r.type === 'depends_on' && r.source_entity_id === checkout.id && r.target_entity_id === catalog.id
+      (r) => r.type === RELATION_TYPE.ContextDependsOn && r.source_entity_id === checkout.id && r.target_entity_id === catalog.id
     );
     expect(dep).toBeDefined();
     expect(dep!.data?.relationship).toBe('customer-supplier');
+
+    // The arch edge is prefixed so it stays distinct from the TOSCA InfraResource `depends_on`,
+    // which shares the preposition and describes placement rather than strategy. A consumer
+    // filtering on the bare string would match both.
+    expect(
+      model.relations.some((r) => r.type === 'depends_on'),
+      'no context dependency is emitted under the bare TOSCA verb',
+    ).toBe(false);
   });
 
   it('returns entities and metadata; full build on small example has expected counts per layer', () => {

@@ -166,6 +166,22 @@ export const RELATION_TYPE = {
   // BCC v5 (v2.6.3): bounded-context association from BD/Assumption/KPI to context
   // Source field: bounded_context_ref on business_decision, assumption, kpi
   BoundedContextRef: 'bounded_context_ref',
+  // arch.schema: Context → Context strategic dependency (context.dependencies[]), carrying the
+  // declared relationship / direction / integration type.
+  //
+  // PREFIXED, and it is the whole point of the name. This edge and the TOSCA
+  // InfraResource → InfraResource `depends_on` below are different relations that share a
+  // preposition: one is a strategic statement about two bounded contexts, the other a placement
+  // statement about two resources. While both were spelled `depends_on`, any rule or consumer
+  // filtering on the string matched both - on a model carrying 13 such edges, 3 were resource
+  // pairs, so a rule about context dependencies was wrong on nearly a quarter of its input and
+  // looked fine. `LeverageDependsOn` is the same treatment applied when its collision was foreseen
+  // rather than discovered.
+  //
+  // The ARCH side is the one that moved: `depends_on` is TOSCA's own verb name, mapped 1:1 from the
+  // source document, so renaming that side would put a translation between the model and the
+  // standard it quotes.
+  ContextDependsOn: 'context_depends_on',
   // v2.7.6 (D15): operation handled/produced by a bounded context. Materialized (not
   // authored) — derived from arch service contracts (expose ∪ send = provide, PRIMARY,
   // many-to-many) with the deprecated file name/scope heuristic as FALLBACK. Carries
@@ -190,6 +206,7 @@ export const RELATION_TYPE = {
   // hybrid `network-link` interconnect.
   HostedOn: 'hosted_on',
   ConnectsTo: 'connects_to',
+  // TOSCA's own verb, and its alone since the arch edge became `context_depends_on` above.
   DependsOn: 'depends_on',
   AttachesTo: 'attaches_to',
   RoutesTo: 'routes_to',

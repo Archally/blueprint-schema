@@ -8,7 +8,14 @@ describe('renderContextMap', () => {
     expect(result).toContain('```mermaid');
     expect(result).toContain('"CTX001: Orders Context"');
     expect(result).toContain('"CTX002: Payments Context"');
-    expect(result).toContain('-->|"depends on"|');
+    expect(
+      result,
+      'the drawn label stays "depends on" even though the relation type is now ' +
+        '`context_depends_on` - the prefix tells the arch edge from the TOSCA one, and inside a ' +
+        'context map, where both endpoints are contexts, it would only restate the frame',
+    ).toContain('-->|"depends on"|');
+    expect(result, 'and specifically NOT the raw type with its underscores removed')
+      .not.toContain('context depends on');
   });
 
   it('returns empty string when no context entities exist', () => {

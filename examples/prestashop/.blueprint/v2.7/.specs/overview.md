@@ -4089,22 +4089,22 @@ graph TD
     ShippingService_openapi -.->|"contract_exposes"| shipping_QRY003
     ShopService_openapi -.->|"contract_exposes"| shop_QRY003
     ShopService_openapi -.->|"contract_exposes"| shop_CMD016
-    Catalog -.->|"depends_on"| International
-    Catalog -.->|"depends_on"| Modules
-    Checkout -.->|"depends_on"| Catalog
-    Checkout -.->|"depends_on"| Customers
-    Checkout -.->|"depends_on"| International
-    Checkout -.->|"depends_on"| Orders
-    Content -.->|"depends_on"| International
-    Customers -.->|"depends_on"| International
-    Modules -.->|"depends_on"| Admin
-    Orders -.->|"depends_on"| Checkout
-    Orders -.->|"depends_on"| Catalog
-    Orders -.->|"depends_on"| Customers
-    Orders -.->|"depends_on"| Shipping
-    Orders -.->|"depends_on"| International
-    Shipping -.->|"depends_on"| International
-    Shop -.->|"depends_on"| International
+    Catalog -.->|"context_depends_on"| International
+    Catalog -.->|"context_depends_on"| Modules
+    Checkout -.->|"context_depends_on"| Catalog
+    Checkout -.->|"context_depends_on"| Customers
+    Checkout -.->|"context_depends_on"| International
+    Checkout -.->|"context_depends_on"| Orders
+    Content -.->|"context_depends_on"| International
+    Customers -.->|"context_depends_on"| International
+    Modules -.->|"context_depends_on"| Admin
+    Orders -.->|"context_depends_on"| Checkout
+    Orders -.->|"context_depends_on"| Catalog
+    Orders -.->|"context_depends_on"| Customers
+    Orders -.->|"context_depends_on"| Shipping
+    Orders -.->|"context_depends_on"| International
+    Shipping -.->|"context_depends_on"| International
+    Shop -.->|"context_depends_on"| International
     admin_STR001 -.->|"story_orders_operation"| admin_CMD001
     admin_STR001 -.->|"story_orders_operation"| admin_CMD013
     admin_STR002 -.->|"story_orders_operation"| admin_CMD021
@@ -9263,6 +9263,22 @@ graph TD
 | ExternalApiConsumers (Context) | contains | AdminApiClient (Service) |
 | Shipping (Context) | contains | ShippingService (Service) |
 | Shop (Context) | contains | ShopService (Service) |
+| Catalog (Context) | context_depends_on | International (Context) |
+| Catalog (Context) | context_depends_on | Modules (Context) |
+| Checkout (Context) | context_depends_on | Catalog (Context) |
+| Checkout (Context) | context_depends_on | Customers (Context) |
+| Checkout (Context) | context_depends_on | International (Context) |
+| Checkout (Context) | context_depends_on | Orders (Context) |
+| Content (Context) | context_depends_on | International (Context) |
+| Customers (Context) | context_depends_on | International (Context) |
+| Modules (Context) | context_depends_on | Admin (Context) |
+| Orders (Context) | context_depends_on | Checkout (Context) |
+| Orders (Context) | context_depends_on | Catalog (Context) |
+| Orders (Context) | context_depends_on | Customers (Context) |
+| Orders (Context) | context_depends_on | Shipping (Context) |
+| Orders (Context) | context_depends_on | International (Context) |
+| Shipping (Context) | context_depends_on | International (Context) |
+| Shop (Context) | context_depends_on | International (Context) |
 | AdminApiClient.httpClient (Contract) | contract_calls | admin.CMD021 (Operation) |
 | AdminApiClient.httpClient (Contract) | contract_calls | admin.QRY001 (Operation) |
 | AdminApiClient.httpClient (Contract) | contract_calls | catalog.QRY001 (Operation) |
@@ -9307,22 +9323,6 @@ graph TD
 | OrderService.asyncapi (Contract) | contract_sends | orders.EVT002 (Operation) |
 | OrderService.asyncapi (Contract) | contract_sends | orders.EVT003 (Operation) |
 | OrderService.asyncapi (Contract) | contract_sends | orders.EVT004 (Operation) |
-| Catalog (Context) | depends_on | International (Context) |
-| Catalog (Context) | depends_on | Modules (Context) |
-| Checkout (Context) | depends_on | Catalog (Context) |
-| Checkout (Context) | depends_on | Customers (Context) |
-| Checkout (Context) | depends_on | International (Context) |
-| Checkout (Context) | depends_on | Orders (Context) |
-| Content (Context) | depends_on | International (Context) |
-| Customers (Context) | depends_on | International (Context) |
-| Modules (Context) | depends_on | Admin (Context) |
-| Orders (Context) | depends_on | Checkout (Context) |
-| Orders (Context) | depends_on | Catalog (Context) |
-| Orders (Context) | depends_on | Customers (Context) |
-| Orders (Context) | depends_on | Shipping (Context) |
-| Orders (Context) | depends_on | International (Context) |
-| Shipping (Context) | depends_on | International (Context) |
-| Shop (Context) | depends_on | International (Context) |
 | DPT001 (Department) | dept_has_team | TM001 (Team) |
 | DPT001 (Department) | dept_has_team | TM002 (Team) |
 | DPT001 (Department) | dept_has_team | TM003 (Team) |
@@ -11459,7 +11459,7 @@ graph TD
 | inquiry_goal | 18 |
 | screen_story | 17 |
 | provides | 16 |
-| depends_on | 16 |
+| context_depends_on | 16 |
 | nav_from | 16 |
 | nav_to | 16 |
 | milestone_deliverable | 16 |
