@@ -1,90 +1,34 @@
+// @ts-check
+/**
+ * Reference integrity over a blueprint model: what declares an id, what references one, and the
+ * edge constructs that resolve while relating nothing.
+ *
+ * WHICH keys hold a reference is not decided here. The schema types every reference as a
+ * metamodel `*_ref`, and `reference-keys.mjs` reads that off the schema tree once per run; the walk
+ * below takes the result and asks it, parent and key together. A key the schema does not type is
+ * still a reference when its value is a scope-qualified typed id, because nothing else is written
+ * that way - so a free-form bag can carry a reference and it is still resolved.
+ */
+
 export const ID_RE = /^([a-z][a-z0-9-]*\.)?[A-Z]{1,4}\d{3,}$/;
 
-const REF_KEY_SUFFIXES = ["_ref", "_refs"];
+/** The scope-qualified form alone - the one shape that is a reference wherever it appears. */
+const SCOPED_ID_RE = /^[a-z][a-z0-9-]*\.[A-Z]{1,4}\d{3,}$/;
 
-const LIKELY_REF_KEYS = new Set([
-  "aggregate",
-  "entity",
-  "command",
-  "query",
-  "event",
-  "rule",
-  "story",
-  "concept",
-  // Plural form on a structural rule, typed `concept_ref[]` by the rules schema.
-  "concepts",
-  "decision",
-  "capability",
-  "test_case",
-  "question",
-  "model",
-  "screen",
-  "action",
-  "governed_by",
-  "triggered_by",
-  "emits",
-  "consumes",
-  "contains",
-  "owned_by",
-  // `staffed_by` names the team whose members perform an actor's role. Unlike `owned_by`, whose
-  // value is an object and whose arms are therefore never reached from here, it carries the id
-  // directly, so listing it is all it takes for the reference to resolve.
-  "staffed_by",
-  "served_by",
-  "actor",
-  "primary_actor",
-  "owner",
-  "use_case",
-  "user_stories",
-  "operations",
-  "test_cases",
-  "stories",
-  "dependencies",
-  "ref",
-  "stakeholders",
-  // `target` names the endpoint of a directed relation and carries a typed id, so it takes part
-  // in reference integrity like any other ref key.
-  "target",
-  // `subject_party` names the party a model is written from. It carries the id directly, so listing
-  // it here is all the resolution it needs.
-  "subject_party",
-  // `parent` names a container of the SAME type as the thing declaring it - a department inside a
-  // department, a deployment scope inside a scope. Both carry a typed id, and the ID_RE guard below
-  // means a `parent` holding anything else is left alone rather than reported as a broken reference.
-  "parent",
-]);
+/**
+ * Format 2 of `operation_ref` and `error_ref`: the declaring document's scope and the entry's key
+ * in the `operations` / `errors` map, `orders:placeOrder`. Anchored so a stray colon cannot match.
+ */
+export const KEYED_REF_RE = /^[a-z][a-z0-9-]*:[a-z][a-zA-Z0-9]*$/;
 
-const NON_REF_KEYS = new Set([
-  "id",
-  "name",
-  "title",
-  "statement",
-  "description",
-  "summary",
-  "source",
-  "version",
-  "schemaVersion",
-  "scope",
-  "category",
-  "type",
-  "status",
-  "method",
-  "date",
-  "file",
-  "term",
-  "definition",
-  "stereotype",
-  "kind",
-]);
+/** Keys that DECLARE an id. `x-model-id` is the models layer's, where `id` means something else. */
+const DECLARATION_KEYS = new Set(["id", "x-model-id"]);
 
-export function isRefKey(key) {
-  if (NON_REF_KEYS.has(key)) return false;
-  if (LIKELY_REF_KEYS.has(key)) return true;
-  for (const suffix of REF_KEY_SUFFIXES) {
-    if (key.endsWith(suffix)) return true;
-  }
-  return false;
-}
+/** A scoped id under one of these illustrates a shape; it references nothing. */
+const EXAMPLE_KEYS = new Set(["example", "examples"]);
+
+/** The two maps whose entry KEYS are addressable through format 2. */
+const KEYED_MAPS = new Set(["operations", "errors"]);
 
 /**
  * Does this schema error concern an entity's IDENTITY or a typed REFERENCE?
@@ -99,12 +43,14 @@ export function isRefKey(key) {
  *   - **references** — a `*_ref` / `*_refs[]` that is absent or the wrong shape. Relations are built
  *     from these, so a demoted reference error becomes a silently missing edge rather than a warning.
  *
- * Everything else stays demotable. Reuses `isRefKey` so "what counts as a reference" has exactly one
- * definition. Was mirrored in the per-version `validate-blueprint.mjs` copies (D24); those are retired, so this is the one definition.
+ * Everything else stays demotable. "What counts as a reference" is the derived key set the caller
+ * passes, so this and the reference walk read one definition. Key-only rather than parent-qualified
+ * here, deliberately: this decides what `--compat` may RELAX, and over-including keeps an error
+ * fatal, which is the safe direction.
  *
  * @returns true when the error must stay fatal even under --compat.
  */
-export function isIdentityOrReferenceViolation(instancePath, message) {
+export function isIdentityOrReferenceViolation(instancePath, message, refKeys) {
   // A `required` failure is the one case the instancePath cannot classify: Ajv points it at the
   // PARENT object ("/concepts/0"), never at the missing key, so the key has to come from the text.
   //
@@ -125,7 +71,7 @@ export function isIdentityOrReferenceViolation(instancePath, message) {
   const required = /must have required property '([^']+)'/.exec(text);
   if (required) {
     const key = required[1];
-    if (key === "id" || isRefKey(key)) return true;
+    if (key === "id" || refKeys.keys.has(key)) return true;
   } else if (/required property/i.test(text)) {
     return true;
   }
@@ -136,7 +82,7 @@ export function isIdentityOrReferenceViolation(instancePath, message) {
     .filter((segment) => segment !== "" && !/^\d+$/.test(segment));
   const leaf = segments[segments.length - 1];
   if (!leaf) return false;
-  return leaf === "id" || isRefKey(leaf);
+  return leaf === "id" || refKeys.keys.has(leaf);
 }
 
 export function collectIds(node, ids = new Map(), duplicates = new Map(), pathStack = []) {
@@ -146,14 +92,16 @@ export function collectIds(node, ids = new Map(), duplicates = new Map(), pathSt
   }
   if (!node || typeof node !== "object") return { ids, duplicates };
 
-  if (typeof node.id === "string" && ID_RE.test(node.id)) {
+  for (const key of DECLARATION_KEYS) {
+    const declared = node[key];
+    if (typeof declared !== "string" || !ID_RE.test(declared)) continue;
     const loc = pathStack.join(".") || "root";
-    if (ids.has(node.id)) {
-      const current = duplicates.get(node.id) ?? [ids.get(node.id)];
+    if (ids.has(declared)) {
+      const current = duplicates.get(declared) ?? [ids.get(declared)];
       current.push(loc);
-      duplicates.set(node.id, current);
+      duplicates.set(declared, current);
     } else {
-      ids.set(node.id, loc);
+      ids.set(declared, loc);
     }
   }
 
@@ -161,6 +109,31 @@ export function collectIds(node, ids = new Map(), duplicates = new Map(), pathSt
     collectIds(v, ids, duplicates, [...pathStack, k]);
   }
   return { ids, duplicates };
+}
+
+/**
+ * The format-2 names a document declares: `<scope>:<key>` for every entry of its `operations` and
+ * `errors` maps. Merged into the id set so a keyed reference resolves through the same lookup as a
+ * typed id. Nothing is collected when the document declares no scope, because the form has no
+ * meaning without one.
+ */
+export function collectKeyedIds(node, scope, ids = new Map(), pathStack = []) {
+  if (!scope) return ids;
+  if (Array.isArray(node)) {
+    node.forEach((item, idx) => collectKeyedIds(item, scope, ids, [...pathStack, `[${idx}]`]));
+    return ids;
+  }
+  if (!node || typeof node !== "object") return ids;
+  for (const [k, v] of Object.entries(node)) {
+    if (KEYED_MAPS.has(k) && v && typeof v === "object" && !Array.isArray(v)) {
+      for (const entryKey of Object.keys(v)) {
+        const keyed = `${scope}:${entryKey}`;
+        if (!ids.has(keyed)) ids.set(keyed, [...pathStack, k, entryKey].join("."));
+      }
+    }
+    collectKeyedIds(v, scope, ids, [...pathStack, k]);
+  }
+  return ids;
 }
 
 /**
@@ -187,54 +160,50 @@ export function isPartyRedeclaration(locations) {
 }
 
 /**
- * Reference keys whose value is an OBJECT, with the arms inside it that carry an id.
+ * Every reference a document makes, with where it was written.
  *
- * `collectRefs` reads a reference from the value AT a key. `owned_by`'s value is an object holding
- * exactly one of `team`, `department` or `party`, so the key matches and the value is neither a
- * string nor an array; the walk then recurses into the object, where the arm names are not
- * reference keys. The id was reached from neither direction, and every ownership statement in every
- * model went unchecked.
- *
- * A table rather than an annotation in the metamodel, because this walk reads the YAML instance and
- * never loads a schema - it could not see an annotation without the schema-traversal machinery that
- * would make the annotation unnecessary. A table of one, because `oneOf` appears exactly once in
- * the metamodel and this is it: there is no class of nested-reference shapes to generalise over.
- *
- * Scoped to the arms of these keys, NOT to the arm names themselves. `team` as a general reference
- * key would claim every key of that name anywhere, including `resource_owner.team`, which holds a
- * free-string team NAME and is a different field with a different meaning.
+ * Two ways in. A key the schema types as a reference (`refKeys`, parent-qualified) yields its
+ * string value, or each string of its array, when the value is a typed id - or the `scope:key`
+ * form, where the definition allows it. A key the schema does NOT type still yields a value that
+ * is a scope-qualified typed id, since that spelling is a reference wherever it appears; the bare
+ * form is not read there, because a bare `TM001` under an untyped key could be a name. Arrays are
+ * transparent: an item is walked with the key that held the array as its parent.
  */
-const NESTED_REF_ARMS = new Map([["owned_by", ["team", "department", "party"]]]);
-
-export function collectRefs(node, refs = [], pathStack = []) {
+export function collectRefs(node, refs = [], pathStack = [], refKeys, parent = "") {
+  if (!refKeys) throw new Error("collectRefs needs the derived reference keys; see reference-keys.mjs");
   if (Array.isArray(node)) {
-    node.forEach((item, idx) => collectRefs(item, refs, [...pathStack, `[${idx}]`]));
+    node.forEach((item, idx) => collectRefs(item, refs, [...pathStack, `[${idx}]`], refKeys, parent));
     return refs;
   }
   if (!node || typeof node !== "object") return refs;
 
   for (const [k, v] of Object.entries(node)) {
-    const arms = NESTED_REF_ARMS.get(k);
-    if (arms && v && typeof v === "object" && !Array.isArray(v)) {
-      for (const arm of arms) {
-        const value = v[arm];
-        if (typeof value === "string" && ID_RE.test(value)) {
-          refs.push({ key: arm, value, loc: [...pathStack, k, arm].join(".") });
-        }
-      }
-    }
-    if (isRefKey(k)) {
-      if (typeof v === "string" && ID_RE.test(v)) {
+    if (refKeys.isReference(parent, k)) {
+      const keyedOk = refKeys.acceptsKeyedForm(parent, k);
+      const accept = (value) => ID_RE.test(value) || (keyedOk && KEYED_REF_RE.test(value));
+      if (typeof v === "string" && accept(v)) {
         refs.push({ key: k, value: v, loc: [...pathStack, k].join(".") });
       } else if (Array.isArray(v)) {
         v.forEach((item, idx) => {
-          if (typeof item === "string" && ID_RE.test(item)) {
+          if (typeof item === "string" && accept(item)) {
+            refs.push({ key: k, value: item, loc: [...pathStack, `${k}[${idx}]`].join(".") });
+          }
+        });
+      }
+    } else if (!DECLARATION_KEYS.has(k) && !EXAMPLE_KEYS.has(k)) {
+      if (typeof v === "string" && SCOPED_ID_RE.test(v)) {
+        refs.push({ key: k, value: v, loc: [...pathStack, k].join(".") });
+      } else if (Array.isArray(v)) {
+        v.forEach((item, idx) => {
+          if (typeof item === "string" && SCOPED_ID_RE.test(item)) {
             refs.push({ key: k, value: item, loc: [...pathStack, `${k}[${idx}]`].join(".") });
           }
         });
       }
     }
-    collectRefs(v, refs, [...pathStack, k]);
+    if (v && typeof v === "object" && !EXAMPLE_KEYS.has(k)) {
+      collectRefs(v, refs, [...pathStack, k], refKeys, k);
+    }
   }
   return refs;
 }

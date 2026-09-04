@@ -57,6 +57,10 @@ naming the version it wanted and every location it searched.
 
 **Cross-reference integrity:**
 - Every typed ID reference (`CN001`, `CMD001`, etc.) must resolve to an entity defined somewhere in the model
+- Which keys hold a reference is read off the schema tree in use, qualified by parent: `owned_by.team` is a `team_ref`, `resource_owner.team` is a free-form name
+- A scope-qualified id (`orders.CMD001`) is resolved wherever it appears, typed key or not; a bare id under an untyped key is left alone
+- Operation and error references also accept `scope:key` (`orders:placeOrder`), resolved against the scoped document's `operations` / `errors` map entries
+- `x-model-id` declarations satisfy `model_ref` references
 - Reports missing references with location
 
 **Gap warnings** (non-blocking):

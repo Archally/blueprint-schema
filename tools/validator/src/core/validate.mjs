@@ -2,9 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { toPosixPath, walkFiles, loadYaml } from "./utils.mjs";
 import { loadSchemaRegistry, makeAjv, SCHEMA_BASE_URI } from "./schema-registry.mjs";
+import { deriveReferenceKeys } from "./reference-keys.mjs";
 import { FILENAME_TO_SCHEMA, detectSchemaType } from "./schema-types.mjs";
 import {
   collectIds,
+  collectKeyedIds,
   collectParentEdges,
   collectRefs,
   collectSelfEdges,
@@ -298,6 +300,9 @@ function describeError(rawError) {
 export function validateModel(args) {
   const { registry } = loadSchemaRegistry(args.schemas);
   const ajv = makeAjv(registry);
+  // Which keys hold a reference is read off THIS schema tree, so the walk below resolves exactly
+  // the references the declared version types - see reference-keys.mjs for why it is not a list.
+  const refKeys = deriveReferenceKeys(registry);
 
   // Rules are not uniform across schema versions, so behaviour follows the version the model
   // DECLARES rather than the newest one this validator knows. From v2.7, only invocable
@@ -370,7 +375,12 @@ export function validateModel(args) {
     // Each ref carries the scope ITS OWN file declares, so a bare id can be resolved against
     // that scope and only that one. Tagging at the call site keeps `collectRefs` unchanged.
     const declaredScope = typeof data.scope === "string" ? data.scope : null;
-    for (const ref of collectRefs(data, [], [relFile])) {
+    // Format-2 names (`orders:placeOrder`) are declared by the map entries of a scoped document.
+    // The scope is the declared one, else the folder the file sits in - the same fallback the
+    // model loader applies, so a reference resolves here iff the builder resolves it.
+    const folderScope = relFile.includes("/") ? relFile.slice(0, relFile.indexOf("/")) : null;
+    collectKeyedIds(data, declaredScope ?? folderScope, allIds, [relFile]);
+    for (const ref of collectRefs(data, [], [relFile], refKeys)) {
       allRefs.push({ ...ref, scope: declaredScope });
     }
 
@@ -393,7 +403,7 @@ export function validateModel(args) {
         const at = rawError.instancePath ? rawError.instancePath : "/";
         const text = `[${relFile}] ${at} -> ${describeError(rawError)}`;
         schemaErrors.push(text);
-        if (isIdentityOrReferenceViolation(rawError.instancePath, rawError.message)) {
+        if (isIdentityOrReferenceViolation(rawError.instancePath, rawError.message, refKeys)) {
           nonDemotable.add(text);
         }
       }
