@@ -145,6 +145,71 @@ export function extractOrgOwnershipRelations(
 }
 
 /**
+ * The three arms of `interacts_with`, and the entity type each one names.
+ *
+ * The same three units `owned_by` ranges over, spelled with the `_ref` suffix this construct uses,
+ * and resolved against the arm's own type for the same reason: an arm holding the wrong kind of id
+ * is a mistake, and resolving it anyway would draw an edge the model never claimed.
+ */
+const INTERACTION_ARMS: ReadonlyArray<readonly [string, string]> = [
+  ['team_ref', ENTITY_TYPE.Team],
+  ['department_ref', ENTITY_TYPE.Department],
+  ['party_ref', ENTITY_TYPE.Party],
+];
+
+/**
+ * Extract `interacts_with` -> the org unit a team or department declares a dependency on.
+ *
+ * These are the dependencies no derivation reaches. A team owning a context whose `dependencies`
+ * name another team's context is already an edge in this graph, and a scenario step reaching an
+ * actor already reaches the team that staffs it; an approval, a consultation or an enabling
+ * relationship leaves no trace in either, so it is stated rather than derived. `data.nature` says
+ * which class an edge is in, so a consumer can compare only the ones claiming something derivable.
+ *
+ * **The id carries `nature`.** One unit may declare several dependencies on the SAME target - an
+ * architectural one and an approval one are different facts about one pair - and relations are
+ * deduplicated by id downstream, so an id built from the endpoints alone would silently keep one of
+ * them. `nature` is what distinguishes them, so it is what the id is discriminated by.
+ */
+export function extractOrgInteractionRelations(
+  entities: Entity[],
+  placeholders: Map<string, Entity>
+): Relation[] {
+  const relations: Relation[] = [];
+
+  for (const entity of entities) {
+    if (entity.type !== ENTITY_TYPE.Team && entity.type !== ENTITY_TYPE.Department) continue;
+    const declared = (entity.data as Record<string, unknown> | undefined)?.interacts_with;
+    if (!Array.isArray(declared)) continue;
+
+    for (const edge of declared) {
+      if (!edge || typeof edge !== 'object' || Array.isArray(edge)) continue;
+      const record = edge as Record<string, unknown>;
+      // The schema requires `nature`, so a model reaching here without one has already failed
+      // validation. The builder still runs on models that have not, and an id needs a value.
+      const nature = typeof record.nature === 'string' ? record.nature : 'unknown';
+      const mode = typeof record.mode === 'string' ? record.mode : undefined;
+
+      for (const [arm, expectedType] of INTERACTION_ARMS) {
+        const ref = record[arm];
+        if (typeof ref !== 'string' || ref === '') continue;
+
+        const targetId = resolveTypedOrPlaceholder(ref, expectedType, entity, entities, placeholders);
+        relations.push({
+          id: `${entity.id}--${RELATION_TYPE.InteractsWith}--${nature}--${targetId}`,
+          source_entity_id: entity.id,
+          target_entity_id: targetId,
+          type: RELATION_TYPE.InteractsWith,
+          data: mode ? { arm, nature, mode } : { arm, nature },
+        });
+      }
+    }
+  }
+
+  return relations;
+}
+
+/**
  * Extract `actor.staffed_by` -> Team.
  *
  * A scenario step names an actor directly, or names an operation whose `initiated_by` does. Both

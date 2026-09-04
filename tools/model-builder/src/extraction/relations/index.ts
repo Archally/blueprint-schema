@@ -13,6 +13,7 @@ import {
   extractOrgRelations,
   extractOrgOwnershipRelations,
   extractStaffingRelations,
+  extractOrgInteractionRelations,
 } from './org.js';
 import { extractUIRelations } from './ui.js';
 import { extractQuestionRelations } from './questions.js';
@@ -68,6 +69,7 @@ export function buildRelations(
     ...extractOrgRelations(entities),
     ...extractOrgOwnershipRelations(entities, placeholders),
     ...extractStaffingRelations(entities, placeholders),
+    ...extractOrgInteractionRelations(entities, placeholders),
     ...extractUIRelations(entities, placeholders),
     ...extractQuestionRelations(entities, placeholders),
     ...extractExampleValidatesRelations(entities, placeholders),

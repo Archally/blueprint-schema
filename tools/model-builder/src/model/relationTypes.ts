@@ -211,6 +211,11 @@ export const RELATION_TYPE = {
   // a scenario step to the team that performs it: a step names an actor, or names an operation whose
   // `initiated_by` does, and the actor names the team.
   StaffedBy: 'staffed_by',
+  // `team.interacts_with[]` and `department.interacts_with[]` → the Team, Department or Party the
+  // declaring unit depends on. ONE type for all three arms, as `owned_by` does, with `data.nature`
+  // carrying the class of dependency and `data.arm` the arm that produced it. `nature` is what a
+  // consumer filters on: only `architectural` edges make a claim the graph can derive on its own.
+  InteractsWith: 'interacts_with',
   // rg.schema (Step 01 / D26): arch service deployed in deployment tier (topology.tiers[].services[] → Service).
   DeployedInTier: 'deployed_in_tier',
   // infrastructure.schema (v2.7.7 CR-1): TOSCA-derived inter-resource relations
