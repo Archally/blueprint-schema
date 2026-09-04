@@ -119,6 +119,17 @@ $defs:
 
           Accountability is not ownership. Ownership is stated by an `owned_by` on the unit that is
           owned, and a department is accountable for work its teams own rather than owning it itself.
+      interacts_with:
+        type: array
+        description: >
+          Dependencies this department has on other parts of the organization, one entry per
+          dependency.
+
+          A department's dependency is usually an aggregate of its teams', and stating it here says
+          it holds for the department as a whole rather than for one team inside it. Where a single
+          team carries the dependency, declare it on that team instead.
+        items:
+          $ref: "#/$defs/org_interaction"
       parent:
         $ref: "../metamodel.schema.yaml#/$defs/department_ref"
         description: >
@@ -174,6 +185,79 @@ $defs:
       about:
         type: string
         description: "What the relationship covers, when the parties have more than one dealing."
+
+  org_interaction:
+    type: object
+    description: >
+      A dependency the declaring team or department has on another part of the organization. Read it
+      as a sentence: the declarer depends on the unit named by the one reference it carries, and
+      `nature` says what kind of dependency that is.
+
+      Directed and nested on its source, so the unit that has the dependency is the one that states
+      it. The other end states nothing, and a mutual dependency is two entries, one on each side.
+    additionalProperties: false
+    required:
+      - nature
+    properties:
+      team_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/team_ref"
+        description: "The team depended on (TM###)."
+      department_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/department_ref"
+        description: "The department depended on (DPT###)."
+      party_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/party_ref"
+        description: "The party depended on (PRT###), for a dependency on another organization as a whole."
+      nature:
+        type: string
+        enum:
+          - architectural
+          - approval
+          - expertise
+          - enablement
+          - capacity
+          - data
+        description: >
+          What kind of dependency this is. Required, because it is what makes the entry checkable:
+          `architectural` claims something the model can derive on its own and can therefore disagree
+          with, while the other five name dependencies no derivation reaches.
+
+          `architectural` - the declarer's systems depend on systems the other unit owns;
+          `approval` - work cannot proceed until the other unit signs it off;
+          `expertise` - the declarer consults the other unit, which leaves no artifact behind;
+          `enablement` - the other unit is raising the declarer's capability and expects to stop;
+          `capacity` - the declarer draws on the other unit's people;
+          `data` - the declarer depends on data the other unit produces or stewards, rather than on
+          a system that serves it.
+      mode:
+        type: string
+        enum:
+          - collaboration
+          - x-as-a-service
+          - facilitating
+        description: >
+          How the two units work together, which is a different question from what the dependency is
+          about: `collaboration` is working closely toward a shared outcome, `x-as-a-service` is
+          consuming something the other unit provides with little contact, `facilitating` is one unit
+          helping another improve.
+
+          The mode is a property of this pair at this time rather than of either unit, so a team
+          whose `kind` is stream-aligned can still facilitate another team on one topic.
+          Collaboration and facilitating are meant to be temporary, which is what `since` records.
+      since:
+        type: string
+        format: date
+        description: >
+          When the two units started interacting this way (YYYY-MM-DD). Worth stating for a
+          `collaboration` or `facilitating` mode, which are meant to end: without a start date
+          nothing can say how long one has run.
+      about:
+        type: string
+        description: "What the dependency covers, when the two units have more than one dealing."
+    oneOf:
+      - required: [team_ref]
+      - required: [department_ref]
+      - required: [party_ref]
 
   team:
     type: object
@@ -241,6 +325,21 @@ $defs:
           Accountability is not ownership. Ownership is stated by an `owned_by` on the unit that is
           owned, and the two come apart: an enabling team raises other teams' capability and owns no
           part of what they build, so a team that nothing points at may still carry a full list here.
+      interacts_with:
+        type: array
+        description: >
+          Dependencies this team has on other parts of the organization, one entry per dependency.
+
+          Some are already derivable: a team owning a context whose `dependencies` name a context
+          owned by another team depends on that team, and a scenario step reaching an actor reaches
+          the team that staffs the actor. Neither derivation can reach a dependency that leaves no
+          trace in a system or a process - an approval, a consultation, one team raising another's
+          capability, a shared function serving everyone - and those are what this states.
+
+          `nature` says which class the dependency is in, so an entry claiming an architectural
+          dependency can be compared against the derived one and a disagreement reported.
+        items:
+          $ref: "#/$defs/org_interaction"
       contact:
         type: object
         description: "Team contact information."
