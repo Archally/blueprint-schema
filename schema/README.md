@@ -4,8 +4,9 @@ This folder holds the versioned JSON-Schema (YAML, draft 2020-12) bundles. Each 
 
 | Version | Status | Notes |
 | --- | --- | --- |
-| [**v2.7**](./v2.7/) | **Current** | Latest. Files renamed for clarity (`infrastructure`, `interactions`, `organization`); v2.7 schemas also accept v2.6–v2.2 documents for forward-compatibility. |
-| [v2.6](./v2.6/) | Maintained | Previous stable line; kept for back-compatibility. |
+| [**v2.8**](./v2.8/) | **Current** | The enforcement line: typed ids on parties, contexts, services, resources and scopes are required, a typed reference to an id nothing declares is an error, and the free-string `service.resources` list and root `infrastructure:` map are gone. Accepts v2.7-v2.2 documents that already meet those rules. |
+| [v2.7](./v2.7/) | Maintained | Previous stable line. Files renamed for clarity (`infrastructure`, `interactions`, `organization`); kept for back-compatibility. |
+| [v2.6](./v2.6/) | Maintained | Older stable line; kept for back-compatibility. |
 
 Browse into a version for a per-plane index (**Design** / **Governance**) plus the cross-cutting **metamodel** and **migration** schemas.
 
@@ -13,8 +14,8 @@ For a human-readable projection of these schemas — layer map, entity catalog, 
 
 ## Choosing a version
 
-- **New projects →** start with **[v2.7](./v2.7/)**.
-- **Existing v2.6 models →** stay on v2.6, or migrate — the `blueprint-schema-update` tool automates `v2.6 → v2.7` (renames `ui`→`interactions`, `rg`→`infrastructure`, `org`→`organization`).
+- **New projects →** start with **[v2.8](./v2.8/)**.
+- **Existing v2.7 or v2.6 models →** stay where they are, or migrate - the `blueprint-schema-update` tool carries a model to v2.8 in one run (v2.6: the file renames; v2.7: the missing typed ids are minted, free-string resource and scope ids are retyped with every reference to them). What it will not guess, it reports; `schema/v2.8/MIGRATION.md` is the guide.
 
 ## Versioning policy ([SemVer](https://semver.org/))
 

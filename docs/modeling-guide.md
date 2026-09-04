@@ -28,7 +28,7 @@ How to build effective blueprints — from a blank directory to a comprehensive 
 | capability | `capability.yaml` |
 
 ```bash
-npm run build && node tools/model-builder/dist/cli.js .blueprint/v2.7 --output model.json
+npm run build && node tools/model-builder/dist/cli.js .blueprint/v2.8 --output model.json
 node tools/entity-query/cli.mjs model.json --text "discount"
 ```
 
@@ -200,7 +200,7 @@ The test for a description: **could a reader who has never seen this model tell 
 In context, that property lives in a model schema that describes *itself* as well as its fields, and points at the concept it carries:
 
 ```yaml
-# file: .blueprint/v2.7/checkout/concepts.yaml
+# file: .blueprint/v2.8/checkout/concepts.yaml
 version: "1.0.0"
 scope: checkout
 tags: [checkout]
@@ -218,7 +218,7 @@ concepts:
 ```
 
 ```yaml
-# file: .blueprint/v2.7/checkout/cart.models.yaml
+# file: .blueprint/v2.8/checkout/cart.models.yaml
 version: "1.0.0"
 scope: checkout
 tags: [cart, models]
@@ -257,7 +257,7 @@ components:
 The most commonly missed item on the list above is the **failure counterpart**. When you author `OrderPlaced` / `OrderRejected`, the happy path tends to get the prose and the failure event gets a bare id — and the failure path is the one a reader most needs explained. This is precisely what `undescribed-event` looks for.
 
 ```yaml
-# file: .blueprint/v2.7/checkout/domain.yaml
+# file: .blueprint/v2.8/checkout/domain.yaml
 version: "1.0.0"
 name: Checkout
 scope: checkout
@@ -355,7 +355,7 @@ Every cross-file reference has exactly one owner:
 ## File Layout
 
 ```
-.blueprint/v2.7/
+.blueprint/v2.8/
   blueprint.yaml              # Root: name, version, layout
   arch.yaml                   # System architecture, context map
   motivation.yaml             # System-wide goals, risks
@@ -390,7 +390,7 @@ Root and slice files of the same type **complement** each other — root is the 
 
 ### Rules
 
-- One subfolder per business domain, directly under `.blueprint/v2.7/`
+- One subfolder per business domain, directly under `.blueprint/v2.8/`
 - Slice names: kebab-case (e.g. `order-management`)
 - Root-level files: only for shared/system-level content (arch, org, system goals)
 - ID prefixing: `{slice}.{PREFIX}{NNN}` (e.g. `orders.CN001`, `payments.CMD001`)

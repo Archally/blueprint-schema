@@ -1,0 +1,422 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Meta-Schema
+description: "Meta-schema composing all blueprint layers into Design + Governance planes with cross-cutting metamodel. Supersedes v1 layer-based blueprint.schema.json. Minimal blueprint: version + name only."
+type: object
+additionalProperties: false
+required:
+  - version
+  - name
+properties:
+  version:
+    $ref: "metamodel.schema.yaml#/$defs/semver"
+    description: "Blueprint content revision (SemVer)."
+  schemaVersion:
+    $ref: "metamodel.schema.yaml#/$defs/schema_version"
+    description: "Blueprint schema version. Omit to assume latest."
+  name:
+    type: string
+    description: "Name of the system being modeled."
+  description:
+    type: string
+    description: "Brief system summary for human and AI agent orientation."
+
+  # === Repository (v2.4; multi-repo `repositories` added v2.7.1) ===
+  repository:
+    $ref: "#/$defs/repository_config"
+    description: >
+      Source code repository configuration for the primary repo. Used by the viewer to
+      construct clickable links from code_refs to the actual files. For blueprints whose
+      code_refs span multiple repositories use `repositories` (keyed by the code_ref org/repo
+      prefix); `repository` stays the fallback for unprefixed (same-repo) code_refs.
+  repositories:
+    type: object
+    additionalProperties:
+      $ref: "#/$defs/repository_config"
+    description: >
+      Per-repository configuration for cross-repo code_refs written in `org/repo#path` form
+      (see metamodel `code_ref_entry`). The map KEY is the code_ref prefix — the `org/repo`
+      segment before `#` — and each VALUE is a repository config. The viewer resolves a
+      prefixed code_ref by looking up its prefix here; unprefixed refs fall back to `repository`.
+      Example: { "acme/orders-service": { url: "https://gitlab.com/acme/orders-service", provider: gitlab } }.
+
+  # === Trackers (v2.7.5) — issue/document link registry for tracker_ref ===
+  trackers:
+    type: object
+    additionalProperties:
+      $ref: "#/$defs/tracker_config"
+    description: >
+      Registry of external issue/document trackers used to turn a `tracker_ref` (on roadmap
+      work-items, milestones, blockers, …) into a clickable link. The map KEY is the tracker id
+      used as the `<tracker>:<key>` prefix on a ref (e.g. `confluence:12345`, `jira-eu:ABC-1`); a
+      bare key resolves via `default_tracker`, and a ref that is already a full URL is used verbatim.
+      Lets one blueprint link into multiple Jira sites/projects and Confluence spaces while storing
+      only short keys. Example:
+      { "jira": { url: "https://acme.atlassian.net/browse/{key}" },
+        "confluence": { url: "https://acme.atlassian.net/wiki/spaces/DOCS/pages/{key}", label: "Confluence" } }.
+  default_tracker:
+    type: string
+    description: >
+      Tracker id (a key of `trackers`) used to resolve a bare `tracker_ref` key that carries no
+      `<tracker>:` prefix. Omit if refs always carry a prefix or a full URL.
+
+  # === Layout ===
+  layout:
+    description: "Blueprint file layout. Omit for legacy single-folder layout using design/governance paths."
+    oneOf:
+      - type: object
+        additionalProperties: false
+        properties:
+          mode:
+            const: unified
+            description: "Single design/governance block or file set."
+      - type: object
+        additionalProperties: false
+        properties:
+          mode:
+            const: slices
+            description: "DDD domain slices as subfolders; optional shared root files."
+          slices:
+            type: array
+            items:
+              oneOf:
+                - type: string
+                  pattern: "^[a-z][a-z0-9-]*$"
+                - $ref: "#/$defs/slice"
+            description: >
+              Domain/capability slices. Each item is either a kebab-case subfolder name
+              (shorthand, backward-compatible) or a slice object (name + description + type
+              + owner + subdomains). A slice is the problem-space unit of decomposition: a
+              business domain OR a cross-cutting technical capability (which may still warrant
+              a deep model). Distinct from a bounded context (solution space; see
+              design/arch.schema), which a slice may map to 1:1, 1:many, or partially.
+          shared:
+            type: object
+            description: "Optional root-level paths for shared/system entities."
+            additionalProperties: false
+            properties:
+              architecture: { type: string, description: "Path to arch.yaml." }
+              concepts: { type: string, description: "Path to concepts.yaml." }
+              rules: { type: string, description: "Path to rules.yaml." }
+              domain: { type: string, description: "Path to domain.yaml." }
+              models: { type: string, description: "Path to models.yaml." }
+              story: { type: string, description: "Path to story.yaml." }
+              dynamics: { type: string, description: "Path to dynamics.yaml." }
+              quality: { type: string, description: "Path to quality.yaml." }
+              infrastructure: { type: string, description: "Path to infrastructure.yaml." }
+              motivation: { type: string, description: "Path to motivation.yaml." }
+              capability: { type: string, description: "Path to capability.yaml." }
+              decisions: { type: string, description: "Path to decisions.yaml." }
+              tests: { type: string, description: "Path to test-cases.yaml." }
+              interactions: { type: string, description: "Path to interactions.yaml." }
+              organization: { type: string, description: "Path to organization.yaml." }
+              roadmap: { type: string, description: "Path to roadmap.yaml." }
+              value_stream: { type: string, description: "Path to value-stream.yaml." }
+              leverage: { type: string, description: "Path to leverage.yaml." }
+
+  # === Constitution ===
+  constitution:
+    type: object
+    description: "Core design principles and conventions governing this blueprint. Machine-readable codification of architectural standards."
+    additionalProperties: false
+    properties:
+      principles:
+        type: array
+        description: "Named design principles with descriptions."
+        items:
+          type: object
+          required: [name, statement]
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              description: "Principle name (e.g., 'Single Source of Truth')."
+            statement:
+              type: string
+              description: "Principle statement — what it means and why."
+            applies_to:
+              type: string
+              description: "Scope: which schemas or entities this principle governs."
+      naming_conventions:
+        type: object
+        description: "Naming rules for the blueprint."
+        additionalProperties: true
+        properties:
+          file_names:
+            type: string
+            description: "Convention for file names (e.g., 'kebab-case')."
+          property_names:
+            type: string
+            description: "Convention for YAML property names (e.g., 'snake_case')."
+          enum_values:
+            type: string
+            description: "Convention for enum values (e.g., 'kebab-case')."
+      conventions:
+        type: array
+        description: "Soft constraints documented as conventions. Validators WARN on violation but do not reject. Examples: Produces Convention — commands typically produce events/documents; Operation ID-Kind Consistency — operation ID prefix must match kind (CMD=command, EVT=event, QRY=query, DOC=document)."
+        items:
+          type: object
+          required: [name, rule]
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              description: "Convention name."
+            rule:
+              type: string
+              description: "The convention rule."
+            severity:
+              type: string
+              enum: [warn, info]
+              default: warn
+              description: "Validator behavior on violation."
+
+  # === Migrations ===
+  migrations:
+    type: array
+    description: "Ordered list of model migrations. Loader applies pending migrations on top of AS-IS model to produce TO-BE state. Each item is either an inline migration or a file reference."
+    items:
+      oneOf:
+        - $ref: "migration.schema.yaml"
+        - type: object
+          required: [file]
+          additionalProperties: false
+          properties:
+            file:
+              type: string
+              description: "Relative path to a migration YAML file (e.g., '.migrations/001-add-payment-retry.migration.yaml'). Dot-prefix distinguishes from domain-slice folder names."
+
+  # === Design Plane ===
+  design:
+    type: object
+    description: "What the system is and how it works: domain model, behavior, and quality attributes."
+    additionalProperties: false
+    properties:
+      architecture:
+        $ref: "design/arch.schema.yaml"
+        description: "Bounded contexts, services, contracts, dependencies."
+      concepts:
+        $ref: "design/concepts.schema.yaml"
+        description: "Domain vocabulary, actors, enumerations, associations, state/lifecycle."
+      rules:
+        $ref: "design/rules.schema.yaml"
+        description: "Business rules, invariants, transitions."
+      domain:
+        $ref: "design/domain.schema.yaml"
+        description: "Operations with protocols, payloads, responses."
+      models:
+        $ref: "design/models.schema.yaml"
+        description: "Data shapes (OpenAPI/AsyncAPI compatible)."
+      infrastructure:
+        $ref: "design/infrastructure.schema.yaml"
+        description: "Resources, environments, deployment topology."
+      story:
+        $ref: "design/story.schema.yaml"
+        description: "Domain stories as operation sequences."
+      dynamics:
+        $ref: "design/dynamics.schema.yaml"
+        description: "Concurrency, parallelism, ordering, race conditions."
+      quality:
+        $ref: "design/quality.schema.yaml"
+        description: "Metrics, KPIs, SLOs, SLAs, security, compliance, observability."
+      interactions:
+        $ref: "design/interactions.schema.yaml"
+        description: "UI screens, actions, and navigation with cross-links."
+
+  # === Governance Plane ===
+  governance:
+    type: object
+    description: "Why it exists, what changed, proof it works: strategic intent and quality evidence."
+    additionalProperties: false
+    properties:
+      motivation:
+        $ref: "governance/motivation.schema.yaml"
+        description: "Goals, non-goals, risks, assumptions, trade-offs."
+      capability:
+        $ref: "governance/capability.schema.yaml"
+        description: "Business capability map (hierarchical)."
+      decisions:
+        $ref: "governance/decisions.schema.yaml"
+        description: "Architecture Decision Log (ADR)."
+      tests:
+        $ref: "governance/test-cases.schema.yaml"
+        description: "Test cases validating rules, operations, concepts."
+      organization:
+        $ref: "governance/organization.schema.yaml"
+        description: "Organizational hierarchy (Party > Department > Team) for ownership tracking."
+      roadmap:
+        $ref: "governance/roadmap.schema.yaml"
+        description: "Product roadmap milestones with deliverables and success criteria."
+      value_stream:
+        $ref: "governance/value-stream.schema.yaml"
+        description: "End-to-end value delivery flows crossing bounded contexts and capabilities."
+      leverage:
+        $ref: "governance/leverage.schema.yaml"
+        description: "Leverage map — prioritized cross-cutting interventions (LP###) over the finding→risk→decision→migration chain."
+
+  # === Extensibility ===
+  profiles:
+    type: array
+    description: "Named extension sets for domain-specific needs. Extend without forking core schemas."
+    items:
+      $ref: "#/$defs/profile"
+
+$defs:
+  repository_config:
+    type: object
+    description: "Source code repository configuration used to construct clickable links from code_refs to files."
+    additionalProperties: false
+    required:
+      - url
+    properties:
+      url:
+        type: string
+        description: "Repository URL (e.g., https://github.com/acme/ecommerce)."
+      branch:
+        type: string
+        default: main
+        description: "Default branch for constructing file URLs. Defaults to main."
+      provider:
+        description: >
+          Repository hosting provider. Determines URL construction pattern:
+          github: {url}/blob/{branch}/{path},
+          gitlab: {url}/-/blob/{branch}/{path},
+          bitbucket: {url}/src/{branch}/{path}.
+          x-custom prefixed providers fall back to GitHub pattern.
+        oneOf:
+          - type: string
+            enum: [github, gitlab, bitbucket]
+          - type: string
+            pattern: "^x-[a-z][a-z0-9-]*$"
+  tracker_config:
+    type: object
+    description: "An external issue/document tracker: a URL template that turns a tracker_ref key into a clickable link."
+    additionalProperties: false
+    required:
+      - url
+    properties:
+      url:
+        type: string
+        description: >
+          URL template. '{key}' is substituted with the ref key; if the template contains no '{key}',
+          the key is appended. E.g. 'https://acme.atlassian.net/browse/{key}' or
+          'https://acme.atlassian.net/wiki/spaces/DOCS/pages/{key}'.
+      label:
+        type: string
+        description: "Human-readable tracker label (e.g. 'Jira', 'Confluence')."
+  slice:
+    type: object
+    description: >
+      A domain or capability slice — the problem-space unit of decomposition. `name` is the
+      kebab-case subfolder under the blueprint root. A slice is NOT necessarily a strict
+      business domain: a cross-cutting technical capability (e.g. a workflow, messaging, or
+      forms engine) is also a slice, and may itself be a deep model. Distinct from a bounded
+      context (solution space; see design/arch.schema): a slice may map to one context,
+      several, or part of one.
+    additionalProperties: false
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        pattern: "^[a-z][a-z0-9-]*$"
+        description: "Slice folder name (kebab-case); matches the subfolder under the blueprint root."
+      description:
+        type: string
+        description: "What this slice is about — its business or technical responsibility."
+      type:
+        type: string
+        enum: [core-domain, supporting-domain, generic-domain, technical-capability]
+        description: >
+          Slice nature. core/supporting/generic-domain capture DDD subdomain importance
+          (problem space); technical-capability is a cross-cutting technical concern realized
+          as a slice (which may still be a deep model). Distinct from a bounded context's
+          `kind` in design/arch.schema (solution space).
+      complexity:
+        $ref: "metamodel.schema.yaml#/$defs/complexity_pattern"
+        description: >
+          Dominant problem-type of the slice: crud / presentation / transformation /
+          integration / cdc / concurrency / state-management. The implementation-complexity axis —
+          orthogonal to `type` (strategic value). Use per-subdomain entries when the slice is
+          split-natured (e.g. ordering: order-lifecycle=state-management, inventory-reservation=concurrency).
+      model_traits:
+        type: array
+        items:
+          $ref: "metamodel.schema.yaml#/$defs/model_traits_item"
+        description: "Behavioural archetype(s) of the slice (Wirfs-Brock role stereotypes)."
+      owner:
+        $ref: "metamodel.schema.yaml#/$defs/owned_by"
+        description: "Owning team/department/party (references governance/organization)."
+      subdomains:
+        type: array
+        description: >
+          Subdomains/modules within this slice (problem-space partitions; e.g. ordering →
+          cart, checkout, order, payment, fulfillment). Each maps by convention to a
+          file-name prefix within the slice folder (order.*.yaml) and/or a tag.
+        items:
+          oneOf:
+            - type: string
+              pattern: "^[a-z][a-z0-9-]*$"
+            - type: object
+              additionalProperties: false
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  pattern: "^[a-z][a-z0-9-]*$"
+                  description: "Subdomain/module name (kebab-case; matches the file-name prefix, e.g. order)."
+                description:
+                  type: string
+                  description: "What this subdomain/module covers."
+                kind:
+                  type: string
+                  enum: [core, supporting, generic]
+                  description: "Optional DDD importance of this subdomain within the slice."
+                complexity:
+                  $ref: "metamodel.schema.yaml#/$defs/complexity_pattern"
+                  description: "Optional dominant problem-type of this subdomain — lets a split-natured slice mark each facet (e.g. order-lifecycle=state-management, inventory-reservation=concurrency)."
+                model_traits:
+                  type: array
+                  items:
+                    $ref: "metamodel.schema.yaml#/$defs/model_traits_item"
+                  description: "Optional behavioural archetype(s) of this subdomain."
+
+  profile:
+    type: object
+    description: "Domain-specific extension adding schemas or constraints without forking core."
+    additionalProperties: false
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: "Profile name (e.g. 'healthcare', 'fintech', 'e-commerce')."
+      description:
+        type: string
+        description: "What this profile adds or customizes."
+      extends:
+        type: array
+        items:
+          type: string
+        description: "Core schema file names this profile extends."
+      schemas:
+        type: array
+        description: "Additional schema files introduced by this profile."
+        items:
+          type: object
+          additionalProperties: false
+          required:
+            - file
+          properties:
+            file:
+              type: string
+              description: "Schema file path."
+            description:
+              type: string
+              description: "What this schema adds."
+      constraints:
+        type: array
+        items:
+          type: string
+        description: "Additional validation rules this profile enforces (free text)."

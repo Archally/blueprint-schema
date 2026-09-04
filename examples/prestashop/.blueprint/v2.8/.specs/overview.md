@@ -1,6 +1,6 @@
 # PrestaShop-v9
 
-> Generated from blueprint model. 2049 entities, 3138 relations.
+> Generated from blueprint model. 2049 entities, 3164 relations.
 
 ## Context Map
 
@@ -4192,6 +4192,30 @@ graph TD
     PRT001 -.->|"org_contains_team"| TM008
     PRT001 -.->|"org_contains_team"| TM009
     PRT001 -.->|"org_contains_team"| TM010
+    Admin -.->|"owned_by"| TM009
+    Catalog -.->|"owned_by"| TM002
+    Checkout -.->|"owned_by"| TM003
+    Content -.->|"owned_by"| TM007
+    Customers -.->|"owned_by"| TM004
+    International -.->|"owned_by"| TM006
+    Modules -.->|"owned_by"| TM008
+    Orders -.->|"owned_by"| TM001
+    Shipping -.->|"owned_by"| TM005
+    Shop -.->|"owned_by"| TM010
+    prestashop_IR001 -.->|"owned_by"| TM010
+    prestashop_IR002 -.->|"owned_by"| TM010
+    prestashop_IR003 -.->|"owned_by"| TM010
+    prestashop_IR004 -.->|"owned_by"| TM010
+    prestashop_IR005 -.->|"owned_by"| TM010
+    MS001 -.->|"owned_by"| TM001
+    MS002 -.->|"owned_by"| TM002
+    MS003 -.->|"owned_by"| TM001
+    MS004 -.->|"owned_by"| TM006
+    MS005 -.->|"owned_by"| TM009
+    WI001 -.->|"owned_by"| TM001
+    WI010 -.->|"owned_by"| TM002
+    WI011 -.->|"owned_by"| TM006
+    TM003 -.->|"interacts_with"| TM002
     admin_SCR001 -.->|"screen_uses_model"| EmployeeList
     admin_SCR001 -.->|"screen_motivated_by"| admin_G001
     admin_SCR002 -.->|"screen_uses_model"| EmployeeForm
@@ -4722,6 +4746,7 @@ graph TD
     modules_UC002 -.->|"use_case_operation"| modules_QRY001
     modules_UC002 -.->|"use_case_operation"| modules_CMD003
     modules_UC002 -.->|"use_case_operation"| modules_CMD006
+    modules_UC002 -.->|"use_case_operation"| modules_CMD003
     orders_UC001 -.->|"use_case_actor"| orders_ACT001
     orders_UC001 -.->|"use_case_user_story"| orders_US001
     orders_UC001 -.->|"use_case_operation"| orders_CMD001
@@ -4758,6 +4783,7 @@ graph TD
     shipping_UC002 -.->|"use_case_operation"| shipping_CMD012
     shop_UC001 -.->|"use_case_actor"| shop_ACT001
     shop_UC001 -.->|"use_case_user_story"| shop_US001
+    shop_UC001 -.->|"use_case_operation"| shop_CMD001
     shop_UC001 -.->|"use_case_operation"| shop_CMD001
     MS001 -.->|"milestone_deliverable"| CAP001
     MS001 -.->|"milestone_deliverable"| CAP003
@@ -8287,7 +8313,7 @@ graph TD
 
 ## Relations
 
-**3138 relations** discovered.
+**3164 relations** discovered.
 
 | Source | Type | Target |
 |--------|------|--------|
@@ -10197,6 +10223,7 @@ graph TD
 | orders.INQ001 (Inquiry) | inquiry_stakeholder | orders.ACT001 (Actor) |
 | orders.INQ001 (Inquiry) | inquiry_stakeholder | orders.ACT002 (Actor) |
 | orders.INQ002 (Inquiry) | inquiry_stakeholder | orders.ACT001 (Actor) |
+| TM003 (Team) | interacts_with | TM002 (Team) |
 | LP001 (LeveragePoint) | leverage_capability | CAP003 (Capability) |
 | LP002 (LeveragePoint) | leverage_capability | CAP004 (Capability) |
 | LP004 (LeveragePoint) | leverage_capability | CAP006 (Capability) |
@@ -10316,6 +10343,29 @@ graph TD
 | PRT001 (Party) | org_contains_team | TM008 (Team) |
 | PRT001 (Party) | org_contains_team | TM009 (Team) |
 | PRT001 (Party) | org_contains_team | TM010 (Team) |
+| Admin (Context) | owned_by | TM009 (Team) |
+| Catalog (Context) | owned_by | TM002 (Team) |
+| Checkout (Context) | owned_by | TM003 (Team) |
+| Content (Context) | owned_by | TM007 (Team) |
+| Customers (Context) | owned_by | TM004 (Team) |
+| International (Context) | owned_by | TM006 (Team) |
+| Modules (Context) | owned_by | TM008 (Team) |
+| Orders (Context) | owned_by | TM001 (Team) |
+| Shipping (Context) | owned_by | TM005 (Team) |
+| Shop (Context) | owned_by | TM010 (Team) |
+| prestashop.IR001 (InfraResource) | owned_by | TM010 (Team) |
+| prestashop.IR002 (InfraResource) | owned_by | TM010 (Team) |
+| prestashop.IR003 (InfraResource) | owned_by | TM010 (Team) |
+| prestashop.IR004 (InfraResource) | owned_by | TM010 (Team) |
+| prestashop.IR005 (InfraResource) | owned_by | TM010 (Team) |
+| MS001 (Milestone) | owned_by | TM001 (Team) |
+| MS002 (Milestone) | owned_by | TM002 (Team) |
+| MS003 (Milestone) | owned_by | TM001 (Team) |
+| MS004 (Milestone) | owned_by | TM006 (Team) |
+| MS005 (Milestone) | owned_by | TM009 (Team) |
+| WI001 (WorkItem) | owned_by | TM001 (Team) |
+| WI010 (WorkItem) | owned_by | TM002 (Team) |
+| WI011 (WorkItem) | owned_by | TM006 (Team) |
 | catalog.PAR001 (Dynamics) | parallelism_operation | catalog.CMD001 (Operation) |
 | international.PAR001 (Dynamics) | parallelism_operation | international.CMD005 (Operation) |
 | orders.PAR001 (Dynamics) | parallelism_operation | orders.EVT001 (Operation) |
@@ -10850,6 +10900,7 @@ graph TD
 | modules.UC002 (UseCase) | use_case_operation | modules.QRY001 (Operation) |
 | modules.UC002 (UseCase) | use_case_operation | modules.CMD003 (Operation) |
 | modules.UC002 (UseCase) | use_case_operation | modules.CMD006 (Operation) |
+| modules.UC002 (UseCase) | use_case_operation | modules.CMD003 (Operation) |
 | orders.UC001 (UseCase) | use_case_operation | orders.CMD001 (Operation) |
 | orders.UC001 (UseCase) | use_case_operation | orders.EVT001 (Operation) |
 | orders.UC002 (UseCase) | use_case_operation | orders.CMD002 (Operation) |
@@ -10868,6 +10919,7 @@ graph TD
 | shipping.UC002 (UseCase) | use_case_operation | shipping.CMD011 (Operation) |
 | shipping.UC002 (UseCase) | use_case_operation | shipping.CMD013 (Operation) |
 | shipping.UC002 (UseCase) | use_case_operation | shipping.CMD012 (Operation) |
+| shop.UC001 (UseCase) | use_case_operation | shop.CMD001 (Operation) |
 | shop.UC001 (UseCase) | use_case_operation | shop.CMD001 (Operation) |
 | orders.UC004 (UseCase) | use_case_story | orders.STR005 (Story) |
 | admin.UC001 (UseCase) | use_case_user_story | admin.US001 (UserStory) |
@@ -11442,7 +11494,7 @@ graph TD
 | user_story_operation | 127 |
 | governed_by | 107 |
 | concepts | 91 |
-| use_case_operation | 68 |
+| use_case_operation | 70 |
 | story_orders_operation | 64 |
 | user_story_actor | 58 |
 | action_triggers_operation | 53 |
@@ -11454,6 +11506,7 @@ graph TD
 | association | 26 |
 | use_case_actor | 25 |
 | risk_goal | 24 |
+| owned_by | 23 |
 | screen_motivated_by | 22 |
 | value_stream_capability | 21 |
 | inquiry_goal | 18 |
@@ -11507,6 +11560,7 @@ graph TD
 | nested_in | 2 |
 | transition_rules | 1 |
 | contract_receives | 1 |
+| interacts_with | 1 |
 | use_case_story | 1 |
 
 ## Coverage Gaps

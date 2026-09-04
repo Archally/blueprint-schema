@@ -1,0 +1,262 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://archally.dev/schemas/blueprint/render.manifest.schema.yaml"
+title: Blueprint Render Manifest
+description: >
+  Declares one project's full artifact set for the `bp render` command: which renderer targets to
+  produce, where their output lands, and the single build stamp shared by the whole run.
+
+  Lives in the project's `.artifacts/` folder, alongside the `renderers/` view-configs it points at
+  and the `.generated/` output — beside the model directory, never inside it, since a manifest is
+  configuration and not model data. A manifest at the project root is also read; `bp render` prefers
+  `.artifacts/` and reports which file it used.
+
+  Every relative path here — `model`, `out`, and each target's `view` and `manifest` — resolves
+  against THIS file's own location, so a manifest can be moved without its contents changing
+  meaning.
+
+  Wire editor validation by putting this line at the TOP of a render.manifest.yaml:
+    # yaml-language-server: $schema=<path-to>/render.manifest.schema.yaml
+
+  A target's `kind` says how it may be narrowed to a slice:
+    - glob      — the target's own file selection may be narrowed to one slice's files.
+    - selector  — the target tool owns its own slice vocabulary; this manifest only names its
+                  own config file for the tool to read.
+    - instance  — a human-authored unit (one roadmap, one story, ...); narrowing by slice does
+                  not apply, since there is no larger set to narrow.
+    - contexts  — the target may be narrowed to a list of bounded contexts.
+  Only glob, selector and contexts targets accept `slices`; an instance target does not.
+type: object
+additionalProperties: false
+required: [model, stamp, targets]
+properties:
+  model:
+    type: string
+    description: "Path to the project's model directory, relative to this file."
+  out:
+    type: string
+    default: _artifacts
+    description: >
+      Artifact root directory, relative to this file and living beside the model directory, not
+      inside it. `.generated` is the conventional value for a manifest in `.artifacts/`, whose name
+      states that nothing inside was written by hand. Defaults to `_artifacts` when omitted, which
+      suits a manifest at the project root; declare it explicitly anywhere else.
+  stamp:
+    type: string
+    description: >
+      The single build stamp ("as of" date or instant) shared by every target in the run, so a
+      partial re-render overwrites the same files a full run would rather than adding new
+      timestamped copies beside them. Its date leads every artifact filename, which is what makes a
+      re-rendered delivery replace itself rather than accumulate beside its predecessor. Required —
+      there is no clock fallback.
+  stamp_in_filename:
+    type: boolean
+    default: true
+    description: >
+      Whether the delivery date leads each artifact's filename. True, the default, names an artifact
+      `<stamp date>-<scope>-<target>.<view>.<ext>`, so a basename says which delivery it belongs to
+      once it is separated from its folder. False names it `<scope>-<target>.<view>.<ext>`; the
+      delivery date is still declared in `stamp`, still pinned for the whole run, and still reported
+      in every artifact's provenance footer and `x-generated-for`.
+      Set it false when the artifact tree is committed to a repository, where the history already
+      records when each version landed and a dated name makes a re-stamped delivery read as a wholly
+      new set of files. Replacement works by comparing the date in a filename against the run's
+      stamp, so under false there is no such date: re-rendering overwrites the same names, and
+      `--clean` is what removes an artifact the manifest no longer produces.
+  archive:
+    type: boolean
+    default: false
+    description: >
+      Keep every delivery instead of replacing the last one. Each run then writes beneath a folder
+      named for its own stamp, so two deliveries never share a directory. Omitted or false, the
+      artifact root holds exactly one delivery: a run replaces the artifacts of any earlier stamp
+      it finds in the scope it rendered, and reports what it removed.
+  build_id:
+    type: string
+    description: >
+      Provenance token recorded INSIDE each artifact — its drawn footer and its machine-readable
+      provenance block — identifying the code that produced it. The literal value `auto` resolves
+      to the current git SHA at render time; any other string is used as-is.
+  link_template:
+    type: string
+    description: >
+      Optional source-link URL template with `{file}`/`{line}` placeholders, passed through to
+      every target whose renderer supports one.
+  contact:
+    type: object
+    additionalProperties: false
+    properties:
+      name: { type: string }
+      url: { type: string }
+      email: { type: string }
+    description: >
+      Contact details stamped into generated contract specs (`info.contact`). Set this so a
+      deliverable carries the owning organisation's identity rather than the generator's default.
+  license:
+    oneOf:
+      - type: boolean
+      - type: object
+        additionalProperties: false
+        properties:
+          name: { type: string }
+          url: { type: string }
+        required: [name]
+    description: >
+      What `info.license` says in generated contract specs. A mapping with `name` (and optionally
+      `url`) states the licence the delivery is under - set it so a deliverable carries the owning
+      organisation's licence rather than the generator's default, the same reason `contact` exists.
+      `false` omits `info.license` entirely. Omit the key to keep the generator's configured licence.
+  defaults:
+    type: object
+    additionalProperties: false
+    properties:
+      formats:
+        type: array
+        items: { type: string }
+        description: "Output formats applied to every target unless a target overrides them."
+      view:
+        type: object
+        minProperties: 1
+        additionalProperties:
+          type: object
+          minProperties: 1
+        description: >
+          View-config keys shared by every target of one tool, keyed by tool name. These are VIEW
+          keys such as `scope` or `arch_base`, not command-line flags, so they are composed into the
+          target's view rather than passed on a command line. A target's own `view:` file overrides
+          them, and `view_overrides` on the target overrides both.
+    description: "Values applied to every target unless the target overrides them."
+  targets:
+    type: array
+    minItems: 1
+    items: { $ref: "#/$defs/target" }
+    description: "The project's full artifact set, one entry per renderer invocation."
+  groups:
+    type: object
+    additionalProperties:
+      type: array
+      items: { type: string }
+    description: >
+      Optional named sets of target ids, selectable together — e.g. the subset of targets that
+      make up a single deliverable pack.
+$defs:
+  target:
+    type: object
+    additionalProperties: false
+    required: [id, tool, kind]
+    properties:
+      id:
+        type: string
+        pattern: "^[A-Za-z0-9._-]+(:[A-Za-z0-9._-]+)?$"
+        description: >
+          Unique target id, filename-safe. A `tool:instance` form (e.g. `gantt:checkout`) maps
+          to a nested output subfolder (`gantt/checkout/`).
+      tool:
+        type: string
+        description: "Which renderer produces this target."
+      kind:
+        type: string
+        enum: [glob, selector, instance, contexts, per-file]
+        description: >
+          How this target may be narrowed to a slice - see the top-level description for what
+          each value means. `per-file` is the one kind that EXPANDS: the target declares a glob
+          in `files`, and every match becomes its own instance, so a model file that joins the
+          project joins the delivery rather than waiting for a hand-written wrapper.
+      view:
+        type: string
+        description: >
+          Path to the tool's own view-config file, relative to this manifest, for tools that take
+          one. A `#section` suffix selects one named entry from a file's `views:` map
+          (`gantt.view.yaml#checkout`), so one file can hold every view a renderer needs: the file's
+          top-level keys are shared by all of them, and each section carries only what is its own.
+      manifest:
+        type: string
+        description: >
+          Path to the tool's own batch/cluster manifest, relative to this manifest, for tools
+          that own their own slice vocabulary.
+      slice:
+        type: string
+        description: >
+          The slice this target's artifacts belong to. Placement only — it files the output under
+          that slice instead of the cross-cutting folder, and never narrows what is rendered. Use it
+          for a human-authored unit whose subject is one slice, such as a roadmap authored inside
+          that slice's folder. Distinct from `slices`, which lists the slices a narrowable target may
+          be asked to render.
+      kinds:
+        type: array
+        items: { type: string }
+        description: >
+          Sub-kinds to generate, for a target whose tool emits more than one artifact kind per
+          invocation (for example: openapi, asyncapi, pact). Distinct from this target's own
+          `kind` field above, which selects slicing behaviour, not output kind.
+
+          Not every sub-kind narrows the same way. `c4` and `mermaid` are views over the whole
+          model, so a narrowed run excludes them and reports it; keep them in their own target so
+          that exclusion is clean rather than partial.
+      version:
+        type: string
+        description: >
+          A MIGRATION selector — which point in the model's history to generate from
+          (`AS-IS`, `TO-BE`, or a migration id). It is NOT a slice selector and NOT a schema
+          version, despite the name. To narrow a run to part of the model, use the slice axis:
+          that is what a `contexts` target's bounded contexts do. The two are orthogonal and
+          compose — "the Orders area, as of MIG003" sets both.
+      stories:
+        type: array
+        items: { type: string }
+        description: >
+          Story ids for a target whose tool renders one story per invocation. The target fans out
+          to one run per id, each with its own output folder. Only meaningful on an `instance`
+          target — each story is a human-authored unit, not a slice.
+      formats:
+        type: array
+        items: { type: string }
+        description: "Output formats for this target, overriding the manifest's `defaults.formats`."
+      slices:
+        type: array
+        items: { type: string }
+        description: >
+          Narrow this target to the named slices. Only meaningful on `glob`, `selector`, and
+          `contexts` targets — a schema error on an `instance` target.
+      files:
+        type: string
+        description: >
+          `kind: per-file` only. Model-relative glob whose every match becomes one instance of this
+          target, id `<id>:<file basename>`. Required for `per-file` and refused for every other
+          kind - a glob on a target that cannot expand would silently render nothing.
+      title_from:
+        type: string
+        description: >
+          `kind: per-file` only. Which top-level key of each matched file supplies that instance's
+          title, so the name is read from the model rather than restated in a view config.
+      view_overrides:
+        type: object
+        minProperties: 1
+        description: >
+          View-config keys that override this target's own `view:` file. The strongest of the three
+          composition layers (`defaults.view.<tool>` < the `view:` file < these), for a value that
+          is genuinely this instance's rather than the tool's or the project's.
+      options:
+        type: object
+        minProperties: 1
+        description: >
+          Tool-specific rendering options, for a tool that has nowhere else to put them.
+
+          Not a general pass-through. Most renderers already take a `view:` config validated by
+          their own `*.view.schema.yaml`, and that file is where their rendering choices belong -
+          two targets of one tool are configured differently by pointing at two views. A bag here
+          for a tool that has a view would give one fact two homes.
+
+          So the vocabulary is the tool adapter's to state. An option the tool does not accept is
+          refused before anything is rendered, naming what it does accept - or naming the view key
+          to set instead, when the tool has a view. `bp render --dry-run` shows the resolved
+          command line, so what an option did is inspectable without rendering.
+
+          A key that restates a target field (`formats`, `slice`, `version`, ...) is refused: set
+          it at the top level of the target.
+    if:
+      required: [kind]
+      properties:
+        kind: { const: instance }
+    then:
+      not:
+        required: [slices]

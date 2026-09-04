@@ -1,0 +1,138 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Value Streams
+description: >
+  Governance Plane: Value Stream Map — end-to-end flows of value delivery
+  that cross-cut bounded contexts and capabilities. Value streams show HOW
+  the business delivers outcomes, while capabilities show WHAT it can do.
+type: object
+additionalProperties: false
+required:
+  - version
+  - value_streams
+properties:
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version of this value stream document."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: "Bounded context or business domain this value stream map covers."
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default. Entities inherit unless overridden."
+  value_streams:
+    type: array
+    description: "Value streams representing end-to-end flows of value delivery."
+    items:
+      $ref: "#/$defs/value_stream"
+
+$defs:
+
+  value_stream:
+    type: object
+    description: >
+      An end-to-end flow of value delivery that crosses bounded contexts
+      and capabilities. Stages represent ordered phases of value creation,
+      each served by one or more capabilities.
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - stages
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/value_stream_ref"
+        description: "Unique value stream identifier (VS001, VS002, etc.)."
+      name:
+        type: string
+        description: "Value stream name in business language."
+      description:
+        type: string
+        description: "What value this stream delivers and to whom."
+      trigger:
+        type: string
+        description: "What initiates this value stream (e.g., 'Customer searches for a product')."
+      outcome:
+        type: string
+        description: "The end value delivered (e.g., 'Customer receives purchased goods')."
+      primary_actors:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        description: "Actors who initiate or benefit from this value stream."
+      stages:
+        type: array
+        description: "Ordered phases of value creation within this stream."
+        items:
+          $ref: "#/$defs/value_stream_stage"
+      metrics:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/kpi_ref"
+        description: "End-to-end KPIs measuring this value stream's effectiveness."
+      goal_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
+        description: "Strategic goals this value stream serves."
+      discovery_stage:
+        $ref: "../metamodel.schema.yaml#/$defs/discovery_stage"
+        description: "Epistemic maturity of this value stream."
+      certainty:
+        $ref: "../metamodel.schema.yaml#/$defs/certainty"
+        description: "Confidence level of this value stream definition."
+      evidence:
+        $ref: "../metamodel.schema.yaml#/$defs/evidence"
+        description: "Evidence justifying this value stream's structure."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Value stream ownership override."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  value_stream_stage:
+    type: object
+    description: "An ordered phase of value creation within a value stream."
+    additionalProperties: false
+    required:
+      - name
+      - capabilities
+    properties:
+      name:
+        type: string
+        description: "Stage name (e.g., 'Discover', 'Select', 'Purchase', 'Fulfill')."
+      description:
+        type: string
+        description: "What happens in this stage."
+      capabilities:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/capability_ref"
+        description: "Capabilities that serve this stage."
+      key_operations:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Highlight critical operations in this stage (optional convenience)."
+      actors:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        description: "Actors active in this stage."
+      pain_points:
+        type: array
+        items:
+          type: string
+        description: "Known friction points in this stage."
+      lead_time:
+        type: string
+        description: "Typical duration of this stage (e.g., '< 2 seconds', '1-3 business days')."

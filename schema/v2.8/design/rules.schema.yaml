@@ -1,0 +1,238 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Rules
+description: "Design Plane — Layer 2: Business rules. Structural invariants, classification, derivation, equivalence, validation, and state-transition rules with SBVR modality."
+type: object
+additionalProperties: false
+required:
+  - version
+properties:
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version of this document. Bump major for removed/renamed rules, minor for new rules, patch for logic clarifications."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: "Bounded context this file belongs to. When set, all rule IDs are addressable as scope.ID from outside."
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default. Entities inherit unless overridden."
+  structural:
+    type: array
+    description: "Invariant rules that must always hold true. Express fundamental domain constraints that cannot be violated."
+    items:
+      $ref: "#/$defs/rule"
+  classification:
+    type: array
+    description: "If-then categorization rules that classify domain entities into categories based on conditions."
+    items:
+      $ref: "#/$defs/rule"
+  derivation:
+    type: array
+    description: "Rules defining how values are computed or derived from other concept properties."
+    items:
+      $ref: "#/$defs/rule"
+  equivalence:
+    type: array
+    description: "Rules defining when two concepts or values are considered equivalent for domain purposes."
+    items:
+      $ref: "#/$defs/rule"
+  validation:
+    type: array
+    description: "Input validation rules applied at system boundaries, checking external data before it enters the domain."
+    items:
+      $ref: "#/$defs/rule"
+  transition:
+    type: array
+    description: "State transition rules defining when and how concepts may move between lifecycle states. Referenced by concept transition_rules[]."
+    items:
+      $ref: "#/$defs/transition_rule"
+
+$defs:
+
+  rule:
+    type: object
+    description: "Business rule. Minimum: id, name."
+    additionalProperties: false
+    required:
+      - id
+      - name
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/rule_ref"
+        description: "Unique rule ID. Prefix indicates category: SR=structural, CR=classification, DR=derivation, EQ=equivalence, VR=validation."
+      name:
+        type: string
+        description: "Human-readable name in imperative form. Describes what the rule enforces, not how."
+      description:
+        type: string
+        description: "Human-readable description of what the rule does and why."
+      summary:
+        type: string
+        maxLength: 200
+        description: "One-line summary (≤200 chars) for listings and quick reference. Must be self-contained."
+      logic:
+        $ref: "../metamodel.schema.yaml#/$defs/logic_tuple"
+        description: "Business logic as when/then/else. 'when' = condition (omit for invariants). 'then' = required outcome. 'else' = alternative."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Rule version for individual lifecycle tracking."
+      modality:
+        $ref: "../metamodel.schema.yaml#/$defs/sbvr_modality"
+        description: "Deontic strength: necessary=domain truth, obligatory=system enforced, prohibited=must never happen, permitted=explicitly allowed."
+      concepts:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+        description: "Concepts this rule constrains or references. Enables traceability from rules to domain vocabulary."
+      fact:
+        type: string
+        description: "Structured predicate anchoring the rule to concept properties. Optional; supplements human-readable logic. Example: 'Inventory.entries.count > 0'."
+      rationale:
+        type: string
+        description: "Why this rule exists and what business need it serves."
+      scope:
+        type: string
+        description: "Applicability scope within the domain (e.g. input-validation, post-processing). Narrows when/where rule applies."
+      certainty:
+        type: string
+        enum:
+          - definitive
+          - heuristic
+        description: "Whether rule is absolute (definitive) or probabilistic (heuristic). Heuristic rules may produce false positives."
+      examples:
+        type: array
+        description: "Input/output pairs demonstrating the rule in action."
+        items:
+          type: object
+          additionalProperties: false
+          properties:
+            input:
+              type: string
+              description: "Input that triggers this rule."
+            output:
+              type: string
+              description: "Expected outcome when rule applies."
+            note:
+              type: string
+              description: "Optional clarification for this example."
+      on_violation:
+        $ref: "#/$defs/violation_response"
+        description: "Response when this rule is violated."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Rule-level ownership override."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "Epistemic provenance for this rule (brownfield modeling confidence). Distinct from rule.certainty (definitive|heuristic)."
+
+  transition_rule:
+    type: object
+    description: "State transition rule. Defines when and how a concept moves between lifecycle states."
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - concept
+      - from
+      - to
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/transition_ref"
+        description: "Unique transition rule ID (e.g. TR001 or billing.TR001)."
+      name:
+        type: string
+        description: "Human-readable name for this transition."
+      summary:
+        type: string
+        maxLength: 200
+        description: "One-line summary of the state transition (≤200 chars)."
+      concept:
+        $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+        description: "The concept whose lifecycle state machine this transition belongs to. Must define states[]."
+      from:
+        type: string
+        description: "Source state name. Must match a state defined in the referenced concept's states[]."
+      to:
+        type: string
+        description: "Target state name. Must match a state defined in the referenced concept's states[]."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Transition rule version for lifecycle tracking."
+      guard:
+        type: object
+        description: "Precondition that must be true for this transition to occur."
+        additionalProperties: false
+        required:
+          - when
+        properties:
+          when:
+            type: string
+            description: "Condition expression that must evaluate to true."
+      fact:
+        type: string
+        description: "Structured predicate for the guard condition. Example: 'Order.items.all(validated) AND Order.payment.authorized'."
+      modality:
+        $ref: "../metamodel.schema.yaml#/$defs/sbvr_modality"
+        description: "Deontic strength for this transition."
+      rationale:
+        type: string
+        description: "Why this transition exists in the domain lifecycle."
+      description:
+        type: string
+        description: "Human-readable description of this transition."
+      on_violation:
+        $ref: "#/$defs/violation_response"
+        description: "Response when an invalid transition is attempted."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Transition rule-level ownership override."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "Epistemic provenance for this transition rule (brownfield modeling confidence)."
+
+  violation_response:
+    type: object
+    description: "Response when a rule is violated. Grouped by severity: hard-stop, soft-continue, deferred, recovery."
+    additionalProperties: false
+    required:
+      - action
+    properties:
+      action:
+        type: string
+        enum:
+          - exit
+          - throw
+          - reject
+          - show-usage-and-exit
+          - warn
+          - warn-and-skip
+          - log
+          - degrade
+          - queue-for-review
+          - escalate
+          - quarantine
+          - compensate
+        description: "Violation action. Hard-stop: exit, throw, reject, show-usage-and-exit. Soft: warn, warn-and-skip, log, degrade. Deferred: queue-for-review, escalate, quarantine. Recovery: compensate."
+      code:
+        type: integer
+        description: "Exit/error code for exit, throw, or reject actions."
+      message:
+        type: string
+        description: "Human-readable description of the violation."

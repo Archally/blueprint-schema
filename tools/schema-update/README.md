@@ -15,7 +15,7 @@ blueprint-schema-update .blueprint/v2.6
 blueprint-schema-update --list
 
 # Verify after update
-blueprint-schema-validate .blueprint/v2.7
+blueprint-schema-validate .blueprint/v2.8
 ```
 
 ## Available Updates
@@ -24,8 +24,10 @@ blueprint-schema-validate .blueprint/v2.7
 |--------|---------|
 | v2.6 → v2.7 | Rename `rg.yaml` → `infrastructure.yaml`, `ui.yaml` → `interactions.yaml`, `org.yaml` → `organization.yaml` |
 | v2.7 → v2.7 (2.7.4) | Quality two-level: remap `finding.quality_characteristic` values `modularity`/`analysability`/`reusability`/`testability` (no longer valid top-level ISO 25010:2011 values) → `quality_characteristic: maintainability` + `quality_subcharacteristic: <value>` |
+| v2.7 → v2.7 (2.7.x) | Arch party ids: give every `parties[]` entry in an arch document a `PRT###`, adopting the org party's id when the names match exactly. A party is dual-sourced and re-declared per slice, so the shared id is what makes those declarations one party |
+| v2.7 → v2.8 | v2.8 typed ids: mint `BC###`/`SVC###` for contexts and services that carry none, retype free-string `IR###`/`DSC###` ids **and every reference to them**, bump `schemaVersion` to `2.8.0`, move the model to `v2.8/`. Reports a party still missing a `PRT###` rather than minting one, and reports every `service.resources` list and root `infrastructure:` map of an arch document - v2.8 no longer accepts either, and neither has a rewrite |
 
-> A v2.6 model reaching 2.7.4 needs **both** updates, and they run in a **single invocation**: the
+> A v2.6 model reaching 2.8.0 needs **all four** updates, and they run in a **single invocation**: the
 > applicable updates are resolved up front and applied in order. When an update renames the version
 > directory (`v2.6 → v2.7` does), the run follows the model to its new location. Every update is
 > idempotent, so re-running is safe.

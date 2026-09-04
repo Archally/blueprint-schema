@@ -4,9 +4,9 @@ Allocate the next free typed id for a blueprint model — deterministically, so 
 never guesses and never greps.
 
 ```bash
-node tools/next-id/cli.mjs CMD --model .blueprint/v2.7
-node tools/next-id/cli.mjs CMD --model .blueprint/v2.7 --scope catalog
-node tools/next-id/cli.mjs SVC --model .blueprint/v2.7 --band 500-599 --count 3 --json
+node tools/next-id/cli.mjs CMD --model .blueprint/v2.8
+node tools/next-id/cli.mjs CMD --model .blueprint/v2.8 --scope catalog
+node tools/next-id/cli.mjs SVC --model .blueprint/v2.8 --band 500-599 --count 3 --json
 ```
 
 | Flag | Meaning |

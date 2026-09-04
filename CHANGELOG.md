@@ -2,6 +2,26 @@
 # All schema version releases in reverse chronological order.
 ---
 entries:
+  - version: "2.8.0"
+    date: "2026-09-04"
+    summary: >
+      The enforcement line. What the 2.7 line encouraged and warned about, 2.8 requires: every
+      party, context and service carries its typed id (`PRT###`, `BC###`, `SVC###`), every
+      infrastructure resource and deployment scope its typed id (`IR###`, `DSC###`), every dependency
+      states its DDD `relationship`, a decision carries a `summary` and a model schema a
+      `description`, capability and KPI owners are actor references, and a milestone deliverable's
+      `ref` is a typed union. A typed reference to an id nothing declares is a cross-reference error
+      on every validator surface. Two free-string surfaces of the arch document are removed -
+      `service.resources` and the root `infrastructure:` map - and the root `domains:` map is marked
+      for removal in v2.9. A story activity may leave `entry_operation` out; two advisory rules,
+      `activity-without-entry-operation` and `empty-context`, report the gap.
+
+      A model that reached 2.7 with the typed conventions in place validates under 2.8 unchanged.
+      One that did not gets across with `blueprint-schema-update`: it mints the missing context and
+      service ids, retypes free-string resource and scope ids together with every reference to them,
+      bumps `schemaVersion` and moves the model to `v2.8/`, and reports rather than guesses a removed
+      surface or a party without `PRT###`. `schema/v2.8/MIGRATION.md` is the guide. The prestashop
+      example ships at v2.8; the v2.7 and v2.6 trees stay published for models on those lines.
   - version: "2.7.15"
     date: "2026-09-01"
     summary: >

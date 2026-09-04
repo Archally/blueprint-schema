@@ -32,7 +32,7 @@ node tools/build-stamp/src/cli.mjs --model <dir> --check    # compute + compare,
 
 | Flag | Meaning |
 |---|---|
-| `-m, --model <dir>` | Blueprint model directory to stamp (default `.blueprint/v2.7`). Writes `<dir>/build.json`. |
+| `-m, --model <dir>` | Blueprint model directory to stamp (default `.blueprint/v2.8`). Writes `<dir>/build.json`. |
 | `-c, --check` | Compute the buildId and compare to the committed `build.json` without writing; **exit 1** if stale. Suited to CI / a pre-commit hook. |
 | `-h, --help` | Show help. |
 
@@ -52,6 +52,6 @@ Zero runtime dependencies (Node builtins only).
 
 ```bash
 # stamp an online-store blueprint before committing
-node tools/build-stamp/src/cli.mjs --model examples/online-store/.blueprint/v2.7
-#   buildId 2026-01-15-a1b2c3d  (128 model files)  ->  examples/online-store/.blueprint/v2.7/build.json
+node tools/build-stamp/src/cli.mjs --model examples/online-store/.blueprint/v2.8
+#   buildId 2026-01-15-a1b2c3d  (128 model files)  ->  examples/online-store/.blueprint/v2.8/build.json
 ```

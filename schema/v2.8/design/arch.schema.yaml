@@ -1,0 +1,755 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Architecture
+description: "Design Plane — L0: Bounded context topology. Parties, contexts, services with contracts (interfaces), enriched dependencies for context-map inference, and unified component kinds."
+type: object
+additionalProperties: false
+required:
+  - name
+  - parties
+properties:
+  name:
+    type: string
+    description: "Name of this architecture definition (e.g. system name or product name)."
+  description:
+    type: string
+    description: "Human-readable description of this architecture."
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version of this architecture document."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: >
+      Bounded context this architecture file belongs to. Used only for
+      context-scoped arch fragments (future). Root-level arch files describe
+      systems and MUST NOT declare scope — the file name identifies the system
+      (e.g., eshop.arch.yaml). Validators SHOULD warn when scope is present
+      alongside system-level parties.
+  stage:
+    type: string
+    description: "Architecture maturity stage (e.g. draft, review, approved, production)."
+  domains:
+    type: object
+    additionalProperties:
+      type: string
+    description: >
+      SOFT-DEPRECATED (v2.8.0). Free-string map naming the domains this architecture belongs to
+      (name to identifier or description). No tool reads it; a domain is not an entity in this
+      version, so the map resolves to nothing. Accepted so that existing documents keep
+      loading. Removal targeted for v2.9, once domains are declared as entities of their own.
+  stories:
+    type: array
+    items:
+      type: string
+    description: "Story file references providing narrative context for this architecture."
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default. Entities inherit unless overridden."
+  parties:
+    type: array
+    items:
+      $ref: "#/$defs/party"
+    description: "Organizational or system parties hosting bounded contexts."
+
+$defs:
+
+  party:
+    type: object
+    description: "An organizational or system party owning one or more bounded contexts."
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - contexts
+      - env
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/party_ref"
+        description: >
+          Stable party id (PRT###) - makes the party a first-class, referenceable
+          graph node. MUST reconcile with the org-layer PRT### when the party is also
+          modelled there (parties are dual-sourced: arch + org).
+      name:
+        type: string
+        description: "Party name (unique within this architecture document)."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Party version for lifecycle tracking."
+      kind:
+        type: string
+        enum: [system, organization]
+        description: "Party type: system=technical system, organization=business unit or company."
+      env:
+        type: string
+        description: "Deployment environment (e.g. production, staging, development)."
+      contexts:
+        type: array
+        items:
+          $ref: "#/$defs/context"
+        description: "Bounded contexts owned by this party."
+      description:
+        type: string
+        description: "Human-readable description."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Party-level ownership override."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  context:
+    type: object
+    description: "A bounded context with its domain model, services, and dependencies."
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - kind
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/bounded_context_ref"
+        description: >
+          Stable bounded-context id (BC###) - the target of inter-context
+          `dependency.bounded_context_ref` edges, the DERIVED operation to context
+          membership (`handled-by`, from a service contract's `expose`/`send`), and a
+          competency question's or business-decision `bounded_context_ref`. Operations do
+          NOT carry an ownership ref - their membership is contract-derived, not
+          declared on the domain file.
+      name:
+        type: string
+        description: "Context name (unique within this party)."
+      kind:
+        type: string
+        enum: [core, generic-core, support, generic]
+        description: "DDD context classification: core=competitive advantage, support=enables core, generic=commodity. Maps to BCC v5 Strategic Classification — Domain Importance."
+      domain_ref:
+        type: string
+        description: >
+          The domain this bounded context belongs to, naming a slice the model
+          declares in `blueprint.yaml`'s `layout.slices`. Optional. Used to draw
+          the domain map — an overview that groups contexts into domains and
+          aggregates the dependencies between them, which is the readable view
+          of a model with more contexts than one diagram can show.
+
+          Declaring it OVERRIDES the fallback, which is the folder the context's
+          file sits in. State it when a context belongs to a domain other than the
+          one its location implies, or when the file sits at the model root and so
+          implies none — a context that resolves to no domain is left out of the
+          domain map and counted in its caption. A value naming a slice the model
+          does not declare is an error, not a new domain.
+      complexity:
+        $ref: "../metamodel.schema.yaml#/$defs/complexity_pattern"
+        description: "Dominant implementation-complexity / problem-type pattern. Distinct from `model_traits` (behavioural archetype) and `kind` (strategic value)."
+      business_model_role:
+        type: string
+        enum: [revenue-generator, engagement-creator, compliance-enforcer]
+        description: >
+          BCC v5 Strategic Classification — Business Model Role.
+          Captures HOW the context contributes to the business. Distinct from
+          `kind` (which captures WHETHER the context is differentiating).
+      evolution:
+        type: string
+        enum: [genesis, custom, product, commodity]
+        description: >
+          BCC v5 Strategic Classification — Wardley Evolution stage.
+          Used in the dedicated Wardley map view (step-10a) and as a third
+          badge in the BCC node's strategic header.
+      model_traits:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/model_traits_item"
+        description: >
+          BCC v5 Model Traits — behavioural archetypes for this context. All
+          values are role nouns ("a context that does X") for authoring
+          consistency. Sources:
+            - Plan / Do / Check (Nick Tune workshop recipe):
+                drafter · executor · auditor
+            - Wirfs-Brock Object Role Stereotypes:
+                controller · service-provider · information-holder
+                structurer · coordinator · interfacer
+            - Domain analysis emphasis:
+                analyser
+          Multiple traits per context are allowed; the canonical Plan/Do/Check
+          pattern is `[drafter, executor, auditor]` across three contexts.
+          Domain-specific traits require a schema CR.
+      summary:
+        type: string
+        description: "Brief description of this context's purpose and responsibilities."
+      description:
+        type: string
+        description: "Human-readable description."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Context-level ownership override."
+      responsibilities:
+        type: array
+        items:
+          type: string
+        description: "What this context is accountable for."
+      dependencies:
+        type: array
+        items:
+          $ref: "#/$defs/dependency"
+        description: "Other contexts or external systems this context depends on. Enriched for context-map inference."
+      entities:
+        type: array
+        items:
+          $ref: "#/$defs/entity"
+        description: "Core domain entities in this context."
+      services:
+        type: array
+        items:
+          $ref: "#/$defs/service"
+        description: "Services implementing this context."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  team:
+    type: object
+    description: "Team responsible for a bounded context."
+    additionalProperties: true
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: "Team name."
+      contactEmail:
+        type: string
+        format: email
+        description: "Team contact email for escalations and coordination."
+
+  dependency:
+    type: object
+    description: "Dependency on another bounded context or external system. Technical connections in contracts enable topology inference; the DDD strategic relationship states the architectural intent the connection cannot."
+    additionalProperties: false
+    required:
+      - name
+      - relationship
+    properties:
+      name:
+        type: string
+        description: "Name of the dependency (context or external system name)."
+      bounded_context_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/bounded_context_ref"
+        description: >
+          Optional target bounded-context id (BC###) — the id-based inter-context
+          edge, preferred over matching the `name` string (deprecated
+          fallback). Use for dependencies on another bounded context in this model.
+      type:
+        type: string
+        description: "Technical integration type (e.g. api, events, shared-db, file, grpc)."
+      relationship:
+        $ref: "../metamodel.schema.yaml#/$defs/context_relationship"
+        description: "DDD strategic relationship pattern. Captures architectural intent beyond technical integration."
+      direction:
+        type: string
+        enum: [upstream, downstream, peer]
+        description: "This context's role: upstream=we provide, downstream=we consume, peer=bidirectional."
+      language_boundary:
+        type: boolean
+        description: "Whether this dependency crosses a ubiquitous language boundary. When true, translation may be needed."
+      translation:
+        type: string
+        description: "How the language boundary is handled (e.g. anticorruption-layer, adapter, mapper, shared-types)."
+      description:
+        type: string
+        description: "Human-readable description."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  entity:
+    type: object
+    description: "A core domain entity in this bounded context."
+    additionalProperties: true
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: "Entity name."
+      description:
+        type: string
+        description: "What this entity represents in the domain."
+
+  service:
+    type: object
+    description: "A deployable service or component within a bounded context."
+    additionalProperties: false
+    required:
+      - id
+      - name
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+        description: >
+          Stable service id (SVC###) - makes the service a first-class, referenceable
+          graph node.
+      name:
+        type: string
+        description: "Service name (e.g. order-api, payment-worker)."
+      kind:
+        $ref: "../metamodel.schema.yaml#/$defs/service_kind"
+        description: "Architectural component type. Determines applicable contract patterns."
+      summary:
+        type: string
+        description: "Brief description of what this service does."
+      description:
+        type: string
+        description: "Full description of this service's purpose, responsibilities, and domain role."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      vendor:
+        type: array
+        items:
+          $ref: "#/$defs/team"
+        description: "Teams or vendors responsible for this service."
+      resource_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+        description: >
+          Typed infrastructure resources this service requires (IR### — `infra_resource_ref`),
+          resolving to `resource` entities in the infrastructure layer. This is the canonical
+          *intent* edge to a CONCRETE resource; the infrastructure layer's `hosted_on` relation
+          is the *placement* edge. Optional. Since v2.8 it is the only way a service names its
+          resources: the free-string `resources` list is no longer accepted. See `needs` for the
+          abstract (type-level) intent.
+      needs:
+        type: array
+        items:
+          $ref: "#/$defs/service_need"
+        description: >
+          Abstract infrastructure NEEDS (Score `type`/`class`/`id`/`params` vocabulary)
+          this service declares — TYPE-level intent, resolved to a concrete resource per
+          environment by a binding (BND###). The three altitudes: `needs` (type) → binding
+          (type × environment) → `resource_refs` / `resource` (IR### instance). A need names WHAT
+          the service requires without pinning a platform, so the same need realizes on cloud,
+          on-prem, or hybrid. Additive/optional (v2.7.7).
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Service-level ownership override."
+      servers:
+        type: array
+        description: >
+          Server instances where this service is deployed.
+          Follows OpenAPI server object pattern.
+        items:
+          type: object
+          additionalProperties: false
+          required: [url, environment]
+          properties:
+            url:
+              type: string
+              description: "Base URL template (e.g., https://api.example.com/v1)."
+            environment:
+              description: "Deployment environment."
+              oneOf:
+                - type: string
+                  enum: [production, staging, development, test]
+                - type: string
+                  pattern: "^x-[a-z][a-z0-9-]*$"
+            protocol:
+              type: string
+              description: "Protocol if different from service default."
+            description:
+              type: string
+              description: "Server instance description."
+            variables:
+              type: object
+              description: "URL template variables."
+              additionalProperties:
+                type: object
+                additionalProperties: false
+                properties:
+                  default:
+                    type: string
+                    description: "Default value for this variable."
+                  enum:
+                    type: array
+                    items:
+                      type: string
+                    description: "Allowed values for this variable."
+      handles:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: >-
+          Operations this service handles in-process, with no transport asserted. Provider-side,
+          like a contract's `expose:`/`send:`, and it materializes the same `handled_by` binding -
+          but it names no channel, because an in-process call has none. The opposite of a
+          `call:` list, which names operations this service DEPENDS ON rather than owns.
+          Several services in different bounded contexts may each declare the same operation, and
+          each declaration is one binding: an operation the domain shares is genuinely handled in
+          more than one place. Declared on the service rather than under `contracts:` because every
+          key there names a protocol with a generated specification, and this has neither.
+      contracts:
+        $ref: "#/$defs/contracts"
+        description: "External contracts exposing and consuming interfaces for this service."
+      side_effects:
+        $ref: "#/$defs/service_side_effects"
+        description: "Observable side effects beyond request/response: filesystem, stdout, stderr."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "Epistemic provenance for this service (brownfield modeling confidence)."
+
+  service_need:
+    type: object
+    description: >
+      An abstract infrastructure need declared by a service (Score `type`/`class`/`id`/`params`
+      vocabulary). Names WHAT the service requires (a resource TYPE) without pinning a
+      concrete resource or platform — a binding (BND###) resolves it per environment (type × env →
+      module). The type-level altitude above `resource_refs` (concrete instance). Substrate-neutral:
+      the same need binds to a cloud module in one environment and an on-prem module in another
+      (hybrid).
+    additionalProperties: false
+    required:
+      - type_ref
+    properties:
+      type_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/resource_type_ref"
+        description: "The resource TYPE this need requires (RT### in the resource-type catalog profiles)."
+      class:
+        type: string
+        description: >
+          Optional variant/tier within the type (Score `class`) — e.g. 'managed' vs 'self-hosted',
+          'standard' vs 'premium', 'read-replica'. Free-text; the catalog/profile + binding interpret it.
+      id:
+        type: string
+        description: >
+          Optional logical need id distinguishing shared-vs-dedicated instances. The same
+          id shared across services ⇒ a shared resource; distinct ids ⇒ dedicated. NOT an IR###
+          (this is intent, pre-binding) — a free-string handle a binding's `need_ref` can target.
+      params:
+        type: object
+        description: >
+          Optional type-level parameters (Score `params`) — e.g. {version: '16', size: small}. The
+          environment `param_overlay` and the binding `params` refine these at resolution time.
+        additionalProperties:
+          type: [string, number, boolean]
+      description:
+        type: string
+        description: "Optional human note on why this need exists."
+
+  contracts:
+    type: object
+    description: "Contract interfaces for this service. Each entry specifies what is exposed or consumed per protocol."
+    additionalProperties: false
+    properties:
+      openapi:
+        $ref: "#/$defs/endpoint_contract"
+        description: "REST/HTTP API contract (OpenAPI specification)."
+      httpClient:
+        $ref: "#/$defs/http_client_contract"
+        description: "Outbound HTTP client contract — what endpoints this service calls."
+      asyncapi:
+        $ref: "#/$defs/channel_contract"
+        description: "Async messaging contract (AsyncAPI specification)."
+      openrpc:
+        $ref: "#/$defs/rpc_contract"
+        description: "JSON-RPC contract (OpenRPC specification)."
+      arazzo:
+        $ref: "#/$defs/flow_contract"
+        description: "Workflow contract (Arazzo specification)."
+      cncfsw:
+        $ref: "#/$defs/flow_contract"
+        description: "Serverless workflow contract (CNCF Serverless Workflow specification)."
+      graphql:
+        type: object
+        additionalProperties: false
+        required: [output]
+        description: "GraphQL API contract."
+        properties:
+          file:
+            type: string
+            description: "Path to the GraphQL schema definition file (.graphql)."
+          output:
+            type: string
+            description: >-
+              Identity of the generated contract artifact: `<name>`, `<slice>/<name>`, or
+              `_global/<name>`. Two services declaring the same value contribute to ONE artifact —
+              their specs are merged additively — so this names the physical contract, not one
+              service's copy of it. A leading slice name places the artifact in that slice;
+              `_global/` marks it cross-cutting; a bare name is placed by the declaring file. A
+              first segment that names no declared slice is kept as a subdirectory and reported.
+          queries:
+            type: array
+            items:
+              type: string
+            description: "Root query field names exposed by this contract."
+          mutations:
+            type: array
+            items:
+              type: string
+            description: "Root mutation field names exposed by this contract."
+          subscriptions:
+            type: array
+            items:
+              type: string
+            description: "Root subscription field names exposed by this contract."
+      security_schemes:
+        type: object
+        description: "Security scheme definitions for this service's contracts."
+        additionalProperties:
+          type: object
+          additionalProperties: false
+          required: [type]
+          properties:
+            type:
+              type: string
+              enum: [apiKey, http, oauth2, openIdConnect, mutualTLS]
+              description: "Security scheme type (OpenAPI-compatible)."
+            scheme:
+              type: string
+              description: "HTTP auth scheme (e.g., bearer, basic). For type=http."
+            bearer_format:
+              type: string
+              description: "Bearer token format hint (e.g., JWT)."
+            flows:
+              type: object
+              additionalProperties: true
+              description: "OAuth2 flow definitions."
+            scopes:
+              type: object
+              additionalProperties:
+                type: string
+              description: "Available OAuth2 scopes with descriptions."
+
+  endpoint_contract:
+    type: object
+    description: "OpenAPI endpoint contract: what the service exposes over HTTP."
+    additionalProperties: false
+    required:
+      - output
+    properties:
+      file:
+        type: string
+        description: "Path to the OpenAPI specification file."
+      output:
+        type: string
+        description: >-
+          Identity of the generated contract artifact: `<name>`, `<slice>/<name>`, or
+          `_global/<name>`. Two services declaring the same value contribute to ONE artifact —
+          their specs are merged additively — so this names the physical contract, not one
+          service's copy of it. A leading slice name places the artifact in that slice;
+          `_global/` marks it cross-cutting; a bare name is placed by the declaring file. A
+          first segment that names no declared slice is kept as a subdirectory and reported.
+      expose:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations exposed by this HTTP contract."
+      input_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named input data structures accepted by this contract."
+      output_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named output data structures produced by this contract."
+
+  http_client_contract:
+    type: object
+    description: "Outbound HTTP client contract: what endpoints this service calls."
+    additionalProperties: false
+    required:
+      - output
+    properties:
+      file:
+        type: string
+        description: "Path to the OpenAPI or .http file describing outbound calls."
+      output:
+        type: string
+        description: >-
+          Identity of the generated client artifact, in the same form as a contract `output:`:
+          `<name>`, `<slice>/<name>`, or `_global/<name>`.
+      call:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations this service calls via HTTP."
+      input_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named input structures sent to the dependency."
+      output_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named output structures received from the dependency."
+
+  channel_contract:
+    type: object
+    description: "AsyncAPI messaging contract: topics and channels this service publishes to or consumes from."
+    additionalProperties: false
+    required:
+      - output
+    properties:
+      file:
+        type: string
+        description: "Path to the AsyncAPI specification file."
+      output:
+        type: string
+        description: "Generated output path."
+      send:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations this service publishes via messaging."
+      receive:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations this service consumes via messaging."
+      brokerId:
+        type: string
+        description: "Message broker identifier (e.g. rabbitmq-prod, kafka-main)."
+      input_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named message structures received (consumed)."
+      output_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named message structures sent (published)."
+
+  rpc_contract:
+    type: object
+    description: "OpenRPC contract: remote methods exposed or called."
+    additionalProperties: false
+    required:
+      - output
+    properties:
+      file:
+        type: string
+        description: "Path to the OpenRPC specification file."
+      output:
+        type: string
+        description: "Generated output path."
+      expose:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations exposed via RPC by this service."
+      call:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations this service calls via RPC."
+      input_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named input structures for RPC calls."
+      output_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named output structures from RPC results."
+
+  flow_contract:
+    type: object
+    description: "Workflow contract (Arazzo or CNCF Serverless Workflow)."
+    additionalProperties: false
+    required:
+      - output
+    properties:
+      file:
+        type: string
+        description: "Path to the workflow specification file."
+      output:
+        type: string
+        description: "Generated output path."
+      workflows:
+        type: array
+        items:
+          type: string
+        description: "Workflow names defined in this contract."
+      input_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named input structures for workflow triggers."
+      output_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named output structures produced by workflows."
+
+  contract_structures:
+    type: object
+    description: "Named data structures crossing the service boundary (input or output). Each entry describes a payload shape."
+    additionalProperties:
+      type: object
+      additionalProperties: false
+      required:
+        - description
+      properties:
+        description:
+          type: string
+          description: "What this structure represents and when it is used."
+        schema:
+          type: object
+          description: "JSON Schema or $ref to models.schema.yaml for the data shape."
+        format:
+          type: string
+          description: "Content type (e.g. application/json, application/xml)."
+        condition:
+          type: string
+          description: "When this structure is expected or produced."
+
+  service_side_effects:
+    type: object
+    description: "Observable side effects of this service beyond its direct contracts. Filesystem, stdout, stderr."
+    additionalProperties: false
+    properties:
+      filesystem:
+        type: array
+        description: "File system changes this service may perform."
+        items:
+          type: object
+          additionalProperties: false
+          properties:
+            condition:
+              type: string
+              description: "When this filesystem effect occurs."
+            action:
+              type: string
+              description: "What happens (e.g. create, update, delete)."
+            location:
+              type: string
+              description: "Path or glob pattern affected."
+            reversible:
+              type: boolean
+              description: "Whether this effect can be undone."
+      stdout:
+        type: array
+        description: "Standard output produced (primarily for CLI components)."
+        items:
+          type: object
+          additionalProperties: false
+          properties:
+            description:
+              type: string
+              description: "What is written to stdout."
+            condition:
+              type: string
+              description: "When this output is produced."
+            format:
+              type: string
+              description: "Output format (e.g. JSON, plain text, table)."
+      stderr:
+        type: array
+        description: "Standard error output produced (primarily for CLI components)."
+        items:
+          type: object
+          additionalProperties: false
+          properties:
+            description:
+              type: string
+              description: "What is written to stderr."
+            condition:
+              type: string
+              description: "When this error output is produced."
+            format:
+              type: string
+              description: "Error format (e.g. plain text, structured JSON)."

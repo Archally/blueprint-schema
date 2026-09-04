@@ -106,15 +106,15 @@ src/
 
 ```bash
 # Build a model.json from a blueprint directory
-npx @archally/blueprint-schema blueprint-model .blueprint/v2.7 --output model.json --pretty
+npx @archally/blueprint-schema blueprint-model .blueprint/v2.8 --output model.json --pretty
 
 # Or pipe to stdout
-node tools/model-builder/dist/cli.js .blueprint/v2.7 > model.json
+node tools/model-builder/dist/cli.js .blueprint/v2.8 > model.json
 ```
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `<path>` | Blueprint directory (positional) | `.blueprint/v2.7` |
+| `<path>` | Blueprint directory (positional) | `.blueprint/v2.8` |
 | `--output`, `-o` | Write to file instead of stdout | stdout |
 | `--pretty`, `-p` | Pretty-print JSON | compact |
 

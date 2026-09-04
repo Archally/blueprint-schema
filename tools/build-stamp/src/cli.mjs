@@ -16,7 +16,7 @@ import path from "node:path";
 import process from "node:process";
 
 function parseArgs(argv) {
-  const args = { model: path.resolve(".blueprint/v2.7"), check: false };
+  const args = { model: path.resolve(".blueprint/v2.8"), check: false };
   for (let i = 2; i < argv.length; i += 1) {
     const token = argv[i];
     if ((token === "--model" || token === "-m") && argv[i + 1]) {
@@ -40,7 +40,7 @@ function printHelp() {
   process.stdout.write(
     "Blueprint build-stamp generator\n\n" +
     "Usage: build-stamp --model <dir> [--check]\n\n" +
-    "  -m, --model <dir>  Blueprint model directory to stamp (default: .blueprint/v2.7).\n" +
+    "  -m, --model <dir>  Blueprint model directory to stamp (default: .blueprint/v2.8).\n" +
     "                     Writes <dir>/build.json.\n" +
     "  -c, --check        Compute the buildId and compare to the committed build.json without\n" +
     "                     writing; exit 1 if stale (for CI / pre-commit).\n" +

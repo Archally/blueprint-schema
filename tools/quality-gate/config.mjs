@@ -40,7 +40,7 @@ export function loadSpec(specPath) {
 
 /**
  * Look for a project override in the model root, then walk up to the project dir —
- * `.blueprint/v2.7/` models conventionally keep theirs beside `.blueprint/`.
+ * `.blueprint/v2.8/` models conventionally keep theirs beside `.blueprint/`.
  * @param {string} modelRoot
  * @param {string} [explicitPath]
  * @returns {{config: object, path: string|null}}

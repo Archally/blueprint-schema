@@ -1,5 +1,5 @@
 version: 0.1.0
-schemaVersion: "2.7.0"
+schemaVersion: "2.8.0"
 horizon: "next 2 quarters"
 ranking_basis:
   - urgency

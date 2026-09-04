@@ -17,7 +17,7 @@ rule validation come from the package. See its
 ## Usage
 
 ```bash
-npx @archally/blueprint-schema blueprint-check .blueprint/v2.7
+npx @archally/blueprint-schema blueprint-check .blueprint/v2.8
 npm run check:examples                  # ecommerce example
 npx @archally/blueprint-schema blueprint-check --list
 npx @archally/blueprint-schema blueprint-check <dir> --config .blueprint-lint.yaml
@@ -77,7 +77,7 @@ Severities: `error` (fails), `warn`, `info`, `off`.
 
 | Flag | Description |
 |------|-------------|
-| `<path>` | blueprint directory (positional; default `.blueprint/v2.7`) |
+| `<path>` | blueprint directory (positional; default `.blueprint/v2.8`) |
 | `--config`, `-c` | path to `.blueprint-lint.yaml` (auto-detected in cwd otherwise) |
 | `--list` | list available rules and exit |
 | `--help`, `-h` | show help |

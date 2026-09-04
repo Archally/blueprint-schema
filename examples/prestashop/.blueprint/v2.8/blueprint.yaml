@@ -1,6 +1,6 @@
 ---
 version: "1.0.0"
-schemaVersion: "2.7.0"
+schemaVersion: "2.8.0"
 name: "PrestaShop E-Commerce Platform"
 description: >
   Blueprint model of the PrestaShop v9 open-source e-commerce platform covering

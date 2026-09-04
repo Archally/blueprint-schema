@@ -1027,9 +1027,9 @@ Commands typically produce events and/or documents. Events do not produce — th
 Three deterministic checks, each answering a different question. They are ordered because each one assumes the previous passed — a semantic finding on an unparseable model is noise.
 
 ```bash
-npm run validate .blueprint/v2.7 --schemas schema/v2.7   # is it legal?
-npm run check    .blueprint/v2.7                          # is it connected?
-npm run quality  .blueprint/v2.7                          # does it say anything?
+npm run validate .blueprint/v2.8 --schemas schema/v2.7   # is it legal?
+npm run check    .blueprint/v2.8                          # is it connected?
+npm run quality  .blueprint/v2.8                          # does it say anything?
 ```
 
 | Tool | Question | Fails the build on |
@@ -1044,10 +1044,10 @@ The default posture is deliberate: only the validator rejects out of the box. A 
 
 ```bash
 # Validate a blueprint directory
-blueprint-validate .blueprint/v2.7
+blueprint-validate .blueprint/v2.8
 
 # Or via npm script
-npm run validate -- .blueprint/v2.7
+npm run validate -- .blueprint/v2.8
 ```
 
 #### Errors (reject blueprint)
@@ -1073,8 +1073,8 @@ npm run validate -- .blueprint/v2.7
 Structural findings a schema can never express: an entity nothing references, a command that produces no event, a rule no test validates, a question nothing answers. The rules are declarative YAML packs in `tools/semantic-checker/rules/`; that directory's README is the authoritative rule inventory, and it is machine-checked against the rule files themselves.
 
 ```bash
-npm run check .blueprint/v2.7
-npm run check .blueprint/v2.7 --config .blueprint-lint.yaml
+npm run check .blueprint/v2.8
+npm run check .blueprint/v2.8 --config .blueprint-lint.yaml
 node tools/semantic-checker/dist/cli.js --list          # every rule and its default severity
 ```
 
@@ -1096,10 +1096,10 @@ Raising a rule to `error` is how a mature model locks in an invariant it has alr
 The validator and the checker both pass on a model whose every description is missing. That model is legal, connected, and useless downstream: model properties become fields in generated OpenAPI contracts, so an undescribed property is a bare field in every generated client and every viewer. The quality gate measures **self-description coverage** — see [Self-Description and Examples](modeling-guide.md#self-description-and-examples) for what the bar is per entity type.
 
 ```bash
-npm run quality .blueprint/v2.7                       # report; never fails
-npm run quality .blueprint/v2.7 --strict              # release gate
-npm run quality .blueprint/v2.7 --strict --since HEAD~1   # gate only what you changed
-npm run quality .blueprint/v2.7 --json worklist.json  # machine-readable backfill worklist
+npm run quality .blueprint/v2.8                       # report; never fails
+npm run quality .blueprint/v2.8 --strict              # release gate
+npm run quality .blueprint/v2.8 --strict --since HEAD~1   # gate only what you changed
+npm run quality .blueprint/v2.8 --json worklist.json  # machine-readable backfill worklist
 ```
 
 Exit `0` clean · `1` threshold or baseline breach under `--strict` · `2` usage or configuration error.

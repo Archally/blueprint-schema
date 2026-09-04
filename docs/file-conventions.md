@@ -6,7 +6,7 @@ Practical rules for organizing `.blueprint/` directories. These conventions appl
 
 ```
 my-project/
-  .blueprint/v2.7/
+  .blueprint/v2.8/
     blueprint.yaml              # Required: name, version
     README.md                   # Optional: project description
 
@@ -156,7 +156,7 @@ orders/
 **At root level** — split system-wide files by concern:
 
 ```
-.blueprint/v2.7/
+.blueprint/v2.8/
   platform.arch.yaml            # Platform infrastructure services
   integrations.arch.yaml        # Third-party integration services
   revenue.capability.yaml       # Revenue-generating capabilities

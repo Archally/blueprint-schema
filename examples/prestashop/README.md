@@ -3,7 +3,7 @@
 A blueprint of the open-source **[PrestaShop](https://github.com/PrestaShop/PrestaShop) v9** e-commerce platform — modeled from the real codebase. This is the counterpoint to the [ecommerce MVB](../ecommerce/): what a mature, Phase 3+ model looks like at scale. Schema **v2.7**, 10 bounded contexts, 158 YAML files, ~1,900 entities.
 
 ```
-.blueprint/v2.7/
+.blueprint/v2.8/
   admin/  catalog/  checkout/  content/  customers/
   international/  modules/  orders/  shipping/  shop/
 ```
@@ -13,15 +13,15 @@ A blueprint of the open-source **[PrestaShop](https://github.com/PrestaShop/Pres
 From the repo root:
 
 ```bash
-node tools/validator/src/cli.mjs examples/prestashop/.blueprint/v2.7 --schemas schema/v2.7
-node tools/semantic-checker/dist/cli.js examples/prestashop/.blueprint/v2.7   # after `npm run build`
+node tools/validator/src/cli.mjs examples/prestashop/.blueprint/v2.8 --schemas schema/v2.8
+node tools/semantic-checker/dist/cli.js examples/prestashop/.blueprint/v2.8   # after `npm run build`
 ```
 
 ## How to explore it
 
 At ~1,900 entities you don't read this top-to-bottom. Two good entry points:
 
-- **The generated overview** — [`.blueprint/v2.7/.specs/overview.md`](./.blueprint/v2.7/.specs/overview.md): markdown + Mermaid diagrams of contexts and causal chains, produced by the `blueprint-render` tool. Start here.
+- **The generated overview** — [`.blueprint/v2.8/.specs/overview.md`](./.blueprint/v2.8/.specs/overview.md): markdown + Mermaid diagrams of contexts and causal chains, produced by the `blueprint-render` tool. Start here.
 - **One context at a time** — open a single directory (e.g. `orders/` or `catalog/`) and read its `concepts.yaml` → `domain.yaml` → `rules.yaml`. Each context is independently legible.
 
 ## What it demonstrates

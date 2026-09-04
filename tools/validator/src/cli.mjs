@@ -223,7 +223,7 @@ function pickVersionDir(base, version) {
 }
 
 function parseArgs(argv) {
-  const args = { model: path.resolve(".blueprint/v2.7"), schemas: null, compat: false, schemaVersion: null };
+  const args = { model: path.resolve(".blueprint/v2.8"), schemas: null, compat: false, schemaVersion: null };
   let schemasExplicit = false;
   let versionOverride = null;
 
@@ -296,7 +296,7 @@ function printHelp() {
       "Validates blueprint YAML files against schemas and checks cross-references.",
       "",
       "Options:",
-      "  --model, -m    Blueprint directory to validate (default: .blueprint/v2.7)",
+      "  --model, -m    Blueprint directory to validate (default: .blueprint/v2.8)",
       "  --schemas, -s  Schema version root (default: resolved from the model's declared version)",
       "  --schema-version  Judge the model as this version (e.g. 2.6), overriding path and declaration",
       "  --compat, -c   Relax schema failures to warnings — EXCEPT identity (`id`) and typed",

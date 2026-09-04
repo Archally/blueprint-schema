@@ -12,14 +12,14 @@ node tools/validator/src/validate-blueprint.mjs <blueprint-dir>
 npm run validate:examples
 
 # Via npx (after npm install)
-npx @archally/blueprint-schema validate .blueprint/v2.7
+npx @archally/blueprint-schema validate .blueprint/v2.8
 ```
 
 ## Options
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--model`, `-m` | Blueprint directory to validate | `.blueprint/v2.7` |
+| `--model`, `-m` | Blueprint directory to validate | `.blueprint/v2.8` |
 | `--schemas`, `-s` | Schema version root directory | Resolved — see below |
 | `--compat`, `-c` | Demote schema errors to warnings | `false` |
 

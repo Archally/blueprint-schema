@@ -1,0 +1,537 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Concepts
+description: "Design Plane — Layer 2: Domain vocabulary. Defines concepts (entities, value objects, aggregates), actors, enumerations, and cross-concept associations."
+type: object
+additionalProperties: false
+required:
+  - version
+  - concepts
+properties:
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version of this document."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: "Bounded context this file belongs to."
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default. Entities inherit unless overridden."
+  concepts:
+    type: array
+    description: "Domain vocabulary entries: entities, value objects, aggregates."
+    items:
+      $ref: "#/$defs/concept"
+  actors:
+    type: array
+    description: "Stakeholders, users, systems, and roles interacting with the domain."
+    items:
+      $ref: "#/$defs/actor"
+  enumerations:
+    type: array
+    description: "Closed value sets (e.g. order statuses, payment types)."
+    items:
+      $ref: "#/$defs/enumeration"
+  associations:
+    type: array
+    description: "Cross-concept relationships where neither side clearly owns the other."
+    items:
+      $ref: "#/$defs/association"
+
+$defs:
+
+  concept:
+    type: object
+    description: "Core domain vocabulary entry. Minimum: id + name (v2.3) or id + term (v2.1/v2.2 compat)."
+    additionalProperties: false
+    required:
+      - id
+    anyOf:
+      - required: [name]
+      - required: [term]
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+        description: "Unique concept identifier (e.g. CN001 or billing.CN001)."
+      name:
+        type: string
+        description: "Display name for this concept (e.g. Order, Customer, Payment)."
+      description:
+        type: string
+        description: "Human-readable description of the concept."
+      term:
+        type: string
+        description: "Optional formal DDD term. Use when it differs from name. Prefer properties.term for v2.3+."
+      summary:
+        type: string
+        maxLength: 200
+        description: "Brief summary (≤200 chars, for RAG and quick reference)."
+      definition:
+        type: string
+        description: "Optional formal glossary definition. Prefer properties.definition for v2.3+."
+      stereotype:
+        type: string
+        enum: [entity, value-object, aggregate-root, domain-service, specification, read-model]
+        description: >
+          DDD modeling classification.
+          entity = has identity and lifecycle.
+          value-object = structural equality, immutable.
+          aggregate-root = entity that forms a transactional consistency boundary,
+            owns child entities, and is the entry point for commands.
+            Event Storming view derives aggregate stickies from this stereotype.
+            Validator warns if aggregate-root lacks characteristic signals
+            (states, contains relationships, governed-by rules).
+          domain-service = stateless behavior not owned by any entity.
+          specification = encapsulates a business rule as reusable predicate object.
+          read-model = query-only projection derived from events/commands with no
+            write operations of its own. Core CQRS concept for materialized views.
+          Omit when premature or when the concept doesn't fit a standard DDD stereotype.
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+        description: "Open metadata bag. Known keys: term (DDD formal name), definition (glossary entry)."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Entity-level version for tracking individual concept changes."
+      synonyms:
+        type: array
+        items:
+          type: string
+        description: "Alternative terms for this concept."
+      scope:
+        type: string
+        description: "Bounded context or subdomain where this concept is authoritative."
+      identity:
+        type: string
+        description: "What uniquely identifies an instance of this concept."
+      attributes:
+        type: object
+        description: "Structured domain attributes keyed by business name."
+        additionalProperties:
+          $ref: "#/$defs/concept_attribute"
+      examples:
+        type: array
+        description: "Concrete examples of this concept."
+        items:
+          type: object
+          additionalProperties: false
+          required:
+            - name
+          properties:
+            name:
+              type: string
+              description: "Example instance name."
+            description:
+              type: string
+              description: "What this example illustrates."
+      relationships:
+        type: array
+        description: "Owned relationships from this concept to others. Subject is implicit (this concept)."
+        items:
+          $ref: "#/$defs/owned_relationship"
+      states:
+        type: array
+        description: "Possible lifecycle states. Can be plain strings or objects with name and description."
+        items:
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: false
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  description: "State name."
+                description:
+                  type: string
+                  description: "What this state means."
+      initial_state:
+        type: string
+        description: "Name of the initial lifecycle state."
+      terminal_states:
+        type: array
+        items:
+          type: string
+        description: "Names of terminal (final) lifecycle states."
+      transition_rules:
+        type: array
+        description: "Transition rule refs (TR prefix) defining valid state transitions for this concept."
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/transition_ref"
+      format:
+        type: object
+        description: "Data format details for data-structure concepts (e.g. strings, codes)."
+        additionalProperties: false
+        properties:
+          type:
+            type: string
+            description: "Data type (e.g. string, integer, uuid)."
+          pattern:
+            type: string
+            description: "Regex pattern constraining valid values."
+          input_type:
+            type: string
+            description: "Expected input type or source (e.g. user-entered, system-generated)."
+          comparison_type:
+            type: string
+            description: "How instances are compared (e.g. case-insensitive, ordinal)."
+          examples:
+            type: array
+            items:
+              type: string
+            description: "Example valid values."
+      algorithm:
+        type: object
+        description: "Algorithm details for computational concepts."
+        additionalProperties: false
+        properties:
+          description:
+            type: string
+            description: "High-level description of the algorithm."
+          derivation:
+            type: string
+            description: "How the result is derived from inputs."
+          methods:
+            type: object
+            description: "Named algorithmic methods with speed/certainty trade-offs."
+            additionalProperties:
+              type: object
+              additionalProperties: false
+              properties:
+                description:
+                  type: string
+                  description: "What this method does."
+                speed:
+                  type: string
+                  description: "Relative speed (e.g. fast, slow, O(n))."
+                certainty:
+                  type: string
+                  description: "Accuracy or confidence level."
+      purpose:
+        type: string
+        description: "Why this concept exists in the domain."
+      rationale:
+        type: string
+        description: "Design or naming rationale."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Concept-level ownership override."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "Epistemic provenance for this concept (brownfield modeling confidence)."
+
+  owned_relationship:
+    type: object
+    description: "Relationship owned by the containing concept. Subject is implicit (the owning concept)."
+    additionalProperties: false
+    required:
+      - predicate
+      - object
+    properties:
+      predicate:
+        type: string
+        enum:
+          - part-of
+          - contains
+          - owned-by
+          - derived-from
+          - extends
+          - classifies
+        description: "Ownership-oriented relationship type."
+      object:
+        $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+        description: "Target concept of this relationship."
+      cardinality:
+        type: string
+        description: "Multiplicity (e.g. 1..*, 0..1, *..*). "
+      description:
+        type: string
+        description: "Optional clarification of this specific relationship instance."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+
+  actor:
+    type: object
+    description: "Stakeholder, user, system, or role interacting with the domain."
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - type
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        description: "Unique actor identifier (e.g. ACT001 or billing.ACT001)."
+      name:
+        type: string
+        description: "Actor name (e.g. Customer, Payment Gateway)."
+      type:
+        type: string
+        enum:
+          - human
+          - system
+          - external
+          - role
+          - time
+        description: "Actor classification: human=person, system=internal service, external=third-party, role=abstract role, time=temporal trigger (timer, schedule, time passing)."
+      summary:
+        type: string
+        maxLength: 200
+        description: "Brief description of this actor (≤200 chars)."
+      responsibilities:
+        type: array
+        items:
+          type: string
+        description: "What this actor is responsible for in the domain."
+      interactions:
+        type: array
+        description: "Concepts or operations this actor interacts with."
+        items:
+          type: object
+          additionalProperties: false
+          required:
+            - target
+            - verb
+          properties:
+            target:
+              type: string
+              description: "concept_ref or operation_ref identifying the interaction target."
+            verb:
+              type: string
+              description: "Action verb (e.g. creates, reads, approves)."
+            description:
+              type: string
+              description: "Optional interaction detail."
+      description:
+        type: string
+        description: "Human-readable description of this actor."
+      personas:
+        type: array
+        description: >
+          UX persona archetypes for this actor. One actor role can manifest as
+          multiple persona archetypes with different goals, pain points, and
+          behaviors (e.g., "Impulse Buyer" vs "Research Shopper" for Shopper).
+          Replaces v2.5 singular 'persona' field.
+        items:
+          $ref: "#/$defs/persona"
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Actor-level ownership override: who maintains this actor's DEFINITION. Not who performs the role - see `staffed_by`."
+      staffed_by:
+        $ref: "../metamodel.schema.yaml#/$defs/team_ref"
+        description: >
+          The team whose members perform this role (TM###). Distinct from `owned_by`, which says who
+          maintains the definition: a product team can own the definition of an end-user role nobody
+          in the organization staffs. Set it only for roles the organization itself performs, and
+          leave it absent for customers, external systems and regulators. It is what makes a process
+          crossing several teams traceable, since a scenario step reaches a team through the actor
+          that performs it.
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "Epistemic provenance for this actor (brownfield modeling confidence)."
+
+  persona:
+    type: object
+    description: "UX persona archetype with goals, pain points, JTBD, and demographics."
+    additionalProperties: false
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: "Persona archetype name (e.g., 'Impulse Buyer', 'Research Shopper')."
+      quote:
+        type: string
+        description: "Representative quote capturing core frustration or goal."
+      goals:
+        type: array
+        items:
+          type: string
+        description: "What this persona is trying to achieve."
+      pain_points:
+        type: array
+        items:
+          type: string
+        description: "Current frustrations and obstacles."
+      behaviors:
+        type: array
+        items:
+          type: string
+        description: "Observable behaviors and workflow patterns."
+      tech_savviness:
+        type: string
+        enum: [low, medium, high, expert]
+        description: "Technical proficiency level."
+      job_to_be_done:
+        type: string
+        description: "JTBD-style core functional job."
+      context:
+        type: string
+        description: "Typical environment or workflow context."
+      demographics:
+        type: object
+        description: >
+          Demographic attributes. Open object — keys vary by domain.
+          Common: role, industry, team_size, experience_years.
+        properties:
+          role:
+            type: string
+            description: "Job title or role."
+          industry:
+            type: string
+            description: "Industry or sector."
+          team_size:
+            type: string
+            description: "Team size (e.g., '5-10')."
+
+  enumeration:
+    type: object
+    description: "Closed value set for a domain category (e.g. order statuses, payment types)."
+    additionalProperties: false
+    required:
+      - id
+      - values
+    anyOf:
+      - required: [name]
+      - required: [term]
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/enumeration_ref"
+        description: "Unique enumeration identifier (e.g. EN001 or billing.EN001)."
+      name:
+        type: string
+        description: "Display name for this enumeration (e.g. Order Status, Payment Type)."
+      term:
+        type: string
+        description: "Optional formal DDD term. Use when it differs from name."
+      description:
+        type: string
+        description: "Human-readable description of this value set."
+      summary:
+        type: string
+        maxLength: 200
+        description: "Brief description of this value set (≤200 chars)."
+      extensible:
+        type: boolean
+        default: false
+        description: "Whether consumers can extend this value set with additional values."
+      values:
+        type: array
+        description: "Allowed values. Plain strings or objects with name, description, code, and optional state transitions."
+        items:
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: false
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  description: "Value name."
+                description:
+                  type: string
+                  description: "What this value means."
+                code:
+                  type: string
+                  description: "Optional machine-readable code or key."
+                transitions_to:
+                  type: array
+                  items:
+                    type: string
+                  description: "Valid target state names for this value. Enables state diagram generation."
+                terminal:
+                  type: boolean
+                  description: "Whether this is a terminal state (no outgoing transitions)."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "Epistemic provenance for this enumeration (brownfield modeling confidence)."
+
+  concept_attribute:
+    type: object
+    description: "Structured concept attribute with typed ID for traceability."
+    additionalProperties: false
+    required:
+      - id
+      - description
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/attribute_ref"
+        description: "Concept attribute identifier (CAT### pattern)."
+      description:
+        type: string
+        description: "What this attribute represents in the domain."
+      example:
+        type: string
+        description: "Concrete example value for this attribute."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  association:
+    type: object
+    description: "Cross-concept relationship where neither side clearly owns the other."
+    additionalProperties: false
+    required:
+      - id
+      - predicate
+      - subject
+      - object
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/association_ref"
+        description: "Unique association identifier (e.g. AS001 or billing.AS001)."
+      predicate:
+        type: string
+        enum:
+          - depends-on
+          - uses
+          - correlates-with
+          - maps-to
+          - triggers
+          - competes-with
+          - collaborates-with
+        description: "Relationship type between the two concepts."
+      subject:
+        $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+        description: "Source concept of this association."
+      object:
+        $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+        description: "Target concept of this association."
+      cardinality:
+        type: string
+        description: "Multiplicity (e.g. 1..*, 0..1, *..*). "
+      description:
+        type: string
+        description: "Optional clarification of this association."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "Epistemic provenance for this association (brownfield modeling confidence)."

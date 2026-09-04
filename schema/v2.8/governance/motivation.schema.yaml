@@ -1,0 +1,478 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Motivation
+description: "Governance Plane: Strategic intent — goals, non-goals, risks, assumptions, and trade-offs. Decisions reference motivation entities (not reverse). Goals link forward to KPIs in quality.schema.yaml."
+type: object
+additionalProperties: false
+required:
+  - version
+properties:
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version of this motivation document."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: "Bounded context this motivation file belongs to."
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default. Entities inherit unless overridden."
+  vision:
+    $ref: "#/$defs/vision"
+    description: "The product's singular identity claim / north-star — what it fundamentally IS and aspires to become. Distinct from goals (measurable objectives that operationalize it) and from the root `description` (a summary blurb). At most one per model."
+  goals:
+    type: array
+    description: "What the system aims to achieve. Goals drive decisions and prioritize work. Each goal can be tracked by a KPI in quality.schema.yaml."
+    items:
+      $ref: "#/$defs/goal"
+  non_goals:
+    type: array
+    description: "Explicit exclusions — what the system intentionally does NOT do. Prevents scope creep and aligns stakeholder expectations."
+    items:
+      $ref: "#/$defs/non_goal"
+  risks:
+    type: array
+    description: "Identified threats to the system's goals. Each risk has likelihood, impact, and mitigation. Risks drive defensive decisions."
+    items:
+      $ref: "#/$defs/risk"
+  assumptions:
+    type: array
+    description: "Things believed true but not yet verified. Wrong assumptions invalidate decisions. Each documents the consequence if false."
+    items:
+      $ref: "#/$defs/assumption"
+  trade_offs:
+    type: array
+    description: "Conscious compromises between competing concerns. Makes implicit architectural tension explicit with rationale."
+    items:
+      $ref: "#/$defs/trade_off"
+  inquiries:
+    type: array
+    description: "Governance inquiries — unresolved strategic or stakeholder concerns that need investigation or decision before work can proceed."
+    items:
+      $ref: "#/$defs/inquiry"
+
+$defs:
+
+  vision:
+    type: object
+    description: "The singular identity claim / north-star: what the product fundamentally IS and aspires to become. Distinct from goals (measurable objectives) and from the root description (a summary blurb) — the vision is the 'why we exist' carrier that goals operationalize and value streams deliver."
+    additionalProperties: false
+    required:
+      - statement
+    properties:
+      statement:
+        type: string
+        description: "The vision as one or two sentences naming what the product is and aspires to be."
+      aspiration:
+        type: string
+        description: "Optional longer-horizon elaboration or north-star framing beyond the core statement."
+      advances_goals:
+        type: array
+        description: "Goals that operationalize this vision (forward links into `goals`)."
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
+      capability_refs:
+        type: array
+        description: "Core capabilities that embody the vision."
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/capability_ref"
+      value_stream_refs:
+        type: array
+        description: "Value streams that carry the vision end-to-end."
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/value_stream_ref"
+      discovery_stage:
+        $ref: "../metamodel.schema.yaml#/$defs/discovery_stage"
+        description: "Epistemic maturity of the vision."
+      certainty:
+        $ref: "../metamodel.schema.yaml#/$defs/certainty"
+        description: "Confidence level of the vision assertion."
+      evidence:
+        $ref: "../metamodel.schema.yaml#/$defs/evidence"
+        description: "Evidence justifying the vision's discovery_stage and certainty."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Vision-level ownership override."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  goal:
+    type: object
+    description: "A strategic objective the system aims to achieve. Measurable goals link to KPIs; all goals drive decisions."
+    additionalProperties: false
+    required:
+      - id
+      - statement
+      - priority
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
+        description: "Unique goal identifier (G + NNN)."
+      description:
+        type: string
+        description: "Human-readable description."
+      statement:
+        type: string
+        description: "The goal as a clear, actionable statement (e.g. 'Reduce order processing time to under 2 seconds')."
+      summary:
+        type: string
+        maxLength: 200
+        description: "One-line summary for listings."
+      priority:
+        type: string
+        enum: [critical, high, medium, low]
+        description: "Goal priority: critical=must have at launch, high=must have, medium=should have, low=nice to have."
+      measure:
+        type: string
+        description: "How achievement is measured (e.g. 'p95 latency < 200ms'). Link to kpi for formal tracking."
+      kpi:
+        $ref: "../metamodel.schema.yaml#/$defs/kpi_ref"
+        description: "KPI in quality.schema.yaml that formally tracks this goal. Closes the goal→KPI→metric traceability chain."
+      examples:
+        type: array
+        description: "Concrete examples illustrating this goal."
+        items:
+          type: object
+          additionalProperties: false
+          properties:
+            description:
+              type: string
+              description: "Example description."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Goal version for lifecycle tracking."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Goal-level ownership override."
+      discovery_stage:
+        $ref: "../metamodel.schema.yaml#/$defs/discovery_stage"
+        description: "Epistemic maturity of this goal."
+      certainty:
+        $ref: "../metamodel.schema.yaml#/$defs/certainty"
+        description: "Confidence level of this goal assertion."
+      evidence:
+        $ref: "../metamodel.schema.yaml#/$defs/evidence"
+        description: "Evidence justifying this goal's discovery_stage and certainty."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  non_goal:
+    type: object
+    description: "An explicit exclusion — something the system intentionally does NOT do. Intentional boundary, not an oversight."
+    additionalProperties: false
+    required:
+      - id
+      - statement
+      - reason
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/non_goal_ref"
+        description: "Unique non-goal identifier (NG + NNN)."
+      description:
+        type: string
+        description: "Human-readable description."
+      statement:
+        type: string
+        description: "What the system explicitly does NOT do (e.g. 'This system does not handle payment processing')."
+      reason:
+        type: string
+        description: "Why this is excluded. Helps future stakeholders understand the boundary was intentional."
+      discovery_stage:
+        $ref: "../metamodel.schema.yaml#/$defs/discovery_stage"
+        description: "Epistemic maturity of this non-goal."
+      certainty:
+        $ref: "../metamodel.schema.yaml#/$defs/certainty"
+        description: "Confidence level of this non-goal assertion."
+      evidence:
+        $ref: "../metamodel.schema.yaml#/$defs/evidence"
+        description: "Evidence justifying this non-goal's boundary."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  risk:
+    type: object
+    description: "An identified threat to the system's goals with probability, severity, and mitigation strategy."
+    additionalProperties: false
+    required:
+      - id
+      - statement
+      - likelihood
+      - impact
+      - mitigation
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/risk_ref"
+        description: "Unique risk identifier (R + NNN)."
+      description:
+        type: string
+        description: "Human-readable description."
+      statement:
+        type: string
+        description: "What could go wrong."
+      summary:
+        type: string
+        maxLength: 200
+        description: "One-line summary for listings."
+      likelihood:
+        type: string
+        enum: [very-low, low, medium, high, very-high]
+        description: "Probability of this risk materializing."
+      impact:
+        type: string
+        enum: [low, medium, high, critical]
+        description: "Severity if materialized: critical=system failure, high=major degradation, medium=noticeable impact, low=minor inconvenience."
+      mitigation:
+        type: string
+        description: "Strategy to prevent or reduce this risk. Should be actionable and specific."
+      contingency:
+        type: string
+        description: "Fallback plan if the primary mitigation strategy fails."
+      owner:
+        $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        description: >
+          Individual responsible for risk response. Distinct from owned_by
+          (org unit accountability).
+      status:
+        type: string
+        enum: [identified, open, mitigated, accepted, closed]
+        description: >
+          Risk lifecycle: identified=logged, open=being mitigated,
+          mitigated=applied, accepted=tolerated, closed=resolved.
+      review_date:
+        type: string
+        format: date
+        description: "When this risk should be reassessed (ISO 8601)."
+      goal_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
+        description: "Goals threatened by this risk."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Risk version for lifecycle tracking."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Risk-level ownership override."
+      discovery_stage:
+        $ref: "../metamodel.schema.yaml#/$defs/discovery_stage"
+        description: "Epistemic maturity of this risk."
+      certainty:
+        $ref: "../metamodel.schema.yaml#/$defs/certainty"
+        description: "Confidence level of this risk assessment."
+      evidence:
+        $ref: "../metamodel.schema.yaml#/$defs/evidence"
+        description: "Evidence justifying this risk assessment."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  assumption:
+    type: object
+    description: "Something believed to be true but not yet verified. Carries risk if wrong; consequence documents the exposure."
+    additionalProperties: false
+    required:
+      - id
+      - statement
+      - consequence
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/assumption_ref"
+        description: "Unique assumption identifier (A + NNN)."
+      description:
+        type: string
+        description: "Human-readable description."
+      statement:
+        type: string
+        description: "What is assumed to be true."
+      consequence:
+        type: string
+        description: "What happens if this assumption is wrong — the risk carried by the assumption."
+      bounded_context_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+        description: >
+          Optional bounded context this assumption applies to. When set, the
+          assumption surfaces in the BCC v5 node footer (Assumptions section)
+          for that context. Added in v2.6.3.
+      risk_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/risk_ref"
+        description: "Risks associated with this assumption being wrong."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Assumption version for lifecycle tracking."
+      discovery_stage:
+        $ref: "../metamodel.schema.yaml#/$defs/discovery_stage"
+        description: "Epistemic maturity of this assumption."
+      certainty:
+        $ref: "../metamodel.schema.yaml#/$defs/certainty"
+        description: "Confidence level of this assumption."
+      evidence:
+        $ref: "../metamodel.schema.yaml#/$defs/evidence"
+        description: "Evidence justifying this assumption's confidence."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  trade_off:
+    type: object
+    description: "A conscious compromise between competing concerns. Documents what was chosen, rejected, and why the choice is acceptable."
+    additionalProperties: false
+    required:
+      - id
+      - choice
+      - selected
+      - rejected
+      - rationale
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/trade_off_ref"
+        description: "Unique trade-off identifier (T + NNN)."
+      description:
+        type: string
+        description: "Human-readable description."
+      choice:
+        type: string
+        description: "The tension or competing concern being resolved."
+      selected:
+        type: string
+        description: "What was chosen."
+      rejected:
+        type: string
+        description: "What was rejected."
+      rationale:
+        type: string
+        description: "Why the selected option is preferable given the context."
+      accepted_risk:
+        type: string
+        description: "Risk accepted by making this trade-off (use risk_ref for traceability)."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Trade-off version for lifecycle tracking."
+      discovery_stage:
+        $ref: "../metamodel.schema.yaml#/$defs/discovery_stage"
+        description: "Epistemic maturity of this trade-off."
+      certainty:
+        $ref: "../metamodel.schema.yaml#/$defs/certainty"
+        description: "Confidence level of this trade-off."
+      evidence:
+        $ref: "../metamodel.schema.yaml#/$defs/evidence"
+        description: "Evidence justifying this trade-off decision."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  inquiry:
+    type: object
+    description: >
+      Governance inquiry — an unresolved strategic or stakeholder concern
+      that needs investigation or decision before work can proceed.
+      Distinct from QN### (domain competency questions that model the
+      reason for a domain to exist). Inquiries are temporary governance
+      artifacts; questions are permanent domain knowledge requirements.
+    additionalProperties: false
+    required:
+      - id
+      - statement
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/inquiry_ref"
+        description: "Unique inquiry identifier (INQ + 3+ digits)."
+      statement:
+        type: string
+        description: "The unresolved concern or question."
+      summary:
+        type: string
+        maxLength: 200
+        description: "One-line summary for listings."
+      description:
+        type: string
+        description: "Additional context, background, or constraints."
+      category:
+        type: string
+        enum: [business, technical, ux, legal, data, dependency, feasibility, strategic, organizational]
+        description: >
+          Inquiry domain classification. business=revenue/market impact,
+          technical=architecture/infrastructure, ux=user experience,
+          legal=regulatory/compliance, data=data quality/availability,
+          dependency=external blocking factor, feasibility=can we do this,
+          strategic=direction/vision, organizational=team/process.
+      goal_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
+        description: "Goals affected by this inquiry."
+      risk_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/risk_ref"
+        description: "Risks related to this inquiry."
+      question_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/question_ref"
+        description: "Domain competency questions (QN###) that prompted this governance inquiry."
+      stakeholders:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        description: "Actors who care about the resolution."
+      owner:
+        $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        description: "Person responsible for driving resolution."
+      blocking:
+        type: boolean
+        default: false
+        description: "True if this inquiry blocks downstream work."
+      due_date:
+        type: string
+        format: date
+        description: "Target date for resolution (ISO 8601)."
+      resolution:
+        type: string
+        description: "Answer or decision once the inquiry is resolved."
+      resolved:
+        type: boolean
+        default: false
+        deprecated: true
+        description: >
+          DEPRECATED - derived from `status`, which is the single source of the lifecycle.
+          `resolved` is true exactly when `status` is `resolved` or `closed`. Still accepted so
+          existing documents keep loading; a consumer should read `status`.
+      status:
+        type: string
+        enum: [open, investigating, resolved, closed, deferred]
+        description: >
+          Inquiry lifecycle: open=logged, investigating=actively being
+          researched, resolved=answer found, closed=resolution accepted,
+          deferred=postponed.
+      discovery_stage:
+        $ref: "../metamodel.schema.yaml#/$defs/discovery_stage"
+        description: "Epistemic maturity of this inquiry."
+      certainty:
+        $ref: "../metamodel.schema.yaml#/$defs/certainty"
+        description: "Confidence level of this inquiry."
+      evidence:
+        $ref: "../metamodel.schema.yaml#/$defs/evidence"
+        description: "Evidence gathered during inquiry investigation."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"

@@ -11,22 +11,22 @@ A **generated, human-readable projection** of the Archally Blueprint JSON Schema
 
 ## Current version
 
-The Atlas covers **v2.7** (current) in full, plus a cross-version changelog.
+The Atlas covers **v2.8** (current) in full, plus a cross-version changelog.
 
 | Page | What it answers |
 | --- | --- |
-| [Overview](./v2.7/overview.md) | What exists, at a glance, with a plane map |
-| [Layer map](./v2.7/layer-map.md) | Planes, files, and bounded dependency diagrams |
-| [Entity catalog](./v2.7/entity-catalog.md) | Every definition: properties, requiredness, enums |
-| [Relationships](./v2.7/relationships.md) | Typed-ID vocabulary and cross-file references |
-| [Examples](./v2.7/examples.md) | Schema-native and curated examples |
+| [Overview](./v2.8/overview.md) | What exists, at a glance, with a plane map |
+| [Layer map](./v2.8/layer-map.md) | Planes, files, and bounded dependency diagrams |
+| [Entity catalog](./v2.8/entity-catalog.md) | Every definition: properties, requiredness, enums |
+| [Relationships](./v2.8/relationships.md) | Typed-ID vocabulary and cross-file references |
+| [Examples](./v2.8/examples.md) | Schema-native and curated examples |
 | [Changelog](./changelog.md) | Schema evolution across versions |
 
 ## Versions
 
 | Version | Atlas pages |
 | --- | --- |
-| `v2.7` (current) | [overview](./v2.7/overview.md) · [catalog](./v2.7/entity-catalog.md) · [relationships](./v2.7/relationships.md) |
+| `v2.8` (current) | [overview](./v2.8/overview.md) · [catalog](./v2.8/entity-catalog.md) · [relationships](./v2.8/relationships.md) |
 | `v2.6` | _covered in the [changelog](./changelog.md) diff path_ |
 
 ## How this is maintained

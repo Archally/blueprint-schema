@@ -2,7 +2,7 @@
 
 # Blueprint Schema Atlas — Changelog
 
-A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It explains *what changed and why it matters to schema consumers* (DEC-ATL-16).
+A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It explains *what changed and why it matters to schema consumers* (DEC-ATL-16).
 
 > **Relationship to the release ledger:** the root [`CHANGELOG.md`](../../CHANGELOG.md) remains the authoritative release ledger (dates, version summaries). This page is the richer *structural* view, derived from the schema diff (DEC-ATL-04). Where the two disagree on wording, the root ledger wins on release facts; this page wins on structural detail.
 
@@ -10,330 +10,368 @@ A generated structural changelog for the **`v2.6` → `v2.7`** diff path. It exp
 
 | Impact | Count |
 | --- | --- |
-| Breaking (major) | 3 |
+| Breaking (major) | 11 |
 | Additive (minor) | 97 |
 | Clarification (patch) | 0 |
-| **Total changes** | 100 |
+| **Total changes** | 108 |
 
 ## ⚠ Breaking changes
 
 | Change | Target | Summary |
 | --- | --- | --- |
+| Removed | design/arch.schema.yaml#/$defs/service/properties/resources | Property resources removed. |
+| Removed | design/arch.schema.yaml#/properties/infrastructure | Property infrastructure removed. |
 | Renamed | design/rg.schema.yaml → design/infrastructure.schema.yaml | Schema file renamed from design/rg.schema.yaml to design/infrastructure.schema.yaml. |
 | Renamed | design/ui.schema.yaml → design/interactions.schema.yaml | Schema file renamed from design/ui.schema.yaml to design/interactions.schema.yaml. |
 | Renamed | governance/org.schema.yaml → governance/organization.schema.yaml | Schema file renamed from governance/org.schema.yaml to governance/organization.schema.yaml. |
+| Requiredness changed | design/arch.schema.yaml#/$defs/dependency/properties/relationship | Property relationship became required (breaking). |
+| Requiredness changed | design/models.schema.yaml#/$defs/model_schema/properties/description | Property description became required (breaking). |
+| Requiredness changed | governance/decisions.schema.yaml#/$defs/decision/properties/summary | Property summary became required (breaking). |
+| Added | design/arch.schema.yaml#/$defs/context/properties/id | Property id added (required — breaking). |
+| Added | design/arch.schema.yaml#/$defs/party/properties/id | Property id added (required — breaking). |
+| Added | design/arch.schema.yaml#/$defs/service/properties/id | Property id added (required — breaking). |
+
+## Removed (2)
+
+- **[breaking]** `design/arch.schema.yaml#/$defs/service/properties/resources` — Property `resources` removed.
+  - _Source: `schema/v2.6/design/arch.schema.yaml#/$defs/service/properties/resources`_
+
+- **[breaking]** `design/arch.schema.yaml#/properties/infrastructure` — Property `infrastructure` removed.
+  - _Source: `schema/v2.6/design/arch.schema.yaml#/properties/infrastructure`_
 
 ## Renamed (3)
 
 - **[breaking]** `design/rg.schema.yaml → design/infrastructure.schema.yaml` — Schema file renamed from `design/rg.schema.yaml` to `design/infrastructure.schema.yaml`.
   - _Rename basis: explicitly annotated (overlay `atlas-changelog`)_
   - _Note: Renamed rg.schema.yaml → infrastructure.schema.yaml for consistency with full descriptive file names. Consumers must rename rg.yaml → infrastructure.yaml in their .blueprint/ dirs._
-  - _Sources: `schema/v2.6/design/rg.schema.yaml`, `schema/v2.7/design/infrastructure.schema.yaml`_
+  - _Sources: `schema/v2.6/design/rg.schema.yaml`, `schema/v2.8/design/infrastructure.schema.yaml`_
 
 - **[breaking]** `design/ui.schema.yaml → design/interactions.schema.yaml` — Schema file renamed from `design/ui.schema.yaml` to `design/interactions.schema.yaml`.
   - _Rename basis: explicitly annotated (overlay `atlas-changelog`)_
   - _Note: Renamed ui.schema.yaml → interactions.schema.yaml — the schema models concrete user–system interaction points (screens, actions, navigation), not broad UX concerns._
-  - _Sources: `schema/v2.6/design/ui.schema.yaml`, `schema/v2.7/design/interactions.schema.yaml`_
+  - _Sources: `schema/v2.6/design/ui.schema.yaml`, `schema/v2.8/design/interactions.schema.yaml`_
 
 - **[breaking]** `governance/org.schema.yaml → governance/organization.schema.yaml` — Schema file renamed from `governance/org.schema.yaml` to `governance/organization.schema.yaml`.
   - _Rename basis: explicitly annotated (overlay `atlas-changelog`)_
   - _Note: Renamed org.schema.yaml → organization.schema.yaml for naming consistency._
-  - _Sources: `schema/v2.6/governance/org.schema.yaml`, `schema/v2.7/governance/organization.schema.yaml`_
+  - _Sources: `schema/v2.6/governance/org.schema.yaml`, `schema/v2.8/governance/organization.schema.yaml`_
+
+## Requiredness changed (4)
+
+- **[breaking]** `design/arch.schema.yaml#/$defs/dependency/properties/relationship` — Property `relationship` became required (breaking).
+  - _Sources: `schema/v2.8/design/arch.schema.yaml#/$defs/dependency/properties/relationship`, `schema/v2.6/design/arch.schema.yaml#/$defs/dependency/properties/relationship`_
+
+- **[breaking]** `design/models.schema.yaml#/$defs/model_schema/properties/description` — Property `description` became required (breaking).
+  - _Sources: `schema/v2.8/design/models.schema.yaml#/$defs/model_schema/properties/description`, `schema/v2.6/design/models.schema.yaml#/$defs/model_schema/properties/description`_
+
+- [additive] `design/story.schema.yaml#/$defs/story_activity/properties/entry_operation` — Property `entry_operation` became optional.
+  - _Sources: `schema/v2.8/design/story.schema.yaml#/$defs/story_activity/properties/entry_operation`, `schema/v2.6/design/story.schema.yaml#/$defs/story_activity/properties/entry_operation`_
+
+- **[breaking]** `governance/decisions.schema.yaml#/$defs/decision/properties/summary` — Property `summary` became required (breaking).
+  - _Sources: `schema/v2.8/governance/decisions.schema.yaml#/$defs/decision/properties/summary`, `schema/v2.6/governance/decisions.schema.yaml#/$defs/decision/properties/summary`_
+
+## Deprecated (1)
+
+- [additive] `governance/motivation.schema.yaml#/$defs/inquiry/properties/resolved` — Property `resolved` marked deprecated.
+  - _Sources: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/resolved`, `schema/v2.6/governance/motivation.schema.yaml#/$defs/inquiry/properties/resolved`_
 
 ## Modified (17)
 
-- [additive] `blueprint.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
-  - _Sources: `schema/v2.7/blueprint.schema.yaml#/properties/schemaVersion`, `schema/v2.6/blueprint.schema.yaml#/properties/schemaVersion`_
+- [additive] `blueprint.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
+  - _Sources: `schema/v2.8/blueprint.schema.yaml#/properties/schemaVersion`, `schema/v2.6/blueprint.schema.yaml#/properties/schemaVersion`_
 
 - [additive] `design/arch.schema.yaml#/$defs/context/properties/complexity` — Property `complexity` enum values added: `state-management`.
-  - _Sources: `schema/v2.7/design/arch.schema.yaml#/$defs/context/properties/complexity`, `schema/v2.6/design/arch.schema.yaml#/$defs/context/properties/complexity`_
+  - _Sources: `schema/v2.8/design/arch.schema.yaml#/$defs/context/properties/complexity`, `schema/v2.6/design/arch.schema.yaml#/$defs/context/properties/complexity`_
 
-- [additive] `design/arch.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
-  - _Sources: `schema/v2.7/design/arch.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/arch.schema.yaml#/properties/schemaVersion`_
+- [additive] `design/arch.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
+  - _Sources: `schema/v2.8/design/arch.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/arch.schema.yaml#/properties/schemaVersion`_
 
-- [additive] `design/concepts.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
-  - _Sources: `schema/v2.7/design/concepts.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/concepts.schema.yaml#/properties/schemaVersion`_
+- [additive] `design/concepts.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
+  - _Sources: `schema/v2.8/design/concepts.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/concepts.schema.yaml#/properties/schemaVersion`_
 
-- [additive] `design/domain.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
-  - _Sources: `schema/v2.7/design/domain.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/domain.schema.yaml#/properties/schemaVersion`_
+- [additive] `design/domain.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
+  - _Sources: `schema/v2.8/design/domain.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/domain.schema.yaml#/properties/schemaVersion`_
 
-- [additive] `design/dynamics.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
-  - _Sources: `schema/v2.7/design/dynamics.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/dynamics.schema.yaml#/properties/schemaVersion`_
+- [additive] `design/dynamics.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
+  - _Sources: `schema/v2.8/design/dynamics.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/dynamics.schema.yaml#/properties/schemaVersion`_
 
-- [additive] `design/models.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
-  - _Sources: `schema/v2.7/design/models.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/models.schema.yaml#/properties/schemaVersion`_
+- [additive] `design/models.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
+  - _Sources: `schema/v2.8/design/models.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/models.schema.yaml#/properties/schemaVersion`_
 
-- [additive] `design/quality.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
-  - _Sources: `schema/v2.7/design/quality.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/quality.schema.yaml#/properties/schemaVersion`_
+- [additive] `design/quality.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
+  - _Sources: `schema/v2.8/design/quality.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/quality.schema.yaml#/properties/schemaVersion`_
 
-- [additive] `design/rules.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
-  - _Sources: `schema/v2.7/design/rules.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/rules.schema.yaml#/properties/schemaVersion`_
+- [additive] `design/rules.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
+  - _Sources: `schema/v2.8/design/rules.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/rules.schema.yaml#/properties/schemaVersion`_
 
-- [additive] `design/story.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
-  - _Sources: `schema/v2.7/design/story.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/story.schema.yaml#/properties/schemaVersion`_
+- [additive] `design/story.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
+  - _Sources: `schema/v2.8/design/story.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/story.schema.yaml#/properties/schemaVersion`_
 
-- [additive] `governance/capability.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
-  - _Sources: `schema/v2.7/governance/capability.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/capability.schema.yaml#/properties/schemaVersion`_
+- [additive] `governance/capability.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
+  - _Sources: `schema/v2.8/governance/capability.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/capability.schema.yaml#/properties/schemaVersion`_
 
-- [additive] `governance/decisions.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
-  - _Sources: `schema/v2.7/governance/decisions.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/decisions.schema.yaml#/properties/schemaVersion`_
+- [additive] `governance/decisions.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
+  - _Sources: `schema/v2.8/governance/decisions.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/decisions.schema.yaml#/properties/schemaVersion`_
 
-- [additive] `governance/motivation.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
-  - _Sources: `schema/v2.7/governance/motivation.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/motivation.schema.yaml#/properties/schemaVersion`_
+- [additive] `governance/motivation.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
+  - _Sources: `schema/v2.8/governance/motivation.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/motivation.schema.yaml#/properties/schemaVersion`_
 
-- [additive] `governance/roadmap.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
-  - _Sources: `schema/v2.7/governance/roadmap.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/roadmap.schema.yaml#/properties/schemaVersion`_
+- [additive] `governance/roadmap.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
+  - _Sources: `schema/v2.8/governance/roadmap.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/roadmap.schema.yaml#/properties/schemaVersion`_
 
-- [additive] `governance/test-cases.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
-  - _Sources: `schema/v2.7/governance/test-cases.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/test-cases.schema.yaml#/properties/schemaVersion`_
+- [additive] `governance/test-cases.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
+  - _Sources: `schema/v2.8/governance/test-cases.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/test-cases.schema.yaml#/properties/schemaVersion`_
 
-- [additive] `governance/value-stream.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
-  - _Sources: `schema/v2.7/governance/value-stream.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/value-stream.schema.yaml#/properties/schemaVersion`_
+- [additive] `governance/value-stream.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
+  - _Sources: `schema/v2.8/governance/value-stream.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/value-stream.schema.yaml#/properties/schemaVersion`_
 
-- [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.7.0`.
-  - _Sources: `schema/v2.7/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
+- [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
+  - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (80)
+## Added (81)
 
 - [additive] `blueprint.schema.yaml#/$defs/repository_config` — New definition `repository_config` added to `blueprint.schema.yaml`.
-  - _Source: `schema/v2.7/blueprint.schema.yaml#/$defs/repository_config`_
+  - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/repository_config`_
 
 - [additive] `blueprint.schema.yaml#/$defs/slice` — New definition `slice` added to `blueprint.schema.yaml`.
-  - _Source: `schema/v2.7/blueprint.schema.yaml#/$defs/slice`_
+  - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/slice`_
 
 - [additive] `blueprint.schema.yaml#/$defs/tracker_config` — New definition `tracker_config` added to `blueprint.schema.yaml`.
-  - _Source: `schema/v2.7/blueprint.schema.yaml#/$defs/tracker_config`_
+  - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/tracker_config`_
 
 - [additive] `blueprint.schema.yaml#/properties/default_tracker` — Property `default_tracker` added (optional).
-  - _Source: `schema/v2.7/blueprint.schema.yaml#/properties/default_tracker`_
+  - _Source: `schema/v2.8/blueprint.schema.yaml#/properties/default_tracker`_
 
 - [additive] `blueprint.schema.yaml#/properties/repositories` — Property `repositories` added (optional).
-  - _Source: `schema/v2.7/blueprint.schema.yaml#/properties/repositories`_
+  - _Source: `schema/v2.8/blueprint.schema.yaml#/properties/repositories`_
 
 - [additive] `blueprint.schema.yaml#/properties/trackers` — Property `trackers` added (optional).
-  - _Source: `schema/v2.7/blueprint.schema.yaml#/properties/trackers`_
+  - _Source: `schema/v2.8/blueprint.schema.yaml#/properties/trackers`_
 
 - [additive] `design/arch.schema.yaml#/$defs/context/properties/domain_ref` — Property `domain_ref` added (optional).
-  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/context/properties/domain_ref`_
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/context/properties/domain_ref`_
 
-- [additive] `design/arch.schema.yaml#/$defs/context/properties/id` — Property `id` added (optional).
-  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/context/properties/id`_
+- **[breaking]** `design/arch.schema.yaml#/$defs/context/properties/id` — Property `id` added (required — breaking).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/context/properties/id`_
 
 - [additive] `design/arch.schema.yaml#/$defs/dependency/properties/bounded_context_ref` — Property `bounded_context_ref` added (optional).
-  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/dependency/properties/bounded_context_ref`_
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/dependency/properties/bounded_context_ref`_
 
-- [additive] `design/arch.schema.yaml#/$defs/party/properties/id` — Property `id` added (optional).
-  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/party/properties/id`_
+- **[breaking]** `design/arch.schema.yaml#/$defs/party/properties/id` — Property `id` added (required — breaking).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/party/properties/id`_
 
 - [additive] `design/arch.schema.yaml#/$defs/service_need` — New definition `service_need` added to `design/arch.schema.yaml`.
-  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service_need`_
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service_need`_
 
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/handles` — Property `handles` added (optional).
-  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service/properties/handles`_
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/handles`_
 
-- [additive] `design/arch.schema.yaml#/$defs/service/properties/id` — Property `id` added (optional).
-  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service/properties/id`_
+- **[breaking]** `design/arch.schema.yaml#/$defs/service/properties/id` — Property `id` added (required — breaking).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/id`_
 
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/needs` — Property `needs` added (optional).
-  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service/properties/needs`_
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/needs`_
 
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/provenance` — Property `provenance` added (optional).
-  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service/properties/provenance`_
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/provenance`_
 
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/resource_refs` — Property `resource_refs` added (optional).
-  - _Source: `schema/v2.7/design/arch.schema.yaml#/$defs/service/properties/resource_refs`_
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/resource_refs`_
 
 - [additive] `design/concepts.schema.yaml#/$defs/actor/properties/provenance` — Property `provenance` added (optional).
-  - _Source: `schema/v2.7/design/concepts.schema.yaml#/$defs/actor/properties/provenance`_
+  - _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/actor/properties/provenance`_
+
+- [additive] `design/concepts.schema.yaml#/$defs/actor/properties/staffed_by` — Property `staffed_by` added (optional).
+  - _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/actor/properties/staffed_by`_
 
 - [additive] `design/concepts.schema.yaml#/$defs/association/properties/provenance` — Property `provenance` added (optional).
-  - _Source: `schema/v2.7/design/concepts.schema.yaml#/$defs/association/properties/provenance`_
+  - _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/association/properties/provenance`_
 
 - [additive] `design/concepts.schema.yaml#/$defs/concept/properties/provenance` — Property `provenance` added (optional).
-  - _Source: `schema/v2.7/design/concepts.schema.yaml#/$defs/concept/properties/provenance`_
+  - _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/concept/properties/provenance`_
 
 - [additive] `design/concepts.schema.yaml#/$defs/enumeration/properties/provenance` — Property `provenance` added (optional).
-  - _Source: `schema/v2.7/design/concepts.schema.yaml#/$defs/enumeration/properties/provenance`_
+  - _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/enumeration/properties/provenance`_
 
 - [additive] `design/domain.schema.yaml#/$defs/operation/properties/dispatch` — Property `dispatch` added (optional).
-  - _Source: `schema/v2.7/design/domain.schema.yaml#/$defs/operation/properties/dispatch`_
+  - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/operation/properties/dispatch`_
 
 - [additive] `design/domain.schema.yaml#/$defs/operation/properties/provenance` — Property `provenance` added (optional).
-  - _Source: `schema/v2.7/design/domain.schema.yaml#/$defs/operation/properties/provenance`_
+  - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/operation/properties/provenance`_
 
 - [additive] `design/domain.schema.yaml#/$defs/question/properties/bounded_context_ref` — Property `bounded_context_ref` added (optional).
-  - _Source: `schema/v2.7/design/domain.schema.yaml#/$defs/question/properties/bounded_context_ref`_
+  - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/question/properties/bounded_context_ref`_
 
 - [additive] `design/models.schema.yaml#/$defs/model_property` — New definition `model_property` added to `design/models.schema.yaml`.
-  - _Source: `schema/v2.7/design/models.schema.yaml#/$defs/model_property`_
+  - _Source: `schema/v2.8/design/models.schema.yaml#/$defs/model_property`_
 
 - [additive] `design/models.schema.yaml#/$defs/model_schema/properties/provenance` — Property `provenance` added (optional).
-  - _Source: `schema/v2.7/design/models.schema.yaml#/$defs/model_schema/properties/provenance`_
+  - _Source: `schema/v2.8/design/models.schema.yaml#/$defs/model_schema/properties/provenance`_
 
 - [additive] `design/quality.schema.yaml#/$defs/finding` — New definition `finding` added to `design/quality.schema.yaml`.
-  - _Source: `schema/v2.7/design/quality.schema.yaml#/$defs/finding`_
+  - _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/finding`_
 
 - [additive] `design/quality.schema.yaml#/$defs/resilience_requirement/properties/resource_refs` — Property `resource_refs` added (optional).
-  - _Source: `schema/v2.7/design/quality.schema.yaml#/$defs/resilience_requirement/properties/resource_refs`_
+  - _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/resilience_requirement/properties/resource_refs`_
 
 - [additive] `design/quality.schema.yaml#/$defs/slo/properties/resource_refs` — Property `resource_refs` added (optional).
-  - _Source: `schema/v2.7/design/quality.schema.yaml#/$defs/slo/properties/resource_refs`_
+  - _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/slo/properties/resource_refs`_
 
 - [additive] `design/quality.schema.yaml#/properties/findings` — Property `findings` added (optional).
-  - _Source: `schema/v2.7/design/quality.schema.yaml#/properties/findings`_
+  - _Source: `schema/v2.8/design/quality.schema.yaml#/properties/findings`_
 
 - [additive] `design/rules.schema.yaml#/$defs/rule/properties/provenance` — Property `provenance` added (optional).
-  - _Source: `schema/v2.7/design/rules.schema.yaml#/$defs/rule/properties/provenance`_
+  - _Source: `schema/v2.8/design/rules.schema.yaml#/$defs/rule/properties/provenance`_
 
 - [additive] `design/rules.schema.yaml#/$defs/transition_rule/properties/provenance` — Property `provenance` added (optional).
-  - _Source: `schema/v2.7/design/rules.schema.yaml#/$defs/transition_rule/properties/provenance`_
+  - _Source: `schema/v2.8/design/rules.schema.yaml#/$defs/transition_rule/properties/provenance`_
 
 - [additive] `design/story.schema.yaml#/$defs/story/properties/tracker_ref` — Property `tracker_ref` added (optional).
-  - _Source: `schema/v2.7/design/story.schema.yaml#/$defs/story/properties/tracker_ref`_
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/story/properties/tracker_ref`_
 
 - [additive] `design/story.schema.yaml#/$defs/use_case/properties/tracker_ref` — Property `tracker_ref` added (optional).
-  - _Source: `schema/v2.7/design/story.schema.yaml#/$defs/use_case/properties/tracker_ref`_
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/use_case/properties/tracker_ref`_
 
 - [additive] `design/story.schema.yaml#/$defs/user_story/properties/tracker_ref` — Property `tracker_ref` added (optional).
-  - _Source: `schema/v2.7/design/story.schema.yaml#/$defs/user_story/properties/tracker_ref`_
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/user_story/properties/tracker_ref`_
 
 - [additive] `governance/decisions.schema.yaml#/$defs/decision_links/properties/related` — Property `related` added (optional).
-  - _Source: `schema/v2.7/governance/decisions.schema.yaml#/$defs/decision_links/properties/related`_
+  - _Source: `schema/v2.8/governance/decisions.schema.yaml#/$defs/decision_links/properties/related`_
 
 - [additive] `governance/leverage.schema.yaml` — New schema file `governance/leverage.schema.yaml` added.
-  - _Source: `schema/v2.7/governance/leverage.schema.yaml`_
+  - _Source: `schema/v2.8/governance/leverage.schema.yaml`_
 
 - [additive] `governance/motivation.schema.yaml#/$defs/vision` — New definition `vision` added to `governance/motivation.schema.yaml`.
-  - _Source: `schema/v2.7/governance/motivation.schema.yaml#/$defs/vision`_
+  - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/vision`_
 
 - [additive] `governance/motivation.schema.yaml#/properties/vision` — Property `vision` added (optional).
-  - _Source: `schema/v2.7/governance/motivation.schema.yaml#/properties/vision`_
+  - _Source: `schema/v2.8/governance/motivation.schema.yaml#/properties/vision`_
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/blocker` — New definition `blocker` added to `governance/roadmap.schema.yaml`.
-  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/blocker`_
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/blocker`_
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/decision_ref_list` — New definition `decision_ref_list` added to `governance/roadmap.schema.yaml`.
-  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/decision_ref_list`_
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/decision_ref_list`_
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/goal_ref_list` — New definition `goal_ref_list` added to `governance/roadmap.schema.yaml`.
-  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/goal_ref_list`_
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/goal_ref_list`_
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/milestone/properties/advances_goals` — Property `advances_goals` added (optional).
-  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/milestone/properties/advances_goals`_
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/milestone/properties/advances_goals`_
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/milestone/properties/mitigates_risks` — Property `mitigates_risks` added (optional).
-  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/milestone/properties/mitigates_risks`_
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/milestone/properties/mitigates_risks`_
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/milestone/properties/realizes_decisions` — Property `realizes_decisions` added (optional).
-  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/milestone/properties/realizes_decisions`_
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/milestone/properties/realizes_decisions`_
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/milestone/properties/use_cases` — Property `use_cases` added (optional).
-  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/milestone/properties/use_cases`_
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/milestone/properties/use_cases`_
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/milestone/properties/user_stories` — Property `user_stories` added (optional).
-  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/milestone/properties/user_stories`_
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/milestone/properties/user_stories`_
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/milestone/properties/value_streams` — Property `value_streams` added (optional).
-  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/milestone/properties/value_streams`_
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/milestone/properties/value_streams`_
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/risk_ref_list` — New definition `risk_ref_list` added to `governance/roadmap.schema.yaml`.
-  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/risk_ref_list`_
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/risk_ref_list`_
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/use_case_ref_list` — New definition `use_case_ref_list` added to `governance/roadmap.schema.yaml`.
-  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/use_case_ref_list`_
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/use_case_ref_list`_
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/user_story_ref_list` — New definition `user_story_ref_list` added to `governance/roadmap.schema.yaml`.
-  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/user_story_ref_list`_
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/user_story_ref_list`_
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/value_stream_ref_list` — New definition `value_stream_ref_list` added to `governance/roadmap.schema.yaml`.
-  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/value_stream_ref_list`_
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/value_stream_ref_list`_
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/work_item` — New definition `work_item` added to `governance/roadmap.schema.yaml`.
-  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/$defs/work_item`_
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/work_item`_
 
 - [additive] `governance/roadmap.schema.yaml#/properties/cadence` — Property `cadence` added (optional).
-  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/properties/cadence`_
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/properties/cadence`_
 
 - [additive] `governance/roadmap.schema.yaml#/properties/work_items` — Property `work_items` added (optional).
-  - _Source: `schema/v2.7/governance/roadmap.schema.yaml#/properties/work_items`_
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/properties/work_items`_
 
 - [additive] `governance/test-cases.schema.yaml#/$defs/fitness_function/properties/provenance` — Property `provenance` added (optional).
-  - _Source: `schema/v2.7/governance/test-cases.schema.yaml#/$defs/fitness_function/properties/provenance`_
+  - _Source: `schema/v2.8/governance/test-cases.schema.yaml#/$defs/fitness_function/properties/provenance`_
 
 - [additive] `governance/test-cases.schema.yaml#/$defs/test_case/properties/provenance` — Property `provenance` added (optional).
-  - _Source: `schema/v2.7/governance/test-cases.schema.yaml#/$defs/test_case/properties/provenance`_
+  - _Source: `schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_case/properties/provenance`_
 
 - [additive] `governance/test-cases.schema.yaml#/$defs/validates_refs/properties/infrastructure` — Property `infrastructure` added (optional).
-  - _Source: `schema/v2.7/governance/test-cases.schema.yaml#/$defs/validates_refs/properties/infrastructure`_
+  - _Source: `schema/v2.8/governance/test-cases.schema.yaml#/$defs/validates_refs/properties/infrastructure`_
 
 - [additive] `governance/test-cases.schema.yaml#/$defs/validates_refs/properties/transitions` — Property `transitions` added (optional).
-  - _Source: `schema/v2.7/governance/test-cases.schema.yaml#/$defs/validates_refs/properties/transitions`_
+  - _Source: `schema/v2.8/governance/test-cases.schema.yaml#/$defs/validates_refs/properties/transitions`_
 
 - [additive] `metamodel.schema.yaml#/$defs/binding_ref` — New definition `binding_ref` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/binding_ref`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/binding_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/bounded_context_ref` — New definition `bounded_context_ref` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/bounded_context_ref`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/bounded_context_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/complexity_pattern` — New definition `complexity_pattern` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/complexity_pattern`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/complexity_pattern`_
 
 - [additive] `metamodel.schema.yaml#/$defs/deployment_scope_ref` — New definition `deployment_scope_ref` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/deployment_scope_ref`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/deployment_scope_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/environment_ref` — New definition `environment_ref` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/environment_ref`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/environment_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/finding_ref` — New definition `finding_ref` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/finding_ref`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/finding_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/impacts_links/properties/environments` — Property `environments` added (optional).
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/impacts_links/properties/environments`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links/properties/environments`_
 
 - [additive] `metamodel.schema.yaml#/$defs/impacts_links/properties/infrastructure` — Property `infrastructure` added (optional).
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/impacts_links/properties/infrastructure`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links/properties/infrastructure`_
 
 - [additive] `metamodel.schema.yaml#/$defs/infra_relation` — New definition `infra_relation` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/infra_relation`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/infra_relation`_
 
 - [additive] `metamodel.schema.yaml#/$defs/infra_resource_ref` — New definition `infra_resource_ref` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/infra_resource_ref`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/infra_resource_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/leverage_ref` — New definition `leverage_ref` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/leverage_ref`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/leverage_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/model_traits_item` — New definition `model_traits_item` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/model_traits_item`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/model_traits_item`_
 
 - [additive] `metamodel.schema.yaml#/$defs/provenance` — New definition `provenance` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/provenance`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/provenance`_
 
 - [additive] `metamodel.schema.yaml#/$defs/quality_characteristic` — New definition `quality_characteristic` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/quality_characteristic`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/quality_characteristic`_
 
 - [additive] `metamodel.schema.yaml#/$defs/quality_subcharacteristic` — New definition `quality_subcharacteristic` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/quality_subcharacteristic`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/quality_subcharacteristic`_
 
 - [additive] `metamodel.schema.yaml#/$defs/resource_type_ref` — New definition `resource_type_ref` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/resource_type_ref`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/resource_type_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/service_ref` — New definition `service_ref` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/service_ref`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/service_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/tracker_ref` — New definition `tracker_ref` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/tracker_ref`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/tracker_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/validates_links/properties/infrastructure` — Property `infrastructure` added (optional).
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/validates_links/properties/infrastructure`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/validates_links/properties/infrastructure`_
 
 - [additive] `metamodel.schema.yaml#/$defs/work_item_ref` — New definition `work_item_ref` added to `metamodel.schema.yaml`.
-  - _Source: `schema/v2.7/metamodel.schema.yaml#/$defs/work_item_ref`_
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/work_item_ref`_
 
 - [additive] `profiles/infrastructure/profiles.schema.yaml` — New schema file `profiles/infrastructure/profiles.schema.yaml` added.
-  - _Source: `schema/v2.7/profiles/infrastructure/profiles.schema.yaml`_
+  - _Source: `schema/v2.8/profiles/infrastructure/profiles.schema.yaml`_
 
 - [additive] `render.manifest.schema.yaml` — New schema file `render.manifest.schema.yaml` added.
-  - _Source: `schema/v2.7/render.manifest.schema.yaml`_
+  - _Source: `schema/v2.8/render.manifest.schema.yaml`_
 
 ---
 

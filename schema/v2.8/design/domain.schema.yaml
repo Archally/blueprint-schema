@@ -1,0 +1,987 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Domain Operations
+description: "Design Plane — Layer 3: Domain operations with protocol bindings, rule governance, pre/postconditions, and side effects. Ordering is in story (logical) and dynamics (runtime)."
+type: object
+additionalProperties: false
+required:
+  - name
+  - version
+  - operations
+properties:
+  name:
+    type: string
+    description: "Domain or service name (e.g. orders, billing). Used for cross-file identification."
+  description:
+    type: string
+    description: "Business domain description summarizing this domain from business perspective."
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version of this domain configuration."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: "Bounded context this domain belongs to."
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default. Entities inherit unless overridden."
+  operations:
+    type: object
+    description: >
+      Domain operations as a dictionary. The key is a camelCase identifier and is the
+      operation's readable address: `arch.yaml` contract lists name it as `<slice>:<key>`.
+      It is chosen by the author rather than computed from `name` - measured across this
+      repo's models, 291 of 3294 keys are a deliberate shortening of the name
+      (`getVacancyFromTemplate` for "Get Vacancy Prefilled From Template"), so a tool that
+      derived one would disagree with the model in roughly one operation in eleven. Each
+      operation also carries a required `id` for machine-stable cross-file references.
+    propertyNames:
+      pattern: "^[a-z][A-Za-z0-9]*$"
+      description: >-
+        The key is an identifier, not a label: contracts address an operation as `<slice>:<key>`,
+        so a key that cannot be written in a ref is a broken address rather than a formatting
+        slip. Derived from the corpus rather than chosen - measured 2026-08-24 across every model
+        in the repo, all 3678 operation and error keys already match this and none carries a
+        space. Duplicate keys need no rule here: YAML itself refuses a map with two of the same.
+        `name` is the human label and is deliberately unconstrained; the two answer different
+        questions, and 2744 of the 3294 names contain spaces precisely because they are prose.
+    additionalProperties:
+      $ref: "#/$defs/operation"
+  errors:
+    type: object
+    description: >
+      Unified error type catalog as a dictionary. The key is a camelCase identifier chosen
+      by the author, in the same idiom operations use, and each error also carries a required
+      `id` for machine-stable references.
+    propertyNames:
+      pattern: "^[a-z][A-Za-z0-9]*$"
+      description: >-
+        The key is an identifier, not a label: contracts address an operation as `<slice>:<key>`,
+        so a key that cannot be written in a ref is a broken address rather than a formatting
+        slip. Derived from the corpus rather than chosen - measured 2026-08-24 across every model
+        in the repo, all 3678 operation and error keys already match this and none carries a
+        space. Duplicate keys need no rule here: YAML itself refuses a map with two of the same.
+        `name` is the human label and is deliberately unconstrained; the two answer different
+        questions, and 2744 of the 3294 names contain spaces precisely because they are prose.
+    additionalProperties:
+      $ref: "#/$defs/error_entry"
+  questions:
+    type: array
+    description: >
+      Competency questions this domain was created to answer.
+      Each question represents an independent knowledge requirement that the
+      domain must satisfy. Questions exist before their operational answers
+      (queries, commands, events) and persist across implementation changes.
+      Unanswered questions (empty answered_by) represent domain gaps.
+      Rooted in ontology engineering (Gruninger & Fox 1995) and
+      Goal-Question-Metric (Basili 1984).
+    items:
+      $ref: "#/$defs/question"
+
+$defs:
+
+  operation:
+    type: object
+    description: "A domain operation with protocol binding, rule governance, and behavioral properties."
+    additionalProperties: false
+    required:
+      - id
+      - kind
+    properties:
+      # --- Identity ---
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Unique operation identifier. Prefix encodes kind: CMD=command, EVT=event, QRY=query, DOC=document. The prefix MUST match the operation's kind field. Validator WARNS on mismatch."
+      kind:
+        type: string
+        enum: [event, command, query, document]
+        description: "Operation category: command=intent to change state, event=fact that happened, query=read-only, document=structured data transfer."
+      name:
+        type: string
+        description: "Human-readable operation name."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Operation version for individual lifecycle tracking."
+      description:
+        type: string
+        description: "What this operation does and its domain significance."
+
+      # --- Legacy free-text rules (preserved; prefer governed_by/preconditions/postconditions) ---
+      rules:
+        type: object
+        description: "Legacy free-text business rules. For new documents prefer governed_by, preconditions, postconditions with typed rule refs."
+        additionalProperties: true
+        properties:
+          businessDomain:
+            type: string
+            description: "Business domain or subdomain this rule set belongs to."
+          invariants:
+            type: array
+            items:
+              type: string
+            description: "Free-text invariants that must always hold."
+          preConditions:
+            type: array
+            items:
+              type: string
+            description: "Free-text preconditions (legacy). Prefer typed preconditions[]."
+          postConditions:
+            type: array
+            items:
+              type: string
+            description: "Free-text postconditions (legacy). Prefer typed postconditions[]."
+          constraints:
+            type: array
+            items:
+              type: string
+            description: "Free-text constraints applying to this operation."
+
+      # --- Protocol binding ---
+      exchange:
+        description: "Communication protocol and binding for this operation. Single exchange or array for multi-channel operations."
+        oneOf:
+          - $ref: "#/$defs/exchange"
+          - type: array
+            items:
+              $ref: "#/$defs/exchange"
+            minItems: 1
+      dispatch:
+        type: string
+        enum: [in-process]
+        description: >
+          Invocation model, ORTHOGONAL to `exchange` (which is the wire transport). Set `in-process` to
+          declare that this command/query EXECUTES in-process and has no wire transport of its own —
+          cross-cutting middleware, a request-scoped context or data-access step, pure compute, a write
+          embedded in a parent aggregate's endpoint, or an in-process delegation/write-back from a
+          consuming context. Absent (the default) means the operation is invoked over the wire via
+          `exchange`. `in-process` and `exchange` are mutually exclusive (see the dispatch-with-exchange
+          check). It exempts the operation from the `missing-exchange-binding` completeness check — so use
+          it only for operations that genuinely execute with no transport, NOT for unimplemented/phantom
+          gaps (those should keep surfacing). Events are already exempt and should not set `dispatch`.
+      payload:
+        $ref: "#/$defs/payload"
+        description: "Message payload schema and content type."
+      responses:
+        type: array
+        items:
+          $ref: "#/$defs/response"
+        description: "Possible response codes and their meanings."
+      reasons:
+        type: array
+        items:
+          $ref: "#/$defs/reason"
+        description: "Business reasons that may trigger or result from this operation."
+
+      # --- Rule governance (typed, from operations.schema.json merge) ---
+      governed_by:
+        type: array
+        items:
+          $ref: "#/$defs/rule_reference"
+        description: "Rules governing this operation's overall behavior. Each entry must reference a typed rule ID."
+      initiated_by:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        description: "Optional list of actor refs that can initiate this operation (who triggers the command). Used for Event Storming to place actor stickies before the command."
+      preconditions:
+        type: array
+        items:
+          $ref: "#/$defs/rule_reference"
+        description: "Rules that must hold true before this operation can execute. Checked at entry."
+      postconditions:
+        type: array
+        items:
+          $ref: "#/$defs/rule_reference"
+        description: "Rules that must hold true after this operation completes. Verified at exit."
+      requires:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations that must be available for this operation to function. Capability dependency, not execution order."
+
+      # --- Causal links (v2.1) ---
+      produces:
+        type: object
+        description: "Operations this operation emits upon execution. Commands typically produce events and/or documents. Events do not produce; they trigger reactions via reacts_to. Validator WARNS on non-conventional usage."
+        additionalProperties: false
+        properties:
+          operations:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            description: "References to produced operations. Convention: commands produce events (EVT) and/or documents (DOC)."
+          mode:
+            type: string
+            enum: [any, one_of, all]
+            default: any
+            description: "Production mode: any=subset may be produced, one_of=exactly one (XOR), all=all are produced (AND)."
+      reacts_to:
+        type: array
+        description: "Events or signals this operation reacts to. Each entry is a reactive policy binding."
+        items:
+          type: object
+          required: [operation]
+          additionalProperties: false
+          properties:
+            operation:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+              description: "Triggering operation. Convention: typically an event (EVT)."
+            policy:
+              type: string
+              description: "Reactive policy name describing why this reaction exists. Maps to Event Storming policy sticky."
+            condition:
+              type: string
+              description: "Guard condition. When absent, reaction is unconditional."
+            rule:
+              oneOf:
+                - $ref: "../metamodel.schema.yaml#/$defs/rule_ref"
+                - $ref: "../metamodel.schema.yaml#/$defs/transition_ref"
+              description: "Business rule governing this reaction."
+      task_type:
+        type: string
+        enum: [automated, manual, user-decision, external]
+        description: "Execution type: automated=system-executed, manual=human action outside system, user-decision=human choice within system (UI), external=third-party system."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Operation-level ownership override."
+
+      # --- Side effects ---
+      side_effects:
+        type: object
+        description: "Observable effects on external state: data reads and writes."
+        additionalProperties: false
+        properties:
+          reads:
+            type: array
+            description: "Data resources this operation reads."
+            items:
+              type: object
+              additionalProperties: false
+              required:
+                - target
+              properties:
+                target:
+                  type: string
+                  description: "Resource or concept being read."
+                pattern:
+                  type: string
+                  description: "Access pattern (e.g. file glob, query filter)."
+          writes:
+            type: array
+            description: "Data resources this operation creates or modifies."
+            items:
+              type: object
+              additionalProperties: false
+              required:
+                - target
+              properties:
+                target:
+                  type: string
+                  description: "Resource or concept being written."
+                when:
+                  type: string
+                  description: "Condition under which this write occurs."
+                files:
+                  type: array
+                  items:
+                    type: string
+                  description: "Specific files written (for file-based operations)."
+
+      # --- Behavioral traits (renamed from properties in v2.3) ---
+      traits:
+        type: object
+        description: "Behavioral traits affecting composition and optimization. Renamed from 'properties' in v2.3 to free that name for entity metadata."
+        additionalProperties: false
+        properties:
+          pure:
+            type: boolean
+            description: "No side effects; always produces same output for same input. Safe to cache, parallelize, and retry."
+          expensive:
+            type: boolean
+            description: "Resource-intensive (CPU, memory, I/O). May need special scheduling or resource limits."
+
+      # --- API design (v2.4) ---
+      examples:
+        type: array
+        description: >
+          Concrete usage examples for this operation. Used for documentation,
+          contract testing (Pact), and mock server generation.
+        items:
+          type: object
+          additionalProperties: false
+          required: [name]
+          properties:
+            name:
+              type: string
+              description: "Example name (e.g., valid-order, duplicate-order)."
+            description:
+              type: string
+              maxLength: 255
+              description: "What this example demonstrates."
+            scenario:
+              type: string
+              enum: [happy-path, error, edge-case]
+              description: "Example classification."
+            request:
+              type: object
+              additionalProperties: true
+              description: "Request payload example."
+            request_headers:
+              type: object
+              additionalProperties:
+                type: string
+              description: "Request header examples."
+            response:
+              type: object
+              additionalProperties: true
+              description: "Expected response payload."
+            response_code:
+              type: string
+              description: "Expected HTTP or application-level response code."
+            response_headers:
+              type: object
+              additionalProperties:
+                type: string
+              description: "Expected response headers."
+            provider_state:
+              type: string
+              description: >
+                Pact provider state for blueprint-driven contract testing.
+                Declares what state the provider must be in for this example
+                to produce the expected response. Maps directly to Pact
+                providerStates[].name in generated interaction files.
+            test_ref:
+              $ref: "../metamodel.schema.yaml#/$defs/test_ref"
+              description: "Reference to a test case that validates this example."
+      idempotent:
+        type: boolean
+        description: >
+          Whether this operation is idempotent. Idempotent operations produce
+          the same result regardless of how many times they are called with
+          the same input. Important for retry logic and API design.
+      idempotency_key:
+        type: string
+        description: >
+          Location of the idempotency key in the request (JSON Path).
+          E.g., $.headers.Idempotency-Key or $.body.request_id.
+          Only meaningful when idempotent is true.
+      correlation_id:
+        type: object
+        additionalProperties: false
+        description: >
+          Correlation identifier for distributed tracing. Specifies where
+          the correlation ID is located in the message/request.
+        properties:
+          location:
+            type: string
+            description: "JSON Path or header name where the correlation ID is found (e.g., $.headers.X-Correlation-ID)."
+          description:
+            type: string
+            description: "Purpose and format of the correlation ID."
+      security:
+        type: array
+        description: >
+          Security requirements for this operation. Each item references
+          a security scheme from the service's contracts.security_schemes.
+        items:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: "Scheme name → required scopes (empty array for no scopes)."
+
+      # --- Entity materialization (v2.6) ---
+      materializes:
+        type: array
+        description: >
+          Entities created or modified as a consequence of this operation.
+          Expresses entity lifecycle effects beyond operation-to-operation
+          causal links (produces/reacts_to). E.g., a refund command
+          materializes a CreditSlip read model.
+        items:
+          type: object
+          additionalProperties: false
+          required:
+            - concept
+            - action
+          properties:
+            concept:
+              $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+              description: "Concept created or modified by this operation."
+            action:
+              type: string
+              enum: [create, update, delete, archive]
+              description: "What happens to the concept instance."
+            description:
+              type: string
+              description: "Why this materialization occurs."
+
+      # --- Delivery planning (v2.5) ---
+      delivery_priority:
+        $ref: "../metamodel.schema.yaml#/$defs/delivery_priority"
+        description: "MoSCoW delivery priority for release planning."
+      release_target:
+        $ref: "../metamodel.schema.yaml#/$defs/release_target"
+        description: "Target release or milestone for this operation."
+
+      # --- Entity metadata ---
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+        description: "Open metadata bag for operation extensions."
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "Epistemic provenance for this operation (brownfield modeling confidence)."
+
+  rule_reference:
+    type: object
+    description: "Typed reference to a rule from rules.schema.yaml, with optional inline context."
+    additionalProperties: false
+    required:
+      - rule
+    properties:
+      rule:
+        oneOf:
+          - $ref: "../metamodel.schema.yaml#/$defs/rule_ref"
+          - $ref: "../metamodel.schema.yaml#/$defs/transition_ref"
+        description: "Rule ID (SR/CR/DR/EQ/VR prefix) or transition rule ID (TR prefix)."
+      description:
+        type: string
+        description: "Optional explanation of why this rule applies to this operation."
+
+  exchange:
+    type: object
+    description: "Communication protocol and binding. Protocol determines which sub-fields are required."
+    unevaluatedProperties: false
+    required:
+      - protocol
+    properties:
+      protocol:
+        description: "Communication protocol. Standard protocols or x- prefixed custom."
+        oneOf:
+          - type: string
+            enum: [http, http-sse, tcp, tds/tcp, grpc, trpc, orpc, json-rpc, x-ws, amqp, amqp091, amqp1, mqtt, kafka, graphql, stdio]
+          - type: string
+            pattern: "^x-[a-z][a-z0-9-]*$"
+      endpoint:
+        $ref: "#/$defs/endpoint"
+        description: "Endpoint configuration (required for http, http-sse, and stdio protocols)."
+      topic:
+        $ref: "#/$defs/topic"
+        description: "Message topic configuration (for AMQP/MQTT protocols)."
+      queue:
+        $ref: "#/$defs/queue"
+        description: "Message queue configuration (alternative to topic for AMQP/MQTT)."
+      method:
+        $ref: "#/$defs/method"
+        description: "RPC method configuration (required for tcp/grpc/trpc/orpc/json-rpc/x-ws)."
+      graphql:
+        $ref: "#/$defs/graphql_binding"
+        description: "GraphQL operation binding (required for graphql protocol)."
+    allOf:
+      - if:
+          properties:
+            protocol: { type: string, enum: [amqp, amqp091, amqp1, mqtt, kafka] }
+          required: [protocol]
+        then:
+          anyOf:
+            - required: [topic]
+            - required: [queue]
+      - if:
+          properties:
+            protocol: { type: string, enum: [http, http-sse] }
+          required: [protocol]
+        then:
+          required: [endpoint]
+      - if:
+          properties:
+            protocol: { type: string, enum: [tcp, tds/tcp, grpc, trpc, orpc, json-rpc, x-ws] }
+          required: [protocol]
+        then:
+          required: [method]
+      - if:
+          properties:
+            protocol: { type: string, enum: [graphql] }
+          required: [protocol]
+        then:
+          required: [graphql]
+      - if:
+          properties:
+            protocol: { type: string, enum: [stdio] }
+          required: [protocol]
+        then:
+          required: [endpoint]
+
+  endpoint:
+    type: object
+    description: "Endpoint configuration. For http/http-sse: URL path + HTTP method. For stdio: tool/method path + CALL method."
+    additionalProperties: false
+    required:
+      - path
+      - method
+    properties:
+      path:
+        type: string
+        description: "URL path template (e.g. /orders/{id})."
+      description:
+        type: string
+        description: "Endpoint description."
+      method:
+        type: string
+        description: "HTTP method (GET, POST, PUT, DELETE, PATCH)."
+      parameters:
+        type: array
+        items:
+          $ref: "#/$defs/parameter"
+        description: "URL path and query parameters."
+      group:
+        type: string
+        description: "API group or tag for documentation and code generation."
+
+  topic:
+    type: object
+    description: "Message topic for pub/sub protocols."
+    additionalProperties: false
+    properties:
+      name:
+        type: string
+        description: "Topic name."
+      description:
+        type: string
+        description: "What messages on this topic represent."
+      filters:
+        type: array
+        items:
+          $ref: "#/$defs/filter"
+        description: "Message filters for selective consumption."
+
+  queue:
+    type: object
+    description: "Message queue for point-to-point protocols."
+    additionalProperties: false
+    properties:
+      name:
+        type: string
+        description: "Queue name."
+      description:
+        type: string
+        description: "What messages in this queue represent."
+
+  filter:
+    type: object
+    description: "Message filter for selective topic consumption."
+    additionalProperties: false
+    required:
+      - name
+      - ref
+    properties:
+      name:
+        type: string
+        description: "Filter name."
+      ref:
+        type: string
+        description: "Reference to the filter value or expression."
+
+  graphql_binding:
+    type: object
+    description: "GraphQL operation binding (required when protocol is graphql)."
+    additionalProperties: false
+    required: [type, field]
+    properties:
+      type:
+        type: string
+        enum: [query, mutation, subscription]
+        description: "GraphQL operation type."
+      field:
+        type: string
+        description: "Root field name in the schema (e.g., getOrders, createOrder)."
+
+  method:
+    type: object
+    description: "RPC method configuration for gRPC/TCP/JSON-RPC and similar RPC protocols (method name + params + result; OpenRPC-compatible)."
+    additionalProperties: false
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: "RPC method name."
+      description:
+        type: string
+        description: "What this method does."
+      summary:
+        type: string
+        description: "Brief one-line summary."
+      parameters:
+        type: array
+        items:
+          $ref: "#/$defs/rpc_parameter"
+        description: "Method input parameters."
+      result:
+        $ref: "#/$defs/rpc_result"
+        description: "Method return value."
+
+  parameter:
+    type: object
+    description: "HTTP path or query parameter."
+    additionalProperties: false
+    required:
+      - name
+      - schema
+      - type
+    properties:
+      name:
+        type: string
+        description: "Parameter name."
+      schema:
+        $ref: "../metamodel.schema.yaml#/$defs/model_ref"
+        description: "Model schema reference for this parameter's type."
+      type:
+        type: string
+        description: "Parameter location (path, query, header, cookie)."
+      required:
+        type: boolean
+        description: "Whether this parameter is required."
+
+  rpc_parameter:
+    type: object
+    description: "RPC method input parameter."
+    additionalProperties: false
+    required:
+      - name
+      - schema
+    properties:
+      name:
+        type: string
+        description: "Parameter name."
+      schema:
+        $ref: "../metamodel.schema.yaml#/$defs/model_ref"
+        description: "Model schema reference for this parameter's type."
+      description:
+        type: string
+        description: "Parameter description."
+      summary:
+        type: string
+        description: "Brief summary."
+      required:
+        type: boolean
+        description: "Whether this parameter is required."
+
+  rpc_result:
+    type: object
+    description: "RPC method return value."
+    additionalProperties: false
+    required:
+      - schema
+    properties:
+      schema:
+        $ref: "../metamodel.schema.yaml#/$defs/model_ref"
+        description: "Model schema reference for the return type."
+      description:
+        type: string
+        description: "Result description."
+      summary:
+        type: string
+        description: "Brief summary."
+      required:
+        type: boolean
+        description: "Whether result is guaranteed non-null."
+
+  payload:
+    type: object
+    description: "Message payload definition."
+    additionalProperties: false
+    required:
+      - schema
+    properties:
+      schema:
+        $ref: "../metamodel.schema.yaml#/$defs/model_ref"
+        description: "Model schema reference for the payload structure."
+      description:
+        type: string
+        description: "Payload description."
+      contentType:
+        type: string
+        description: "MIME content type (e.g. application/json)."
+      required:
+        type: boolean
+        description: "Whether payload is mandatory for this operation."
+      version:
+        type: string
+        description: "Payload schema version."
+      stage:
+        type: string
+        description: "Pipeline stage where this payload is used."
+
+  response:
+    type: object
+    description: "Operation response definition."
+    additionalProperties: false
+    required:
+      - code
+      - description
+    properties:
+      code:
+        type: string
+        description: "HTTP or application-level response code."
+      type:
+        type: string
+        enum: [success, failure, error]
+        description: "Response category: success=expected outcome, failure=business rejection, error=unexpected fault."
+      description:
+        type: string
+        description: "What this response means to the caller."
+      schema:
+        $ref: "../metamodel.schema.yaml#/$defs/model_ref"
+        description: "Model schema reference for the response body."
+      contentType:
+        type: string
+        description: "MIME content type of the response."
+      headers:
+        type: array
+        items:
+          $ref: "#/$defs/response_header"
+        description: "Response headers."
+      error:
+        $ref: "../metamodel.schema.yaml#/$defs/error_ref"
+        description: "Reference to a domain error type from the errors catalog."
+
+  error_entry:
+    type: object
+    description: "Domain error type for consistent API error responses."
+    additionalProperties: false
+    required: [id, name]
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/error_ref"
+        description: "Unique error identifier (ERR001, ERR002, etc.)."
+      name:
+        type: string
+        description: "Human-readable error name."
+      description:
+        type: string
+        description: "Detailed description of when and why this error occurs."
+      category:
+        type: string
+        enum: [validation, authorization, not-found, conflict, timeout, external, internal]
+        description: "Error classification for grouping and handling."
+      severity:
+        type: string
+        enum: [warning, error, critical]
+        description: "Error severity level."
+      http_status:
+        type: integer
+        description: "Suggested HTTP status code for API generation."
+      retry_eligible:
+        type: boolean
+        description: "Whether this error type is safe to retry."
+      related_rules:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/rule_ref"
+        description: "Business rules that can trigger this error."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  response_header:
+    type: object
+    description: "HTTP response header definition."
+    additionalProperties: false
+    required:
+      - name
+      - schema
+    properties:
+      name:
+        type: string
+        description: "Header name (e.g. X-Request-Id)."
+      schema:
+        $ref: "../metamodel.schema.yaml#/$defs/model_ref"
+        description: "Model schema reference for the header value type."
+
+  reason:
+    type: object
+    description: "Business reason that may trigger or result from this operation."
+    additionalProperties: false
+    required:
+      - name
+      - description
+    properties:
+      name:
+        type: string
+        description: "Reason identifier (e.g. duplicate-order, insufficient-funds)."
+      description:
+        type: string
+        description: "Human-readable description of this reason."
+      version:
+        type: string
+        description: "Reason version."
+
+  question:
+    type: object
+    description: >
+      A competency question this domain was created to answer.
+      Questions are first-class entities with independent identity and lifecycle.
+      They bridge strategic intent (goals, decisions) to operational implementation
+      (operations of any kind: queries, commands, events, documents).
+
+      Design rationale for separate entity status:
+      (1) Questions exist before operations — requirements precede implementation.
+      (2) Questions span all operation kinds — not limited to queries.
+      (3) Questions have N:M relationships with operations.
+      (4) Questions are referenceable from the strategic layer (goals, decisions, tests).
+      (5) Unanswered questions (empty answered_by) are the most valuable artifact
+          for gap analysis and backlog prioritization.
+
+      Pattern origin: Competency Questions (Gruninger & Fox 1995),
+      Goal-Question-Metric (Basili 1984).
+    additionalProperties: false
+    required:
+      - id
+      - statement
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/question_ref"
+        description: "Unique question identifier (e.g. QN001 or billing.QN001)."
+      statement:
+        type: string
+        description: >
+          The question as a natural-language interrogative sentence.
+          Should be phrased from the stakeholder's perspective, not the system's.
+          E.g., "What is the current status of a customer's order?"
+          E.g., "Can a customer cancel an order after shipping?"
+          E.g., "What happens when inventory reaches zero?"
+      name:
+        type: string
+        description: "Short name for listings and graph nodes (e.g. 'Order Status')."
+      summary:
+        type: string
+        maxLength: 200
+        description: "One-line summary for listings (≤200 chars)."
+      description:
+        type: string
+        description: >
+          Extended context: why this question matters, what answering it enables,
+          and what business decisions depend on the answer.
+      category:
+        type: string
+        enum:
+          - existence
+          - enumeration
+          - relationship
+          - measurement
+          - temporal
+          - behavioral
+          - compliance
+          - business
+          - technical
+          - ux
+          - legal
+          - data
+          - dependency
+          - feasibility
+        description: >
+          Question category. Ontology categories (existence through compliance)
+          classify what the question asks about — from Gruninger & Fox 1995.
+          Domain categories (business through feasibility) classify whose
+          concern it is. Use tags for additional specificity.
+      priority:
+        type: string
+        enum: [critical, high, medium, low]
+        description: >
+          Question priority. Critical questions define the domain's raison d'être —
+          if the system can't answer them, the domain has no justification.
+      answered_by:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: >
+          Operations that answer this question. Accepts ANY operation kind
+          (CMD, EVT, QRY, DOC) — not limited to queries. A question about
+          "Can X happen?" may be answered by a command. A question about
+          "What happens when Y?" may be answered by an event chain.
+          Multiple operations may partially answer the same question (N:M).
+          An empty array means the question is unanswered — a domain gap
+          that should drive backlog prioritization.
+      concepts:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+        description: >
+          Concepts this question is about. Links questions to the ubiquitous
+          language. E.g., a question about "order status" references the
+          Order and OrderStatus concepts.
+      bounded_context_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/bounded_context_ref"
+        description: >
+          The bounded context whose knowledge boundary this competency question
+          defines (v2.7.6, D17). SINGLE-VALUED and EXPLICIT: a competency question
+          is a knowledge requirement of exactly one BC — unlike operations (which
+          are m:n and DERIVED from arch service contracts, so they carry no ref,
+          D14). Questions are referenced by NO arch construct, so this ref is the
+          only explicit binding; it is especially load-bearing for UNANSWERED
+          questions (empty answered_by), which have no operations to inherit a BC
+          from yet still belong to the BC carrying the knowledge gap. Points at an
+          arch `context.id` (BC###, optionally scope-prefixed e.g. shop.BC001; the
+          legacy kebab-context-name is a deprecated compat shim). When absent, the
+          owning BC falls back to the deprecated file `name`/`scope` heuristic; an
+          op-less, ref-less question resolves to 0 contexts → resolvability WARN
+          Strongly encouraged in v2.7.x, aligned to required in v2.8.
+      motivated_by:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
+        description: >
+          Goals that motivated this question. Closes the goal→question
+          traceability chain. E.g., goal "Enable real-time order visibility"
+          motivates question "What is the current status of a customer's order?"
+      stakeholders:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        description: >
+          Actors who need this question answered. Captures the human demand
+          side — who in the organization needs this knowledge and why.
+      owner:
+        $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        description: >
+          Person responsible for driving resolution. Distinct from
+          stakeholders[] (who care about the answer) — owner is who
+          must actually resolve it.
+      blocking:
+        type: boolean
+        default: false
+        description: "True if this question blocks downstream work."
+      due_date:
+        type: string
+        format: date
+        description: "Target date for resolution (ISO 8601)."
+      resolution:
+        type: string
+        description: "Answer or decision once the question is resolved."
+      resolved:
+        type: boolean
+        default: false
+        description: "Whether this question has been resolved."
+      version:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_version"
+        description: "Question version for lifecycle tracking."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Question-level ownership override."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      # NOTE: Questions do NOT have code_refs — they are strategic/analytical artifacts, not code.

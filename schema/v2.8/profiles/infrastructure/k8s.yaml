@@ -1,0 +1,29 @@
+---
+version: "1.0.0"
+profile: k8s
+substrate: cloud
+description: >
+  Kubernetes realizations of the neutral resource-type catalog. Realizes neutral RTs with
+  Helm charts / operators — substrate-portable (runs on any managed or self-hosted cluster). Proves
+  the container substrate realizes the same neutral RT001 with an identical outputs contract.
+realizations:
+  - realizes: RT001
+    substrate: cloud
+    module: { ref: "cloudnative-pg/cloudnative-pg", version_pin: "0.22.0", system: helm }
+    outputs:
+      - { name: host, type: hostname }
+      - { name: port, type: int }
+      - { name: name, type: string }
+      - { name: username, type: string }
+      - { name: password, type: string, secret: true }
+    notes: "CloudNativePG operator — Postgres in-cluster."
+
+  - realizes: RT002
+    substrate: cloud
+    module: { ref: "minio/minio", version_pin: "5.2.0", system: helm }
+    notes: "MinIO S3-compatible object store in-cluster."
+
+  - realizes: RT004
+    substrate: cloud
+    module: { ref: "bitnami/redis", version_pin: "20.1.0", system: helm }
+    notes: "Bitnami Redis chart."

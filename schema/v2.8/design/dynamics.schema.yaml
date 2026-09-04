@@ -1,0 +1,303 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Dynamics
+description: "Design Plane: Runtime concurrency and execution behavior. Covers execution model, parallelism, ordering constraints, race conditions, and resource profiles. Side effects in domain.yaml; observability in quality.yaml; deployment topology in infrastructure.yaml."
+type: object
+additionalProperties: false
+required:
+  - version
+properties:
+  version:
+    $ref: "../metamodel.schema.yaml#/$defs/semver"
+    description: "Content version of this dynamics document."
+  schemaVersion:
+    $ref: "../metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this document conforms to. Omit to assume latest."
+  scope:
+    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    description: "Bounded context this dynamics file belongs to."
+  tags:
+    $ref: "../metamodel.schema.yaml#/$defs/tags"
+  owned_by:
+    $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+    description: "File-level ownership default. Entities inherit unless overridden."
+  execution:
+    $ref: "#/$defs/execution_model"
+    description: "Fundamental execution model for this domain's operations."
+  parallelism:
+    type: array
+    description: "Identified opportunities for parallel execution. Each describes operations that can run concurrently, their relationship pattern, and expected benefit."
+    items:
+      $ref: "#/$defs/parallelism_opportunity"
+  ordering:
+    type: array
+    description: "Runtime ordering constraints between operations. Defines prerequisites and safe concurrency. Logical/narrative ordering lives in story.schema.yaml."
+    items:
+      $ref: "#/$defs/ordering_constraint"
+  race_conditions:
+    type: array
+    description: "Known concurrency hazards and mitigations. Proactive documentation of races prevents production incidents."
+    items:
+      $ref: "#/$defs/race_condition"
+  resources:
+    $ref: "#/$defs/resource_profile"
+    description: "Resource consumption characteristics: memory, I/O, and CPU profiles for capacity planning."
+
+$defs:
+
+  execution_model:
+    type: object
+    description: "High-level declaration of how operations are scheduled and coordinated. Specific parallelism and ordering details are in their respective collections."
+    additionalProperties: false
+    required:
+      - model
+    properties:
+      model:
+        type: string
+        enum:
+          - sequential
+          - parallel
+          - actor
+          - csp
+          - reactive
+          - event-driven
+          - pipeline
+        description: "Primary execution model: sequential=one-at-a-time, parallel=concurrent, actor=message-passing, csp=communicating processes, reactive=event-stream, event-driven=event-triggered, pipeline=staged handoffs."
+      description:
+        type: string
+        description: "Narrative description of the execution approach."
+      rationale:
+        type: string
+        description: "Why this execution model was chosen."
+
+  parallelism_opportunity:
+    type: object
+    description: "An identified opportunity to run operations concurrently. Documents relationship pattern, expected benefit, and implementation complexity."
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - operations
+      - relationship
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/parallelism_ref"
+        description: "Unique parallelism identifier (PAR + NNN)."
+      name:
+        type: string
+        description: "Human-readable name (e.g. 'Parallel inventory scanning')."
+      summary:
+        type: string
+        maxLength: 200
+        description: "One-line summary for listings."
+      operations:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations that can run concurrently in this opportunity."
+      relationship:
+        type: string
+        enum:
+          - independent
+          - embarrassingly-parallel
+          - pipeline
+          - fork-join
+          - scatter-gather
+        description: "Concurrency pattern: independent=no dependencies, embarrassingly-parallel=same op on partitioned data, pipeline=concurrent stages, fork-join=fan out then merge, scatter-gather=fan out then collect as they complete."
+      benefit:
+        type: string
+        description: "Expected benefit (e.g. '2-3x speedup on multi-core systems')."
+      complexity:
+        type: string
+        enum: [low, medium, high]
+        description: "Implementation complexity: low=trivial, medium=requires synchronization, high=complex coordination."
+      implemented:
+        type: boolean
+        description: "Whether this parallelism is currently implemented. false=identified opportunity, not yet realized."
+      description:
+        type: string
+        description: "Human-readable description."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  ordering_constraint:
+    type: object
+    description: "Runtime ordering constraint between operations. Absorbs v1 execution_order and can_parallel_with. This is runtime sequencing; logical/narrative ordering is in story.schema.yaml."
+    additionalProperties: false
+    required:
+      - id
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/ordering_ref"
+        description: "Unique ordering identifier (ORD + NNN)."
+      summary:
+        type: string
+        description: "Human-readable description (e.g. 'Inventory scan must complete before classification')."
+      operations:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations this constraint applies to."
+      requires:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations that must complete BEFORE these operations can start."
+      enables:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations that become eligible AFTER these operations complete."
+      can_parallel_with:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations that may execute concurrently. Explicitly marks safe concurrency. Moved from v1 operations schema."
+      step:
+        type: integer
+        description: "Optional step number for sequential planning. Operations sharing a step may run in parallel if parallel=true. Lower numbers execute first."
+      parallel:
+        type: boolean
+        description: "Whether operations within this step can run in parallel. Only meaningful when step is provided."
+      condition:
+        type: string
+        description: "Optional condition under which this ordering applies (e.g. 'only in batch mode')."
+      note:
+        type: string
+        description: "Additional context about this ordering constraint."
+      description:
+        type: string
+        description: "Human-readable description."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  race_condition:
+    type: object
+    description: "A documented concurrency hazard with mitigation strategy. Proactive identification prevents production incidents."
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - scenario
+      - impact
+      - mitigation
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/race_condition_ref"
+        description: "Unique race condition identifier (RC + NNN)."
+      name:
+        type: string
+        description: "Human-readable name for this hazard."
+      summary:
+        type: string
+        maxLength: 200
+        description: "One-line summary for listings."
+      scenario:
+        type: string
+        description: "How this race occurs — the specific interleaving of operations that leads to incorrect behavior."
+      impact:
+        type: string
+        description: "What happens if unmitigated (e.g. 'Duplicate orders created')."
+      likelihood:
+        type: string
+        enum: [very-low, low, medium, high]
+        description: "Probability in production based on traffic patterns, concurrency level, and timing windows."
+      mitigation:
+        type: string
+        description: "Strategy to prevent or handle this race (e.g. 'Optimistic locking with retry')."
+      affects:
+        type: array
+        items:
+          type: string
+        description: "Operations or concepts affected. Use operation_ref (CMD/EVT/QRY/DOC + number) or concept_ref (CNnnn) format for traceability."
+      description:
+        type: string
+        description: "Human-readable description."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+  resource_profile:
+    type: object
+    description: "Resource consumption characteristics for capacity planning and performance optimization."
+    additionalProperties: false
+    properties:
+      memory:
+        $ref: "#/$defs/memory_spec"
+        description: "Memory usage profile."
+      disk_io:
+        $ref: "#/$defs/io_spec"
+        description: "Disk I/O profile."
+      cpu:
+        $ref: "#/$defs/cpu_spec"
+        description: "CPU consumption profile."
+
+  memory_spec:
+    type: object
+    description: "Memory consumption profile documenting how usage scales with input size."
+    additionalProperties: false
+    properties:
+      formula:
+        type: string
+        description: "Memory usage formula (e.g. 'O(n) where n = file count' or 'base 50MB + 1KB per entry')."
+      examples:
+        type: array
+        description: "Concrete memory usage examples at various input sizes."
+        items:
+          type: object
+          additionalProperties: false
+          properties:
+            input:
+              type: string
+              description: "Input description or size (e.g. '10k files')."
+            memory:
+              type: string
+              description: "Memory consumed (e.g. '256MB')."
+
+  io_spec:
+    type: object
+    description: "I/O profile for disk, network, or storage operations."
+    additionalProperties: false
+    properties:
+      operations:
+        type: array
+        items:
+          type: string
+        description: "I/O-performing operations (use operation_ref format: CMD/EVT/QRY/DOC + number)."
+      pattern:
+        type: string
+        description: "I/O access pattern (e.g. 'sequential read', 'random read/write', 'append-only')."
+      throughput:
+        type: string
+        description: "Expected throughput (e.g. '1000 files/sec')."
+      bottleneck:
+        type: string
+        description: "Known bottleneck (e.g. 'disk seek time for small files')."
+
+  cpu_spec:
+    type: object
+    description: "CPU consumption profile for compute-intensive operations."
+    additionalProperties: false
+    properties:
+      operations:
+        type: array
+        items:
+          type: string
+        description: "CPU-intensive operations (use operation_ref format: CMD/EVT/QRY/DOC + number)."
+      complexity:
+        type: string
+        description: "Computational complexity (e.g. 'O(n log n)')."
+      parallelizable:
+        type: boolean
+        description: "Whether CPU work can be distributed across cores."

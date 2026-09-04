@@ -9,7 +9,7 @@ one command.
 
 ```bash
 # once — build the model the query runs against
-npm run build && node tools/model-builder/dist/cli.js .blueprint/v2.7 --output model.json
+npm run build && node tools/model-builder/dist/cli.js .blueprint/v2.8 --output model.json
 
 # then, as often as you like
 node tools/entity-query/cli.mjs model.json --text "order"

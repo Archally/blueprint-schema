@@ -5,13 +5,13 @@ Zero-build, zero-config beyond `yaml`. Reports **both** drift directions between
 
 ```bash
 # code → model: did anything model the files I just changed?
-node tools/coverage-check/cli.mjs $(git diff --name-only main) --model .blueprint/v2.7
+node tools/coverage-check/cli.mjs $(git diff --name-only main) --model .blueprint/v2.8
 
 # model → code: does the blueprint still point at files that exist?
-node tools/coverage-check/cli.mjs --model .blueprint/v2.7 --audit
+node tools/coverage-check/cli.mjs --model .blueprint/v2.8 --audit
 
 # both, gating CI
-node tools/coverage-check/cli.mjs $(git diff --name-only main) --model .blueprint/v2.7 --audit --strict
+node tools/coverage-check/cli.mjs $(git diff --name-only main) --model .blueprint/v2.8 --audit --strict
 ```
 
 | Flag | Effect |

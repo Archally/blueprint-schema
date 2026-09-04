@@ -1,0 +1,441 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Migration Schema
+description: "Versioned, ordered changes to a blueprint model instance. Enables AS-IS to TO-BE model transformation with traceability and rollback."
+type: object
+additionalProperties: false
+required: [migration, changes]
+properties:
+  schemaVersion:
+    $ref: "metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this migration conforms to. Omit to assume latest."
+  migration:
+    type: object
+    description: "Migration identity, lifecycle, and traceability metadata."
+    additionalProperties: false
+    required: [id, name, date, status, description]
+    properties:
+      id:
+        $ref: "metamodel.schema.yaml#/$defs/migration_ref"
+        description: "Unique migration identifier (MIG001, MIG002, etc.)."
+      name:
+        type: string
+        pattern: "^[a-z0-9-]+$"
+        description: "Kebab-case migration name (e.g., 'add-payment-retry-logic')."
+      date:
+        type: string
+        pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+        description: "Migration creation date (YYYY-MM-DD)."
+      status:
+        type: string
+        enum: [draft, pending, applied, rolled-back]
+        description: "Lifecycle state: draft=authoring, pending=ready for review/application, applied=committed to model, rolled-back=reverted."
+      description:
+        type: string
+        description: "What this migration does and why, in plain language."
+      author:
+        type: string
+        description: "Person or agent who created this migration."
+      breaking:
+        type: boolean
+        default: false
+        description: "Whether this migration introduces breaking changes to generated artifacts."
+      semver_impact:
+        type: string
+        enum: [major, minor, patch]
+        description: "Semantic versioning impact on the blueprint model version."
+      depends_on:
+        type: array
+        items:
+          $ref: "metamodel.schema.yaml#/$defs/migration_ref"
+        description: "Migrations that must be applied before this one. Loader validates dependency order."
+      related_decisions:
+        type: array
+        items:
+          $ref: "metamodel.schema.yaml#/$defs/decision_ref"
+        description: "Architectural decisions that motivated this migration."
+      rationale:
+        type: string
+        description: "Detailed reasoning for why this migration is needed."
+      tags:
+        type: array
+        items:
+          type: string
+        description: "Free-form tags for grouping and filtering migrations."
+      properties:
+        $ref: "metamodel.schema.yaml#/$defs/entity_properties"
+        description: "Open metadata bag for migration-level custom attributes."
+  changes:
+    type: object
+    description: "Model changes organized by concern: entities (nodes), properties (attributes), relationships (edges), and meta (cross-cutting). At least one change must be present across all collections."
+    additionalProperties: false
+    properties:
+      entities:
+        type: array
+        description: "Entity-level changes: add, remove, deprecate, split, or merge entire blueprint entities."
+        items:
+          $ref: "#/$defs/entity_change"
+      properties:
+        type: array
+        description: "Property-level changes: set, unset, or rename individual fields on existing entities."
+        items:
+          $ref: "#/$defs/property_change"
+      relationships:
+        type: array
+        description: "Relationship changes: add, remove, or redirect edges between entities."
+        items:
+          $ref: "#/$defs/relationship_change"
+      meta:
+        type: array
+        description: "Cross-cutting changes: tags, file restructuring, bulk operations, constitution amendments."
+        items:
+          $ref: "#/$defs/meta_change"
+  rollback:
+    type: object
+    description: "Rollback feasibility metadata. Automatic rollback derives inverse operations from before/old_value."
+    additionalProperties: false
+    properties:
+      automatic:
+        type: boolean
+        default: true
+        description: "Whether rollback can be computed from before/old_value fields."
+      warnings:
+        type: array
+        items:
+          type: string
+        description: "Warnings about rollback risks."
+      data_loss:
+        type: boolean
+        default: false
+        description: "Whether rollback would lose information not captured in before/old_value."
+      external_actions:
+        type: array
+        items:
+          type: string
+        description: "Manual actions required outside the blueprint if rollback is performed."
+
+$defs:
+  entity_change:
+    type: object
+    description: "A change to a whole entity (node in the graph)."
+    additionalProperties: false
+    required: [kind, entity_type, target]
+    properties:
+      kind:
+        type: string
+        enum: [add, modify, deprecate, remove, split, merge]
+        description: "Change type: add=new entity, modify=replace, deprecate=mark for removal, remove=delete, split=one to many, merge=many to one."
+      entity_type:
+        type: string
+        enum:
+          - concept
+          - actor
+          - enumeration
+          - association
+          - operation
+          - error
+          - rule
+          - transition
+          - model
+          - story
+          - activity
+          - user-story
+          - use-case
+          - question
+          - party
+          - department
+          - team
+          - context
+          - service
+          - contract
+          - dependency
+          - goal
+          - non-goal
+          - risk
+          - assumption
+          - trade-off
+          - inquiry
+          - decision
+          - capability
+          - test-case
+          - fitness-function
+          - metric
+          - kpi
+          - slo
+          - sla
+          - security
+          - compliance
+          - resilience
+          - parallelism
+          - ordering
+          - race-condition
+          - screen
+          - ui-action
+          - ui-navigation
+          - resource
+          - milestone
+          - value-stream
+        description: "Blueprint entity type. Routes validation to the appropriate schema."
+      target:
+        type: string
+        description: "Entity identifier (typed ref, e.g., CN005, CMD012) or SpecPath. For add: new entity ID. For merge: comma-separated source IDs."
+      description:
+        type: string
+        description: "Human-readable description of this change."
+      before:
+        type: object
+        description: "Entity state before change. REQUIRED for modify, remove, merge. Enables rollback."
+      after:
+        description: "Entity state after change. REQUIRED for add, modify, split. For split: array of entities."
+      reason:
+        type: string
+        description: "Why this specific entity change is needed."
+      group:
+        type: string
+        description: "Atomic group name. All changes with the same group must apply together or not at all."
+      order:
+        type: integer
+        description: "Explicit ordering within this migration. Lower numbers apply first."
+
+  property_change:
+    type: object
+    description: "A change to individual properties on an existing entity."
+    additionalProperties: false
+    required: [kind, target, property]
+    properties:
+      kind:
+        type: string
+        enum: [set, unset, rename, append, remove-item]
+        description: "Property operation: set=assign, unset=remove, rename=change name, append=add to array, remove-item=remove from array."
+      target:
+        type: string
+        description: "Entity identifier (typed ref, e.g., CN005, CMD012)."
+      entity_type:
+        type: string
+        description: "Entity type for validation routing. Same enum as entity_change.entity_type."
+      property:
+        type: string
+        description: "Property name or dot-path for nested properties (e.g., description, payload.model)."
+      value:
+        description: "New value for set/append operations. Type depends on the property."
+      old_value:
+        description: "Previous value for conflict detection and rollback."
+      new_name:
+        type: string
+        description: "New property name for rename operations."
+      description:
+        type: string
+        description: "Human-readable description of this property change."
+      reason:
+        type: string
+        description: "Why this property is being changed."
+      group:
+        type: string
+        description: "Atomic group name (same semantics as entity_change.group)."
+      order:
+        type: integer
+        description: "Explicit ordering within this migration."
+
+  relationship_change:
+    type: object
+    description: "A change to a relationship (edge) between two entities."
+    additionalProperties: false
+    required: [kind, subject, predicate, object]
+    properties:
+      kind:
+        type: string
+        enum: [add, remove, redirect, modify]
+        description: "Edge operation: add=create, remove=delete, redirect=change target, modify=change edge properties."
+      subject:
+        type: string
+        description: "Source entity typed ref (e.g., CMD005). The entity this relationship originates from."
+      predicate:
+        type: string
+        enum:
+          - relationship
+          - transition_rules
+          - interaction
+          - association
+          - produces
+          - reacts_to
+          - concepts
+          - concept
+          - governed_by
+          - precondition
+          - preconditions
+          - postcondition
+          - postconditions
+          - initiated_by
+          - depends_on
+          - requires
+          - has_state
+          - transition
+          - constrains
+          - validates
+          - motivation_refs
+          - capability_refs
+          - declared_impact
+          - tracks
+          - targets
+          - measures
+          - goal.kpi
+          - references
+          - contains
+          - extends
+          - typed_by
+          - has_error
+          - enters_at
+          - has_step
+          - next_activity
+          - assigned_to_lane
+          - exposes
+          - consumes
+          - related_to
+          - provides
+          - story_orders_operation
+          - org_contains_dept
+          - dept_has_team
+          - org_contains_team
+          - screen_uses_model
+          - screen_motivated_by
+          - screen_decision
+          - screen_validated_by
+          - screen_story
+          - action_on_screen
+          - action_triggers_operation
+          - nav_from
+          - nav_to
+          - question_answered_by
+          - question_about
+          - question_motivated_by
+          - question_stakeholder
+          - test_validates_question
+          - decision_motivated_by_question
+          - example_validates
+          - user_story_actor
+          - user_story_operation
+          - user_story_test_case
+          - user_story_use_case
+          - use_case_actor
+          - use_case_user_story
+          - use_case_story
+          - use_case_screen
+          - use_case_operation
+          - milestone_dependency
+          - milestone_deliverable
+          - question_owner
+          - risk_owner
+          - inquiry_goal
+          - inquiry_risk
+          - inquiry_question
+          - inquiry_owner
+          - inquiry_stakeholder
+          - risk_goal
+          - capability_goal
+          - assumption_risk
+          - value_stream_capability
+          - value_stream_goal
+          - value_stream_kpi
+          - value_stream_actor
+          - code_ref
+        description: "Relationship type. Maps to graph edge label."
+      object:
+        type: string
+        description: "Target entity typed ref (e.g., EVT006). For redirect: current target."
+      new_object:
+        type: string
+        description: "For redirect: the new target entity ref."
+      edge_properties:
+        type: object
+        description: "Properties on the edge itself (policy, condition, mode for produces/reacts_to)."
+        additionalProperties: true
+        properties:
+          policy:
+            type: string
+            description: "Reactive policy name (for reacts_to edges)."
+          condition:
+            type: string
+            description: "Guard condition (for reacts_to edges)."
+          mode:
+            type: string
+            enum: [any, one_of, all]
+            description: "Production mode (for produces edges)."
+          rule:
+            type: string
+            description: "Rule reference governing this relationship."
+          relationship_type:
+            type: string
+            description: "DDD relationship pattern (for depends_on edges between contexts)."
+      description:
+        type: string
+        description: "Human-readable description of this relationship change."
+      reason:
+        type: string
+        description: "Why this relationship is being changed."
+      group:
+        type: string
+        description: "Atomic group name."
+      order:
+        type: integer
+        description: "Explicit ordering within this migration."
+
+  meta_change:
+    type: object
+    description: "Cross-cutting changes: tags, file restructuring, bulk operations, constitution amendments."
+    additionalProperties: false
+    required: [kind, target]
+    properties:
+      kind:
+        type: string
+        enum:
+          - tag-add
+          - tag-remove
+          - tag-rename
+          - bulk-tag
+          - reclassify
+          - move-to-slice
+          - constitution-amend
+          - declare-shared-layer
+          - document-add
+          - document-move
+          - document-split
+          - document-merge
+          - note
+        description: "Meta operation: tag-add/remove/rename, bulk-tag, reclassify, move-to-slice, constitution-amend, declare-shared-layer, document-add/move/split/merge, or note (informational)."
+      target:
+        type: string
+        description: "Entity ref, tag name, slice name, or constitution section depending on kind."
+      value:
+        description: "New value (tag name, new slice, amended text, etc.)."
+      old_value:
+        description: "Previous value for rollback."
+      filter:
+        type: object
+        description: "For bulk operations: filter criteria to select target entities."
+        properties:
+          entity_type:
+            type: string
+            description: "Filter by entity type."
+          tags:
+            type: array
+            items:
+              type: string
+            description: "Filter by existing tags (entities matching ANY)."
+          slice:
+            type: string
+            description: "Filter by domain slice name."
+          layer:
+            type: string
+            description: "Filter by canonical model layer (e.g. design.ui, governance.roadmap)."
+      description:
+        type: string
+        description: "Human-readable description."
+      reason:
+        type: string
+        description: "Why this meta change is needed."
+      group:
+        type: string
+        description: "Atomic group name."
+      order:
+        type: integer
+        description: "Explicit ordering within this migration."

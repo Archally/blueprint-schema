@@ -35,7 +35,7 @@ function makeFixture(files, manifestOverride) {
   mkdirSync(join(toolsDir, "semantic-checker", "rules"), { recursive: true });
   mkdirSync(portDir, { recursive: true });
 
-  const exampleDir = join(root, "examples", "prestashop", ".blueprint", "v2.7");
+  const exampleDir = join(root, "examples", "prestashop", ".blueprint", "v2.8");
   mkdirSync(exampleDir, { recursive: true });
 
   const dirFor = {
@@ -71,7 +71,7 @@ function makeFixture(files, manifestOverride) {
     "# job quality-gate tools/quality-gate",
     "# job semantic-rules tools/semantic-checker/rules",
     "# job port tools/port",
-    "# job example-model examples/prestashop/.blueprint/v2.7",
+    "# job example-model examples/prestashop/.blueprint/v2.8",
   ];
   writeFileSync(
     join(portDir, "PORTED.sha256"),
@@ -136,8 +136,8 @@ test("a unit marked extras-ok may ship files the manifest does not name", () => 
   try {
     const manifest = join(portDir, "PORTED.sha256");
     writeFileSync(manifest,
-      readFileSync(manifest, "utf8").replace("# job example-model examples/prestashop/.blueprint/v2.7",
-        "# job example-model examples/prestashop/.blueprint/v2.7 extras-ok"), "utf8");
+      readFileSync(manifest, "utf8").replace("# job example-model examples/prestashop/.blueprint/v2.8",
+        "# job example-model examples/prestashop/.blueprint/v2.8 extras-ok"), "utf8");
     writeFileSync(join(dirFor["example-model"], "cli.ts"), "export {};\n", "utf8");
     const { code, out } = run(verifier);
     assert.equal(code, 0, out);
