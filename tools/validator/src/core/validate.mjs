@@ -3,21 +3,10 @@ import path from "node:path";
 import { toPosixPath, walkFiles, loadYaml } from "./utils.mjs";
 import { loadSchemaRegistry, makeAjv, SCHEMA_BASE_URI } from "./schema-registry.mjs";
 import { deriveReferenceKeys } from "./reference-keys.mjs";
+import { resolveModelReferences } from "./cross-references.mjs";
 import { FILENAME_TO_SCHEMA, detectSchemaType } from "./schema-types.mjs";
-import {
-  collectIds,
-  collectKeyedIds,
-  collectParentEdges,
-  collectRefs,
-  collectSelfEdges,
-  findParentCycles,
-  isIdentityOrReferenceViolation,
-  isPartyRedeclaration,
-} from "./references.mjs";
+import { isIdentityOrReferenceViolation } from "./references.mjs";
 import { SECTION_TO_CATEGORY, resolvesAgainst } from "./model-ref-match.mjs";
-
-/** `RT###` refs point to the resource-type CATALOG in the profiles, never into the model. */
-const CATALOG_REF_RE = /^([a-z][a-z0-9-]*\.)?RT\d{3,}$/;
 
 /**
  * v2.7.7 typed-id conventions, warned about below v2.8 and enforced by the schema from v2.8.
@@ -329,11 +318,6 @@ export function validateModel(args) {
   const nonDemotable = new Set();
   const crossErrors = [];
   const warnings = [];
-  const allIds = new Map();
-  const allDuplicates = new Map();
-  const parentEdges = new Map();
-  const selfEdges = [];
-  const allRefs = [];
   /**
    * Each recognised file is parsed exactly once and reused by every later pass, so the passes
    * cannot disagree about the same file and warning order stays deterministic.
@@ -369,20 +353,6 @@ export function validateModel(args) {
     // points at other entities — skipping it would silently narrow the graph and let dangling
     // references through unreported.
     parsedFiles.push({ relFile, schemaType, data });
-    collectIds(data, allIds, allDuplicates, [relFile]);
-    collectParentEdges(data, parentEdges);
-    collectSelfEdges(data, selfEdges, null, [relFile]);
-    // Each ref carries the scope ITS OWN file declares, so a bare id can be resolved against
-    // that scope and only that one. Tagging at the call site keeps `collectRefs` unchanged.
-    const declaredScope = typeof data.scope === "string" ? data.scope : null;
-    // Format-2 names (`orders:placeOrder`) are declared by the map entries of a scoped document.
-    // The scope is the declared one, else the folder the file sits in - the same fallback the
-    // model loader applies, so a reference resolves here iff the builder resolves it.
-    const folderScope = relFile.includes("/") ? relFile.slice(0, relFile.indexOf("/")) : null;
-    collectKeyedIds(data, declaredScope ?? folderScope, allIds, [relFile]);
-    for (const ref of collectRefs(data, [], [relFile], refKeys)) {
-      allRefs.push({ ...ref, scope: declaredScope });
-    }
 
     // Schema validation, on the other hand, needs a schema. Unrecognised files are counted as
     // skipped and reported as such, never validated against an unrelated schema.
@@ -411,44 +381,25 @@ export function validateModel(args) {
     filesValidated += 1;
   }
 
-  for (const [id, locs] of allDuplicates.entries()) {
-    // A party re-declared across arch slices and the org layer shares one id BY DESIGN.
-    if (isPartyRedeclaration(locs)) continue;
-    warnings.push(`Duplicate ID '${id}' in: ${locs.join(", ")}`);
+  // Every readable document takes part, and the findings are structured so the model server can
+  // render the same ones - one implementation of "does this reference resolve", two surfaces.
+  // A cycle and a self edge are cross-reference errors rather than schema errors, so `--compat`
+  // cannot demote them: a chain that does not terminate is not a version-compatibility question.
+  const references = resolveModelReferences(parsedFiles, refKeys);
+  for (const { id, locations } of references.duplicates) {
+    warnings.push(`Duplicate ID '${id}' in: ${locations.join(", ")}`);
   }
-
-  for (const r of allRefs) {
-    if (CATALOG_REF_RE.test(r.value)) continue;
-    if (allIds.has(r.value)) continue;
-    // The scope prefix is OPTIONAL by schema (`^([a-z][a-z0-9-]*\.)?CN\d{3}$` and its siblings),
-    // so a bare id inside a scoped file names that file's own scope. It is resolved against THAT
-    // scope alone, never against every scope: a bare id is ambiguous across contexts, and a
-    // search that accepted any match would resolve a typo to whichever slice happened to own it.
-    if (!r.value.includes(".") && r.scope && allIds.has(`${r.scope}.${r.value}`)) continue;
-    crossErrors.push(`Missing reference '${r.value}' at ${r.loc}`);
+  for (const { value, loc } of references.missing) {
+    crossErrors.push(`Missing reference '${value}' at ${loc}`);
   }
-
-  // A `parent` ring resolves perfectly and still breaks every consumer that walks it, so reference
-  // checking above cannot see it and this is where it is caught. Collected across the whole model
-  // rather than per file, because a chain may cross files.
-  //
-  // ONE implementation for every construct that uses `parent`. A department's parent department and
-  // a deployment scope's parent scope are the same shape and the same defect, and the dangling half
-  // is now the generic reference walk's job because `parent` is a reference key. A cycle is a
-  // cross-reference error rather than a schema error, so `--compat` cannot demote it: a chain that
-  // does not terminate is not a version-compatibility question.
-  for (const cycle of findParentCycles(parentEdges)) {
+  for (const cycle of references.parentCycles) {
     crossErrors.push(
       cycle.length === 1
         ? `'${cycle[0]}' is its own parent`
         : `Parent cycle: ${[...cycle, cycle[0]].join(" -> ")}`,
     );
   }
-
-  // The same blind spot one construct over: an edge naming its own declarer resolves, so the walk
-  // above passes it. A cross-reference error rather than a warning, because the entry states a
-  // relationship that does not exist - a unit cannot depend on, supply or be hosted on itself.
-  for (const edge of selfEdges) {
+  for (const edge of references.selfEdges) {
     crossErrors.push(`'${edge.id}' declares an edge to itself at ${edge.loc}`);
   }
 
