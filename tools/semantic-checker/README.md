@@ -38,9 +38,11 @@ npx @archally/blueprint-schema blueprint-check <dir> --config .blueprint-lint.ya
 | `exchange-missing-payload` | warn | every Operation with an `exchange` also declares a `payload.schema` (the data model on the wire) |
 | `events-with-produces` | warn | no event Operation is the source of a `produces` edge (anti-pattern) |
 | `untested-rules` | warn | every business rule has an incoming `validated-by` edge (a test validates it) |
+| `activity-without-entry-operation` | warn | every story activity names the `entry_operation` it begins with; an activity may omit it while the operation is not yet modelled, and this reports the gap |
 | `aggregate-root-signals` | info | aggregate-root Concepts have lifecycle states or relationships |
 | `unanswered-questions` | info | every Question has an outgoing `answered-by` edge |
 | `dispatch-with-exchange` | warn | no Operation sets `dispatch: in-process` *and* an `exchange` — they are mutually exclusive |
+| `empty-context` | warn | a Context that declares services handles at least one operation (an incoming `handled_by`); a context with no services is a named boundary and is out of scope |
 | `unbound-operation` | warn | every Operation is provided by some bounded context (a contract `expose`/`send`, or the deprecated name/scope fallback) |
 | `unbound-question` | warn | every competency Question resolves to a bounded context |
 | `leverage-point-no-address` | warn | every LeveragePoint addresses at least one finding, risk or decision |

@@ -1,0 +1,20 @@
+engineVersion: "0.1"
+rules:
+  - id: activity-without-entry-operation
+    severity: warn
+    description: >-
+      A story activity that names no `entry_operation`. The entry operation is where the activity
+      enters the domain's causal chain, and the story visualizer follows `produces` / `reacts_to`
+      from it; an activity without one is a narrative step the domain never reaches. From v2.8 the
+      field is optional so that an operation not yet modelled can be left out honestly - a reference
+      to an operation nothing declares is a cross-reference error, and an invented placeholder is
+      worse than a gap. Absence warns; false presence errors. Declare the operation (a stub with
+      `provenance.discovery_stage: hypothesis` is enough) and name it here when it exists.
+      Override per-project via .blueprint-lint.yaml (e.g. `activity-without-entry-operation: off`).
+    find:
+      entity_type: Story
+    check:
+      custom:
+        module: ./activity-entry-operation.mjs
+        export: activityWithoutEntryOperation
+    message: 'Story "{displayId}" ({name|''unnamed''}) has {count} activity(ies) with no entry_operation: {activities}. Declare the operation the activity begins with and name it; leave the field out only while the operation is not yet modelled.'
