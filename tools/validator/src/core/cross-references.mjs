@@ -59,6 +59,9 @@ export const CATALOG_REF_RE = /^([a-z][a-z0-9-]*\.)?RT\d{3,}$/;
 export function resolveModelReferences(documents, refKeys) {
   const allIds = new Map();
   const allDuplicates = new Map();
+  // Duplicate detection runs over the whole model in one pass below; the per-document collection
+  // above exists so a bare id can be aliased under the scope its own document declares.
+  const everything = new Map();
   const parentEdges = new Map();
   const selfEdges = [];
   const allRefs = [];
@@ -69,13 +72,30 @@ export function resolveModelReferences(documents, refKeys) {
     const declaredScope = typeof record.scope === "string" ? record.scope : null;
     const folderScope = relFile.includes("/") ? relFile.slice(0, relFile.indexOf("/")) : null;
 
-    collectIds(data, allIds, allDuplicates, [relFile]);
+    const declaredHere = new Map();
+    collectIds(data, declaredHere, new Map(), [relFile]);
+    for (const [id, loc] of declaredHere) {
+      if (!allIds.has(id)) allIds.set(id, loc);
+      // The scope prefix is optional on a DECLARATION too: a bare `KPI001` in a document that
+      // declares `scope: orders` is `orders.KPI001`, which is the id the model builder gives it
+      // and the id another document references it by. The alias is registered only where the
+      // qualified id is not itself declared, so a real declaration is never shadowed.
+      if (declaredScope && !id.includes(".")) {
+        const qualified = `${declaredScope}.${id}`;
+        if (!allIds.has(qualified)) allIds.set(qualified, loc);
+      }
+    }
     collectKeyedIds(data, declaredScope ?? folderScope, allIds, [relFile]);
     collectParentEdges(data, parentEdges);
     collectSelfEdges(data, selfEdges, null, [relFile]);
     for (const ref of collectRefs(data, [], [relFile], refKeys)) {
       allRefs.push({ ...ref, scope: declaredScope, file: relFile });
     }
+  }
+
+  for (const { relFile, data } of documents) {
+    if (!data || typeof data !== "object") continue;
+    collectIds(data, everything, allDuplicates, [relFile]);
   }
 
   const missing = [];
