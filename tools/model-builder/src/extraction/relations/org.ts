@@ -2,6 +2,7 @@ import type { Entity, Relation } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 import { createPlaceholder, entityDomain, resolveRef } from './resolver.js';
+import { OWNED_BY_DEFAULT } from '../entities/ownershipDefaults.js';
 
 /**
  * Extract structural relations from org entities:
@@ -104,17 +105,19 @@ function resolveTypedOrPlaceholder(
 }
 
 /**
- * Extract the organizational ownership edge: any unit declaring `owned_by` -> the org unit it names.
+ * Extract the organizational ownership edge: any unit that names an owner -> the org unit it names.
  *
  * ONE relation type, `owned_by`, with `data.arm` naming which of the three arms produced it. The arm
  * is also recoverable from the target entity's type; `data.arm` exists so a consumer holding only the
  * edge does not need a second lookup.
  *
- * **Entity-level statements only.** A document may also carry a root `owned_by`, which is a default
- * for that file's TOP-LEVEL array items. It is not emitted here: `Entity` does not record whether it
- * was a top-level array item, so applying the default to every entity from the file would claim
- * ownership of nested services and contracts the document never mentions. A consumer should read
- * this edge set as the entity-level half of what a model states about ownership.
+ * **Both halves of what a model states about ownership.** An entity naming its own owner produces
+ * the edge from `owned_by`; one inheriting a document's file-level default produces it from
+ * `_owned_by_default`, which `annotateOwnershipDefaults` writes onto the nodes that inherit before
+ * extraction runs. The inherited edge carries `data.inherited`, so a consumer holding only the edge
+ * can still tell a statement from a default - a report on undeclared ownership wants the first and
+ * not the second. An entity has one or the other and never both: the annotation skips any node that
+ * declares an owner.
  */
 export function extractOrgOwnershipRelations(
   entities: Entity[],
@@ -123,11 +126,14 @@ export function extractOrgOwnershipRelations(
   const relations: Relation[] = [];
 
   for (const entity of entities) {
-    const ownedBy = (entity.data as Record<string, unknown> | undefined)?.owned_by;
-    if (!ownedBy || typeof ownedBy !== 'object' || Array.isArray(ownedBy)) continue;
+    const data = entity.data as Record<string, unknown> | undefined;
+    const declared = asOwnerObject(data?.owned_by);
+    const ownedBy = declared ?? asOwnerObject(data?.[OWNED_BY_DEFAULT]);
+    if (!ownedBy) continue;
+    const inherited = declared === null;
 
     for (const [arm, expectedType] of OWNER_ARMS) {
-      const ref = (ownedBy as Record<string, unknown>)[arm];
+      const ref = ownedBy[arm];
       if (typeof ref !== 'string' || ref === '') continue;
 
       const targetId = resolveTypedOrPlaceholder(ref, expectedType, entity, entities, placeholders);
@@ -136,12 +142,18 @@ export function extractOrgOwnershipRelations(
         source_entity_id: entity.id,
         target_entity_id: targetId,
         type: RELATION_TYPE.OwnedBy,
-        data: { arm },
+        data: inherited ? { arm, inherited: true } : { arm },
       });
     }
   }
 
   return relations;
+}
+
+/** An owner is an object of arms; anything else is a malformed statement and names nobody. */
+function asOwnerObject(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
 }
 
 /**

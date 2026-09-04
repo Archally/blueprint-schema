@@ -19,15 +19,17 @@ rules:
   - id: org-interaction-unverifiable
     severity: info
     description: >-
-      A team or department declares an architectural `interacts_with`, and the derivation that would
-      check it cannot be completed. Reported so an unwalkable chain does not read as agreement.
+      A team or department declares an architectural `interacts_with` that the derivation could not
+      reach a verdict on, because the chain it walks stops somewhere. Reported so an unwalkable
+      chain does not read as agreement. Per declared edge: an edge the incomplete derivation does
+      reach has been compared and agreed, and is not reported here.
     find:
       entity_type_in: [Team, Department]
     check:
       custom:
         module: ./org-interaction-divergence.mjs
         export: orgInteractionUnverifiable
-    message: "{displayId} declares an architectural dependency that cannot be checked: {reasons}"
+    message: "{displayId} declares an architectural dependency on {targets} that cannot be checked: {reasons}"
 
   - id: org-interaction-underived
     severity: info

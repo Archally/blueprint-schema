@@ -160,19 +160,31 @@ export const orgInteractionDivergesFromArchitecture = (model, subject) => {
 };
 
 /**
- * The subject declares an architectural dependency and its chain cannot be walked.
+ * The subject declares an architectural dependency the walk could not reach a verdict on.
  *
  * Not a defect in the declaration and not a defect in the architecture: it says the comparison did
  * not happen. Without it, a unit whose chain is broken looks exactly like one whose declarations all
  * agree - which is the failure this rule set exists to avoid making.
+ *
+ * **Per declared edge, not per unit.** A blocked chain makes the derived set a FLOOR: what it holds
+ * is still derived, and only what it lacks is in doubt. A declared edge the floor already contains
+ * has been compared and agreed, whatever else the walk could not finish - so reporting the unit
+ * would bury an answer the model does supply. The reasons are named for the edges that remain
+ * unreached, which is where they explain something.
  */
 export const orgInteractionUnverifiable = (model, subject) => {
   if (!subject) return { ok: true };
-  const { blocked, entityById } = derive(model);
-  const reasons = blocked.get(keyOf(subject));
+  const { derived, blocked, entityById } = derive(model);
+  const self = keyOf(subject);
+  const reasons = blocked.get(self);
   if (!reasons) return { ok: true };
-  if (declaredArchitectural(subject, entityById).length === 0) return { ok: true };
-  return { ok: false, context: { reasons: [...reasons] } };
+
+  const reached = derived.get(self) ?? new Set();
+  const unreached = declaredArchitectural(subject, entityById).filter(
+    (target) => !reached.has(target),
+  );
+  if (unreached.length === 0) return { ok: true };
+  return { ok: false, context: { reasons: [...reasons], targets: unreached } };
 };
 
 /**

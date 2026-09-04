@@ -1,6 +1,7 @@
 import type { Entity } from '../../model/types.js';
 import type { ParsedBlueprintDocument, DocumentsBySchemaType } from '../../model/types.js';
 import { getSchemaTypeFromPath } from './id.js';
+import { annotateOwnershipDefaults } from './ownershipDefaults.js';
 import { extractConcepts } from './concepts.js';
 import { extractRules } from './rules.js';
 import { extractDomain } from './domain.js';
@@ -48,6 +49,11 @@ const EXTRACTORS: Record<string, (doc: ParsedBlueprintDocument) => Entity[]> = {
 /**
  * Extract all entities from documents pre-grouped by schema type.
  * All documents of the same schema type are processed together.
+ *
+ * Each document is annotated with its file-level ownership default first, so an entity that
+ * inherits one carries it the way an entity that declares one does. The annotation runs here rather
+ * than at each stack's call site because a per-stack call site is how two stacks come to disagree
+ * about what a model states.
  */
 export function extractAllEntities(documentsByType: DocumentsBySchemaType): Entity[] {
   const entities: Entity[] = [];
@@ -55,6 +61,7 @@ export function extractAllEntities(documentsByType: DocumentsBySchemaType): Enti
     const extract = EXTRACTORS[schemaType];
     if (!extract) continue;
     for (const doc of docs) {
+      annotateOwnershipDefaults(doc);
       entities.push(...extract(doc));
     }
   }
@@ -70,6 +77,7 @@ export function extractEntitiesFromDocument(doc: ParsedBlueprintDocument): Entit
   if (!schemaType || schemaType === 'blueprint') return [];
   const extract = EXTRACTORS[schemaType];
   if (!extract) return [];
+  annotateOwnershipDefaults(doc);
   return extract(doc);
 }
 
