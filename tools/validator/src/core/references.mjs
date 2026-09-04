@@ -45,6 +45,13 @@ const LIKELY_REF_KEYS = new Set([
   // `target` names the endpoint of a directed relation and carries a typed id, so it takes part
   // in reference integrity like any other ref key.
   "target",
+  // `subject_party` names the party a model is written from. It carries the id directly, so listing
+  // it here is all the resolution it needs.
+  "subject_party",
+  // `parent` names a container of the SAME type as the thing declaring it - a department inside a
+  // department, a deployment scope inside a scope. Both carry a typed id, and the ID_RE guard below
+  // means a `parent` holding anything else is left alone rather than reported as a broken reference.
+  "parent",
 ]);
 
 const NON_REF_KEYS = new Set([
@@ -230,4 +237,73 @@ export function collectRefs(node, refs = [], pathStack = []) {
     collectRefs(v, refs, [...pathStack, k]);
   }
   return refs;
+}
+
+/**
+ * Every `{ id, parent }` pair in the model, wherever it appears.
+ *
+ * `parent` names a container of the same type as its declarer, which makes it a hierarchy, and a
+ * hierarchy can be written as a ring. **A ring is invisible to reference checking**: every id
+ * resolves, so `collectRefs` reports nothing, and a consumer walking upward from any member never
+ * terminates. The two constructs that use it - a department's parent department and a deployment
+ * scope's parent scope - are equally capable of it, so this collects both rather than one.
+ *
+ * Keyed on the declaring object's own id, so the result is the edge set a walk would follow.
+ */
+export function collectParentEdges(node, edges = new Map()) {
+  if (Array.isArray(node)) {
+    node.forEach((item) => collectParentEdges(item, edges));
+    return edges;
+  }
+  if (!node || typeof node !== "object") return edges;
+
+  if (
+    typeof node.id === "string" &&
+    ID_RE.test(node.id) &&
+    typeof node.parent === "string" &&
+    ID_RE.test(node.parent)
+  ) {
+    edges.set(node.id, node.parent);
+  }
+
+  for (const value of Object.values(node)) collectParentEdges(value, edges);
+  return edges;
+}
+
+/**
+ * The `parent` chains that close on themselves, each reported once.
+ *
+ * A self-reference (`A -> A`) is the one-element case and is returned like any other, because it is
+ * the same defect: a walk that cannot terminate. Each cycle is rendered starting from its
+ * alphabetically lowest member so the same ring reads identically however it was reached, and so two
+ * runs over one model produce the same text.
+ */
+export function findParentCycles(edges) {
+  const cycles = [];
+  const seen = new Set();
+
+  for (const start of edges.keys()) {
+    if (seen.has(start)) continue;
+
+    const path = [];
+    const onPath = new Map();
+    let current = start;
+
+    while (current !== undefined && !seen.has(current)) {
+      if (onPath.has(current)) {
+        const ring = path.slice(onPath.get(current));
+        // Rotate to the lowest member: one ring, one rendering, whichever node was entered first.
+        const lowest = ring.indexOf([...ring].sort()[0]);
+        cycles.push([...ring.slice(lowest), ...ring.slice(0, lowest)]);
+        break;
+      }
+      onPath.set(current, path.length);
+      path.push(current);
+      current = edges.get(current);
+    }
+
+    for (const id of path) seen.add(id);
+  }
+
+  return cycles;
 }

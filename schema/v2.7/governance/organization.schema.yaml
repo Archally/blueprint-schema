@@ -22,6 +22,16 @@ properties:
   owned_by:
     $ref: "../metamodel.schema.yaml#/$defs/owned_by"
     description: "File-level ownership default."
+  subject_party:
+    $ref: "../metamodel.schema.yaml#/$defs/party_ref"
+    description: >
+      Which party this model is written from - "us". Optional, and the anchor every
+      relative statement about the organization needs: without it, calling a party internal or
+      external has an implied subject the model never states, and a model describing two companies
+      cannot say it at all.
+
+      With it, "is this party external" is answered by walking `relations` from here rather than by a
+      per-party flag, and structure that does not involve us stays expressible.
   parties:
     type: array
     description: "Organizational parties (companies, business units, or system owners)."
@@ -67,6 +77,14 @@ $defs:
         description: "Teams belonging to this party. Departments reference these by team_ref."
         items:
           $ref: "#/$defs/team"
+      relations:
+        type: array
+        description: >
+          How this party stands to other parties. Structure between parties is mostly not
+          containment - a subsidiary is inside us and a supplier is not - so it is stated as edges
+          rather than by nesting both inside `parties`, which would make that tree mean two things.
+        items:
+          $ref: "#/$defs/party_relation"
       properties:
         $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
       tags:
@@ -101,6 +119,16 @@ $defs:
 
           Accountability is not ownership. Ownership is stated by an `owned_by` on the unit that is
           owned, and a department is accountable for work its teams own rather than owning it itself.
+      parent:
+        $ref: "../metamodel.schema.yaml#/$defs/department_ref"
+        description: >
+          The department this one sits inside, for an organization deeper than two levels. A
+          reference rather than nested `departments[]`, matching how `department.teams` references
+          teams that `party.teams` declares: every department is declared once in the party's flat
+          array and the hierarchy is expressed between them.
+
+          A department cannot be its own parent, and a chain of parents cannot return to where it
+          started - both are reported.
       teams:
         type: array
         description: "References to teams in this department (team_ref IDs)."
@@ -110,6 +138,42 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  party_relation:
+    type: object
+    description: >
+      A directed relationship from the declaring party to another. Read it as a sentence: the
+      declaring party IS `type` the party named by `party_ref`.
+    additionalProperties: false
+    required:
+      - party_ref
+      - type
+    properties:
+      party_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/party_ref"
+        description: "The party on the other end of the relationship (PRT###)."
+      type:
+        type: string
+        enum:
+          - subsidiary_of
+          - supplier_to
+          - partner_of
+          - regulator_of
+          - customer_of
+        description: >
+          What the relationship IS. Required, so an edge is never merely "related": an
+          untyped link between two organizations carries no more than the fact that someone
+          thought of them together.
+
+          `subsidiary_of` is ownership of the company itself, not of a system;
+          `supplier_to` delivers work or goods under an agreement;
+          `partner_of` is a joint undertaking neither side buys from the other;
+          `regulator_of` sets rules the other must satisfy;
+          `customer_of` receives what the other supplies, and is the inverse of `supplier_to` rather
+          than a second edge to be declared alongside it.
+      about:
+        type: string
+        description: "What the relationship covers, when the parties have more than one dealing."
 
   team:
     type: object

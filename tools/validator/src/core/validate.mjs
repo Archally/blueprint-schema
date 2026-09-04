@@ -5,7 +5,9 @@ import { loadSchemaRegistry, makeAjv, SCHEMA_BASE_URI } from "./schema-registry.
 import { FILENAME_TO_SCHEMA, detectSchemaType } from "./schema-types.mjs";
 import {
   collectIds,
+  collectParentEdges,
   collectRefs,
+  findParentCycles,
   isIdentityOrReferenceViolation,
   isPartyRedeclaration,
 } from "./references.mjs";
@@ -315,6 +317,7 @@ export function validateModel(args) {
   const warnings = [];
   const allIds = new Map();
   const allDuplicates = new Map();
+  const parentEdges = new Map();
   const allRefs = [];
   /**
    * Each recognised file is parsed exactly once and reused by every later pass, so the passes
@@ -352,6 +355,7 @@ export function validateModel(args) {
     // references through unreported.
     parsedFiles.push({ relFile, schemaType, data });
     collectIds(data, allIds, allDuplicates, [relFile]);
+    collectParentEdges(data, parentEdges);
     // Each ref carries the scope ITS OWN file declares, so a bare id can be resolved against
     // that scope and only that one. Tagging at the call site keeps `collectRefs` unchanged.
     const declaredScope = typeof data.scope === "string" ? data.scope : null;
@@ -401,6 +405,23 @@ export function validateModel(args) {
     // search that accepted any match would resolve a typo to whichever slice happened to own it.
     if (!r.value.includes(".") && r.scope && allIds.has(`${r.scope}.${r.value}`)) continue;
     crossErrors.push(`Missing reference '${r.value}' at ${r.loc}`);
+  }
+
+  // A `parent` ring resolves perfectly and still breaks every consumer that walks it, so reference
+  // checking above cannot see it and this is where it is caught. Collected across the whole model
+  // rather than per file, because a chain may cross files.
+  //
+  // ONE implementation for every construct that uses `parent`. A department's parent department and
+  // a deployment scope's parent scope are the same shape and the same defect, and the dangling half
+  // is now the generic reference walk's job because `parent` is a reference key. A cycle is a
+  // cross-reference error rather than a schema error, so `--compat` cannot demote it: a chain that
+  // does not terminate is not a version-compatibility question.
+  for (const cycle of findParentCycles(parentEdges)) {
+    crossErrors.push(
+      cycle.length === 1
+        ? `'${cycle[0]}' is its own parent`
+        : `Parent cycle: ${[...cycle, cycle[0]].join(" -> ")}`,
+    );
   }
 
   // Gap warnings and typed-id warnings are emitted in ONE per-file pass, so all findings for a
@@ -473,50 +494,6 @@ export function validateModel(args) {
             );
           }
         }
-      }
-    }
-  }
-
-  // Deployment-scope hierarchy. `scope_ref` and `target_scope.ref` resolvability is already
-  // covered by the generic cross-ref walk; these two need the scope GRAPH:
-  //   - dangling `parent` → Cross-Reference Error (`parent` is not a generic ref key)
-  //   - a cycle in the `parent` chain → schema-level ERROR (it must be a tree)
-  const scopeParent = new Map(); // scopeId → parentId (only scopes that declare a parent)
-  const scopeLoc = new Map(); // scopeId → relFile (every declared scope)
-  for (const { relFile, schemaType, data } of parsedFiles) {
-    if (schemaType !== "infrastructure" || !data || !Array.isArray(data.deployment_scopes)) continue;
-    for (const scope of data.deployment_scopes) {
-      if (!scope || typeof scope !== "object" || typeof scope.id !== "string") continue;
-      scopeLoc.set(scope.id, relFile);
-      if (typeof scope.parent === "string") scopeParent.set(scope.id, scope.parent);
-    }
-  }
-  for (const [id, parent] of scopeParent.entries()) {
-    if (!scopeLoc.has(parent)) {
-      crossErrors.push(
-        `Missing reference '${parent}' at ${scopeLoc.get(id)}.deployment_scopes (DeploymentScope '${id}' parent)`,
-      );
-    }
-  }
-  // Cycle detection over the functional parent-graph (each scope has ≤1 parent).
-  const inCycle = new Set();
-  for (const start of scopeParent.keys()) {
-    if (inCycle.has(start)) continue;
-    const seenIndex = new Map();
-    const chain = [];
-    let cur = start;
-    while (cur !== undefined && scopeParent.has(cur) && !seenIndex.has(cur)) {
-      seenIndex.set(cur, chain.length);
-      chain.push(cur);
-      cur = scopeParent.get(cur);
-    }
-    if (cur !== undefined && seenIndex.has(cur)) {
-      const cycle = chain.slice(seenIndex.get(cur));
-      if (!cycle.some((n) => inCycle.has(n))) {
-        cycle.forEach((n) => inCycle.add(n));
-        schemaErrors.push(
-          `DeploymentScope parent hierarchy forms a cycle: ${cycle.join(" → ")} → ${cycle[0]} — scope.parent must be acyclic (a subscription→resource-group tree)`,
-        );
       }
     }
   }
