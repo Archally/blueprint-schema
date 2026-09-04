@@ -18,8 +18,13 @@ import { SECTION_TO_CATEGORY, resolvesAgainst } from "./model-ref-match.mjs";
 const CATALOG_REF_RE = /^([a-z][a-z0-9-]*\.)?RT\d{3,}$/;
 
 /**
- * v2.7.7 typed-id conventions. A free-string id stays schema-VALID but SHOULD carry the
- * typed prefix; enforcement lands in v2.8. Warn only — never an error.
+ * v2.7.7 typed-id conventions, warned about below v2.8 and enforced by the schema from v2.8.
+ *
+ * Before v2.8 a free-string id is schema-VALID and this warning is the only thing that says
+ * anything about it. From v2.8 the schema holds each of these ids to its typed pattern, so the
+ * same fact arrives as an ERROR from Ajv - and the branch below stops warning, because a warning
+ * saying a value is "valid but discouraged" beside an error rejecting it states the opposite of
+ * what the run just decided. One fact, one severity, whichever version is in force.
  */
 const TYPED_ID = [
   { key: "resources", kind: "Infrastructure resource", expected: "IR###", re: /^([a-z][a-z0-9-]*\.)?IR\d{3,}$/ },
@@ -301,6 +306,9 @@ export function validateModel(args) {
   // operation was expected to carry an `exchange` block, so a v2.6 model is still held to that.
   const version = detectSchemaVersion(args);
   const eventsExemptFromExchange = atLeast(version, 2, 7);
+  // From v2.8 the infrastructure id fields carry their typed patterns, so Ajv rejects what this
+  // warning used to describe. See TYPED_ID above for why both must never fire on one value.
+  const typedIdsEnforcedBySchema = atLeast(version, 2, 8);
 
   const modelDir = args.model;
   if (!fs.existsSync(modelDir)) {
@@ -492,7 +500,7 @@ export function validateModel(args) {
       }
     }
 
-    if (schemaType === "infrastructure" && data && typeof data === "object") {
+    if (schemaType === "infrastructure" && !typedIdsEnforcedBySchema && data && typeof data === "object") {
       for (const { key, kind, expected, re } of TYPED_ID) {
         if (!Array.isArray(data[key])) continue;
         for (const item of data[key]) {
