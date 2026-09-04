@@ -28,6 +28,9 @@ npx @archally/blueprint-schema blueprint-check <dir> --config .blueprint-lint.ya
 | Rule ID | Default | What it requires |
 |---------|---------|------------------|
 | `orphan-entities` | warn | every entity (except Missing/CodeFile) referenced by ≥ 1 relation |
+| `org-interaction-diverges-from-architecture` | warn | every `interacts_with` of nature `architectural` matches a dependency the architecture states |
+| `org-interaction-underived` | info | a unit that lists its architectural dependencies lists all the ones the architecture shows |
+| `org-interaction-unverifiable` | info | reports where that comparison could not be made, so an unwalkable chain does not read as agreement |
 | `missing-causal-links` | warn | every command Operation has a `produces` edge to an event |
 | `missing-exchange-binding` | warn | every command/query Operation declares an `exchange` (transport binding); events exempt |
 | `contract-operation-missing-exchange` | warn | every Operation wired to a service contract (`expose`/`call`/`send`/`receive`) declares an `exchange` |

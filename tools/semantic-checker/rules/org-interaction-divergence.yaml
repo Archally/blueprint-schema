@@ -1,0 +1,44 @@
+engineVersion: "0.1"
+rules:
+  - id: org-interaction-diverges-from-architecture
+    severity: warn
+    description: >-
+      A team or department declares an `interacts_with` of nature `architectural` that the
+      architecture does not show. The chain team <- owned_by - context - depends_on -> context -
+      owned_by -> team states the same class of dependency independently, so a declared edge it
+      does not produce means one of the two statements is stale. Silent where the chain cannot be
+      walked; `org-interaction-unverifiable` covers that.
+    find:
+      entity_type_in: [Team, Department]
+    check:
+      custom:
+        module: ./org-interaction-divergence.mjs
+        export: orgInteractionDivergesFromArchitecture
+    message: '{displayId} declares an architectural dependency the architecture does not show: {targets}'
+
+  - id: org-interaction-unverifiable
+    severity: info
+    description: >-
+      A team or department declares an architectural `interacts_with`, and the derivation that would
+      check it cannot be completed. Reported so an unwalkable chain does not read as agreement.
+    find:
+      entity_type_in: [Team, Department]
+    check:
+      custom:
+        module: ./org-interaction-divergence.mjs
+        export: orgInteractionUnverifiable
+    message: "{displayId} declares an architectural dependency that cannot be checked: {reasons}"
+
+  - id: org-interaction-underived
+    severity: info
+    description: >-
+      The architecture shows a dependency between org units that neither one declared. Reported only
+      for a unit already keeping a list of its architectural dependencies, since a unit that declares
+      none has not adopted the construct.
+    find:
+      entity_type_in: [Team, Department]
+    check:
+      custom:
+        module: ./org-interaction-divergence.mjs
+        export: orgInteractionUnderived
+    message: "{displayId} depends on {targets} in the architecture and does not declare it"
