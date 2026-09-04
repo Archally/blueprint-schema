@@ -14,12 +14,19 @@ const LAYER = SCHEMA_TYPE_TO_LAYER['org']!;
  *
  * Produces Party, Department, and Team entities.
  * Departments and teams carry `_party` metadata for hierarchy reconstruction.
+ *
+ * The document's `subject_party` marks one party as the one the model is written from, with
+ * `_is_subject`. It is a distinguished NODE rather than an edge: "which party is us" is not a
+ * relationship between two things, and a self-edge or an edge from a document would be a shape
+ * invented to make it traversable. A consumer reads the marker and walks `party_relation` from
+ * there, which is how "is this party external" becomes a traversal rather than a per-party flag.
  */
 export function extractOrg(doc: ParsedBlueprintDocument): Entity[] {
   const entities: Entity[] = [];
   const data = doc.data ?? {};
   const parties = data.parties as Array<Record<string, unknown>> | undefined;
   if (!Array.isArray(parties)) return entities;
+  const subjectParty = typeof data.subject_party === 'string' ? data.subject_party : undefined;
 
   for (const party of parties) {
     const partyId = party.id as string | undefined;
@@ -38,7 +45,9 @@ export function extractOrg(doc: ParsedBlueprintDocument): Entity[] {
       summary: partyName,
       term: partyName,
       description: partyDescription,
-      data: party,
+      // Spread rather than aliased: `mergeParties` writes `_sources` onto this object, and an
+      // aliased `data` would write it back into the parsed document.
+      data: { ...party, ...(subjectParty === displayId ? { _is_subject: true } : {}) },
     });
 
     // Departments (nested objects with their own id)

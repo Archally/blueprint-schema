@@ -250,3 +250,92 @@ export function extractStaffingRelations(
 
   return relations;
 }
+
+/**
+ * Extract `party.relations[]` -> the party on the other end, typed.
+ *
+ * Structure between parties is mostly not containment: a subsidiary is inside us and a supplier is
+ * not, so nesting both under `parties[]` would make one tree mean two things. The edge carries the
+ * `type` that says which, and the id is discriminated by it - one party may be both `supplier_to`
+ * and `partner_of` another, and those are two facts about one pair that an id built from the
+ * endpoints alone would deduplicate into one.
+ *
+ * Read an edge as a sentence: the declaring party IS `data.type` the party it names.
+ */
+export function extractPartyRelations(
+  entities: Entity[],
+  placeholders: Map<string, Entity>
+): Relation[] {
+  const relations: Relation[] = [];
+
+  for (const entity of entities) {
+    if (entity.type !== ENTITY_TYPE.Party) continue;
+    const declared = (entity.data as Record<string, unknown> | undefined)?.relations;
+    if (!Array.isArray(declared)) continue;
+
+    for (const edge of declared) {
+      if (!edge || typeof edge !== 'object' || Array.isArray(edge)) continue;
+      const record = edge as Record<string, unknown>;
+      const ref = record.party_ref;
+      if (typeof ref !== 'string' || ref === '') continue;
+      // The schema requires `type`, so a model reaching here without one has already failed
+      // validation. The builder still runs on models that have not, and an id needs a value.
+      const type = typeof record.type === 'string' ? record.type : 'unknown';
+
+      const targetId = resolveTypedOrPlaceholder(
+        ref,
+        ENTITY_TYPE.Party,
+        entity,
+        entities,
+        placeholders
+      );
+      const about = typeof record.about === 'string' ? record.about : undefined;
+      relations.push({
+        id: `${entity.id}--${RELATION_TYPE.PartyRelation}--${type}--${targetId}`,
+        source_entity_id: entity.id,
+        target_entity_id: targetId,
+        type: RELATION_TYPE.PartyRelation,
+        data: about ? { type, about } : { type },
+      });
+    }
+  }
+
+  return relations;
+}
+
+/**
+ * Extract `department.parent` -> the department this one sits inside.
+ *
+ * Every department is declared once in its party's flat array and the hierarchy is expressed
+ * between them, the same way `department.teams` references teams that `party.teams` declares. The
+ * edge runs from the declaring department to its parent, which is the direction the field is
+ * written in; a reader wanting the children of a department walks it inbound.
+ */
+export function extractDeptParentRelations(
+  entities: Entity[],
+  placeholders: Map<string, Entity>
+): Relation[] {
+  const relations: Relation[] = [];
+
+  for (const entity of entities) {
+    if (entity.type !== ENTITY_TYPE.Department) continue;
+    const ref = (entity.data as Record<string, unknown> | undefined)?.parent;
+    if (typeof ref !== 'string' || ref === '') continue;
+
+    const targetId = resolveTypedOrPlaceholder(
+      ref,
+      ENTITY_TYPE.Department,
+      entity,
+      entities,
+      placeholders
+    );
+    relations.push({
+      id: `${entity.id}--${RELATION_TYPE.DeptParent}--${targetId}`,
+      source_entity_id: entity.id,
+      target_entity_id: targetId,
+      type: RELATION_TYPE.DeptParent,
+    });
+  }
+
+  return relations;
+}

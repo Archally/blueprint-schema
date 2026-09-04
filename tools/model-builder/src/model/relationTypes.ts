@@ -207,6 +207,14 @@ export const RELATION_TYPE = {
   // recoverable from the target entity's type; `data.arm` carries it as well, so the edge is
   // self-describing without a second lookup.
   OwnedBy: 'owned_by',
+  // A directed, typed relationship between two parties (party.relations[]). ONE type for all five
+  // values, as `owned_by` and `interacts_with` do, with `data.type` naming which. The id carries the
+  // type: one party may be both `supplier_to` and `partner_of` another, and those are two facts
+  // about one pair that an id built from the endpoints alone would deduplicate into one.
+  PartyRelation: 'party_relation',
+  // A department inside another department (department.parent), for an organization deeper than two
+  // levels. Runs from the declaring department to its parent, the direction the field is written in.
+  DeptParent: 'dept_parent',
   // `actor.staffed_by` → the Team whose members perform the actor's role. It completes the path from
   // a scenario step to the team that performs it: a step names an actor, or names an operation whose
   // `initiated_by` does, and the actor names the team.
