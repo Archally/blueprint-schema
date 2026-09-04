@@ -37,6 +37,10 @@ parties:
       - id: TM003
         name: "Checkout & Payments Team"
         description: "Owns cart, checkout flow, cart rules, promotions, and payment gateway integration."
+        interacts_with:
+          - team_ref: TM002
+            nature: architectural
+            about: "product, price and availability data the checkout reads"
         contact:
           email: checkout@prestashop.example
           slack: "#team-checkout"
