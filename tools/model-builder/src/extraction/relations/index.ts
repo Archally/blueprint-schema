@@ -9,7 +9,11 @@ import { extractArchRelations } from './arch.js';
 import { extractArchContractRelations } from './archContracts.js';
 import { extractArchDependencyRelations } from './archDependencies.js';
 import { buildStoryRelations } from './story.js';
-import { extractOrgRelations } from './org.js';
+import {
+  extractOrgRelations,
+  extractOrgOwnershipRelations,
+  extractStaffingRelations,
+} from './org.js';
 import { extractUIRelations } from './ui.js';
 import { extractQuestionRelations } from './questions.js';
 import { extractCodeRefRelations } from './codeRefs.js';
@@ -62,6 +66,8 @@ export function buildRelations(
     ...extractArchDependencyRelations(entities, placeholders),
     ...buildStoryRelations(entities, placeholders),
     ...extractOrgRelations(entities),
+    ...extractOrgOwnershipRelations(entities, placeholders),
+    ...extractStaffingRelations(entities, placeholders),
     ...extractUIRelations(entities, placeholders),
     ...extractQuestionRelations(entities, placeholders),
     ...extractExampleValidatesRelations(entities, placeholders),

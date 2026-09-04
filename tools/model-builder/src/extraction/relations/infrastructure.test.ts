@@ -114,12 +114,12 @@ describe('extractInfrastructureRelations', () => {
     expect(deployed[0]).toMatchObject({ source_entity_id: 'svc-arch.yaml-storefront', target_entity_id: 'tier-infrastructure.yaml-web-tier' });
   });
 
-  it('emits InfraResource --owned_by_team--> Team', () => {
+  it('emits InfraResource --resource_owner_team--> Team', () => {
     const rels = extractInfrastructureRelations([
       infra('IR001', { owner: { team: 'TM001' } }),
       team('TM001'),
     ]);
-    expect(rels.filter((r) => r.type === RELATION_TYPE.OwnedByTeam)).toHaveLength(1);
+    expect(rels.filter((r) => r.type === RELATION_TYPE.ResourceOwnerTeam)).toHaveLength(1);
   });
 
   it('drops unresolvable TOSCA targets silently (no placeholders)', () => {

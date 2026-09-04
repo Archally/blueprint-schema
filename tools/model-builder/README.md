@@ -80,7 +80,7 @@ Concepts, Actors, Enumerations, Associations, Operations (CMD/EVT/QRY/DOC), Rule
 
 ## Relation Types (43)
 
-Covers all cross-schema references: `produces`, `reacts_to`, `governed_by`, `declared_impact`, `validates`, `answered_by`, `code_ref`, `value_stream_capability`, `owned_by_team`, and 34 more.
+Covers all cross-schema references: `produces`, `reacts_to`, `governed_by`, `declared_impact`, `validates`, `answered_by`, `code_ref`, `value_stream_capability`, `resource_owner_team`, and 34 more.
 
 ## Architecture
 

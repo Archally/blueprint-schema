@@ -179,6 +179,26 @@ export function isPartyRedeclaration(locations) {
   return locations.length > 1 && locations.every((loc) => PARTY_DECLARATION.test(loc));
 }
 
+/**
+ * Reference keys whose value is an OBJECT, with the arms inside it that carry an id.
+ *
+ * `collectRefs` reads a reference from the value AT a key. `owned_by`'s value is an object holding
+ * exactly one of `team`, `department` or `party`, so the key matches and the value is neither a
+ * string nor an array; the walk then recurses into the object, where the arm names are not
+ * reference keys. The id was reached from neither direction, and every ownership statement in every
+ * model went unchecked.
+ *
+ * A table rather than an annotation in the metamodel, because this walk reads the YAML instance and
+ * never loads a schema - it could not see an annotation without the schema-traversal machinery that
+ * would make the annotation unnecessary. A table of one, because `oneOf` appears exactly once in
+ * the metamodel and this is it: there is no class of nested-reference shapes to generalise over.
+ *
+ * Scoped to the arms of these keys, NOT to the arm names themselves. `team` as a general reference
+ * key would claim every key of that name anywhere, including `resource_owner.team`, which holds a
+ * free-string team NAME and is a different field with a different meaning.
+ */
+const NESTED_REF_ARMS = new Map([["owned_by", ["team", "department", "party"]]]);
+
 export function collectRefs(node, refs = [], pathStack = []) {
   if (Array.isArray(node)) {
     node.forEach((item, idx) => collectRefs(item, refs, [...pathStack, `[${idx}]`]));
@@ -187,6 +207,15 @@ export function collectRefs(node, refs = [], pathStack = []) {
   if (!node || typeof node !== "object") return refs;
 
   for (const [k, v] of Object.entries(node)) {
+    const arms = NESTED_REF_ARMS.get(k);
+    if (arms && v && typeof v === "object" && !Array.isArray(v)) {
+      for (const arm of arms) {
+        const value = v[arm];
+        if (typeof value === "string" && ID_RE.test(value)) {
+          refs.push({ key: arm, value, loc: [...pathStack, k, arm].join(".") });
+        }
+      }
+    }
     if (isRefKey(k)) {
       if (typeof v === "string" && ID_RE.test(v)) {
         refs.push({ key: k, value: v, loc: [...pathStack, k].join(".") });

@@ -9,7 +9,7 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  *     Match tier.data._tier_services[] entries against RG entities in the
  *     SAME fileOrigin by displayId.
  *
- * - RG resource --owned-by-team--> Team
+ * - RG resource --resource_owner_team--> Team
  *     Match resource.data.owner.team (a Team displayId, e.g. "TM001") against
  *     any Team entity in the model. Team displayIds are conventionally
  *     globally unique within a project, so cross-file matching is safe.
@@ -64,10 +64,10 @@ export function extractRgRelations(entities: Entity[]): Relation[] {
         const team = teamByDisplayId.get(teamRef);
         if (team) {
           relations.push({
-            id: `${e.id}--${RELATION_TYPE.OwnedByTeam}--${team.id}`,
+            id: `${e.id}--${RELATION_TYPE.ResourceOwnerTeam}--${team.id}`,
             source_entity_id: e.id,
             target_entity_id: team.id,
-            type: RELATION_TYPE.OwnedByTeam,
+            type: RELATION_TYPE.ResourceOwnerTeam,
           });
         }
       }

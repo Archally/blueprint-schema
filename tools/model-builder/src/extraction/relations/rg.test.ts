@@ -65,7 +65,7 @@ describe('extractRgRelations', () => {
     ]);
   });
 
-  it('emits Resource --owned-by-team--> Team when resource.owner.team matches a Team displayId', () => {
+  it('emits Resource --resource_owner_team--> Team when resource.owner.team matches a Team displayId', () => {
     const entities: Entity[] = [
       rgResource('api-svc', 'TM001'),
       rgResource('commerce-db', 'TM002'),
@@ -74,7 +74,7 @@ describe('extractRgRelations', () => {
     ];
 
     const relations = extractRgRelations(entities);
-    const ownedBy = relations.filter((r) => r.type === RELATION_TYPE.OwnedByTeam);
+    const ownedBy = relations.filter((r) => r.type === RELATION_TYPE.ResourceOwnerTeam);
 
     expect(ownedBy).toHaveLength(2);
     expect(ownedBy.map((r) => r.target_entity_id).sort()).toEqual(['team-TM001', 'team-TM002']);
@@ -102,7 +102,7 @@ describe('extractRgRelations', () => {
     const entities: Entity[] = [rgResource('api-svc', 'TM999')];
 
     const relations = extractRgRelations(entities);
-    expect(relations.filter((r) => r.type === RELATION_TYPE.OwnedByTeam)).toEqual([]);
+    expect(relations.filter((r) => r.type === RELATION_TYPE.ResourceOwnerTeam)).toEqual([]);
   });
 
   it('drops unresolvable service refs in tier.services[] silently', () => {

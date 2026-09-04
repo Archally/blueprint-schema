@@ -67,7 +67,7 @@ describe('extractRg', () => {
     expect(webTier?.data?._resource_displayids).toEqual(['api-svc', 'commerce-db']);
   });
 
-  it('preserves resource owner.team field for OwnedByTeam relation extraction', () => {
+  it('preserves resource owner.team field for ResourceOwnerTeam relation extraction', () => {
     const entities = extractRg(rgDoc);
     const apiSvc = entities.find(
       (e) => e.type === ENTITY_TYPE.RG && e.displayId === 'api-svc',

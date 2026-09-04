@@ -196,7 +196,21 @@ export const RELATION_TYPE = {
   // BCC v5 (v2.6.3): business-decision motivated by user story (BD.linked_user_stories[])
   BusinessDecisionLinkedUserStory: 'business_decision_linked_user_story',
   // rg.schema (Step 01 / D26): resource owned by org team (resource.owner.team → Team).
-  OwnedByTeam: 'owned_by_team',
+  //
+  // Named for the FIELD it reads, not for its endpoints. `resource_owner.team` holds a free-string
+  // team NAME (`design/infrastructure.schema.yaml`: "Owning team name"), which is a different
+  // statement from the typed `TM###` reference `owned_by.team` carries. The two have separate
+  // relation types so a consumer can tell a named team from a referenced one.
+  ResourceOwnerTeam: 'resource_owner_team',
+  // The organizational ownership edge: any unit that declares `owned_by` → the Team, Department or
+  // Party named by the one arm it sets. ONE type serves all three arms, because the arm is
+  // recoverable from the target entity's type; `data.arm` carries it as well, so the edge is
+  // self-describing without a second lookup.
+  OwnedBy: 'owned_by',
+  // `actor.staffed_by` → the Team whose members perform the actor's role. It completes the path from
+  // a scenario step to the team that performs it: a step names an actor, or names an operation whose
+  // `initiated_by` does, and the actor names the team.
+  StaffedBy: 'staffed_by',
   // rg.schema (Step 01 / D26): arch service deployed in deployment tier (topology.tiers[].services[] → Service).
   DeployedInTier: 'deployed_in_tier',
   // infrastructure.schema (v2.7.7 CR-1): TOSCA-derived inter-resource relations

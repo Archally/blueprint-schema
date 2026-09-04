@@ -8,7 +8,7 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  * Emits (unresolvable targets are dropped silently — no Missing placeholders, mirroring
  * `extractRgRelations`; dangling typed refs are a validation-layer concern):
  *
- *   InfraResource --owned_by_team-->        Team          (resource.owner.team)
+ *   InfraResource --resource_owner_team-->  Team          (resource.owner.team, a free-string NAME)
  *   InfraResource --{hosted_on|connects_to|depends_on|attaches_to|routes_to}--> InfraResource
  *                                                          (resource.relations[], TOSCA; target
  *                                                           may be in another environment/substrate
@@ -111,7 +111,7 @@ export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
       const teamRef = owner?.team as string | undefined;
       if (teamRef) {
         const team = teamByDisplayId.get(teamRef);
-        if (team) push(e, RELATION_TYPE.OwnedByTeam, team);
+        if (team) push(e, RELATION_TYPE.ResourceOwnerTeam, team);
       }
 
       // relations[] → TOSCA edges (target may cross environments/substrates)
