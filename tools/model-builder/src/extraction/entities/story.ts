@@ -43,6 +43,11 @@ export interface OperationDetail {
  * Cross-scope: "orders.CMD001" → tries full ref as displayId first (new scoped-id format),
  *   with fallbackId using opId only (old format).
  * Absent ref → unresolved (informational step).
+ *
+ * The id here is provisional: entity extraction runs before the entity list exists, so it can only
+ * reconstruct one from the ref, and the reconstruction assumes a scope keeps its operations in a
+ * file named `domain.yaml`. Relation building resolves the same ref against the real entities and
+ * writes the answer back over this field, so a consumer reads the resolved id, not the guess.
  */
 function resolveOperationRef(
   operationRef: string | undefined,

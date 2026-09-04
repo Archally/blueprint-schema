@@ -20,6 +20,9 @@ import type { OperationDetail } from '../entities/story.js';
  *
  * When the ref genuinely does not resolve, a Missing placeholder is created and the step is marked
  * resolved: false on the Story.
+ *
+ * Either way the outcome is written back onto the Story's `operationsDetail[]`, so the field and the
+ * edge always name the same entity: `resolvedEntityId` on success, `resolved: false` on failure.
  */
 export function buildStoryRelations(
   entities: Entity[],
@@ -58,6 +61,16 @@ export function buildStoryRelations(
             `Story operation '${op.name}' (ref: ${ref}) resolved to entity not found in model; created placeholder.`
           );
         }
+      } else {
+        // The relation and the Story's own `operationsDetail[].resolvedEntityId` name the SAME
+        // operation, so they are resolved once, here, by the resolver above. The entity extractor
+        // can only guess that id: it runs before the entity list exists, so it reconstructs
+        // `{domain}-domain.yaml-{ref}` from the ref alone, which holds only where a scope keeps its
+        // operations in a file literally named `domain.yaml`. Under the multi-file convention
+        // (`product-core.domain.yaml`, `api.domain.yaml`) the guess names no entity, and a consumer
+        // reading the field walks off the graph while the edge beside it is correct. `op` is the
+        // element of `story.data.operationsDetail`, so this writes through to the model.
+        op.resolvedEntityId = targetId;
       }
 
       relations.push({
