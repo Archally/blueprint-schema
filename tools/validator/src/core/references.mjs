@@ -240,6 +240,60 @@ export function collectRefs(node, refs = [], pathStack = []) {
 }
 
 /**
+ * Edge constructs: a container key, and the arms inside each item that name the edge's TARGET.
+ *
+ * These are directed edges nested on their source, so an entry naming the declaring entity's own id
+ * is an edge from a thing to itself. It relates nothing, no consumer can walk it, and every id in it
+ * resolves - so the reference walk above sees a model in perfect order.
+ *
+ * A table rather than a rule over every reference, because naming your own id is not wrong
+ * everywhere. A block carrying a back-pointer to the record it belongs to states its own provenance
+ * and is correct read on its own. What separates these is that the object IS an edge: it exists only
+ * to relate two units, so the two ends being equal empties it.
+ *
+ * Matching is on the literal id, the same comparison the reference walk makes. A scope prefix is
+ * part of an id here, so `billing.TM001` and `TM001` are two ids - and a reference to one from a
+ * file declaring the other is already reported as dangling.
+ */
+const EDGE_TARGET_ARMS = new Map([
+  ["interacts_with", ["team_ref", "department_ref", "party_ref"]],
+  ["relations", ["party_ref", "target"]],
+]);
+
+/**
+ * Every edge that names its own declarer, with the id, the construct and where it was written.
+ *
+ * The declarer is the NEAREST enclosing object carrying a typed id, so a team nested inside a party
+ * is judged against its own id rather than the party's.
+ */
+export function collectSelfEdges(node, hits = [], declarer = null, pathStack = []) {
+  if (Array.isArray(node)) {
+    node.forEach((item, idx) => collectSelfEdges(item, hits, declarer, [...pathStack, `[${idx}]`]));
+    return hits;
+  }
+  if (!node || typeof node !== "object") return hits;
+
+  const own =
+    typeof node.id === "string" && ID_RE.test(node.id) ? node.id : declarer;
+
+  for (const [key, value] of Object.entries(node)) {
+    const arms = EDGE_TARGET_ARMS.get(key);
+    if (arms && own && Array.isArray(value)) {
+      value.forEach((edge, idx) => {
+        if (!edge || typeof edge !== "object" || Array.isArray(edge)) return;
+        for (const arm of arms) {
+          if (edge[arm] === own) {
+            hits.push({ id: own, key, arm, loc: [...pathStack, `${key}[${idx}]`, arm].join(".") });
+          }
+        }
+      });
+    }
+    collectSelfEdges(value, hits, own, [...pathStack, key]);
+  }
+  return hits;
+}
+
+/**
  * Every `{ id, parent }` pair in the model, wherever it appears.
  *
  * `parent` names a container of the same type as its declarer, which makes it a hierarchy, and a

@@ -7,6 +7,7 @@ import {
   collectIds,
   collectParentEdges,
   collectRefs,
+  collectSelfEdges,
   findParentCycles,
   isIdentityOrReferenceViolation,
   isPartyRedeclaration,
@@ -318,6 +319,7 @@ export function validateModel(args) {
   const allIds = new Map();
   const allDuplicates = new Map();
   const parentEdges = new Map();
+  const selfEdges = [];
   const allRefs = [];
   /**
    * Each recognised file is parsed exactly once and reused by every later pass, so the passes
@@ -356,6 +358,7 @@ export function validateModel(args) {
     parsedFiles.push({ relFile, schemaType, data });
     collectIds(data, allIds, allDuplicates, [relFile]);
     collectParentEdges(data, parentEdges);
+    collectSelfEdges(data, selfEdges, null, [relFile]);
     // Each ref carries the scope ITS OWN file declares, so a bare id can be resolved against
     // that scope and only that one. Tagging at the call site keeps `collectRefs` unchanged.
     const declaredScope = typeof data.scope === "string" ? data.scope : null;
@@ -422,6 +425,13 @@ export function validateModel(args) {
         ? `'${cycle[0]}' is its own parent`
         : `Parent cycle: ${[...cycle, cycle[0]].join(" -> ")}`,
     );
+  }
+
+  // The same blind spot one construct over: an edge naming its own declarer resolves, so the walk
+  // above passes it. A cross-reference error rather than a warning, because the entry states a
+  // relationship that does not exist - a unit cannot depend on, supply or be hosted on itself.
+  for (const edge of selfEdges) {
+    crossErrors.push(`'${edge.id}' declares an edge to itself at ${edge.loc}`);
   }
 
   // Gap warnings and typed-id warnings are emitted in ONE per-file pass, so all findings for a
