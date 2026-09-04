@@ -327,7 +327,16 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
       owned_by:
         $ref: "../metamodel.schema.yaml#/$defs/owned_by"
-        description: "Actor-level ownership override."
+        description: "Actor-level ownership override: who maintains this actor's DEFINITION. Not who performs the role - see `staffed_by`."
+      staffed_by:
+        $ref: "../metamodel.schema.yaml#/$defs/team_ref"
+        description: >
+          The team whose members perform this role (TM###). Distinct from `owned_by`, which says who
+          maintains the definition: a product team can own the definition of an end-user role nobody
+          in the organization staffs. Set it only for roles the organization itself performs, and
+          leave it absent for customers, external systems and regulators. It is what makes a process
+          crossing several teams traceable, since a scenario step reaches a team through the actor
+          that performs it.
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:

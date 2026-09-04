@@ -349,7 +349,14 @@ $defs:
               description: "What happens at this step (plain language)."
             operation:
               $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
-              description: "Domain operation at this step (functional mode)."
+              description: "Domain operation at this step (functional mode). Its initiator is the performer of the step."
+            actor:
+              $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+              description: >
+                Actor who performs this step, when the step is not a modelled operation. Consulted
+                only when `operation` is absent, so a step that IS an operation keeps one source of
+                truth for its performer. Use it for human acts a domain operation does not describe:
+                a sign-off, a go/no-go call, a code freeze.
             screen:
               $ref: "../metamodel.schema.yaml#/$defs/screen_ref"
               description: "UI screen where this step occurs (journey mode)."

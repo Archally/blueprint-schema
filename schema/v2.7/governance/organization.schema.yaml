@@ -47,6 +47,16 @@ $defs:
       description:
         type: string
         description: "What this party represents in the organization."
+      responsibilities:
+        type: array
+        items:
+          type: string
+        description: >
+          What this party is accountable for, one item per responsibility. `description` carries the
+          prose summary; this is the enumerated form a reader or a report can walk.
+
+          Accountability is not ownership. Ownership is stated by an `owned_by` on the unit that is
+          owned, so a party can be accountable for an outcome delivered by units it owns no part of.
       departments:
         type: array
         description: "Departments within this party."
@@ -78,7 +88,19 @@ $defs:
         description: "Department name."
       description:
         type: string
-        description: "What this department is responsible for."
+        description: >
+          What this department does, in prose. Its accountabilities as an enumerated list are
+          `responsibilities`.
+      responsibilities:
+        type: array
+        items:
+          type: string
+        description: >
+          What this department is accountable for, one item per responsibility. `description` carries
+          the prose summary; this is the enumerated form a reader or a report can walk.
+
+          Accountability is not ownership. Ownership is stated by an `owned_by` on the unit that is
+          owned, and a department is accountable for work its teams own rather than owning it itself.
       teams:
         type: array
         description: "References to teams in this department (team_ref IDs)."
@@ -103,9 +125,58 @@ $defs:
       name:
         type: string
         description: "Team name."
+      kind:
+        type: string
+        enum:
+          - dev-stream-aligned
+          - dev-platform
+          - dev-enabling
+          - dev-complicated-subsystem
+          - qa
+          - test-automation
+          - design
+          - product
+          - security
+          - operations
+          - people
+          - management
+        description: >
+          The team's primary function. One flat list at two levels: the `dev-` values refine the
+          engineering function by the team's role in the architecture, the rest name other
+          organizational functions.
+
+          It carries a fact nothing else in the model states, and without it a team that owns no
+          bounded context is unreadable: for a design or people team that is correct, for a
+          stream-aligned team it is a gap, and no tool can tell the two apart from ownership alone.
+
+          Choosing a value is a judgement, so the distinctions that decide the hard cases:
+          `dev-stream-aligned` builds and runs a slice of the product end to end;
+          `dev-platform` builds something other teams consume as a service;
+          `dev-enabling` raises other teams' capability and expects to move on;
+          `dev-complicated-subsystem` owns a part requiring specialist knowledge to change;
+          `operations` runs services rather than building what others consume, which is the line
+          that separates it from `dev-platform` for a team doing both;
+          `test-automation` builds and maintains the automation, `qa` decides what quality means.
+
+          The value names the PRIMARY function and `tags` carry the rest. A team that builds internal
+          tooling and also runs production is one or the other, never both, and the choice states
+          what the team is for.
       description:
         type: string
-        description: "What this team is responsible for."
+        description: >
+          What this team does, in prose. Its accountabilities as an enumerated list are
+          `responsibilities`.
+      responsibilities:
+        type: array
+        items:
+          type: string
+        description: >
+          What this team is accountable for, one item per responsibility. `description` carries the
+          prose summary; this is the enumerated form a reader or a report can walk.
+
+          Accountability is not ownership. Ownership is stated by an `owned_by` on the unit that is
+          owned, and the two come apart: an enabling team raises other teams' capability and owns no
+          part of what they build, so a team that nothing points at may still carry a full list here.
       contact:
         type: object
         description: "Team contact information."
