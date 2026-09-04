@@ -31,6 +31,15 @@ import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../t
 // only inside infrastructure documents, where the schema puts them. Every OTHER occurrence of a
 // retyped id is reported and left alone: a value that merely looks like an id is not one, and a
 // silent wrong rewrite is the failure this whole tool exists to avoid.
+//
+// WHAT v2.8 STOPS ACCEPTING, AND WHY IT IS REPORTED RATHER THAN REWRITTEN. `service.resources`
+// (a free-string list of resource categories) and the root `infrastructure:` map of an arch
+// document (free-string name to description) are removed in v2.8. Neither has a transform: a
+// category such as "database" is not a resource, so minting an IR### from it would declare
+// infrastructure the model never had, and the map's values are prose, which this tool never
+// deletes. Each occurrence is reported with the manual path. The hop still bumps the version, so
+// the model then fails validation at exactly that property - a visible stop, rather than a
+// migration that withholds every other rewrite because of one line a person has to decide.
 
 const ARCH_FILE = /^(arch\.(yaml|yml)|[^/\\]+[.-]arch\.(yaml|yml))$/i;
 const INFRA_FILE = /^(infrastructure\.(yaml|yml)|[^/\\]+[.-]infrastructure\.(yaml|yml))$/i;
@@ -315,6 +324,7 @@ function analyse(absoluteDir: string): Analysis {
   }
 
   const mints = collectArchMints(archFiles, lines, usedIds, warnings);
+  reportRemovedSurfaces(archFiles, lines, warnings);
   const { retypes, idMap } = collectInfraRetypes(infraFiles, lines, usedIds, warnings);
   const refs = collectRefSites(allFiles, lines, idMap, warnings);
   const versions = collectVersionSites(allFiles, lines);
@@ -444,6 +454,72 @@ const describe = (entry: SequenceEntry): string => {
   const name = entry.values.get('name');
   return name ? `"${unquote(name)}"` : `at line ${entry.lineIndex + 1}`;
 };
+
+/**
+ * The two arch surfaces v2.8 no longer accepts, reported by file and line and never rewritten.
+ *
+ * A root `infrastructure:` map is found whether it opens a block or holds a flow mapping on its own
+ * line; a service's `resources` whether it is a block list or `[a, b]`. Only arch documents and
+ * only the nesting the schema declares (`parties -> contexts -> services`) are read, so the
+ * `resources:` container of an infrastructure document - the typed IR### declarations - is never
+ * mistaken for the removed list.
+ */
+function reportRemovedSurfaces(
+  archFiles: { relativePath: string; absolutePath: string }[],
+  lines: Map<string, SourceLine[]>,
+  warnings: string[],
+): void {
+  for (const file of archFiles) {
+    const fileLines = lines.get(file.absolutePath)!;
+
+    const mapLine = fileLines.findIndex((line) => /^infrastructure:[ \t]*(\S.*)?$/.test(line.text));
+    if (mapLine !== -1) {
+      warnings.push(
+        `${file.relativePath}:${mapLine + 1}: the root \`infrastructure:\` map is not accepted from v2.8 - ` +
+          'declare each entry as a resource (IR###) in infrastructure.yaml, or keep its text in a description, then delete the map',
+      );
+    }
+
+    const partiesLine = findRootBlock(fileLines, 'parties');
+    if (partiesLine === -1) continue;
+    const parties = readSequence(fileLines, partiesLine);
+    if (!parties) continue;
+    for (const party of parties) {
+      const contextsLine = party.blocks.get('contexts');
+      if (contextsLine === undefined) continue;
+      const contexts = readSequence(fileLines, contextsLine) ?? [];
+      for (const context of contexts) {
+        const servicesLine = context.blocks.get('services');
+        if (servicesLine === undefined) continue;
+        const services = readSequence(fileLines, servicesLine) ?? [];
+        for (const service of services) {
+          const resourcesLine =
+            service.blocks.get('resources') ??
+            (service.values.has('resources') ? findEntryKeyLine(fileLines, service, 'resources') : -1);
+          if (resourcesLine === -1) continue;
+          warnings.push(
+            `${file.relativePath}:${resourcesLine + 1}: service ${describe(service)} uses \`resources\`, which is not accepted from v2.8 - ` +
+              'declare the resources as IR### in infrastructure.yaml and reference them with `resource_refs`, or delete the line',
+          );
+        }
+      }
+    }
+  }
+}
+
+/** The line index of `key:` among an entry's own keys, or -1. */
+function findEntryKeyLine(lines: SourceLine[], entry: SequenceEntry, key: string): number {
+  const pattern = new RegExp(`^${key}:`);
+  if (pattern.test(entry.firstKeyText)) return entry.lineIndex;
+  for (let index = entry.lineIndex + 1; index < lines.length; index += 1) {
+    const { text } = lines[index]!;
+    if (isBlank(text)) continue;
+    const indent = indentOf(text);
+    if (indent < entry.keyColumn) break;
+    if (indent === entry.keyColumn && pattern.test(text.trimStart())) return index;
+  }
+  return -1;
+}
 
 /** Free-string resource and deployment-scope ids, with the typed id each will become. */
 function collectInfraRetypes(
