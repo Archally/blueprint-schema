@@ -63,6 +63,8 @@ goals:
 
 risks:
   - id: catalog.R001
+    affects:
+      operation_refs: [catalog.EVT002]
     statement: "Elasticsearch index drift after bulk product updates"
     description: >
       Bulk CSV imports update MySQL directly. If the ES re-indexing job

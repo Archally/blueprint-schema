@@ -12,6 +12,10 @@ operations:
     description: "Explicitly generate an invoice for an order. Normally invoices are auto-generated on payment acceptance, but merchants may trigger manual generation."
     delivery_priority: must-have
     initiated_by: [orders.ACT003]
+    reacts_to:
+      - operation: orders.EVT005
+        policy: "Generate the invoice when the order enters a state that carries the invoice flag, such as Payment accepted"
+        condition: "the new order state has the invoice flag set"
     governed_by:
       - rule: orders.SR002
     produces:

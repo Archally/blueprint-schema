@@ -55,6 +55,9 @@ operations:
     description: "Transition an order to a new state. Validates the transition against the state machine and triggers side effects (email, stock release, invoice generation)."
     delivery_priority: must-have
     initiated_by: [orders.ACT003, orders.ACT004]
+    reacts_to:
+      - operation: orders.EVT001
+        policy: "Set the order's initial state to the one the payment module reports at validation, such as Awaiting payment or Payment accepted"
     governed_by:
       - rule: orders.CR001
       - rule: orders.TR001

@@ -68,6 +68,8 @@ risks:
     certainty: confirmed
 
   - id: shipping.R003
+    affects:
+      operation_refs: [shipping.CMD012]
     statement: "Editing shipped shipments causes data inconsistency"
     description: >
       Modifying a shipment after physical dispatch could cause mismatch

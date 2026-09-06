@@ -40,6 +40,8 @@ goals:
 
 risks:
   - id: international.R001
+    affects:
+      operation_refs: [international.CMD005]
     statement: "Stale exchange rates cause incorrect multi-currency pricing"
     description: >
       If exchange rate refresh fails or is not scheduled, customers see

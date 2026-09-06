@@ -6,54 +6,49 @@ tags:
   - e-commerce
   - php
   - symfony
-parties:
-  - id: PRT002
-    name: PrestaShop
-    kind: system
-    env: production
-    description: PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
-    contexts:
-      - id: prestashop.BC001
-        name: Admin
-        kind: generic
-        complexity: crud
-        evolution: commodity
-        summary: Employee accounts, profiles, security, API clients, configuration.
-        owned_by:
-          team: TM009
-        responsibilities:
-          - Employee registration and profile/role management
-          - Access control and permission checking
-          - API client (OAuth2) management
-          - Webservice key management
-          - Security audit logging
-          - Shop configuration key-value store
-        services:
-          - id: prestashop.SVC001
-            name: AdminService
-            kind: api
-            summary: REST API for employee, security, and configuration management.
-            servers:
-              - url: https://api.prestashop.example/v1
-                environment: production
-              - url: http://localhost:8080/api
-                environment: development
-            contracts:
-              openapi:
-                output: admin/admin-api.openapi
-                expose:
-                  - admin:addEmployee
-                  - admin:editProfile
-                  - admin:getEmployeeForEditing
-                  - admin:addApiClient
-              security_schemes:
-                bearer:
-                  type: http
-                  scheme: bearer
-                  bearer_format: JWT
-                admin_oauth2:
-                  type: oauth2
-                  scopes:
-                    admin:read: Read admin data
-                    admin:write: Modify admin data
-                    employees:manage: Manage employee accounts
+system_ref: PRT002
+contexts:
+  - id: prestashop.BC001
+    name: Admin
+    kind: generic
+    complexity: crud
+    evolution: commodity
+    summary: Employee accounts, profiles, security, API clients, configuration.
+    owned_by:
+      team: TM009
+    responsibilities:
+      - Employee registration and profile/role management
+      - Access control and permission checking
+      - API client (OAuth2) management
+      - Webservice key management
+      - Security audit logging
+      - Shop configuration key-value store
+    services:
+      - id: prestashop.SVC001
+        name: AdminService
+        kind: api
+        summary: REST API for employee, security, and configuration management.
+        servers:
+          - url: https://api.prestashop.example/v1
+            environment: production
+          - url: http://localhost:8080/api
+            environment: development
+        contracts:
+          openapi:
+            output: admin/admin-api.openapi
+            expose:
+              - admin:addEmployee
+              - admin:editProfile
+              - admin:getEmployeeForEditing
+              - admin:addApiClient
+          security_schemes:
+            bearer:
+              type: http
+              scheme: bearer
+              bearer_format: JWT
+            admin_oauth2:
+              type: oauth2
+              scopes:
+                admin:read: Read admin data
+                admin:write: Modify admin data
+                employees:manage: Manage employee accounts

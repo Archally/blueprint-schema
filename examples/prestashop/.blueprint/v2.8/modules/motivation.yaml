@@ -40,6 +40,8 @@ goals:
 
 risks:
   - id: modules.R001
+    affects:
+      operation_refs: [modules.CMD003]
     statement: "Incompatible module breaks storefront after installation or upgrade"
     description: >
       Third-party modules may be incompatible with the current PrestaShop version

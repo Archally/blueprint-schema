@@ -130,6 +130,8 @@ risks:
     tags: [concurrency, reliability]
 
   - id: orders.R004
+    affects:
+      operation_refs: [orders.CMD024]
     statement: "State machine inconsistency from custom order states"
     description: >
       Merchants can add custom order states via the admin CRUD. If a custom state

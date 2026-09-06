@@ -19,32 +19,40 @@ parties:
     description: >-
       Third-party systems integrating with PrestaShop over the Admin REST API using OAuth2. Not built
       or operated by PrestaShop; modelled so the dependency on the Admin API surface is visible.
-    contexts:
-      - id: prestashop.BC009
-        name: ExternalApiConsumers
-        kind: generic
-        complexity: integration
-        evolution: commodity
-        summary: External systems consuming PrestaShop Admin API via OAuth2.
-        services:
-          - id: prestashop.SVC009
-            name: AdminApiClient
-            kind: api
-            summary: External API consumer using PrestaShop Admin REST API with OAuth2 authentication.
-            contracts:
-              httpClient:
-                # Declared at the model ROOT: an external consumer of the Admin API, belonging to
-                # no single slice. `_global/` says that outright rather than leaving it inferred.
-                output: _global/admin-api-client.http
-                call:
-                  - admin:addApiClient
-                  - admin:getEmployeeForEditing
-                  - catalog:searchProducts
-                  - catalog:getProductDetail
-                  - orders:getOrderForViewing
-              security_schemes:
-                admin_oauth2:
-                  type: oauth2
-                  scopes:
-                    admin:read: Read access to admin API
-                    admin:write: Write access to admin API
+
+  - id: PRT002
+    name: PrestaShop
+    kind: system
+    env: production
+    description: PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
+
+system_ref: PRT003
+contexts:
+  - id: prestashop.BC009
+    name: ExternalApiConsumers
+    kind: generic
+    complexity: integration
+    evolution: commodity
+    summary: External systems consuming PrestaShop Admin API via OAuth2.
+    services:
+      - id: prestashop.SVC009
+        name: AdminApiClient
+        kind: api
+        summary: External API consumer using PrestaShop Admin REST API with OAuth2 authentication.
+        contracts:
+          httpClient:
+            # Declared at the model ROOT: an external consumer of the Admin API, belonging to
+            # no single slice. `_global/` says that outright rather than leaving it inferred.
+            output: _global/admin-api-client.http
+            call:
+              - admin:addApiClient
+              - admin:getEmployeeForEditing
+              - catalog:searchProducts
+              - catalog:getProductDetail
+              - orders:getOrderForViewing
+          security_schemes:
+            admin_oauth2:
+              type: oauth2
+              scopes:
+                admin:read: Read access to admin API
+                admin:write: Write access to admin API

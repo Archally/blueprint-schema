@@ -6,77 +6,72 @@ tags:
   - e-commerce
   - php
   - symfony
-parties:
-  - id: PRT002
-    name: PrestaShop
-    kind: system
-    env: production
-    description: PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
-    contexts:
-      - id: prestashop.BC003
-        name: Checkout
-        kind: core
-        complexity: concurrency
-        evolution: product
-        summary: Cart management, checkout flow, cart rules, promotions, payment orchestration.
-        owned_by:
-          team: TM003
-        responsibilities:
-          - Cart session lifecycle (create, update, checkout, abandon)
-          - Cart item management (add, remove, update quantity)
-          - Cart rule and discount evaluation
-          - Catalog price rule application
-          - Payment initiation and gateway orchestration
-          - Cart total calculation (products, discounts, tax, shipping)
-        dependencies:
-          - name: Catalog
-            type: api
-            relationship: customer-supplier
-            direction: downstream
-            description: Reads product prices, stock, and availability for cart items.
-            bounded_context_ref: prestashop.BC002
-          - name: Customers
-            type: api
-            relationship: customer-supplier
-            direction: downstream
-            description: Reads customer data for cart rules and guest checkout.
-            bounded_context_ref: prestashop.BC005
-          - name: International
-            type: api
-            relationship: customer-supplier
-            direction: downstream
-            description: Reads currency and tax data for cart totals.
-            bounded_context_ref: prestashop.BC006
-          - name: Orders
-            type: events
-            relationship: shared-kernel
-            direction: upstream
-            description: Publishes cart-to-order transition event.
-            language_boundary: false
-            bounded_context_ref: prestashop.BC008
-        services:
-          - id: prestashop.SVC003
-            name: CheckoutService
-            kind: api
-            summary: REST API for cart operations and payment initiation.
-            needs:
-              - { type_ref: RT001, class: self-hosted, id: prestashop-db }
-            servers:
-              - url: https://api.prestashop.example/v1
-                environment: production
-              - url: http://localhost:8080/api
-                environment: development
-            contracts:
-              openapi:
-                output: checkout/checkout-api.openapi
-                expose:
-                  - checkout:addProductToCart
-                  - checkout:removeProductFromCart
-                  - checkout:getCartForViewing
-              asyncapi:
-                output: checkout/checkout-events.asyncapi
-                send:
-                  - checkout:cartProductsUpdated
-                receive:
-                  - orders:orderPlaced
-                brokerId: prestashop-event-bus
+system_ref: PRT002
+contexts:
+  - id: prestashop.BC003
+    name: Checkout
+    kind: core
+    complexity: concurrency
+    evolution: product
+    summary: Cart management, checkout flow, cart rules, promotions, payment orchestration.
+    owned_by:
+      team: TM003
+    responsibilities:
+      - Cart session lifecycle (create, update, checkout, abandon)
+      - Cart item management (add, remove, update quantity)
+      - Cart rule and discount evaluation
+      - Catalog price rule application
+      - Payment initiation and gateway orchestration
+      - Cart total calculation (products, discounts, tax, shipping)
+    dependencies:
+      - name: Catalog
+        type: api
+        relationship: customer-supplier
+        direction: downstream
+        description: Reads product prices, stock, and availability for cart items.
+        bounded_context_ref: prestashop.BC002
+      - name: Customers
+        type: api
+        relationship: customer-supplier
+        direction: downstream
+        description: Reads customer data for cart rules and guest checkout.
+        bounded_context_ref: prestashop.BC005
+      - name: International
+        type: api
+        relationship: customer-supplier
+        direction: downstream
+        description: Reads currency and tax data for cart totals.
+        bounded_context_ref: prestashop.BC006
+      - name: Orders
+        type: events
+        relationship: shared-kernel
+        direction: upstream
+        description: Publishes cart-to-order transition event.
+        language_boundary: false
+        bounded_context_ref: prestashop.BC008
+    services:
+      - id: prestashop.SVC003
+        name: CheckoutService
+        kind: api
+        summary: REST API for cart operations and payment initiation.
+        needs:
+          - { type_ref: RT001, class: self-hosted, id: prestashop-db }
+        servers:
+          - url: https://api.prestashop.example/v1
+            environment: production
+          - url: http://localhost:8080/api
+            environment: development
+        contracts:
+          openapi:
+            output: checkout/checkout-api.openapi
+            expose:
+              - checkout:addProductToCart
+              - checkout:removeProductFromCart
+              - checkout:getCartForViewing
+          asyncapi:
+            output: checkout/checkout-events.asyncapi
+            send:
+              - checkout:cartProductsUpdated
+            receive:
+              - orders:orderPlaced
+            brokerId: prestashop-event-bus

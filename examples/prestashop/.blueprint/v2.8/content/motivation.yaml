@@ -56,6 +56,8 @@ risks:
     certainty: confirmed
 
   - id: content.R002
+    affects:
+      operation_refs: [content.CMD016]
     statement: "Theme incompatibility after PrestaShop upgrade"
     description: >
       Theme updates may lag behind core PrestaShop upgrades, causing visual
