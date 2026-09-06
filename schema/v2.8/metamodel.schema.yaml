@@ -320,7 +320,11 @@ $defs:
   party_ref:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?PRT\\d{3}$"
-    description: "Reference to an organizational party (e.g. PRT001 or billing.PRT001)."
+    description: >
+      Reference to a party, system or organizational (e.g. PRT001 or billing.PRT001). A party is
+      one node however many documents declare it: declarations fold on the id; a party declared
+      without an id folds on its name within its scope and the fold is reported as a guess; a scalar
+      two declarations state differently is reported and never resolved.
 
   department_ref:
     type: string
@@ -847,7 +851,22 @@ $defs:
             - documentation
             - assumption
             - experiment
-          description: "Type of evidence."
+            - workshop
+          description: >
+            The kind of source the evidence comes from.
+            interview: a conversation with a user, expert or stakeholder.
+            survey: aggregated answers from many respondents.
+            analytics: measured usage or operational data.
+            stakeholder-signoff: an explicit agreement by the people accountable.
+            competitive-analysis: a comparison against other products or approaches.
+            codebase-analysis: a reading of the implementation.
+            documentation: an existing written source.
+            assumption: a belief not yet backed by evidence, named so it can be tested.
+            experiment: an outcome observed under a designed test.
+            workshop: a collaborative modelling session (EventStorming, Domain Storytelling,
+            a whiteboard workshop). The source is the board export or photo and the date is
+            the session's, so an element harvested from the board points back to it and the
+            board's age stays visible.
         source:
           type: string
           description: "Where this evidence comes from (URL, document name, person/team)."
@@ -957,3 +976,78 @@ $defs:
         items:
           $ref: "#/$defs/environment_ref"
         description: "Deployment environments (ENV###) impacted by this decision."
+
+# ── GDSM self-description + modeling-guidance ledger ─────────────────────────
+# `modeling_guidance` is the schema-native home for durable modelling lessons about this
+# suite, served on demand by the blueprint MCP `get_analysis_guidance` tool. Entries are
+# added deliberately and pruned on curation; nothing writes here automatically, and nothing
+# here is loaded into a session unless it is asked for.
+x-gdsm:
+  version: "1.0.0"
+  methodology: "GDSM v1.0 (Goal-Driven Schema Modeling)"
+  status: draft
+  suite_name: "blueprint"
+  purpose: >
+    The cross-cutting blueprint metamodel - typed ids, versioning, and the shared reference
+    types every layer resolves through. It also carries the suite-level modeling_guidance
+    ledger.
+  design_notes: >
+    A lesson belongs here when it is durable and about the schema itself: what a construct
+    means, where an entity belongs, or what a name is already taken by. What a validator or a
+    semantic rule can decide belongs in that check instead, and what is true of one model only
+    belongs in that model.
+  modeling_guidance:
+    - lesson: >
+        A competency question (QN###) is answered by an operation and scopes exactly one bounded
+        context; an inquiry (INQ###) is the modeller's own question and resolves. A question whose
+        answer is a rendered artifact rather than an operation is neither of them, and belongs
+        beside the render manifest rather than inside the model.
+      category: semantics
+      date: "2026-09-06"
+      evidence: >
+        `question.answered_by` takes operation references only, and the `unbound-question` check
+        binds a question to one bounded context.
+      schema_version: "2.8.0"
+    - lesson: >
+        Widening an existing reference type so it can also denote something else loosens every
+        consumer that reads it. Add a sibling reference type instead, and leave the original
+        meaning exact.
+      category: structure
+      date: "2026-09-06"
+      evidence: >
+        Measured 2026-09-06: `operation_ref` is resolved from 38 places in 12 schema files of this
+        line, each of which reads it as "an operation".
+      schema_version: "2.8.0"
+    - lesson: >
+        The `design` / `governance` plane axis is authorship and epistemic maturity - who is
+        entitled to state a thing, and how settled it is - not subject matter. A distinction
+        between what a model states and what is stated about the model is a different axis, and
+        one entity type does not earn a plane of its own.
+      category: semantics
+      date: "2026-09-06"
+      evidence: >
+        Every governance layer (decisions, motivation, test cases, capability) is authored by a
+        different role from the design layers it describes.
+      schema_version: "2.8.0"
+    - lesson: >
+        A key name that already carries a meaning one key away in the same document is not
+        available for a second meaning, however apt. In a render manifest `view:` is the path to a
+        renderer's own view-config file, so it cannot also mean the perspective an artifact takes.
+      category: gotcha
+      date: "2026-09-06"
+      evidence: "`render.manifest.schema.yaml`, `$defs/target.view`."
+      schema_version: "2.8.0"
+    - lesson: >
+        An entity is declared whole, exactly once, in exactly one file. Nesting states a relation
+        by position and is the right shape where the child has no identity outside its parent - a
+        service inside its context - but it costs one re-declaration of the parent in every file a
+        child is declared in. A bounded context that several systems provide services to is
+        therefore declared at the document root, and each of its services names its system with
+        `system_ref` or inherits the document's default.
+      category: structure
+      date: "2026-09-06"
+      evidence: >
+        A nine-document model declares ten parties 28 times, and seven of its nine contexts sit
+        under several parties each, because the party owning a context has to be re-declared
+        wherever the context is.
+      schema_version: "2.8.1"

@@ -24,7 +24,10 @@ description: >
     - instance  — a human-authored unit (one roadmap, one story, ...); narrowing by slice does
                   not apply, since there is no larger set to narrow.
     - contexts  — the target may be narrowed to a list of bounded contexts.
-  Only glob, selector and contexts targets accept `slices`; an instance target does not.
+    - model     - the tool reads the whole model directory and narrows itself to a slice given by
+                  NAME; the manifest names no files for it. A slice with no directory in the model
+                  is excluded before the tool runs.
+  Only glob, selector, contexts and model targets accept `slices`; an instance target does not.
 type: object
 additionalProperties: false
 required: [model, stamp, targets]
@@ -155,12 +158,17 @@ $defs:
         description: "Which renderer produces this target."
       kind:
         type: string
-        enum: [glob, selector, instance, contexts, per-file]
+        enum: [glob, selector, instance, contexts, model, per-file, parcels]
         description: >
           How this target may be narrowed to a slice - see the top-level description for what
           each value means. `per-file` is the one kind that EXPANDS: the target declares a glob
           in `files`, and every match becomes its own instance, so a model file that joins the
           project joins the delivery rather than waiting for a hand-written wrapper.
+
+          `contexts` and `parcels` are the two SCOPE kinds, one per domain: a scope kind names the
+          partition a domain's artifacts actually vary by, and the two domains partition
+          differently. Everything else a delivery declares is the same question in both, which is
+          why there is one manifest format rather than two.
       view:
         type: string
         description: >
@@ -215,8 +223,9 @@ $defs:
         type: array
         items: { type: string }
         description: >
-          Narrow this target to the named slices. Only meaningful on `glob`, `selector`, and
-          `contexts` targets — a schema error on an `instance` target.
+          Narrow this target to the named slices: it renders once per named slice, into that
+          slice's folder, and never as a whole-model artifact. Only meaningful on `glob`,
+          `selector`, `contexts` and `model` targets - a schema error on an `instance` target.
       files:
         type: string
         description: >
@@ -228,6 +237,19 @@ $defs:
         description: >
           `kind: per-file` only. Which top-level key of each matched file supplies that instance's
           title, so the name is read from the model rather than restated in a view config.
+      needs:
+        type: array
+        minItems: 1
+        items: { type: string }
+        description: >
+          Target ids that must render before this one, because it CONSUMES what they produce.
+
+          Declaration order is the cheaper rule and the wrong one: it makes a delivery depend on
+          how somebody typed a file, and reordering two lines then breaks a document with no
+          error. The dependency is a fact about the tools - a report that embeds a drawing needs
+          the drawing rendered into the same delivery folder first - so it is stated, and a runner
+          can refuse a cycle and refuse to run a target whose need failed rather than producing a
+          complete-looking document with nothing in it.
       view_overrides:
         type: object
         minProperties: 1

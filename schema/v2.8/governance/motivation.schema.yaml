@@ -257,6 +257,31 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
         description: "Goals threatened by this risk."
+      affects:
+        type: object
+        description: "Blueprint entities this risk touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, context or story it is about."
+        additionalProperties: false
+        properties:
+          operation_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            description: "Operations affected."
+          concept_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+            description: "Concepts affected."
+          context_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+            description: "Bounded contexts / slices affected."
+          story_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/story_ref"
+            description: "Stories affected, for a concern about a flow as a whole rather than one of its operations."
       version:
         $ref: "../metamodel.schema.yaml#/$defs/entity_version"
         description: "Risk version for lifecycle tracking."
@@ -430,6 +455,31 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
         description: "Actors who care about the resolution."
+      affects:
+        type: object
+        description: "Blueprint entities this inquiry touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, context or story it is about."
+        additionalProperties: false
+        properties:
+          operation_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            description: "Operations affected."
+          concept_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+            description: "Concepts affected."
+          context_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+            description: "Bounded contexts / slices affected."
+          story_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/story_ref"
+            description: "Stories affected, for a concern about a flow as a whole rather than one of its operations."
       owner:
         $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
         description: "Person responsible for driving resolution."

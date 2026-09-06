@@ -6,7 +6,11 @@ type: object
 additionalProperties: false
 required:
   - name
-  - parties
+# A document declares its bounded contexts nested under the parties that provide their services
+# (`parties`), at the document root (`contexts`), or both; it must declare at least one list.
+anyOf:
+  - required: [parties]
+  - required: [contexts]
 properties:
   name:
     type: string
@@ -54,18 +58,40 @@ properties:
     type: array
     items:
       $ref: "#/$defs/party"
-    description: "Organizational or system parties hosting bounded contexts."
+    description: >
+      System and organizational parties. In the nested form each carries the bounded contexts whose
+      services are its components; a party declared whole carries none, and services elsewhere name
+      it through `system_ref`.
+  contexts:
+    type: array
+    items:
+      $ref: "#/$defs/context"
+    description: >
+      Bounded contexts declared whole at the document root, each exactly once in the model. A
+      service under a root-declared context names the system it is a component of through
+      `system_ref`, or inherits this document's `system_ref` default; the systems a context spans
+      are derived from its services. This is the form for a context that several systems provide
+      services to, which the nested form can state only by declaring the context once per system.
+  system_ref:
+    $ref: "../metamodel.schema.yaml#/$defs/party_ref"
+    description: >
+      File-level default for `service.system_ref`: the system party that every service under a
+      root-declared context in this document is a component of, unless the service names its own.
+      A service nested under a party is a component of that party and does not read this default.
 
 $defs:
 
   party:
     type: object
-    description: "An organizational or system party owning one or more bounded contexts."
+    description: >
+      A system or organizational party. In the nested form it carries the bounded contexts whose
+      services are its components; declared whole, it carries no contexts and services name it
+      through `system_ref`. One party is one node however many documents declare it (see
+      `party_ref` in the metamodel for how declarations fold).
     additionalProperties: false
     required:
       - id
       - name
-      - contexts
       - env
     properties:
       id:
@@ -91,7 +117,10 @@ $defs:
         type: array
         items:
           $ref: "#/$defs/context"
-        description: "Bounded contexts owned by this party."
+        description: >
+          Bounded contexts whose services are components of this party (nested form). Optional: a
+          party declared whole carries none, and its contexts are then derived from the services
+          that name it through `system_ref`.
       description:
         type: string
         description: "Human-readable description."
@@ -123,7 +152,7 @@ $defs:
           declared on the domain file.
       name:
         type: string
-        description: "Context name (unique within this party)."
+        description: "Context name (unique within the party or document that declares it)."
       kind:
         type: string
         enum: [core, generic-core, support, generic]
@@ -301,6 +330,15 @@ $defs:
       kind:
         $ref: "../metamodel.schema.yaml#/$defs/service_kind"
         description: "Architectural component type. Determines applicable contract patterns."
+      system_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/party_ref"
+        description: >
+          The system party (PRT###) this service is a component of. A service nested under a party
+          is a component of that party and may omit it; naming a different party there is a
+          cross-reference error. A service under a root-declared context names it here or inherits
+          the document's `system_ref` default, and one that does neither is reported by the
+          semantic checker as a service without a system. Distinct from `owned_by`, which says who
+          owns the service rather than what it is part of.
       summary:
         type: string
         description: "Brief description of what this service does."

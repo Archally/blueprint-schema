@@ -951,3 +951,64 @@ $defs:
         items:
           $ref: "#/$defs/environment_ref"
         description: "Deployment environments (ENV###) impacted by this decision."
+
+# ── GDSM self-description + modeling-guidance ledger ─────────────────────────
+# `modeling_guidance` is the schema-native home for durable modelling lessons about this
+# suite, served on demand by the blueprint MCP `get_analysis_guidance` tool. Entries are
+# added deliberately and pruned on curation; nothing writes here automatically, and nothing
+# here is loaded into a session unless it is asked for.
+x-gdsm:
+  version: "1.0.0"
+  methodology: "GDSM v1.0 (Goal-Driven Schema Modeling)"
+  status: draft
+  suite_name: "blueprint"
+  purpose: >
+    The cross-cutting blueprint metamodel - typed ids, versioning, and the shared reference
+    types every layer resolves through. It also carries the suite-level modeling_guidance
+    ledger.
+  design_notes: >
+    A lesson belongs here when it is durable and about the schema itself: what a construct
+    means, where an entity belongs, or what a name is already taken by. What a validator or a
+    semantic rule can decide belongs in that check instead, and what is true of one model only
+    belongs in that model.
+  modeling_guidance:
+    - lesson: >
+        A competency question (QN###) is answered by an operation and scopes exactly one bounded
+        context; an inquiry (INQ###) is the modeller's own question and resolves. A question whose
+        answer is a rendered artifact rather than an operation is neither of them, and belongs
+        beside the render manifest rather than inside the model.
+      category: semantics
+      date: "2026-09-06"
+      evidence: >
+        `question.answered_by` takes operation references only, and the `unbound-question` check
+        binds a question to one bounded context.
+      schema_version: "2.7.16"
+    - lesson: >
+        Widening an existing reference type so it can also denote something else loosens every
+        consumer that reads it. Add a sibling reference type instead, and leave the original
+        meaning exact.
+      category: structure
+      date: "2026-09-06"
+      evidence: >
+        Measured 2026-09-06: `operation_ref` is resolved from 37 places in 11 schema files of this
+        line, each of which reads it as "an operation".
+      schema_version: "2.7.16"
+    - lesson: >
+        The `design` / `governance` plane axis is authorship and epistemic maturity - who is
+        entitled to state a thing, and how settled it is - not subject matter. A distinction
+        between what a model states and what is stated about the model is a different axis, and
+        one entity type does not earn a plane of its own.
+      category: semantics
+      date: "2026-09-06"
+      evidence: >
+        Every governance layer (decisions, motivation, test cases, capability) is authored by a
+        different role from the design layers it describes.
+      schema_version: "2.7.16"
+    - lesson: >
+        A key name that already carries a meaning one key away in the same document is not
+        available for a second meaning, however apt. In a render manifest `view:` is the path to a
+        renderer's own view-config file, so it cannot also mean the perspective an artifact takes.
+      category: gotcha
+      date: "2026-09-06"
+      evidence: "`render.manifest.schema.yaml`, `$defs/target.view`."
+      schema_version: "2.7.16"

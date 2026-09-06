@@ -292,11 +292,12 @@ The design plane groups the fields under `provenance` because it already uses `c
 | Architectural fact read directly from code | `committed` | `confirmed` | `codebase-analysis` → `supports` |
 | Pattern strongly evidenced, but framed and named by you | `validated` | `probable` | `codebase-analysis` → `supports` |
 | Intent or strategic judgement you inferred | `validated` / `exploring` | `probable` / `speculative` | `codebase-analysis` |
+| Agreed by the participants of a modelling workshop, read from the board export or photo | `validated` | `probable` | `workshop` → `supports` |
 | A guess or analogy not yet grounded | `hypothesis` | `speculative` | `assumption` |
 
-If something cannot be tied to evidence at all, do not assert it — make it a question (`QN###` with `answered_by: []`), which is a first-class gap rather than a false claim.
+If something cannot be tied to evidence at all, do not assert it — make it a question (`QN###` with `answered_by: []`), which is a first-class gap rather than a false claim. A hotspot or question mark left on a workshop board is such a gap: carry it as a question with the board as its evidence, never resolve it silently while transcribing.
 
-**`code_refs` is already the codebase-analysis evidence — do not duplicate it.** Where `code_refs` is present, fill in `discovery_stage` + `certainty` and omit an evidence record that merely re-points at the same files. Reserve `evidence[]` for evidence *beyond* the entity's own code: `documentation`, an `assumption`, a `stakeholder-signoff`, or analysis of a different artifact. Entities that cannot carry `code_refs` at all (goals, risks, capabilities) use one evidence record as their grounding. Every `evidence.source` should be a real path or document, so the claim is checkable; `kind` and `summary` are required.
+**`code_refs` is already the codebase-analysis evidence — do not duplicate it.** Where `code_refs` is present, fill in `discovery_stage` + `certainty` and omit an evidence record that merely re-points at the same files. Reserve `evidence[]` for evidence *beyond* the entity's own code: `documentation`, an `assumption`, a `stakeholder-signoff`, a `workshop` (the source is the board export or photo, the date is the session's), or analysis of a different artifact. Entities that cannot carry `code_refs` at all (goals, risks, capabilities) use one evidence record as their grounding. Every `evidence.source` should be a real path or document, so the claim is checkable; `kind` and `summary` are required.
 
 Marking a decision `confirmed` while citing nothing is the one case where this is not a style preference — `decision-asserted-without-evidence` reports it, because an evidentiary claim with no source is a defect rather than a gap. Speculative and probable decisions are exempt by design: saying "we are not sure" is honest, and honest is what this is for.
 
