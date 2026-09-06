@@ -7,11 +7,13 @@
  * its validation report, so `bp validate` and MCP `get_validation` cannot disagree about whether
  * a reference resolves. Each surface decides how to word a finding; none decides what one is.
  *
- * Four classes. A MISSING reference names an id nothing declares. A DUPLICATE id is declared
+ * Five classes. A MISSING reference names an id nothing declares. A DUPLICATE id is declared
  * twice, except a party, which is re-declared by design across arch slices and the org layer. A
  * PARENT CYCLE is a `parent` chain that never terminates - every id in it resolves, so the walk
  * above cannot see it. A SELF EDGE is a relation naming its own declarer - it resolves too, and
- * relates nothing.
+ * relates nothing. An ENVELOPE CONFLICT is a service nested under one party whose `system_ref`
+ * names another - both resolve, and the two statements of which system the service is a component
+ * of contradict each other.
  */
 
 import {
@@ -20,6 +22,7 @@ import {
   collectParentEdges,
   collectRefs,
   collectSelfEdges,
+  collectEnvelopeConflicts,
   findParentCycles,
   isPartyRedeclaration,
 } from "./references.mjs";
@@ -39,6 +42,7 @@ export const CATALOG_REF_RE = /^([a-z][a-z0-9-]*\.)?RT\d{3,}$/;
  * @property {Array<{ id: string, locations: string[] }>} duplicates
  * @property {string[][]} parentCycles each ring in walk order, rotated to its lowest member
  * @property {Array<{ id: string, key: string, arm: string, loc: string, file: string }>} selfEdges
+ * @property {Array<{ service: string, declared: string, envelope: string, loc: string, file: string }>} envelopeConflicts
  */
 
 /**
@@ -64,6 +68,7 @@ export function resolveModelReferences(documents, refKeys) {
   const everything = new Map();
   const parentEdges = new Map();
   const selfEdges = [];
+  const envelopeConflicts = [];
   const allRefs = [];
 
   for (const { relFile, data } of documents) {
@@ -88,6 +93,9 @@ export function resolveModelReferences(documents, refKeys) {
     collectKeyedIds(data, declaredScope ?? folderScope, allIds, [relFile]);
     collectParentEdges(data, parentEdges);
     collectSelfEdges(data, selfEdges, null, [relFile]);
+    for (const conflict of collectEnvelopeConflicts(data, [], [relFile])) {
+      envelopeConflicts.push({ ...conflict, file: relFile });
+    }
     for (const ref of collectRefs(data, [], [relFile], refKeys)) {
       allRefs.push({ ...ref, scope: declaredScope, file: relFile });
     }
@@ -117,5 +125,6 @@ export function resolveModelReferences(documents, refKeys) {
     duplicates,
     parentCycles: findParentCycles(parentEdges),
     selfEdges: selfEdges.map((edge) => ({ ...edge, file: edge.loc.split(".")[0] })),
+    envelopeConflicts,
   };
 }

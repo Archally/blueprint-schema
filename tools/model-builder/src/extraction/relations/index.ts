@@ -8,6 +8,7 @@ import { extractTestCaseRelations } from './testCases.js';
 import { extractArchRelations } from './arch.js';
 import { extractArchContractRelations } from './archContracts.js';
 import { extractArchDependencyRelations } from './archDependencies.js';
+import { extractSystemRelations } from './systemRef.js';
 import { buildStoryRelations } from './story.js';
 import {
   extractOrgRelations,
@@ -26,6 +27,7 @@ import { extractUseCaseRelations } from './useCase.js';
 import { extractRoadmapRelations } from './roadmap.js';
 import { extractMotivationRelations } from './motivation.js';
 import { extractInquiryRelations } from './inquiry.js';
+import { extractAffectsRelations } from './affects.js';
 import { extractCapabilityRelations } from './capability.js';
 import { extractValueStreamRelations } from './valueStream.js';
 import { extractLeverageRelations } from './leverage.js';
@@ -67,6 +69,7 @@ export function buildRelations(
     ...extractArchRelations(entities),
     ...extractArchContractRelations(entities, placeholders),
     ...extractArchDependencyRelations(entities, placeholders),
+    ...extractSystemRelations(entities, placeholders),
     ...buildStoryRelations(entities, placeholders),
     ...extractOrgRelations(entities),
     ...extractOrgOwnershipRelations(entities, placeholders),
@@ -82,6 +85,7 @@ export function buildRelations(
     ...extractRoadmapRelations(entities, placeholders),
     ...extractMotivationRelations(entities, placeholders),
     ...extractInquiryRelations(entities, placeholders),
+    ...extractAffectsRelations(entities, placeholders),
     ...extractCapabilityRelations(entities, placeholders),
     ...extractValueStreamRelations(entities, placeholders),
     ...extractLeverageRelations(entities, placeholders),

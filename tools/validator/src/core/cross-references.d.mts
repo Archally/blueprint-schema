@@ -15,6 +15,8 @@ export interface ReferenceFindings {
   /** Each ring in walk order, rotated to its lowest member. */
   parentCycles: string[][];
   selfEdges: Array<{ id: string; key: string; arm: string; loc: string; file: string }>;
+  /** A service nested under one party whose `system_ref` names another; both resolve and contradict. */
+  envelopeConflicts: Array<{ service: string; declared: string; envelope: string; loc: string; file: string }>;
 }
 
 /** Resolve every reference the documents make against every id they declare - see cross-references.mjs. */

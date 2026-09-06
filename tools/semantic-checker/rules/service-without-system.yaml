@@ -1,0 +1,24 @@
+engineVersion: "0.1"
+rules:
+  - id: service-without-system
+    severity: warn
+    description: >-
+      A service the model places in no system. A service nested under a party is a component of
+      that party by position; a service under a root-declared context names its system through
+      `system_ref` or inherits the document's `system_ref` default. The model-builder materializes
+      whichever the author wrote as a `system_ref` edge (Service -> Party), so a service with no
+      outgoing `system_ref` is one the model says nothing about: it renders in no system's box and
+      the context it belongs to spans one system fewer than it should. Advisory rather than an
+      error, for the reason `unbound-operation` is: silence is not contradiction. A `system_ref`
+      that names a party nothing declares is the contradiction, and the reference walk reports it
+      as an error in both validator surfaces. Fix by naming the system on the service, or once for
+      the document in its `system_ref` header. Override per-project via .blueprint-lint.yaml
+      (e.g. `service-without-system: off`).
+    find:
+      entity_type: Service
+    check:
+      has_relation:
+        direction: out
+        type: system_ref
+        exists: true
+    message: 'Service "{displayId}" is placed in no system - it is declared under a root context and neither names a `system_ref` nor inherits the document''s `system_ref` default. Name the system on the service, or once for the document in its header.'

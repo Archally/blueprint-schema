@@ -4,6 +4,7 @@ import { toPosixPath, walkFiles, loadYaml } from "./utils.mjs";
 import { loadSchemaRegistry, makeAjv, SCHEMA_BASE_URI } from "./schema-registry.mjs";
 import { deriveReferenceKeys } from "./reference-keys.mjs";
 import { resolveModelReferences } from "./cross-references.mjs";
+import { archContextsOf, servicesOf } from "./arch-shape.mjs";
 import { FILENAME_TO_SCHEMA, detectSchemaType } from "./schema-types.mjs";
 import { isIdentityOrReferenceViolation } from "./references.mjs";
 import { SECTION_TO_CATEGORY, resolvesAgainst } from "./model-ref-match.mjs";
@@ -159,13 +160,11 @@ export function checkContractOutputSlice(relFile, serviceName, kind, output, sli
 export function declaredContractOutputs(parsedFiles) {
   const outputs = new Set();
   for (const { schemaType, data } of parsedFiles) {
-    if (schemaType !== "arch" || !Array.isArray(data?.parties)) continue;
-    for (const party of data.parties) {
-      for (const context of party?.contexts ?? []) {
-        for (const service of context?.services ?? []) {
-          for (const contract of Object.values(service?.contracts ?? {})) {
-            if (contract && typeof contract.output === "string") outputs.add(contract.output);
-          }
+    if (schemaType !== "arch") continue;
+    for (const declared of archContextsOf(data)) {
+      for (const [service] of servicesOf(declared)) {
+        for (const contract of Object.values(service?.contracts ?? {})) {
+          if (contract && typeof contract.output === "string") outputs.add(contract.output);
         }
       }
     }
@@ -402,6 +401,11 @@ export function validateModel(args) {
   for (const edge of references.selfEdges) {
     crossErrors.push(`'${edge.id}' declares an edge to itself at ${edge.loc}`);
   }
+  for (const conflict of references.envelopeConflicts) {
+    crossErrors.push(
+      `Service '${conflict.service}' names system '${conflict.declared}' but is declared under party '${conflict.envelope}' at ${conflict.loc}`,
+    );
+  }
 
   // Gap warnings and typed-id warnings are emitted in ONE per-file pass, so all findings for a
   // file appear together and in file order. Consumers render this array verbatim, which makes
@@ -426,24 +430,23 @@ export function validateModel(args) {
       }
     }
 
-    if (schemaType === "arch" && data?.parties) {
-      for (const party of data.parties) {
-        if (!party.contexts) continue;
-        for (const context of party.contexts) {
-          if (!context.services) continue;
-          for (const service of context.services) {
-            if (!service.contracts) {
-              warnings.push(
-                `[${relFile}] Service "${service.name}" in party "${party.name}" has no contracts block`,
-              );
-              continue;
-            }
-            for (const [kind, contract] of Object.entries(service.contracts)) {
-              const finding = checkContractOutputSlice(
-                relFile, service.name, kind, contract?.output, sliceNames,
-              );
-              if (finding) warnings.push(finding);
-            }
+    if (schemaType === "arch") {
+      // Both declaration shapes: a nested service is placed by its party, a root-declared one by
+      // its context, and the message names whichever the author wrote.
+      for (const declared of archContextsOf(data)) {
+        const placement = declared.party
+          ? `in party "${declared.party.name}"`
+          : `in context "${declared.context.name}"`;
+        for (const [service] of servicesOf(declared)) {
+          if (!service.contracts) {
+            warnings.push(`[${relFile}] Service "${service.name}" ${placement} has no contracts block`);
+            continue;
+          }
+          for (const [kind, contract] of Object.entries(service.contracts)) {
+            const finding = checkContractOutputSlice(
+              relFile, service.name, kind, contract?.output, sliceNames,
+            );
+            if (finding) warnings.push(finding);
           }
         }
       }

@@ -160,6 +160,7 @@ export function mergeParties(entities: Entity[]): MergePartiesResult {
   const contributors = new Map<string, string[]>();
   const idRemap = new Map<string, string>();
   const conflicts: PartyMemberConflict[] = [];
+  const survivorOf = new Map<PartyMemberConflict, Entity>();
   const result: Entity[] = [];
 
   for (const entity of entities) {
@@ -187,7 +188,9 @@ export function mergeParties(entities: Entity[]): MergePartiesResult {
       (existing.data as Record<string, unknown>)._sources = [...seen];
     }
     if (entity.id !== existing.id) idRemap.set(entity.id, existing.id);
+    const before = conflicts.length;
     unionMembers(existing, entity, conflicts, contributors.get(key)!);
+    for (const conflict of conflicts.slice(before)) survivorOf.set(conflict, existing);
   }
 
   const warnings: PartyMergeWarning[] = [];
@@ -200,12 +203,31 @@ export function mergeParties(entities: Entity[]): MergePartiesResult {
   // reports every contributing file and nothing aliases the map's internals.
   const settledConflicts = conflicts.map((conflict) => ({ ...conflict, sources: [...conflict.sources] }));
 
+  // The surviving node carries its own conflicts under `_conflicts`, beside `_sources`: a consumer
+  // holding the entity - a semantic rule, a report - can see that its parts disagree without the
+  // call site that ran the fold having to hand the list over. Written only where there is one, so a
+  // party whose parts agree looks exactly as it did.
+  settledConflicts.forEach((conflict, index) => {
+    const survivor = survivorOf.get(conflicts[index]!);
+    if (!survivor) return;
+    const data = (survivor.data ??= {}) as Record<string, unknown>;
+    const carried = Array.isArray(data._conflicts) ? (data._conflicts as unknown[]) : [];
+    carried.push({ key: conflict.key, sources: conflict.sources });
+    data._conflicts = carried;
+  });
+
   return { entities: result, warnings, conflicts: settledConflicts, idRemap };
 }
 
 /**
- * Rewrite relation endpoints through a `mergeParties` remap. Relations that become self-loops are
- * dropped — two rows of one party pointing at each other says nothing once they are one node.
+ * Rewrite relation endpoints through a `mergeParties` remap. A relation that BECOMES a self-loop is
+ * dropped - two rows of one party pointing at each other say nothing once they are one node.
+ *
+ * A relation that was ALREADY a self-loop keeps its place: an entity referring to itself is a thing
+ * a model states on purpose - a category whose parent is a category, a concept that depends on
+ * itself - and it has nothing to do with the fold. Dropping every self-loop cost one such edge on a
+ * model whose only sin was declaring a party in eleven files, and the loss was invisible: the fold
+ * reports what it merges, never what it discards, so the edge simply was not in the graph.
  */
 export function remapRelationEndpoints(
   relations: Relation[],
@@ -216,7 +238,8 @@ export function remapRelationEndpoints(
   for (const relation of relations) {
     const source = idRemap.get(relation.source_entity_id) ?? relation.source_entity_id;
     const target = idRemap.get(relation.target_entity_id) ?? relation.target_entity_id;
-    if (source === target) continue;
+    const rewritten = source !== relation.source_entity_id || target !== relation.target_entity_id;
+    if (rewritten && source === target) continue;
     remapped.push(
       source === relation.source_entity_id && target === relation.target_entity_id
         ? relation

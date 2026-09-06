@@ -117,6 +117,12 @@ export interface BlueprintMetadata {
   project_id?: string;
   /** Aggregated domain-slice descriptions keyed by inferred domain name. */
   domain_descriptions?: Record<string, string>;
+  /**
+   * Members two declarations of one party state differently - reported by the party fold and never
+   * resolved. Present only when there is at least one, so a model whose parties agree keeps its
+   * digest; the surviving party node carries the same list under `data._conflicts`.
+   */
+  party_conflicts?: Array<{ party: string; key: string; sources: string[] }>;
   /** Present when validation was run (step-05). */
   validation?: ValidationResult;
   /** Present when migration validation was run (to-be or point-in-time). */

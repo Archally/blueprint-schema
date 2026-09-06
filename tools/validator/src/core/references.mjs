@@ -208,6 +208,45 @@ export function collectRefs(node, refs = [], pathStack = [], refKeys, parent = "
   return refs;
 }
 
+/** The identity a party folds on: the bare `PRT###`, whichever scope prefix a spelling carries. */
+const barePartyId = (id) => (String(id).includes(".") ? String(id).split(".").pop() : String(id));
+
+/**
+ * Every nested service whose `system_ref` names a party other than the one it is declared under.
+ *
+ * A service nested under a party is a component of that party by position; `system_ref` states the
+ * same fact by reference. Two statements of one fact that disagree is a contradiction, so it is an
+ * error rather than a preference for either. A service whose `system_ref` names its own envelope
+ * is redundancy, not contradiction, and is left alone; a service under a root-declared context has
+ * no envelope and cannot conflict here. Ids compare on the bare `PRT###`, which is the identity
+ * the party fold uses, so `billing.PRT001` and `PRT001` are one party.
+ *
+ * A party declared without an id gives the comparison no basis and is skipped; the schema requires
+ * the id from v2.8, so that state is reported already.
+ */
+export function collectEnvelopeConflicts(node, hits = [], pathStack = []) {
+  const parties = node && typeof node === "object" ? node.parties : undefined;
+  if (!Array.isArray(parties)) return hits;
+  parties.forEach((party, partyIndex) => {
+    if (!party || typeof party !== "object" || typeof party.id !== "string") return;
+    const envelope = party.id;
+    (Array.isArray(party.contexts) ? party.contexts : []).forEach((context, contextIndex) => {
+      if (!context || typeof context !== "object") return;
+      (Array.isArray(context.services) ? context.services : []).forEach((service, serviceIndex) => {
+        if (!service || typeof service !== "object" || typeof service.system_ref !== "string") return;
+        if (barePartyId(service.system_ref) === barePartyId(envelope)) return;
+        hits.push({
+          service: typeof service.id === "string" ? service.id : String(service.name ?? "?"),
+          declared: service.system_ref,
+          envelope,
+          loc: [...pathStack, "parties", `[${partyIndex}]`, "contexts", `[${contextIndex}]`, "services", `[${serviceIndex}]`, "system_ref"].join("."),
+        });
+      });
+    });
+  });
+  return hits;
+}
+
 /**
  * Edge constructs: a container key, and the arms inside each item that name the edge's TARGET.
  *

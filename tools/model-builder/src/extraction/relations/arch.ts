@@ -5,11 +5,16 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
 /**
  * Extract structural containment relations from arch entities.
  * These are not ref-based — they derive from the YAML nesting hierarchy
- * preserved via _party, _context, _service fields in entity.data.
+ * preserved via _party, _context, _service fields in entity.data. A root-declared context and
+ * everything under it carry `_root` instead of `_party`, and key on an empty party segment.
  *
  * - Context → Service (contains)
  * - Service → Contract (provides)
  */
+function envelopeOf(data: Record<string, unknown> | undefined): string | undefined {
+  if (typeof data?._party === 'string') return data._party;
+  return data?._root === true ? '' : undefined;
+}
 export function extractArchRelations(entities: Entity[]): Relation[] {
   const relations: Relation[] = [];
 
@@ -21,16 +26,16 @@ export function extractArchRelations(entities: Entity[]): Relation[] {
   for (const entity of entities) {
     const data = entity.data as Record<string, unknown> | undefined;
     if (entity.type === ENTITY_TYPE.Context) {
-      const party = data?._party as string | undefined;
-      if (party) {
+      const party = envelopeOf(data);
+      if (party !== undefined) {
         const key = `${entity.fileOrigin ?? ''}|${party}|${entity.displayId}`;
         contextIndex.set(key, entity.id);
       }
     }
     if (entity.type === ENTITY_TYPE.Service) {
-      const party = data?._party as string | undefined;
+      const party = envelopeOf(data);
       const context = data?._context as string | undefined;
-      if (party && context) {
+      if (party !== undefined && context) {
         const key = `${entity.fileOrigin ?? ''}|${party}|${context}|${entity.displayId}`;
         serviceIndex.set(key, entity.id);
       }
@@ -41,9 +46,9 @@ export function extractArchRelations(entities: Entity[]): Relation[] {
     const data = entity.data as Record<string, unknown> | undefined;
 
     if (entity.type === ENTITY_TYPE.Service) {
-      const party = data?._party as string | undefined;
+      const party = envelopeOf(data);
       const context = data?._context as string | undefined;
-      if (!party || !context) continue;
+      if (party === undefined || !context) continue;
       const contextKey = `${entity.fileOrigin ?? ''}|${party}|${context}`;
       const contextId = contextIndex.get(contextKey);
       if (!contextId) continue;
@@ -56,10 +61,10 @@ export function extractArchRelations(entities: Entity[]): Relation[] {
     }
 
     if (entity.type === ENTITY_TYPE.Contract) {
-      const party = data?._party as string | undefined;
+      const party = envelopeOf(data);
       const context = data?._context as string | undefined;
       const service = data?._service as string | undefined;
-      if (!party || !context || !service) continue;
+      if (party === undefined || !context || !service) continue;
       const serviceKey = `${entity.fileOrigin ?? ''}|${party}|${context}|${service}`;
       const serviceId = serviceIndex.get(serviceKey);
       if (!serviceId) continue;

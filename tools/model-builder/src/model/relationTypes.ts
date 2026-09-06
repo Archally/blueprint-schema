@@ -143,6 +143,12 @@ export const RELATION_TYPE = {
   InquiryStakeholder: 'inquiry_stakeholder',
   // motivation.schema (v2.5): risk references goal (risk.goal_refs[])
   RiskGoal: 'risk_goal',
+  // v2.8.1: where a governance concern sticks on the domain model - risk.affects.*_refs[],
+  // inquiry.affects.*_refs[], finding.affects.*_refs[] (operation, concept, story). One type per
+  // source, as `race_condition_affects`: the target's own type says what was affected.
+  RiskAffects: 'risk_affects',
+  InquiryAffects: 'inquiry_affects',
+  FindingAffects: 'finding_affects',
   // motivation.schema (v2.7.7 vision CR, D045): the singular vision's forward-links — the
   // "identity → objectives → competencies → delivery" chain, made queryable.
   // vision → goal (vision.advances_goals[])
@@ -202,6 +208,16 @@ export const RELATION_TYPE = {
   // statement from the typed `TM###` reference `owned_by.team` carries. The two have separate
   // relation types so a consumer can tell a named team from a referenced one.
   ResourceOwnerTeam: 'resource_owner_team',
+  // The system a service is a component of: Service -> Party. Stated by position for a service
+  // nested under a party, by `system_ref` for a service under a root-declared context, or by the
+  // document's `system_ref` default (then `data.inherited`). Named for the field, as `owned_by` is,
+  // and distinct from it: `owned_by` says who owns the service, this says what it is part of.
+  SystemRef: 'system_ref',
+  // The systems a bounded context spans: Context -> Party, one edge per distinct system among the
+  // context's services (plus the envelope party of a nested context). Derived, never authored: a
+  // context that several systems provide services to has several, which the nested form could only
+  // state by declaring the context once per system.
+  Spans: 'spans',
   // The organizational ownership edge: any unit that declares `owned_by` → the Team, Department or
   // Party named by the one arm it sets. ONE type serves all three arms, because the arm is
   // recoverable from the target entity's type; `data.arm` carries it as well, so the edge is

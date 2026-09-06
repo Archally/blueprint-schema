@@ -1,0 +1,22 @@
+engineVersion: "0.1"
+rules:
+  - id: story-without-event
+    severity: info
+    description: >-
+      A story whose operations neither are nor produce an event. A story is a run of operations,
+      and an event is the only one of them that states an outcome - a command asks, a query looks,
+      an event says what happened. A command that `produces` an event counts: the domain layer has
+      stated the outcome, and the story need not restate it. A story that names commands and
+      queries, none of which produces anything, reads as an intent with no observable result, and every consumer that follows outcomes falls silent on it: the
+      Event Storming board draws it as a segment with no orange sticky, a policy can never react
+      to it, and its use-case sequence ends on a call rather than a fact. Measured before the
+      rule existed: 17 of 25 stories on one corpus and 18 of 68 on another. Info rather than
+      warn, because a read-only journey is a legitimate story; raise it per-project via
+      `.blueprint-lint.yaml` once the story layer is meant to state outcomes.
+    find:
+      entity_type: Story
+    check:
+      custom:
+        module: ./story-without-event.mjs
+        export: storyWithoutEvent
+    message: 'Story "{displayId}" ({name|''unnamed''}) names {operations} operation(s), none of which is or produces an event: {kinds}. Name the event the story ends in, add `produces` to the command that causes it, or accept it as a read-only journey.'

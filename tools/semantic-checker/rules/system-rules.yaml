@@ -1,0 +1,40 @@
+engineVersion: "0.1"
+rules:
+  - id: service-system-is-an-organization
+    severity: warn
+    description: >-
+      A service whose system is a party of kind `organization`. `system_ref` names what a service
+      is a component of, and a component belongs to a technical system; a business unit or company
+      owns it, which is `owned_by`'s statement. The shape arises where a company stood in for a
+      system because the nested form required a party envelope. Advisory: the schema never
+      required `party.kind`, so a party with no kind is not reported, and the party's kind is what
+      the author corrects - re-kind the party as a system, or name the system the service is part
+      of and keep the organization in `owned_by`. Override per-project via .blueprint-lint.yaml
+      (e.g. `service-system-is-an-organization: off`).
+    find:
+      entity_type: Service
+    check:
+      custom:
+        module: ./system-rules.mjs
+        export: serviceSystemIsAnOrganization
+    message: 'Service "{displayId}" names {system} as its system, and {system} is a party of kind organization. A service is a component of a technical system; an organization owns it (`owned_by`). Re-kind the party, or name the system the service is part of.'
+
+  - id: party-parts-disagree
+    severity: warn
+    description: >-
+      Two declarations of one party state a member differently. A party is one node however many
+      documents declare it (a nested arch document re-declares the party whose contexts it holds,
+      and the org layer declares it again); the fold unions the parts and keeps the first value of
+      a scalar two parts define differently, reporting the disagreement rather than resolving it.
+      This rule renders that report. A part that is silent on a member is not a disagreement - the
+      union copies the value across - so a party is reported only where its parts contradict each
+      other. Fix in the model: declare the party whole, once, and let the other documents name it
+      through `system_ref`. Override per-project via .blueprint-lint.yaml
+      (e.g. `party-parts-disagree: off`).
+    find:
+      entity_type: Party
+    check:
+      custom:
+        module: ./system-rules.mjs
+        export: partyPartsDisagree
+    message: 'Party {party} "{party_name}" is declared in {files} and the parts disagree on {keys} - the first declaration''s value is kept and the disagreement is not resolved. Declare the party whole, once, and name it from the other documents through `system_ref`.'
