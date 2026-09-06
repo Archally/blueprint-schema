@@ -2,6 +2,92 @@
 # All schema version releases in reverse chronological order.
 ---
 entries:
+  - version: "2.8.1"
+    date: "2026-09-06"
+    summary: >
+      A bounded context can be declared whole at the document root, and a service names the system
+      it is a component of. An arch document declares its contexts nested under the parties that
+      provide their services (`parties`), at the document root (`contexts`), or both. A
+      root-declared context is declared once in the model; its services name their system through
+      `system_ref` (a `PRT###` reference) or inherit the document's `system_ref` default, and the
+      systems a context spans are derived from its services. This is the form for a context that
+      several systems provide services to, which the nested form could state only by declaring the
+      context once per system and the party once per document that mentions it. `party.contexts`
+      and the root `parties` list stop being required, so a party can be declared whole, once, with
+      its `env` and no contexts.
+
+      `system_ref` is optional. A service nested under a party is a component of that party by
+      position; one that names a different party there contradicts its own declaration, and the
+      reference walk reports it as a cross-reference error. A root-declared context's service that
+      names no system and inherits none is silence rather than contradiction, and the semantic
+      checker reports it as a warning. Three rules ship with it - `service-without-system`,
+      `service-system-is-an-organization` (a service is a component of a technical system, while a
+      business unit or company owns it) and `party-parts-disagree` (two declarations of one party
+      that contradict each other; the parts are unioned and the disagreement reported, never
+      resolved).
+
+      This release ALSO admits `workshop` as an evidence `kind`: a collaborative modelling session
+      (EventStorming, Domain Storytelling, a whiteboard workshop) whose source is the board export
+      or photo and whose date is the session's, so an entity harvested from a board carries an
+      evidence record pointing back to it and a freshness scan sees the board's age. The `kind`
+      description now says what each of the ten values means.
+
+      This release ALSO carries the render manifest's `kind: model` and a working `slices:` list,
+      the same change the 2.7.16 entry describes; and it lets a governance concern say where it
+      sticks on the domain model - Risk and Inquiry gain `affects` with the shape Finding has
+      carried since v2.7 (`operation_refs`, `concept_refs`, `context_refs`), and all three gain
+      `story_refs`, for a concern about a flow as a whole rather than one of its operations. All
+      three build typed relations, so a risk, an inquiry or a finding reaches the graph and the
+      drawings rather than only the reference walk.
+
+      This release ALSO carries the suite's modeling-guidance ledger. `metamodel.schema.yaml` gains
+      an `x-gdsm` block holding durable modelling lessons about this schema, served on request and
+      read by nothing automatically; the 2.7 line carries the same block minus the lesson about
+      root-declared contexts, because the ledger is resolved from the schema directory of the
+      project being opened and both lines carry live projects. And the `unbound-question` rule
+      stops promising a severity the engine does not hold: it stays a warning, and its description
+      now says why - a `bounded_context_ref` naming an unknown `BC###` is already a cross-reference
+      error in validation, so what this check reports on its own is a question that names no
+      context at all.
+
+      Every v2.8.0 document validates unchanged: the nested form is untouched, and nothing new is
+      required. `blueprint-schema-update` rewrites a model that declares one party many times into
+      the root form - the party keeps its whole declaration in the file holding most of its
+      services, every other occurrence becomes a root-declared context, and each service carries or
+      inherits the `system_ref` naming the party it was nested under. No text is invented.
+  - version: "2.7.16"
+    date: "2026-09-06"
+    summary: >
+      A render target can be narrowed by NAME, and a target's `slices:` list finally does what the
+      schema said. `kind: model` is a fifth target kind for a tool that reads the whole model
+      directory and narrows itself to a slice once handed its name, where `glob` narrows by
+      selecting files and `contexts` by bounded context. Under `kind: glob` such a tool rendered
+      the whole model with an advisory, because the manifest named no files for it to select;
+      under `kind: model` the runner passes the name, decides only whether the model has a
+      directory of that name holding model files, and files the output under the slice.
+
+      And `slices:` on a target - declared in this schema since the first manifest, accepted by the
+      normaliser and read by nothing - now renders the target once per named slice, into each
+      slice's folder, and never as a whole-model artifact. Under a single-slice run the target
+      joins only when that slice is named and otherwise says which slices it declares; on an
+      unscoped or all-slices run each named slice renders once. Every name is checked against the
+      model's declared slices. This is what lets a manifest declare a per-slice interactive board
+      beside whole-model walls without a second tool or a flag.
+
+      This release ALSO carries the suite's modeling-guidance ledger - an `x-gdsm` block on
+      `metamodel.schema.yaml` holding durable modelling lessons about this schema, served on
+      request and read by nothing automatically. It is on both live lines rather than the newest
+      alone, because the ledger is resolved from the schema directory of the project being opened,
+      and projects on this line are still authored against it.
+
+      This release ALSO lets a governance concern say where it sticks on the domain model, the same
+      change 2.8.1 carries: Risk and Inquiry gain `affects` (`operation_refs`, `concept_refs`,
+      `context_refs`) and all three gain `story_refs`. It is on this line because models still
+      authored against 2.7 carry risks and inquiries that cannot say where they stick until the
+      field exists here.
+
+      A manifest and a model valid under 2.7.15 stay valid: every addition is optional, and `kind`
+      gains a value rather than losing one.
   - version: "2.8.0"
     date: "2026-09-04"
     summary: >
