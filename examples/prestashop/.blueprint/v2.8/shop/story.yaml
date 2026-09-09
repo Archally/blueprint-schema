@@ -1,56 +1,52 @@
 ---
-name: "Shop Stories"
+name: "Shop Processes"
 version: "1.0.0"
 scope: shop
 
-stories:
-  - id: shop.STR001
+processes:
+  - id: shop.PRC001
     title: "Store Branding Setup"
     description: "An administrator uploads store logos and favicon to establish the shop's visual identity."
-    process:
-      id: shop.SP001
-      trigger:
-        type: message
-        operation: shop.CMD001
-        description: "Administrator uploads store logo and favicon."
-      end_states:
-        - name: "Branding uploaded"
-          type: complete
-          description: "Logo and favicon saved, visible on storefront."
-        - name: "Upload failed"
-          type: error
-          description: "Unsupported file extension or file too large."
-      lanes:
-        - actor: shop.ACT001
-          operations: [shop.CMD001]
+    trigger:
+      type: message
+      operation: shop.CMD001
+      description: "Administrator uploads store logo and favicon."
+    end_states:
+      - name: "Branding uploaded"
+        type: complete
+        description: "Logo and favicon saved, visible on storefront."
+      - name: "Upload failed"
+        type: error
+        description: "Unsupported file extension or file too large."
+    lanes:
+      - actor: shop.ACT001
+        operations: [shop.CMD001]
     activities:
-      - id: shop.SA001
+      - id: shop.PA001
         name: "Upload Branding"
         triggered_by: [shop.ACT001]
         entry_operation: shop.CMD001
         path_type: happy
 
-  - id: shop.STR002
+  - id: shop.PRC002
     title: "Search Alias Configuration"
     description: "A marketing manager configures search term aliases to improve product discoverability."
-    process:
-      id: shop.SP002
-      trigger:
-        type: message
-        operation: shop.CMD010
-        description: "Marketing manager creates a search term alias."
-      end_states:
-        - name: "Alias configured"
-          type: complete
-          description: "Search alias created, variants mapped to canonical term."
-        - name: "Configuration failed"
-          type: error
-          description: "Duplicate alias or invalid search term."
-      lanes:
-        - actor: shop.ACT002
-          operations: [shop.CMD010]
+    trigger:
+      type: message
+      operation: shop.CMD010
+      description: "Marketing manager creates a search term alias."
+    end_states:
+      - name: "Alias configured"
+        type: complete
+        description: "Search alias created, variants mapped to canonical term."
+      - name: "Configuration failed"
+        type: error
+        description: "Duplicate alias or invalid search term."
+    lanes:
+      - actor: shop.ACT002
+        operations: [shop.CMD010]
     activities:
-      - id: shop.SA002
+      - id: shop.PA002
         name: "Add Alias"
         triggered_by: [shop.ACT002]
         entry_operation: shop.CMD010

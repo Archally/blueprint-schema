@@ -1,39 +1,37 @@
 ---
-name: "Content Stories"
+name: "Content Processes"
 version: "1.0.0"
 scope: content
 
-stories:
-  - id: content.STR001
+processes:
+  - id: content.PRC001
     title: "CMS Page Publishing"
     description: "A content manager creates a CMS page, assigns it to a category, configures SEO metadata, and publishes it on the storefront."
-    process:
-      id: content.SP001
-      trigger:
-        type: message
-        operation: content.CMD001
-        description: "Content manager creates a new CMS page."
-      end_states:
-        - name: "Page published"
-          type: complete
-          description: "CMS page created, SEO metadata configured, page visible on storefront."
-        - name: "Publishing failed"
-          type: error
-          description: "Category not found or SEO metadata validation failure."
-      lanes:
-        - actor: content.ACT001
-          operations: [content.CMD001, content.CMD019, content.QRY001]
+    trigger:
+      type: message
+      operation: content.CMD001
+      description: "Content manager creates a new CMS page."
+    end_states:
+      - name: "Page published"
+        type: complete
+        description: "CMS page created, SEO metadata configured, page visible on storefront."
+      - name: "Publishing failed"
+        type: error
+        description: "Category not found or SEO metadata validation failure."
+    lanes:
+      - actor: content.ACT001
+        operations: [content.CMD001, content.CMD019, content.QRY001]
     activities:
-      - id: content.SA001
+      - id: content.PA001
         name: "Create CMS Page"
         triggered_by: [content.ACT001]
         entry_operation: content.CMD001
         path_type: happy
-      - id: content.SA002
+      - id: content.PA002
         name: "Configure SEO Metadata"
         triggered_by: [content.EVT001]
         entry_operation: content.CMD019
-      - id: content.SA003
+      - id: content.PA003
         name: "Verify Page Display"
         triggered_by: [content.EVT015]
         entry_operation: content.QRY001
@@ -42,36 +40,34 @@ stories:
         role: implementation
         description: "CMS page creation and management controller."
 
-  - id: content.STR002
+  - id: content.PRC002
     title: "Theme Activation"
     description: "A store designer imports a new theme, enables it for the storefront, and optionally adapts it for RTL languages."
-    process:
-      id: content.SP002
-      trigger:
-        type: message
-        operation: content.CMD013
-        description: "Store designer imports a new theme."
-      end_states:
-        - name: "Theme activated"
-          type: complete
-          description: "Theme imported, enabled, and optionally adapted for RTL."
-        - name: "Activation failed"
-          type: error
-          description: "Theme archive invalid, incompatible, or missing required templates."
-      lanes:
-        - actor: content.ACT002
-          operations: [content.CMD013, content.CMD014, content.CMD017]
+    trigger:
+      type: message
+      operation: content.CMD013
+      description: "Store designer imports a new theme."
+    end_states:
+      - name: "Theme activated"
+        type: complete
+        description: "Theme imported, enabled, and optionally adapted for RTL."
+      - name: "Activation failed"
+        type: error
+        description: "Theme archive invalid, incompatible, or missing required templates."
+    lanes:
+      - actor: content.ACT002
+        operations: [content.CMD013, content.CMD014, content.CMD017]
     activities:
-      - id: content.SA004
+      - id: content.PA004
         name: "Import Theme"
         triggered_by: [content.ACT002]
         entry_operation: content.CMD013
         path_type: happy
-      - id: content.SA005
+      - id: content.PA005
         name: "Enable Theme"
         triggered_by: [content.EVT009]
         entry_operation: content.CMD014
-      - id: content.SA006
+      - id: content.PA006
         name: "Adapt for RTL"
         triggered_by: [content.EVT010]
         entry_operation: content.CMD017

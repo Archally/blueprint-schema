@@ -1,41 +1,39 @@
 ---
-name: "Checkout Stories"
+name: "Checkout Processes"
 version: "1.0.0"
 scope: checkout
 
-stories:
-  - id: checkout.STR001
+processes:
+  - id: checkout.PRC001
     title: "Shopper cart journey"
     description: "Shopper adds products to cart, applies voucher, and prepares for checkout."
     initiated_by: [orders.ACT001]
-    process:
-      id: checkout.SP001
-      trigger:
-        type: message
-        operation: checkout.CMD009
-        description: "Shopper adds first product to cart."
-      end_states:
-        - name: "Cart ready for checkout"
-          type: complete
-          description: "Cart populated with products, voucher applied, delivery configured."
-        - name: "Product unavailable"
-          type: error
-          description: "Product out of stock or cart rule validation failed."
-      lanes:
-        - actor: orders.ACT001
-          operations: [checkout.CMD009, checkout.CMD014, checkout.CMD002]
+    trigger:
+      type: message
+      operation: checkout.CMD009
+      description: "Shopper adds first product to cart."
+    end_states:
+      - name: "Cart ready for checkout"
+        type: complete
+        description: "Cart populated with products, voucher applied, delivery configured."
+      - name: "Product unavailable"
+        type: error
+        description: "Product out of stock or cart rule validation failed."
+    lanes:
+      - actor: orders.ACT001
+        operations: [checkout.CMD009, checkout.CMD014, checkout.CMD002]
     activities:
-      - id: checkout.SA001
+      - id: checkout.PA001
         name: "Add products to cart"
         entry_operation: checkout.CMD009
-        next_activities: [checkout.SA002]
+        next_activities: [checkout.PA002]
         path_type: happy
-      - id: checkout.SA002
+      - id: checkout.PA002
         name: "Apply voucher code"
         entry_operation: checkout.CMD014
-        next_activities: [checkout.SA003]
+        next_activities: [checkout.PA003]
         path_type: happy
-      - id: checkout.SA003
+      - id: checkout.PA003
         name: "Configure cart for checkout"
         entry_operation: checkout.CMD002
         path_type: happy
@@ -47,32 +45,30 @@ stories:
         role: implementation
         description: "Back-office cart management controller."
 
-  - id: checkout.STR002
+  - id: checkout.PRC002
     title: "Discount campaign setup"
     description: "Marketing manager creates and configures a promotional discount campaign."
     initiated_by: [checkout.ACT001]
-    process:
-      id: checkout.SP002
-      trigger:
-        type: message
-        operation: checkout.CMD016
-        description: "Marketing manager creates a promotional discount."
-      end_states:
-        - name: "Campaign active"
-          type: complete
-          description: "Discount created with conditions and usage limits, optionally duplicated."
-        - name: "Configuration invalid"
-          type: error
-          description: "Invalid discount rules, overlapping conditions, or missing required fields."
-      lanes:
-        - actor: checkout.ACT001
-          operations: [checkout.CMD016, checkout.CMD019]
+    trigger:
+      type: message
+      operation: checkout.CMD016
+      description: "Marketing manager creates a promotional discount."
+    end_states:
+      - name: "Campaign active"
+        type: complete
+        description: "Discount created with conditions and usage limits, optionally duplicated."
+      - name: "Configuration invalid"
+        type: error
+        description: "Invalid discount rules, overlapping conditions, or missing required fields."
+    lanes:
+      - actor: checkout.ACT001
+        operations: [checkout.CMD016, checkout.CMD019]
     activities:
-      - id: checkout.SA004
+      - id: checkout.PA004
         name: "Create discount"
         entry_operation: checkout.CMD016
         path_type: happy
-      - id: checkout.SA005
+      - id: checkout.PA005
         name: "Duplicate for seasonal reuse"
         entry_operation: checkout.CMD019
         path_type: happy

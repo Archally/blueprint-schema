@@ -1,73 +1,69 @@
 ---
-name: "International Stories"
+name: "International Processes"
 version: "1.0.0"
 scope: international
 
-stories:
-  - id: international.STR001
+processes:
+  - id: international.PRC001
     title: "Multi-Currency Store Setup"
     description: "A localization admin configures multiple currencies with exchange rates for an international store."
-    process:
-      id: international.SP001
-      trigger:
-        type: message
-        operation: international.CMD001
-        description: "Localization admin adds a new currency."
-      end_states:
-        - name: "Currencies configured"
-          type: complete
-          description: "Currencies added with exchange rates, default currency set."
-        - name: "Configuration failed"
-          type: error
-          description: "Invalid ISO currency code or exchange rate refresh failed."
-      lanes:
-        - actor: international.ACT001
-          operations: [international.CMD001, international.CMD005, international.CMD006]
+    trigger:
+      type: message
+      operation: international.CMD001
+      description: "Localization admin adds a new currency."
+    end_states:
+      - name: "Currencies configured"
+        type: complete
+        description: "Currencies added with exchange rates, default currency set."
+      - name: "Configuration failed"
+        type: error
+        description: "Invalid ISO currency code or exchange rate refresh failed."
+    lanes:
+      - actor: international.ACT001
+        operations: [international.CMD001, international.CMD005, international.CMD006]
     activities:
-      - id: international.SA001
+      - id: international.PA001
         name: "Add Currencies"
         triggered_by: [international.ACT001]
         entry_operation: international.CMD001
         path_type: happy
-      - id: international.SA002
+      - id: international.PA002
         name: "Refresh Exchange Rates"
         triggered_by: [international.EVT001]
         entry_operation: international.CMD005
-      - id: international.SA003
+      - id: international.PA003
         name: "Set Default Currency"
         triggered_by: [international.ACT001]
         entry_operation: international.CMD006
 
-  - id: international.STR002
+  - id: international.PRC002
     title: "Tax Rules Configuration"
     description: "A tax accountant configures zone-based tax rules for EU VAT compliance."
-    process:
-      id: international.SP002
-      trigger:
-        type: message
-        operation: international.CMD023
-        description: "Tax accountant creates a new tax rate."
-      end_states:
-        - name: "Tax rules configured"
-          type: complete
-          description: "Tax rates, rules groups, and zone assignments configured for compliance."
-        - name: "Configuration failed"
-          type: error
-          description: "Duplicate tax rule binding or invalid rate percentage."
-      lanes:
-        - actor: international.ACT002
-          operations: [international.CMD023, international.CMD027, international.CMD028]
+    trigger:
+      type: message
+      operation: international.CMD023
+      description: "Tax accountant creates a new tax rate."
+    end_states:
+      - name: "Tax rules configured"
+        type: complete
+        description: "Tax rates, rules groups, and zone assignments configured for compliance."
+      - name: "Configuration failed"
+        type: error
+        description: "Duplicate tax rule binding or invalid rate percentage."
+    lanes:
+      - actor: international.ACT002
+        operations: [international.CMD023, international.CMD027, international.CMD028]
     activities:
-      - id: international.SA004
+      - id: international.PA004
         name: "Create Tax Rates"
         triggered_by: [international.ACT002]
         entry_operation: international.CMD023
         path_type: happy
-      - id: international.SA005
+      - id: international.PA005
         name: "Create Tax Rules Group"
         triggered_by: [international.EVT023]
         entry_operation: international.CMD027
-      - id: international.SA006
+      - id: international.PA006
         name: "Configure Tax Rules"
         triggered_by: [international.EVT027]
         entry_operation: international.CMD028

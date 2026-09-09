@@ -18,7 +18,7 @@ screens:
     name: "CMS Page Editor"
     summary: "CMS page add/edit form with localized title, content editor, SEO metadata, category selector, and display toggle."
     uses_models: ["EditableCmsPage"]
-    stories: [content.STR001]
+    processes: [content.PRC001]
 
   - id: content.SCR003
     name: "CMS Category List"

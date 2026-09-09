@@ -1,31 +1,29 @@
 ---
-name: "Order Stories"
+name: "Order Processes"
 version: "1.0.0"
 scope: orders
 
-stories:
-  - id: orders.STR001
+processes:
+  - id: orders.PRC001
     title: "Place an order"
     description: "End-to-end flow from cart to confirmed order."
     initiated_by: [orders.ACT001]
-    process:
-      id: orders.SP001
-      trigger:
-        type: message
-        operation: orders.CMD001
-        description: "Customer submits order from checkout."
-      end_states:
-        - name: "Order placed"
-          type: complete
-          description: "Order created with payment recorded and stock reserved."
-        - name: "Order rejected"
-          type: error
-          description: "Validation failure - insufficient stock, invalid address, or payment declined."
-      lanes:
-        - actor: orders.ACT001
-          operations: [orders.CMD001]
+    trigger:
+      type: message
+      operation: orders.CMD001
+      description: "Customer submits order from checkout."
+    end_states:
+      - name: "Order placed"
+        type: complete
+        description: "Order created with payment recorded and stock reserved."
+      - name: "Order rejected"
+        type: error
+        description: "Validation failure - insufficient stock, invalid address, or payment declined."
+    lanes:
+      - actor: orders.ACT001
+        operations: [orders.CMD001]
     activities:
-      - id: orders.SA001
+      - id: orders.PA001
         name: "Submit order"
         entry_operation: orders.CMD001
         steps:
@@ -41,30 +39,28 @@ stories:
         role: implementation
         description: "Front-office order placement controller."
 
-  - id: orders.STR002
+  - id: orders.PRC002
     title: "Cancel and refund"
     description: "Merchant or customer cancels an order and triggers refund."
     initiated_by: [orders.ACT003, orders.ACT004]
-    process:
-      id: orders.SP002
-      trigger:
-        type: message
-        operation: orders.CMD002
-        description: "Merchant or administrator initiates order cancellation."
-      end_states:
-        - name: "Order cancelled and refunded"
-          type: complete
-          description: "Order cancelled, stock released, refund processed, credit slip generated."
-        - name: "Cancellation rejected"
-          type: error
-          description: "Order is in a non-cancellable state (already shipped or delivered)."
-      lanes:
-        - actor: orders.ACT003
-          operations: [orders.CMD002, orders.CMD003]
-        - actor: orders.ACT004
-          operations: [orders.CMD002, orders.CMD003]
+    trigger:
+      type: message
+      operation: orders.CMD002
+      description: "Merchant or administrator initiates order cancellation."
+    end_states:
+      - name: "Order cancelled and refunded"
+        type: complete
+        description: "Order cancelled, stock released, refund processed, credit slip generated."
+      - name: "Cancellation rejected"
+        type: error
+        description: "Order is in a non-cancellable state (already shipped or delivered)."
+    lanes:
+      - actor: orders.ACT003
+        operations: [orders.CMD002, orders.CMD003]
+      - actor: orders.ACT004
+        operations: [orders.CMD002, orders.CMD003]
     activities:
-      - id: orders.SA002
+      - id: orders.PA002
         name: "Cancel order"
         entry_operation: orders.CMD002
         steps:
@@ -72,7 +68,7 @@ stories:
             note: "Cancel order, release stock."
           - operation_ref: orders.EVT002
             note: "OrderCancelled event emitted."
-      - id: orders.SA003
+      - id: orders.PA003
         name: "Process refund"
         entry_operation: orders.CMD003
         steps:
@@ -87,28 +83,26 @@ stories:
         role: implementation
         description: "Order cancellation and refund actions."
 
-  - id: orders.STR003
+  - id: orders.PRC003
     title: "Manage order products"
     description: "Merchant modifies order contents - adding, removing, or updating product lines."
     initiated_by: [orders.ACT003]
-    process:
-      id: orders.SP003
-      trigger:
-        type: message
-        operation: orders.CMD020
-        description: "Merchant modifies order product lines from back-office."
-      end_states:
-        - name: "Products modified"
-          type: complete
-          description: "Order lines updated, totals recalculated."
-        - name: "Modification rejected"
-          type: error
-          description: "Invalid product, insufficient stock, or order in non-editable state."
-      lanes:
-        - actor: orders.ACT003
-          operations: [orders.CMD020]
+    trigger:
+      type: message
+      operation: orders.CMD020
+      description: "Merchant modifies order product lines from back-office."
+    end_states:
+      - name: "Products modified"
+        type: complete
+        description: "Order lines updated, totals recalculated."
+      - name: "Modification rejected"
+        type: error
+        description: "Invalid product, insufficient stock, or order in non-editable state."
+    lanes:
+      - actor: orders.ACT003
+        operations: [orders.CMD020]
     activities:
-      - id: orders.SA004
+      - id: orders.PA004
         name: "Modify order products"
         entry_operation: orders.CMD020
         steps:
@@ -117,28 +111,26 @@ stories:
           - operation_ref: orders.EVT009
             note: "OrderProductModified event emitted, totals recalculated."
 
-  - id: orders.STR004
+  - id: orders.PRC004
     title: "Generate invoice and record payment"
     description: "Merchant generates an invoice for a paid order and records a manual payment."
     initiated_by: [orders.ACT003]
-    process:
-      id: orders.SP004
-      trigger:
-        type: message
-        operation: orders.CMD017
-        description: "Merchant generates invoice for a paid order."
-      end_states:
-        - name: "Invoice generated and payment recorded"
-          type: complete
-          description: "Invoice created with sequential number, manual payment recorded."
-        - name: "Invoice generation failed"
-          type: error
-          description: "Order not in invoiceable state or duplicate invoice attempt."
-      lanes:
-        - actor: orders.ACT003
-          operations: [orders.CMD017, orders.CMD019]
+    trigger:
+      type: message
+      operation: orders.CMD017
+      description: "Merchant generates invoice for a paid order."
+    end_states:
+      - name: "Invoice generated and payment recorded"
+        type: complete
+        description: "Invoice created with sequential number, manual payment recorded."
+      - name: "Invoice generation failed"
+        type: error
+        description: "Order not in invoiceable state or duplicate invoice attempt."
+    lanes:
+      - actor: orders.ACT003
+        operations: [orders.CMD017, orders.CMD019]
     activities:
-      - id: orders.SA005
+      - id: orders.PA005
         name: "Generate invoice"
         entry_operation: orders.CMD017
         steps:
@@ -146,7 +138,7 @@ stories:
             note: "Generate invoice for the order."
           - operation_ref: orders.EVT007
             note: "InvoiceGenerated event emitted."
-      - id: orders.SA006
+      - id: orders.PA006
         name: "Record payment"
         entry_operation: orders.CMD019
         steps:
@@ -155,28 +147,26 @@ stories:
           - operation_ref: orders.EVT008
             note: "PaymentAdded event emitted."
 
-  - id: orders.STR005
+  - id: orders.PRC005
     title: "Process return and credit slip"
     description: "Administrator processes a customer return, updates the return state, and issues a credit slip."
     initiated_by: [orders.ACT004]
-    process:
-      id: orders.SP005
-      trigger:
-        type: message
-        operation: orders.CMD023
-        description: "Administrator processes customer return from back-office."
-      end_states:
-        - name: "Return processed"
-          type: complete
-          description: "Return state updated, refund processed, credit slip generated."
-        - name: "Refund rejected"
-          type: error
-          description: "Refund amount exceeds order total or return window expired."
-      lanes:
-        - actor: orders.ACT004
-          operations: [orders.CMD023, orders.CMD016]
+    trigger:
+      type: message
+      operation: orders.CMD023
+      description: "Administrator processes customer return from back-office."
+    end_states:
+      - name: "Return processed"
+        type: complete
+        description: "Return state updated, refund processed, credit slip generated."
+      - name: "Refund rejected"
+        type: error
+        description: "Refund amount exceeds order total or return window expired."
+    lanes:
+      - actor: orders.ACT004
+        operations: [orders.CMD023, orders.CMD016]
     activities:
-      - id: orders.SA007
+      - id: orders.PA007
         name: "Update return state"
         entry_operation: orders.CMD023
         steps:
@@ -184,7 +174,7 @@ stories:
             note: "Update return state to package-received."
           - operation_ref: orders.EVT010
             note: "ReturnStateChanged event emitted."
-      - id: orders.SA008
+      - id: orders.PA008
         name: "Issue refund for return"
         entry_operation: orders.CMD016
         steps:
@@ -443,6 +433,6 @@ use_cases:
         condition: "Refund amount exceeds remaining refundable total."
         action: "System rejects with RefundExceedsTotal error."
     user_stories: [orders.US003]
-    stories: [orders.STR005]
+    processes: [orders.PRC005]
     delivery_priority: must-have
     status: refined

@@ -18,13 +18,13 @@ screens:
     name: "Customer Detail"
     summary: "Full customer profile with personal info, addresses, order history, carts, and group assignment."
     uses_models: ["CustomerForViewing"]
-    stories: [customers.STR001]
+    processes: [customers.PRC001]
 
   - id: customers.SCR003
     name: "Customer Service Thread"
     summary: "Service thread view with message history, customer context, and reply form."
     uses_models: ["CustomerThreadForViewing"]
-    stories: [customers.STR002]
+    processes: [customers.PRC002]
 
   - id: customers.SCR004
     name: "Address Edit"

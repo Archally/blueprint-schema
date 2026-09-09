@@ -1,39 +1,37 @@
 ---
-name: "Shipping Stories"
+name: "Shipping Processes"
 version: "1.0.0"
 scope: shipping
 
-stories:
-  - id: shipping.STR001
+processes:
+  - id: shipping.PRC001
     title: "Carrier Configuration"
     description: "A shipping manager configures a new carrier with delivery zones, cost ranges, and dimensional constraints."
-    process:
-      id: shipping.SP001
-      trigger:
-        type: message
-        operation: shipping.CMD001
-        description: "Shipping manager creates a new carrier."
-      end_states:
-        - name: "Carrier configured"
-          type: complete
-          description: "Carrier created with zones, shipping ranges, and tax rules."
-        - name: "Configuration failed"
-          type: error
-          description: "Missing delivery zones or overlapping shipping ranges."
-      lanes:
-        - actor: shipping.ACT001
-          operations: [shipping.CMD001, shipping.CMD008, shipping.CMD010]
+    trigger:
+      type: message
+      operation: shipping.CMD001
+      description: "Shipping manager creates a new carrier."
+    end_states:
+      - name: "Carrier configured"
+        type: complete
+        description: "Carrier created with zones, shipping ranges, and tax rules."
+      - name: "Configuration failed"
+        type: error
+        description: "Missing delivery zones or overlapping shipping ranges."
+    lanes:
+      - actor: shipping.ACT001
+        operations: [shipping.CMD001, shipping.CMD008, shipping.CMD010]
     activities:
-      - id: shipping.SA001
+      - id: shipping.PA001
         name: "Create Carrier"
         triggered_by: [shipping.ACT001]
         entry_operation: shipping.CMD001
         path_type: happy
-      - id: shipping.SA002
+      - id: shipping.PA002
         name: "Set Shipping Ranges"
         triggered_by: [shipping.EVT001]
         entry_operation: shipping.CMD008
-      - id: shipping.SA003
+      - id: shipping.PA003
         name: "Assign Tax Rule"
         triggered_by: [shipping.EVT006]
         entry_operation: shipping.CMD010
@@ -42,36 +40,34 @@ stories:
         role: implementation
         description: "Carrier configuration controller."
 
-  - id: shipping.STR002
+  - id: shipping.PRC002
     title: "Order Shipment Fulfillment"
     description: "A shipping manager creates shipments from orders, assigns products, and manages split/merge scenarios."
-    process:
-      id: shipping.SP002
-      trigger:
-        type: message
-        operation: shipping.CMD011
-        description: "Shipping manager creates a shipment for an order."
-      end_states:
-        - name: "Shipment fulfilled"
-          type: complete
-          description: "All order products assigned to shipments with carriers and tracking."
-        - name: "Fulfillment failed"
-          type: error
-          description: "Order not in fulfillment-ready state or carrier assignment invalid."
-      lanes:
-        - actor: shipping.ACT001
-          operations: [shipping.CMD011, shipping.CMD013, shipping.CMD015]
+    trigger:
+      type: message
+      operation: shipping.CMD011
+      description: "Shipping manager creates a shipment for an order."
+    end_states:
+      - name: "Shipment fulfilled"
+        type: complete
+        description: "All order products assigned to shipments with carriers and tracking."
+      - name: "Fulfillment failed"
+        type: error
+        description: "Order not in fulfillment-ready state or carrier assignment invalid."
+    lanes:
+      - actor: shipping.ACT001
+        operations: [shipping.CMD011, shipping.CMD013, shipping.CMD015]
     activities:
-      - id: shipping.SA004
+      - id: shipping.PA004
         name: "Create Shipment"
         triggered_by: [shipping.ACT001]
         entry_operation: shipping.CMD011
         path_type: happy
-      - id: shipping.SA005
+      - id: shipping.PA005
         name: "Add Products to Shipment"
         triggered_by: [shipping.EVT009]
         entry_operation: shipping.CMD013
-      - id: shipping.SA006
+      - id: shipping.PA006
         name: "Split Shipment"
         triggered_by: [shipping.ACT001]
         entry_operation: shipping.CMD015

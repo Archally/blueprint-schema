@@ -18,7 +18,7 @@ screens:
     name: "Currency Configuration"
     summary: "Currency add/edit form with ISO code, exchange rate, precision, localized names/symbols."
     uses_models: ["CurrencyForEditing"]
-    stories: [international.STR001]
+    processes: [international.PRC001]
 
   - id: international.SCR003
     name: "Language List"
@@ -40,7 +40,7 @@ screens:
     name: "Tax Rules Group Configuration"
     summary: "Tax rules group edit form with matrix of zone/country tax rule bindings."
     uses_models: ["TaxRulesGroupForEditing"]
-    stories: [international.STR002]
+    processes: [international.PRC002]
 
 actions:
   - id: international.UAC001

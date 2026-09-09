@@ -20,72 +20,137 @@ layout:
   slices:
     - name: admin
       description: "Back-office: employees, permissions, API clients, and the administration shell."
-      type: supporting-domain
-      subdomains:
-        - api
-        - config
-        - identity
     - name: catalog
       description: "Products, categories, attributes, combinations, stock and pricing rules."
-      type: core-domain
-      subdomains:
-        - category
-        - characteristics
-        - combination
-        - image-settings
-        - media
-        - pricing
-        - product
-        - supply-chain
     - name: checkout
       description: "Cart, address and carrier selection, payment initiation and order placement."
-      type: core-domain
-      subdomains:
-        - cart
-        - discount
-        - pricing
     - name: content
       description: "CMS pages, blocks and static content served alongside the storefront."
-      type: supporting-domain
-      subdomains:
-        - cms
-        - seo
-        - theme
     - name: customers
       description: "Customer accounts, addresses, groups, and consent/PII handling."
-      type: core-domain
-      subdomains:
-        - address
-        - customer
-        - customer-service
-        - title
     - name: international
       description: "Languages, currencies, countries, zones, taxes and translation."
-      type: supporting-domain
-      subdomains:
-        - currency
-        - geography
-        - language
-        - localization
-        - taxation
     - name: modules
       description: "The module/hook extension system: install, configure, upgrade, and hook dispatch."
-      type: technical-capability
     - name: orders
       description: "Order lifecycle, statuses, invoices, credit slips, refunds and returns."
-      type: core-domain
-      subdomains:
-        - invoice-payment
-        - order
-        - order-admin
-        - refunds
-        - returns
     - name: shipping
       description: "Carriers, zones, weight/price ranges and delivery-cost computation."
-      type: supporting-domain
-      subdomains:
-        - carrier
-        - shipment
     - name: shop
       description: "Multistore: shop groups, shops, per-shop configuration and URL routing."
-      type: supporting-domain
+
+domains:
+  - id: DMN001
+    name: admin
+    description: "Back-office: employees, permissions, API clients, and the administration shell."
+    type: supporting-domain
+    subdomains:
+      - id: SDM001
+        name: api
+      - id: SDM002
+        name: config
+      - id: SDM003
+        name: identity
+  - id: DMN002
+    name: catalog
+    description: "Products, categories, attributes, combinations, stock and pricing rules."
+    type: core-domain
+    subdomains:
+      - id: SDM004
+        name: category
+      - id: SDM005
+        name: characteristics
+      - id: SDM006
+        name: combination
+      - id: SDM007
+        name: image-settings
+      - id: SDM008
+        name: media
+      - id: SDM009
+        name: pricing
+      - id: SDM010
+        name: product
+      - id: SDM011
+        name: supply-chain
+  - id: DMN003
+    name: checkout
+    description: "Cart, address and carrier selection, payment initiation and order placement."
+    type: core-domain
+    subdomains:
+      - id: SDM012
+        name: cart
+      - id: SDM013
+        name: discount
+      - id: SDM014
+        name: pricing
+  - id: DMN004
+    name: content
+    description: "CMS pages, blocks and static content served alongside the storefront."
+    type: supporting-domain
+    subdomains:
+      - id: SDM015
+        name: cms
+      - id: SDM016
+        name: seo
+      - id: SDM017
+        name: theme
+  - id: DMN005
+    name: customers
+    description: "Customer accounts, addresses, groups, and consent/PII handling."
+    type: core-domain
+    subdomains:
+      - id: SDM018
+        name: address
+      - id: SDM019
+        name: customer
+      - id: SDM020
+        name: customer-service
+      - id: SDM021
+        name: title
+  - id: DMN006
+    name: international
+    description: "Languages, currencies, countries, zones, taxes and translation."
+    type: supporting-domain
+    subdomains:
+      - id: SDM022
+        name: currency
+      - id: SDM023
+        name: geography
+      - id: SDM024
+        name: language
+      - id: SDM025
+        name: localization
+      - id: SDM026
+        name: taxation
+  - id: DMN007
+    name: modules
+    description: "The module/hook extension system: install, configure, upgrade, and hook dispatch."
+    type: technical-capability
+  - id: DMN008
+    name: orders
+    description: "Order lifecycle, statuses, invoices, credit slips, refunds and returns."
+    type: core-domain
+    subdomains:
+      - id: SDM027
+        name: invoice-payment
+      - id: SDM028
+        name: order
+      - id: SDM029
+        name: order-admin
+      - id: SDM030
+        name: refunds
+      - id: SDM031
+        name: returns
+  - id: DMN009
+    name: shipping
+    description: "Carriers, zones, weight/price ranges and delivery-cost computation."
+    type: supporting-domain
+    subdomains:
+      - id: SDM032
+        name: carrier
+      - id: SDM033
+        name: shipment
+  - id: DMN010
+    name: shop
+    description: "Multistore: shop groups, shops, per-shop configuration and URL routing."
+    type: supporting-domain

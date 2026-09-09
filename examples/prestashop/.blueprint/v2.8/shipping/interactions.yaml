@@ -18,7 +18,7 @@ screens:
     name: "Carrier Configuration"
     summary: "Multi-step carrier form: general settings, zones, ranges, dimensional constraints, and tax rule assignment."
     uses_models: ["CarrierForEditing"]
-    stories: [shipping.STR001]
+    processes: [shipping.PRC001]
 
   - id: shipping.SCR003
     name: "Order Shipments"
@@ -30,7 +30,7 @@ screens:
     name: "Shipment Detail"
     summary: "Single shipment view with assigned products, carrier info, tracking number, and edit/split controls."
     uses_models: ["ShipmentForViewing"]
-    stories: [shipping.STR002]
+    processes: [shipping.PRC002]
 
 actions:
   - id: shipping.UAC001

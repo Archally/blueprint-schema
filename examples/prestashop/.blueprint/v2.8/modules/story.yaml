@@ -1,41 +1,39 @@
 ---
-name: "Module Stories"
+name: "Module Processes"
 version: "1.0.0"
 scope: modules
 
-stories:
-  - id: modules.STR001
+processes:
+  - id: modules.PRC001
     title: "Module Installation & Activation"
     description: "A store admin uploads, installs, and activates a module to extend storefront functionality."
-    process:
-      id: modules.SP001
-      trigger:
-        type: message
-        operation: modules.CMD008
-        description: "Module developer uploads a module package."
-      end_states:
-        - name: "Module active"
-          type: complete
-          description: "Module uploaded, installed, hooks registered, and verified active."
-        - name: "Installation failed"
-          type: error
-          description: "Module already installed, dependency conflict, or compatibility failure."
-      lanes:
-        - actor: modules.ACT002
-          operations: [modules.CMD008]
-        - actor: modules.ACT001
-          operations: [modules.CMD001, modules.QRY001]
+    trigger:
+      type: message
+      operation: modules.CMD008
+      description: "Module developer uploads a module package."
+    end_states:
+      - name: "Module active"
+        type: complete
+        description: "Module uploaded, installed, hooks registered, and verified active."
+      - name: "Installation failed"
+        type: error
+        description: "Module already installed, dependency conflict, or compatibility failure."
+    lanes:
+      - actor: modules.ACT002
+        operations: [modules.CMD008]
+      - actor: modules.ACT001
+        operations: [modules.CMD001, modules.QRY001]
     activities:
-      - id: modules.SA001
+      - id: modules.PA001
         name: "Upload Module"
         triggered_by: [modules.ACT002]
         entry_operation: modules.CMD008
         path_type: happy
-      - id: modules.SA002
+      - id: modules.PA002
         name: "Install Module"
         triggered_by: [modules.EVT006]
         entry_operation: modules.CMD001
-      - id: modules.SA003
+      - id: modules.PA003
         name: "Verify Module"
         triggered_by: [modules.EVT001]
         entry_operation: modules.QRY001
@@ -44,32 +42,30 @@ stories:
         role: implementation
         description: "Module lifecycle management controller."
 
-  - id: modules.STR002
+  - id: modules.PRC002
     title: "Module Troubleshooting"
     description: "A store admin disables or resets a problematic module to restore store stability."
-    process:
-      id: modules.SP002
-      trigger:
-        type: manual
-        operation: modules.CMD003
-        description: "Store admin disables a problematic module to restore stability."
-      end_states:
-        - name: "Module stabilized"
-          type: complete
-          description: "Module disabled and/or reset, store stability restored."
-        - name: "Reset failed"
-          type: error
-          description: "Module reset fails, requiring full uninstallation."
-      lanes:
-        - actor: modules.ACT001
-          operations: [modules.CMD003, modules.CMD006]
+    trigger:
+      type: manual
+      operation: modules.CMD003
+      description: "Store admin disables a problematic module to restore stability."
+    end_states:
+      - name: "Module stabilized"
+        type: complete
+        description: "Module disabled and/or reset, store stability restored."
+      - name: "Reset failed"
+        type: error
+        description: "Module reset fails, requiring full uninstallation."
+    lanes:
+      - actor: modules.ACT001
+        operations: [modules.CMD003, modules.CMD006]
     activities:
-      - id: modules.SA004
+      - id: modules.PA004
         name: "Disable Module"
         triggered_by: [modules.ACT001]
         entry_operation: modules.CMD003
         path_type: happy
-      - id: modules.SA005
+      - id: modules.PA005
         name: "Reset Module"
         triggered_by: [modules.ACT001]
         entry_operation: modules.CMD006

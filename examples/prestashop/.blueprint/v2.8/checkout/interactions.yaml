@@ -13,7 +13,7 @@ screens:
     summary: "Back-office view of a cart session with products, totals, applied discounts, and customer info."
     uses_models: ["CartForViewing"]
     motivated_by: [checkout.G001]
-    stories: [checkout.STR001]
+    processes: [checkout.PRC001]
 
   - id: checkout.SCR002
     name: "Discount List"
@@ -25,7 +25,7 @@ screens:
     name: "Discount Edit"
     summary: "Form for creating and editing discounts - conditions, actions, validity, usage limits, and product rule groups."
     uses_models: ["DiscountForEditing"]
-    stories: [checkout.STR002]
+    processes: [checkout.PRC002]
 
   - id: checkout.SCR004
     name: "Catalog Price Rule List"

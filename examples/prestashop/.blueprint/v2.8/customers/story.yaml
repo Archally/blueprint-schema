@@ -1,39 +1,37 @@
 ---
-name: "Customer Stories"
+name: "Customer Processes"
 version: "1.0.0"
 scope: customers
 
-stories:
-  - id: customers.STR001
+processes:
+  - id: customers.PRC001
     title: "Customer account lifecycle"
     description: "Customer registers, manages profile, and eventually exercises GDPR rights."
     initiated_by: [customers.ACT001]
-    process:
-      id: customers.SP001
-      trigger:
-        type: message
-        operation: customers.CMD001
-        description: "Customer registers a new account."
-      end_states:
-        - name: "Account lifecycle complete"
-          type: complete
-          description: "Account created, addresses managed, GDPR data deletion exercised."
-        - name: "Registration failed"
-          type: error
-          description: "Duplicate email or password policy violation."
-      lanes:
-        - actor: customers.ACT001
-          operations: [customers.CMD001, customers.CMD012, customers.CMD003]
+    trigger:
+      type: message
+      operation: customers.CMD001
+      description: "Customer registers a new account."
+    end_states:
+      - name: "Account lifecycle complete"
+        type: complete
+        description: "Account created, addresses managed, GDPR data deletion exercised."
+      - name: "Registration failed"
+        type: error
+        description: "Duplicate email or password policy violation."
+    lanes:
+      - actor: customers.ACT001
+        operations: [customers.CMD001, customers.CMD012, customers.CMD003]
     activities:
-      - id: customers.SA001
+      - id: customers.PA001
         name: "Register account"
         entry_operation: customers.CMD001
         path_type: happy
-      - id: customers.SA002
+      - id: customers.PA002
         name: "Manage addresses"
         entry_operation: customers.CMD012
         path_type: happy
-      - id: customers.SA003
+      - id: customers.PA003
         name: "Request data deletion"
         entry_operation: customers.CMD003
         path_type: happy
@@ -45,32 +43,30 @@ stories:
         role: implementation
         description: "Front-office customer registration."
 
-  - id: customers.STR002
+  - id: customers.PRC002
     title: "Customer service interaction"
     description: "Customer submits inquiry, agent responds and resolves."
     initiated_by: [customers.ACT002]
-    process:
-      id: customers.SP002
-      trigger:
-        type: message
-        operation: customers.CMD016
-        description: "Support agent replies to a customer service thread."
-      end_states:
-        - name: "Inquiry resolved"
-          type: complete
-          description: "Reply sent, thread resolved or forwarded to specialist."
-        - name: "Thread not found"
-          type: error
-          description: "Service thread does not exist or is already closed."
-      lanes:
-        - actor: customers.ACT002
-          operations: [customers.CMD016, customers.CMD017]
+    trigger:
+      type: message
+      operation: customers.CMD016
+      description: "Support agent replies to a customer service thread."
+    end_states:
+      - name: "Inquiry resolved"
+        type: complete
+        description: "Reply sent, thread resolved or forwarded to specialist."
+      - name: "Thread not found"
+        type: error
+        description: "Service thread does not exist or is already closed."
+    lanes:
+      - actor: customers.ACT002
+        operations: [customers.CMD016, customers.CMD017]
     activities:
-      - id: customers.SA004
+      - id: customers.PA004
         name: "Reply to thread"
         entry_operation: customers.CMD016
         path_type: happy
-      - id: customers.SA005
+      - id: customers.PA005
         name: "Forward to specialist"
         entry_operation: customers.CMD017
         path_type: happy

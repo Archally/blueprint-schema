@@ -1,31 +1,29 @@
 ---
-name: "Catalog Stories"
+name: "Catalog Processes"
 version: "1.0.0"
 scope: catalog
 
-stories:
-  - id: catalog.STR001
+processes:
+  - id: catalog.PRC001
     title: "Add a product to catalog"
     description: "CategoryManager creates a new product with combinations and images."
     initiated_by: [catalog.ACT001]
-    process:
-      id: catalog.SP001
-      trigger:
-        type: message
-        operation: catalog.CMD001
-        description: "CategoryManager creates a new product in back-office."
-      end_states:
-        - name: "Product created"
-          type: complete
-          description: "Product created in draft status, search index updated."
-        - name: "Creation failed"
-          type: error
-          description: "Validation failure - missing required fields or duplicate reference."
-      lanes:
-        - actor: catalog.ACT001
-          operations: [catalog.CMD001]
+    trigger:
+      type: message
+      operation: catalog.CMD001
+      description: "CategoryManager creates a new product in back-office."
+    end_states:
+      - name: "Product created"
+        type: complete
+        description: "Product created in draft status, search index updated."
+      - name: "Creation failed"
+        type: error
+        description: "Validation failure - missing required fields or duplicate reference."
+    lanes:
+      - actor: catalog.ACT001
+        operations: [catalog.CMD001]
     activities:
-      - id: catalog.SA001
+      - id: catalog.PA001
         name: "Create product"
         entry_operation: catalog.CMD001
         steps:
@@ -38,28 +36,26 @@ stories:
         role: implementation
         description: "Product creation and management controller."
 
-  - id: catalog.STR002
+  - id: catalog.PRC002
     title: "Manage product variants"
     description: "CategoryManager generates and configures product combinations (variants)."
     initiated_by: [catalog.ACT001]
-    process:
-      id: catalog.SP002
-      trigger:
-        type: message
-        operation: catalog.CMD011
-        description: "CategoryManager generates combinations for a product."
-      end_states:
-        - name: "Combinations generated"
-          type: complete
-          description: "All attribute value permutations created with default stock and pricing."
-        - name: "Generation failed"
-          type: error
-          description: "Product type is not 'combinations' or no attribute values selected."
-      lanes:
-        - actor: catalog.ACT001
-          operations: [catalog.CMD011]
+    trigger:
+      type: message
+      operation: catalog.CMD011
+      description: "CategoryManager generates combinations for a product."
+    end_states:
+      - name: "Combinations generated"
+        type: complete
+        description: "All attribute value permutations created with default stock and pricing."
+      - name: "Generation failed"
+        type: error
+        description: "Product type is not 'combinations' or no attribute values selected."
+    lanes:
+      - actor: catalog.ACT001
+        operations: [catalog.CMD011]
     activities:
-      - id: catalog.SA002
+      - id: catalog.PA002
         name: "Generate combinations"
         entry_operation: catalog.CMD011
         steps:
@@ -68,28 +64,26 @@ stories:
           - operation_ref: catalog.EVT004
             note: "CombinationGenerated event."
 
-  - id: catalog.STR003
+  - id: catalog.PRC003
     title: "Organize category hierarchy"
     description: "CategoryManager creates and organizes the category tree structure."
     initiated_by: [catalog.ACT001]
-    process:
-      id: catalog.SP003
-      trigger:
-        type: message
-        operation: catalog.CMD025
-        description: "CategoryManager creates a category in the tree."
-      end_states:
-        - name: "Category created"
-          type: complete
-          description: "Category added to hierarchy with parent assignment."
-        - name: "Creation failed"
-          type: error
-          description: "Parent category not found or circular reference detected."
-      lanes:
-        - actor: catalog.ACT001
-          operations: [catalog.CMD025]
+    trigger:
+      type: message
+      operation: catalog.CMD025
+      description: "CategoryManager creates a category in the tree."
+    end_states:
+      - name: "Category created"
+        type: complete
+        description: "Category added to hierarchy with parent assignment."
+      - name: "Creation failed"
+        type: error
+        description: "Parent category not found or circular reference detected."
+    lanes:
+      - actor: catalog.ACT001
+        operations: [catalog.CMD025]
     activities:
-      - id: catalog.SA003
+      - id: catalog.PA003
         name: "Build category tree"
         entry_operation: catalog.CMD025
         steps:

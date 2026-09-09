@@ -18,7 +18,7 @@ screens:
     name: "Module Upload"
     summary: "Module upload form for importing module packages from file archives."
     uses_models: ["ModuleUpload"]
-    stories: [modules.STR001]
+    processes: [modules.PRC001]
 
   - id: modules.SCR003
     name: "Hook Configuration"

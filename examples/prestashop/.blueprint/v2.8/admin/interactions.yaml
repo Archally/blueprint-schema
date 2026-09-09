@@ -18,7 +18,7 @@ screens:
     name: "Employee Form"
     summary: "Employee creation/edit form with profile selection and shop association."
     uses_models: ["EmployeeForm"]
-    stories: [admin.STR001]
+    processes: [admin.PRC001]
 
   - id: admin.SCR003
     name: "Profile Permissions"
