@@ -40,7 +40,7 @@ properties:
       prefixed code_ref by looking up its prefix here; unprefixed refs fall back to `repository`.
       Example: { "acme/orders-service": { url: "https://gitlab.com/acme/orders-service", provider: gitlab } }.
 
-  # === Trackers (v2.7.5) — issue/document link registry for tracker_ref ===
+  # === Trackers (v2.7.5) - issue/document link registry for tracker_ref ===
   trackers:
     type: object
     additionalProperties:
@@ -84,12 +84,12 @@ properties:
                   pattern: "^[a-z][a-z0-9-]*$"
                 - $ref: "#/$defs/slice"
             description: >
-              Domain/capability slices. Each item is either a kebab-case subfolder name
-              (shorthand, backward-compatible) or a slice object (name + description + type
-              + owner + subdomains). A slice is the problem-space unit of decomposition: a
-              business domain OR a cross-cutting technical capability (which may still warrant
-              a deep model). Distinct from a bounded context (solution space; see
-              design/arch.schema), which a slice may map to 1:1, 1:many, or partially.
+              Slice folders under the blueprint root. Each item is either a kebab-case
+              subfolder name (shorthand, backward-compatible) or a slice object (name +
+              description + owner). A slice is a FILESYSTEM partition; the problem space is
+              declared in `domains`, and which slice holds a domain's model is derived from
+              where its contexts are declared. Distinct from a bounded context (solution
+              space; see design/arch.schema), which a slice may hold 1:1, 1:many, or partially.
           shared:
             type: object
             description: "Optional root-level paths for shared/system entities."
@@ -100,7 +100,7 @@ properties:
               rules: { type: string, description: "Path to rules.yaml." }
               domain: { type: string, description: "Path to domain.yaml." }
               models: { type: string, description: "Path to models.yaml." }
-              story: { type: string, description: "Path to story.yaml." }
+              process: { type: string, description: "Path to process.yaml." }
               dynamics: { type: string, description: "Path to dynamics.yaml." }
               quality: { type: string, description: "Path to quality.yaml." }
               infrastructure: { type: string, description: "Path to infrastructure.yaml." }
@@ -113,6 +113,20 @@ properties:
               roadmap: { type: string, description: "Path to roadmap.yaml." }
               value_stream: { type: string, description: "Path to value-stream.yaml." }
               leverage: { type: string, description: "Path to leverage.yaml." }
+
+  # === Problem space (v2.8.6) ===
+  domains:
+    type: array
+    description: >
+      The model's problem-space registry: the domains this system exists for, each with the
+      subdomains it divides into. Two levels, declared once here and referenced everywhere else
+      by id: a bounded context names the domain it realizes with `domain_ref`, and which slice
+      folder holds a domain's model is derived from where its contexts are declared, never
+      declared. `layout.slices` describes files; this describes the business. A slice and a
+      domain often share a name and are still different things: two folders can describe one
+      domain, and one folder can hold parts of several.
+    items:
+      $ref: "#/$defs/domain"
 
   # === Constitution ===
   constitution:
@@ -210,7 +224,7 @@ properties:
       infrastructure:
         $ref: "design/infrastructure.schema.yaml"
         description: "Resources, environments, deployment topology."
-      story:
+      process:
         $ref: "design/story.schema.yaml"
         description: "Domain stories as operation sequences."
       dynamics:
@@ -304,15 +318,94 @@ $defs:
       label:
         type: string
         description: "Human-readable tracker label (e.g. 'Jira', 'Confluence')."
+  domain:
+    type: object
+    description: >
+      A region of the problem space: a business domain, or a cross-cutting technical capability
+      that still warrants a deep model. Classified on the same axis as its subdomains (`type`),
+      owned and described, and referenced by bounded contexts through `domain_ref`. Its
+      subdomains nest here because a subdomain belongs to exactly one domain, and the schema
+      stops at two levels because DDD practice does.
+    additionalProperties: false
+    required:
+      - id
+      - name
+    properties:
+      id:
+        type: string
+        pattern: "^DMN\\d{3,}$"
+        description: "Domain id. Model-wide, so it carries no context prefix (DMN001)."
+      name:
+        type: string
+        description: "Domain name as the business says it (e.g. Ordering, Catalog)."
+      description:
+        type: string
+        description: "What this domain is about - the business responsibility it names."
+      type:
+        $ref: "metamodel.schema.yaml#/$defs/subdomain_kind"
+        description: "DDD strategic importance of this domain."
+      complexity:
+        $ref: "metamodel.schema.yaml#/$defs/complexity_pattern"
+        description: >
+          Dominant problem-type of the domain's model. Use the subdomain entries when the domain
+          is split-natured (e.g. order-lifecycle=state-management, inventory-reservation=concurrency).
+      model_traits:
+        type: array
+        items:
+          $ref: "metamodel.schema.yaml#/$defs/model_traits_item"
+        description: "Behavioural archetype(s) of the domain model (Wirfs-Brock role stereotypes)."
+      owner:
+        $ref: "metamodel.schema.yaml#/$defs/owned_by"
+        description: "Owning team/department/party (references governance/organization)."
+      subdomains:
+        type: array
+        description: "The subdomains this domain divides into. A subdomain has no subdomains of its own."
+        items:
+          $ref: "#/$defs/subdomain"
+  subdomain:
+    type: object
+    description: >
+      A partition of one domain, classified on the same axis as the domain that contains it.
+      Declared inside its domain, so the parent is stated by position and cannot be declared
+      twice. Not a folder: the files under a slice may belong to several subdomains, and that
+      link is derived from the entities the files declare.
+    additionalProperties: false
+    required:
+      - id
+      - name
+    properties:
+      id:
+        type: string
+        pattern: "^SDM\\d{3,}$"
+        description: "Subdomain id. Model-wide, no context prefix (SDM001)."
+      name:
+        type: string
+        description: "Subdomain name (e.g. cart, checkout, fulfillment)."
+      description:
+        type: string
+        description: "What this subdomain covers."
+      type:
+        $ref: "metamodel.schema.yaml#/$defs/subdomain_kind"
+        description: "DDD importance of this subdomain, on the same axis as its domain."
+      complexity:
+        $ref: "metamodel.schema.yaml#/$defs/complexity_pattern"
+        description: "Dominant problem-type of this subdomain, so a split-natured domain can mark each facet."
+      model_traits:
+        type: array
+        items:
+          $ref: "metamodel.schema.yaml#/$defs/model_traits_item"
+        description: "Behavioural archetype(s) of this subdomain."
+      owner:
+        $ref: "metamodel.schema.yaml#/$defs/owned_by"
+        description: "Owning team/department/party, when it differs from the domain's."
   slice:
     type: object
     description: >
-      A domain or capability slice - the problem-space unit of decomposition. `name` is the
-      kebab-case subfolder under the blueprint root. A slice is NOT necessarily a strict
-      business domain: a cross-cutting technical capability (e.g. a workflow, messaging, or
-      forms engine) is also a slice, and may itself be a deep model. Distinct from a bounded
-      context (solution space; see design/arch.schema): a slice may map to one context,
-      several, or part of one.
+      A slice folder - `name` is the kebab-case subfolder under the blueprint root. A slice is a
+      FILESYSTEM partition and nothing more: the problem-space partition is `domains`, and which
+      slice holds a domain's model is derived from where that domain's contexts are declared.
+      Distinct from a bounded context (solution space; see design/arch.schema): a slice may hold
+      one context, several, or part of one.
     additionalProperties: false
     required:
       - name
@@ -327,9 +420,10 @@ $defs:
       type:
         $ref: "metamodel.schema.yaml#/$defs/subdomain_kind"
         description: >
-          Slice nature, as a region of the problem space. A bounded context's `kind` in
-          design/arch.schema classifies a unit of the SOLUTION space by the domain it realizes,
-          which is why the two use different vocabularies.
+          SOFT-DEPRECATED (v2.8.6). Slice nature, as a region of the problem space. A slice is a
+          folder, and its nature belongs to the domain it holds: declare `type` on the domain in
+          `domains[]`. The schema-update tool moves it there. Still accepted until the next major
+          line, so an unmigrated model keeps validating.
       complexity:
         $ref: "metamodel.schema.yaml#/$defs/complexity_pattern"
         description: >
@@ -348,9 +442,11 @@ $defs:
       subdomains:
         type: array
         description: >
-          Subdomains/modules within this slice (problem-space partitions; e.g. ordering →
-          cart, checkout, order, payment, fulfillment). Each maps by convention to a
-          file-name prefix within the slice folder (order.*.yaml) and/or a tag.
+          SOFT-DEPRECATED (v2.8.6). Subdomains within this slice. They are problem-space
+          partitions and belong in `domains[].subdomains[]`, where each carries an id a
+          context can name; the schema-update tool moves them and rewrites every `domain_ref`.
+          Still accepted until the next major line. The file-name prefix convention
+          (order.*.yaml) stays a convention and is derived, never declared.
         items:
           oneOf:
             - type: string
