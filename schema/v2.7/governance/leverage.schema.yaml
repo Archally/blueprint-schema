@@ -2,13 +2,13 @@
 $schema: "https://json-schema.org/draft/2020-12/schema"
 title: Blueprint Leverage Map
 description: >
-  Governance Plane: Leverage Map — the prioritization tier that sits ABOVE the AS-IS remediation
+  Governance Plane: Leverage Map - the prioritization tier that sits ABOVE the AS-IS remediation
   chain (finding → risk → decision → migration). A leverage point (LP###) is the "vital few"
   cross-cutting intervention: it bundles the findings/risks/decisions/fitness-functions it addresses,
   projects the consequences of acting (or not), and delegates its delivery/sequencing to roadmap
   work-items (WI###) rather than re-modelling execution. Answers: what are the highest-leverage
   things to do, in what order, why, and how confident are we? Distinct from `design/quality`
-  findings (an AS-IS assessment) — leverage is forward-looking, target-setting prioritization.
+  findings (an AS-IS assessment) - leverage is forward-looking, target-setting prioritization.
 type: object
 additionalProperties: false
 required:
@@ -39,24 +39,24 @@ properties:
     description: >
       The shared rubric used to rank leverage points (e.g. urgency, dependency-hub, blast-radius,
       delivery-risk-reduction, evidence-confidence). Documents HOW `rank` was assigned. Not derivable
-      from the model — records the human judgement rubric.
+      from the model - records the human judgement rubric.
   pareto_core:
     type: array
     items:
       $ref: "../metamodel.schema.yaml#/$defs/leverage_ref"
     description: >
-      The committed 'vital few' — a CURATED subset of leverage points the team commits to now.
+      The committed 'vital few' - a CURATED subset of leverage points the team commits to now.
       Semantically distinct from `rank` (which orders all points): pareto_core is the go/no-go
       selection, which may be narrower than 'the top N by rank'.
   leverage_points:
     type: array
-    description: "The leverage points — prioritized cross-cutting interventions."
+    description: "The leverage points - prioritized cross-cutting interventions."
     items:
       $ref: "#/$defs/leverage_point"
   watchlist:
     type: array
     description: >
-      Signals being MONITORED but not yet acted on — candidate future leverage points or deferred
+      Signals being MONITORED but not yet acted on - candidate future leverage points or deferred
       risks. Lightweight: enough to not lose the thread, without promoting to a full leverage point.
     items:
       $ref: "#/$defs/watch_item"
@@ -66,7 +66,7 @@ $defs:
   leverage_point:
     type: object
     description: >
-      A prioritized cross-cutting intervention — "the one thing to do for X". Synthesizes the model:
+      A prioritized cross-cutting intervention - "the one thing to do for X". Synthesizes the model:
       it references (does NOT duplicate) the findings/risks/decisions/fitness-functions it addresses,
       the migrations/roadmap-work-items that deliver it, and the goals/value-streams it advances.
       Caps the remediation chain finding → risk → decision → migration with a prioritization tier.
@@ -121,7 +121,7 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/decision_ref"
         description: >
-          Decisions (D###) this intervention bundles / is realized through — the DIRECT link to the
+          Decisions (D###) this intervention bundles / is realized through - the DIRECT link to the
           architecture decision log. (Indirect links also exist via `finding_refs` and `realized_by`.)
       fitness_function_refs:
         type: array
@@ -140,7 +140,7 @@ $defs:
           $ref: "../metamodel.schema.yaml#/$defs/work_item_ref"
         description: >
           Roadmap work-items (WI###) that deliver/sequence this intervention. Delivery is DELEGATED to
-          the roadmap execution tier — leverage does not re-model steps/horizons/progress. Optional:
+          the roadmap execution tier - leverage does not re-model steps/horizons/progress. Optional:
           prioritize-before-schedule is the normal early state (an LP may exist before its work-items).
       # --- Strategic intent ---
       advances_goals:
@@ -216,7 +216,7 @@ $defs:
       id:
         type: string
         pattern: "^W\\d{3}$"
-        description: "Local watch-item id (W + 3 digits). Not referenced elsewhere — local to this map."
+        description: "Local watch-item id (W + 3 digits). Not referenced elsewhere - local to this map."
       title:
         type: string
         description: "What is being watched (e.g. 'Retire compatibility-only runtime islands')."

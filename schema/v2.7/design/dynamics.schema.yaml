@@ -202,7 +202,7 @@ $defs:
         description: "One-line summary for listings."
       scenario:
         type: string
-        description: "How this race occurs — the specific interleaving of operations that leads to incorrect behavior."
+        description: "How this race occurs - the specific interleaving of operations that leads to incorrect behavior."
       impact:
         type: string
         description: "What happens if unmitigated (e.g. 'Duplicate orders created')."

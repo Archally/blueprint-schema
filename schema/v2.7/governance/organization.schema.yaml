@@ -1,7 +1,7 @@
 ---
 $schema: "https://json-schema.org/draft/2020-12/schema"
 title: Blueprint Organization
-description: "Governance Plane: Organizational hierarchy — Party > Department > Team. Defines who owns what in the blueprint. Teams are first-class entities under a party; departments reference teams by ID."
+description: "Governance Plane: Organizational hierarchy - Party > Department > Team. Defines who owns what in the blueprint. Teams are first-class entities under a party; departments reference teams by ID."
 type: object
 additionalProperties: false
 required:

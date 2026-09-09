@@ -1,0 +1,109 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Migration Register
+description: "An ordered record of the changes a blueprint model has been through and the ones it is planned to go through, written for a reader. Each entry names one migration and describes its changes in prose. A single migration authored for execution, with typed targets and rollback data, is a `migration.yaml` document instead."
+type: object
+additionalProperties: false
+required: [migrations]
+properties:
+  version:
+    type: string
+    description: "Version of the model instance this register describes."
+    examples: ["1.0.0"]
+  schemaVersion:
+    $ref: "metamodel.schema.yaml#/$defs/schema_version"
+    description: "Schema version this register conforms to. Omit to assume latest."
+  tags:
+    $ref: "metamodel.schema.yaml#/$defs/tags"
+    description: "Free-form tags for grouping and filtering the register."
+  migrations:
+    type: array
+    description: "The register, in the order the migrations apply. Completed and planned entries live in one list so a reader sees where the model has been and where it is going."
+    items:
+      $ref: "#/$defs/register_entry"
+
+$defs:
+  register_status:
+    type: string
+    enum: [planned, in-progress, completed, cancelled]
+    x-vocabulary-distinct: "Says where a migration stands in the model's history, as a reader sees it. Not the authoring lifecycle of a single executable migration document, which runs draft to applied."
+    description: >
+      Where this migration stands.
+      planned: intended, not yet carried out. in-progress: partly carried out.
+      completed: carried out. cancelled: planned and then dropped, kept because
+      the reason it was dropped is part of the history.
+
+  register_change_kind:
+    type: string
+    enum: [add, modify, deprecate, remove, rename, split, merge]
+    x-vocabulary-distinct: "Labels a change a reader is told about in prose, where naming an entity is optional. Not the operation an executable migration performs on a named target in a given order."
+    description: >
+      What kind of change this entry describes.
+      add: something new. modify: something changed. deprecate: something marked for removal.
+      remove: something gone. rename: something kept its identity under a new name.
+      split: one became many. merge: many became one.
+
+  register_entry:
+    type: object
+    description: "One migration in the register."
+    additionalProperties: false
+    required: [id, name, status, changes]
+    properties:
+      id:
+        $ref: "metamodel.schema.yaml#/$defs/migration_ref"
+        description: "Migration identifier (MIG001, MIG002, and so on)."
+      name:
+        type: string
+        description: "Short title, in the words a reader of the model would use."
+        examples: ["Accounting Domain Bootstrap"]
+      description:
+        type: string
+        description: "What this migration does and why, in plain language."
+      status:
+        $ref: "#/$defs/register_status"
+      impact:
+        $ref: "metamodel.schema.yaml#/$defs/semver_impact"
+        description: "Semantic versioning impact of this migration on the model version."
+      reversible:
+        type: boolean
+        description: "Whether this migration can be undone from what the entry records."
+      inverse_summary:
+        type: string
+        description: "How to undo this migration, in prose. Present when `reversible` is true and the steps are worth stating."
+      date:
+        type: string
+        pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+        description: "When this migration was carried out, or is planned for (YYYY-MM-DD)."
+      depends_on:
+        type: array
+        items:
+          $ref: "metamodel.schema.yaml#/$defs/migration_ref"
+        description: "Migrations that apply before this one."
+      tags:
+        $ref: "metamodel.schema.yaml#/$defs/tags"
+        description: "Free-form tags for this entry."
+      changes:
+        type: array
+        minItems: 1
+        description: "The changes this migration makes, each described for a reader. An entry with no changes says nothing, so at least one is required."
+        items:
+          $ref: "#/$defs/register_change"
+
+  register_change:
+    type: object
+    description: "One change a migration makes, described in prose. Naming the entity is optional: a change may describe a whole file, a slice or a convention, none of which carry an entity id."
+    additionalProperties: false
+    required: [type, description]
+    properties:
+      type:
+        $ref: "#/$defs/register_change_kind"
+      description:
+        type: string
+        description: "What changed, in the words a reader of the model would use."
+      entity:
+        type: string
+        description: "The entity this change is about, when it is about one. A typed id, scoped where the model scopes ids."
+        examples: ["contracts.CN006", "CN006"]
+      reason:
+        type: string
+        description: "Why this particular change is part of the migration."

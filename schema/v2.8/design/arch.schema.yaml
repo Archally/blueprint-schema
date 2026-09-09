@@ -1,7 +1,7 @@
 ---
 $schema: "https://json-schema.org/draft/2020-12/schema"
 title: Blueprint Architecture
-description: "Design Plane — L0: Bounded context topology. Parties, contexts, services with contracts (interfaces), enriched dependencies for context-map inference, and unified component kinds."
+description: "Design Plane - L0: Bounded context topology. Parties, contexts, services with contracts (interfaces), enriched dependencies for context-map inference, and unified component kinds."
 type: object
 additionalProperties: false
 required:
@@ -29,7 +29,7 @@ properties:
     description: >
       Bounded context this architecture file belongs to. Used only for
       context-scoped arch fragments (future). Root-level arch files describe
-      systems and MUST NOT declare scope — the file name identifies the system
+      systems and MUST NOT declare scope - the file name identifies the system
       (e.g., eshop.arch.yaml). Validators SHOULD warn when scope is present
       alongside system-level parties.
   stage:
@@ -92,7 +92,6 @@ $defs:
     required:
       - id
       - name
-      - env
     properties:
       id:
         $ref: "../metamodel.schema.yaml#/$defs/party_ref"
@@ -110,9 +109,6 @@ $defs:
         type: string
         enum: [system, organization]
         description: "Party type: system=technical system, organization=business unit or company."
-      env:
-        type: string
-        description: "Deployment environment (e.g. production, staging, development)."
       contexts:
         type: array
         items:
@@ -154,22 +150,24 @@ $defs:
         type: string
         description: "Context name (unique within the party or document that declares it)."
       kind:
-        type: string
-        enum: [core, generic-core, support, generic]
-        description: "DDD context classification: core=competitive advantage, support=enables core, generic=commodity. Maps to BCC v5 Strategic Classification — Domain Importance."
+        $ref: "../metamodel.schema.yaml#/$defs/context_kind"
+        description: >
+          DDD classification of this bounded context, by the problem-space domain it realizes.
+          The slice vocabulary in blueprint.schema classifies that domain itself; this one
+          classifies the solution-space unit serving it.
       domain_ref:
         type: string
         description: >
           The domain this bounded context belongs to, naming a slice the model
           declares in `blueprint.yaml`'s `layout.slices`. Optional. Used to draw
-          the domain map — an overview that groups contexts into domains and
+          the domain map - an overview that groups contexts into domains and
           aggregates the dependencies between them, which is the readable view
           of a model with more contexts than one diagram can show.
 
           Declaring it OVERRIDES the fallback, which is the folder the context's
           file sits in. State it when a context belongs to a domain other than the
           one its location implies, or when the file sits at the model root and so
-          implies none — a context that resolves to no domain is left out of the
+          implies none - a context that resolves to no domain is left out of the
           domain map and counted in its caption. A value naming a slice the model
           does not declare is an error, not a new domain.
       complexity:
@@ -179,14 +177,14 @@ $defs:
         type: string
         enum: [revenue-generator, engagement-creator, compliance-enforcer]
         description: >
-          BCC v5 Strategic Classification — Business Model Role.
+          BCC v5 Strategic Classification - Business Model Role.
           Captures HOW the context contributes to the business. Distinct from
           `kind` (which captures WHETHER the context is differentiating).
       evolution:
         type: string
         enum: [genesis, custom, product, commodity]
         description: >
-          BCC v5 Strategic Classification — Wardley Evolution stage.
+          BCC v5 Strategic Classification - Wardley Evolution stage.
           Used in the dedicated Wardley map view (step-10a) and as a third
           badge in the BCC node's strategic header.
       model_traits:
@@ -194,7 +192,7 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/model_traits_item"
         description: >
-          BCC v5 Model Traits — behavioural archetypes for this context. All
+          BCC v5 Model Traits - behavioural archetypes for this context. All
           values are role nouns ("a context that does X") for authoring
           consistency. Sources:
             - Plan / Do / Check (Nick Tune workshop recipe):
@@ -270,7 +268,7 @@ $defs:
       bounded_context_ref:
         $ref: "../metamodel.schema.yaml#/$defs/bounded_context_ref"
         description: >
-          Optional target bounded-context id (BC###) — the id-based inter-context
+          Optional target bounded-context id (BC###) - the id-based inter-context
           edge, preferred over matching the `name` string (deprecated
           fallback). Use for dependencies on another bounded context in this model.
       type:
@@ -357,7 +355,7 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
         description: >
-          Typed infrastructure resources this service requires (IR### — `infra_resource_ref`),
+          Typed infrastructure resources this service requires (IR### - `infra_resource_ref`),
           resolving to `resource` entities in the infrastructure layer. This is the canonical
           *intent* edge to a CONCRETE resource; the infrastructure layer's `hosted_on` relation
           is the *placement* edge. Optional. Since v2.8 it is the only way a service names its
@@ -369,7 +367,7 @@ $defs:
           $ref: "#/$defs/service_need"
         description: >
           Abstract infrastructure NEEDS (Score `type`/`class`/`id`/`params` vocabulary)
-          this service declares — TYPE-level intent, resolved to a concrete resource per
+          this service declares - TYPE-level intent, resolved to a concrete resource per
           environment by a binding (BND###). The three altitudes: `needs` (type) → binding
           (type × environment) → `resource_refs` / `resource` (IR### instance). A need names WHAT
           the service requires without pinning a platform, so the same need realizes on cloud,
@@ -391,10 +389,19 @@ $defs:
               type: string
               description: "Base URL template (e.g., https://api.example.com/v1)."
             environment:
-              description: "Deployment environment."
+              description: >
+                Which deployment environment this server instance serves. A value takes exactly
+                one of three forms, and the three cannot overlap: a name from the common
+                vocabulary (production, staging, development, test); a typed environment
+                reference (ENV###) naming an environment the model declares, so the server points
+                at the entity carrying that environment's class, substrate, provider and target
+                scope; or an `x-` prefixed name, for an environment outside the common vocabulary.
+                Only the typed form resolves - naming an ENV### the model does not declare is a
+                cross-reference error, while a name is checked against nothing.
               oneOf:
                 - type: string
                   enum: [production, staging, development, test]
+                - $ref: "../metamodel.schema.yaml#/$defs/environment_ref"
                 - type: string
                   pattern: "^x-[a-z][a-z0-9-]*$"
             protocol:
@@ -450,7 +457,7 @@ $defs:
     description: >
       An abstract infrastructure need declared by a service (Score `type`/`class`/`id`/`params`
       vocabulary). Names WHAT the service requires (a resource TYPE) without pinning a
-      concrete resource or platform — a binding (BND###) resolves it per environment (type × env →
+      concrete resource or platform - a binding (BND###) resolves it per environment (type × env →
       module). The type-level altitude above `resource_refs` (concrete instance). Substrate-neutral:
       the same need binds to a cloud module in one environment and an on-prem module in another
       (hybrid).
@@ -464,18 +471,18 @@ $defs:
       class:
         type: string
         description: >
-          Optional variant/tier within the type (Score `class`) — e.g. 'managed' vs 'self-hosted',
+          Optional variant/tier within the type (Score `class`) - e.g. 'managed' vs 'self-hosted',
           'standard' vs 'premium', 'read-replica'. Free-text; the catalog/profile + binding interpret it.
       id:
         type: string
         description: >
           Optional logical need id distinguishing shared-vs-dedicated instances. The same
           id shared across services ⇒ a shared resource; distinct ids ⇒ dedicated. NOT an IR###
-          (this is intent, pre-binding) — a free-string handle a binding's `need_ref` can target.
+          (this is intent, pre-binding) - a free-string handle a binding's `need_ref` can target.
       params:
         type: object
         description: >
-          Optional type-level parameters (Score `params`) — e.g. {version: '16', size: small}. The
+          Optional type-level parameters (Score `params`) - e.g. {version: '16', size: small}. The
           environment `param_overlay` and the binding `params` refine these at resolution time.
         additionalProperties:
           type: [string, number, boolean]
@@ -493,7 +500,7 @@ $defs:
         description: "REST/HTTP API contract (OpenAPI specification)."
       httpClient:
         $ref: "#/$defs/http_client_contract"
-        description: "Outbound HTTP client contract — what endpoints this service calls."
+        description: "Outbound HTTP client contract - what endpoints this service calls."
       asyncapi:
         $ref: "#/$defs/channel_contract"
         description: "Async messaging contract (AsyncAPI specification)."
@@ -519,8 +526,8 @@ $defs:
             type: string
             description: >-
               Identity of the generated contract artifact: `<name>`, `<slice>/<name>`, or
-              `_global/<name>`. Two services declaring the same value contribute to ONE artifact —
-              their specs are merged additively — so this names the physical contract, not one
+              `_global/<name>`. Two services declaring the same value contribute to ONE artifact -
+              their specs are merged additively - so this names the physical contract, not one
               service's copy of it. A leading slice name places the artifact in that slice;
               `_global/` marks it cross-cutting; a bare name is placed by the declaring file. A
               first segment that names no declared slice is kept as a subdirectory and reported.
@@ -581,8 +588,8 @@ $defs:
         type: string
         description: >-
           Identity of the generated contract artifact: `<name>`, `<slice>/<name>`, or
-          `_global/<name>`. Two services declaring the same value contribute to ONE artifact —
-          their specs are merged additively — so this names the physical contract, not one
+          `_global/<name>`. Two services declaring the same value contribute to ONE artifact -
+          their specs are merged additively - so this names the physical contract, not one
           service's copy of it. A leading slice name places the artifact in that slice;
           `_global/` marks it cross-cutting; a bare name is placed by the declaring file. A
           first segment that names no declared slice is kept as a subdirectory and reported.

@@ -21,7 +21,7 @@ properties:
     description: "File-level ownership default. Entities inherit unless overridden."
   happy_path:
     type: array
-    description: "Tests for normal, expected operation. Validates primary success scenarios — the golden path. Every blueprint should have at least one."
+    description: "Tests for normal, expected operation. Validates primary success scenarios - the golden path. Every blueprint should have at least one."
     items:
       $ref: "#/$defs/test_case"
   edge_cases:
@@ -36,7 +36,7 @@ properties:
       $ref: "#/$defs/test_case"
   fitness_functions:
     type: array
-    description: "Architectural fitness functions — automated constraints validated against the blueprint structure itself. Examples: No service may have more than 5 direct dependencies; Every command operation must have at least one entry in produces."
+    description: "Architectural fitness functions - automated constraints validated against the blueprint structure itself. Examples: No service may have more than 5 direct dependencies; Every command operation must have at least one entry in produces."
     items:
       $ref: "#/$defs/fitness_function"
   tags:
@@ -46,7 +46,7 @@ $defs:
 
   fitness_function:
     type: object
-    description: "Architectural fitness function — automated constraint validated against the blueprint structure itself."
+    description: "Architectural fitness function - automated constraint validated against the blueprint structure itself."
     additionalProperties: false
     required: [id, name, assertion]
     properties:
@@ -117,7 +117,7 @@ $defs:
         description: "Initial state and preconditions (Arrange phase)."
       expected_result:
         $ref: "#/$defs/expected_result"
-        description: "Expected outcome (Assert phase). All fields optional — use what's relevant."
+        description: "Expected outcome (Assert phase). All fields optional - use what's relevant."
       note:
         type: string
         description: "Additional context for test reviewers. Useful for non-obvious logic."
@@ -165,7 +165,7 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/provenance"
         description: >
           Epistemic provenance for this test case: on what basis it was authored and how sure we
-          are it encodes correct behaviour. Complements `code_refs` — code_refs say WHERE the test /
+          are it encodes correct behaviour. Complements `code_refs` - code_refs say WHERE the test /
           its subject lives; provenance says ON WHAT EVIDENCE (e.g. codebase-analysis of a legacy
           flow, documentation, stakeholder sign-off) and HOW SURE (discovery_stage / certainty).
           Especially useful for brownfield tests reverse-engineered from observed behaviour.
@@ -173,7 +173,7 @@ $defs:
 
   validates_refs:
     type: object
-    description: "Typed references to blueprint entities this test validates. Tests OWN these links — authoritative for traceability."
+    description: "Typed references to blueprint entities this test validates. Tests OWN these links - authoritative for traceability."
     additionalProperties: false
     properties:
       rules:
@@ -240,7 +240,7 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
         description: >
-          Infrastructure resources (IR###) this test validates placement or behaviour of — e.g.
+          Infrastructure resources (IR###) this test validates placement or behaviour of - e.g.
           a test asserting a service is `hosted_on` the intended tier, or that a DR failover
           target exists. Additive/optional (v2.7.7); parallels the metamodel `validates_links` shape.
 

@@ -348,7 +348,7 @@ $defs:
       as the arch `context.id` (self-identity), by inter-context `dependency` targets
       (id-based context-map edges), and by BCC entities (business decisions /
       assumptions / KPIs). Operation→bounded-context membership is NOT declared with
-      this ref — it is derived from arch service contracts (`expose`/`send` = handled
+      this ref - it is derived from arch service contracts (`expose`/`send` = handled
       / produced), so there is no `bounded_context_ref` on domain files. A
       ref to an unknown BC### is a resolvability WARNING (promoted to error in v2.8,
       when BC###/SVC### become required). The legacy kebab-context-name form (e.g.
@@ -442,13 +442,13 @@ $defs:
   finding_ref:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?FN\\d{3}$"
-    description: "Reference to a quality finding — an AS-IS internal-quality defect (e.g. FN001 or ordering.FN001)."
+    description: "Reference to a quality finding - an AS-IS internal-quality defect (e.g. FN001 or ordering.FN001)."
 
   leverage_ref:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?LP\\d{3}$"
     description: >
-      Reference to a leverage point — a prioritized cross-cutting intervention that bundles findings /
+      Reference to a leverage point - a prioritized cross-cutting intervention that bundles findings /
       risks / decisions / fitness-functions and is delivered via migrations / roadmap work-items
       (e.g. LP001 or platform.LP001). Added v2.7.4.
 
@@ -465,10 +465,10 @@ $defs:
       - portability
       - safety
     description: >
-      ISO/IEC 25010:2011 top-level product-quality characteristic — the eight 2011 characteristics
+      ISO/IEC 25010:2011 top-level product-quality characteristic - the eight 2011 characteristics
       plus `safety` (the one clearly-useful 2023 addition). Names the top-level quality attribute a
       finding degrades or a requirement targets; finer grain goes in `quality_subcharacteristic`.
-      Added v2.7.4 — supersedes the former maintainability-family-only enum (the removed values
+      Added v2.7.4 - supersedes the former maintainability-family-only enum (the removed values
       modularity/analysability/reusability/testability are now sub-characteristics; see schema-update
       module 002).
 
@@ -521,7 +521,7 @@ $defs:
       - hazard-warning
       - safe-integration
     description: >
-      ISO/IEC 25010 sub-characteristic — the finer grain under a `quality_characteristic`. The pairing
+      ISO/IEC 25010 sub-characteristic - the finer grain under a `quality_characteristic`. The pairing
       of a sub-characteristic to its top-level is a CONVENTION the author keeps, not a schema-enforced
       constraint (a flat enum). Safety sub-characteristics are from the 2023 revision. Added v2.7.4.
 
@@ -532,13 +532,13 @@ $defs:
       Dominant implementation-complexity / problem-type pattern of a context or subdomain:
       crud=record management; presentation=UI-heavy; transformation=translation/ACL between models;
       integration=orchestration/sagas across systems; cdc=change-data-capture; concurrency=contention
-      over a finite shared resource; state-management=lifecycle/state-machine. The problem-type axis —
+      over a finite shared resource; state-management=lifecycle/state-machine. The problem-type axis -
       distinct from `model_traits` (behavioural archetype) and from `kind`/`type` (strategic value).
 
   model_traits_item:
     type: string
     enum: [analyser, executor, drafter, auditor, controller, service-provider, information-holder, structurer, coordinator, interfacer]
-    description: "A behavioural archetype (Wirfs-Brock role stereotype) of a context or subdomain — e.g. controller/coordinator drives a process/state-machine, information-holder is CRUD-ish, interfacer translates."
+    description: "A behavioural archetype (Wirfs-Brock role stereotype) of a context or subdomain - e.g. controller/coordinator drives a process/state-machine, information-holder is CRUD-ish, interfacer translates."
 
   kpi_ref:
     type: string
@@ -576,12 +576,12 @@ $defs:
   # (ex-`rg`, frozen since v2.0.0) participates in the knowledge graph. The new
   # prefixes IR/ENV/RT/BND are collision-free and pattern-distinct from their
   # visual neighbours (ENV != EN, BND != BD, RT != R / rule refs). RES### stays
-  # `resilience_ref` — the infra resource is IR###, not RES###.
-  # All typed IDs are STRONGLY ENCOURAGED but OPTIONAL in v2.7.x: a free-string
-  # id stays schema-valid; the validator WARNs when it doesn't match the prefix.
-  # They become REQUIRED in v2.8 (with resolvability warn->error), joining the
-  # context-ownership BC###/SVC### promotion. Defined here but referenced only
-  # from the infra / arch / governance schemas (CR steps 02-04).
+  # `resilience_ref` - the infra resource is IR###, not RES###.
+  # On this line the typed form is REQUIRED: a free-string id is a schema error, and
+  # a reference that resolves to nothing is an error rather than a warning. On the 2.7
+  # line the same ids were strongly encouraged but optional, and a free-string id
+  # validated with a warning. Defined here, referenced from the infra, arch and
+  # governance schemas.
   # ---------------------------------------------------------------------------
 
   infra_resource_ref:
@@ -589,11 +589,12 @@ $defs:
     pattern: "^([a-z][a-z0-9-]*\\.)?IR\\d{3,}$"
     description: >
       Reference to an infrastructure resource by its typed id (e.g. IR001 or
-      prod.IR001), optionally context/environment-prefixed — the concrete host /
-      store / network / compute node in the infrastructure layer. SHOULD match
-      IR###; a free-string id (e.g. `prod-web-hosting`) stays schema-valid but
-      the validator WARNs (optional in v2.7.x, REQUIRED from v2.8). Distinct from
-      `resilience_ref` (RES###) — the infra resource is IR###, not RES###.
+      prod.IR001), optionally context/environment-prefixed - the concrete host /
+      store / network / compute node in the infrastructure layer. This is the only
+      form this line accepts: a free-string id such as `prod-web-hosting` validated
+      on the 2.7 line and was reported as a warning, and is a schema error here.
+      Distinct from `resilience_ref` (RES###) - the infra resource is IR###, not
+      RES###.
 
   environment_ref:
     type: string
@@ -602,8 +603,9 @@ $defs:
       Reference to a deployment environment by its typed id (e.g. ENV001 or
       azure.ENV001). Environments are a first-class binding dimension (production
       / staging / dr / ...), each carrying its own target scope, credentials and
-      param overlay — not a duplicated model fork. Optional in v2.7.x, REQUIRED
-      from v2.8. Pattern-distinct from the `EN###` prefix: ENV### != EN###.
+      param overlay - not a duplicated model fork. A binding names one here, and a
+      service's server may name one instead of spelling the environment's name.
+      Pattern-distinct from the `EN###` prefix: ENV### != EN###.
 
   resource_type_ref:
     type: string
@@ -612,9 +614,10 @@ $defs:
       Reference to a resource type in the neutral resource-type catalog (e.g.
       RT001 or azure.RT001). A resource type carries an inputs/outputs contract
       and is realised per platform by profile data (neutral + azure + k8s/aws).
-      Optional in v2.7.x, REQUIRED from v2.8. Pattern-distinct from `risk_ref`
-      (R###) and `rule_ref` ((SR|CR|DR|EQ|VR)###): RT### != R###, and RT is not a
-      rule prefix.
+      The catalog is external to the model, so this reference resolves against the
+      catalog and never against the model's own entities. Pattern-distinct from
+      `risk_ref` (R###) and `rule_ref` ((SR|CR|DR|EQ|VR)###): RT### != R###, and RT
+      is not a rule prefix.
 
   binding_ref:
     type: string
@@ -622,9 +625,8 @@ $defs:
     description: >
       Reference to a binding by its typed id (e.g. BND001 or prod.BND001). A
       binding resolves (resource-type x environment) -> a concrete platform /
-      module + params (the intent->implementation bridge). Optional in v2.7.x,
-      REQUIRED from v2.8. Pattern-distinct from `business_decision_ref` (BD###):
-      BND### != BD###.
+      module + params (the intent->implementation bridge). Pattern-distinct from
+      `business_decision_ref` (BD###): BND### != BD###.
 
   deployment_scope_ref:
     type: string
@@ -632,13 +634,14 @@ $defs:
     description: >
       Reference to a deployment scope by its typed id (e.g. DSC001 or shared.DSC001).
       A DeploymentScope is a substrate-neutral management / lifecycle / ownership /
-      billing partition — an Azure Resource Group or Subscription, an AWS Account /
+      billing partition - an Azure Resource Group or Subscription, an AWS Account /
       OU, a GCP Project / Folder, a Kubernetes Cluster / Namespace, or an on-prem
       Datacenter / host-pool. Scopes nest via `parent` (the subscription -> resource-
       group hierarchy); each InfraResource may name its owning scope via `scope_ref`.
       Distinct from TOSCA `hosted_on` (runtime placement, NOT management grouping) and
-      from the file-scope prefix (authoring grouping). Optional in v2.7.x, REQUIRED
-      from v2.8. Pattern-distinct from `decision_ref` (D###): DSC### != D### (the
+      from the file-scope prefix (authoring grouping). A deployment scope's id was a
+      free string on the 2.7 line; from 2.8 only the typed form validates.
+      Pattern-distinct from `decision_ref` (D###): DSC### != D### (the
       character after D is S, not a digit).
 
   infra_relation:
@@ -654,7 +657,7 @@ $defs:
       infrastructure layer (snake_case, TOSCA-verbatim). `hosted_on` is the
       canonical placement edge; `connects_to` / `depends_on` may carry
       attribute-level output refs; `depends_on` is the ordering-only fallback.
-      Exactly these five verbs — no synonyms (no `manages`, `uses`, ...).
+      Exactly these five verbs - no synonyms (no `manages`, `uses`, ...).
 
   context_relationship:
     type: string
@@ -687,7 +690,14 @@ $defs:
   change_kind:
     type: string
     enum: [add, modify, deprecate, remove, rename, split, merge]
-    description: "Change type for CIA. Semver impact: add→minor, modify→minor/major, deprecate→minor, remove/rename/split/merge→major."
+    x-vocabulary-distinct: "Classifies a change NARRATIVELY, for change-impact analysis on a decision. Not the executable operation a migration performs."
+    description: >
+      Change type for change-impact analysis, as a decision records what it did to a spec path.
+      Semver impact: add is minor, modify is minor or major, deprecate is minor, and
+      remove, rename, split and merge are major.
+      A migration document classifies its own changes with `entity_change_kind`, which carries the
+      same words for a different job: this one describes an impact, that one names an operation
+      with a target and an ordering.
 
   semver_impact:
     type: string
@@ -821,6 +831,113 @@ $defs:
       speculative: based on assumption or analogy.
       probable: supported by partial evidence.
       confirmed: validated by research or stakeholder agreement.
+
+  # ---------------------------------------------------------------------------
+  # Graded and Categorical Vocabularies (v2.8)
+  # A controlled vocabulary used by more than one field is declared once here and
+  # referenced by $ref. Fields that share values but answer different questions get
+  # separate definitions with distinct names, so they can diverge without a migration;
+  # `x-vocabulary-distinct` states which question each one answers. Graded vocabularies
+  # are declared from least to greatest, except where an external standard fixes the
+  # order (see delivery_priority, which follows MoSCoW).
+  # ---------------------------------------------------------------------------
+
+  severity_scale:
+    type: string
+    enum: [low, medium, high, critical]
+    x-vocabulary-distinct: "How much damage something does, for a defect or a materialized risk."
+    description: >
+      Magnitude of harm, ascending.
+      low: minor inconvenience.
+      medium: noticeable impact.
+      high: major degradation.
+      critical: system failure.
+
+  importance_scale:
+    type: string
+    enum: [low, medium, high, critical]
+    x-vocabulary-distinct: "How differentiating something is to the business, which is not how damaging it is."
+    description: >
+      Business-strategic weight, ascending.
+      low: commodity.
+      medium: supporting.
+      high: essential.
+      critical: core differentiator.
+
+  priority_scale:
+    type: string
+    enum: [low, medium, high, critical]
+    x-vocabulary-distinct: "How essential it is to act on something, which is neither how damaging nor how differentiating it is."
+    description: >
+      Order of attention, ascending.
+      low: nice to have.
+      medium: should have.
+      high: must have.
+      critical: without it the thing it belongs to has no justification.
+
+  likelihood_scale:
+    type: string
+    enum: [very-low, low, medium, high, very-high]
+    description: >
+      Probability of something occurring, ascending from very-low to very-high.
+      Used for a risk materializing and for a concurrency hazard being hit in production.
+
+  outcome:
+    type: string
+    enum: [success, failure, error]
+    description: >
+      Outcome category.
+      success: the intended completion.
+      failure: a rejection the domain expects and models.
+      error: an unexpected fault.
+
+  production_mode:
+    type: string
+    enum: [any, one_of, all]
+    description: >
+      How many of a declared set are produced.
+      any: a subset may be.
+      one_of: exactly one (XOR).
+      all: every one (AND).
+
+  story_status:
+    type: string
+    enum: [draft, refined, ready, in-progress, done, deferred]
+    description: >
+      Authoring and delivery lifecycle of a user story or a use case.
+
+  milestone_status:
+    type: string
+    enum: [planned, in-progress, achieved, deferred, cancelled]
+    description: >
+      Delivery lifecycle of a milestone or a work item, which sit on one axis.
+
+  subdomain_kind:
+    type: string
+    enum: [core-domain, supporting-domain, generic-domain, technical-capability]
+    x-vocabulary-distinct: "Classifies a region of the PROBLEM space: a domain, or a subdomain within one."
+    description: >
+      DDD strategic importance of a domain or subdomain.
+      core-domain: the competitive advantage, worth the deepest model.
+      supporting-domain: necessary to the core and specific to this business.
+      generic-domain: necessary and available off the shelf.
+      technical-capability: a cross-cutting technical concern rather than a business
+      subdomain, which may still carry a deep model.
+
+  context_kind:
+    type: string
+    enum: [core, generic-core, support, generic]
+    x-vocabulary-distinct: "Classifies a unit of the SOLUTION space by the problem-space domain it realizes."
+    description: >
+      DDD classification of a bounded context, by the domain it realizes.
+      core: realizes the competitive advantage.
+      generic-core: a core capability built on a generic foundation.
+      support: enables the core.
+      generic: commodity.
+      The subject is a bounded context, which is solution space; the classification names the
+      problem-space region it serves, so it maps to BCC v5 Strategic Classification, Domain
+      Importance. Distinct from `subdomain_kind`, which classifies the problem-space region
+      itself.
 
   # ---------------------------------------------------------------------------
   # Evidence Chain (v2.6)
@@ -997,6 +1114,22 @@ x-gdsm:
     semantic rule can decide belongs in that check instead, and what is true of one model only
     belongs in that model.
   modeling_guidance:
+    - lesson: >
+        Two fields share one definition only when all three hold: they answer the same question
+        about different subjects, every value transfers with its ANCHORS, and some declared task
+        wants a join across both. Identical value lists are not the test. A goal's priority, a
+        capability's strategic importance and a finding's severity are all four-point ladders, and
+        `critical` means "without it there is no justification", "core differentiator" and "system
+        failure" in turn. Same values, three questions, three definitions - each declaring
+        `x-vocabulary-distinct` so the twin reads as deliberate rather than as a copy someone
+        forgot to consolidate.
+      category: structure
+      date: "2026-09-08"
+      evidence: >
+        Applying the test to the five four-point sites in v2.8 split them three ways where a
+        reading by value list would have merged them into one. `npm run schema-vocabulary-check`
+        enforces the rule and passes a definition that names its own question.
+      schema_version: "2.8.4"
     - lesson: >
         A competency question (QN###) is answered by an operation and scopes exactly one bounded
         context; an inquiry (INQ###) is the modeller's own question and resolves. A question whose

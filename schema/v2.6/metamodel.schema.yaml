@@ -548,7 +548,7 @@ $defs:
     type: string
     description: >
       Target release or milestone label (e.g., "MVP", "v1.1", "Q3-2026").
-      Free-form string — use milestone IDs (MS###) for formal traceability.
+      Free-form string - use milestone IDs (MS###) for formal traceability.
 
   # ---------------------------------------------------------------------------
   # Epistemic Metadata (v2.5)

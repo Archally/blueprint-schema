@@ -33,7 +33,7 @@ $defs:
   milestone:
     type: object
     description: >
-      Product roadmap milestone — a dated target with deliverables and
+      Product roadmap milestone - a dated target with deliverables and
       success criteria. Used for PRD timeline section generation.
     additionalProperties: false
     required:
@@ -60,7 +60,7 @@ $defs:
         description: "Milestone lifecycle status."
       deliverables:
         type: array
-        description: "What ships in this milestone — polymorphic refs."
+        description: "What ships in this milestone - polymorphic refs."
         items:
           type: object
           additionalProperties: false

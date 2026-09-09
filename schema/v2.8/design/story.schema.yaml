@@ -1,7 +1,7 @@
 ---
 $schema: "https://json-schema.org/draft/2020-12/schema"
 title: Blueprint Story
-description: "Design Plane — Layer 4: Domain stories expressing logical operation sequences, actor interactions, and side effects. Ordering here is logical; runtime ordering is in dynamics."
+description: "Design Plane - Layer 4: Domain stories expressing logical operation sequences, actor interactions, and side effects. Ordering here is logical; runtime ordering is in dynamics."
 type: object
 additionalProperties: false
 required:
@@ -41,12 +41,12 @@ properties:
       $ref: "#/$defs/story"
   user_stories:
     type: array
-    description: "Agile user stories — PRD building blocks capturing user-level goals."
+    description: "Agile user stories - PRD building blocks capturing user-level goals."
     items:
       $ref: "#/$defs/user_story"
   use_cases:
     type: array
-    description: "Use cases — scenario-level requirements. Supports functional and journey modes."
+    description: "Use cases - scenario-level requirements. Supports functional and journey modes."
     items:
       $ref: "#/$defs/use_case"
 
@@ -192,7 +192,7 @@ $defs:
         description: "What initiates this activity: an actor (for first activity) or an event operation (for reactive activities)."
       steps:
         type: array
-        description: "Optional convenience view of operations in this activity — not source of truth. Domain causal links (produces/reacts_to) are authoritative. Validator WARNS if steps contradict causal chain."
+        description: "Optional convenience view of operations in this activity - not source of truth. Domain causal links (produces/reacts_to) are authoritative. Validator WARNS if steps contradict causal chain."
         items:
           type: object
           required: [operation_ref]
@@ -224,7 +224,7 @@ $defs:
   user_story:
     type: object
     description: >
-      Agile user story — a PRD building block capturing a user-level goal.
+      Agile user story - a PRD building block capturing a user-level goal.
       Format: As a [actor], I want [goal], so that [benefit].
     additionalProperties: false
     required: [id, actor, goal]
@@ -234,13 +234,13 @@ $defs:
         description: "Unique user story identifier (US + 3+ digits)."
       actor:
         $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
-        description: "The actor who wants this — the 'As a...' clause."
+        description: "The actor who wants this - the 'As a...' clause."
       goal:
         type: string
-        description: "What the actor wants to do — the 'I want...' clause."
+        description: "What the actor wants to do - the 'I want...' clause."
       benefit:
         type: string
-        description: "Why this matters — the 'So that...' clause."
+        description: "Why this matters - the 'So that...' clause."
       summary:
         type: string
         maxLength: 200
@@ -262,8 +262,7 @@ $defs:
         minimum: 1
         description: "Relative effort estimate for sprint planning."
       status:
-        type: string
-        enum: [draft, refined, ready, in-progress, done, deferred]
+        $ref: "../metamodel.schema.yaml#/$defs/story_status"
         description: "User story lifecycle status."
       use_case:
         $ref: "../metamodel.schema.yaml#/$defs/use_case_ref"
@@ -300,7 +299,7 @@ $defs:
   use_case:
     type: object
     description: >
-      Use case — a scenario-level requirement describing actor interaction
+      Use case - a scenario-level requirement describing actor interaction
       with the system. Serves as both functional specification (steps with
       operations) and user journey (steps with screens, emotions, pain
       points). Groups user stories and optionally references implementing
@@ -411,8 +410,7 @@ $defs:
       release_target:
         $ref: "../metamodel.schema.yaml#/$defs/release_target"
       status:
-        type: string
-        enum: [draft, refined, ready, in-progress, done, deferred]
+        $ref: "../metamodel.schema.yaml#/$defs/story_status"
         description: "Use case lifecycle status."
       version:
         $ref: "../metamodel.schema.yaml#/$defs/entity_version"

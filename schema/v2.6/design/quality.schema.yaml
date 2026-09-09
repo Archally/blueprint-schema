@@ -23,22 +23,22 @@ properties:
     description: "File-level ownership default. Entities inherit unless overridden."
   metrics:
     type: array
-    description: "Quantitative measurements of system behavior. Foundation for KPIs, SLOs, and observability — define what you measure before defining targets."
+    description: "Quantitative measurements of system behavior. Foundation for KPIs, SLOs, and observability - define what you measure before defining targets."
     items:
       $ref: "#/$defs/metric"
   kpis:
     type: array
-    description: "Key Performance Indicators — metrics with business targets. Link operational measurements to strategic goals from motivation.schema.yaml."
+    description: "Key Performance Indicators - metrics with business targets. Link operational measurements to strategic goals from motivation.schema.yaml."
     items:
       $ref: "#/$defs/kpi"
   slos:
     type: array
-    description: "Service Level Objectives — operational reliability targets the engineering team commits to. Based on metrics, constrain operations."
+    description: "Service Level Objectives - operational reliability targets the engineering team commits to. Based on metrics, constrain operations."
     items:
       $ref: "#/$defs/slo"
   slas:
     type: array
-    description: "Service Level Agreements — external contractual commitments built on SLOs. Carry business consequences (penalties, credits) when breached."
+    description: "Service Level Agreements - external contractual commitments built on SLOs. Carry business consequences (penalties, credits) when breached."
     items:
       $ref: "#/$defs/sla"
   security:
@@ -58,7 +58,7 @@ properties:
       $ref: "#/$defs/resilience_requirement"
   observability:
     type: object
-    description: "Observability strategy across four pillars: metrics, logs, traces, events. Each pillar is optional — start with what you need."
+    description: "Observability strategy across four pillars: metrics, logs, traces, events. Each pillar is optional - start with what you need."
     additionalProperties: false
     properties:
       metrics:
@@ -127,7 +127,7 @@ $defs:
             description: "Concepts this metric measures."
       collection:
         type: object
-        description: "How this metric is gathered. Optional — useful for implementation planning."
+        description: "How this metric is gathered. Optional - useful for implementation planning."
         additionalProperties: false
         properties:
           method:
@@ -159,7 +159,7 @@ $defs:
 
   kpi:
     type: object
-    description: "A Key Performance Indicator — metric with business target. Links operational measurement to strategic goal."
+    description: "A Key Performance Indicator - metric with business target. Links operational measurement to strategic goal."
     additionalProperties: false
     required:
       - id
@@ -192,7 +192,7 @@ $defs:
           for that context. Added in v2.6.3.
       thresholds:
         type: object
-        description: "Alert thresholds — when the metric crosses these levels, action is needed."
+        description: "Alert thresholds - when the metric crosses these levels, action is needed."
         additionalProperties: false
         properties:
           warning:
@@ -219,7 +219,7 @@ $defs:
 
   slo:
     type: object
-    description: "Service Level Objective — an internal reliability target the team commits to. Operationalizes quality through specific measurable thresholds."
+    description: "Service Level Objective - an internal reliability target the team commits to. Operationalizes quality through specific measurable thresholds."
     additionalProperties: false
     required:
       - id
@@ -275,7 +275,7 @@ $defs:
 
   sla:
     type: object
-    description: "Service Level Agreement — external contractual commitment built on SLOs. Carries business consequences when breached."
+    description: "Service Level Agreement - external contractual commitment built on SLOs. Carries business consequences when breached."
     additionalProperties: false
     required:
       - id
@@ -472,10 +472,10 @@ $defs:
         description: "Target (e.g. '99.99%' for availability)."
       rto:
         type: string
-        description: "Recovery Time Objective — maximum acceptable downtime (e.g. '5min', '1h')."
+        description: "Recovery Time Objective - maximum acceptable downtime (e.g. '5min', '1h')."
       rpo:
         type: string
-        description: "Recovery Point Objective — maximum acceptable data loss (e.g. '0', '1h')."
+        description: "Recovery Point Objective - maximum acceptable data loss (e.g. '0', '1h')."
       strategy:
         type: string
         description: "How resilience is achieved (e.g. 'active-passive failover', 'multi-region active-active')."

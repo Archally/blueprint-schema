@@ -202,14 +202,13 @@ $defs:
         description: "One-line summary for listings."
       scenario:
         type: string
-        description: "How this race occurs — the specific interleaving of operations that leads to incorrect behavior."
+        description: "How this race occurs - the specific interleaving of operations that leads to incorrect behavior."
       impact:
         type: string
         description: "What happens if unmitigated (e.g. 'Duplicate orders created')."
       likelihood:
-        type: string
-        enum: [very-low, low, medium, high]
-        description: "Probability in production based on traffic patterns, concurrency level, and timing windows."
+        $ref: "../metamodel.schema.yaml#/$defs/likelihood_scale"
+        description: "Probability in production based on traffic patterns, concurrency level, and timing windows. very-high: the timing window is hit under normal load, not only under stress."
       mitigation:
         type: string
         description: "Strategy to prevent or handle this race (e.g. 'Optimistic locking with retry')."

@@ -41,7 +41,7 @@ properties:
     additionalProperties: false
     description: >
       External design artifact links for PRD design section.
-      All fields optional — include what exists.
+      All fields optional - include what exists.
     properties:
       figma_url:
         type: string

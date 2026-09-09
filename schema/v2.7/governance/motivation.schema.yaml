@@ -1,7 +1,7 @@
 ---
 $schema: "https://json-schema.org/draft/2020-12/schema"
 title: Blueprint Motivation
-description: "Governance Plane: Strategic intent — goals, non-goals, risks, assumptions, and trade-offs. Decisions reference motivation entities (not reverse). Goals link forward to KPIs in quality.schema.yaml."
+description: "Governance Plane: Strategic intent - goals, non-goals, risks, assumptions, and trade-offs. Decisions reference motivation entities (not reverse). Goals link forward to KPIs in quality.schema.yaml."
 type: object
 additionalProperties: false
 required:
@@ -23,7 +23,7 @@ properties:
     description: "File-level ownership default. Entities inherit unless overridden."
   vision:
     $ref: "#/$defs/vision"
-    description: "The product's singular identity claim / north-star — what it fundamentally IS and aspires to become. Distinct from goals (measurable objectives that operationalize it) and from the root `description` (a summary blurb). At most one per model."
+    description: "The product's singular identity claim / north-star - what it fundamentally IS and aspires to become. Distinct from goals (measurable objectives that operationalize it) and from the root `description` (a summary blurb). At most one per model."
   goals:
     type: array
     description: "What the system aims to achieve. Goals drive decisions and prioritize work. Each goal can be tracked by a KPI in quality.schema.yaml."
@@ -31,7 +31,7 @@ properties:
       $ref: "#/$defs/goal"
   non_goals:
     type: array
-    description: "Explicit exclusions — what the system intentionally does NOT do. Prevents scope creep and aligns stakeholder expectations."
+    description: "Explicit exclusions - what the system intentionally does NOT do. Prevents scope creep and aligns stakeholder expectations."
     items:
       $ref: "#/$defs/non_goal"
   risks:
@@ -51,7 +51,7 @@ properties:
       $ref: "#/$defs/trade_off"
   inquiries:
     type: array
-    description: "Governance inquiries — unresolved strategic or stakeholder concerns that need investigation or decision before work can proceed."
+    description: "Governance inquiries - unresolved strategic or stakeholder concerns that need investigation or decision before work can proceed."
     items:
       $ref: "#/$defs/inquiry"
 
@@ -59,7 +59,7 @@ $defs:
 
   vision:
     type: object
-    description: "The singular identity claim / north-star: what the product fundamentally IS and aspires to become. Distinct from goals (measurable objectives) and from the root description (a summary blurb) — the vision is the 'why we exist' carrier that goals operationalize and value streams deliver."
+    description: "The singular identity claim / north-star: what the product fundamentally IS and aspires to become. Distinct from goals (measurable objectives) and from the root description (a summary blurb) - the vision is the 'why we exist' carrier that goals operationalize and value streams deliver."
     additionalProperties: false
     required:
       - statement
@@ -144,6 +144,31 @@ $defs:
             description:
               type: string
               description: "Example description."
+      affects:
+        type: object
+        description: "Blueprint entities this goal touches: where it sticks on the domain model, so a story board or a wall can pin the opportunity beside the operation, concept, context or story it is about."
+        additionalProperties: false
+        properties:
+          operation_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            description: "Operations affected."
+          concept_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+            description: "Concepts affected."
+          context_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+            description: "Bounded contexts / slices affected."
+          story_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/story_ref"
+            description: "Stories affected, for a goal about a flow as a whole rather than one of its operations."
       version:
         $ref: "../metamodel.schema.yaml#/$defs/entity_version"
         description: "Goal version for lifecycle tracking."
@@ -166,7 +191,7 @@ $defs:
 
   non_goal:
     type: object
-    description: "An explicit exclusion — something the system intentionally does NOT do. Intentional boundary, not an oversight."
+    description: "An explicit exclusion - something the system intentionally does NOT do. Intentional boundary, not an oversight."
     additionalProperties: false
     required:
       - id
@@ -322,7 +347,7 @@ $defs:
         description: "What is assumed to be true."
       consequence:
         type: string
-        description: "What happens if this assumption is wrong — the risk carried by the assumption."
+        description: "What happens if this assumption is wrong - the risk carried by the assumption."
       bounded_context_ref:
         $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
         description: >
@@ -403,7 +428,7 @@ $defs:
   inquiry:
     type: object
     description: >
-      Governance inquiry — an unresolved strategic or stakeholder concern
+      Governance inquiry - an unresolved strategic or stakeholder concern
       that needs investigation or decision before work can proceed.
       Distinct from QN### (domain competency questions that model the
       reason for a domain to exist). Inquiries are temporary governance

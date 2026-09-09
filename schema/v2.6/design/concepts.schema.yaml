@@ -1,7 +1,7 @@
 ---
 $schema: "https://json-schema.org/draft/2020-12/schema"
 title: Blueprint Concepts
-description: "Design Plane — Layer 2: Domain vocabulary. Defines concepts (entities, value objects, aggregates), actors, enumerations, and cross-concept associations."
+description: "Design Plane - Layer 2: Domain vocabulary. Defines concepts (entities, value objects, aggregates), actors, enumerations, and cross-concept associations."
 type: object
 additionalProperties: false
 required:
@@ -371,7 +371,7 @@ $defs:
       demographics:
         type: object
         description: >
-          Demographic attributes. Open object — keys vary by domain.
+          Demographic attributes. Open object - keys vary by domain.
           Common: role, industry, team_size, experience_years.
         properties:
           role:

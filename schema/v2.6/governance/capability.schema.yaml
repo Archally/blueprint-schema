@@ -1,7 +1,7 @@
 ---
 $schema: "https://json-schema.org/draft/2020-12/schema"
 title: Blueprint Business Capabilities
-description: "Governance Plane: Business Capability Map — a hierarchical view of what the business can do, independent of organizational structure or process. Capabilities are stable building blocks mapping the business 'what' (not 'how' or 'who'). Reference operations, rules, and concepts for traceability."
+description: "Governance Plane: Business Capability Map - a hierarchical view of what the business can do, independent of organizational structure or process. Capabilities are stable building blocks mapping the business 'what' (not 'how' or 'who'). Reference operations, rules, and concepts for traceability."
 type: object
 additionalProperties: false
 required:
@@ -32,7 +32,7 @@ $defs:
 
   capability:
     type: object
-    description: "A business capability — something the business can do or needs to do. Stable and technology-independent. Links to operations (how), rules (constraints), and concepts (domain vocabulary)."
+    description: "A business capability - something the business can do or needs to do. Stable and technology-independent. Links to operations (how), rules (constraints), and concepts (domain vocabulary)."
     additionalProperties: false
     required:
       - id

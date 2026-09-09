@@ -6,11 +6,11 @@ description: >
   produce, where their output lands, and the single build stamp shared by the whole run.
 
   Lives in the project's `.artifacts/` folder, alongside the `renderers/` view-configs it points at
-  and the `.generated/` output — beside the model directory, never inside it, since a manifest is
+  and the `.generated/` output - beside the model directory, never inside it, since a manifest is
   configuration and not model data. A manifest at the project root is also read; `bp render` prefers
   `.artifacts/` and reports which file it used.
 
-  Every relative path here — `model`, `out`, and each target's `view` and `manifest` — resolves
+  Every relative path here - `model`, `out`, and each target's `view` and `manifest` - resolves
   against THIS file's own location, so a manifest can be moved without its contents changing
   meaning.
 
@@ -18,12 +18,12 @@ description: >
     # yaml-language-server: $schema=<path-to>/render.manifest.schema.yaml
 
   A target's `kind` says how it may be narrowed to a slice:
-    - glob      — the target's own file selection may be narrowed to one slice's files.
-    - selector  — the target tool owns its own slice vocabulary; this manifest only names its
+    - glob      - the target's own file selection may be narrowed to one slice's files.
+    - selector  - the target tool owns its own slice vocabulary; this manifest only names its
                   own config file for the tool to read.
-    - instance  — a human-authored unit (one roadmap, one story, ...); narrowing by slice does
+    - instance  - a human-authored unit (one roadmap, one story, ...); narrowing by slice does
                   not apply, since there is no larger set to narrow.
-    - contexts  — the target may be narrowed to a list of bounded contexts.
+    - contexts  - the target may be narrowed to a list of bounded contexts.
     - model     - the tool reads the whole model directory and narrows itself to a slice given by
                   NAME; the manifest names no files for it. A slice with no directory in the model
                   is excluded before the tool runs.
@@ -49,7 +49,7 @@ properties:
       The single build stamp ("as of" date or instant) shared by every target in the run, so a
       partial re-render overwrites the same files a full run would rather than adding new
       timestamped copies beside them. Its date leads every artifact filename, which is what makes a
-      re-rendered delivery replace itself rather than accumulate beside its predecessor. Required —
+      re-rendered delivery replace itself rather than accumulate beside its predecessor. Required -
       there is no clock fallback.
   stamp_in_filename:
     type: boolean
@@ -76,8 +76,8 @@ properties:
   build_id:
     type: string
     description: >
-      Provenance token recorded INSIDE each artifact — its drawn footer and its machine-readable
-      provenance block — identifying the code that produced it. The literal value `auto` resolves
+      Provenance token recorded INSIDE each artifact - its drawn footer and its machine-readable
+      provenance block - identifying the code that produced it. The literal value `auto` resolves
       to the current git SHA at render time; any other string is used as-is.
   link_template:
     type: string
@@ -137,9 +137,10 @@ properties:
     type: object
     additionalProperties:
       type: array
+      minItems: 1
       items: { type: string }
     description: >
-      Optional named sets of target ids, selectable together — e.g. the subset of targets that
+      Optional named sets of target ids, selectable together - e.g. the subset of targets that
       make up a single deliverable pack.
 $defs:
   target:
@@ -184,7 +185,7 @@ $defs:
       slice:
         type: string
         description: >
-          The slice this target's artifacts belong to. Placement only — it files the output under
+          The slice this target's artifacts belong to. Placement only - it files the output under
           that slice instead of the cross-cutting folder, and never narrows what is rendered. Use it
           for a human-authored unit whose subject is one slice, such as a roadmap authored inside
           that slice's folder. Distinct from `slices`, which lists the slices a narrowable target may
@@ -203,18 +204,18 @@ $defs:
       version:
         type: string
         description: >
-          A MIGRATION selector — which point in the model's history to generate from
+          A MIGRATION selector - which point in the model's history to generate from
           (`AS-IS`, `TO-BE`, or a migration id). It is NOT a slice selector and NOT a schema
           version, despite the name. To narrow a run to part of the model, use the slice axis:
           that is what a `contexts` target's bounded contexts do. The two are orthogonal and
-          compose — "the Orders area, as of MIG003" sets both.
+          compose - "the Orders area, as of MIG003" sets both.
       stories:
         type: array
         items: { type: string }
         description: >
           Story ids for a target whose tool renders one story per invocation. The target fans out
           to one run per id, each with its own output folder. Only meaningful on an `instance`
-          target — each story is a human-authored unit, not a slice.
+          target - each story is a human-authored unit, not a slice.
       formats:
         type: array
         items: { type: string }
@@ -226,6 +227,14 @@ $defs:
           Narrow this target to the named slices: it renders once per named slice, into that
           slice's folder, and never as a whole-model artifact. Only meaningful on `glob`,
           `selector`, `contexts` and `model` targets - a schema error on an `instance` target.
+      per_slice:
+        type: boolean
+        description: >
+          Render this target once per slice the model declares, and never as a whole-model artifact.
+          The dynamic form of `slices:`, and a different statement: `slices:` names the slices a
+          target is about, while this says the target has no whole-model reading, so a slice the
+          model gains joins on its own. Refused alongside `slices:`, and a schema error on an
+          `instance` target.
       files:
         type: string
         description: >
@@ -250,6 +259,19 @@ $defs:
           the drawing rendered into the same delivery folder first - so it is stated, and a runner
           can refuse a cycle and refuse to run a target whose need failed rather than producing a
           complete-looking document with nothing in it.
+      audience:
+        type: array
+        minItems: 1
+        items: { type: string, minLength: 1 }
+        description: >
+          Who opens this target's artifacts, named in the roles the organization itself uses -
+          `QA lead`, `platform team`, `the client's architect`. Free text rather than a reference to
+          a modelled actor, because the reader of a delivery is usually outside the system being
+          modelled, and a reader the model does not carry is exactly the one worth writing down.
+
+          A delivery is a set of documents for people, and which people is a fact about the target
+          that nothing else in the manifest states. Written down, it can be asked of a whole set:
+          whether every named reader has an artifact, and whether every artifact has a reader.
       view_overrides:
         type: object
         minProperties: 1
@@ -275,10 +297,15 @@ $defs:
 
           A key that restates a target field (`formats`, `slice`, `version`, ...) is refused: set
           it at the top level of the target.
-    if:
-      required: [kind]
-      properties:
-        kind: { const: instance }
-    then:
-      not:
-        required: [slices]
+    allOf:
+      - if:
+          required: [kind]
+          properties:
+            kind: { const: instance }
+        then:
+          not:
+            anyOf:
+              - required: [slices]
+              - required: [per_slice]
+      - not:
+          required: [slices, per_slice]

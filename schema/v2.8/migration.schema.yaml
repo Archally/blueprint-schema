@@ -41,8 +41,7 @@ properties:
         default: false
         description: "Whether this migration introduces breaking changes to generated artifacts."
       semver_impact:
-        type: string
-        enum: [major, minor, patch]
+        $ref: "metamodel.schema.yaml#/$defs/semver_impact"
         description: "Semantic versioning impact on the blueprint model version."
       depends_on:
         type: array
@@ -115,6 +114,17 @@ properties:
         description: "Manual actions required outside the blueprint if rollback is performed."
 
 $defs:
+  entity_change_kind:
+    type: string
+    enum: [add, modify, deprecate, remove, rename, split, merge]
+    x-vocabulary-distinct: "Names the OPERATION a migration performs on an entity, alongside a target and an ordering. Not the narrative impact classification a decision records."
+    description: >
+      What this migration does to one entity.
+      add: a new entity. modify: replace it. deprecate: mark it for removal. remove: delete it.
+      rename: it keeps its identity under a new id. split: one becomes many. merge: many become one.
+      Deliberately NOT a reference to the metamodel's `change_kind`, which carries the same words to
+      classify a decision's impact rather than to be executed.
+
   entity_change:
     type: object
     description: "A change to a whole entity (node in the graph)."
@@ -122,9 +132,7 @@ $defs:
     required: [kind, entity_type, target]
     properties:
       kind:
-        type: string
-        enum: [add, modify, deprecate, remove, split, merge]
-        description: "Change type: add=new entity, modify=replace, deprecate=mark for removal, remove=delete, split=one to many, merge=many to one."
+        $ref: "#/$defs/entity_change_kind"
       entity_type:
         type: string
         enum:
@@ -357,8 +365,7 @@ $defs:
             type: string
             description: "Guard condition (for reacts_to edges)."
           mode:
-            type: string
-            enum: [any, one_of, all]
+            $ref: "metamodel.schema.yaml#/$defs/production_mode"
             description: "Production mode (for produces edges)."
           rule:
             type: string

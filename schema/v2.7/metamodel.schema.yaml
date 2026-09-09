@@ -344,7 +344,7 @@ $defs:
       as the arch `context.id` (self-identity), by inter-context `dependency` targets
       (id-based context-map edges), and by BCC entities (business decisions /
       assumptions / KPIs). Operation→bounded-context membership is NOT declared with
-      this ref — it is derived from arch service contracts (`expose`/`send` = handled
+      this ref - it is derived from arch service contracts (`expose`/`send` = handled
       / produced), so there is no `bounded_context_ref` on domain files. A
       ref to an unknown BC### is a resolvability WARNING (promoted to error in v2.8,
       when BC###/SVC### become required). The legacy kebab-context-name form (e.g.
@@ -438,13 +438,13 @@ $defs:
   finding_ref:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?FN\\d{3}$"
-    description: "Reference to a quality finding — an AS-IS internal-quality defect (e.g. FN001 or ordering.FN001)."
+    description: "Reference to a quality finding - an AS-IS internal-quality defect (e.g. FN001 or ordering.FN001)."
 
   leverage_ref:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?LP\\d{3}$"
     description: >
-      Reference to a leverage point — a prioritized cross-cutting intervention that bundles findings /
+      Reference to a leverage point - a prioritized cross-cutting intervention that bundles findings /
       risks / decisions / fitness-functions and is delivered via migrations / roadmap work-items
       (e.g. LP001 or platform.LP001). Added v2.7.4.
 
@@ -461,10 +461,10 @@ $defs:
       - portability
       - safety
     description: >
-      ISO/IEC 25010:2011 top-level product-quality characteristic — the eight 2011 characteristics
+      ISO/IEC 25010:2011 top-level product-quality characteristic - the eight 2011 characteristics
       plus `safety` (the one clearly-useful 2023 addition). Names the top-level quality attribute a
       finding degrades or a requirement targets; finer grain goes in `quality_subcharacteristic`.
-      Added v2.7.4 — supersedes the former maintainability-family-only enum (the removed values
+      Added v2.7.4 - supersedes the former maintainability-family-only enum (the removed values
       modularity/analysability/reusability/testability are now sub-characteristics; see schema-update
       module 002).
 
@@ -517,7 +517,7 @@ $defs:
       - hazard-warning
       - safe-integration
     description: >
-      ISO/IEC 25010 sub-characteristic — the finer grain under a `quality_characteristic`. The pairing
+      ISO/IEC 25010 sub-characteristic - the finer grain under a `quality_characteristic`. The pairing
       of a sub-characteristic to its top-level is a CONVENTION the author keeps, not a schema-enforced
       constraint (a flat enum). Safety sub-characteristics are from the 2023 revision. Added v2.7.4.
 
@@ -528,13 +528,13 @@ $defs:
       Dominant implementation-complexity / problem-type pattern of a context or subdomain:
       crud=record management; presentation=UI-heavy; transformation=translation/ACL between models;
       integration=orchestration/sagas across systems; cdc=change-data-capture; concurrency=contention
-      over a finite shared resource; state-management=lifecycle/state-machine. The problem-type axis —
+      over a finite shared resource; state-management=lifecycle/state-machine. The problem-type axis -
       distinct from `model_traits` (behavioural archetype) and from `kind`/`type` (strategic value).
 
   model_traits_item:
     type: string
     enum: [analyser, executor, drafter, auditor, controller, service-provider, information-holder, structurer, coordinator, interfacer]
-    description: "A behavioural archetype (Wirfs-Brock role stereotype) of a context or subdomain — e.g. controller/coordinator drives a process/state-machine, information-holder is CRUD-ish, interfacer translates."
+    description: "A behavioural archetype (Wirfs-Brock role stereotype) of a context or subdomain - e.g. controller/coordinator drives a process/state-machine, information-holder is CRUD-ish, interfacer translates."
 
   kpi_ref:
     type: string
@@ -585,11 +585,11 @@ $defs:
     pattern: "^([a-z][a-z0-9-]*\\.)?IR\\d{3,}$"
     description: >
       Reference to an infrastructure resource by its typed id (e.g. IR001 or
-      prod.IR001), optionally context/environment-prefixed — the concrete host /
+      prod.IR001), optionally context/environment-prefixed - the concrete host /
       store / network / compute node in the infrastructure layer. SHOULD match
       IR###; a free-string id (e.g. `prod-web-hosting`) stays schema-valid but
       the validator WARNs (optional in v2.7.x, REQUIRED from v2.8). Distinct from
-      `resilience_ref` (RES###) — the infra resource is IR###, not RES###.
+      `resilience_ref` (RES###) - the infra resource is IR###, not RES###.
 
   environment_ref:
     type: string
@@ -598,7 +598,7 @@ $defs:
       Reference to a deployment environment by its typed id (e.g. ENV001 or
       azure.ENV001). Environments are a first-class binding dimension (production
       / staging / dr / ...), each carrying its own target scope, credentials and
-      param overlay — not a duplicated model fork. Optional in v2.7.x, REQUIRED
+      param overlay - not a duplicated model fork. Optional in v2.7.x, REQUIRED
       from v2.8. Pattern-distinct from the `EN###` prefix: ENV### != EN###.
 
   resource_type_ref:
@@ -628,7 +628,7 @@ $defs:
     description: >
       Reference to a deployment scope by its typed id (e.g. DSC001 or shared.DSC001).
       A DeploymentScope is a substrate-neutral management / lifecycle / ownership /
-      billing partition — an Azure Resource Group or Subscription, an AWS Account /
+      billing partition - an Azure Resource Group or Subscription, an AWS Account /
       OU, a GCP Project / Folder, a Kubernetes Cluster / Namespace, or an on-prem
       Datacenter / host-pool. Scopes nest via `parent` (the subscription -> resource-
       group hierarchy); each InfraResource may name its owning scope via `scope_ref`.
@@ -650,7 +650,7 @@ $defs:
       infrastructure layer (snake_case, TOSCA-verbatim). `hosted_on` is the
       canonical placement edge; `connects_to` / `depends_on` may carry
       attribute-level output refs; `depends_on` is the ordering-only fallback.
-      Exactly these five verbs — no synonyms (no `manages`, `uses`, ...).
+      Exactly these five verbs - no synonyms (no `manages`, `uses`, ...).
 
   context_relationship:
     type: string
@@ -783,7 +783,7 @@ $defs:
     type: string
     description: >
       Target release or milestone label (e.g., "MVP", "v1.1", "Q3-2026").
-      Free-form string — use milestone IDs (MS###) for formal traceability.
+      Free-form string - use milestone IDs (MS###) for formal traceability.
 
   # ---------------------------------------------------------------------------
   # Epistemic Metadata (v2.5)

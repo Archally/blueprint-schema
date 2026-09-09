@@ -32,7 +32,7 @@ properties:
     description: >
       Sprint cadence anchor (v2.7.2). When present, work items may be placed by sprint
       number and their calendar dates are derived as
-      anchor_start + (sprint - anchor_sprint) * sprint_length_days. Optional — omit for a
+      anchor_start + (sprint - anchor_sprint) * sprint_length_days. Optional - omit for a
       purely date-based roadmap. Pure-rendering concerns (axis bounds, marker lines,
       tracker base URL) live in the Gantt view-config, not here.
     additionalProperties: false
@@ -69,7 +69,7 @@ $defs:
   milestone:
     type: object
     description: >
-      Product roadmap milestone — a dated target with deliverables and
+      Product roadmap milestone - a dated target with deliverables and
       success criteria. Used for PRD timeline section generation.
     additionalProperties: false
     required:
@@ -91,12 +91,11 @@ $defs:
         format: date
         description: "Target delivery date (ISO 8601: YYYY-MM-DD)."
       status:
-        type: string
-        enum: [planned, in-progress, achieved, deferred, cancelled]
+        $ref: "../metamodel.schema.yaml#/$defs/milestone_status"
         description: "Milestone lifecycle status."
       deliverables:
         type: array
-        description: "What ships in this milestone — polymorphic refs."
+        description: "What ships in this milestone - polymorphic refs."
         items:
           type: object
           additionalProperties: false
@@ -165,7 +164,7 @@ $defs:
       `cadence`) or by explicit date; rolls up to a milestone via `milestone`. Carries
       typed traceability to goals/risks/decisions/value-streams/stories/use-cases so
       delivery links back to strategic intent. Rendering concerns (colour, hatching, axis,
-      marker lines, tracker base URL) are NOT modelled here — they belong to a Gantt
+      marker lines, tracker base URL) are NOT modelled here - they belong to a Gantt
       view-config.
     additionalProperties: false
     required:
@@ -190,14 +189,13 @@ $defs:
         type: string
         description: "What this work item delivers and why."
       status:
-        type: string
-        enum: [planned, in-progress, achieved, deferred, cancelled]
+        $ref: "../metamodel.schema.yaml#/$defs/milestone_status"
         description: "Delivery lifecycle status (same axis as milestone.status)."
       confidence:
         type: string
         enum: [committed, estimated, tentative]
         description: >
-          Planning confidence in the placement/scope — orthogonal to `status`. committed =
+          Planning confidence in the placement/scope - orthogonal to `status`. committed =
           firm dates; estimated = sized but movable; tentative = provisional/placeholder.
       progress:
         type: integer
@@ -238,7 +236,7 @@ $defs:
         type: array
         items:
           type: string
-        description: "Human owner(s) responsible — free-text names/teams, distinct from the typed `owned_by`."
+        description: "Human owner(s) responsible - free-text names/teams, distinct from the typed `owned_by`."
         examples: [["Jane Doe"], ["Backend Team"]]
       tracker_ref:
         $ref: "../metamodel.schema.yaml#/$defs/tracker_ref"

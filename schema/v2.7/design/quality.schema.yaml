@@ -23,22 +23,22 @@ properties:
     description: "File-level ownership default. Entities inherit unless overridden."
   metrics:
     type: array
-    description: "Quantitative measurements of system behavior. Foundation for KPIs, SLOs, and observability — define what you measure before defining targets."
+    description: "Quantitative measurements of system behavior. Foundation for KPIs, SLOs, and observability - define what you measure before defining targets."
     items:
       $ref: "#/$defs/metric"
   kpis:
     type: array
-    description: "Key Performance Indicators — metrics with business targets. Link operational measurements to strategic goals from motivation.schema.yaml."
+    description: "Key Performance Indicators - metrics with business targets. Link operational measurements to strategic goals from motivation.schema.yaml."
     items:
       $ref: "#/$defs/kpi"
   slos:
     type: array
-    description: "Service Level Objectives — operational reliability targets the engineering team commits to. Based on metrics, constrain operations."
+    description: "Service Level Objectives - operational reliability targets the engineering team commits to. Based on metrics, constrain operations."
     items:
       $ref: "#/$defs/slo"
   slas:
     type: array
-    description: "Service Level Agreements — external contractual commitments built on SLOs. Carry business consequences (penalties, credits) when breached."
+    description: "Service Level Agreements - external contractual commitments built on SLOs. Carry business consequences (penalties, credits) when breached."
     items:
       $ref: "#/$defs/sla"
   security:
@@ -61,14 +61,14 @@ properties:
     description: >
       AS-IS internal-quality defects discovered in the codebase (maintainability / modularity dimension of
       ISO/IEC 25010): smells, duplication, drift, coupling, boundary leaks, god-classes. An ASSESSMENT of
-      current state — NOT a target (contrast metrics/SLOs/KPIs, which are forward-looking commitments). Each
+      current state - NOT a target (contrast metrics/SLOs/KPIs, which are forward-looking commitments). Each
       finding anchors the remediation chain finding → risk → decision → migration. Drives refactoring and
       modularization/microservices planning. Slice-scoped (per-slice quality file) or root (systemic).
     items:
       $ref: "#/$defs/finding"
   observability:
     type: object
-    description: "Observability strategy across four pillars: metrics, logs, traces, events. Each pillar is optional — start with what you need."
+    description: "Observability strategy across four pillars: metrics, logs, traces, events. Each pillar is optional - start with what you need."
     additionalProperties: false
     properties:
       metrics:
@@ -137,7 +137,7 @@ $defs:
             description: "Concepts this metric measures."
       collection:
         type: object
-        description: "How this metric is gathered. Optional — useful for implementation planning."
+        description: "How this metric is gathered. Optional - useful for implementation planning."
         additionalProperties: false
         properties:
           method:
@@ -169,7 +169,7 @@ $defs:
 
   kpi:
     type: object
-    description: "A Key Performance Indicator — metric with business target. Links operational measurement to strategic goal."
+    description: "A Key Performance Indicator - metric with business target. Links operational measurement to strategic goal."
     additionalProperties: false
     required:
       - id
@@ -202,7 +202,7 @@ $defs:
           for that context. Added in v2.6.3.
       thresholds:
         type: object
-        description: "Alert thresholds — when the metric crosses these levels, action is needed."
+        description: "Alert thresholds - when the metric crosses these levels, action is needed."
         additionalProperties: false
         properties:
           warning:
@@ -229,7 +229,7 @@ $defs:
 
   slo:
     type: object
-    description: "Service Level Objective — an internal reliability target the team commits to. Operationalizes quality through specific measurable thresholds."
+    description: "Service Level Objective - an internal reliability target the team commits to. Operationalizes quality through specific measurable thresholds."
     additionalProperties: false
     required:
       - id
@@ -261,7 +261,7 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
         description: >
-          Infrastructure resources (IR###) this SLO targets — an availability/latency objective
+          Infrastructure resources (IR###) this SLO targets - an availability/latency objective
           can bind to a concrete host, store, or estate, not only to operations. Additive/optional
           (v2.7.7). Distinct from `resilience_ref`/RES### (untouched).
       error_budget:
@@ -293,7 +293,7 @@ $defs:
 
   sla:
     type: object
-    description: "Service Level Agreement — external contractual commitment built on SLOs. Carries business consequences when breached."
+    description: "Service Level Agreement - external contractual commitment built on SLOs. Carries business consequences when breached."
     additionalProperties: false
     required:
       - id
@@ -490,10 +490,10 @@ $defs:
         description: "Target (e.g. '99.99%' for availability)."
       rto:
         type: string
-        description: "Recovery Time Objective — maximum acceptable downtime (e.g. '5min', '1h')."
+        description: "Recovery Time Objective - maximum acceptable downtime (e.g. '5min', '1h')."
       rpo:
         type: string
-        description: "Recovery Point Objective — maximum acceptable data loss (e.g. '0', '1h')."
+        description: "Recovery Point Objective - maximum acceptable data loss (e.g. '0', '1h')."
       strategy:
         type: string
         description: "How resilience is achieved (e.g. 'active-passive failover', 'multi-region active-active')."
@@ -502,7 +502,7 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
         description: >
-          Infrastructure resources (IR###) this resilience requirement applies to — the concrete
+          Infrastructure resources (IR###) this resilience requirement applies to - the concrete
           host/store/failover target the RTO/RPO is measured against. Additive/optional (v2.7.7).
           The requirement entity keeps its own RES### id (`resilience_ref`); `resource_refs` links
           it to the infra graph.
@@ -524,7 +524,7 @@ $defs:
     description: >
       An AS-IS internal-quality defect discovered in the codebase (maintainability / modularity): a smell,
       duplication, drift, coupling, boundary leak, god-class, or dead/dual implementation. An ASSESSMENT of
-      current state — not a target. Carries code_refs to the offending code and `affects` refs to the domain
+      current state - not a target. Carries code_refs to the offending code and `affects` refs to the domain
       entities it touches. Anchors the remediation chain: finding → risk → decision → migration (the downstream
       hops are stored idiomatically on decision.motivation_refs.risks and migration.related_decisions).
     additionalProperties: false
@@ -569,7 +569,7 @@ $defs:
       quality_characteristic:
         $ref: "../metamodel.schema.yaml#/$defs/quality_characteristic"
         description: >
-          ISO/IEC 25010:2011 top-level product-quality characteristic this finding degrades — the
+          ISO/IEC 25010:2011 top-level product-quality characteristic this finding degrades - the
           top-level attribute only (finer grain goes in `quality_subcharacteristic`). Optional.
       quality_subcharacteristic:
         $ref: "../metamodel.schema.yaml#/$defs/quality_subcharacteristic"
@@ -583,7 +583,7 @@ $defs:
           type: string
         description: >
           Regulatory frameworks this finding relates to (e.g. GDPR, PCI-DSS, WCAG). A tag, NOT a
-          quality characteristic — regulatory concerns classify as security / functional-suitability
+          quality characteristic - regulatory concerns classify as security / functional-suitability
           per ISO 25010 (which dropped the 9126 'compliance' characteristic). Optional.
       severity:
         type: string
@@ -595,7 +595,7 @@ $defs:
         description: "Rough remediation effort (t-shirt size). Optional."
       statement:
         type: string
-        description: "The observation — what is wrong and where, in plain language."
+        description: "The observation - what is wrong and where, in plain language."
       recommendation:
         type: string
         description: "Suggested remediation direction, in prose. The structured fix lives in the linked migration."
@@ -628,7 +628,7 @@ $defs:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/risk_ref"
-        description: "Risks this finding rolls up into (finding → risk — first hop of the remediation chain)."
+        description: "Risks this finding rolls up into (finding → risk - first hop of the remediation chain)."
       decision_refs:
         type: array
         items:
@@ -636,7 +636,7 @@ $defs:
         description: "Decisions that address this finding (finding → decision; usually reached via a risk)."
       migration_ref:
         $ref: "../metamodel.schema.yaml#/$defs/migration_ref"
-        description: "The migration that remediates this finding (the TO-BE change — last hop of the chain)."
+        description: "The migration that remediates this finding (the TO-BE change - last hop of the chain)."
       status:
         type: string
         enum: [open, acknowledged, planned, in-progress, resolved, wont-fix]

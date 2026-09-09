@@ -1,7 +1,7 @@
 ---
 $schema: "https://json-schema.org/draft/2020-12/schema"
 title: Blueprint Domain Operations
-description: "Design Plane — Layer 3: Domain operations with protocol bindings, rule governance, pre/postconditions, and side effects. Ordering is in story (logical) and dynamics (runtime)."
+description: "Design Plane - Layer 3: Domain operations with protocol bindings, rule governance, pre/postconditions, and side effects. Ordering is in story (logical) and dynamics (runtime)."
 type: object
 additionalProperties: false
 required:
@@ -798,8 +798,8 @@ $defs:
       (operations of any kind: queries, commands, events, documents).
 
       Design rationale for separate entity status:
-      (1) Questions exist before operations — requirements precede implementation.
-      (2) Questions span all operation kinds — not limited to queries.
+      (1) Questions exist before operations - requirements precede implementation.
+      (2) Questions span all operation kinds - not limited to queries.
       (3) Questions have N:M relationships with operations.
       (4) Questions are referenceable from the strategic layer (goals, decisions, tests).
       (5) Unanswered questions (empty answered_by) are the most valuable artifact
@@ -854,14 +854,14 @@ $defs:
           - feasibility
         description: >
           Question category. Ontology categories (existence through compliance)
-          classify what the question asks about — from Gruninger & Fox 1995.
+          classify what the question asks about - from Gruninger & Fox 1995.
           Domain categories (business through feasibility) classify whose
           concern it is. Use tags for additional specificity.
       priority:
         type: string
         enum: [critical, high, medium, low]
         description: >
-          Question priority. Critical questions define the domain's raison d'être —
+          Question priority. Critical questions define the domain's raison d'être -
           if the system can't answer them, the domain has no justification.
       answered_by:
         type: array
@@ -869,11 +869,11 @@ $defs:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
         description: >
           Operations that answer this question. Accepts ANY operation kind
-          (CMD, EVT, QRY, DOC) — not limited to queries. A question about
+          (CMD, EVT, QRY, DOC) - not limited to queries. A question about
           "Can X happen?" may be answered by a command. A question about
           "What happens when Y?" may be answered by an event chain.
           Multiple operations may partially answer the same question (N:M).
-          An empty array means the question is unanswered — a domain gap
+          An empty array means the question is unanswered - a domain gap
           that should drive backlog prioritization.
       concepts:
         type: array
@@ -897,12 +897,12 @@ $defs:
           $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
         description: >
           Actors who need this question answered. Captures the human demand
-          side — who in the organization needs this knowledge and why.
+          side - who in the organization needs this knowledge and why.
       owner:
         $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
         description: >
           Person responsible for driving resolution. Distinct from
-          stakeholders[] (who care about the answer) — owner is who
+          stakeholders[] (who care about the answer) - owner is who
           must actually resolve it.
       blocking:
         type: boolean

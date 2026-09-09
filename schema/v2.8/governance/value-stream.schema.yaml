@@ -2,7 +2,7 @@
 $schema: "https://json-schema.org/draft/2020-12/schema"
 title: Blueprint Value Streams
 description: >
-  Governance Plane: Value Stream Map — end-to-end flows of value delivery
+  Governance Plane: Value Stream Map - end-to-end flows of value delivery
   that cross-cut bounded contexts and capabilities. Value streams show HOW
   the business delivers outcomes, while capabilities show WHAT it can do.
 type: object

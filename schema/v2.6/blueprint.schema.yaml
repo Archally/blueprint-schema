@@ -115,7 +115,7 @@ properties:
               description: "Principle name (e.g., 'Single Source of Truth')."
             statement:
               type: string
-              description: "Principle statement — what it means and why."
+              description: "Principle statement - what it means and why."
             applies_to:
               type: string
               description: "Scope: which schemas or entities this principle governs."
@@ -135,7 +135,7 @@ properties:
             description: "Convention for enum values (e.g., 'kebab-case')."
       conventions:
         type: array
-        description: "Soft constraints documented as conventions. Validators WARN on violation but do not reject. Examples: Produces Convention — commands typically produce events/documents; Operation ID-Kind Consistency — operation ID prefix must match kind (CMD=command, EVT=event, QRY=query, DOC=document)."
+        description: "Soft constraints documented as conventions. Validators WARN on violation but do not reject. Examples: Produces Convention - commands typically produce events/documents; Operation ID-Kind Consistency - operation ID prefix must match kind (CMD=command, EVT=event, QRY=query, DOC=document)."
         items:
           type: object
           required: [name, rule]

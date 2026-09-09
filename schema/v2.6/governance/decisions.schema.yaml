@@ -24,7 +24,7 @@ properties:
     description: "File-level ownership default. Entities inherit unless overridden."
   decisions:
     type: array
-    description: "Architecture Decision Log. Chronological, append-only. Each entry is immutable once landed — supersede rather than modify."
+    description: "Architecture Decision Log. Chronological, append-only. Each entry is immutable once landed - supersede rather than modify."
     items:
       $ref: "#/$defs/decision"
   business_decisions:
@@ -133,7 +133,7 @@ $defs:
         description: "Confidence level of this decision. Speculative for proposed, confirmed for landed."
       evidence:
         $ref: "../metamodel.schema.yaml#/$defs/evidence"
-        description: "Evidence chain justifying this decision — benchmarks, experiments, stakeholder feedback."
+        description: "Evidence chain justifying this decision - benchmarks, experiments, stakeholder feedback."
 
   rationale:
     type: object
@@ -197,7 +197,7 @@ $defs:
           $ref: "../metamodel.schema.yaml#/$defs/inquiry_ref"
         description: >
           Governance inquiries (INQ###) that drove or are resolved by this
-          decision. Distinct from questions — inquiries are temporary governance
+          decision. Distinct from questions - inquiries are temporary governance
           concerns, questions are permanent domain knowledge requirements.
 
   change_item:
@@ -364,7 +364,7 @@ $defs:
         description: "Short name of the option (e.g. 'x-vector voice conversion', 'McAdams coefficient')."
       description:
         type: string
-        description: "Detailed description of the option — technical approach, constraints, prerequisites."
+        description: "Detailed description of the option - technical approach, constraints, prerequisites."
       pros:
         type: array
         items:
@@ -392,7 +392,7 @@ $defs:
   business_decision:
     type: object
     description: >
-      BCC v5 Business Decision — a key rule or policy that governs the
+      BCC v5 Business Decision - a key rule or policy that governs the
       behaviour of one or more bounded contexts. NOT a data-level invariant
       (those live in rules.schema.yaml as Rule); NOT an ADR (D### above).
       These are higher-level policy statements expressing "what we will / will

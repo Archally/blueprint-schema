@@ -35,8 +35,8 @@ properties:
       $ref: "#/$defs/repository_config"
     description: >
       Per-repository configuration for cross-repo code_refs written in `org/repo#path` form
-      (see metamodel `code_ref_entry`). The map KEY is the code_ref prefix — the `org/repo`
-      segment before `#` — and each VALUE is a repository config. The viewer resolves a
+      (see metamodel `code_ref_entry`). The map KEY is the code_ref prefix - the `org/repo`
+      segment before `#` - and each VALUE is a repository config. The viewer resolves a
       prefixed code_ref by looking up its prefix here; unprefixed refs fall back to `repository`.
       Example: { "acme/orders-service": { url: "https://gitlab.com/acme/orders-service", provider: gitlab } }.
 
@@ -133,7 +133,7 @@ properties:
               description: "Principle name (e.g., 'Single Source of Truth')."
             statement:
               type: string
-              description: "Principle statement — what it means and why."
+              description: "Principle statement - what it means and why."
             applies_to:
               type: string
               description: "Scope: which schemas or entities this principle governs."
@@ -153,7 +153,7 @@ properties:
             description: "Convention for enum values (e.g., 'kebab-case')."
       conventions:
         type: array
-        description: "Soft constraints documented as conventions. Validators WARN on violation but do not reject. Examples: Produces Convention — commands typically produce events/documents; Operation ID-Kind Consistency — operation ID prefix must match kind (CMD=command, EVT=event, QRY=query, DOC=document)."
+        description: "Soft constraints documented as conventions. Validators WARN on violation but do not reject. Examples: Produces Convention - commands typically produce events/documents; Operation ID-Kind Consistency - operation ID prefix must match kind (CMD=command, EVT=event, QRY=query, DOC=document)."
         items:
           type: object
           required: [name, rule]
@@ -252,7 +252,7 @@ properties:
         description: "End-to-end value delivery flows crossing bounded contexts and capabilities."
       leverage:
         $ref: "governance/leverage.schema.yaml"
-        description: "Leverage map — prioritized cross-cutting interventions (LP###) over the finding→risk→decision→migration chain."
+        description: "Leverage map - prioritized cross-cutting interventions (LP###) over the finding→risk→decision→migration chain."
 
   # === Extensibility ===
   profiles:
@@ -307,7 +307,7 @@ $defs:
   slice:
     type: object
     description: >
-      A domain or capability slice — the problem-space unit of decomposition. `name` is the
+      A domain or capability slice - the problem-space unit of decomposition. `name` is the
       kebab-case subfolder under the blueprint root. A slice is NOT necessarily a strict
       business domain: a cross-cutting technical capability (e.g. a workflow, messaging, or
       forms engine) is also a slice, and may itself be a deep model. Distinct from a bounded
@@ -323,7 +323,7 @@ $defs:
         description: "Slice folder name (kebab-case); matches the subfolder under the blueprint root."
       description:
         type: string
-        description: "What this slice is about — its business or technical responsibility."
+        description: "What this slice is about - its business or technical responsibility."
       type:
         type: string
         enum: [core-domain, supporting-domain, generic-domain, technical-capability]
@@ -336,7 +336,7 @@ $defs:
         $ref: "metamodel.schema.yaml#/$defs/complexity_pattern"
         description: >
           Dominant problem-type of the slice: crud / presentation / transformation /
-          integration / cdc / concurrency / state-management. The implementation-complexity axis —
+          integration / cdc / concurrency / state-management. The implementation-complexity axis -
           orthogonal to `type` (strategic value). Use per-subdomain entries when the slice is
           split-natured (e.g. ordering: order-lifecycle=state-management, inventory-reservation=concurrency).
       model_traits:
@@ -375,7 +375,7 @@ $defs:
                   description: "Optional DDD importance of this subdomain within the slice."
                 complexity:
                   $ref: "metamodel.schema.yaml#/$defs/complexity_pattern"
-                  description: "Optional dominant problem-type of this subdomain — lets a split-natured slice mark each facet (e.g. order-lifecycle=state-management, inventory-reservation=concurrency)."
+                  description: "Optional dominant problem-type of this subdomain - lets a split-natured slice mark each facet (e.g. order-lifecycle=state-management, inventory-reservation=concurrency)."
                 model_traits:
                   type: array
                   items:

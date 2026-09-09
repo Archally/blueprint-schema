@@ -1,7 +1,7 @@
 ---
 $schema: "https://json-schema.org/draft/2020-12/schema"
 title: Blueprint Infrastructure Resources
-description: "Design Plane: Infrastructure resource definitions and deployment topology. Declares platform resources (databases, queues, storage, services), ownership, per-environment configuration, and service placement across tiers. v2.7.7 adds knowledge-graph participation — typed resource ids (IR###), first-class typed Environments (ENV###), TOSCA inter-resource relations, and IaC traceability — all substrate-neutral (cloud, on-premise, hybrid) and strictly additive."
+description: "Design Plane: Infrastructure resource definitions and deployment topology. Declares platform resources (databases, queues, storage, services), ownership, per-environment configuration, and service placement across tiers. v2.7.7 adds knowledge-graph participation - typed resource ids (IR###), first-class typed Environments (ENV###), TOSCA inter-resource relations, and IaC traceability - all substrate-neutral (cloud, on-premise, hybrid) and strictly additive."
 type: object
 additionalProperties: false
 required:
@@ -33,7 +33,14 @@ properties:
       oneOf:
         - type: string
         - $ref: "#/$defs/environment"
-    description: "Declared environments. Legacy form: a plain name string (e.g. dev, staging, prod). v2.7.7 form: a typed Environment object (id ENV###, substrate, target_scope, …). Both are valid (additive); name strings still validate per-environment resource-config keys. A string branch is a literal env-name; the object branch requires id+name — no overlap (unambiguous oneOf)."
+    description: >
+      Declared environments, in either of two forms. The typed object (id ENV###, name, substrate,
+      target_scope, ...) is the form to prefer: it is the only one anything else in the model can
+      point at, so a binding, a server and a per-environment configuration key can all name the same
+      environment and be checked against it. The plain name string declares an environment and
+      nothing more - it carries no class, no substrate and no scope, and nothing resolves to it.
+      Both are valid and neither is deprecated; a string branch is a literal environment name and the
+      object branch requires id and name, so the two cannot overlap and the union is unambiguous.
   resources:
     type: array
     description: "Infrastructure resources: databases, queues, caches, storage, external services."
@@ -47,27 +54,36 @@ properties:
     description: >
       (resource-type × environment) → implementation bindings (BND###, v2.7.7). A binding
       resolves an abstract need / resource-type in a specific environment to a concrete platform
-      module + pinned version + params — the intent→implementation bridge that survived across
+      module + pinned version + params - the intent→implementation bridge that survived across
       Radius recipes ≡ Score ≡ Crossplane v2 ≡ Humanitec. Optional/additive.
       Substrate-neutral: the same neutral type binds to a cloud module in a `cloud` ENV and an
-      on-prem module in an `on-prem` ENV — hybrid falls out as two bindings.
+      on-prem module in an `on-prem` ENV - hybrid falls out as two bindings.
     items:
       $ref: "#/$defs/binding"
   deployment_scopes:
     type: array
     description: >
-      Deployment scopes (DSC###, v2.7.7) — the management / lifecycle / ownership /
+      Deployment scopes (DSC###, v2.7.7) - the management / lifecycle / ownership /
       billing partitions that OWN resources: Azure Resource Groups + Subscriptions,
       AWS Accounts / OUs, GCP Projects / Folders, Kubernetes Clusters / Namespaces,
       on-prem Datacenters / host-pools. Scopes nest via `parent` to form the
       subscription -> resource-group hierarchy; a resource joins a scope via
       `resource.scope_ref`. Distinct from TOSCA `hosted_on` (runtime placement) and
-      from the id scope-prefix (authoring grouping). Optional/additive — may live in a
+      from the id scope-prefix (authoring grouping). Optional/additive - may live in a
       shared file so several contexts reference one subscription (concat-merge).
     items:
       $ref: "#/$defs/deployment_scope"
 
 $defs:
+
+  substrate:
+    type: string
+    enum: [cloud, on-prem, hybrid, edge]
+    description: >
+      Where something physically runs. cloud: a provider's managed capacity. on-prem: hardware the
+      organization operates. hybrid: federating cloud and on-prem bindings. edge: distributed compute
+      close to where it is used. Declared once because an environment and a deployment scope answer
+      the same question about different subjects, and a reader compares their answers.
 
   resource:
     type: object
@@ -109,7 +125,25 @@ $defs:
             description: "Platform-specific resource type (e.g. cosmosdb, sqs, gcs, postgres)."
       environments:
         type: object
-        description: "Per-environment configuration keyed by environment name. Use ALL for config shared across all environments."
+        description: >
+          Per-environment configuration. A key is a declared environment's typed id (ENV###), the
+          environment's name, or `ALL` for configuration shared across every environment. The typed
+          key is the one that RESOLVES: a key naming an ENV### the model does not declare is a
+          cross-reference error, in the same words as any other dangling reference, while a name is
+          checked against nothing and is reported only as an advisory, because a model may configure
+          for a deployment it has not modelled.
+        propertyNames:
+          anyOf:
+            - $ref: "../metamodel.schema.yaml#/$defs/environment_ref"
+            - const: ALL
+            - type: string
+          description: >-
+            The three legal forms, DECLARED rather than restricted: the last branch admits any
+            string, so no key that validated before validates less now. The block exists because one
+            of the branches is a typed reference, and that is the fact a reader and a validator both
+            need. A key is a key, so nothing can infer from the value alone that it points at an
+            entity; saying so here is what lets the reference walk resolve the typed form and leave
+            a name alone.
         additionalProperties:
           $ref: "#/$defs/environment_config"
       owned_by:
@@ -127,7 +161,7 @@ $defs:
         description: "Optional typed reference to a resource type (RT###) in the resource-type catalog (step 04). Resolves to the type's inputs/outputs contract; the concrete platform realization is chosen per environment by a binding (BND###)."
       scope_ref:
         $ref: "../metamodel.schema.yaml#/$defs/deployment_scope_ref"
-        description: "Optional management/lifecycle partition (DSC###) this resource is owned in — its resource-group / namespace / host-pool. Distinct from `hosted_on` (runtime placement): a logical DB may be `scope_ref` its own resource-group yet `hosted_on` a shared SQL elastic pool (the RG-vs-pool distinction). Absent => tooling may derive grouping from the id scope-prefix."
+        description: "Optional management/lifecycle partition (DSC###) this resource is owned in - its resource-group / namespace / host-pool. Distinct from `hosted_on` (runtime placement): a logical DB may be `scope_ref` its own resource-group yet `hosted_on` a shared SQL elastic pool (the RG-vs-pool distinction). Absent => tooling may derive grouping from the id scope-prefix."
       hosting_model:
         type: string
         enum:
@@ -138,15 +172,15 @@ $defs:
           - serverless
           - network-link
           - external-saas
-        description: "Substrate-neutral realization classifier: HOW the resource is hosted — a managed cloud/PaaS service, an IaaS/on-prem VM, a container, bare metal, serverless, a hybrid network interconnect (network-link), or an external SaaS. Drives portability/cost/hybrid-boundary analysis and makes cloud-vs-on-prem legible. Additive to the coarse free-string `kind` (WHAT it is: database/queue/…)."
+        description: "Substrate-neutral realization classifier: HOW the resource is hosted - a managed cloud/PaaS service, an IaaS/on-prem VM, a container, bare metal, serverless, a hybrid network interconnect (network-link), or an external SaaS. Drives portability/cost/hybrid-boundary analysis and makes cloud-vs-on-prem legible. Additive to the coarse free-string `kind` (WHAT it is: database/queue/…)."
       relations:
         type: array
-        description: "Typed inter-resource relations (TOSCA vocabulary) — the typed replacement for untyped links in the `properties` bag. `hosted_on` is the canonical placement edge; connects_to/depends_on/attaches_to/routes_to express wiring. For a hybrid interconnect, a network-link resource's connects_to/routes_to targets may sit in a different environment/substrate."
+        description: "Typed inter-resource relations (TOSCA vocabulary) - the typed replacement for untyped links in the `properties` bag. `hosted_on` is the canonical placement edge; connects_to/depends_on/attaches_to/routes_to express wiring. For a hybrid interconnect, a network-link resource's connects_to/routes_to targets may sit in a different environment/substrate."
         items:
           $ref: "#/$defs/infra_relation_edge"
       iac_refs:
         $ref: "#/$defs/iac_refs"
-        description: "Infrastructure-as-Code traceability for this resource — the analogue of code_refs for infra. Spans cloud provisioners AND on-prem config-management."
+        description: "Infrastructure-as-Code traceability for this resource - the analogue of code_refs for infra. Spans cloud provisioners AND on-prem config-management."
       lifecycle:
         $ref: "#/$defs/lifecycle"
         description: "Optional lifecycle/protection posture (architect-altitude)."
@@ -166,15 +200,15 @@ $defs:
         description: "Optional provider-specific exposure mechanism (free-text): e.g. 'azure-private-endpoint', 'vnet-integrated', 'aws-privatelink', 'on-prem firewall DMZ'. Retains the concrete mechanism while `exposure` stays neutral."
       identity:
         $ref: "#/$defs/resource_identity"
-        description: "Optional workload identity this resource runs as (cross-cutting). Neutral-named — a cloud managed identity OR an on-prem AD / k8s service account."
+        description: "Optional workload identity this resource runs as (cross-cutting). Neutral-named - a cloud managed identity OR an on-prem AD / k8s service account."
       access:
         type: array
         items:
           $ref: "#/$defs/access_grant"
-        description: "Optional RBAC access grants (identity × target × role triples). Neutral — cloud IAM OR on-prem AD/LDAP. Semantic level only; mechanics live in the module."
+        description: "Optional RBAC access grants (identity × target × role triples). Neutral - cloud IAM OR on-prem AD/LDAP. Semantic level only; mechanics live in the module."
       observability:
         $ref: "#/$defs/observability_binding"
-        description: "Optional per-resource telemetry wiring — where this resource sends logs/metrics (AVM calls this 'diagnostics'). Neutral: cloud diagnostics OR on-prem syslog/SNMP/Prometheus. Distinct from the quality-layer observability STRATEGY."
+        description: "Optional per-resource telemetry wiring - where this resource sends logs/metrics (AVM calls this 'diagnostics'). Neutral: cloud diagnostics OR on-prem syslog/SNMP/Prometheus. Distinct from the quality-layer observability STRATEGY."
       redundancy:
         $ref: "#/$defs/redundancy"
         description: "Optional availability-domain spread (AVM calls this 'zones'). Neutral: cloud AZs/regions OR on-prem sites/racks."
@@ -303,7 +337,7 @@ $defs:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
-        description: "Typed resource references (IR###) deployed in this tier (v2.7.7). Additive alongside the legacy free-string `services`; prefer this for graph participation. A tier is a grouping VIEW (extraction emits `contains`), distinct from the canonical placement edge `hosted_on` — the resolver de-dupes so a resource in both is not double-counted."
+        description: "Typed resource references (IR###) deployed in this tier (v2.7.7). Additive alongside the legacy free-string `services`; prefer this for graph participation. A tier is a grouping VIEW (extraction emits `contains`), distinct from the canonical placement edge `hosted_on` - the resolver de-dupes so a resource in both is not double-counted."
       region:
         type: string
         description: "Deployment region (e.g. eu-west-1, us-east-2)."
@@ -317,7 +351,7 @@ $defs:
 
   environment:
     type: object
-    description: "A deployment environment as a first-class, referenceable entity (v2.7.7, ENV###). Environments are a binding dimension (production/staging/dr/…) — each carries its own target scope, credentials, and parameter overlay. Substrate-neutral: cloud, on-premise, and hybrid are equally expressible."
+    description: "A deployment environment as a first-class, referenceable entity (v2.7.7, ENV###). Environments are a binding dimension (production/staging/dr/…) - each carries its own target scope, credentials, and parameter overlay. Substrate-neutral: cloud, on-premise, and hybrid are equally expressible."
     additionalProperties: false
     required:
       - id
@@ -332,14 +366,13 @@ $defs:
       env_class:
         type: string
         enum: [production, staging, development, test, dr, sandbox, other]
-        description: "Environment class. Orthogonal to substrate — a `dr` environment may be cloud OR on-prem."
+        description: "Environment class. Orthogonal to substrate - a `dr` environment may be cloud OR on-prem."
       substrate:
-        type: string
-        enum: [cloud, on-prem, hybrid, edge]
-        description: "Where this environment physically runs. `hybrid` federates cloud + on-prem bindings; `edge` = distributed/edge compute. Makes the cloud-vs-on-prem split legible for impact/cost analysis."
+        $ref: "#/$defs/substrate"
+        description: "Where this environment physically runs. Makes the cloud-versus-on-prem split legible for impact and cost analysis."
       provider:
         type: string
-        description: "Optional platform provider — free-text so on-prem/private-cloud fit: azure, aws, gcp, vmware, openstack, bare-metal, k8s, … A hybrid environment may carry a compound value (e.g. 'azure+vmware')."
+        description: "Optional platform provider - free-text so on-prem/private-cloud fit: azure, aws, gcp, vmware, openstack, bare-metal, k8s, … A hybrid environment may carry a compound value (e.g. 'azure+vmware')."
       target_scope:
         $ref: "#/$defs/target_scope"
         description: "The deployment partition/boundary this environment maps into (substrate-neutral)."
@@ -376,7 +409,7 @@ $defs:
 
   target_scope_ref:
     type: object
-    description: "Reference form (v2.7.7): point an environment's target scope at a first-class DeploymentScope (DSC###) instead of inlining {kind, name}. Additive — the inline form stays valid."
+    description: "Reference form (v2.7.7): point an environment's target scope at a first-class DeploymentScope (DSC###) instead of inlining {kind, name}. Additive - the inline form stays valid."
     additionalProperties: false
     required:
       - ref
@@ -407,7 +440,7 @@ $defs:
   deployment_scope:
     type: object
     description: >
-      A deployment scope (DSC###, v2.7.7) — a substrate-neutral management / lifecycle /
+      A deployment scope (DSC###, v2.7.7) - a substrate-neutral management / lifecycle /
       ownership / billing partition. Generalizes an Azure Resource Group or Subscription,
       an AWS Account / OU, a GCP Project / Folder, a Kubernetes Cluster / Namespace, or an
       on-prem Datacenter / host-pool. Scopes nest via `parent` (subscription -> resource-
@@ -431,15 +464,10 @@ $defs:
         description: "Partition type (subscription / resource_group / account / project / cluster / namespace / datacenter / host_pool / ...)."
       parent:
         $ref: "../metamodel.schema.yaml#/$defs/deployment_scope_ref"
-        description: "Optional parent scope (DSC###) — builds the hierarchy (a resource_group's parent subscription; a namespace's parent cluster). A top-tier scope (subscription/account/project/cluster/datacenter) omits it."
+        description: "Optional parent scope (DSC###) - builds the hierarchy (a resource_group's parent subscription; a namespace's parent cluster). A top-tier scope (subscription/account/project/cluster/datacenter) omits it."
       substrate:
-        type: string
-        enum:
-          - cloud
-          - on-prem
-          - hybrid
-          - edge
-        description: "Optional substrate this scope lives on. When present it is the MOST authoritative substrate signal for member resources — stronger than transitive `hosted_on` walking or the `platform.name` heuristic."
+        $ref: "#/$defs/substrate"
+        description: "Optional substrate this scope lives on. When present it is the MOST authoritative substrate signal for member resources - stronger than transitive `hosted_on` walking or the `platform.name` heuristic."
       provider:
         type: string
         description: "Optional platform provider (free-text so on-prem fits): azure, aws, gcp, vmware, openstack, k8s, ..."
@@ -477,7 +505,7 @@ $defs:
         description: "The target resource (IR###). May be in another environment/substrate (hybrid interconnect)."
       outputs:
         type: array
-        description: "Optional attribute-level outputs of the target this resource consumes — e.g. host, port, connection-string. Makes connects_to/depends_on wiring explicit for impact analysis."
+        description: "Optional attribute-level outputs of the target this resource consumes - e.g. host, port, connection-string. Makes connects_to/depends_on wiring explicit for impact analysis."
         items:
           type: string
       description:
@@ -486,7 +514,7 @@ $defs:
 
   iac_refs:
     type: array
-    description: "Traceability links from a resource to its Infrastructure-as-Code — the infra analogue of code_refs. Spans cloud provisioners AND on-prem config-management so on-prem IaC is first-class."
+    description: "Traceability links from a resource to its Infrastructure-as-Code - the infra analogue of code_refs. Spans cloud provisioners AND on-prem config-management so on-prem IaC is first-class."
     items:
       $ref: "#/$defs/iac_ref"
 
@@ -547,7 +575,7 @@ $defs:
     description: >
       Resolves (resource-type × environment) → a concrete implementation: which platform module
       realizes the type in that environment, with a pinned version and params. The same neutral
-      type binds differently per environment — an azure module in a `cloud` ENV, an on-prem module
+      type binds differently per environment - an azure module in a `cloud` ENV, an on-prem module
       in an `on-prem` ENV (hybrid = two bindings). Resolution is MOST-SPECIFIC-MATCH: a
       binding with `need_ref` beats one matching by `type_ref` alone; a binding scoped to an
       `environment_ref` beats an environment-agnostic default.
@@ -565,20 +593,20 @@ $defs:
         type: string
         description: >
           Optional reference to a service `need` id (the free-string need `id`) this binding
-          satisfies — more specific than binding-by-type. Most-specific-match: a `need_ref` binding
+          satisfies - more specific than binding-by-type. Most-specific-match: a `need_ref` binding
           wins over a `type_ref`-only binding for the same environment.
       environment_ref:
         $ref: "../metamodel.schema.yaml#/$defs/environment_ref"
         description: "The environment (ENV###) this binding applies to. Omit for an environment-agnostic default (least specific)."
       resource_ref:
         $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
-        description: "Optional concrete resource (IR###) this binding produces/targets — closes need → binding → resource."
+        description: "Optional concrete resource (IR###) this binding produces/targets - closes need → binding → resource."
       module:
         $ref: "#/$defs/binding_module"
         description: "The concrete platform module/recipe that realizes the type in this environment."
       profile:
         type: string
-        description: "Optional resource-type profile this binding draws from (neutral/azure/aws/k8s/on-prem/openstack — the resource-type catalog)."
+        description: "Optional resource-type profile this binding draws from (neutral/azure/aws/k8s/on-prem/openstack - the resource-type catalog)."
       params:
         type: object
         description: "Binding-time parameters passed to the module (conceptually merged over need `params` + environment `param_overlay`)."
@@ -586,7 +614,7 @@ $defs:
           type: [string, number, boolean]
       outputs:
         type: array
-        description: "Outputs this binding exposes (host/port/connection-string/…). A field may be secret-flagged — a reference/flow marker only, never a value."
+        description: "Outputs this binding exposes (host/port/connection-string/…). A field may be secret-flagged - a reference/flow marker only, never a value."
         items:
           $ref: "#/$defs/io_field"
       description:
@@ -598,7 +626,7 @@ $defs:
     description: >
       A concrete platform module/recipe reference with a pinned version (`version_pin` is carried;
       no generator consumes it in v2.7.7). Substrate-neutral: AVM is ONE
-      realization vocabulary, not THE vocabulary — a Terraform registry module, a Helm chart, or an
+      realization vocabulary, not THE vocabulary - a Terraform registry module, a Helm chart, or an
       Ansible role are equally valid.
     additionalProperties: false
     required:
@@ -606,7 +634,7 @@ $defs:
     properties:
       ref:
         type: string
-        description: "Module/recipe locator — e.g. 'br/public:avm/res/db-for-postgre-sql/flexible-server', a Terraform registry path, a Helm chart, an Ansible role."
+        description: "Module/recipe locator - e.g. 'br/public:avm/res/db-for-postgre-sql/flexible-server', a Terraform registry path, a Helm chart, an Ansible role."
       version_pin:
         type: string
         description: "Optional pinned module version (e.g. '1.2.3', '~> 4.0'). The continuous-readiness field (carried, unused this round)."
@@ -618,7 +646,7 @@ $defs:
     type: object
     description: >
       A typed input or output field of a resource-type contract or a binding. An output
-      may be secret-flagged — a reference/flow marker only, never a secret VALUE. Mirrors
+      may be secret-flagged - a reference/flow marker only, never a secret VALUE. Mirrors
       the `io_field` shape in the resource-type profile schema (`profiles/infrastructure/`).
     additionalProperties: false
     required:
@@ -632,7 +660,7 @@ $defs:
         description: "Optional value-type hint (e.g. string, int, hostname, uri)."
       secret:
         type: boolean
-        description: "When true this field is a secret — the model carries the reference/flow, never the value."
+        description: "When true this field is a secret - the model carries the reference/flow, never the value."
       description:
         type: string
         description: "Optional description of the field."
@@ -640,9 +668,9 @@ $defs:
   resource_identity:
     type: object
     description: >
-      The workload identity a resource runs as / authenticates with — named for the CONCERN, not
+      The workload identity a resource runs as / authenticates with - named for the CONCERN, not
       the Azure product: a cloud managed identity (system/user-assigned), a Kubernetes or
-      on-prem service account, or an AD service account. Semantic level only — mechanics
+      on-prem service account, or an AD service account. Semantic level only - mechanics
       live in the module.
     additionalProperties: false
     properties:
@@ -658,7 +686,7 @@ $defs:
     type: object
     description: >
       An RBAC access triple: which identity may do what to which target. Substrate-neutral
-      — a cloud IAM role assignment OR an on-prem AD/LDAP group grant. Semantic level only.
+      - a cloud IAM role assignment OR an on-prem AD/LDAP group grant. Semantic level only.
     additionalProperties: false
     required:
       - role
@@ -668,7 +696,7 @@ $defs:
         description: "The grantee identity (a `resource_identity` name, a group, or a principal label)."
       target:
         type: string
-        description: "What the access is over (a resource, a scope, a data store — free-text/label; may be an IR###)."
+        description: "What the access is over (a resource, a scope, a data store - free-text/label; may be an IR###)."
       role:
         type: string
         description: "The role/permission granted (e.g. reader, contributor, db_datawriter, read-only)."
@@ -676,7 +704,7 @@ $defs:
   observability_binding:
     type: object
     description: >
-      Where this resource sends its telemetry — named for the concern (AVM calls this 'diagnostics'):
+      Where this resource sends its telemetry - named for the concern (AVM calls this 'diagnostics'):
       logs and metrics sinks. Substrate-neutral: cloud diagnostic settings OR on-prem
       syslog/SNMP/Prometheus. Distinct from the quality-layer `observability` STRATEGY
       (product-wide); this is per-resource wiring.
@@ -696,7 +724,7 @@ $defs:
   redundancy:
     type: object
     description: >
-      Availability-domain spread — named for the concern (AVM calls this 'zones'): the fault domains this
+      Availability-domain spread - named for the concern (AVM calls this 'zones'): the fault domains this
       resource is replicated across. Substrate-neutral: cloud availability zones/regions OR on-prem
       sites/racks.
     additionalProperties: false
@@ -713,7 +741,7 @@ $defs:
   encryption_key:
     type: object
     description: >
-      Encryption-key posture — named for the concern (AVM calls this 'customer_managed_key'): a cloud
+      Encryption-key posture - named for the concern (AVM calls this 'customer_managed_key'): a cloud
       KMS/Key-Vault key OR an on-prem HSM/Vault. Carries a key REFERENCE, never key
       material.
     additionalProperties: false
@@ -724,7 +752,7 @@ $defs:
         description: "Who manages the key: platform-managed, customer-managed (cloud KMS/Key-Vault), or self-hosted (on-prem HSM/Vault)."
       key_ref:
         type: string
-        description: "Optional key reference/label (a vault path or key id — a reference, never the key material)."
+        description: "Optional key reference/label (a vault path or key id - a reference, never the key material)."
 
   deployment_unit:
     type: object
