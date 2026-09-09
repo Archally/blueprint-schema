@@ -1,0 +1,93 @@
+# Blueprint Schema changelog - the 2.6 line.
+#
+# One file per MINOR version. Newest entry first; several entries may share a `version:`
+# when one release landed in more than one step.
+#
+# The index, with every line and its status, is ../CHANGELOG.md.
+entries:
+  - version: "2.6.3"
+    date: "2026-05-09"
+    summary: Bounded Context Canvas v5 — strategic classification, model traits, business decisions, BCC
+      linkage on assumptions and KPIs
+    changes:
+      - kind: modify
+        target: design/arch.schema.yaml
+        semver: minor
+        notes: >
+          Added optional fields on context: business_model_role, evolution (Wardley stage),
+          model_traits[] (10-value enum). All optional; existing documents unaffected.
+      - kind: add
+        target: governance/decisions.schema.yaml
+        semver: minor
+        notes: >
+          Added business_decision (BD###) entity and business_decisions[] root array. Distinct from
+          decision (D###): a policy statement with linked_contexts[], linked_user_stories[],
+          linked_assumptions[], linked_kpis[].
+      - kind: modify
+        target: metamodel.schema.yaml
+        semver: minor
+        notes: |
+          Added context_association_ref pattern for BCC v5 cross-references.
+      - kind: modify
+        target: governance/motivation.schema.yaml
+        semver: minor
+        notes: |
+          Added optional context_associations[] on assumptions and KPIs for BCC v5 linkage.
+      - kind: modify
+        target: design/quality.schema.yaml
+        semver: minor
+        notes: |
+          Added optional context_associations[] on KPIs for BCC v5 linkage.
+  - version: "2.6.2"
+    date: "2026-04-03"
+    summary: Multi-exchange operations, stdio and http-sse protocols
+    changes:
+      - kind: modify
+        target: design/domain.schema.yaml
+        semver: minor
+        notes: >
+          Operations can declare multiple exchange blocks (request/response pairs). Added stdio and
+          http-sse protocol options.
+  - version: "2.6.1"
+    date: "2026-03-27"
+    summary: Decision structured options, epistemic fields, inquiry refs
+    changes:
+      - kind: modify
+        target: governance/decisions.schema.yaml
+        semver: minor
+        notes: >
+          Decisions gain structured options[] with pros/cons/score. Added epistemic_status and
+          confidence fields.
+      - kind: modify
+        target: governance/motivation.schema.yaml
+        semver: minor
+        notes: |
+          Inquiries (INQ###) gain refs to decisions, operations, concepts.
+  - version: "2.6.0"
+    date: "2026-03-19"
+    summary: Value streams, personas as array (breaking), materializes, evidence chains
+    changes:
+      - kind: add
+        target: governance/value-stream.schema.yaml
+        semver: minor
+        notes: >
+          New schema: value streams (VS###) crossing bounded contexts and capabilities. Stages
+          reference capabilities; streams reference goals and KPIs.
+      - kind: modify
+        target: design/domain.schema.yaml
+        semver: minor
+        notes: >
+          Operations gain materializes block for entity lifecycle tracking. Produces/reacts_to
+          explicitly modeled.
+      - kind: modify
+        target: design/concepts.schema.yaml
+        semver: major
+        notes: >
+          Actor personas changed from single object to array (breaking). Enumerations gain
+          transitions_to[] and terminal flag.
+      - kind: modify
+        target: metamodel.schema.yaml
+        semver: minor
+        notes: >
+          Evidence chain fields (evidence_refs, evidence_strength) added to shared definitions.
+          CAT### context prefix support.

@@ -1,0 +1,203 @@
+# Blueprint Schema changelog - the 2.8 line.
+#
+# One file per MINOR version. Newest entry first; several entries may share a `version:`
+# when one release landed in more than one step.
+#
+# The index, with every line and its status, is ../CHANGELOG.md.
+entries:
+  - version: "2.8.5"
+    date: "2026-09-08"
+    summary: >
+      A model's migration REGISTER gets a schema. `migrations.yaml` beside the model root records
+      what a model has been through and what is planned for it, one entry per migration with its
+      changes described in prose: an `id`, a `name`, a `status`, at least one change, and optionally
+      a description, a semantic-versioning impact, a date, `depends_on`, tags, and whether the
+      migration is reversible with a summary of how.
+
+      It is a different document from `migration.yaml`, which describes ONE migration authored for
+      execution, with typed targets, before and after state, and rollback data. The register's two
+      vocabularies say why they are not one. `register_status` runs `planned`, `in-progress`,
+      `completed`, `cancelled`, which is where a migration stands as a reader of the model's history
+      sees it, and not the authoring lifecycle a single executable migration runs from draft to
+      applied. `register_change_kind` labels a change described in prose, where naming an entity is
+      optional because a change may be about a whole file, a slice or a convention;
+      `entity_change_kind` names an operation performed on a target in a given order. Each carries
+      `x-vocabulary-distinct` stating which question it answers.
+
+      A migration document is now addressed the same way by every surface that reads a model: a
+      model's own migration is `migration.yaml`, one of several is `<name>.migration.yaml`, and the
+      register is `migrations.yaml`.
+
+      The reference example gains both. `examples/prestashop` declares a register of the five
+      changes that model has been through, and its slices declare the thirty-three subdomains they
+      partition into.
+  - version: "2.8.4"
+    date: "2026-09-08"
+    summary: >
+      Two spaces, two vocabularies. DDD strategic importance had been declared three times: on a
+      slice (`core-domain`, `supporting-domain`, `generic-domain`, `technical-capability`), on a
+      subdomain within a slice (`core`, `supporting`, `generic`), and on a bounded context (`core`,
+      `generic-core`, `support`, `generic`). The first two are one classification at two
+      granularities and now share `metamodel.schema.yaml` `$defs.subdomain_kind`; the third
+      classifies a different subject and becomes `$defs.context_kind`. Each carries
+      `x-vocabulary-distinct` naming the space it classifies.
+
+      The surviving spellings are the ones models already use, so nothing migrates. A reader now
+      meets `supporting-domain` in the problem space and `support` in the solution space, in two
+      definitions that each state which space they are about. The one value that leaves an accepted
+      set is the bare `supporting` on a subdomain.
+
+      The two descriptions also stop contradicting each other. A bounded context's classification
+      named a problem-space axis while the slice field described the same field as solution space.
+      Both are true of different halves: the SUBJECT is a solution-space unit, and the
+      classification names the problem-space region it realizes. Each description now says so from
+      its own side.
+
+      A change considered and NOT made, recorded so the reason is available: a constitution
+      convention's `severity` remains `[warn, info]` while a fitness function's is `[error, warning,
+      info]`. A convention is defined here as a soft constraint that validators warn about and never
+      reject, so `error` has no meaning there, and the two sets differ for that reason rather than
+      by accident.
+
+      Two duplications are resolved by reference rather than by rewriting values. An environment's
+      substrate and a deployment scope's substrate declared the same four values, one inline and one
+      as a block list; they now share a local definition. A migration's `entity_change.kind` had
+      become value-identical to the metamodel's `change_kind`; those two stay separate deliberately,
+      one being a narrative impact classification and the other an executable operation, so each now
+      says so in an annotation rather than being merged.
+  - version: "2.8.3"
+    date: "2026-09-08"
+    summary: >
+      A goal can say where it sticks. `goal` gains `affects`, the block `risk`, `inquiry` and
+      `finding` already carry: `operation_refs`, `concept_refs`, `context_refs` and `story_refs`,
+      every one optional, with the same sub-shape `risk.affects` declares. A goal that declares none
+      validates exactly as it did before.
+
+      The field closes a gap no authoring could reach. An Event Storming wall draws a goal as an
+      opportunity, and every opportunity on every board fell under "not on a story path" because a
+      goal had nothing to declare a story with.
+  - version: "2.8.2"
+    date: "2026-09-07"
+    summary: >
+      `party.env` is REMOVED. This is a breaking change in a patch version, stated rather than
+      implied: a document that declares `env` on a party is rejected under 2.8.2 where it was
+      accepted under 2.8.1. The field was a required free string naming one deployment environment
+      for a whole party, and it predates the infrastructure layer: since v2.7.7 an environment is a
+      first-class entity (`ENV###`) carrying its class, substrate, provider and target scope, and a
+      binding resolves a need per environment. Nothing derived from the string, and being
+      single-valued it could not state a party present in two environments, which parties routinely
+      are through their services. `$defs.party.required` is now `[id, name]`, and the removal is
+      declared in the version's divergence ledger with its reason. The schema update tool removes
+      the line and reports each removal with the value it carried, so a model reaching 2.8 arrives
+      valid and its author is told what went and where it can go instead.
+
+      A controlled vocabulary used by more than one field is now declared once. Seven value-lists
+      written out at sixteen sites move into `metamodel.schema.yaml` `$defs` and every site
+      references them: `severity_scale`, `importance_scale`, `priority_scale`, `likelihood_scale`,
+      `outcome`, `production_mode`, `story_status`, `milestone_status`, plus `semver_impact`, which
+      had existed as a shared definition since v2.5 while the migration schema declared its own copy
+      beside five references to the same file.
+
+      Three of the new definitions carry BYTE-IDENTICAL value lists and different names, which is
+      the point rather than an oversight. A goal's priority, a capability's strategic importance and
+      a finding's severity are all four-point ladders answering three different questions: how
+      essential it is to act, how differentiating it is to the business, how much damage it does.
+      `critical` means "core differentiator" in one and "system failure" in another, so a single
+      definition would flatten a distinction the model relies on. Each carries
+      `x-vocabulary-distinct` naming the question it answers, so a reader and a checker can both
+      tell a deliberate twin from a copy. Declaring a list once also settles its ORDER once: graded
+      vocabularies read from least to greatest, except where an external standard fixes the order.
+
+      Two additions. A race condition's `likelihood` gains `very-high`, so it spans the same five
+      rungs as a risk's; a timing window can be hit under normal load. A declarative migration's
+      `changes[].kind` gains `rename`, so a migration document can record that an entity kept its
+      identity under a new id.
+
+      A render manifest target can name WHO opens its artifacts. `audience:` on a target is a
+      non-empty list of role names as the organization itself uses them - `QA lead`, `platform
+      team`, `the client's architect` - free text rather than a reference to a modelled actor,
+      because the reader of a delivery is usually outside the system being modelled. Nothing
+      narrows, renders or fails differently because of it: the field is the manifest stating who a
+      target is for, so a whole set can be asked whether every named reader has an artifact and
+      whether every artifact has a reader. The manifest schema and the runtime normalizer now also
+      agree about every LIST they both read.
+
+      Two shared semantic rules describe themselves accurately. `unbound-operation` is advisory and
+      says why it stays advisory: an operation can be unbound because the binding has not been
+      declared yet, because the context it belongs to is named but not modelled, or because the
+      solution side does not exist yet, and a rule cannot tell those apart from an author's
+      oversight. The finding reads as a question for the author rather than a verdict.
+  - version: "2.8.1"
+    date: "2026-09-06"
+    summary: >
+      A bounded context can be declared whole at the document root, and a service names the system
+      it is a component of. An arch document declares its contexts nested under the parties that
+      provide their services (`parties`), at the document root (`contexts`), or both. A
+      root-declared context is declared once in the model; its services name their system through
+      `system_ref` (a `PRT###` reference) or inherit the document's `system_ref` default, and the
+      systems a context spans are derived from its services. This is the form for a context that
+      several systems provide services to, which the nested form could state only by declaring the
+      context once per system and the party once per document that mentions it. `party.contexts` and
+      the root `parties` list stop being required, so a party can be declared whole, once, with its
+      `env` and no contexts.
+
+      `system_ref` is optional. A service nested under a party is a component of that party by
+      position; one that names a different party there contradicts its own declaration, and the
+      reference walk reports it as a cross-reference error. A root-declared context's service that
+      names no system and inherits none is silence rather than contradiction, and the semantic
+      checker reports it as a warning. Three rules ship with it - `service-without-system`,
+      `service-system-is-an-organization` (a service is a component of a technical system, while a
+      business unit or company owns it) and `party-parts-disagree` (two declarations of one party
+      that contradict each other; the parts are unioned and the disagreement reported, never
+      resolved).
+
+      This release ALSO admits `workshop` as an evidence `kind`: a collaborative modelling session
+      (EventStorming, Domain Storytelling, a whiteboard workshop) whose source is the board export
+      or photo and whose date is the session's, so an entity harvested from a board carries an
+      evidence record pointing back to it and a freshness scan sees the board's age. The `kind`
+      description now says what each of the ten values means.
+
+      This release ALSO carries the render manifest's `kind: model` and a working `slices:` list,
+      the same change the 2.7.16 entry describes; and it lets a governance concern say where it
+      sticks on the domain model - Risk and Inquiry gain `affects` with the shape Finding has
+      carried since v2.7 (`operation_refs`, `concept_refs`, `context_refs`), and all three gain
+      `story_refs`, for a concern about a flow as a whole rather than one of its operations. All
+      three build typed relations, so a risk, an inquiry or a finding reaches the graph and the
+      drawings rather than only the reference walk.
+
+      This release ALSO carries the suite's modeling-guidance ledger. `metamodel.schema.yaml` gains
+      an `x-gdsm` block holding durable modelling lessons about this schema, served on request and
+      read by nothing automatically; the 2.7 line carries the same block minus the lesson about
+      root-declared contexts, because the ledger is resolved from the schema directory of the
+      project being opened and both lines carry live projects. And the `unbound-question` rule stops
+      promising a severity the engine does not hold: it stays a warning, and its description now
+      says why - a `bounded_context_ref` naming an unknown `BC###` is already a cross-reference
+      error in validation, so what this check reports on its own is a question that names no context
+      at all.
+
+      Every v2.8.0 document validates unchanged: the nested form is untouched, and nothing new is
+      required. `blueprint-schema-update` rewrites a model that declares one party many times into
+      the root form - the party keeps its whole declaration in the file holding most of its
+      services, every other occurrence becomes a root-declared context, and each service carries or
+      inherits the `system_ref` naming the party it was nested under. No text is invented.
+  - version: "2.8.0"
+    date: "2026-09-04"
+    summary: >
+      The enforcement line. What the 2.7 line encouraged and warned about, 2.8 requires: every
+      party, context and service carries its typed id (`PRT###`, `BC###`, `SVC###`), every
+      infrastructure resource and deployment scope its typed id (`IR###`, `DSC###`), every
+      dependency states its DDD `relationship`, a decision carries a `summary` and a model schema a
+      `description`, capability and KPI owners are actor references, and a milestone deliverable's
+      `ref` is a typed union. A typed reference to an id nothing declares is a cross-reference error
+      on every validator surface. Two free-string surfaces of the arch document are removed -
+      `service.resources` and the root `infrastructure:` map - and the root `domains:` map is marked
+      for removal in v2.9. A story activity may leave `entry_operation` out; two advisory rules,
+      `activity-without-entry-operation` and `empty-context`, report the gap.
+
+      A model that reached 2.7 with the typed conventions in place validates under 2.8 unchanged.
+      One that did not gets across with `blueprint-schema-update`: it mints the missing context and
+      service ids, retypes free-string resource and scope ids together with every reference to them,
+      bumps `schemaVersion` and moves the model to `v2.8/`, and reports rather than guesses a
+      removed surface or a party without `PRT###`. `schema/v2.8/MIGRATION.md` is the guide. The
+      prestashop example ships at v2.8; the v2.7 and v2.6 trees stay published for models on those
+      lines.
