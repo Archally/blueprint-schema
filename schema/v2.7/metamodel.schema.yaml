@@ -572,7 +572,7 @@ $defs:
   # (ex-`rg`, frozen since v2.0.0) participates in the knowledge graph. The new
   # prefixes IR/ENV/RT/BND are collision-free and pattern-distinct from their
   # visual neighbours (ENV != EN, BND != BD, RT != R / rule refs). RES### stays
-  # `resilience_ref` — the infra resource is IR###, not RES###.
+  # `resilience_ref` - the infra resource is IR###, not RES###.
   # All typed IDs are STRONGLY ENCOURAGED but OPTIONAL in v2.7.x: a free-string
   # id stays schema-valid; the validator WARNs when it doesn't match the prefix.
   # They become REQUIRED in v2.8 (with resolvability warn->error), joining the
@@ -858,7 +858,7 @@ $defs:
           description: "How this evidence affects confidence in the entity."
 
   # ---------------------------------------------------------------------------
-  # Provenance (v2.8) — grouped epistemic metadata for DESIGN-plane entities.
+  # Provenance (v2.8) - grouped epistemic metadata for DESIGN-plane entities.
   # Governance entities carry discovery_stage/certainty/evidence as flat fields;
   # design entities nest them here to avoid colliding with domain-semantic
   # fields (e.g. rules.certainty = definitive|heuristic). Optional and additive.
@@ -887,7 +887,7 @@ $defs:
   # Shared Traceability Links (use typed refs)
   # ---------------------------------------------------------------------------
 
-  # NOTE (v2.7.7): validates_links / impacts_links are shared TEMPLATE $defs — the consuming
+  # NOTE (v2.7.7): validates_links / impacts_links are shared TEMPLATE $defs - the consuming
   # schemas carry their own local copies (test-cases `validates_refs`, decisions
   # `impact_declaration.direct`) which are the authoritative, validated structures. These
   # templates are kept in sync as a reference shape; editing them alone is

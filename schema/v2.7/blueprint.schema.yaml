@@ -40,7 +40,7 @@ properties:
       prefixed code_ref by looking up its prefix here; unprefixed refs fall back to `repository`.
       Example: { "acme/orders-service": { url: "https://gitlab.com/acme/orders-service", provider: gitlab } }.
 
-  # === Trackers (v2.7.5) — issue/document link registry for tracker_ref ===
+  # === Trackers (v2.7.5) - issue/document link registry for tracker_ref ===
   trackers:
     type: object
     additionalProperties:

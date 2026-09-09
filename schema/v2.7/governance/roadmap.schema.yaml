@@ -146,7 +146,7 @@ $defs:
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
 
-  # --- Execution tier (WBS) — added v2.7.2 ---
+  # --- Execution tier (WBS) - added v2.7.2 ---
 
   work_item:
     type: object

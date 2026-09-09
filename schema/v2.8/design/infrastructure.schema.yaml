@@ -346,7 +346,7 @@ $defs:
         description: "Number of replicas for services in this tier."
 
   # ---------------------------------------------------------------------------
-  # v2.7.7 — knowledge-graph participation (typed, substrate-neutral, additive)
+  # v2.7.7 - knowledge-graph participation (typed, substrate-neutral, additive)
   # ---------------------------------------------------------------------------
 
   environment:
@@ -567,7 +567,7 @@ $defs:
         description: "Retain the underlying resource when the model entity is removed."
 
   # ---------------------------------------------------------------------------
-  # v2.7.7 — intent + binding split, and neutral cross-cutting blocks
+  # v2.7.7 - intent + binding split, and neutral cross-cutting blocks
   # ---------------------------------------------------------------------------
 
   binding:

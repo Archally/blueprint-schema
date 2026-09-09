@@ -402,7 +402,7 @@ $defs:
         description: "Unresolved questions that must be answered before this option can be chosen."
 
   # ---------------------------------------------------------------------------
-  # Bounded Context Canvas v5 — Business Decision (BD###)
+  # Bounded Context Canvas v5 - Business Decision (BD###)
   # Added in v2.6.3. Distinct from `decision` (D###, ADR rationale): a
   # business_decision is a high-level policy statement scoped to a bounded
   # context. Lives in the same governance file as ADRs because both belong to

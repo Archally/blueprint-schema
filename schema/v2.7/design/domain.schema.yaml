@@ -984,4 +984,4 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
-      # NOTE: Questions do NOT have code_refs — they are strategic/analytical artifacts, not code.
+      # NOTE: Questions do NOT have code_refs - they are strategic/analytical artifacts, not code.
