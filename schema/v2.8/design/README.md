@@ -11,7 +11,7 @@ Each file below is a standalone JSON Schema (draft 2020-12), loaded by the valid
 | [`concepts.schema.yaml`](./concepts.schema.yaml) | Domain vocabulary. Defines concepts (entities, value objects, aggregates), actors, enumerations, and cross-concept associations. |
 | [`domain.schema.yaml`](./domain.schema.yaml) | Domain operations with protocol bindings, rule governance, pre/postconditions, and side effects. Ordering is in story (logical) and dynamics (runtime). |
 | [`rules.schema.yaml`](./rules.schema.yaml) | Business rules. Structural invariants, classification, derivation, equivalence, validation, and state-transition rules with SBVR modality. |
-| [`story.schema.yaml`](./story.schema.yaml) | Domain stories expressing logical operation sequences, actor interactions, and side effects. Ordering here is logical; runtime ordering is in dynamics. |
+| [`story.schema.yaml`](./story.schema.yaml) | Business processes expressing logical operation sequences, actor interactions, and side effects. Ordering here is logical; runtime ordering is in dynamics. |
 | [`models.schema.yaml`](./models.schema.yaml) | Reusable data model definitions (schemas, fields, parameters) with optional concept back-references. Follows OpenAPI/AsyncAPI component naming conventions. |
 | [`arch.schema.yaml`](./arch.schema.yaml) | Bounded context topology. Parties, contexts, services with contracts (interfaces), enriched dependencies for context-map inference, and unified component kinds. |
 | [`interactions.schema.yaml`](./interactions.schema.yaml) | User interface screens, actions, and navigation. Cross-links to models, operations, goals, decisions, tests, and stories for CIA traceability from domain changes to UI impact. |
