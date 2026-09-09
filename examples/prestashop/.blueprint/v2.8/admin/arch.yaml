@@ -30,7 +30,7 @@ contexts:
         summary: REST API for employee, security, and configuration management.
         servers:
           - url: https://api.prestashop.example/v1
-            environment: production
+            environment: prestashop.ENV001
           - url: http://localhost:8080/api
             environment: development
         contracts:

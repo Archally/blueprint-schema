@@ -15,7 +15,6 @@ parties:
   - id: PRT003
     name: ApiIntegrators
     kind: system
-    env: production
     description: >-
       Third-party systems integrating with PrestaShop over the Admin REST API using OAuth2. Not built
       or operated by PrestaShop; modelled so the dependency on the Admin API surface is visible.
@@ -23,7 +22,6 @@ parties:
   - id: PRT002
     name: PrestaShop
     kind: system
-    env: production
     description: PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
 
 system_ref: PRT003

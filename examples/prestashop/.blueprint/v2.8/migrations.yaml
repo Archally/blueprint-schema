@@ -1,0 +1,102 @@
+---
+version: "1.0.0"
+tags: [migrations, v2.7-to-v2.8]
+
+# Where this model has been. Each entry is one change that landed, in the order it landed.
+migrations:
+  - id: MIG001
+    name: "Move to the v2.8 line"
+    date: "2026-09-04"
+    status: completed
+    impact: major
+    reversible: false
+    description: >
+      The model moves from the v2.7 tree to v2.8 through the schema update hop.
+      v2.8 requires typed ids where v2.7 accepted free strings, so every layer is
+      rewritten rather than re-declared, and the earlier tree stops being the one
+      that is read.
+    changes:
+      - type: modify
+        description: >
+          Every layer file moves from .blueprint/v2.7 to .blueprint/v2.8 and declares
+          schemaVersion 2.8.0. Free-string identifiers become typed ids.
+      - type: remove
+        description: >
+          The root infrastructure map and a service's free-string resource list go,
+          both replaced by the typed infrastructure layer and resource_refs.
+
+  - id: MIG002
+    name: "The anchor states its reactions and its risks"
+    date: "2026-09-06"
+    status: completed
+    impact: minor
+    reversible: true
+    inverse_summary: >
+      Remove the two produces clauses on the anchor and the six risks that name them.
+    description: >
+      The event-storming anchor was silent about what the platform reacts to. It now
+      states the two reactions PrestaShop has, and six risks say where each one sticks.
+    changes:
+      - type: add
+        description: "Two reactions on the anchor, and the produces clause each one needs."
+      - type: add
+        description: "Six risks, each naming the reaction whose failure it describes."
+
+  - id: MIG003
+    name: "Each context and each party is declared once"
+    date: "2026-09-06"
+    status: completed
+    impact: minor
+    reversible: true
+    inverse_summary: >
+      Return each context declaration to the parties that repeated it, and drop the
+      document-level system_ref defaults.
+    description: >
+      A bounded context had been declared inside every party that provided one of its
+      services, so a context with four providers was declared four times and a diagram
+      could claim any one of them owned it. Contexts move to the document root, declared
+      once, and a service names the system it belongs to.
+    changes:
+      - type: modify
+        entity: prestashop.arch.yaml
+        description: >
+          Contexts move from nested declarations under parties to the document root.
+      - type: add
+        description: >
+          A service names its system through system_ref, or inherits the document default.
+
+  - id: MIG004
+    name: "A party stops declaring an environment"
+    date: "2026-09-07"
+    status: completed
+    impact: major
+    reversible: false
+    description: >
+      A party's environment was a second place to say what the services it provides
+      already say. The field leaves the v2.8 line and is named in the divergence ledger,
+      so a document still carrying it is rejected rather than quietly ignored.
+    changes:
+      - type: remove
+        description: "party.env, on every party that declared one."
+
+  - id: MIG005
+    name: "A server names the environment the model declares"
+    date: "2026-09-07"
+    status: completed
+    impact: patch
+    reversible: true
+    inverse_summary: >
+      Replace each ENV### reference with the environment name it resolves to.
+    description: >
+      Production servers named their environment in prose while the infrastructure layer
+      declared it as a typed entity, so the two could disagree and nothing would say so.
+      Each production server now references the declared environment. Development servers
+      keep a name, because no such environment is declared.
+    changes:
+      - type: modify
+        description: >
+          Production servers reference prestashop.ENV001 where they carried the string
+          "production". Development servers keep their string.
+        reason: >
+          The model declares no development environment, and inventing one so that every
+          server could reference something would state what is not true.
