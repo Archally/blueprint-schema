@@ -154,7 +154,7 @@ $defs:
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
 
-  # --- Execution tier (WBS) — added v2.7.2 ---
+  # --- Execution tier (WBS) - added v2.7.2 ---
 
   work_item:
     type: object
@@ -307,17 +307,17 @@ $defs:
 
   goal_ref_list:
     type: array
-    description: "Motivation goals (G###) this item advances."
+    description: "Motivation goals (GL###) this item advances."
     items:
       $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
   risk_ref_list:
     type: array
-    description: "Motivation risks (R###) this item mitigates."
+    description: "Motivation risks (RSK###) this item mitigates."
     items:
       $ref: "../metamodel.schema.yaml#/$defs/risk_ref"
   decision_ref_list:
     type: array
-    description: "Decisions (D###) this item realizes / implements."
+    description: "Decisions (DC###) this item realizes / implements."
     items:
       $ref: "../metamodel.schema.yaml#/$defs/decision_ref"
   value_stream_ref_list:

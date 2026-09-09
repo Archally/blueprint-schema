@@ -134,15 +134,17 @@ $defs:
 
   decision_ref:
     type: string
-    pattern: "^([a-z][a-z0-9-]*\\.)?D\\d{3}$"
-    description: "Reference to a decision (e.g. D001 or billing.D001)."
+    pattern: "^([a-z][a-z0-9-]*\\.)?(DC|D)\\d{3}$"
+    description: >
+      Reference to a decision (e.g. DC001 or billing.DC001). `D###` is the band's retired
+      spelling: it still validates on this line and stops validating in the next major.
 
   business_decision_ref:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?BD\\d{3,}$"
     description: >
       Reference to a Bounded Context Canvas business decision (e.g. BD001 or
-      orders.BD001). Distinct from `decision_ref` (D###, ADR rationale): a
+      orders.BD001). Distinct from `decision_ref` (DC###, ADR rationale): a
       business_decision is a high-level policy statement scoped to a bounded
       context, not an architectural decision record.
 
@@ -153,23 +155,31 @@ $defs:
 
   goal_ref:
     type: string
-    pattern: "^([a-z][a-z0-9-]*\\.)?G\\d{3}$"
-    description: "Reference to a motivation goal (e.g. G001 or billing.G001)."
+    pattern: "^([a-z][a-z0-9-]*\\.)?(GL|G)\\d{3}$"
+    description: >
+      Reference to a motivation goal (e.g. GL001 or billing.GL001). `G###` is the band's retired
+      spelling: it still validates on this line and stops validating in the next major.
 
   risk_ref:
     type: string
-    pattern: "^([a-z][a-z0-9-]*\\.)?R\\d{3}$"
-    description: "Reference to a motivation risk (e.g. R001 or billing.R001)."
+    pattern: "^([a-z][a-z0-9-]*\\.)?(RSK|R)\\d{3}$"
+    description: >
+      Reference to a motivation risk (e.g. RSK001 or billing.RSK001). `R###` is the band's retired
+      spelling: it still validates on this line and stops validating in the next major.
 
   assumption_ref:
     type: string
-    pattern: "^([a-z][a-z0-9-]*\\.)?A\\d{3}$"
-    description: "Reference to a motivation assumption (e.g. A001 or billing.A001)."
+    pattern: "^([a-z][a-z0-9-]*\\.)?(ASM|A)\\d{3}$"
+    description: >
+      Reference to a motivation assumption (e.g. ASM001 or billing.ASM001). `A###` is the band's
+      retired spelling: it still validates on this line and stops validating in the next major.
 
   trade_off_ref:
     type: string
-    pattern: "^([a-z][a-z0-9-]*\\.)?T\\d{3}$"
-    description: "Reference to a motivation trade-off (e.g. T001 or billing.T001)."
+    pattern: "^([a-z][a-z0-9-]*\\.)?(TRO|T)\\d{3}$"
+    description: >
+      Reference to a motivation trade-off (e.g. TRO001 or billing.TRO001). `T###` is the band's
+      retired spelling: it still validates on this line and stops validating in the next major.
 
   inquiry_ref:
     type: string
@@ -203,23 +213,22 @@ $defs:
 
   association_ref:
     type: string
-    pattern: "^([a-z][a-z0-9-]*\\.)?AS\\d{3}$"
-    description: "Reference to an association (e.g. AS001 or billing.AS001)."
+    pattern: "^([a-z][a-z0-9-]*\\.)?(ASC|AS)\\d{3}$"
+    description: >
+      Reference to an association (e.g. ASC001 or billing.ASC001). `AS###` is the band's retired
+      spelling: it still validates on this line and stops validating in the next major. It moves
+      with the one-letter bands because `AS###` beside `ASM###` would rebuild, one letter along,
+      the adjacency they are being retired to remove.
 
   transition_ref:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?TR\\d{3}$"
     description: "Reference to a state transition rule (e.g. TR001 or billing.TR001)."
 
-  story_activity_ref:
+  process_activity_ref:
     type: string
-    pattern: "^([a-z][a-z0-9-]*\\.)?SA\\d{3}$"
-    description: "Reference to a story activity (e.g. SA001 or billing.SA001)."
-
-  story_process_ref:
-    type: string
-    pattern: "^([a-z][a-z0-9-]*\\.)?SP\\d{3}$"
-    description: "Reference to a story process (e.g. SP001 or billing.SP001)."
+    pattern: "^([a-z][a-z0-9-]*\\.)?PA\\d{3}$"
+    description: "Reference to a process activity (e.g. PA001 or billing.PA001)."
 
   user_story_ref:
     type: string
@@ -268,6 +277,16 @@ $defs:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?MIG\\d{3}$"
     description: "Reference to a blueprint model migration (e.g. MIG001 or billing.MIG001)."
+
+  domain_ref:
+    type: string
+    pattern: "^DMN\\d{3,}$"
+    description: "Reference to a domain declared in blueprint.yaml `domains[]` (e.g. DMN001). Model-wide, so no context prefix."
+
+  subdomain_ref:
+    type: string
+    pattern: "^SDM\\d{3,}$"
+    description: "Reference to a subdomain declared under its domain in blueprint.yaml `domains[].subdomains[]` (e.g. SDM001)."
 
   model_ref:
     description: >
@@ -367,10 +386,10 @@ $defs:
     pattern: "^([a-z][a-z0-9-]*\\.)?SVC\\d{3,}$"
     description: "Reference to an architecture service (e.g. SVC001 or shop.SVC001)."
 
-  story_ref:
+  process_ref:
     type: string
-    pattern: "^([a-z][a-z0-9-]*\\.)?STR\\d{3}$"
-    description: "Reference to a domain story (e.g. STR001 or orders.STR001)."
+    pattern: "^([a-z][a-z0-9-]*\\.)?PRC\\d{3}$"
+    description: "Reference to a business process (e.g. PRC001 or orders.PRC001)."
 
   question_ref:
     type: string
@@ -615,9 +634,8 @@ $defs:
       RT001 or azure.RT001). A resource type carries an inputs/outputs contract
       and is realised per platform by profile data (neutral + azure + k8s/aws).
       The catalog is external to the model, so this reference resolves against the
-      catalog and never against the model's own entities. Pattern-distinct from
-      `risk_ref` (R###) and `rule_ref` ((SR|CR|DR|EQ|VR)###): RT### != R###, and RT
-      is not a rule prefix.
+      catalog and never against the model's own entities. Not a rule prefix: a rule is
+      `(SR|CR|DR|EQ|VR)###`.
 
   binding_ref:
     type: string
@@ -641,8 +659,6 @@ $defs:
       Distinct from TOSCA `hosted_on` (runtime placement, NOT management grouping) and
       from the file-scope prefix (authoring grouping). A deployment scope's id was a
       free string on the 2.7 line; from 2.8 only the typed form validates.
-      Pattern-distinct from `decision_ref` (D###): DSC### != D### (the
-      character after D is S, not a digit).
 
   infra_relation:
     type: string
@@ -1000,7 +1016,7 @@ $defs:
           description: "How this evidence affects confidence in the entity."
 
   # ---------------------------------------------------------------------------
-  # Provenance (v2.8) — grouped epistemic metadata for DESIGN-plane entities.
+  # Provenance (v2.8) - grouped epistemic metadata for DESIGN-plane entities.
   # Governance entities carry discovery_stage/certainty/evidence as flat fields;
   # design entities nest them here to avoid colliding with domain-semantic
   # fields (e.g. rules.certainty = definitive|heuristic). Optional and additive.
@@ -1029,7 +1045,7 @@ $defs:
   # Shared Traceability Links (use typed refs)
   # ---------------------------------------------------------------------------
 
-  # NOTE (v2.7.7): validates_links / impacts_links are shared TEMPLATE $defs — the consuming
+  # NOTE (v2.7.7): validates_links / impacts_links are shared TEMPLATE $defs - the consuming
   # schemas carry their own local copies (test-cases `validates_refs`, decisions
   # `impact_declaration.direct`) which are the authoritative, validated structures. These
   # templates are kept in sync as a reference shape; editing them alone is
@@ -1094,6 +1110,43 @@ $defs:
           $ref: "#/$defs/environment_ref"
         description: "Deployment environments (ENV###) impacted by this decision."
 
+# ── Retired id bands ──────────────────────────────────────────────────
+# The bands this line accepts in two spellings, and which of the two is retired. Declared as data
+# rather than only in the `description:` of each reference above, because two tools read it: the
+# validator reports a model still using a retired band, and the update that rewrites a model to
+# the new spelling is checked against this list. Version-scoped by construction - a model
+# validated against a line carrying no such block is reported nothing, because there the short
+# spelling is the current one.
+#
+# `deprecated_since` is the version that widened the first patterns; a band widened later carries
+# its own `since`, so a report names the version that actually accepted the row's new spelling.
+x-retired-bands:
+  deprecated_since: "2.8.11"
+  removed_in: "the next major line"
+  bands:
+    - old: D
+      new: DC
+      entity: Decision
+    - old: R
+      new: RSK
+      entity: Risk
+    - old: G
+      new: GL
+      entity: Goal
+    - old: T
+      new: TRO
+      entity: TradeOff
+    - old: A
+      new: ASM
+      entity: Assumption
+    - old: AS
+      new: ASC
+      entity: Association
+    - old: W
+      new: WCH
+      entity: Watch item
+      since: "2.8.12"
+
 # ── GDSM self-description + modeling-guidance ledger ─────────────────────────
 # `modeling_guidance` is the schema-native home for durable modelling lessons about this
 # suite, served on demand by the blueprint MCP `get_analysis_guidance` tool. Entries are
@@ -1114,6 +1167,41 @@ x-gdsm:
     semantic rule can decide belongs in that check instead, and what is true of one model only
     belongs in that model.
   modeling_guidance:
+    - lesson: >
+        Order is not causality. `produces` and `reacts_to` state what an operation causes, true of
+        it wherever it appears; an activity's `steps` state which operations run in that phase of
+        that process, in what order, with what commentary - including queries and the commands a
+        person issues next, which have no causal edge to live on. The same operation sits in many
+        processes with different neighbours, so order cannot live on the operation. Author both:
+        causality once, on the operation; sequence per activity, and never a branch inside it - an
+        activity that needs an alternative is two activities.
+      category: semantics
+      date: "2026-09-09"
+      evidence: >
+        Measured across every model on this line: on the curated example, steps restate the
+        command-and-its-event pair in 11 of 13 adjacent pairs; on the largest real model 143 of 279
+        adjacent pairs have no causal edge at all and 174 of 279 non-entry step references lie
+        outside the story's causal closure, most of them a command a person issued next. Every
+        one of the corpus's 624 step rows carries a note.
+      schema_version: "2.8.9"
+    - lesson: >
+        Three narrative entities, and the choice between them is one question: is this something
+        someone INTENDS, or something the model already CONTAINS? `user_story` and `use_case`
+        state intent - they carry delivery state, need no operation to exist, and can be deferred
+        or dropped with the model unchanged. `story` and its activities describe the model, an
+        activity naming the operation it begins at. So a use case can be authored before the
+        domain model exists and a story cannot say much without it. This is NOT the
+        `design` / `governance` plane axis, which is authorship and epistemic maturity: the two
+        are independent, and a requirement does not change plane for being a requirement.
+      category: semantics
+      date: "2026-09-09"
+      evidence: >
+        `use_case.main_scenario[]` requires only `step` and `action` and leaves `operation`
+        optional, while a `story_activity` without `entry_operation` is reported by the
+        `activity-without-entry-operation` rule. Across every model on this line, no file has ever
+        been authored holding requirements alone: the two tiers are written together, so the
+        distinction has to be stated rather than read off the file layout.
+      schema_version: "2.8.9"
     - lesson: >
         Two fields share one definition only when all three hold: they answer the same question
         about different subjects, every value transfers with its ANCHORS, and some declared task
@@ -1184,3 +1272,19 @@ x-gdsm:
         under several parties each, because the party owning a context has to be re-declared
         wherever the context is.
       schema_version: "2.8.1"
+    - lesson: >
+        A folder is not a domain. The filesystem never establishes a model fact: a slice is
+        where files live, a domain is a region of the problem space, and the two are n-to-n
+        (two folders can describe one domain, one folder can hold parts of several). So the
+        problem space is a registry of its own (`domains[]`, two levels, ids), a bounded
+        context names its domain by id, and which slice holds a domain's model is DERIVED from
+        where its contexts are declared. A folder may supply a default for a declarable field,
+        never the only source of one, and the graph records which source won.
+      category: structure
+      date: "2026-09-09"
+      evidence: >
+        A client model declared 33 typed slices with 97 subdomains inside `layout.slices` and
+        31 contexts naming a slice as their domain; nothing could say that two of those slices
+        were one domain, and a renderer had to treat the slice vocabulary as the domain
+        vocabulary.
+      schema_version: "2.8.6"

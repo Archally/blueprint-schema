@@ -115,13 +115,13 @@ $defs:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/risk_ref"
-        description: "Motivation risks (R###) this intervention mitigates."
+        description: "Motivation risks (RSK###) this intervention mitigates."
       decision_refs:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/decision_ref"
         description: >
-          Decisions (D###) this intervention bundles / is realized through - the DIRECT link to the
+          Decisions (DC###) this intervention bundles / is realized through - the DIRECT link to the
           architecture decision log. (Indirect links also exist via `finding_refs` and `realized_by`.)
       fitness_function_refs:
         type: array
@@ -147,7 +147,7 @@ $defs:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
-        description: "Motivation goals (G###) this intervention advances."
+        description: "Motivation goals (GL###) this intervention advances."
       advances_value_streams:
         type: array
         items:
@@ -215,8 +215,12 @@ $defs:
     properties:
       id:
         type: string
-        pattern: "^W\\d{3}$"
-        description: "Local watch-item id (W + 3 digits). Not referenced elsewhere - local to this map."
+        pattern: "^([a-z][a-z0-9-]*\\.)?(WCH|W)\\d{3}$"
+        description: >
+          Identifier of this watch item (e.g. WCH001 or billing.WCH001). `W###` is the band's
+          retired spelling: it still validates on this line and stops validating in the next major.
+          The context prefix carries the scope a map declares, so two scoped maps in one model name
+          their watch items apart.
       title:
         type: string
         description: "What is being watched (e.g. 'Retire compatibility-only runtime islands')."
@@ -227,7 +231,7 @@ $defs:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/risk_ref"
-        description: "Risks (R###) this watch item concerns."
+        description: "Risks (RSK###) this watch item concerns."
       finding_refs:
         type: array
         items:
@@ -237,6 +241,6 @@ $defs:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/decision_ref"
-        description: "Decisions (D###) relevant to this watch item."
+        description: "Decisions (DC###) relevant to this watch item."
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
