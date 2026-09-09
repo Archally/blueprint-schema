@@ -41,6 +41,8 @@ const FILENAME_TO_SCHEMA: Record<string, string> = {
   'capability.yml': 'capability',
   'story.yaml': 'story',
   'story.yml': 'story',
+  'process.yaml': 'process',
+  'process.yml': 'process',
   'models.yaml': 'models',
   'models.yml': 'models',
   'rg.yaml': 'rg',
@@ -62,12 +64,16 @@ const FILENAME_TO_SCHEMA: Record<string, string> = {
   'leverage.yaml': 'leverage',
   'leverage.yml': 'leverage',
   'blueprint.yaml': 'blueprint',
+  'migration.yaml': 'migration',
+  'migration.yml': 'migration',
+  'migrations.yaml': 'migrations',
+  'migrations.yml': 'migrations',
   'blueprint.yml': 'blueprint',
 };
 
 /** Multi-file pattern: {name}.{schema-type}.yaml (e.g. consumer.domain.yaml, payment.concepts.yaml). */
 const MULTI_FILE_PATTERN =
-  /^[^/\\]+\.(concepts|rules|domain|arch|motivation|decisions|test-cases|dynamics|quality|capability|story|models|rg|infrastructure|org|organization|ui|interactions|roadmap|value-stream|leverage)\.(yaml|yml)$/i;
+  /^[^/\\]+\.(concepts|rules|domain|arch|motivation|decisions|test-cases|dynamics|quality|capability|story|process|models|rg|infrastructure|org|organization|ui|interactions|roadmap|value-stream|leverage)\.(yaml|yml)$/i;
 
 export function getSchemaTypeFromPath(filePath: string | undefined): string | null {
   if (!filePath) return null;

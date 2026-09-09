@@ -22,8 +22,10 @@ import { extractLeverage } from './leverage.js';
 import { extractRg } from './rg.js';
 import { extractInfrastructure } from './infrastructure.js';
 import { extractDynamics } from './dynamics.js';
+import { extractDomains } from './domains.js';
 
 const EXTRACTORS: Record<string, (doc: ParsedBlueprintDocument) => Entity[]> = {
+  blueprint: extractDomains,
   concepts: extractConcepts,
   rules: extractRules,
   domain: extractDomain,
@@ -34,6 +36,9 @@ const EXTRACTORS: Record<string, (doc: ParsedBlueprintDocument) => Entity[]> = {
   capability: extractCapability,
   quality: extractQuality,
   story: extractStory,
+  // The same extractor serves both names of one file kind: `story` before v2.8.10, `process`
+  // now. Which one a model uses is decided by its own version's schema-type map.
+  process: extractStory,
   dynamics: extractDynamics,
   models: extractModels,
   rg: extractRg,
@@ -104,4 +109,5 @@ export { extractLeverage } from './leverage.js';
 export { extractRg } from './rg.js';
 export { extractInfrastructure } from './infrastructure.js';
 export { extractDynamics } from './dynamics.js';
+export { extractDomains } from './domains.js';
 export { makeInternalId, getSchemaTypeFromPath } from './id.js';

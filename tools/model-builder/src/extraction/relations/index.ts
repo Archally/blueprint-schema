@@ -37,6 +37,7 @@ import { extractInfrastructureRelations } from './infrastructure.js';
 import { extractMembershipRelations } from './membership.js';
 import { extractDynamicsRelations } from './dynamics.js';
 import { extractQualityRelations } from './quality.js';
+import { extractDomainRegistryRelations } from './domains.js';
 
 /**
  * Build all relations from the entity list.
@@ -96,6 +97,7 @@ export function buildRelations(
     ...extractMembershipRelations(entities),
     ...extractDynamicsRelations(entities, placeholders),
     ...extractQualityRelations(entities, placeholders),
+    ...extractDomainRegistryRelations(entities, placeholders),
     ...codeRefRelations,
   ];
 

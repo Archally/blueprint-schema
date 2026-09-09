@@ -1,0 +1,21 @@
+engineVersion: "0.1"
+rules:
+  - id: user-story-use-case-back-reference
+    severity: warn
+    description: >-
+      A user story names its use case through `use_case`, which is soft-deprecated. The link between
+      a use case and the stories that realise it is stated once, by the use case, in
+      `user_stories[]`. Written from both ends it is two statements with nothing to say which is
+      current, and the graph carries two relation types for one relationship, so asking a use case
+      for its stories and asking a story for its use case can return different answers. The finding
+      names each use case and the edit it needs: one that already lists the story back needs only
+      the back-pointer removed, one that does not is relying on it, and gains the story first.
+      Override per-project via .blueprint-lint.yaml
+      (e.g. `user-story-use-case-back-reference: off`).
+    find:
+      entity_type: UserStory
+    check:
+      custom:
+        module: ./user-story-use-case-back-reference.mjs
+        export: userStoryUseCaseBackReference
+    message: 'User story "{displayId}" ({name|''unnamed''}) names {count} use case(s) through the deprecated `use_case` back-pointer: {cases}.'

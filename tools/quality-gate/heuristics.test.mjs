@@ -119,3 +119,27 @@ describe('classifyValue — content heuristics (the anti-filler tier)', () => {
     assert.equal(classifyValue('string', undefined, {}).status, 'covered');
   });
 });
+
+describe('classifyValue: deny_opening', () => {
+  const rules = { deny_opening: ['if', 'when', 'unless', 'jeśli', 'gdy', 'w przypadku'] };
+
+  test('a note that opens with a condition is filler, and the reason names the word', () => {
+    const result = classifyValue('If the customer is new, create the account first.', rules);
+    assert.equal(result.status, 'filler');
+    assert.match(result.reason ?? '', /opens with a condition \("if"\)/);
+    assert.equal(classifyValue('Jeśli klient jest nowy, załóż konto.', rules).status, 'filler');
+    assert.equal(classifyValue('W przypadku błędu powtórz krok.', rules).status, 'filler');
+  });
+
+  test('the word has to OPEN the note; inside it, a condition is ordinary prose', () => {
+    assert.equal(classifyValue('Create the account, even if the customer exists.', rules).status, 'covered');
+    // A word that merely starts with the denied one is not the denied one.
+    assert.equal(classifyValue('Iffy data is rejected here.', rules).status, 'covered');
+    assert.equal(classifyValue('Whenever possible, batch the writes.', rules).status, 'covered');
+  });
+
+  test('punctuation and case around the opening word do not hide it', () => {
+    assert.equal(classifyValue('  IF: stock is short, reserve later.', rules).status, 'filler');
+    assert.equal(classifyValue('"When" the timer fires, close the batch.', rules).status, 'filler');
+  });
+});

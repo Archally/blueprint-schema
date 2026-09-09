@@ -30,7 +30,7 @@ export function buildStoryRelations(
 ): Relation[] {
   const relations: Relation[] = [];
 
-  const storyEntities = entities.filter((e) => e.type === ENTITY_TYPE.Story);
+  const storyEntities = entities.filter((e) => e.type === ENTITY_TYPE.Process);
 
   for (const story of storyEntities) {
     const details = (story.data as { operationsDetail?: OperationDetail[] })?.operationsDetail ?? [];
@@ -77,7 +77,7 @@ export function buildStoryRelations(
         id: `${story.id}_orders_${targetId}_${op.position}`,
         source_entity_id: story.id,
         target_entity_id: targetId,
-        type: RELATION_TYPE.StoryOrdersOperation,
+        type: RELATION_TYPE.ProcessOrdersOperation,
         predicate: `orders at position ${op.position}`,
         data: { position: op.position, component: op.component },
       });

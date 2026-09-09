@@ -4,6 +4,7 @@ import { toPosixPath, walkFiles, loadYaml } from "./utils.mjs";
 import { loadSchemaRegistry, makeAjv, SCHEMA_BASE_URI } from "./schema-registry.mjs";
 import { deriveReferenceKeys } from "./reference-keys.mjs";
 import { resolveModelReferences } from "./cross-references.mjs";
+import { retiredBandTable, retiredBandMessage } from "./id-bands.mjs";
 import { archContextsOf, servicesOf } from "./arch-shape.mjs";
 import { FILENAME_TO_SCHEMA, detectSchemaType } from "./schema-types.mjs";
 import { isIdentityOrReferenceViolation } from "./references.mjs";
@@ -287,6 +288,9 @@ function describeError(rawError) {
 
 export function validateModel(args) {
   const { registry } = loadSchemaRegistry(args.schemas);
+  // Which id bands this schema line retires is the line's own statement, so a model checked against
+  // an earlier tree is told nothing about bands that tree never retired.
+  const bandTable = retiredBandTable(registry);
   const ajv = makeAjv(registry);
   // Which keys hold a reference is read off THIS schema tree, so the walk below resolves exactly
   // the references the declared version types - see reference-keys.mjs for why it is not a list.
@@ -390,9 +394,12 @@ export function validateModel(args) {
   // render the same ones - one implementation of "does this reference resolve", two surfaces.
   // A cycle and a self edge are cross-reference errors rather than schema errors, so `--compat`
   // cannot demote them: a chain that does not terminate is not a version-compatibility question.
-  const references = resolveModelReferences(parsedFiles, refKeys);
+  const references = resolveModelReferences(parsedFiles, refKeys, bandTable);
   for (const { id, locations } of references.duplicates) {
     warnings.push(`Duplicate ID '${id}' in: ${locations.join(", ")}`);
+  }
+  for (const finding of references.retiredBands) {
+    warnings.push(retiredBandMessage(finding, bandTable));
   }
   for (const { value, loc } of references.missing) {
     crossErrors.push(`Missing reference '${value}' at ${loc}`);

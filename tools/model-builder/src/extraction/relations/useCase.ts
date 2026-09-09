@@ -6,11 +6,17 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
 /**
  * Extract outbound relations from UseCase entities:
  * - primary_actor → UseCaseActor (use_case → actor)
+ * - secondary_actors[] → UseCaseSecondaryActor (use_case → actor)
+ * - includes[] → UseCaseIncludes, extends[] → UseCaseExtends (use_case → use case)
  * - user_stories[] → UseCaseUserStory (use_case → user story)
- * - stories[] → UseCaseStory (use_case → story STR###)
+ * - processes[] → UseCaseProcess (use_case → process PRC###)
  * - main_scenario[].screen → UseCaseScreen (use_case → screen)
- * - main_scenario[].operation → UseCaseOperation (use_case → operation)
- * - main_scenario[].actor, extensions[].actor → UseCaseActor (use_case → actor)
+ * - main_scenario[].operation and extensions[].operation → UseCaseOperation
+ * - main_scenario[].actor, alternative_flows[].actor → UseCaseActor (use_case → actor)
+ *
+ * A secondary actor takes its OWN relation type rather than reusing UseCaseActor, because the two
+ * make different statements: who starts this, and who else is in it. A consumer that wants "every
+ * actor involved" unions the two; one that wants the initiator cannot recover it from a union.
  */
 export function extractUseCaseRelations(
   entities: Entity[],
@@ -37,6 +43,43 @@ export function extractUseCaseRelations(
       });
     }
 
+    // secondary_actors[]: actor refs. Unsuffixed ids, like primary_actor - these are use-case-level
+    // statements, not step-level ones, so nothing can repeat a target within one array.
+    const secondaryActors = data.secondary_actors as string[] | undefined;
+    if (Array.isArray(secondaryActors)) {
+      for (const ref of secondaryActors) {
+        if (typeof ref !== 'string' || !ref) continue;
+        const targetId = resolveOrPlaceholder(ref, domain, entities, placeholders);
+        relations.push({
+          id: `${entity.id}--${RELATION_TYPE.UseCaseSecondaryActor}--${targetId}`,
+          source_entity_id: entity.id,
+          target_entity_id: targetId,
+          type: RELATION_TYPE.UseCaseSecondaryActor,
+        });
+      }
+    }
+
+    // includes[] and extends[]: use_case refs. Both point AWAY from this use case - the including
+    // one names what it performs, the extending one names what it adds to - so the base use case
+    // stays readable on its own and the direction is the one UML draws.
+    for (const [key, type] of [
+      ['includes', RELATION_TYPE.UseCaseIncludes],
+      ['extends', RELATION_TYPE.UseCaseExtends],
+    ] as const) {
+      const refs = data[key] as string[] | undefined;
+      if (!Array.isArray(refs)) continue;
+      for (const ref of refs) {
+        if (typeof ref !== 'string' || !ref) continue;
+        const targetId = resolveOrPlaceholder(ref, domain, entities, placeholders);
+        relations.push({
+          id: `${entity.id}--${type}--${targetId}`,
+          source_entity_id: entity.id,
+          target_entity_id: targetId,
+          type,
+        });
+      }
+    }
+
     // user_stories[]: user_story refs
     const userStories = data.user_stories as string[] | undefined;
     if (Array.isArray(userStories)) {
@@ -52,17 +95,18 @@ export function extractUseCaseRelations(
       }
     }
 
-    // stories[]: story refs (STR###)
-    const stories = data.stories as string[] | undefined;
+    // processes[]: process refs (PRC###)
+    // `processes` from v2.8.10, `stories` before it - one list under two names.
+    const stories = (data.processes ?? data.stories) as string[] | undefined;
     if (Array.isArray(stories)) {
       for (const ref of stories) {
         if (typeof ref !== 'string' || !ref) continue;
         const targetId = resolveOrPlaceholder(ref, domain, entities, placeholders);
         relations.push({
-          id: `${entity.id}--${RELATION_TYPE.UseCaseStory}--${targetId}`,
+          id: `${entity.id}--${RELATION_TYPE.UseCaseProcess}--${targetId}`,
           source_entity_id: entity.id,
           target_entity_id: targetId,
-          type: RELATION_TYPE.UseCaseStory,
+          type: RELATION_TYPE.UseCaseProcess,
         });
       }
     }
@@ -91,7 +135,11 @@ export function extractUseCaseRelations(
     // unique. `step` is reported in `data`, where repeating is fine because it is the fact rather
     // than the key.
     const scenario = data.main_scenario as Array<Record<string, unknown>> | undefined;
-    const extensions = data.extensions as Array<Record<string, unknown>> | undefined;
+    // `alternative_flows` is the current spelling and `extensions` the soft-deprecated one; the
+    // schema forbids declaring both, so reading either is reading the model's single answer.
+    const extensions = (data.alternative_flows ?? data.extensions) as
+      | Array<Record<string, unknown>>
+      | undefined;
     const steps: { step: Record<string, unknown>; scenario: 'main' | 'extension'; index: number }[] = [
       ...(Array.isArray(scenario) ? scenario : []).map((step, index) => ({ step, scenario: 'main' as const, index })),
       ...(Array.isArray(extensions) ? extensions : []).map((step, index) => ({ step, scenario: 'extension' as const, index })),

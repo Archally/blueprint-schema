@@ -39,6 +39,8 @@ npx @archally/blueprint-schema blueprint-check <dir> --config .blueprint-lint.ya
 | `exchange-missing-payload` | warn | every Operation with an `exchange` also declares a `payload.schema` (the data model on the wire) |
 | `events-with-produces` | warn | no event Operation is the source of a `produces` edge (anti-pattern) |
 | `untested-rules` | warn | every business rule has an incoming `validated-by` edge (a test validates it) |
+| `activity-steps-reverse-causal-edge` | warn |
+| `activity-steps-without-causal-edge` | info |
 | `activity-without-entry-operation` | warn | every story activity names the `entry_operation` it begins with; an activity may omit it while the operation is not yet modelled, and this reports the gap |
 | `aggregate-root-signals` | info | aggregate-root Concepts have lifecycle states or relationships |
 | `unanswered-questions` | info | every Question has an outgoing `answered-by` edge |
@@ -50,6 +52,7 @@ npx @archally/blueprint-schema blueprint-check <dir> --config .blueprint-lint.ya
 | `leverage-point-no-strategic-intent` | info | every LeveragePoint links to a goal or value stream |
 | `undescribed-event` | warn | every event Operation carries prose (`description` \| `statement` \| `summary`) — catches the asymmetric `one_of` pair, where only the happy-path half is described |
 | `decision-asserted-without-evidence` | warn | every Decision marked `certainty: confirmed` cites `evidence[]` — an evidentiary claim with no source. Speculative/probable decisions are exempt by design |
+| `user-story-use-case-back-reference` | warn |
 | `user-story-without-acceptance-criteria` | info | every UserStory has `acceptance_criteria` — without them nothing can be derived into a test case |
 | `model-without-purpose` | info | every model declares its CQRS `purpose` (`command-payload` \| `event-payload` \| `read-model` \| `shared` \| `dto`) |
 | `model-without-represents` | info | every model maps to the concept(s) it carries via `represents[]`; omit only for envelopes/wrappers |

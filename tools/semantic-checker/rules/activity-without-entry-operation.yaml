@@ -12,7 +12,7 @@ rules:
       `provenance.discovery_stage: hypothesis` is enough) and name it here when it exists.
       Override per-project via .blueprint-lint.yaml (e.g. `activity-without-entry-operation: off`).
     find:
-      entity_type: Story
+      entity_type: Process
     check:
       custom:
         module: ./activity-entry-operation.mjs

@@ -6,7 +6,11 @@ import { update as update001 } from './updates/001-rename-acronym-schemas.js';
 import { update as update002 } from './updates/002-quality-characteristic-two-level.js';
 import { update as update004 } from './updates/004-arch-party-ids.js';
 import { update as update005 } from './updates/005-v28-typed-ids.js';
+import { update as update006 } from './updates/006-retire-single-letter-bands.js';
+import { update as update007 } from './updates/007-story-becomes-process.js';
 import { update as update008 } from './updates/008-arch-root-contexts.js';
+import { update as update009 } from './updates/009-domain-registry.js';
+import { update as update010 } from './updates/010-retire-watch-item-band.js';
 
 // Version order, single pass — see resolveChain. `004` follows `002`: both are in-place 2.7
 // restructures, and a v2.6 model must receive 001 → 002 → 004 in one run. `005` is the only hop off
@@ -14,7 +18,16 @@ import { update as update008 } from './updates/008-arch-root-contexts.js';
 // `005` reports a party still missing one rather than minting it. `008` is an in-place 2.8
 // restructure and runs last: it groups a model's declarations by the `PRT###` `004` minted, and a
 // model arriving from 2.7 must reach 2.8 before it applies.
-const ALL_UPDATES: SchemaUpdate[] = [update001, update002, update004, update005, update008];
+// `007` is an in-place 2.8 rename and runs before `008`: it renames a model's narrative ids and
+// its story files, and every 2.8 module after it should see the model in its final vocabulary.
+// `006` is the band retirement, and by the ordering both plan files state it runs AFTER `007`:
+// the narrative rename walks the same corpus, and the two must not interleave. So it is registered
+// between `007` and `008` rather than by its number - the number records when it was specified,
+// the position records when it runs.
+// `010` retires the seventh band and touches only a watchlist entry's own id, so it shares no
+// file region with anything above it and its position is free. It sits last because that is
+// when it was specified.
+const ALL_UPDATES: SchemaUpdate[] = [update001, update002, update004, update005, update007, update006, update008, update009, update010];
 
 export function detectVersion(blueprintDir: string): string | null {
   const dirName = path.basename(path.resolve(blueprintDir));

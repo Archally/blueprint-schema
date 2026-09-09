@@ -102,7 +102,7 @@ export const RELATION_TYPE = {
   // resilience.resource_refs[] -> InfraResource: what the RTO and RPO are measured against.
   ResilienceResource: 'resilience_resource',
   // story.schema: story orders operations (story → operation, with position)
-  StoryOrdersOperation: 'story_orders_operation',
+  ProcessOrdersOperation: 'process_orders_operation',
   // org.schema: party structurally contains department
   OrgContainsDept: 'org_contains_dept',
   // org.schema: department has team
@@ -118,7 +118,7 @@ export const RELATION_TYPE = {
   // ui.schema: screen validated by test
   ScreenValidatedBy: 'screen_validated_by',
   // ui.schema: screen participates in story
-  ScreenStory: 'screen_story',
+  ScreenProcess: 'screen_process',
   // ui.schema: action belongs to screen
   ActionOnScreen: 'action_on_screen',
   // ui.schema: action triggers operation
@@ -156,11 +156,17 @@ export const RELATION_TYPE = {
   // story.schema (v2.5): use case contains user stories (use_case.user_stories[])
   UseCaseUserStory: 'use_case_user_story',
   // story.schema (v2.5): use case implemented by story (use_case.stories[])
-  UseCaseStory: 'use_case_story',
+  UseCaseProcess: 'use_case_process',
   // story.schema (v2.5): use case step references screen (main_scenario[].screen)
   UseCaseScreen: 'use_case_screen',
   // story.schema (v2.5): use case step references operation (main_scenario[].operation)
   UseCaseOperation: 'use_case_operation',
+  // story.schema (v2.8.8): use case involves an actor it does not initiate from (secondary_actors[])
+  UseCaseSecondaryActor: 'use_case_secondary_actor',
+  // story.schema (v2.8.8): use case always performs another (use_case.includes[])
+  UseCaseIncludes: 'use_case_includes',
+  // story.schema (v2.8.8): use case conditionally extends another (use_case.extends[])
+  UseCaseExtends: 'use_case_extends',
   // roadmap.schema (v2.5): milestone depends on milestone (milestone.dependencies[])
   MilestoneDependency: 'milestone_dependency',
   // roadmap.schema (v2.5): milestone delivers entity (milestone.deliverables[].ref)
@@ -188,6 +194,13 @@ export const RELATION_TYPE = {
   InquiryAffects: 'inquiry_affects',
   FindingAffects: 'finding_affects',
   GoalAffects: 'goal_affects',
+  // quality.schema: the AS-IS remediation chain's first hop, from the finding that observed the
+  // problem to what the model decided about it - finding.risk_refs[], finding.decision_refs[],
+  // finding.migration_ref. The schema states the chain finding -> risk -> decision -> migration in
+  // two places; these are the edges that make it navigable rather than asserted.
+  FindingRisk: 'finding_risk',
+  FindingDecision: 'finding_decision',
+  FindingMigration: 'finding_migration',
   // motivation.schema (v2.7.7 vision CR, D045): the singular vision's forward-links — the
   // "identity → objectives → competencies → delivery" chain, made queryable.
   // vision → goal (vision.advances_goals[])
@@ -380,6 +393,23 @@ export const RELATION_TYPE = {
   OrderingParallelWith: 'ordering_parallel_with',
   // race_condition.affects[]: the operation or concept the hazard touches
   RaceConditionAffects: 'race_condition_affects',
+  // --- v2.8.6 problem-space registry (blueprint.yaml root `domains:`) -------
+  // A subdomain nested under a Domain (positional, from `domains[].subdomains[]` - no field
+  // named `parent`, the way arch's `Contains` reads YAML nesting rather than a ref). Runs from
+  // the declaring Subdomain to its Domain, the direction `DeptParent` above uses for the same
+  // shape of fact.
+  SubdomainOfDomain: 'subdomain_of_domain',
+  // A bounded context's `domain_ref` (arch.schema `parties[].contexts[]` / root `contexts[]`),
+  // when the value is a typed Domain id (`^DMN\d{3,}$`) rather than an older model's slice name.
+  // PREFIXED with the source type, as `ContextDependsOn` is above: "realizes" already names the
+  // roadmap→decision edge (`RoadmapRealizesDecision`), and a bare `realizes` would blur the two.
+  ContextRealizesDomain: 'context_realizes_domain',
+  // v2.8.7: a bounded context's `domain_ref` naming a Subdomain (`^SDM\d{3,}$`) instead of a
+  // Domain - the declared half of "BC connects to domain or subdomain, one ref" (owner's
+  // ruling). The derived Domain edge this implies REUSES `context_realizes_domain` above rather
+  // than a distinct type, so a consumer grouping contexts by domain sees one shape regardless of
+  // which the author named.
+  ContextRealizesSubdomain: 'context_realizes_subdomain',
 } as const;
 
 export type RelationType = (typeof RELATION_TYPE)[keyof typeof RELATION_TYPE];

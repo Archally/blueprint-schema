@@ -23,6 +23,7 @@ export const V2_SCHEMA_TYPES = [
   'quality',
   'capability',
   'story',
+  'process',
   'models',
   'rg',
   'infrastructure',
@@ -61,6 +62,8 @@ export const FILENAME_TO_SCHEMA: Record<string, V2SchemaType> = {
   'capability.yml': 'capability',
   'story.yaml': 'story',
   'story.yml': 'story',
+  'process.yaml': 'process',
+  'process.yml': 'process',
   'models.yaml': 'models',
   'models.yml': 'models',
   'rg.yaml': 'rg',
@@ -96,7 +99,7 @@ export const FILENAME_TO_SCHEMA: Record<string, V2SchemaType> = {
 
 /** Multi-file pattern: {name}.{schema-type}.yaml (e.g. consumer.domain.yaml, payment.concepts.yaml). */
 export const MULTI_FILE_PATTERN =
-  /^[^/\\]+\.(concepts|rules|domain|arch|motivation|decisions|test-cases|dynamics|quality|capability|story|models|rg|infrastructure|org|organization|ui|interactions|roadmap|value-stream|leverage)\.(yaml|yml)$/i;
+  /^[^/\\]+\.(concepts|rules|domain|arch|motivation|decisions|test-cases|dynamics|quality|capability|story|process|models|rg|infrastructure|org|organization|ui|interactions|roadmap|value-stream|leverage)\.(yaml|yml)$/i;
 
 /**
  * Map file path to v2 schema type. Returns null for files outside the blueprint convention.

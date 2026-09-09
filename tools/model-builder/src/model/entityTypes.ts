@@ -40,7 +40,7 @@ export const ENTITY_TYPE = {
   Compliance: 'Compliance',
   Resilience: 'Resilience',
   Finding: 'Finding',
-  Story: 'Story',
+  Process: 'Process',
   Dynamics: 'Dynamics',
   Models: 'Models',
   RG: 'RG',
@@ -72,6 +72,12 @@ export const ENTITY_TYPE = {
   LeveragePoint: 'LeveragePoint',
   CodeFile: 'CodeFile',
   Missing: 'Missing',
+  // v2.8.6 problem-space registry (blueprint.yaml root `domains:`). Domain (DMN###) and, nested
+  // under it, Subdomain (SDM###) - exactly two levels, a subdomain declares no subdomains of its
+  // own. Distinct from the DDD tactical `domain.yaml` plane (design.domain layer), which models
+  // aggregates/entities/events inside a bounded context rather than the strategic problem space.
+  Domain: 'Domain',
+  Subdomain: 'Subdomain',
 } as const;
 
 export type EntityType = (typeof ENTITY_TYPE)[keyof typeof ENTITY_TYPE];
@@ -83,7 +89,11 @@ export const SCHEMA_TYPE_TO_LAYER: Record<string, string> = {
   domain: 'design.domain',
   arch: 'design.arch',
   models: 'design.models',
-  story: 'design.story',
+  // `story` is the file kind's name before v2.8.10 and `process` its name now. Both resolve to
+  // the same layer: the vocabulary is the code's, and a model on an earlier schema line describes
+  // the same thing under the older word.
+  story: 'design.process',
+  process: 'design.process',
   dynamics: 'design.dynamics',
   quality: 'design.quality',
   rg: 'design.rg',

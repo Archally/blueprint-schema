@@ -4,7 +4,7 @@ import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { SCHEMA_TYPE_TO_LAYER } from '../../model/entityTypes.js';
 import { makeInternalId } from './id.js';
 
-const LAYER = SCHEMA_TYPE_TO_LAYER['story']!;
+const LAYER = SCHEMA_TYPE_TO_LAYER['process']!;
 
 /** Domain operation file basename used when resolving operationRef to entity ID. */
 const DOMAIN_FILE_BASENAME = 'domain.yaml';
@@ -125,8 +125,12 @@ interface StoryInput {
   initiated_by?: string[] | unknown;
   operations?: StoryOperationInput[];
   activities?: StoryActivityInput[];
-  /** BPMN-style process metadata (lanes, trigger, end_states) — preserved as-is. */
-  process?: unknown;
+  /** BPMN-style process metadata, direct properties from v2.8.10 - preserved as-is. */
+  trigger?: unknown;
+  end_states?: unknown;
+  lanes?: unknown;
+  /** The same three nested, which is how every model on an earlier schema line carries them. */
+  process?: { trigger?: unknown; end_states?: unknown; lanes?: unknown };
 }
 
 /**
@@ -145,7 +149,10 @@ export function extractStory(doc: ParsedBlueprintDocument): Entity[] {
   // writes first, since user stories precede process stories in the authoring flow. Found by the
   // step-04b rule fixture (plan D44); the same defect existed at the same line in the public
   // model-builder and was fixed there in lockstep (D34).
-  const stories = Array.isArray(data.stories) ? (data.stories as StoryInput[]) : [];
+  // `processes` is the collection's name from v2.8.10; `stories` is what it was called before,
+  // and every model on an earlier schema line still uses it.
+  const collection = data.processes ?? data.stories;
+  const stories = Array.isArray(collection) ? (collection as StoryInput[]) : [];
 
   for (let i = 0; i < stories.length; i++) {
     const s = stories[i]!;
@@ -175,7 +182,7 @@ export function extractStory(doc: ParsedBlueprintDocument): Entity[] {
     entities.push({
       id,
       displayId,
-      type: ENTITY_TYPE.Story,
+      type: ENTITY_TYPE.Process,
       layer: LAYER,
       fileOrigin: doc.filePath,
       summary: s.title,
@@ -190,10 +197,15 @@ export function extractStory(doc: ParsedBlueprintDocument): Entity[] {
         operationsDetail,
         // Preserve raw schema structures alongside the flattened operationsDetail
         // so downstream consumers (e.g., Mermaid flowchart generator) can access
-        // activity boundaries, path_type, triggered_by, next_activities, and process.lanes.
+        // activity boundaries, path_type, triggered_by, next_activities and the lanes.
         // Kept as `unknown` here; downstream parses against story.schema.yaml shape.
         activities: Array.isArray(s.activities) && s.activities.length > 0 ? s.activities : undefined,
-        process: s.process,
+        // From v2.8.10 these are direct properties; before it they were nested under `process`,
+        // which after the rename would have read `process.process`. Normalized here so a consumer
+        // reads one shape whichever line the model is on.
+        trigger: s.trigger ?? s.process?.trigger,
+        end_states: s.end_states ?? s.process?.end_states,
+        lanes: s.lanes ?? s.process?.lanes,
       },
     });
   }

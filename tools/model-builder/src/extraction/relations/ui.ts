@@ -93,10 +93,10 @@ export function extractUIRelations(
           if (typeof ref !== 'string' || !ref) continue;
           const targetId = resolveOrPlaceholder(ref, domain, entities, placeholders);
           relations.push({
-            id: `${entity.id}--${RELATION_TYPE.ScreenStory}--${targetId}`,
+            id: `${entity.id}--${RELATION_TYPE.ScreenProcess}--${targetId}`,
             source_entity_id: entity.id,
             target_entity_id: targetId,
-            type: RELATION_TYPE.ScreenStory,
+            type: RELATION_TYPE.ScreenProcess,
           });
         }
       }

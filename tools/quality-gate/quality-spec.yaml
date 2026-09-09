@@ -225,6 +225,35 @@ metrics:
     calibration: >-
       corpus p50=100% (n=7); golden 78% is the corpus floor
 
+  story.step.note:
+    title: Story activity step - note
+    layer: story
+    # One observation per step of an activity's `steps`. Present is covered; absent is missing,
+    # because a step with no note is an operation reference the narrative says nothing about. The
+    # signal this metric exists for is the FILLER state: a note that opens with a condition says
+    # the step branches, and an activity whose sequence branches is two activities linked through
+    # `next_activities` - the branch belongs on the edge between them, not in a note. Both
+    # languages the corpus is authored in are listed; a multi-word entry matches as a phrase.
+    content:
+      deny_opening:
+        - if
+        - when
+        - unless
+        - in case
+        - jeśli
+        - jeżeli
+        - gdy
+        - kiedy
+        - o ile
+        - chyba że
+        - w przypadku
+    threshold: null
+    patch_threshold: null
+    calibration: >-
+      no bar yet: 3 models author steps at all (n<10), and every one of their 624 step rows carries
+      a note, so presence is not the question. The metric reports and ratchets against its baseline;
+      the filler count is the signal.
+
   # ── safety net ──────────────────────────────────────────────────────────────
 
   entity.description:

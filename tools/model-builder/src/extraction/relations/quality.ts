@@ -18,11 +18,20 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  *   Security    --security_concept-->     Concept              (concepts[])
  *   Compliance  --compliance_concept-->   Concept              (concepts[])
  *   Resilience  --resilience_resource-->  InfraResource        (resource_refs[])
+ *   Finding     --finding_risk-->         Risk                 (risk_refs[])
+ *   Finding     --finding_decision-->     Decision             (decision_refs[])
+ *   Finding     --finding_migration-->    Migration            (migration_ref)
  *
  * Together these are the measurement chain the quality schema names - goal -> KPI -> metric ->
  * operation/concept -> SLO -> SLA - plus the three requirement planes that bind to what they
  * govern. The chain's first hop has two authored forms: `kpi.goal` is extracted here, and
  * `goal.kpi` with the rest of the motivation plane.
+ *
+ * A FINDING's three outbound refs are here rather than with the leverage plane, because the
+ * finding owns them: `leverage_point.finding_refs` points INTO a finding, and what the finding
+ * itself decided about the problem it observed points out of it. `finding.affects` is the fourth
+ * and is extracted with the other three concern planes, so a finding's edges are split by what
+ * they mean rather than by which file declares them.
  *
  * Two fields on these entities deliberately build no edge. `kpi.bounded_context_ref` names a
  * bounded context and is extracted with the other context associations. `sla.parties.provider` and
@@ -64,6 +73,11 @@ const QUALITY_REF_FIELDS: Partial<Record<string, QualityRefField[]>> = {
   ],
   [ENTITY_TYPE.Resilience]: [
     { path: 'resource_refs', type: RELATION_TYPE.ResilienceResource, list: true },
+  ],
+  [ENTITY_TYPE.Finding]: [
+    { path: 'risk_refs', type: RELATION_TYPE.FindingRisk, list: true },
+    { path: 'decision_refs', type: RELATION_TYPE.FindingDecision, list: true },
+    { path: 'migration_ref', type: RELATION_TYPE.FindingMigration, list: false },
   ],
 };
 

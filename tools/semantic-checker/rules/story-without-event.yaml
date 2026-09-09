@@ -14,7 +14,7 @@ rules:
       warn, because a read-only journey is a legitimate story; raise it per-project via
       `.blueprint-lint.yaml` once the story layer is meant to state outcomes.
     find:
-      entity_type: Story
+      entity_type: Process
     check:
       custom:
         module: ./story-without-event.mjs

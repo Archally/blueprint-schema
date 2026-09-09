@@ -314,12 +314,30 @@ class ObservationCollector {
         entityId: typedIdOf(userStory.id), context: { name, title: name },
       });
     }
-    for (const collection of [doc?.stories, doc?.use_cases]) {
+    // `processes` from v2.8.10, `stories` before it - one file kind under two names.
+    for (const collection of [doc?.processes ?? doc?.stories, doc?.use_cases]) {
       for (const [key, story] of entriesOf(collection)) {
         this.claim(story);
         const name = String(nameOf(story, key));
         this.add('story.description', file, name, proseOf(story), {
           entityId: typedIdOf(story.id), context: { name, title: name },
+        });
+      }
+    }
+    // A story activity's steps are the sequence the author narrates, one note each. The note is
+    // observed per step so the gate can see the one shape a note must not take: opening with a
+    // condition, which says the step branches, and an activity whose sequence branches is two
+    // activities. An activity without steps observes nothing here; the step list is optional.
+    for (const [storyKey, story] of entriesOf(doc?.processes ?? doc?.stories)) {
+      const storyName = String(nameOf(story, storyKey));
+      for (const [activityKey, activity] of entriesOf(story?.activities)) {
+        const activityName = String(activity?.id ?? nameOf(activity, activityKey));
+        const steps = Array.isArray(activity?.steps) ? activity.steps : [];
+        steps.forEach((step, index) => {
+          const subject = `${storyName} / ${activityName} / step ${index + 1}`;
+          this.add('story.step.note', file, subject, step?.note, {
+            entityId: typedIdOf(activity?.id), context: { name: String(step?.operation_ref ?? subject), title: activityName },
+          });
         });
       }
     }

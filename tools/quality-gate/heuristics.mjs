@@ -110,6 +110,9 @@ export function echoesSubject(text, subject) {
  * @param {number} [contentRules.min_length]
  * @param {string[]} [contentRules.deny]       literal placeholder strings (case-insensitive)
  * @param {string[]} [contentRules.deny_echo_of] context keys whose value must not be echoed
+ * @param {string[]} [contentRules.deny_opening] words the text must not OPEN with (case-insensitive;
+ *   a multi-word entry matches as a phrase). For a step note, opening with a condition means the
+ *   step branches, and a branching sequence is two activities rather than one note.
  * @param {Record<string,string>} [context]    e.g. { name: 'criteria', title: 'PayGapPayload' }
  * @returns {{status: 'covered'|'filler'|'missing', reason?: string}}
  */
@@ -147,6 +150,14 @@ export function classifyValue(value, contentRules, context = {}) {
     const subject = context[contextKey];
     if (subject && echoesSubject(text, subject)) {
       return { status: 'filler', reason: `restates ${contextKey} "${subject}"` };
+    }
+  }
+
+  const opening = text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+  for (const word of contentRules.deny_opening ?? []) {
+    const phrase = String(word).toLowerCase().trim();
+    if (phrase && (opening === phrase || opening.startsWith(`${phrase} `))) {
+      return { status: 'filler', reason: `opens with a condition ("${word}"): a step that branches is two activities` };
     }
   }
 

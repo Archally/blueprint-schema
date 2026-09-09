@@ -7,15 +7,17 @@
  * its validation report, so `bp validate` and MCP `get_validation` cannot disagree about whether
  * a reference resolves. Each surface decides how to word a finding; none decides what one is.
  *
- * Five classes. A MISSING reference names an id nothing declares. A DUPLICATE id is declared
+ * Six classes. A MISSING reference names an id nothing declares. A DUPLICATE id is declared
  * twice, except a party, which is re-declared by design across arch slices and the org layer. A
  * PARENT CYCLE is a `parent` chain that never terminates - every id in it resolves, so the walk
  * above cannot see it. A SELF EDGE is a relation naming its own declarer - it resolves too, and
  * relates nothing. An ENVELOPE CONFLICT is a service nested under one party whose `system_ref`
  * names another - both resolve, and the two statements of which system the service is a component
- * of contradict each other.
+ * of contradict each other. A RETIRED BAND is an id spelled with a band the schema line still
+ * accepts and no longer wants; it resolves, and it stops resolving one line from now.
  */
 
+import { retiredBandOf, rebanded } from "./id-bands.mjs";
 import {
   collectIds,
   collectKeyedIds,
@@ -43,6 +45,7 @@ export const CATALOG_REF_RE = /^([a-z][a-z0-9-]*\.)?RT\d{3,}$/;
  * @property {string[][]} parentCycles each ring in walk order, rotated to its lowest member
  * @property {Array<{ id: string, key: string, arm: string, loc: string, file: string }>} selfEdges
  * @property {Array<{ service: string, declared: string, envelope: string, loc: string, file: string }>} envelopeConflicts
+ * @property {Array<{ id: string, band: import("./id-bands.mjs").RetiredBand, rebanded: string, loc: string, file: string }>} retiredBands
  */
 
 /**
@@ -56,11 +59,18 @@ export const CATALOG_REF_RE = /^([a-z][a-z0-9-]*\.)?RT\d{3,}$/;
  * the same fallback the model loader applies, so a reference resolves here iff the builder
  * resolves it.
  *
+ * A retired band is reported on the DECLARATION, once per id. A reference to a retired-band id
+ * either resolves - to a declaration this pass already names, so repeating it per mention would
+ * report one thing hundreds of times - or it does not, and is already a missing reference. The
+ * declaration is therefore the complete set, and it is also the thing an author edits.
+ *
  * @param {ModelDocument[]} documents every readable document, whether or not a schema knows it
  * @param {import("./reference-keys.mjs").ReferenceKeys} refKeys
+ * @param {import("./id-bands.mjs").RetiredBandTable} [bandTable] what this schema line retires;
+ *   omitted, nothing is retired, which is the right answer for a line that retires nothing
  * @returns {ReferenceFindings}
  */
-export function resolveModelReferences(documents, refKeys) {
+export function resolveModelReferences(documents, refKeys, bandTable) {
   const allIds = new Map();
   const allDuplicates = new Map();
   // Duplicate detection runs over the whole model in one pass below; the per-document collection
@@ -70,6 +80,7 @@ export function resolveModelReferences(documents, refKeys) {
   const selfEdges = [];
   const envelopeConflicts = [];
   const allRefs = [];
+  const retiredBands = new Map();
 
   for (const { relFile, data } of documents) {
     if (!data || typeof data !== "object") continue;
@@ -89,6 +100,11 @@ export function resolveModelReferences(documents, refKeys) {
         const qualified = `${declaredScope}.${id}`;
         if (!allIds.has(qualified)) allIds.set(qualified, loc);
       }
+    }
+    for (const [id, loc] of declaredHere) {
+      if (retiredBands.has(id)) continue;
+      const band = retiredBandOf(id, bandTable);
+      if (band) retiredBands.set(id, { id, band, rebanded: rebanded(id, band), loc, file: relFile });
     }
     collectKeyedIds(data, declaredScope ?? folderScope, allIds, [relFile]);
     collectParentEdges(data, parentEdges);
@@ -126,5 +142,6 @@ export function resolveModelReferences(documents, refKeys) {
     parentCycles: findParentCycles(parentEdges),
     selfEdges: selfEdges.map((edge) => ({ ...edge, file: edge.loc.split(".")[0] })),
     envelopeConflicts,
+    retiredBands: [...retiredBands.values()],
   };
 }

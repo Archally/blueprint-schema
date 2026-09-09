@@ -1,4 +1,5 @@
 import type { ReferenceKeys } from "./reference-keys.mjs";
+import type { RetiredBand, RetiredBandTable } from "./id-bands.mjs";
 
 /** `RT###` refs point to the resource-type catalog in the profiles, never into the model. */
 export const CATALOG_REF_RE: RegExp;
@@ -17,7 +18,13 @@ export interface ReferenceFindings {
   selfEdges: Array<{ id: string; key: string; arm: string; loc: string; file: string }>;
   /** A service nested under one party whose `system_ref` names another; both resolve and contradict. */
   envelopeConflicts: Array<{ service: string; declared: string; envelope: string; loc: string; file: string }>;
+  /** An id spelled with a band this schema line still accepts and no longer wants, once per declaration. */
+  retiredBands: Array<{ id: string; band: RetiredBand; rebanded: string; loc: string; file: string }>;
 }
 
 /** Resolve every reference the documents make against every id they declare - see cross-references.mjs. */
-export function resolveModelReferences(documents: ModelDocument[], refKeys: ReferenceKeys): ReferenceFindings;
+export function resolveModelReferences(
+  documents: ModelDocument[],
+  refKeys: ReferenceKeys,
+  bandTable?: RetiredBandTable,
+): ReferenceFindings;

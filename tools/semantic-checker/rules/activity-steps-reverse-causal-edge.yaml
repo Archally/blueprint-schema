@@ -1,0 +1,22 @@
+engineVersion: "0.1"
+rules:
+  - id: activity-steps-reverse-causal-edge
+    severity: warn
+    description: >-
+      Two adjacent steps of one story activity stand in the opposite order to a causal edge the
+      domain declares: the second step `produces` the first, directly or through an event the
+      first reacts to, or the first `reacts_to` the second. An activity's `steps` state the order
+      operations run in; `produces` and `reacts_to` state what causes what. The two are written
+      independently and agree where they overlap, and a pair that reverses a declared edge is two
+      statements that cannot both be true. A pair no edge joins is not reported here - a person
+      acting next or a read running has no causal edge by design - and is counted by
+      `activity-steps-without-causal-edge` instead. Fix the order in the story, or the edge in the
+      domain, whichever misstates the system. Override per-project via .blueprint-lint.yaml
+      (e.g. `activity-steps-reverse-causal-edge: off`).
+    find:
+      entity_type: Process
+    check:
+      custom:
+        module: ./activity-steps-causal-edges.mjs
+        export: activityStepsReverseCausalEdge
+    message: 'Story "{displayId}" ({name|''unnamed''}) orders {count} adjacent step pair(s) against a declared causal edge: {pairs}. Reorder the steps, or correct the `produces` / `reacts_to` link they contradict.'

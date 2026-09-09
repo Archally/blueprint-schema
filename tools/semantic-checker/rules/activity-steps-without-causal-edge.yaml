@@ -1,0 +1,22 @@
+engineVersion: "0.1"
+rules:
+  - id: activity-steps-without-causal-edge
+    severity: info
+    description: >-
+      How many adjacent step pairs of a story's activities no declared causal edge joins: neither
+      step `produces` the other, directly or through an event the other reacts to, and neither
+      `reacts_to` the other. This is a count, not a defect. A story's `steps` carry the order
+      operations run in, including the commands a person issues after looking at an event and the
+      queries that run along the way, and the causal graph has nothing to say about either by
+      design. Measured on a large model, half of all adjacent pairs are of this kind. The count says
+      how much of the story's sequence the domain layer carries and how much only the steps do;
+      where a pair SHOULD be causal - a command whose event the next command reacts to - add the
+      `produces` or `reacts_to` link and the pair leaves this count. Override per-project via
+      .blueprint-lint.yaml (e.g. `activity-steps-without-causal-edge: off`).
+    find:
+      entity_type: Process
+    check:
+      custom:
+        module: ./activity-steps-causal-edges.mjs
+        export: activityStepsWithoutCausalEdge
+    message: 'Story "{displayId}" ({name|''unnamed''}) has {count} of {pairs} adjacent step pair(s) joined by no declared causal edge. Expected where a person or a read comes next; add `produces` / `reacts_to` where the domain should state the link.'
