@@ -330,6 +330,14 @@ function main() {
   );
   console.log(`${cyan("Mode:")}      ${args.compat ? yellow("compat") : "strict"}`);
   console.log(`${cyan("Files:")}     ${green(result.filesValidated)} validated, ${result.filesSkipped} skipped`);
+  // A skipped file is NAMED, not only counted. Whether a skip is routine or a gap depends on which
+  // file it was: a deployment manifest sitting beside the model is expected, a model document under
+  // a filename no schema claims is not. A number cannot tell those apart, and every run that
+  // reports one is asking its reader to guess.
+  if (result.skippedFiles?.length) {
+    console.log(yellow(`           no schema matches these filenames, so they were not checked:`));
+    result.skippedFiles.forEach((relFile) => console.log(yellow(`             - ${relFile}`)));
+  }
   console.log("");
 
   const section = (label, items, colour, headerColour) => {

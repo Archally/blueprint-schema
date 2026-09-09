@@ -11,6 +11,7 @@
 
 export const V2_SCHEMA_TYPES = [
   'migration',
+  'migrations',
   'concepts',
   'rules',
   'domain',
@@ -82,6 +83,15 @@ export const FILENAME_TO_SCHEMA: Record<string, V2SchemaType> = {
   'leverage.yml': 'leverage',
   'blueprint.yaml': 'blueprint',
   'blueprint.yml': 'blueprint',
+  // A migration is addressed two ways: as the model's own `migration.yaml`, and as
+  // `<name>.migration.yaml` for one of several. The second is matched by the regex in
+  // `getSchemaForFile`, which is why `migration` is absent from `MULTI_FILE_PATTERN` below.
+  'migration.yaml': 'migration',
+  'migration.yml': 'migration',
+  // The register of a model's migrations, read as a history. Singular and plural are two
+  // documents with two schemas, not two spellings of one.
+  'migrations.yaml': 'migrations',
+  'migrations.yml': 'migrations',
 };
 
 /** Multi-file pattern: {name}.{schema-type}.yaml (e.g. consumer.domain.yaml, payment.concepts.yaml). */
@@ -94,7 +104,7 @@ export const MULTI_FILE_PATTERN =
  * Supports:
  *   - Exact filenames: `domain.yaml`, `concepts.yaml`, …
  *   - Multi-file pattern: `payment.domain.yaml`, `consumer.concepts.yaml`, `orders/story.yaml`
- *   - Migrations: `*.migration.yaml`
+ *   - Migrations: `migration.yaml`, and `*.migration.yaml` for one of several
  */
 export function getSchemaForFile(filePath: string): V2SchemaType | null {
   const segments = filePath.replace(/\\/g, '/').split('/');

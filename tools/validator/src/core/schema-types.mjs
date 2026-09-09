@@ -3,6 +3,7 @@ import path from "node:path";
 export const FILENAME_TO_SCHEMA = {
   blueprint: "blueprint.schema.yaml",
   migration: "migration.schema.yaml",
+  migrations: "migrations.schema.yaml",
   concepts: "design/concepts.schema.yaml",
   rules: "design/rules.schema.yaml",
   domain: "design/domain.schema.yaml",

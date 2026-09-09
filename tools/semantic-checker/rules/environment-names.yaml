@@ -1,0 +1,44 @@
+engineVersion: "0.1"
+rules:
+  - id: environment-named-not-declared
+    severity: warn
+    description: >-
+      A service whose server names a deployment environment that the model does not declare. A
+      server's `environment` accepts a name from the common vocabulary, an `x-` prefixed name, or
+      the typed id of a declared environment (ENV###). Only the id is a reference: a name resolves
+      to nothing, so nothing else can notice that the model holds two vocabularies for one set of
+      environments - a server deployed to `development` while the declared environments are
+      `production` and `staging`. Fix in the model by declaring the environment and naming it by
+      id, which also lets a query reach its substrate, provider and target scope; or accept the
+      name, which is a statement the model deliberately leaves outside its infrastructure. Silent
+      in a model that declares no environments at all, where every name is unmatched and the
+      finding would be a different, much broader claim. Override per-project via
+      .blueprint-lint.yaml (e.g. `environment-named-not-declared: off`).
+    find:
+      entity_type: Service
+    check:
+      custom:
+        module: ./environment-names.mjs
+        export: serverEnvironmentNotDeclared
+    message: 'Service {subject} "{subject_name}" has a server in {names}, and no declared environment carries that name. Declared: {declared}. Declare the environment and name it by its id, or keep the name and accept that nothing resolves it.'
+
+  - id: environment-config-key-not-declared
+    severity: warn
+    description: >-
+      A resource carrying per-environment configuration keyed by an environment NAME the model does
+      not declare, so a block of credentials and parameters sits against an environment that exists
+      only in the key. Warning rather than error: a model may configure for a deployment it has not
+      modelled, and silence is not contradiction. This rule covers the name form only. A key in the
+      typed form (ENV###) that names no declared environment is a cross-reference ERROR from
+      validation, not a finding here, because the schema declares that form of key to be a reference
+      and a dangling reference is a contradiction rather than a silence. The literal `ALL` means
+      every environment rather than naming one and is never reported. Silent in a model that
+      declares no environments at all. Override per-project via .blueprint-lint.yaml (e.g.
+      `environment-config-key-not-declared: off`).
+    find:
+      entity_type: InfraResource
+    check:
+      custom:
+        module: ./environment-names.mjs
+        export: resourceEnvironmentConfigNotDeclared
+    message: 'Resource {subject} "{subject_name}" configures for {names}, and no declared environment carries that name. Declared: {declared}. Declare the environment, key the configuration by its id, or drop the block.'

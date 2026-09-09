@@ -33,13 +33,21 @@ import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../t
 // silent wrong rewrite is the failure this whole tool exists to avoid.
 //
 // WHAT v2.8 STOPS ACCEPTING, AND WHY IT IS REPORTED RATHER THAN REWRITTEN. `service.resources`
-// (a free-string list of resource categories) and the root `infrastructure:` map of an arch
-// document (free-string name to description) are removed in v2.8. Neither has a transform: a
-// category such as "database" is not a resource, so minting an IR### from it would declare
-// infrastructure the model never had, and the map's values are prose, which this tool never
-// deletes. Each occurrence is reported with the manual path. The hop still bumps the version, so
+// (a free-string list of resource categories), the root `infrastructure:` map of an arch document
+// (free-string name to description) and `party.env` (one environment name for a whole party) are
+// removed in v2.8. The first two are REPORTED and never rewritten, because a transform would
+// invent: a category such as "database" is not a resource, so minting an IR### from it would
+// declare infrastructure the model never had, and the map's values are prose, which this tool never
+// deletes. Each occurrence is reported with the manual path; the hop still bumps the version, so
 // the model then fails validation at exactly that property - a visible stop, rather than a
 // migration that withholds every other rewrite because of one line a person has to decide.
+//
+// `party.env` is DELETED instead, and each deletion is reported with the value it removed. The
+// difference is not principle but arithmetic: the first two are optional in v2.7 and rare, so
+// reporting stops a few models at a line each. `env` is on 91 party declarations across 13 models,
+// up to 30 in one, so reporting it would turn every real migration into a wall of hand-edits. There
+// is nothing to invent here - the field's replacement is a typed Environment the author may or may
+// not want - and nothing is lost silently, because the warning carries the removed value.
 
 const ARCH_FILE = /^(arch\.(yaml|yml)|[^/\\]+[.-]arch\.(yaml|yml))$/i;
 const INFRA_FILE = /^(infrastructure\.(yaml|yml)|[^/\\]+[.-]infrastructure\.(yaml|yml))$/i;
@@ -75,6 +83,15 @@ interface SourceLine {
   start: number;
   /** The line's own terminator, so an edit keeps the file's CRLF/LF mix intact. */
   eol: string;
+}
+
+/** A `party.env` line the hop deletes, with the value it carried so the report can name it. */
+interface EnvRemovalSite {
+  relativePath: string;
+  absolutePath: string;
+  lineIndex: number;
+  party: string;
+  value: string;
 }
 
 /** One `- ` entry of a block sequence, with the keys declared at its own key column. */
@@ -283,6 +300,8 @@ interface VersionSite {
 
 interface Analysis {
   mints: MintSite[];
+  /** `party.env` occurrences, deleted by the hop and named in the report with their value. */
+  envRemovals: EnvRemovalSite[];
   retypes: RetypeSite[];
   refs: RefSite[];
   versions: VersionSite[];
@@ -324,6 +343,7 @@ function analyse(absoluteDir: string): Analysis {
   }
 
   const mints = collectArchMints(archFiles, lines, usedIds, warnings);
+  const envRemovals = collectEnvRemovals(archFiles, lines);
   reportRemovedSurfaces(archFiles, lines, warnings);
   const { retypes, idMap } = collectInfraRetypes(infraFiles, lines, usedIds, warnings);
   const refs = collectRefSites(allFiles, lines, idMap, warnings);
@@ -338,7 +358,7 @@ function analyse(absoluteDir: string): Analysis {
         }
       : null;
 
-  return { mints, retypes, refs, versions, directoryRename, warnings, lines };
+  return { mints, envRemovals, retypes, refs, versions, directoryRename, warnings, lines };
 }
 
 /**
@@ -454,6 +474,39 @@ const describe = (entry: SequenceEntry): string => {
   const name = entry.values.get('name');
   return name ? `"${unquote(name)}"` : `at line ${entry.lineIndex + 1}`;
 };
+
+/**
+ * Every `party.env` line in the arch documents, which the hop deletes.
+ *
+ * Collected rather than reported-and-left, for the reason in the header: the field is on nearly
+ * every party of nearly every model, so leaving it would make the migration fail once per party.
+ * The value travels with the site so the run can say what it removed - a deletion nobody is told
+ * about is the mirror of an invention nobody is told about.
+ */
+function collectEnvRemovals(
+  archFiles: { relativePath: string; absolutePath: string }[],
+  lines: Map<string, SourceLine[]>,
+): EnvRemovalSite[] {
+  const sites: EnvRemovalSite[] = [];
+  for (const file of archFiles) {
+    const fileLines = lines.get(file.absolutePath)!;
+    const partiesLine = findRootBlock(fileLines, 'parties');
+    if (partiesLine === -1) continue;
+    for (const party of readSequence(fileLines, partiesLine) ?? []) {
+      if (!party.values.has('env')) continue;
+      const lineIndex = findEntryKeyLine(fileLines, party, 'env');
+      if (lineIndex === -1) continue;
+      sites.push({
+        relativePath: file.relativePath,
+        absolutePath: file.absolutePath,
+        lineIndex,
+        party: describe(party),
+        value: unquote(String(party.values.get('env') ?? '').trim()),
+      });
+    }
+  }
+  return sites;
+}
 
 /**
  * The two arch surfaces v2.8 no longer accepts, reported by file and line and never rewritten.
@@ -739,9 +792,22 @@ function buildPlan(blueprintDir: string): UpdatePlan {
       detail: `schemaVersion ${site.from} -> ${TARGET_SCHEMA_VERSION}`,
     });
   }
+  for (const site of analysis.envRemovals) {
+    changes.push({
+      type: 'edit-yaml',
+      path: site.relativePath,
+      detail: `line ${site.lineIndex + 1}: party ${site.party} - remove \`env: ${site.value}\` (not accepted from v2.8)`,
+    });
+  }
   if (analysis.directoryRename) changes.push(analysis.directoryRename);
 
   const warnings = [...analysis.warnings];
+  for (const site of analysis.envRemovals) {
+    warnings.push(
+      `${site.relativePath}:${site.lineIndex + 1}: party ${site.party} - \`env: ${site.value}\` removed, ` +
+        'which v2.8 does not accept. Declare it as an Environment (ENV###) in infrastructure.yaml if the model needs it.',
+    );
+  }
   if (changes.length === 0) {
     warnings.push('Every typed id is already present and typed, and the version already reads 2.8.0 - nothing to do.');
   }
@@ -764,7 +830,9 @@ function applyPlan(blueprintDir: string): UpdateResult {
   // two references, and two independent renders reading the ORIGINAL text would each produce a line
   // holding its own rewrite and none of the other's - the second overwriting the first, silently,
   // and only when a line happens to hold two ids. A render therefore takes the text as it stands.
-  type Render = (text: string, line: SourceLine) => string;
+  // A render returning `null` DELETES the line, terminator included - `party.env` is the only user.
+  // A blank line left behind would validate and would still be a scar nobody chose to leave.
+  type Render = (text: string, line: SourceLine) => string | null;
   const edits = new Map<string, Map<number, Render[]>>();
   const queue = (absolutePath: string, lineIndex: number, render: Render): void => {
     if (!edits.has(absolutePath)) edits.set(absolutePath, new Map());
@@ -787,6 +855,9 @@ function applyPlan(blueprintDir: string): UpdateResult {
   for (const site of analysis.refs) {
     queue(site.absolutePath, site.lineIndex, (text) => replaceToken(text, site.oldId, site.newId));
   }
+  for (const site of analysis.envRemovals) {
+    queue(site.absolutePath, site.lineIndex, () => null);
+  }
   for (const site of analysis.versions) {
     queue(site.absolutePath, site.lineIndex, (text) =>
       text.replace(
@@ -802,9 +873,12 @@ function applyPlan(blueprintDir: string): UpdateResult {
       let content = fs.readFileSync(absolutePath, 'utf8');
       for (const lineIndex of [...byLine.keys()].sort((a, b) => b - a)) {
         const line = fileLines[lineIndex]!;
-        let text = line.text;
-        for (const render of byLine.get(lineIndex)!) text = render(text, line);
-        content = content.slice(0, line.start) + text + content.slice(line.start + line.text.length);
+        let text: string | null = line.text;
+        for (const render of byLine.get(lineIndex)!) text = text === null ? null : render(text, line);
+        content =
+          text === null
+            ? content.slice(0, line.start) + content.slice(line.start + line.text.length + line.eol.length)
+            : content.slice(0, line.start) + text + content.slice(line.start + line.text.length);
       }
       fs.writeFileSync(absolutePath, content, 'utf8');
     } catch (error) {

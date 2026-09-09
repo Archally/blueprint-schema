@@ -178,6 +178,14 @@ export function collectRefs(node, refs = [], pathStack = [], refKeys, parent = "
   if (!node || typeof node !== "object") return refs;
 
   for (const [k, v] of Object.entries(node)) {
+    // A map whose KEYS the schema types as references - per-environment configuration is the one
+    // shape that has them. Same admission rule as a value: id-shaped is a reference, anything else
+    // is a name, and a name is checked by nothing here.
+    if (refKeys.isKeyReference?.(parent, k) && v && typeof v === "object" && !Array.isArray(v)) {
+      for (const entryKey of Object.keys(v)) {
+        if (ID_RE.test(entryKey)) refs.push({ key: k, value: entryKey, loc: [...pathStack, k, entryKey].join(".") });
+      }
+    }
     if (refKeys.isReference(parent, k)) {
       const keyedOk = refKeys.acceptsKeyedForm(parent, k);
       const accept = (value) => ID_RE.test(value) || (keyedOk && KEYED_REF_RE.test(value));

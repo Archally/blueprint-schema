@@ -7,7 +7,7 @@ rules:
       the fact. The observed failure shape is asymmetric `one_of` pairs — the happy-path half
       (`LoanIssued`) described, the failure counterpart (`LoanRefused`) left bare — which reads as
       complete until a consumer has to decide when the second one fires. Accepts any of
-      `description` / `statement` / `summary` (D11): several models carry the prose under `summary`
+      `description` / `statement` / `summary`: several models carry the prose under `summary`
       and are legitimately complete. Companion to the `domain.event.description` quality-gate
       metric, which additionally rejects filler and name-echoes; this rule only asks whether prose
       exists at all, so a green rule and a red metric are consistent, not contradictory.

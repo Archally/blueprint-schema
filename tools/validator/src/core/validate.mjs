@@ -323,7 +323,13 @@ export function validateModel(args) {
    */
   const parsedFiles = [];
   let filesValidated = 0;
-  let filesSkipped = 0;
+  /**
+   * Every file the run did not schema-check, by name. A count alone says how many documents went
+   * unchecked but not which, and the two readings differ: a skipped deployment manifest is routine,
+   * a skipped model file is a gap. The count reported to callers is this list's length, so the two
+   * cannot disagree.
+   */
+  const skippedFiles = [];
 
   for (const filePath of yamlFiles) {
     const relFile = toPosixPath(path.relative(modelDir, filePath));
@@ -341,7 +347,7 @@ export function validateModel(args) {
       if (schemaRelPath) {
         schemaErrors.push(`[${relFile}] Parse error: ${err.message}`);
       } else {
-        filesSkipped += 1;
+        skippedFiles.push(relFile);
       }
       continue;
     }
@@ -355,7 +361,7 @@ export function validateModel(args) {
 
     // Schema validation, on the other hand, needs a schema. Unrecognised files are counted as
     // skipped and reported as such, never validated against an unrelated schema.
-    if (!schemaRelPath) { filesSkipped += 1; continue; }
+    if (!schemaRelPath) { skippedFiles.push(relFile); continue; }
 
     const schemaUri = SCHEMA_BASE_URI + schemaRelPath;
     const validate = ajv.getSchema(schemaUri);
@@ -500,5 +506,13 @@ export function validateModel(args) {
     schemaErrors.push(...retained);
   }
 
-  return { schemaErrors, crossErrors, warnings, modelPath: modelDir, filesValidated, filesSkipped };
+  return {
+    schemaErrors,
+    crossErrors,
+    warnings,
+    modelPath: modelDir,
+    filesValidated,
+    filesSkipped: skippedFiles.length,
+    skippedFiles,
+  };
 }

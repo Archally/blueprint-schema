@@ -1,0 +1,35 @@
+engineVersion: "0.1"
+rules:
+  - id: event-transport-without-contract
+    severity: warn
+    description: >-
+      The reverse direction of contract-operation-missing-exchange and
+      contract-operation-missing-channel-address. Those two start from the CONTRACT and ask about
+      the transport; this one starts from the TRANSPORT and asks about the contract. An event whose
+      `exchange` names a messaging protocol and a channel travels off-process, so something consumes
+      it - but if no service contract lists it under `send` or `receive`, the architecture layer
+      does not say who publishes it or who is entitled to hear it. Nothing can generate an AsyncAPI
+      channel for it, and a reader cannot tell an intentional broadcast from an unfinished one.
+      Companion, not overlap - the three rules divide the space so one defect is reported once.
+      Completeness nudge; override per-project via .blueprint-lint.yaml.
+    # Subjects: every Operation, narrowed by the classification the model-builder derives once from
+    # the contract wiring, the transport and cross-scope reactions (`eventReach.ts`).
+    #
+    # Why the derived field rather than the raw `exchange`: the evidence is recorded STRONGEST
+    # FIRST, so `exchange` as the evidence already means "no contract wires this one" - the two
+    # halves of this rule in one value. Re-expressing it here is not possible anyway, since
+    # `exchange` is an object OR an array and the DSL has no iteration clause; re-implementing it
+    # in a custom module would be the second implementation of one rule that this rule's own
+    # subject exists to prevent.
+    #
+    # Its limit, stated because it is one: where that pass has not run the field is absent, the
+    # filter matches nothing, and the rule reports zero - which reads exactly like a clean model.
+    find:
+      entity_type: Operation
+    filter:
+      field_in:
+        data.kind: [event]
+        data._event_reach_evidence: [exchange]
+    check:
+      always: true
+    message: 'Operation "{displayId}" ({name|''unnamed''}) declares a messaging exchange with a channel, but no service contract lists it under send or receive - the model says it travels off-process without saying who publishes it or who consumes it.'

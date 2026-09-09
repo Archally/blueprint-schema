@@ -63,6 +63,44 @@ export const RELATION_TYPE = {
   ContractReceives: 'contract_receives',
   // motivation.schema: goal tracked by KPI (goal.kpi)
   GoalKpi: 'goal.kpi',
+  // --- quality.schema: the measurement chain and the requirement planes ------
+  // goal -> KPI -> metric -> operation/concept -> SLO -> SLA, plus the security, compliance and
+  // resilience requirements that bind to what they govern.
+  //
+  // ONE TYPE PER (source, field) PAIR, not one per plane. A KPI that names a metric and an SLO
+  // that names one are different statements - a business target and an operational commitment -
+  // and a rule or a view filtering on the type has to be able to tell them apart. The same
+  // reasoning names `slo_operation` rather than reusing the domain plane's `requires`.
+  //
+  // metric.measures.operations[] / metric.measures.concepts[]. One type for both arms: the
+  // target's own type says which produced it, as `owned_by` does for its three.
+  MetricMeasures: 'metric_measures',
+  // kpi.metric -> Metric: the measurement a business target is read from.
+  KpiMetric: 'kpi_metric',
+  // kpi.goal -> Goal. `goal.kpi` above is the same join written from the other side; a model may
+  // author either, so both are extracted and stay distinct edges - which side stated the link is
+  // part of what the model says.
+  KpiGoal: 'kpi_goal',
+  // kpi.owner -> Actor: who answers for the target.
+  KpiOwner: 'kpi_owner',
+  // slo.metric -> Metric: the measurement the objective is stated against.
+  SloMetric: 'slo_metric',
+  // slo.operations[] -> Operation: what the objective constrains.
+  SloOperation: 'slo_operation',
+  // slo.resource_refs[] -> InfraResource: the concrete host or store it is measured on.
+  SloResource: 'slo_resource',
+  // sla.slos[] -> SLO: the objectives a contractual commitment is built on. `sla.parties.*` names
+  // a provider or consumer in prose rather than by reference, so it builds no edge.
+  SlaSlo: 'sla_slo',
+  // security.operations[] -> Operation, security.concepts[] -> Concept: what a requirement governs
+  // and what data it protects.
+  SecurityOperation: 'security_operation',
+  SecurityConcept: 'security_concept',
+  // compliance.concepts[] -> Concept: the data a regulation governs. This is the edge that makes a
+  // regulation usable as an impact seed.
+  ComplianceConcept: 'compliance_concept',
+  // resilience.resource_refs[] -> InfraResource: what the RTO and RPO are measured against.
+  ResilienceResource: 'resilience_resource',
   // story.schema: story orders operations (story → operation, with position)
   StoryOrdersOperation: 'story_orders_operation',
   // org.schema: party structurally contains department
@@ -149,6 +187,7 @@ export const RELATION_TYPE = {
   RiskAffects: 'risk_affects',
   InquiryAffects: 'inquiry_affects',
   FindingAffects: 'finding_affects',
+  GoalAffects: 'goal_affects',
   // motivation.schema (v2.7.7 vision CR, D045): the singular vision's forward-links — the
   // "identity → objectives → competencies → delivery" chain, made queryable.
   // vision → goal (vision.advances_goals[])
@@ -274,6 +313,12 @@ export const RELATION_TYPE = {
   NestedIn: 'nested_in',
   // targets_scope: Environment → DeploymentScope (environment.target_scope.ref — promoted inline scope).
   TargetsScope: 'targets_scope',
+  // arch.schema (2.8.2): arch Service → Environment, from `service.servers[].environment` where the
+  // server names the environment by its typed id. A NAME builds no edge, because a name is not a
+  // reference and resolves to nothing; the semantic rule `environment-named-not-declared` is what
+  // reports one that matches no declared environment. Distinct from `deployed_in_tier`: a tier is a
+  // topology grouping inside one deployment, an environment is the binding dimension across them.
+  DeployedInEnvironment: 'deployed_in_environment',
   // roadmap.schema (v2.7.2): work item rolls up to milestone / release (work_item.milestone)
   WorkItemMilestone: 'work_item_milestone',
   // roadmap.schema (v2.7.2): parent work item contains child work item (work_item.children[])

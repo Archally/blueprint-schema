@@ -19,6 +19,9 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  *   Binding       --realizes_type-->        ResourceType  (binding.type_ref)
  *   Service       --needs-->                ResourceType  (service.needs[].type_ref, abstract intent)
  *   Service       --uses_resource-->        InfraResource (service.resource_refs[], concrete intent)
+ *   Service       --deployed_in_environment-> Environment (service.servers[].environment, where the
+ *                                                          server names one by id; a NAME builds no
+ *                                                          edge - see the note below)
  *   DeploymentTier--contains-->             InfraResource (tier.resource_refs[] typed + legacy
  *                                                          tier.services[] same-file matches)
  *   Service       --deployed_in_tier-->     DeploymentTier(legacy tier.services[] cross-file service)
@@ -35,7 +38,22 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  * ResourceType (RT###) entities are catalog-sourced (profile files, not project models); until
  * profiles load through core, `needs`/`realizes_type` targeting RT### resolve to nothing and are
  * dropped. The edge logic is ready and lights up automatically once RT entities exist.
+ *
+ * WHICH MISSES GET A PLACEHOLDER, and why none of them are here. A placeholder exists for a target
+ * the VALIDATOR cannot check: `archDependencies` builds one because a context dependency names a
+ * context by NAME, and a name is not a reference the walk resolves. Everything this extractor reads
+ * is a typed ref, so a miss is already a cross-reference error with a file and a location - a
+ * placeholder would be the same fact told twice, in a vocabulary that reads like model content.
+ * `servers[].environment` inherits the rule on both of its forms: as an `ENV###` it is a typed ref
+ * the walk resolves, and as a name it is not a reference at all, so neither shape earns one.
  */
+
+/**
+ * The typed environment id, as `metamodel.schema.yaml#/$defs/environment_ref` states it. A server's
+ * `environment` accepts this, a name from a small vocabulary, or an `x-` prefixed name, and only the
+ * first is a reference: matching here is what tells the three apart.
+ */
+const ENVIRONMENT_ID = /^([a-z][a-z0-9-]*\.)?ENV\d{3,}$/;
 
 const TOSCA_RELATION: Record<string, string> = {
   hosted_on: RELATION_TYPE.HostedOn,
@@ -198,6 +216,20 @@ export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
         for (const ref of resourceRefs) {
           const resource = resolveByRef(infraByDisplayId, ref);
           if (resource) push(e, RELATION_TYPE.UsesResource, resource);
+        }
+      }
+      // servers[].environment → Environment, for the typed form only. Two servers of one service in
+      // the same environment are one edge: the pair is the fact, and a relation id is built from it.
+      const servers = data.servers as Array<Record<string, unknown>> | undefined;
+      if (Array.isArray(servers)) {
+        const emitted = new Set<string>();
+        for (const server of servers) {
+          const value = server?.environment;
+          if (typeof value !== 'string' || !ENVIRONMENT_ID.test(value)) continue;
+          const env = resolveByRef(envByDisplayId, value);
+          if (!env || emitted.has(env.id)) continue;
+          emitted.add(env.id);
+          push(e, RELATION_TYPE.DeployedInEnvironment, env);
         }
       }
     }

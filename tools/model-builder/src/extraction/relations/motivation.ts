@@ -8,6 +8,11 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  * - risk.owner      → RiskOwner      (risk → actor)
  * - risk.goal_refs[] → RiskGoal      (risk → goal)
  * - assumption.risk_refs[] → AssumptionRisk (assumption → risk)
+ * - goal.kpi        → GoalKpi       (goal → KPI)
+ *
+ * `goal.kpi` and `kpi.goal` are the same join written from either side; the KPI's own field is
+ * extracted with the quality plane, and the two stay distinct edges because which side stated the
+ * link is part of what the model says.
  */
 export function extractMotivationRelations(
   entities: Entity[],
@@ -46,6 +51,20 @@ export function extractMotivationRelations(
             type: RELATION_TYPE.RiskGoal,
           });
         }
+      }
+    }
+
+    if (entity.type === ENTITY_TYPE.Goal) {
+      // kpi - the indicator this goal is tracked by
+      const kpi = data.kpi as string | undefined;
+      if (typeof kpi === 'string' && kpi) {
+        const targetId = resolveOrPlaceholder(kpi, domain, entities, placeholders);
+        relations.push({
+          id: `${entity.id}--${RELATION_TYPE.GoalKpi}--${targetId}`,
+          source_entity_id: entity.id,
+          target_entity_id: targetId,
+          type: RELATION_TYPE.GoalKpi,
+        });
       }
     }
 

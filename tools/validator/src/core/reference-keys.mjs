@@ -24,6 +24,16 @@
  * as an `anyOf`/`oneOf` of patterns. That excludes `tracker_ref` (an external locator with no
  * pattern) and `code_refs` (an array of objects). The typed-id shape is enforced at walk time by
  * `ID_RE`, so a key derived here whose value is not id-shaped is left alone.
+ *
+ * ## A map's KEYS can be references too
+ *
+ * A per-environment configuration block is an object keyed by the environment it configures, and
+ * one of the legal key forms is a typed id. Nothing about a key's own text says whether it is meant
+ * to point at an entity - `production` and `ENV001` are both just keys - so the only place that can
+ * say so is the schema, through `propertyNames`. A property whose `propertyNames` resolves to a
+ * reference definition is recorded as a KEY reference, separately from the value pairs, and the
+ * walk then reads its map's keys the way it reads a value. Same rule at walk time: a key that is not
+ * id-shaped is a name, and a name is not a reference.
  */
 
 /** Names of the two definitions that also accept the `scope:key` form. */
@@ -41,6 +51,7 @@ const DEFS_REF = /^([^#]*)#\/\$defs\/([A-Za-z0-9_-]+)$/;
  * @property {(parent: string, key: string) => boolean} isReference
  * @property {(parent: string, key: string) => Set<string>} defsOf
  * @property {(parent: string, key: string) => boolean} acceptsKeyedForm the `scope:key` shape is legal here
+ * @property {(parent: string, key: string) => boolean} isKeyReference this property is a map whose KEYS may be references
  */
 
 /**
@@ -53,6 +64,8 @@ const DEFS_REF = /^([^#]*)#\/\$defs\/([A-Za-z0-9_-]+)$/;
 export function deriveReferenceKeys(registry) {
   /** @type {Map<string, Set<string>>} */
   const pairs = new Map();
+  /** `parent/key` -> the reference definitions this map's KEYS may take. */
+  const keyPairs = new Map();
   const visited = new Set();
 
   const refDefNames = collectReferenceDefinitions(registry);
@@ -107,6 +120,13 @@ export function deriveReferenceKeys(registry) {
         for (const def of defs) set.add(def);
         pairs.set(pairKey, set);
       }
+      const keyDefs = refDefsOf(property?.propertyNames, fromFile);
+      if (keyDefs.length > 0) {
+        const pairKey = `${parent}/${key}`;
+        const set = keyPairs.get(pairKey) ?? new Set();
+        for (const def of keyDefs) set.add(def);
+        keyPairs.set(pairKey, set);
+      }
       descend(property, key, fromFile);
     }
     // Arrays are transparent, a map's values sit under the map's key, and every alternative of a
@@ -134,6 +154,7 @@ export function deriveReferenceKeys(registry) {
       for (const def of pairs.get(`${parent}/${key}`) ?? []) if (KEYED_REF_DEFS.has(def)) return true;
       return false;
     },
+    isKeyReference: (parent, key) => keyPairs.has(`${parent}/${key}`),
   };
 }
 
