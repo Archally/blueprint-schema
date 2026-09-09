@@ -263,11 +263,11 @@ $defs:
             items:
               $ref: "../metamodel.schema.yaml#/$defs/model_ref"
             description: "Models directly affected."
-          stories:
+          processes:
             type: array
             items:
-              $ref: "../metamodel.schema.yaml#/$defs/story_ref"
-            description: "Stories directly affected."
+              $ref: "../metamodel.schema.yaml#/$defs/process_ref"
+            description: "Business processes directly affected."
           ui:
             type: object
             description: "UI elements directly affected by this decision."
@@ -403,8 +403,8 @@ $defs:
         description: "Unresolved questions that must be answered before this option can be chosen."
 
   # ---------------------------------------------------------------------------
-  # Bounded Context Canvas v5 — Business Decision (BD###)
-  # Added in v2.6.3. Distinct from `decision` (D###, ADR rationale): a
+  # Bounded Context Canvas v5 - Business Decision (BD###)
+  # Added in v2.6.3. Distinct from `decision` (DC###, ADR rationale): a
   # business_decision is a high-level policy statement scoped to a bounded
   # context. Lives in the same governance file as ADRs because both belong to
   # the governance plane; the $def names disambiguate.
@@ -415,7 +415,7 @@ $defs:
     description: >
       BCC v5 Business Decision - a key rule or policy that governs the
       behaviour of one or more bounded contexts. NOT a data-level invariant
-      (those live in rules.schema.yaml as Rule); NOT an ADR (D### above).
+      (those live in rules.schema.yaml as Rule); NOT an ADR (DC### above).
       These are higher-level policy statements expressing "what we will / will
       not do" in the bounded context's domain.
     additionalProperties: false

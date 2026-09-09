@@ -1,26 +1,26 @@
 ---
 $schema: "https://json-schema.org/draft/2020-12/schema"
-title: Blueprint Story
-description: "Design Plane - Layer 4: Domain stories expressing logical operation sequences, actor interactions, and side effects. Ordering here is logical; runtime ordering is in dynamics."
+title: Blueprint Process
+description: "Design Plane - Layer 4: Business processes expressing logical operation sequences, actor interactions, and side effects. Ordering here is logical; runtime ordering is in dynamics."
 type: object
 additionalProperties: false
 required:
   - name
   - version
-  - stories
+  - processes
 properties:
   name:
     type: string
-    description: "Domain or service name these stories belong to."
+    description: "Domain or service name these processes belong to."
   version:
     $ref: "../metamodel.schema.yaml#/$defs/semver"
-    description: "Content version of this story document."
+    description: "Content version of this process document."
   schemaVersion:
     $ref: "../metamodel.schema.yaml#/$defs/schema_version"
     description: "Schema version this document conforms to. Omit to assume latest."
   scope:
     $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
-    description: "Bounded context this story file belongs to."
+    description: "Bounded context this process file belongs to."
   stage:
     type: string
     description: "Development stage (e.g. draft, review, approved)."
@@ -28,145 +28,144 @@ properties:
     type: object
     additionalProperties:
       type: string
-    description: "Domain references used in these stories (name → identifier mapping)."
+    description: "Domain references used in these processes (name → identifier mapping)."
   tags:
     $ref: "../metamodel.schema.yaml#/$defs/tags"
   owned_by:
     $ref: "../metamodel.schema.yaml#/$defs/owned_by"
     description: "File-level ownership default. Entities inherit unless overridden."
-  stories:
+  processes:
     type: array
-    description: "Domain stories describing how operations flow from trigger to outcome."
+    description: "Business processes describing how operations flow from trigger to outcome."
     items:
-      $ref: "#/$defs/story"
+      $ref: "#/$defs/process"
   user_stories:
     type: array
-    description: "Agile user stories - PRD building blocks capturing user-level goals."
+    description: "Agile user stories - user-level goals someone intends to deliver. Statements of intent, not descriptions of the modelled system."
     items:
       $ref: "#/$defs/user_story"
   use_cases:
     type: array
-    description: "Use cases - scenario-level requirements. Supports functional and journey modes."
+    description: "Use cases - scenario-level requirements stating intended behaviour. Supports functional and journey modes, and needs no domain model to exist."
     items:
       $ref: "#/$defs/use_case"
 
 $defs:
 
-  story:
+  process:
     type: object
-    description: "A domain story: named narrative of actor-operation collaboration."
+    description: >
+      A business process: a named narrative of actor and operation collaboration. A process
+      DESCRIBES the modelled system, so its activities point at operations the domain already
+      declares. For behaviour someone intends but the model does not yet contain, use `use_case`.
     additionalProperties: false
     required:
       - id
       - title
     properties:
       id:
-        $ref: "../metamodel.schema.yaml#/$defs/story_ref"
-        description: "Typed story identifier (STR### pattern)."
+        $ref: "../metamodel.schema.yaml#/$defs/process_ref"
+        description: "Typed process identifier (PRC### pattern)."
       title:
         type: string
-        description: "Story title in imperative or actor-goal form."
-      storyUri:
+        description: "Process title in imperative or actor-goal form."
+      processUri:
         type: string
-        description: "Optional URI to the story source (e.g. Jira, Linear, GitHub issue)."
+        description: "Optional URI to the process source (e.g. Jira, Linear, GitHub issue)."
       status:
         type: string
-        description: "Story status (e.g. draft, approved, implemented)."
+        description: "Process status (e.g. draft, approved, implemented)."
       description:
         type: string
-        description: "Narrative description of this story's context and goal."
+        description: "Narrative description of this process's context and goal."
       properties:
         $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
       tracker_ref:
         $ref: "../metamodel.schema.yaml#/$defs/tracker_ref"
       initiated_by:
         type: array
-        description: "Optional list of actor refs that can initiate this story (human, system, or time). Used for Event Storming lane-start actor stickies."
+        description: "Optional list of actor refs that can initiate this process (human, system, or time). Used for Event Storming lane-start actor stickies."
         items:
           $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
       activities:
         type: array
-        description: "Process activities composing this story. Each activity is an asynchronous phase containing synchronous steps."
+        description: "Process activities composing this process. Each activity is an asynchronous phase containing synchronous steps."
         items:
-          $ref: "#/$defs/story_activity"
-      process:
+          $ref: "#/$defs/process_activity"
+      trigger:
         type: object
-        description: "Process metadata when this story represents a business process. Enables BPMN generation. When absent, story is a lightweight interaction sequence."
+        description: "Process start event."
+        required: [type]
         additionalProperties: false
         properties:
-          id:
-            $ref: "../metamodel.schema.yaml#/$defs/story_process_ref"
-            description: "Unique process identifier (SP001, SP002, etc.)."
-          trigger:
-            type: object
-            description: "Process start event."
-            required: [type]
-            additionalProperties: false
-            properties:
-              type:
-                type: string
-                enum: [message, timer, signal, manual, conditional]
-                description: "BPMN-compatible start event type."
-              operation:
+          type:
+            type: string
+            enum: [message, timer, signal, manual, conditional]
+            description: "BPMN-compatible start event type."
+          operation:
+            $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            description: "Triggering operation (required for message/signal types)."
+          schedule:
+            type: string
+            description: "Cron expression or ISO 8601 duration (for timer type)."
+          description:
+            type: string
+            description: "Human-readable trigger description."
+      end_states:
+        type: array
+        description: "Process terminal states with their types."
+        items:
+          type: object
+          required: [name, type]
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              description: "End state name."
+            type:
+              type: string
+              enum: [complete, error, cancel, terminate]
+              description: "BPMN-compatible end event type."
+            description:
+              type: string
+              description: "End state description."
+      lanes:
+        type: array
+        description: "Swim lane assignments mapping actors to their operations within this process."
+        items:
+          type: object
+          required: [actor]
+          additionalProperties: false
+          properties:
+            actor:
+              $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+              description: "Actor responsible for operations in this lane."
+            operations:
+              type: array
+              items:
                 $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
-                description: "Triggering operation (required for message/signal types)."
-              schedule:
-                type: string
-                description: "Cron expression or ISO 8601 duration (for timer type)."
-              description:
-                type: string
-                description: "Human-readable trigger description."
-          end_states:
-            type: array
-            description: "Process terminal states with their types."
-            items:
-              type: object
-              required: [name, type]
-              additionalProperties: false
-              properties:
-                name:
-                  type: string
-                  description: "End state name."
-                type:
-                  type: string
-                  enum: [complete, error, cancel, terminate]
-                  description: "BPMN-compatible end event type."
-                description:
-                  type: string
-                  description: "End state description."
-          lanes:
-            type: array
-            description: "Swim lane assignments mapping actors to their operations within this process."
-            items:
-              type: object
-              required: [actor]
-              additionalProperties: false
-              properties:
-                actor:
-                  $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
-                  description: "Actor responsible for operations in this lane."
-                operations:
-                  type: array
-                  items:
-                    $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
-                  description: "Operations assigned to this actor's lane."
+              description: "Operations assigned to this actor's lane."
       owned_by:
         $ref: "../metamodel.schema.yaml#/$defs/owned_by"
-        description: "Story-level ownership override."
+        description: "Process-level ownership override."
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
 
-  story_activity:
+  process_activity:
     type: object
-    description: "Process activity within a story. Entry point into domain causal chain (produces/reacts_to)."
+    description: >
+      An activity within a process. Entry point into the domain causal chain
+      (produces/reacts_to). An activity names the operation it begins at once that operation is
+      modelled, and that anchoring is what makes a process a description of the domain rather
+      than a proposal about it.
     additionalProperties: false
     required: [id, name]
     properties:
       id:
-        $ref: "../metamodel.schema.yaml#/$defs/story_activity_ref"
-        description: "Unique activity identifier (SA001, SA002, etc.)."
+        $ref: "../metamodel.schema.yaml#/$defs/process_activity_ref"
+        description: "Unique activity identifier (PA001, PA002, etc.)."
       name:
         type: string
         description: "Human-readable activity name describing this process phase."
@@ -192,7 +191,17 @@ $defs:
         description: "What initiates this activity: an actor (for first activity) or an event operation (for reactive activities)."
       steps:
         type: array
-        description: "Optional convenience view of operations in this activity - not source of truth. Domain causal links (produces/reacts_to) are authoritative. Validator WARNS if steps contradict causal chain."
+        description: >
+          The operations this activity runs, in order, each with an optional note. This list is the
+          model's statement of within-activity ORDER and INCLUSION: which operations run in this
+          phase and in what sequence, including the queries and the commands a person issues next,
+          which no causal link can carry. Domain causal links (`produces` / `reacts_to`) state
+          CAUSALITY and are not repeated here; where a step follows a declared causal edge the two
+          agree, and `activity-steps-reverse-causal-edge` reports a pair that reverses one. When
+          present these are what the model reports as the activity's operation detail; when absent,
+          `entry_operation` stands in as the single entry. Branching does not belong in this list:
+          an activity that needs an alternative inside it is two activities linked through
+          `next_activities`.
         items:
           type: object
           required: [operation_ref]
@@ -207,7 +216,7 @@ $defs:
       next_activities:
         type: array
         items:
-          $ref: "../metamodel.schema.yaml#/$defs/story_activity_ref"
+          $ref: "../metamodel.schema.yaml#/$defs/process_activity_ref"
         description: "Optional explicit links to subsequent activities. When absent, flow is inferred from domain causal links."
       path_type:
         type: string
@@ -218,14 +227,17 @@ $defs:
 
   # ---------------------------------------------------------------------------
   # User Story (v2.5)
-  # PRD building block — Agile user story with MoSCoW delivery priority.
+  # Agile user story with MoSCoW delivery priority. States what someone intends to deliver.
   # ---------------------------------------------------------------------------
 
   user_story:
     type: object
     description: >
-      Agile user story - a PRD building block capturing a user-level goal.
+      Agile user story: a user-level goal someone INTENDS to deliver.
       Format: As a [actor], I want [goal], so that [benefit].
+      A user story states intent rather than describing the modelled system. It carries delivery
+      state (`delivery_priority`, `release_target`, `status`), needs no operation to exist, and can
+      be deferred or dropped without the model changing.
     additionalProperties: false
     required: [id, actor, goal]
     properties:
@@ -266,7 +278,13 @@ $defs:
         description: "User story lifecycle status."
       use_case:
         $ref: "../metamodel.schema.yaml#/$defs/use_case_ref"
-        description: "Use case this story belongs to (optional back-pointer)."
+        description: >
+          SOFT-DEPRECATED (v2.8.9). The use case this story belongs to, named from the story. The
+          link is stated by the use case instead - `use_case.user_stories[]` - so that one place
+          answers "which stories realise this use case" and a reader never has to reconcile two
+          lists that can disagree. Still accepted and still read, and removal is on the next major
+          line. `user-story-use-case-back-reference` reports each use, and says whether the use case
+          already lists the story back: where it does not, add it there before removing this.
       operations:
         type: array
         items:
@@ -296,6 +314,31 @@ $defs:
   # and journey (screen + emotion + pain_point). Merged UJ capabilities.
   # ---------------------------------------------------------------------------
 
+  alternative_flow:
+    type: object
+    description: >
+      One conditional branch off a step of a use case's main scenario: when the condition holds,
+      this happens instead of, or in addition to, the step it branches from.
+    additionalProperties: false
+    required: [step, condition, action]
+    properties:
+      step:
+        type: integer
+        minimum: 1
+        description: "Step number of the main scenario where this branch leaves it."
+      condition:
+        type: string
+        description: "Condition that triggers this branch."
+      action:
+        type: string
+        description: "What happens on this branch."
+      operation:
+        $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Domain operation performed on this branch. Its initiator is the performer."
+      actor:
+        $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        description: "Actor who performs this branch, when it is not a modelled operation. Consulted only when `operation` is absent."
+
   use_case:
     type: object
     description: >
@@ -304,8 +347,20 @@ $defs:
       operations) and user journey (steps with screens, emotions, pain
       points). Groups user stories and optionally references implementing
       stories (STR###).
+      Like `user_story` and unlike `story`, a use case states INTENDED behaviour: its steps may be
+      written in plain language, so it can be authored before the domain model exists.
     additionalProperties: false
     required: [id, name, primary_actor]
+    # One spelling or the other, never both. Two lists of branches on one use case would be two
+    # answers to "what are this use case's alternatives", and nothing could say which is current.
+    #
+    # Written as `dependentSchemas` rather than `not: {required: [...]}` for the ERROR PATH: the
+    # latter reports the whole use case as "must NOT be valid", which does not say which key to
+    # remove. This reports at `/alternative_flows`, and the author is looking at the answer.
+    dependentSchemas:
+      extensions:
+        properties:
+          alternative_flows: false
     properties:
       id:
         $ref: "../metamodel.schema.yaml#/$defs/use_case_ref"
@@ -323,6 +378,14 @@ $defs:
       primary_actor:
         $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
         description: "The actor who initiates this use case."
+      secondary_actors:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        description: >
+          Actors this use case involves without initiating it - a service it calls, a person it
+          notifies, a system it reads from. A use case has one initiator and any number of
+          participants; `primary_actor` states the initiator.
       goal:
         type: string
         description: "What the actor is trying to accomplish."
@@ -371,40 +434,54 @@ $defs:
             pain_point:
               type: string
               description: "UX friction or difficulty at this step."
+      alternative_flows:
+        type: array
+        description: >
+          Alternative flows and exception handling: what happens at a step of the main scenario when
+          a condition holds. A branch WITHIN this use case; a use case that conditionally adds
+          behaviour to another one is `extends`.
+        items:
+          $ref: "#/$defs/alternative_flow"
       extensions:
         type: array
-        description: "Alternative flows and exception handling."
+        description: >
+          SOFT-DEPRECATED (v2.8.9). The same list, under its former name. Use `alternative_flows`,
+          which is what a use case's conditional branches are called; `extensions` reads as the
+          relationship to another use case, which is `extends`. Both spellings are accepted and read
+          identically, and a use case may declare only one of them. Removal on the next major line.
         items:
-          type: object
-          additionalProperties: false
-          required: [step, condition, action]
-          properties:
-            step:
-              type: integer
-              minimum: 1
-              description: "Step number where the extension branches."
-            condition:
-              type: string
-              description: "Condition that triggers this extension."
-            action:
-              type: string
-              description: "What happens in the extension path."
-            operation:
-              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
-              description: "Domain operation performed in this alternative flow. Its initiator is the performer of the branch."
-            actor:
-              $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
-              description: "Actor who performs this alternative flow, when the branch is not a modelled operation. Consulted only when `operation` is absent."
+          $ref: "#/$defs/alternative_flow"
+      includes:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/use_case_ref"
+        description: >
+          Use cases this one always performs as part of itself. The included behaviour runs every
+          time, which is what separates it from `extends`: behaviour that runs only under a
+          condition is an extension, not an inclusion. The reference points from the including use
+          case to the included one.
+      extends:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/use_case_ref"
+        description: >
+          Use cases this one conditionally adds behaviour to. The reference points from the
+          extending use case to the one extended, so the base use case stays unaware of it and can
+          be read on its own. For a branch WITHIN this use case, use `extensions` instead - that is
+          a step-level alternative, not a use case of its own.
       user_stories:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/user_story_ref"
-        description: "User stories within this use case."
-      stories:
+        description: >
+          The user stories that realise this use case. This is where the link between the two is
+          stated: a use case names its stories, and a story does not name its use case back, so the
+          question has one answer and one place to change it.
+      processes:
         type: array
         items:
-          $ref: "../metamodel.schema.yaml#/$defs/story_ref"
-        description: "Process flow stories (STR###) implementing this use case."
+          $ref: "../metamodel.schema.yaml#/$defs/process_ref"
+        description: "Business processes (PRC###) implementing this use case."
       delivery_priority:
         $ref: "../metamodel.schema.yaml#/$defs/delivery_priority"
       release_target:

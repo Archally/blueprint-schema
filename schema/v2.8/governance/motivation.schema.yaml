@@ -163,11 +163,11 @@ $defs:
             items:
               $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
             description: "Bounded contexts / slices affected."
-          story_refs:
+          process_refs:
             type: array
             items:
-              $ref: "../metamodel.schema.yaml#/$defs/story_ref"
-            description: "Stories affected, for a goal about a flow as a whole rather than one of its operations."
+              $ref: "../metamodel.schema.yaml#/$defs/process_ref"
+            description: "Business processes affected, for a goal about a flow as a whole rather than one of its operations."
       version:
         $ref: "../metamodel.schema.yaml#/$defs/entity_version"
         description: "Goal version for lifecycle tracking."
@@ -299,11 +299,11 @@ $defs:
             items:
               $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
             description: "Bounded contexts / slices affected."
-          story_refs:
+          process_refs:
             type: array
             items:
-              $ref: "../metamodel.schema.yaml#/$defs/story_ref"
-            description: "Stories affected, for a concern about a flow as a whole rather than one of its operations."
+              $ref: "../metamodel.schema.yaml#/$defs/process_ref"
+            description: "Business processes affected, for a concern about a flow as a whole rather than one of its operations."
       version:
         $ref: "../metamodel.schema.yaml#/$defs/entity_version"
         description: "Risk version for lifecycle tracking."
@@ -497,11 +497,11 @@ $defs:
             items:
               $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
             description: "Bounded contexts / slices affected."
-          story_refs:
+          process_refs:
             type: array
             items:
-              $ref: "../metamodel.schema.yaml#/$defs/story_ref"
-            description: "Stories affected, for a concern about a flow as a whole rather than one of its operations."
+              $ref: "../metamodel.schema.yaml#/$defs/process_ref"
+            description: "Business processes affected, for a concern about a flow as a whole rather than one of its operations."
       owner:
         $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
         description: "Person responsible for driving resolution."

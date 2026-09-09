@@ -209,13 +209,20 @@ $defs:
           version, despite the name. To narrow a run to part of the model, use the slice axis:
           that is what a `contexts` target's bounded contexts do. The two are orthogonal and
           compose - "the Orders area, as of MIG003" sets both.
+      processes:
+        type: array
+        items: { type: string }
+        description: >
+          Process ids for a target whose tool renders one process per invocation. The target fans
+          out to one run per id, each with its own output folder. Only meaningful on an `instance`
+          target - each process is a human-authored unit, not a slice.
       stories:
         type: array
         items: { type: string }
         description: >
-          Story ids for a target whose tool renders one story per invocation. The target fans out
-          to one run per id, each with its own output folder. Only meaningful on an `instance`
-          target - each story is a human-authored unit, not a slice.
+          SOFT-DEPRECATED (v2.8.10). The same list, under the name the unit carried before it was
+          called a process. Read identically, so a manifest pointing at a model on an earlier
+          schema line keeps naming its units the way that line does.
       formats:
         type: array
         items: { type: string }

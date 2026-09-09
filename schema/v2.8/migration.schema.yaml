@@ -145,8 +145,8 @@ $defs:
           - rule
           - transition
           - model
-          - story
-          - activity
+          - process
+          - process-activity
           - user-story
           - use-case
           - question

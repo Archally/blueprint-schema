@@ -201,11 +201,11 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/model_ref"
         description: "Models this test validates structure of."
-      stories:
+      processes:
         type: array
         items:
-          $ref: "../metamodel.schema.yaml#/$defs/story_ref"
-        description: "Stories this test validates flow of."
+          $ref: "../metamodel.schema.yaml#/$defs/process_ref"
+        description: "Business processes this test validates flow of."
       ui:
         type: object
         description: "UI elements this test validates."

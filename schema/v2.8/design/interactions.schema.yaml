@@ -103,11 +103,11 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/test_ref"
         description: "Tests that verify this screen's behavior."
-      stories:
+      processes:
         type: array
         items:
-          $ref: "../metamodel.schema.yaml#/$defs/story_ref"
-        description: "Domain stories this screen participates in."
+          $ref: "../metamodel.schema.yaml#/$defs/process_ref"
+        description: "Business processes this screen participates in."
       version:
         $ref: "../metamodel.schema.yaml#/$defs/entity_version"
         description: "Screen version for lifecycle tracking."

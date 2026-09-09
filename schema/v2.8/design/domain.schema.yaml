@@ -206,7 +206,7 @@ $defs:
       # --- Causal links (v2.1) ---
       produces:
         type: object
-        description: "Operations this operation emits upon execution. Commands typically produce events and/or documents. Events do not produce; they trigger reactions via reacts_to. Validator WARNS on non-conventional usage."
+        description: "Operations this operation emits upon execution. Commands typically produce events and/or documents. Events do not produce; they trigger reactions via reacts_to. Validator WARNS on non-conventional usage. This is the model's statement of CAUSALITY, true of the operation wherever it appears; the order in which operations run inside one process activity is stated by that activity's `steps`, not here."
         additionalProperties: false
         properties:
           operations:
@@ -220,7 +220,7 @@ $defs:
             description: "Production mode: any=subset may be produced, one_of=exactly one (XOR), all=all are produced (AND)."
       reacts_to:
         type: array
-        description: "Events or signals this operation reacts to. Each entry is a reactive policy binding."
+        description: "Events or signals this operation reacts to. Each entry is a reactive policy binding: a statement of CAUSALITY, true of the operation wherever it appears. A person deciding what to do after an event is not a policy, and that order is stated by the process activity's `steps`, not here."
         items:
           type: object
           required: [operation]
@@ -981,4 +981,4 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
-      # NOTE: Questions do NOT have code_refs — they are strategic/analytical artifacts, not code.
+      # NOTE: Questions do NOT have code_refs - they are strategic/analytical artifacts, not code.
