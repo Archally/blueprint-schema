@@ -126,30 +126,87 @@ SemVer rules: **major** = breaking change, **minor** = new optional capability, 
 
 ## 5. ID Patterns
 
-All IDs support optional context prefix using dot notation (e.g. `billing.CN001`):
+Every typed id band a blueprint can carry. The table is the registry: a family that is not here has
+no prefix reserved, and two families claiming one prefix is the failure it exists to prevent.
+`npm run id-band-check` compares it against the patterns the schema declares, so a band added to the
+schema without a row here fails on the same commit.
+
+All IDs support an optional context prefix using dot notation (e.g. `billing.CN001`), except where
+the Pattern column says otherwise.
+
+### Concepts and rules
 
 | Entity | Pattern | Example |
 |--------|---------|---------|
 | Concept | `CN\d{3}` | `CN001`, `billing.CN001` |
+| Concept attribute | `CAT\d{3,}` | `CAT001` |
 | Actor | `ACT\d{3}` | `ACT001` |
 | Enumeration | `EN\d{3}` | `EN001` |
-| Association | `AS\d{3}` | `AS001` |
+| Association | `(ASC\|AS)\d{3}` | `ASC001` |
 | Rule | `(SR\|CR\|DR\|EQ\|VR)\d{3}` | `SR001`, `billing.SR001` |
 | Transition | `TR\d{3}` | `TR001` |
-| Command | `CMD\d{3}` | CMD001 |
-| Event | `EVT\d{3}` | EVT001 |
-| Query | `QRY\d{3}` | QRY001 |
-| Document | `DOC\d{3}` | DOC001 |
-| Decision | `D\d{3}` | `D001`, `billing.D001` |
-| Goal | `G\d{3}` | `G001` |
-| Non-goal | `NG\d{3}` | `NG001` |
-| Risk | `R\d{3}` | `R001` |
-| Assumption | `A\d{3}` | `A001` |
-| Trade-off | `T\d{3}` | `T001` |
-| Capability | `CAP\d{3}` | `CAP001` |
-| Test (happy) | `TC\d{3}` | `TC001` |
-| Test (edge) | `EC\d{3}` | `EC001` |
-| Test (error) | `ER\d{3}` | `ER001` |
+
+Rule prefixes: `SR`=structural, `CR`=classification, `DR`=derivation, `EQ`=equivalence, `VR`=validation.
+
+### Operations and payloads
+
+| Entity | Pattern | Example |
+|--------|---------|---------|
+| Command | `CMD\d{3}` | `CMD001` |
+| Event | `EVT\d{3}` | `EVT001` |
+| Query | `QRY\d{3}` | `QRY001` |
+| Document | `DOC\d{3}` | `DOC001` |
+| Error | `ERR\d{3,}` | `ERR001` |
+| Model | `MDL\d{3,}` | `MDL001` |
+
+### Architecture and the problem space
+
+| Entity | Pattern | Example |
+|--------|---------|---------|
+| Bounded context | `BC\d{3,}` | `BC001` |
+| Service | `SVC\d{3,}` | `SVC001` |
+| Domain | `DMN\d{3,}` | `DMN001` (no context prefix) |
+| Subdomain | `SDM\d{3,}` | `SDM001` (no context prefix) |
+
+### Infrastructure
+
+| Entity | Pattern | Example |
+|--------|---------|---------|
+| Infrastructure resource | `IR\d{3,}` | `IR001` |
+| Environment | `ENV\d{3,}` | `ENV001` |
+| Resource type | `RT\d{3,}` | `RT001` |
+| Binding | `BND\d{3,}` | `BND001` |
+| Deployment scope | `DSC\d{3,}` | `DSC001` |
+
+### Narrative
+
+| Entity | Pattern | Example |
+|--------|---------|---------|
+| Process | `PRC\d{3}` | `PRC001`, `orders.PRC001` |
+| Process activity | `PA\d{3}` | `PA001` |
+| User story | `US\d{3,}` | `US001`, `orders.US001` |
+| Use case | `UC\d{3,}` | `UC001`, `orders.UC001` |
+
+### Interactions
+
+| Entity | Pattern | Example |
+|--------|---------|---------|
+| Screen | `SCR\d{3}` | `SCR001` |
+| UI action | `UAC\d{3}` | `UAC001` |
+| UI navigation | `UNV\d{3}` | `UNV001` |
+
+### Dynamics
+
+| Entity | Pattern | Example |
+|--------|---------|---------|
+| Parallelism | `PAR\d{3}` | `PAR001` |
+| Ordering | `ORD\d{3}` | `ORD001` |
+| Race condition | `RC\d{3}` | `RC001` |
+
+### Quality
+
+| Entity | Pattern | Example |
+|--------|---------|---------|
 | Metric | `MT\d{3}` | `MT001` |
 | KPI | `KPI\d{3}` | `KPI001` |
 | SLO | `SLO\d{3}` | `SLO001` |
@@ -157,32 +214,52 @@ All IDs support optional context prefix using dot notation (e.g. `billing.CN001`
 | Security | `SEC\d{3}` | `SEC001` |
 | Compliance | `CMP\d{3}` | `CMP001` |
 | Resilience | `RES\d{3}` | `RES001` |
-| Parallelism | `PAR\d{3}` | `PAR001` |
-| Ordering | `ORD\d{3}` | `ORD001` |
-| Race condition | `RC\d{3}` | `RC001` |
-| Story activity | `SA\d{3}` | `SA001` |
-| Story process | `SP\d{3}` | `SP001` |
-| Error | `ERR\d{3}` | `ERR001` |
+
+### Governance
+
+| Entity | Pattern | Example |
+|--------|---------|---------|
+| Decision | `(DC\|D)\d{3}` | `DC001`, `billing.DC001` |
+| Business decision | `BD\d{3,}` | `BD001` |
+| Goal | `(GL\|G)\d{3}` | `GL001` |
+| Non-goal | `NG\d{3}` | `NG001` |
+| Risk | `(RSK\|R)\d{3}` | `RSK001` |
+| Assumption | `(ASM\|A)\d{3}` | `ASM001` |
+| Trade-off | `(TRO\|T)\d{3}` | `TRO001` |
+| Inquiry | `INQ\d{3,}` | `INQ001` |
+| Question | `QN\d{3,}` | `QN001`, `billing.QN001` |
+| Finding | `FN\d{3}` | `FN001` |
+| Leverage point | `LP\d{3}` | `LP001` |
+| Watch item | `(WCH\|W)\d{3}` | `WCH001` |
+| Capability | `CAP\d{3}` | `CAP001` |
+| Value stream | `VS\d{3,}` | `VS001` |
 | Fitness function | `FF\d{3}` | `FF001` |
+| Test (happy / edge / error) | `(TC\|EC\|ER)\d{3}` | `TC001`, `EC001`, `ER001` |
 | Migration | `MIG\d{3}` | `MIG001` |
-| Concept attribute | `CAT\d{3}` | `CAT001` |
-| Story | `STR\d{3}` | `STR001` |
-| Screen | `SCR\d{3}` | `SCR001` |
-| UI Action | `UAC\d{3}` | `UAC001` |
-| UI Navigation | `UNV\d{3}` | `UNV001` |
-| Party | `PRT\d{3}` | `PRT001` |
-| Department | `DPT\d{3}` | `DPT001` |
-| Team | `TM\d{3}` | `TM001` |
-| Model (x-extension) | `MDL\d{3}` | `MDL001` |
-| Question | `QN\d{3}` | `QN001`, `billing.QN001` |
-| User Story | `US\d{3,}` | `US001`, `orders.US001` |
-| Use Case | `UC\d{3,}` | `UC001`, `orders.UC001` |
 | Milestone | `MS\d{3,}` | `MS001`, `roadmap.MS001` |
-| Work Item | `WI\d{3,}` | `WI001`, `roadmap.WI001` |
+| Work item | `WI\d{3,}` | `WI001`, `roadmap.WI001` |
+| Party / Department / Team | `(PRT\|DPT\|TM)\d{3}` | `PRT001`, `DPT001`, `TM001` |
 
-Rule prefixes: `SR`=structural, `CR`=classification, `DR`=derivation, `EQ`=equivalence, `VR`=validation.
+### Bands accepted in two spellings
 
-**Operation ID numbering:** Use a single counter across all operation kinds within a slice. IDs reflect creation order, not kind-specific sequences. Gaps within a prefix are expected (e.g., CMD001, EVT002, CMD003 — there is no CMD002).
+Seven bands are written two ways. The longer spelling is the one to write; the shorter one still
+validates on this line and stops validating in the next major, and a model carrying it is reported
+by name with its replacement.
+
+| Write | Also accepted | Entity |
+|-------|---------------|--------|
+| `DC###` | `D###` | Decision |
+| `RSK###` | `R###` | Risk |
+| `GL###` | `G###` | Goal |
+| `TRO###` | `T###` | Trade-off |
+| `ASM###` | `A###` | Assumption |
+| `ASC###` | `AS###` | Association |
+| `WCH###` | `W###` | Watch item |
+
+The pairs are declared as `x-retired-bands` in `metamodel.schema.yaml`, which is what the validator
+and the model update both read.
+
+**Operation ID numbering:** Use a single counter across all operation kinds within a slice. IDs reflect creation order, not kind-specific sequences. Gaps within a prefix are expected (e.g., CMD001, EVT002, CMD003 - there is no CMD002).
 
 **ID-kind consistency:** The operation ID prefix must match the `kind` field. Validator warns on mismatch.
 
