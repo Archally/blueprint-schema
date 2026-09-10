@@ -708,7 +708,7 @@ _Source: `schema/v2.8/design/arch.schema.yaml` · root type `object`_
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
 | `scope` | `ref → context_prefix` | — |  | Bounded context this architecture file belongs to. Used only for context-scoped arch fragments (future). Root-level arch files describe systems and MUST NOT de… |
 | `stage` | `string` | — |  | Architecture maturity stage (e.g. draft, review, approved, production). |
-| `domains` | `object` | — |  | SOFT-DEPRECATED (v2.8.0). Free-string map naming the domains this architecture belongs to (name to identifier or description). No tool reads it, and it resolve… |
+| `domains` | `object` | — |  | SOFT-DEPRECATED (v2.8.0). Free-string map naming the domains this architecture belongs to (name to identifier or description). Nothing resolves it. A domain is… |
 | `processes` | `array<string>` | — |  | Process file references providing narrative context for this architecture. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
@@ -2691,7 +2691,7 @@ _Source: `schema/v2.8/design/story.schema.yaml` · root type `object`_
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
 | `scope` | `ref → context_prefix` | — |  | Bounded context this process file belongs to. |
 | `stage` | `string` | — |  | Development stage (e.g. draft, review, approved). |
-| `domains` | `object` | — |  | Domain references used in these processes (name → identifier mapping). |
+| `domains` | `object` | — |  | SOFT-DEPRECATED (v2.8.15). Free-string map naming the domains these processes touch (name to identifier or description). Nothing resolves it. A domain is decla… |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
 | `processes` | `array<ref → process>` | ✓ |  | Business processes describing how operations flow from trigger to outcome. |

@@ -41,10 +41,11 @@ properties:
       type: string
     description: >
       SOFT-DEPRECATED (v2.8.0). Free-string map naming the domains this architecture belongs to
-      (name to identifier or description). No tool reads it, and it resolves to nothing. A domain
-      is declared in the root `domains[]` registry of `blueprint.yaml`, where it carries a
-      `DMN###` id that a context names through `domain_ref`. Accepted so that existing documents
-      keep loading. Removal targeted for v2.9.
+      (name to identifier or description). Nothing resolves it. A domain is declared in the root
+      `domains[]` registry of `blueprint.yaml`, where it carries a `DMN###` id that a context
+      names through `domain_ref`; the schema-update tool promotes each key into that registry,
+      the name becoming the domain's name and the prose its description, and removes the key
+      here. Accepted so that existing documents keep loading. Removal targeted for v2.9.
   processes:
     type: array
     items:

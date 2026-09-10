@@ -28,7 +28,13 @@ properties:
     type: object
     additionalProperties:
       type: string
-    description: "Domain references used in these processes (name → identifier mapping)."
+    description: >
+      SOFT-DEPRECATED (v2.8.15). Free-string map naming the domains these processes touch
+      (name to identifier or description). Nothing resolves it. A domain is declared in the root
+      `domains[]` registry of `blueprint.yaml`, where it carries a `DMN###` id that a context
+      names through `domain_ref`; the schema-update tool promotes each key into that registry,
+      the name becoming the domain's name and the prose its description, and removes the key
+      here. Accepted so that existing documents keep loading. Removal targeted for v2.9.
   tags:
     $ref: "../metamodel.schema.yaml#/$defs/tags"
   owned_by:
