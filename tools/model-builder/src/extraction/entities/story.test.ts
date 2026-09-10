@@ -47,13 +47,25 @@ const ORDERS_STORY_DOC: ParsedBlueprintDocument = {
 };
 
 describe('extractStory', () => {
-  it('TC-SE1: returns Story entities with type Story and layer design.story', () => {
+  it('TC-SE1: returns Process entities with type Process and layer design.process', () => {
     const entities = extractStory(ORDERS_STORY_DOC);
     expect(entities).toHaveLength(1);
-    expect(entities[0]!.type).toBe(ENTITY_TYPE.Story);
-    expect(entities[0]!.layer).toBe('design.story');
+    expect(entities[0]!.type).toBe(ENTITY_TYPE.Process);
+    expect(entities[0]!.layer).toBe('design.process');
     expect(entities[0]!.displayId).toBe('ST-001');
     expect(entities[0]!.summary).toBe('Customer submits order');
+  });
+
+  it('reads the collection under `processes`, the name it carries from v2.8.10', () => {
+    const { stories, ...rest } = ORDERS_STORY_DOC.data as Record<string, unknown>;
+    const doc: ParsedBlueprintDocument = {
+      ...ORDERS_STORY_DOC,
+      data: { ...rest, processes: stories },
+    };
+    const entities = extractStory(doc);
+    expect(entities).toHaveLength(1);
+    expect(entities[0]!.type).toBe(ENTITY_TYPE.Process);
+    expect(entities[0]!.displayId).toBe('ST-001');
   });
 
   it('TC-SE2: operationsDetail has 4 entries in order with positions 0-3', () => {
@@ -177,7 +189,7 @@ describe('extractStory', () => {
     const userStories = entities.filter((e) => e.type === ENTITY_TYPE.UserStory);
     expect(userStories).toHaveLength(2);
     expect(userStories[0]!.displayId).toBe('US001');
-    expect(userStories[0]!.layer).toBe('design.story');
+    expect(userStories[0]!.layer).toBe('design.process');
     expect(userStories[0]!.summary).toBe('Place order');
     expect(userStories[0]!.term).toBe('place an order');
     expect(userStories[0]!.id).toBe('orders-story.yaml-US001');
@@ -204,7 +216,7 @@ describe('extractStory', () => {
     const useCases = entities.filter((e) => e.type === ENTITY_TYPE.UseCase);
     expect(useCases).toHaveLength(2);
     expect(useCases[0]!.displayId).toBe('UC001');
-    expect(useCases[0]!.layer).toBe('design.story');
+    expect(useCases[0]!.layer).toBe('design.process');
     expect(useCases[0]!.summary).toBe('Full checkout');
     expect(useCases[0]!.term).toBe('Place Order');
     expect(useCases[1]!.summary).toBe('Track Order'); // falls back to name

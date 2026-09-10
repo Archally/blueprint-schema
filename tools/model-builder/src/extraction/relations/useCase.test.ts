@@ -5,7 +5,7 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
 import type { Entity } from '../../model/types.js';
 
 function makeEntity(overrides: Partial<Entity> & { id: string; displayId: string; type: string }): Entity {
-  return { layer: 'design.story', fileOrigin: 'orders/story.yaml', ...overrides };
+  return { layer: 'design.process', fileOrigin: 'orders/story.yaml', ...overrides };
 }
 
 describe('extractUseCaseRelations', () => {
@@ -38,17 +38,17 @@ describe('extractUseCaseRelations', () => {
     expect(relations.filter((r) => r.type === RELATION_TYPE.UseCaseUserStory)).toHaveLength(2);
   });
 
-  it('creates stories[] relations to STR###', () => {
+  it('creates processes[] relations to PRC###', () => {
     const entities: Entity[] = [
       makeEntity({
         id: 'orders-story.yaml-UC001', displayId: 'UC001', type: ENTITY_TYPE.UseCase,
-        data: { id: 'UC001', name: 'Place Order', primary_actor: 'ACT001', stories: ['STR001'] },
+        data: { id: 'UC001', name: 'Place Order', primary_actor: 'ACT001', processes: ['PRC001'] },
       }),
-      makeEntity({ id: 'orders-story.yaml-STR001', displayId: 'STR001', type: ENTITY_TYPE.Story }),
+      makeEntity({ id: 'orders-story.yaml-PRC001', displayId: 'PRC001', type: ENTITY_TYPE.Process }),
     ];
     const placeholders = new Map<string, Entity>();
     const relations = extractUseCaseRelations(entities, placeholders);
-    expect(relations.filter((r) => r.type === RELATION_TYPE.UseCaseStory)).toHaveLength(1);
+    expect(relations.filter((r) => r.type === RELATION_TYPE.UseCaseProcess)).toHaveLength(1);
   });
 
   it('extracts screen and operation refs from main_scenario steps', () => {

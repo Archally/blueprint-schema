@@ -5,7 +5,7 @@ import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 
 // ---------------------------------------------------------------------------
-// story extraction: StoryOrdersOperation relations (step-02 TC-SE7)
+// process extraction: ProcessOrdersOperation relations (TC-SE7)
 // ---------------------------------------------------------------------------
 
 const ORDERS_DOMAIN_DOC: ParsedBlueprintDocument = {
@@ -67,14 +67,14 @@ const ORDERS_STORY_DOC: ParsedBlueprintDocument = {
 };
 
 describe('buildRelations / buildBlueprintModel with story extraction', () => {
-  it('TC-SE7: StoryOrdersOperation relations exist for resolved operations only (2 for fixture)', () => {
+  it('TC-SE7: ProcessOrdersOperation relations exist for resolved operations only (2 for fixture)', () => {
     const documents: ParsedBlueprintDocument[] = [ORDERS_DOMAIN_DOC, INVENTORY_DOMAIN_DOC, ORDERS_STORY_DOC];
     const model = buildBlueprintModel(groupDocumentsBySchemaType(documents));
 
-    const storyEntities = model.entities.filter((e) => e.type === ENTITY_TYPE.Story);
+    const storyEntities = model.entities.filter((e) => e.type === ENTITY_TYPE.Process);
     expect(storyEntities).toHaveLength(1);
 
-    const storyRels = model.relations.filter((r) => r.type === RELATION_TYPE.StoryOrdersOperation);
+    const storyRels = model.relations.filter((r) => r.type === RELATION_TYPE.ProcessOrdersOperation);
     expect(storyRels).toHaveLength(2);
 
     const ops = model.entities.filter((e) => e.type === ENTITY_TYPE.Operation);
@@ -113,7 +113,7 @@ describe('buildRelations / buildBlueprintModel with story extraction', () => {
     const documents: ParsedBlueprintDocument[] = [ORDERS_DOMAIN_DOC, storyWithInvalidRef];
     const model = buildBlueprintModel(groupDocumentsBySchemaType(documents));
 
-    const storyRels = model.relations.filter((r) => r.type === RELATION_TYPE.StoryOrdersOperation);
+    const storyRels = model.relations.filter((r) => r.type === RELATION_TYPE.ProcessOrdersOperation);
     expect(storyRels).toHaveLength(2);
 
     const missingTarget = storyRels.find((r) => {
@@ -122,7 +122,7 @@ describe('buildRelations / buildBlueprintModel with story extraction', () => {
     });
     expect(missingTarget).toBeDefined();
 
-    const story = model.entities.find((e) => e.type === ENTITY_TYPE.Story)!;
+    const story = model.entities.find((e) => e.type === ENTITY_TYPE.Process)!;
     const details = (story.data as { operationsDetail?: { name: string; resolved: boolean }[] }).operationsDetail ?? [];
     const nonExistent = details.find((d) => d.name === 'Non-existent op');
     expect(nonExistent!.resolved).toBe(false);
