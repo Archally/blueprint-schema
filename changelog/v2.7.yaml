@@ -5,6 +5,37 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.7.18"
+    date: "2026-09-08"
+    summary: >
+      A goal can say what it bears on. `goal` gains `affects`, the block `risk` and `inquiry`
+      already carry: `operation_refs`, `concept_refs`, `context_refs` and `story_refs`, every one
+      optional, with the same sub-shape and the same meanings. A goal that declares none validates
+      exactly as it did before.
+
+      What it buys is a goal that can be drawn beside the things it is about. Until a goal could
+      name an operation, a concept, a context or a story, nothing could place one on a path through
+      the model, and a projection had to leave every goal unattached whatever the model knew.
+      `context_refs` holds a context prefix rather than an entity id, as it does on the other two.
+
+      Additive. A document valid under 2.7.17 is valid here, and the reverse holds for any document
+      that does not use the new block.
+  - version: "2.7.17"
+    date: "2026-09-07"
+    summary: >
+      A render manifest target can name WHO opens its artifacts. `audience:` on a target is a
+      non-empty list of role names as the organization itself uses them - `QA lead`,
+      `platform team`, `the client's architect` - free text rather than a reference to a modelled
+      actor, because the reader of a delivery is usually outside the system being modelled and most
+      readers could not be named that way at all.
+
+      Nothing narrows, renders or fails differently because of it. The field is the manifest stating
+      who a target is for, so a whole delivery can be asked whether every named reader has an
+      artifact and whether every artifact has a reader.
+
+      One change here is NOT additive: an entry under `groups` declares `minItems: 1`, so a group
+      selecting nothing is refused. A manifest that declared an empty group was valid under 2.7.16
+      and is not valid here; a group that selects at least one target is unaffected.
   - version: "2.7.16"
     date: "2026-09-06"
     summary: >
