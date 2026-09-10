@@ -5,6 +5,29 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.16"
+    date: "2026-09-10"
+    summary: >
+      A slice can reserve numeric ranges of a typed id prefix. Two entities of one family cannot
+      share a number, so a model whose slices all allocate into one prefix has to divide the number
+      space between them; `layout.slices[].bands[]` states that division. Each band names a
+      `prefix`, an inclusive `from` and `to`, and optional `notes`, against the shape
+      `metamodel.schema.yaml#/$defs/id_band`.
+
+
+      A band is declared on the slice that owns it, so ownership is stated by position and a band
+      cannot name a slice the model does not have.
+
+
+      The validator reads the declaration. An id of a banded prefix, declared in a slice's files and
+      sitting outside every band that slice reserves, is a warning naming the id, the band it landed
+      in and the band it should have used. Two bands of one prefix that overlap are a warning at the
+      point of declaration, answerable before any id exists. A band whose `to` is below its `from`
+      reserves nothing and says so.
+
+
+      Additive and opt-in. A model that declares no band validates and is checked exactly as under
+      2.8.15, and a prefix nobody bands is unconstrained.
   - version: "2.8.15"
     date: "2026-09-10"
     summary: >
