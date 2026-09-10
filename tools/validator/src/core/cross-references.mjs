@@ -17,7 +17,7 @@
  * accepts and no longer wants; it resolves, and it stops resolving one line from now.
  */
 
-import { retiredBandOf, rebanded } from "./id-bands.mjs";
+import { retiredBandOf, rebanded, outOfBandFinding } from "./id-bands.mjs";
 import {
   collectIds,
   collectKeyedIds,
@@ -70,7 +70,7 @@ export const CATALOG_REF_RE = /^([a-z][a-z0-9-]*\.)?RT\d{3,}$/;
  *   omitted, nothing is retired, which is the right answer for a line that retires nothing
  * @returns {ReferenceFindings}
  */
-export function resolveModelReferences(documents, refKeys, bandTable) {
+export function resolveModelReferences(documents, refKeys, bandTable, declaredBands = []) {
   const allIds = new Map();
   const allDuplicates = new Map();
   // Duplicate detection runs over the whole model in one pass below; the per-document collection
@@ -81,6 +81,10 @@ export function resolveModelReferences(documents, refKeys, bandTable) {
   const envelopeConflicts = [];
   const allRefs = [];
   const retiredBands = new Map();
+  // Ownership, beside retirement: the same walk already knows each id and the folder it came from,
+  // and the folder IS the slice a band is declared on. Collecting here rather than re-walking the
+  // model keeps one traversal answering both id-band questions.
+  const outOfBand = new Map();
 
   for (const { relFile, data } of documents) {
     if (!data || typeof data !== "object") continue;
@@ -105,6 +109,15 @@ export function resolveModelReferences(documents, refKeys, bandTable) {
       if (retiredBands.has(id)) continue;
       const band = retiredBandOf(id, bandTable);
       if (band) retiredBands.set(id, { id, band, rebanded: rebanded(id, band), loc, file: relFile });
+    }
+    if (declaredBands.length > 0 && folderScope) {
+      for (const [id] of declaredHere) {
+        // One finding per id, however many files declare it - the second declaration is a duplicate,
+        // which is a different report with its own message.
+        if (outOfBand.has(id)) continue;
+        const finding = outOfBandFinding(id, folderScope, declaredBands);
+        if (finding) outOfBand.set(id, { ...finding, file: relFile });
+      }
     }
     collectKeyedIds(data, declaredScope ?? folderScope, allIds, [relFile]);
     collectParentEdges(data, parentEdges);
@@ -143,5 +156,6 @@ export function resolveModelReferences(documents, refKeys, bandTable) {
     selfEdges: selfEdges.map((edge) => ({ ...edge, file: edge.loc.split(".")[0] })),
     envelopeConflicts,
     retiredBands: [...retiredBands.values()],
+    outOfBand: [...outOfBand.values()],
   };
 }
