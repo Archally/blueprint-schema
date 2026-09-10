@@ -27,11 +27,22 @@ import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../t
 //     - id: BC001
 //       domain_ref: DMN001
 //
-// WHAT SEEDS A DOMAIN. A slice that classified itself (`type`) or declared subdomains, and any
-// slice a context names in `domain_ref`. A slice that said nothing about the problem space seeds
-// nothing: the registry states only what the model already stated, restated with an id. Ids are
-// taken in slice order, above whatever the file already holds, so a re-run after an author has
-// added a domain by hand continues the sequence rather than colliding with it.
+// WHAT SEEDS A DOMAIN. Two sources, in this order.
+//
+// A SLICE that classified itself (`type`) or declared subdomains, and any slice a context names in
+// `domain_ref`. A slice that said nothing about the problem space seeds nothing.
+//
+// A GLOSSARY KEY - the root `domains:` free-string map an architecture or process document may
+// carry, one entry per domain, name to prose. It seeds even when its name matches no slice: a key
+// is a declaration that the domain exists and what it is about, where a `domain_ref` is only a
+// reference to one. The prose becomes the domain's `description` and LEAVES the document, so the
+// model states each domain once; a key naming a domain the registry already declares stays where
+// it is, because two authored descriptions is a disagreement no tool should silently resolve.
+//
+// Either way the registry states only what the model already stated, restated with an id. Ids are
+// taken in slice order and then in document order, above whatever the file already holds, so a
+// re-run after an author has added a domain by hand continues the sequence rather than colliding
+// with it.
 //
 // WHAT MOVES AND WHAT IS COPIED. `type` and `subdomains` leave the slice, because a folder has no
 // strategic importance and holds no subdomains. `description`, `owner`, `complexity` and
@@ -49,6 +60,9 @@ import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../t
 // this module cannot read back is the failure it exists to avoid.
 
 const ARCH_FILE = /^(arch\.(yaml|yml)|[^/\\]+[.-]arch\.(yaml|yml))$/i;
+const STORY_FILE = /^(story\.(yaml|yml)|[^/\\]+[.-]story\.(yaml|yml))$/i;
+/** A block-scalar head (`>`, `|-`, `>2`), which owns the lines below it rather than a value beside it. */
+const BLOCK_SCALAR = /^[>|][+-]?\d*$/;
 /** A `domain_ref` already stating a registry id - a domain or, since 2.8.7, one of its subdomains. */
 const REGISTRY_ID = /^(DMN|SDM)\d{3,}$/;
 const ANY_DOMAIN_ID = /\bDMN(\d{3,})\b/g;
@@ -391,37 +405,111 @@ function readRegistry(lines: SourceLine[], block: KeyBlock): RegistryEntry[] {
   return entries;
 }
 
-interface ArchReference {
+interface Document {
   relativePath: string;
   absolutePath: string;
+  /** True for an architecture file. A process file carries a glossary but never a `domain_ref`. */
+  arch: boolean;
   lines: SourceLine[];
+}
+
+interface ArchReference {
+  document: Document;
   lineIndex: number;
   value: string;
 }
 
-function collectArchFiles(root: string): { relativePath: string; absolutePath: string }[] {
-  const found: { relativePath: string; absolutePath: string }[] = [];
+/** One glossary key: a domain a document names, with the map that holds it. */
+interface GlossaryEntry {
+  document: Document;
+  /** The root `domains:` block this key sits in. */
+  map: KeyBlock;
+  /** The key itself - its name is the domain's name, its value the domain's description. */
+  key: KeyBlock;
+  /** Column the map's keys sit at, so a block scalar can be re-indented into the registry. */
+  column: number;
+  /** How many keys the map holds, so a map that empties can go with its last key. */
+  siblings: number;
+}
+
+/**
+ * Every architecture and process document under the model, read ONCE.
+ *
+ * One file can carry both a `domain_ref` to rewrite and a glossary key to promote, and both edits
+ * land on the same line array. Reading the file once per edit would give each its own copy, and
+ * whichever wrote second would discard the other.
+ */
+function loadDocuments(root: string): Document[] {
+  const found: Document[] = [];
   const walk = (directory: string) => {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const absolutePath = path.join(directory, entry.name);
-      if (entry.isDirectory()) walk(absolutePath);
-      else if (ARCH_FILE.test(entry.name)) found.push({ relativePath: path.relative(root, absolutePath).split(path.sep).join('/'), absolutePath });
+      if (entry.isDirectory()) {
+        walk(absolutePath);
+        continue;
+      }
+      const arch = ARCH_FILE.test(entry.name);
+      if (!arch && !STORY_FILE.test(entry.name)) continue;
+      found.push({
+        relativePath: path.relative(root, absolutePath).split(path.sep).join('/'),
+        absolutePath,
+        arch,
+        lines: scanLines(fs.readFileSync(absolutePath, 'utf8')),
+      });
     }
   };
   walk(root);
   return found.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
 }
 
-function collectDomainReferences(root: string): ArchReference[] {
+function collectDomainReferences(documents: Document[]): ArchReference[] {
   const references: ArchReference[] = [];
-  for (const file of collectArchFiles(root)) {
-    const lines = scanLines(fs.readFileSync(file.absolutePath, 'utf8'));
-    lines.forEach((line, lineIndex) => {
+  for (const document of documents) {
+    if (!document.arch) continue;
+    document.lines.forEach((line, lineIndex) => {
       const match = line.text.match(DOMAIN_REF_LINE);
-      if (match) references.push({ ...file, lines, lineIndex, value: match[3]! });
+      if (match) references.push({ document, lineIndex, value: match[3]! });
     });
   }
   return references;
+}
+
+/**
+ * Every glossary key in the model: a root `domains:` mapping of name to prose.
+ *
+ * A block opening a sequence is the registry's shape, not the glossary's, so a document carrying
+ * one is left alone rather than misread.
+ */
+function collectGlossaries(documents: Document[]): GlossaryEntry[] {
+  const entries: GlossaryEntry[] = [];
+  for (const document of documents) {
+    const map = topLevelKeys(document.lines).find((candidate) => candidate.key === 'domains');
+    if (!map || map.value.length > 0) continue;
+    let column = -1;
+    let sequence = false;
+    for (let index = map.keyLine + 1; index < map.end; index += 1) {
+      const text = document.lines[index]!.text;
+      if (isBlank(text) || isComment(text)) continue;
+      sequence = text.trimStart().startsWith('-');
+      column = indentOf(text);
+      break;
+    }
+    if (sequence || column <= 0) continue;
+    const keys = readKeys(document.lines, map.keyLine + 1, map.end, column);
+    for (const key of keys) entries.push({ document, map, key, column, siblings: keys.length });
+  }
+  return entries;
+}
+
+/** The glossary key rendered as the domain's `description`, its own value kept verbatim. */
+function describedAs(glossary: GlossaryEntry, eol: string): SourceLine[] {
+  const { key } = glossary;
+  const inline = key.value.length > 0;
+  const head: SourceLine = { text: inline ? `    description: ${key.value}` : '    description:', eol };
+  const body = key.end > key.keyLine + 1;
+  if (inline && !BLOCK_SCALAR.test(key.value)) return [head];
+  if (!body) return inline ? [head] : [];
+  return [head, ...reindent(glossary.document.lines, key.keyLine + 1, key.end, glossary.column, 4, eol)];
 }
 
 interface Analysis {
@@ -432,10 +520,13 @@ interface Analysis {
   registryBlock: KeyBlock | null;
   layoutBlock: KeyBlock | null;
   rewrites: { reference: ArchReference; id: string }[];
+  documents: Document[];
+  /** The glossary keys promoted into the registry, which leave the documents that held them. */
+  promotions: GlossaryEntry[];
 }
 
 function analyse(blueprintDir: string): Analysis {
-  const analysis: Analysis = { changes: [], warnings: [], blueprint: null, seeds: [], registryBlock: null, layoutBlock: null, rewrites: [] };
+  const analysis: Analysis = { changes: [], warnings: [], blueprint: null, seeds: [], registryBlock: null, layoutBlock: null, rewrites: [], documents: [], promotions: [] };
   const blueprintPath = path.join(blueprintDir, 'blueprint.yaml');
   if (!fs.existsSync(blueprintPath)) {
     analysis.warnings.push('blueprint.yaml: not found - nothing to promote');
@@ -460,7 +551,9 @@ function analyse(blueprintDir: string): Analysis {
     }
     if (childColumn > 0) slicesKey = readKeys(lines, block.keyLine + 1, block.end, childColumn).find((key) => key.key === 'slices') ?? null;
   }
-  const references = collectDomainReferences(blueprintDir);
+  analysis.documents = loadDocuments(blueprintDir);
+  const references = collectDomainReferences(analysis.documents);
+  const glossaries = collectGlossaries(analysis.documents);
   const registry = analysis.registryBlock ? readRegistry(lines, analysis.registryBlock) : [];
   const nameToId = new Map<string, string>(registry.map((entry) => [entry.name, entry.id]));
 
@@ -638,25 +731,59 @@ function analyse(blueprintDir: string): Analysis {
     });
   }
 
+  // The second source. A slice says which folder holds a domain's model; a glossary key says the
+  // domain exists and what it is about. Promoted after the slices so a model carrying both keeps
+  // the ids its layout order implies, and before the references so a `domain_ref` naming a domain
+  // only the glossary declared still resolves to an id.
+  for (const glossary of glossaries) {
+    const name = glossary.key.key;
+    const value = unquote(inlineValue(glossary.key.value));
+    const where = `${glossary.document.relativePath}:${glossary.key.keyLine + 1}`;
+    if (REGISTRY_ID.test(value)) {
+      analysis.warnings.push(`${where}: domains["${name}"] holds the id ${value} rather than prose - left alone, it states nothing the registry does not`);
+      continue;
+    }
+    const existing = nameToId.get(name);
+    if (existing) {
+      analysis.warnings.push(`${where}: domains["${name}"] names a domain the registry already declares (${existing}) - left alone, merge the two descriptions by hand`);
+      continue;
+    }
+    counters.domain += 1;
+    const id = `DMN${pad(counters.domain)}`;
+    const written: SourceLine[] = [
+      { text: `  - id: ${id}`, eol },
+      { text: `    name: ${name}`, eol },
+      ...describedAs(glossary, eol),
+    ];
+    nameToId.set(name, id);
+    analysis.seeds.push({ sliceName: name, id, entry: null, lines: written, subdomainCount: 0 });
+    analysis.promotions.push(glossary);
+    analysis.changes.push({
+      type: 'edit-yaml',
+      path: 'blueprint.yaml',
+      detail: `${id} "${name}" seeded from the \`domains:\` glossary of ${glossary.document.relativePath}`,
+    });
+  }
+
   for (const reference of references) {
     if (REGISTRY_ID.test(reference.value)) continue;
     const id = nameToId.get(reference.value);
     if (!id) {
       analysis.warnings.push(
-        `${reference.relativePath}:${reference.lineIndex + 1}: domain_ref "${reference.value}" names no slice - left alone, point it at a DMN### by hand`,
+        `${reference.document.relativePath}:${reference.lineIndex + 1}: domain_ref "${reference.value}" names no domain the model declares - left alone, point it at a DMN### by hand`,
       );
       continue;
     }
     analysis.rewrites.push({ reference, id });
     analysis.changes.push({
       type: 'edit-yaml',
-      path: reference.relativePath,
+      path: reference.document.relativePath,
       detail: `domain_ref "${reference.value}" -> ${id} (line ${reference.lineIndex + 1})`,
     });
   }
 
   if (analysis.changes.length === 0 && analysis.warnings.length === 0) {
-    analysis.warnings.push('Every slice is a folder already and every domain_ref is an id - nothing to promote.');
+    analysis.warnings.push('Every slice is a folder already, no document names a domain in prose, and every domain_ref is an id - nothing to promote.');
   }
   return analysis;
 }
@@ -695,7 +822,7 @@ function rewriteBlueprint(analysis: Analysis): string {
 }
 
 function rewriteArch(reference: ArchReference, id: string): void {
-  const line = reference.lines[reference.lineIndex]!;
+  const line = reference.document.lines[reference.lineIndex]!;
   const match = line.text.match(DOMAIN_REF_LINE)!;
   const comment = match[4] ? ` ${match[4]}` : '';
   line.text = `${match[1]}domain_ref: ${id}${comment}`;
@@ -706,6 +833,23 @@ function buildPlan(blueprintDir: string): UpdatePlan {
   return { sourceVersion: '2.8', targetVersion: '2.8', description: update.description, changes: analysis.changes, warnings: analysis.warnings };
 }
 
+/**
+ * A document after the glossary keys it gave up have left it, and without the map itself when they
+ * were all of it. A key that stayed - one naming a domain the registry already declares - keeps
+ * the map alive, because dropping it would delete prose no other file carries.
+ */
+function rewriteGlossary(document: Document, promoted: GlossaryEntry[]): string {
+  const map = promoted[0]!.map;
+  const removals =
+    promoted.length === promoted[0]!.siblings
+      ? [{ start: map.start, end: map.end }]
+      : promoted.map((entry) => ({ start: entry.key.start, end: entry.key.end }));
+  const lines = [...document.lines];
+  removals.sort((left, right) => right.start - left.start);
+  for (const removal of removals) lines.splice(removal.start, removal.end - removal.start);
+  return joinLines(lines);
+}
+
 function applyPlan(blueprintDir: string): UpdateResult {
   const analysis = analyse(blueprintDir);
   const plan: UpdatePlan = { sourceVersion: '2.8', targetVersion: '2.8', description: update.description, changes: analysis.changes, warnings: analysis.warnings };
@@ -713,12 +857,24 @@ function applyPlan(blueprintDir: string): UpdateResult {
   if (analysis.changes.length === 0) return { ...plan, applied: true, errors };
   try {
     if (analysis.seeds.length > 0) fs.writeFileSync(analysis.blueprint!.absolutePath, rewriteBlueprint(analysis), 'utf8');
-    const touched = new Map<string, ArchReference>();
+    // A document's line array is shared by every edit against it, and `rewriteArch` edits the line
+    // objects in place. So the reference rewrites land first, the glossary removal is computed on
+    // top of them, and each document is written exactly once.
+    const promotedBy = new Map<Document, GlossaryEntry[]>();
+    for (const promotion of analysis.promotions) {
+      const promoted = promotedBy.get(promotion.document) ?? [];
+      promoted.push(promotion);
+      promotedBy.set(promotion.document, promoted);
+    }
+    const touched = new Set<Document>(promotedBy.keys());
     for (const rewrite of analysis.rewrites) {
       rewriteArch(rewrite.reference, rewrite.id);
-      touched.set(rewrite.reference.absolutePath, rewrite.reference);
+      touched.add(rewrite.reference.document);
     }
-    for (const reference of touched.values()) fs.writeFileSync(reference.absolutePath, joinLines(reference.lines), 'utf8');
+    for (const document of touched) {
+      const promoted = promotedBy.get(document);
+      fs.writeFileSync(document.absolutePath, promoted ? rewriteGlossary(document, promoted) : joinLines(document.lines), 'utf8');
+    }
   } catch (error) {
     errors.push(`write failed: ${error instanceof Error ? error.message : String(error)}`);
   }
