@@ -5,6 +5,26 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.15"
+    date: "2026-09-10"
+    summary: >
+      Documentation and migration only. A root `domains:` map may be declared in an architecture
+      document and in a process document. It is a free-string map of name to prose and nothing
+      resolves it; both descriptions state that, and both name the registry a domain is declared
+      in: the root `domains[]` of `blueprint.yaml`, where a domain carries a `DMN###` id that a
+      context names through `domain_ref`.
+
+
+      `schema-update` promotes the map. Each key becomes a domain in that registry - the key its
+      name, the prose beneath it its description - and the key leaves the document, so a domain is
+      named in one place. A key seeds a domain even when it matches no slice folder, because
+      naming a domain states that it exists where a `domain_ref` only points at one. A key naming
+      a domain the registry already declares is left where it is and reported, since two authored
+      descriptions are a disagreement to settle by hand.
+
+
+      The map is accepted in both documents for the rest of the 2.8 line. A document valid under
+      2.8.14 is valid here.
   - version: "2.8.14"
     date: "2026-09-10"
     summary: >
