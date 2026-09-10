@@ -345,9 +345,9 @@ $defs:
       Use case - a scenario-level requirement describing actor interaction
       with the system. Serves as both functional specification (steps with
       operations) and user journey (steps with screens, emotions, pain
-      points). Groups user stories and optionally references implementing
-      stories (STR###).
-      Like `user_story` and unlike `story`, a use case states INTENDED behaviour: its steps may be
+      points). Groups user stories and optionally references the processes
+      that implement it (PRC###).
+      Like `user_story` and unlike `process`, a use case states INTENDED behaviour: its steps may be
       written in plain language, so it can be authored before the domain model exists.
     additionalProperties: false
     required: [id, name, primary_actor]

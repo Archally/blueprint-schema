@@ -10,34 +10,76 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 | Impact | Count |
 | --- | --- |
-| Breaking (major) | 11 |
-| Additive (minor) | 97 |
+| Breaking (major) | 23 |
+| Additive (minor) | 134 |
 | Clarification (patch) | 0 |
-| **Total changes** | 108 |
+| **Total changes** | 157 |
 
 ## ⚠ Breaking changes
 
 | Change | Target | Summary |
 | --- | --- | --- |
+| Removed | design/arch.schema.yaml#/$defs/party/properties/env | Property env removed. |
 | Removed | design/arch.schema.yaml#/$defs/service/properties/resources | Property resources removed. |
 | Removed | design/arch.schema.yaml#/properties/infrastructure | Property infrastructure removed. |
+| Removed | design/arch.schema.yaml#/properties/stories | Property stories removed. |
+| Removed | design/story.schema.yaml#/$defs/story | Definition story removed from design/story.schema.yaml. |
+| Removed | design/story.schema.yaml#/$defs/story_activity | Definition story_activity removed from design/story.schema.yaml. |
+| Removed | design/story.schema.yaml#/$defs/use_case/properties/stories | Property stories removed. |
+| Removed | design/story.schema.yaml#/properties/stories | Property stories removed. |
+| Removed | governance/test-cases.schema.yaml#/$defs/validates_refs/properties/stories | Property stories removed. |
+| Removed | metamodel.schema.yaml#/$defs/story_activity_ref | Definition story_activity_ref removed from metamodel.schema.yaml. |
+| Removed | metamodel.schema.yaml#/$defs/story_process_ref | Definition story_process_ref removed from metamodel.schema.yaml. |
+| Removed | metamodel.schema.yaml#/$defs/story_ref | Definition story_ref removed from metamodel.schema.yaml. |
 | Renamed | design/rg.schema.yaml → design/infrastructure.schema.yaml | Schema file renamed from design/rg.schema.yaml to design/infrastructure.schema.yaml. |
 | Renamed | design/ui.schema.yaml → design/interactions.schema.yaml | Schema file renamed from design/ui.schema.yaml to design/interactions.schema.yaml. |
 | Renamed | governance/org.schema.yaml → governance/organization.schema.yaml | Schema file renamed from governance/org.schema.yaml to governance/organization.schema.yaml. |
 | Requiredness changed | design/arch.schema.yaml#/$defs/dependency/properties/relationship | Property relationship became required (breaking). |
 | Requiredness changed | design/models.schema.yaml#/$defs/model_schema/properties/description | Property description became required (breaking). |
 | Requiredness changed | governance/decisions.schema.yaml#/$defs/decision/properties/summary | Property summary became required (breaking). |
+| Modified | migration.schema.yaml#/$defs/entity_change/properties/entity_type | Property entity_type enum values removed: story, activity. |
 | Added | design/arch.schema.yaml#/$defs/context/properties/id | Property id added (required — breaking). |
 | Added | design/arch.schema.yaml#/$defs/party/properties/id | Property id added (required — breaking). |
 | Added | design/arch.schema.yaml#/$defs/service/properties/id | Property id added (required — breaking). |
+| Added | design/story.schema.yaml#/properties/processes | Property processes added (required — breaking). |
 
-## Removed (2)
+## Removed (12)
+
+- **[breaking]** `design/arch.schema.yaml#/$defs/party/properties/env` — Property `env` removed.
+  - _Source: `schema/v2.6/design/arch.schema.yaml#/$defs/party/properties/env`_
 
 - **[breaking]** `design/arch.schema.yaml#/$defs/service/properties/resources` — Property `resources` removed.
   - _Source: `schema/v2.6/design/arch.schema.yaml#/$defs/service/properties/resources`_
 
 - **[breaking]** `design/arch.schema.yaml#/properties/infrastructure` — Property `infrastructure` removed.
   - _Source: `schema/v2.6/design/arch.schema.yaml#/properties/infrastructure`_
+
+- **[breaking]** `design/arch.schema.yaml#/properties/stories` — Property `stories` removed.
+  - _Source: `schema/v2.6/design/arch.schema.yaml#/properties/stories`_
+
+- **[breaking]** `design/story.schema.yaml#/$defs/story` — Definition `story` removed from `design/story.schema.yaml`.
+  - _Source: `schema/v2.6/design/story.schema.yaml#/$defs/story`_
+
+- **[breaking]** `design/story.schema.yaml#/$defs/story_activity` — Definition `story_activity` removed from `design/story.schema.yaml`.
+  - _Source: `schema/v2.6/design/story.schema.yaml#/$defs/story_activity`_
+
+- **[breaking]** `design/story.schema.yaml#/$defs/use_case/properties/stories` — Property `stories` removed.
+  - _Source: `schema/v2.6/design/story.schema.yaml#/$defs/use_case/properties/stories`_
+
+- **[breaking]** `design/story.schema.yaml#/properties/stories` — Property `stories` removed.
+  - _Source: `schema/v2.6/design/story.schema.yaml#/properties/stories`_
+
+- **[breaking]** `governance/test-cases.schema.yaml#/$defs/validates_refs/properties/stories` — Property `stories` removed.
+  - _Source: `schema/v2.6/governance/test-cases.schema.yaml#/$defs/validates_refs/properties/stories`_
+
+- **[breaking]** `metamodel.schema.yaml#/$defs/story_activity_ref` — Definition `story_activity_ref` removed from `metamodel.schema.yaml`.
+  - _Source: `schema/v2.6/metamodel.schema.yaml#/$defs/story_activity_ref`_
+
+- **[breaking]** `metamodel.schema.yaml#/$defs/story_process_ref` — Definition `story_process_ref` removed from `metamodel.schema.yaml`.
+  - _Source: `schema/v2.6/metamodel.schema.yaml#/$defs/story_process_ref`_
+
+- **[breaking]** `metamodel.schema.yaml#/$defs/story_ref` — Definition `story_ref` removed from `metamodel.schema.yaml`.
+  - _Source: `schema/v2.6/metamodel.schema.yaml#/$defs/story_ref`_
 
 ## Renamed (3)
 
@@ -56,16 +98,19 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
   - _Note: Renamed org.schema.yaml → organization.schema.yaml for naming consistency._
   - _Sources: `schema/v2.6/governance/org.schema.yaml`, `schema/v2.8/governance/organization.schema.yaml`_
 
-## Requiredness changed (4)
+## Requiredness changed (5)
 
 - **[breaking]** `design/arch.schema.yaml#/$defs/dependency/properties/relationship` — Property `relationship` became required (breaking).
   - _Sources: `schema/v2.8/design/arch.schema.yaml#/$defs/dependency/properties/relationship`, `schema/v2.6/design/arch.schema.yaml#/$defs/dependency/properties/relationship`_
 
+- [additive] `design/arch.schema.yaml#/$defs/party/properties/contexts` — Property `contexts` became optional.
+  - _Sources: `schema/v2.8/design/arch.schema.yaml#/$defs/party/properties/contexts`, `schema/v2.6/design/arch.schema.yaml#/$defs/party/properties/contexts`_
+
+- [additive] `design/arch.schema.yaml#/properties/parties` — Property `parties` became optional.
+  - _Sources: `schema/v2.8/design/arch.schema.yaml#/properties/parties`, `schema/v2.6/design/arch.schema.yaml#/properties/parties`_
+
 - **[breaking]** `design/models.schema.yaml#/$defs/model_schema/properties/description` — Property `description` became required (breaking).
   - _Sources: `schema/v2.8/design/models.schema.yaml#/$defs/model_schema/properties/description`, `schema/v2.6/design/models.schema.yaml#/$defs/model_schema/properties/description`_
-
-- [additive] `design/story.schema.yaml#/$defs/story_activity/properties/entry_operation` — Property `entry_operation` became optional.
-  - _Sources: `schema/v2.8/design/story.schema.yaml#/$defs/story_activity/properties/entry_operation`, `schema/v2.6/design/story.schema.yaml#/$defs/story_activity/properties/entry_operation`_
 
 - **[breaking]** `governance/decisions.schema.yaml#/$defs/decision/properties/summary` — Property `summary` became required (breaking).
   - _Sources: `schema/v2.8/governance/decisions.schema.yaml#/$defs/decision/properties/summary`, `schema/v2.6/governance/decisions.schema.yaml#/$defs/decision/properties/summary`_
@@ -75,7 +120,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `governance/motivation.schema.yaml#/$defs/inquiry/properties/resolved` — Property `resolved` marked deprecated.
   - _Sources: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/resolved`, `schema/v2.6/governance/motivation.schema.yaml#/$defs/inquiry/properties/resolved`_
 
-## Modified (17)
+## Modified (20)
 
 - [additive] `blueprint.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/blueprint.schema.yaml#/properties/schemaVersion`, `schema/v2.6/blueprint.schema.yaml#/properties/schemaVersion`_
@@ -91,6 +136,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/domain.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/design/domain.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/domain.schema.yaml#/properties/schemaVersion`_
+
+- [additive] `design/dynamics.schema.yaml#/$defs/race_condition/properties/likelihood` — Property `likelihood` enum values added: `very-high`.
+  - _Sources: `schema/v2.8/design/dynamics.schema.yaml#/$defs/race_condition/properties/likelihood`, `schema/v2.6/design/dynamics.schema.yaml#/$defs/race_condition/properties/likelihood`_
 
 - [additive] `design/dynamics.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/design/dynamics.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/dynamics.schema.yaml#/properties/schemaVersion`_
@@ -125,10 +173,19 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `governance/value-stream.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/governance/value-stream.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/value-stream.schema.yaml#/properties/schemaVersion`_
 
+- **[breaking]** `migration.schema.yaml#/$defs/entity_change/properties/entity_type` — Property `entity_type` enum values removed: `story`, `activity`.
+  - _Sources: `schema/v2.8/migration.schema.yaml#/$defs/entity_change/properties/entity_type`, `schema/v2.6/migration.schema.yaml#/$defs/entity_change/properties/entity_type`_
+
+- [additive] `migration.schema.yaml#/$defs/entity_change/properties/kind` — Property `kind` enum values added: `rename`.
+  - _Sources: `schema/v2.8/migration.schema.yaml#/$defs/entity_change/properties/kind`, `schema/v2.6/migration.schema.yaml#/$defs/entity_change/properties/kind`_
+
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (81)
+## Added (116)
+
+- [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
+  - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
 
 - [additive] `blueprint.schema.yaml#/$defs/repository_config` — New definition `repository_config` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/repository_config`_
@@ -136,11 +193,17 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `blueprint.schema.yaml#/$defs/slice` — New definition `slice` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/slice`_
 
+- [additive] `blueprint.schema.yaml#/$defs/subdomain` — New definition `subdomain` added to `blueprint.schema.yaml`.
+  - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/subdomain`_
+
 - [additive] `blueprint.schema.yaml#/$defs/tracker_config` — New definition `tracker_config` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/tracker_config`_
 
 - [additive] `blueprint.schema.yaml#/properties/default_tracker` — Property `default_tracker` added (optional).
   - _Source: `schema/v2.8/blueprint.schema.yaml#/properties/default_tracker`_
+
+- [additive] `blueprint.schema.yaml#/properties/domains` — Property `domains` added (optional).
+  - _Source: `schema/v2.8/blueprint.schema.yaml#/properties/domains`_
 
 - [additive] `blueprint.schema.yaml#/properties/repositories` — Property `repositories` added (optional).
   - _Source: `schema/v2.8/blueprint.schema.yaml#/properties/repositories`_
@@ -177,6 +240,18 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/resource_refs` — Property `resource_refs` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/resource_refs`_
+
+- [additive] `design/arch.schema.yaml#/$defs/service/properties/system_ref` — Property `system_ref` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/system_ref`_
+
+- [additive] `design/arch.schema.yaml#/properties/contexts` — Property `contexts` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/properties/contexts`_
+
+- [additive] `design/arch.schema.yaml#/properties/processes` — Property `processes` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/properties/processes`_
+
+- [additive] `design/arch.schema.yaml#/properties/system_ref` — Property `system_ref` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/properties/system_ref`_
 
 - [additive] `design/concepts.schema.yaml#/$defs/actor/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/actor/properties/provenance`_
@@ -226,8 +301,29 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/rules.schema.yaml#/$defs/transition_rule/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.8/design/rules.schema.yaml#/$defs/transition_rule/properties/provenance`_
 
-- [additive] `design/story.schema.yaml#/$defs/story/properties/tracker_ref` — Property `tracker_ref` added (optional).
-  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/story/properties/tracker_ref`_
+- [additive] `design/story.schema.yaml#/$defs/alternative_flow` — New definition `alternative_flow` added to `design/story.schema.yaml`.
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/alternative_flow`_
+
+- [additive] `design/story.schema.yaml#/$defs/process` — New definition `process` added to `design/story.schema.yaml`.
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/process`_
+
+- [additive] `design/story.schema.yaml#/$defs/process_activity` — New definition `process_activity` added to `design/story.schema.yaml`.
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/process_activity`_
+
+- [additive] `design/story.schema.yaml#/$defs/use_case/properties/alternative_flows` — Property `alternative_flows` added (optional).
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/use_case/properties/alternative_flows`_
+
+- [additive] `design/story.schema.yaml#/$defs/use_case/properties/extends` — Property `extends` added (optional).
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/use_case/properties/extends`_
+
+- [additive] `design/story.schema.yaml#/$defs/use_case/properties/includes` — Property `includes` added (optional).
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/use_case/properties/includes`_
+
+- [additive] `design/story.schema.yaml#/$defs/use_case/properties/processes` — Property `processes` added (optional).
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/use_case/properties/processes`_
+
+- [additive] `design/story.schema.yaml#/$defs/use_case/properties/secondary_actors` — Property `secondary_actors` added (optional).
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/use_case/properties/secondary_actors`_
 
 - [additive] `design/story.schema.yaml#/$defs/use_case/properties/tracker_ref` — Property `tracker_ref` added (optional).
   - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/use_case/properties/tracker_ref`_
@@ -235,11 +331,23 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/story.schema.yaml#/$defs/user_story/properties/tracker_ref` — Property `tracker_ref` added (optional).
   - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/user_story/properties/tracker_ref`_
 
+- **[breaking]** `design/story.schema.yaml#/properties/processes` — Property `processes` added (required — breaking).
+  - _Source: `schema/v2.8/design/story.schema.yaml#/properties/processes`_
+
 - [additive] `governance/decisions.schema.yaml#/$defs/decision_links/properties/related` — Property `related` added (optional).
   - _Source: `schema/v2.8/governance/decisions.schema.yaml#/$defs/decision_links/properties/related`_
 
 - [additive] `governance/leverage.schema.yaml` — New schema file `governance/leverage.schema.yaml` added.
   - _Source: `schema/v2.8/governance/leverage.schema.yaml`_
+
+- [additive] `governance/motivation.schema.yaml#/$defs/goal/properties/affects` — Property `affects` added (optional).
+  - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/goal/properties/affects`_
+
+- [additive] `governance/motivation.schema.yaml#/$defs/inquiry/properties/affects` — Property `affects` added (optional).
+  - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects`_
+
+- [additive] `governance/motivation.schema.yaml#/$defs/risk/properties/affects` — Property `affects` added (optional).
+  - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/affects`_
 
 - [additive] `governance/motivation.schema.yaml#/$defs/vision` — New definition `vision` added to `governance/motivation.schema.yaml`.
   - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/vision`_
@@ -304,6 +412,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `governance/test-cases.schema.yaml#/$defs/validates_refs/properties/infrastructure` — Property `infrastructure` added (optional).
   - _Source: `schema/v2.8/governance/test-cases.schema.yaml#/$defs/validates_refs/properties/infrastructure`_
 
+- [additive] `governance/test-cases.schema.yaml#/$defs/validates_refs/properties/processes` — Property `processes` added (optional).
+  - _Source: `schema/v2.8/governance/test-cases.schema.yaml#/$defs/validates_refs/properties/processes`_
+
 - [additive] `governance/test-cases.schema.yaml#/$defs/validates_refs/properties/transitions` — Property `transitions` added (optional).
   - _Source: `schema/v2.8/governance/test-cases.schema.yaml#/$defs/validates_refs/properties/transitions`_
 
@@ -316,8 +427,14 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `metamodel.schema.yaml#/$defs/complexity_pattern` — New definition `complexity_pattern` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/complexity_pattern`_
 
+- [additive] `metamodel.schema.yaml#/$defs/context_kind` — New definition `context_kind` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/context_kind`_
+
 - [additive] `metamodel.schema.yaml#/$defs/deployment_scope_ref` — New definition `deployment_scope_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/deployment_scope_ref`_
+
+- [additive] `metamodel.schema.yaml#/$defs/domain_ref` — New definition `domain_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/domain_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/environment_ref` — New definition `environment_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/environment_ref`_
@@ -331,6 +448,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `metamodel.schema.yaml#/$defs/impacts_links/properties/infrastructure` — Property `infrastructure` added (optional).
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links/properties/infrastructure`_
 
+- [additive] `metamodel.schema.yaml#/$defs/importance_scale` — New definition `importance_scale` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/importance_scale`_
+
 - [additive] `metamodel.schema.yaml#/$defs/infra_relation` — New definition `infra_relation` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/infra_relation`_
 
@@ -340,8 +460,29 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `metamodel.schema.yaml#/$defs/leverage_ref` — New definition `leverage_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/leverage_ref`_
 
+- [additive] `metamodel.schema.yaml#/$defs/likelihood_scale` — New definition `likelihood_scale` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/likelihood_scale`_
+
+- [additive] `metamodel.schema.yaml#/$defs/milestone_status` — New definition `milestone_status` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/milestone_status`_
+
 - [additive] `metamodel.schema.yaml#/$defs/model_traits_item` — New definition `model_traits_item` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/model_traits_item`_
+
+- [additive] `metamodel.schema.yaml#/$defs/outcome` — New definition `outcome` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/outcome`_
+
+- [additive] `metamodel.schema.yaml#/$defs/priority_scale` — New definition `priority_scale` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/priority_scale`_
+
+- [additive] `metamodel.schema.yaml#/$defs/process_activity_ref` — New definition `process_activity_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/process_activity_ref`_
+
+- [additive] `metamodel.schema.yaml#/$defs/process_ref` — New definition `process_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/process_ref`_
+
+- [additive] `metamodel.schema.yaml#/$defs/production_mode` — New definition `production_mode` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/production_mode`_
 
 - [additive] `metamodel.schema.yaml#/$defs/provenance` — New definition `provenance` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/provenance`_
@@ -358,6 +499,18 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `metamodel.schema.yaml#/$defs/service_ref` — New definition `service_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/service_ref`_
 
+- [additive] `metamodel.schema.yaml#/$defs/severity_scale` — New definition `severity_scale` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/severity_scale`_
+
+- [additive] `metamodel.schema.yaml#/$defs/story_status` — New definition `story_status` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/story_status`_
+
+- [additive] `metamodel.schema.yaml#/$defs/subdomain_kind` — New definition `subdomain_kind` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/subdomain_kind`_
+
+- [additive] `metamodel.schema.yaml#/$defs/subdomain_ref` — New definition `subdomain_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/subdomain_ref`_
+
 - [additive] `metamodel.schema.yaml#/$defs/tracker_ref` — New definition `tracker_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/tracker_ref`_
 
@@ -366,6 +519,12 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `metamodel.schema.yaml#/$defs/work_item_ref` — New definition `work_item_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/work_item_ref`_
+
+- [additive] `migration.schema.yaml#/$defs/entity_change_kind` — New definition `entity_change_kind` added to `migration.schema.yaml`.
+  - _Source: `schema/v2.8/migration.schema.yaml#/$defs/entity_change_kind`_
+
+- [additive] `migrations.schema.yaml` — New schema file `migrations.schema.yaml` added.
+  - _Source: `schema/v2.8/migrations.schema.yaml`_
 
 - [additive] `profiles/infrastructure/profiles.schema.yaml` — New schema file `profiles/infrastructure/profiles.schema.yaml` added.
   - _Source: `schema/v2.8/profiles/infrastructure/profiles.schema.yaml`_

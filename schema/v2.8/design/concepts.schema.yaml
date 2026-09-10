@@ -502,7 +502,7 @@ $defs:
     properties:
       id:
         $ref: "../metamodel.schema.yaml#/$defs/association_ref"
-        description: "Unique association identifier (e.g. AS001 or billing.AS001)."
+        description: "Unique association identifier (e.g. ASC001 or billing.ASC001)."
       predicate:
         type: string
         enum:

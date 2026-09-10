@@ -53,7 +53,7 @@ $defs:
     properties:
       id:
         $ref: "../metamodel.schema.yaml#/$defs/decision_ref"
-        description: "Unique decision ID (e.g. D001 or billing.D001). Assigned chronologically; never reused."
+        description: "Unique decision ID (e.g. DC001 or billing.DC001). Assigned chronologically; never reused."
       description:
         type: string
         description: "Human-readable description."

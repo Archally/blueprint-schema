@@ -5,6 +5,27 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.13"
+    date: "2026-09-10"
+    summary: >
+      Documentation only. The schema reference and the modeling guide state the narrative layer's
+      current names: a process carries `PRC###`, an activity `PA###`, the collection key is
+      `processes:`, the typed reference is `process_ref`, and a process is named through
+      `screen.processes`, `use_case.processes`, `declared_impact.direct.processes` and
+      `validates.processes`.
+
+      They also state two properties of a process that are easy to read the other way round:
+      `entry_operation` on an activity is optional, so an activity whose operation is not yet
+      modelled leaves it out and the gap is reported; and `trigger`, `end_states` and `lanes` are
+      direct properties of the process rather than a nested object.
+
+      Every example writes the band it means to teach - `DC###` for a decision, `GL###` for a goal,
+      `RSK###` for a risk, `ASC###` for an association - and so do the `id` descriptions in
+      `decisions.schema.yaml`, `concepts.schema.yaml` and `story.schema.yaml`. The table of bands
+      accepted in two spellings, and the release-history rows, name both, which is their purpose.
+
+      No pattern, property, enum or requirement changed. A document valid under 2.8.12 is valid
+      here, and the reverse holds.
   - version: "2.8.12"
     date: "2026-09-09"
     summary: >

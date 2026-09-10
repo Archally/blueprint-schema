@@ -6,18 +6,18 @@ A generated, human-readable projection of the JSON Schema. **JSON Schema remains
 
 | Metric | Count |
 | --- | --- |
-| Schema files | 23 |
+| Schema files | 24 |
 | Planes | 3 |
-| Object definitions | 150 |
-| Typed-ID entity types | 60 |
-| Cross-file reference edges | 39 |
+| Object definitions | 155 |
+| Typed-ID entity types | 61 |
+| Cross-file reference edges | 40 |
 
 ## Plane map
 
 ```mermaid
 graph TD
     ROOT["Blueprint v2.8"]
-    cross_cutting["Cross-cutting<br/>5 schema files"]
+    cross_cutting["Cross-cutting<br/>6 schema files"]
     ROOT --> cross_cutting
     design["Design Plane<br/>10 schema files"]
     ROOT --> design
@@ -34,6 +34,7 @@ Version-root schemas that belong to neither plane and apply across every layer: 
 | [`blueprint.schema.yaml`](./entity-catalog.md#blueprint) | Blueprint Meta-Schema | Meta-schema composing all blueprint layers into Design + Governance planes with cross-cutting metamodel. Supersedes v1 layer-based blueprin… |
 | [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | Blueprint Metamodel | Cross-cutting definitions for all blueprint layers. Provides typed ID refs, versioning, SpecPath, and shared vocabulary. Consumed by all de… |
 | [`migration.schema.yaml`](./entity-catalog.md#migration) | Blueprint Migration Schema | Versioned, ordered changes to a blueprint model instance. Enables AS-IS to TO-BE model transformation with traceability and rollback. |
+| [`migrations.schema.yaml`](./entity-catalog.md#migrations) | Blueprint Migration Register | An ordered record of the changes a blueprint model has been through and the ones it is planned to go through, written for a reader. Each en… |
 | [`profiles/infrastructure/profiles.schema.yaml`](./entity-catalog.md#profiles-infrastructure-profiles) | Blueprint Infrastructure Resource-Type Profile | Validates a resource-type catalog profile file (v2.7.7). A profile is DATA, not schema: the resource-type catalog is shipped as versioned p… |
 | [`render.manifest.schema.yaml`](./entity-catalog.md#render-manifest) | Blueprint Render Manifest | Declares one project's full artifact set for the `bp render` command: which renderer targets to produce, where their output lands, and the… |
 
@@ -43,16 +44,16 @@ What & how: domain model, behavior, contracts, and quality attributes.
 
 | Schema file | Title | Summary |
 | --- | --- | --- |
-| [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | Blueprint Architecture | Design Plane — L0: Bounded context topology. Parties, contexts, services with contracts (interfaces), enriched dependencies for context-map… |
-| [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | Blueprint Concepts | Design Plane — Layer 2: Domain vocabulary. Defines concepts (entities, value objects, aggregates), actors, enumerations, and cross-concept… |
-| [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | Blueprint Domain Operations | Design Plane — Layer 3: Domain operations with protocol bindings, rule governance, pre/postconditions, and side effects. Ordering is in sto… |
+| [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | Blueprint Architecture | Design Plane - L0: Bounded context topology. Parties, contexts, services with contracts (interfaces), enriched dependencies for context-map… |
+| [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | Blueprint Concepts | Design Plane - Layer 2: Domain vocabulary. Defines concepts (entities, value objects, aggregates), actors, enumerations, and cross-concept… |
+| [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | Blueprint Domain Operations | Design Plane - Layer 3: Domain operations with protocol bindings, rule governance, pre/postconditions, and side effects. Ordering is in sto… |
 | [`design/dynamics.schema.yaml`](./entity-catalog.md#design-dynamics) | Blueprint Dynamics | Design Plane: Runtime concurrency and execution behavior. Covers execution model, parallelism, ordering constraints, race conditions, and r… |
 | [`design/infrastructure.schema.yaml`](./entity-catalog.md#design-infrastructure) | Blueprint Infrastructure Resources | Design Plane: Infrastructure resource definitions and deployment topology. Declares platform resources (databases, queues, storage, service… |
 | [`design/interactions.schema.yaml`](./entity-catalog.md#design-interactions) | Blueprint UI | Design Plane: User interface screens, actions, and navigation. Cross-links to models, operations, goals, decisions, tests, and stories for… |
 | [`design/models.schema.yaml`](./entity-catalog.md#design-models) | Blueprint Models | Design Plane: Reusable data model definitions (schemas, fields, parameters) with optional concept back-references. Follows OpenAPI/AsyncAPI… |
 | [`design/quality.schema.yaml`](./entity-catalog.md#design-quality) | Blueprint Quality | Design Plane: Non-functional requirements as first-class entities. Covers metrics, KPIs, SLOs, SLAs, security, compliance, resilience, and… |
-| [`design/rules.schema.yaml`](./entity-catalog.md#design-rules) | Blueprint Rules | Design Plane — Layer 2: Business rules. Structural invariants, classification, derivation, equivalence, validation, and state-transition ru… |
-| [`design/story.schema.yaml`](./entity-catalog.md#design-story) | Blueprint Story | Design Plane — Layer 4: Domain stories expressing logical operation sequences, actor interactions, and side effects. Ordering here is logic… |
+| [`design/rules.schema.yaml`](./entity-catalog.md#design-rules) | Blueprint Rules | Design Plane - Layer 2: Business rules. Structural invariants, classification, derivation, equivalence, validation, and state-transition ru… |
+| [`design/story.schema.yaml`](./entity-catalog.md#design-story) | Blueprint Process | Design Plane - Layer 4: Business processes expressing logical operation sequences, actor interactions, and side effects. Ordering here is l… |
 
 ## Governance Plane
 
@@ -60,14 +61,14 @@ Why & proof: strategic intent, decisions, capabilities, and quality evidence.
 
 | Schema file | Title | Summary |
 | --- | --- | --- |
-| [`governance/capability.schema.yaml`](./entity-catalog.md#governance-capability) | Blueprint Business Capabilities | Governance Plane: Business Capability Map — a hierarchical view of what the business can do, independent of organizational structure or pro… |
+| [`governance/capability.schema.yaml`](./entity-catalog.md#governance-capability) | Blueprint Business Capabilities | Governance Plane: Business Capability Map - a hierarchical view of what the business can do, independent of organizational structure or pro… |
 | [`governance/decisions.schema.yaml`](./entity-catalog.md#governance-decisions) | Blueprint Decisions | Governance Plane: Architecture Decision Log (ADR). Chronological, append-only record of design decisions with typed impact references, moti… |
-| [`governance/leverage.schema.yaml`](./entity-catalog.md#governance-leverage) | Blueprint Leverage Map | Governance Plane: Leverage Map — the prioritization tier that sits ABOVE the AS-IS remediation chain (finding → risk → decision → migration… |
-| [`governance/motivation.schema.yaml`](./entity-catalog.md#governance-motivation) | Blueprint Motivation | Governance Plane: Strategic intent — goals, non-goals, risks, assumptions, and trade-offs. Decisions reference motivation entities (not rev… |
-| [`governance/organization.schema.yaml`](./entity-catalog.md#governance-organization) | Blueprint Organization | Governance Plane: Organizational hierarchy — Party > Department > Team. Defines who owns what in the blueprint. Teams are first-class entit… |
+| [`governance/leverage.schema.yaml`](./entity-catalog.md#governance-leverage) | Blueprint Leverage Map | Governance Plane: Leverage Map - the prioritization tier that sits ABOVE the AS-IS remediation chain (finding → risk → decision → migration… |
+| [`governance/motivation.schema.yaml`](./entity-catalog.md#governance-motivation) | Blueprint Motivation | Governance Plane: Strategic intent - goals, non-goals, risks, assumptions, and trade-offs. Decisions reference motivation entities (not rev… |
+| [`governance/organization.schema.yaml`](./entity-catalog.md#governance-organization) | Blueprint Organization | Governance Plane: Organizational hierarchy - Party > Department > Team. Defines who owns what in the blueprint. Teams are first-class entit… |
 | [`governance/roadmap.schema.yaml`](./entity-catalog.md#governance-roadmap) | Blueprint Roadmap | Governance Plane: Product roadmap milestones with deliverables, success criteria, and dependencies. Used for PRD timeline section generatio… |
 | [`governance/test-cases.schema.yaml`](./entity-catalog.md#governance-test-cases) | Blueprint Test Cases | Governance Plane: Test cases organized as happy-path, edge-case, and error-case suites. Owns validates references as the authoritative sour… |
-| [`governance/value-stream.schema.yaml`](./entity-catalog.md#governance-value-stream) | Blueprint Value Streams | Governance Plane: Value Stream Map — end-to-end flows of value delivery that cross-cut bounded contexts and capabilities. Value streams sho… |
+| [`governance/value-stream.schema.yaml`](./entity-catalog.md#governance-value-stream) | Blueprint Value Streams | Governance Plane: Value Stream Map - end-to-end flows of value delivery that cross-cut bounded contexts and capabilities. Value streams sho… |
 
 ## Navigate
 

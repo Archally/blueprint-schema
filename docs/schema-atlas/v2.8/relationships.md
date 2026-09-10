@@ -10,11 +10,11 @@ Metamodel `*_ref` definitions turn a model into a navigable graph — each entit
 
 | ID prefix | Ref type | Description |
 | --- | --- | --- |
-| `A` | `assumption_ref` | Reference to a motivation assumption (e.g. A001 or billing.A001). |
 | `ACT` | `actor_ref` | Reference to an actor (e.g. ACT001 or billing.ACT001). |
-| `AS` | `association_ref` | Reference to an association (e.g. AS001 or billing.AS001). |
+| `ASC` | `association_ref` | Reference to an association (e.g. ASC001 or billing.ASC001). `AS###` is the band's retired spelling: it still validates on this line and stops validating in th… |
+| `ASM` | `assumption_ref` | Reference to a motivation assumption (e.g. ASM001 or billing.ASM001). `A###` is the band's retired spelling: it still validates on this line and stops validati… |
 | `BC` | `bounded_context_ref` | Reference to a bounded context by its arch id (e.g. BC001 or shop.BC001). Used as the arch `context.id` (self-identity), by inter-context `dependency` targets… |
-| `BD` | `business_decision_ref` | Reference to a Bounded Context Canvas business decision (e.g. BD001 or orders.BD001). Distinct from `decision_ref` (D###, ADR rationale): a business_decision i… |
+| `BD` | `business_decision_ref` | Reference to a Bounded Context Canvas business decision (e.g. BD001 or orders.BD001). Distinct from `decision_ref` (DC###, ADR rationale): a business_decision… |
 | `BND` | `binding_ref` | Reference to a binding by its typed id (e.g. BND001 or prod.BND001). A binding resolves (resource-type x environment) -> a concrete platform / module + params… |
 | `CAP` | `capability_ref` | Reference to a business capability (e.g. CAP001 or billing.CAP001). |
 | `CAT` | `attribute_ref` | Concept attribute identifier (e.g. CAT001 or catalog.CAT001). Optional context prefix for cross-context disambiguation. |
@@ -22,7 +22,8 @@ Metamodel `*_ref` definitions turn a model into a navigable graph — each entit
 | `CMD` | `operation_ref` | Any operation reference. Two formats supported: (1) ID-based: optional context prefix + kind + digits (e.g., CMD001, orders.CMD001). (2) Domain:key: domainRef… |
 | `CMP` | `compliance_ref` | Reference to a compliance requirement (e.g. CMP001 or billing.CMP001). |
 | `CN` | `concept_ref` | Reference to a concept (e.g. CN001 or billing.CN001). |
-| `D` | `decision_ref` | Reference to a decision (e.g. D001 or billing.D001). |
+| `DC` | `decision_ref` | Reference to a decision (e.g. DC001 or billing.DC001). `D###` is the band's retired spelling: it still validates on this line and stops validating in the next… |
+| `DMN` | `domain_ref` | Reference to a domain declared in blueprint.yaml `domains[]` (e.g. DMN001). Model-wide, so no context prefix. |
 | `DOC` | `document_ref` | Document operation identifier. Documents represent full state transfers. |
 | `DPT` | `department_ref` | Reference to an organizational department (e.g. DPT001 or billing.DPT001). |
 | `DSC` | `deployment_scope_ref` | Reference to a deployment scope by its typed id (e.g. DSC001 or shared.DSC001). A DeploymentScope is a substrate-neutral management / lifecycle / ownership / b… |
@@ -31,39 +32,39 @@ Metamodel `*_ref` definitions turn a model into a navigable graph — each entit
 | `ERR` | `error_ref` | Reference to a domain error. Two formats supported: (1) ID-based: optional context prefix + ERR + digits (e.g., ERR001, orders.ERR001). (2) Domain:key: domainR… |
 | `EVT` | `event_ref` | Event operation identifier. Events are facts that happened (past tense, broadcast). |
 | `FF` | `fitness_function_ref` | Reference to an architectural fitness function (e.g. FF001 or billing.FF001). |
-| `FN` | `finding_ref` | Reference to a quality finding — an AS-IS internal-quality defect (e.g. FN001 or ordering.FN001). |
-| `G` | `goal_ref` | Reference to a motivation goal (e.g. G001 or billing.G001). |
+| `FN` | `finding_ref` | Reference to a quality finding - an AS-IS internal-quality defect (e.g. FN001 or ordering.FN001). |
+| `GL` | `goal_ref` | Reference to a motivation goal (e.g. GL001 or billing.GL001). `G###` is the band's retired spelling: it still validates on this line and stops validating in th… |
 | `INQ` | `inquiry_ref` | Reference to a governance inquiry (e.g. INQ001 or orders.INQ001). |
-| `IR` | `infra_resource_ref` | Reference to an infrastructure resource by its typed id (e.g. IR001 or prod.IR001), optionally context/environment-prefixed — the concrete host / store / netwo… |
+| `IR` | `infra_resource_ref` | Reference to an infrastructure resource by its typed id (e.g. IR001 or prod.IR001), optionally context/environment-prefixed - the concrete host / store / netwo… |
 | `KPI` | `kpi_ref` | Reference to a quality KPI (e.g. KPI001 or billing.KPI001). |
-| `LP` | `leverage_ref` | Reference to a leverage point — a prioritized cross-cutting intervention that bundles findings / risks / decisions / fitness-functions and is delivered via mig… |
+| `LP` | `leverage_ref` | Reference to a leverage point - a prioritized cross-cutting intervention that bundles findings / risks / decisions / fitness-functions and is delivered via mig… |
 | `MDL` | `model_ref` | Reference to a model component. Four forms supported: (1) Typed ID: MDL + digits with optional context prefix (MDL001, billing.MDL003). (2) PascalCase name mat… |
 | `MIG` | `migration_ref` | Reference to a blueprint model migration (e.g. MIG001 or billing.MIG001). |
 | `MS` | `milestone_ref` | Reference to a roadmap milestone (MS + 3+ digits, optional context prefix). |
 | `MT` | `metric_ref` | Reference to a quality metric (e.g. MT001 or billing.MT001). |
 | `NG` | `non_goal_ref` | Reference to a motivation non-goal (e.g. NG001 or billing.NG001). |
 | `ORD` | `ordering_ref` | Reference to a dynamics ordering constraint (e.g. ORD001 or billing.ORD001). |
+| `PA` | `process_activity_ref` | Reference to a process activity (e.g. PA001 or billing.PA001). |
 | `PAR` | `parallelism_ref` | Reference to a dynamics parallelism opportunity (e.g. PAR001 or billing.PAR001). |
-| `PRT` | `party_ref` | Reference to an organizational party (e.g. PRT001 or billing.PRT001). |
+| `PRC` | `process_ref` | Reference to a business process (e.g. PRC001 or orders.PRC001). |
+| `PRT` | `party_ref` | Reference to a party, system or organizational (e.g. PRT001 or billing.PRT001). A party is one node however many documents declare it: declarations fold on the… |
 | `QN` | `question_ref` | Reference to a domain competency question (e.g. QN001 or billing.QN001). Questions are first-class entities representing knowledge requirements of a bounded co… |
 | `QRY` | `query_ref` | Query operation identifier. Queries are read-only data requests. |
-| `R` | `risk_ref` | Reference to a motivation risk (e.g. R001 or billing.R001). |
 | `RC` | `race_condition_ref` | Reference to a dynamics race condition (e.g. RC001 or billing.RC001). |
 | `RES` | `resilience_ref` | Reference to a resilience requirement (e.g. RES001 or billing.RES001). |
+| `RSK` | `risk_ref` | Reference to a motivation risk (e.g. RSK001 or billing.RSK001). `R###` is the band's retired spelling: it still validates on this line and stops validating in… |
 | `RT` | `resource_type_ref` | Reference to a resource type in the neutral resource-type catalog (e.g. RT001 or azure.RT001). A resource type carries an inputs/outputs contract and is realis… |
-| `SA` | `story_activity_ref` | Reference to a story activity (e.g. SA001 or billing.SA001). |
 | `SCR` | `screen_ref` | Reference to a UI screen (e.g. SCR001 or orders.SCR001). |
+| `SDM` | `subdomain_ref` | Reference to a subdomain declared under its domain in blueprint.yaml `domains[].subdomains[]` (e.g. SDM001). |
 | `SEC` | `security_ref` | Reference to a security requirement (e.g. SEC001 or billing.SEC001). |
 | `SLA` | `sla_ref` | Reference to a service level agreement (e.g. SLA001 or billing.SLA001). |
 | `SLO` | `slo_ref` | Reference to a service level objective (e.g. SLO001 or billing.SLO001). |
-| `SP` | `story_process_ref` | Reference to a story process (e.g. SP001 or billing.SP001). |
 | `SR` | `rule_ref` | Reference to a rule by type prefix: SR=structural, CR=classification, DR=derivation, EQ=equivalence, VR=validation. |
-| `STR` | `story_ref` | Reference to a domain story (e.g. STR001 or orders.STR001). |
 | `SVC` | `service_ref` | Reference to an architecture service (e.g. SVC001 or shop.SVC001). |
-| `T` | `trade_off_ref` | Reference to a motivation trade-off (e.g. T001 or billing.T001). |
 | `TC` | `test_ref` | Reference to a test case by suite: TC=happy-path, EC=edge-case, ER=error-case. |
 | `TM` | `team_ref` | Reference to a team (e.g. TM001 or billing.TM001). |
 | `TR` | `transition_ref` | Reference to a state transition rule (e.g. TR001 or billing.TR001). |
+| `TRO` | `trade_off_ref` | Reference to a motivation trade-off (e.g. TRO001 or billing.TRO001). `T###` is the band's retired spelling: it still validates on this line and stops validatin… |
 | `UAC` | `ui_action_ref` | Reference to a UI action (e.g. UAC001 or orders.UAC001). |
 | `UC` | `use_case_ref` | Reference to a use case (UC + 3+ digits, optional context prefix). |
 | `UNV` | `ui_nav_ref` | Reference to a UI navigation element (e.g. UNV001 or orders.UNV001). |
@@ -81,7 +82,7 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub �
 
 | Schema file | Inbound refs |
 | --- | --- |
-| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 639 |
+| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 693 |
 | [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | 1 |
 | [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | 1 |
 | [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | 1 |
@@ -112,27 +113,28 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub �
 | `blueprint.schema.yaml` | `governance/roadmap.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `governance/test-cases.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `governance/value-stream.schema.yaml` | 1 |
-| `blueprint.schema.yaml` | `metamodel.schema.yaml` | 7 |
+| `blueprint.schema.yaml` | `metamodel.schema.yaml` | 17 |
 | `blueprint.schema.yaml` | `migration.schema.yaml` | 1 |
-| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 36 |
+| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 42 |
 | `design/concepts.schema.yaml` | `metamodel.schema.yaml` | 37 |
-| `design/domain.schema.yaml` | `metamodel.schema.yaml` | 47 |
-| `design/dynamics.schema.yaml` | `metamodel.schema.yaml` | 22 |
-| `design/infrastructure.schema.yaml` | `metamodel.schema.yaml` | 26 |
+| `design/domain.schema.yaml` | `metamodel.schema.yaml` | 50 |
+| `design/dynamics.schema.yaml` | `metamodel.schema.yaml` | 23 |
+| `design/infrastructure.schema.yaml` | `metamodel.schema.yaml` | 27 |
 | `design/interactions.schema.yaml` | `metamodel.schema.yaml` | 29 |
 | `design/models.schema.yaml` | `metamodel.schema.yaml` | 13 |
-| `design/quality.schema.yaml` | `metamodel.schema.yaml` | 72 |
+| `design/quality.schema.yaml` | `metamodel.schema.yaml` | 74 |
 | `design/rules.schema.yaml` | `metamodel.schema.yaml` | 24 |
-| `design/story.schema.yaml` | `metamodel.schema.yaml` | 54 |
-| `governance/capability.schema.yaml` | `metamodel.schema.yaml` | 20 |
+| `design/story.schema.yaml` | `metamodel.schema.yaml` | 58 |
+| `governance/capability.schema.yaml` | `metamodel.schema.yaml` | 21 |
 | `governance/decisions.schema.yaml` | `metamodel.schema.yaml` | 47 |
 | `governance/leverage.schema.yaml` | `metamodel.schema.yaml` | 30 |
-| `governance/motivation.schema.yaml` | `metamodel.schema.yaml` | 68 |
+| `governance/motivation.schema.yaml` | `metamodel.schema.yaml` | 83 |
 | `governance/organization.schema.yaml` | `metamodel.schema.yaml` | 21 |
-| `governance/roadmap.schema.yaml` | `metamodel.schema.yaml` | 35 |
-| `governance/test-cases.schema.yaml` | `metamodel.schema.yaml` | 27 |
+| `governance/roadmap.schema.yaml` | `metamodel.schema.yaml` | 37 |
+| `governance/test-cases.schema.yaml` | `metamodel.schema.yaml` | 28 |
 | `governance/value-stream.schema.yaml` | `metamodel.schema.yaml` | 19 |
-| `migration.schema.yaml` | `metamodel.schema.yaml` | 5 |
+| `migration.schema.yaml` | `metamodel.schema.yaml` | 7 |
+| `migrations.schema.yaml` | `metamodel.schema.yaml` | 6 |
 
 ---
 

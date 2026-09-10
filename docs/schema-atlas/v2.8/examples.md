@@ -32,6 +32,14 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/governance/roadmap.schema.yaml#/$defs/work_item/properties/executor/examples/1`: `["Backend Team"]`
 
+- `schema/v2.8/migrations.schema.yaml#/properties/version/examples/0`: `"1.0.0"`
+
+- `schema/v2.8/migrations.schema.yaml#/$defs/register_entry/properties/name/examples/0`: `"Accounting Domain Bootstrap"`
+
+- `schema/v2.8/migrations.schema.yaml#/$defs/register_change/properties/entity/examples/0`: `"contracts.CN006"`
+
+- `schema/v2.8/migrations.schema.yaml#/$defs/register_change/properties/entity/examples/1`: `"CN006"`
+
 ## Reference example models
 
 Full example blueprints in this repository, validated against the schema — the best way to see the schema in use.

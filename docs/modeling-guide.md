@@ -72,7 +72,7 @@ Per business domain (slice), construct in this order:
 - Value objects, entities within aggregates, additional attributes
 - Error catalog (ERR###) with category, severity, http_status
 - Data models (MDL###) with `purpose` and `represents[]`
-- Decisions (D###) with `declared_impact`
+- Decisions (DC###) with `declared_impact`
 - Questions (QN###) — domain knowledge requirements
 - Use cases (UC###) with scenarios
 - Personas on actors

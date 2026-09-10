@@ -57,7 +57,7 @@ Two planes + one cross-cutting metamodel:
 | `domain.schema.yaml` | Design | Operations with protocols, payloads, responses |
 | `models.schema.yaml` | Design | Data shapes (OpenAPI/AsyncAPI compatible) |
 | `infrastructure.schema.yaml` | Design | Infrastructure resources, deployment topology |
-| `story.schema.yaml` | Design | Domain stories as operation sequences |
+| `story.schema.yaml` | Design | Processes, user stories and use cases |
 | `dynamics.schema.yaml` | Design | Concurrency, parallelism, ordering, race conditions |
 | `quality.schema.yaml` | Design | Metrics, KPIs, SLOs, SLAs, security, compliance, observability |
 | `motivation.schema.yaml` | Governance | Vision (identity/north-star), goals, non-goals, risks, assumptions, trade-offs |
@@ -333,7 +333,7 @@ concepts:
 
 ### Medium Blueprint (~80 lines)
 
-A small service with concepts, rules, one operation, one story, one test, and a goal. Shows cross-layer traceability.
+A small service with concepts, rules, one operation, one process, one test, and a goal. Shows cross-layer traceability.
 
 ```yaml
 # concepts.yaml
@@ -398,7 +398,7 @@ operations:
 # motivation.yaml
 version: "1.0.0"
 goals:
-  - id: G001
+  - id: GL001
     statement: "Process orders within 2 seconds"
     priority: high
 ```
@@ -417,7 +417,7 @@ happy_path:
 
 ### Full Blueprint
 
-A complete e-commerce bounded context with all planes populated demonstrates all schemas in a cohesive example: architecture with contracts, concepts with actors and enumerations, rules with transitions, operations, models, a story, dynamics, quality with metrics/SLOs, motivation with goals/risks, capabilities, decisions, and tests.
+A complete e-commerce bounded context with all planes populated demonstrates all schemas in a cohesive example: architecture with contracts, concepts with actors and enumerations, rules with transitions, operations, models, a process, dynamics, quality with metrics/SLOs, motivation with goals/risks, capabilities, decisions, and tests.
 
 ---
 
@@ -441,10 +441,10 @@ Cross-layer reference paths for tooling validation:
 | Concept | Transition rules | `concept.transition_rules` | Optional |
 | Concept attribute | Model property | `represents[].property_map` | Optional (v2.2) |
 | Model | Concept | `represents[].concept` | Optional (v2.2) |
-| Decision | Models/Stories/UI | `declared_impact.direct` | Optional (v2.2) |
-| Test | Models/Stories/UI/Ownership | `test.validates` | Optional (v2.2) |
+| Decision | Models/Processes/UI | `declared_impact.direct` | Optional (v2.2) |
+| Test | Models/Processes/UI/Ownership | `test.validates` | Optional (v2.2) |
 | Screen | Models | `screen.uses_models` | Optional (v2.2) |
-| Screen | Stories | `screen.stories` | Optional (v2.2) |
+| Screen | Processes | `screen.processes` | Optional (v2.2) |
 | Action | Operations | `action.triggers_operations` | Optional (v2.2) |
 | Navigation | Screens | `navigation.from/to` | Required (v2.2) |
 | Entity | Team/Dept/Party | `owned_by` | Optional (v2.2) |
@@ -461,7 +461,7 @@ Cross-layer reference paths for tooling validation:
 | User Story | Use Case | `user_story.use_case` | Optional (v2.5) |
 | Use Case | Actor | `use_case.primary_actor` | Required (v2.5) |
 | Use Case | User Stories | `use_case.user_stories` | Optional (v2.5) |
-| Use Case | Stories | `use_case.stories` | Optional (v2.5) |
+| Use Case | Processes | `use_case.processes` | Optional (v2.5) |
 | Use Case | Operations | `use_case.main_scenario[].operation` | Optional (v2.5) |
 | Use Case | Screens | `use_case.main_scenario[].screen` | Optional (v2.5) |
 | Milestone | Milestones | `milestone.dependencies` | Optional (v2.5) |
@@ -499,13 +499,13 @@ reads best; a key is free to be a shortening of it (`exportEventIcs` for "Export
 models in practice shorten roughly one key in ten. Read the key from the model rather than computing
 it from the name.
 
-### Story (story.schema.yaml)
-- **activities[]**: Replaces operations[]. Each activity has required `id` (SA001), `name`, `entry_operation`.
-- **entry_operation**: Domain operation where activity begins; generator follows causal chain from here.
+### Narrative (story.schema.yaml)
+- **activities[]**: Replaces operations[]. Each activity has required `id` (PA001) and `name`.
+- **entry_operation**: Domain operation where the activity begins; the generator follows the causal chain from here. Optional - an activity whose operation is not yet modelled leaves it out, and `activity-without-entry-operation` reports the gap.
 - **steps[]**: Optional convenience view of operations in activity. Domain causal links are authoritative; validator WARNS if steps contradict.
 - **next_activities**, **path_type** (happy|error|compensation): Optional flow metadata.
-- **process**: Optional object with trigger, end_states, lanes — enables BPMN generation.
-- **tags**: Root, story, and activity level.
+- **trigger**, **end_states**, **lanes**: Optional BPMN metadata, direct properties of the process.
+- **tags**: Root, process, and activity level.
 
 ### Models (models.schema.yaml)
 - **purpose**: Optional enum (command-payload|event-payload|read-model|shared|dto).
@@ -567,16 +567,16 @@ components:
 - **kind**: How the model represents the concept (API payload, persistence, event, UI, report)
 - **strategy**: `property-map` for explicit mapping, `same-names` when properties match attributes
 
-### Story IDs (story.schema.yaml)
+### Process IDs (story.schema.yaml)
 
-Stories get typed IDs via `story_ref` (STR###), replacing the informal `storyId`:
+Processes get typed IDs via `process_ref` (PRC###), and activities via `process_activity_ref` (PA###):
 
 ```yaml
-stories:
-  - id: STR001
+processes:
+  - id: PRC001
     title: "Customer submits order"
     activities:
-      - id: SA001
+      - id: PA001
         name: "Submit Order"
         entry_operation: "orders.CMD001"
 ```
@@ -620,14 +620,14 @@ concepts:
 
 ### Interactions Schema (interactions.schema.yaml) — NEW
 
-Screens, actions, and navigation with cross-links to models, stories, tests, and operations:
+Screens, actions, and navigation with cross-links to models, processes, tests, and operations:
 
 ```yaml
 screens:
   - id: SCR001
     name: "Order List"
     uses_models: [OrderList]
-    stories: [STR001]
+    processes: [PRC001]
 actions:
   - id: UAC001
     name: "Submit Order"
@@ -642,7 +642,7 @@ navigation:
 
 ### Expanded Decision Impact (decisions.schema.yaml)
 
-`declared_impact.direct` gains models, stories, and UI arrays:
+`declared_impact.direct` gains models, processes, and UI arrays:
 
 ```yaml
 declared_impact:
@@ -650,7 +650,7 @@ declared_impact:
     concepts: [CN001]
     operations: [QRY001]
     models: [OrderList, Order]
-    stories: [STR001]
+    processes: [PRC001]
     ui:
       screens: [SCR001, SCR002]
       actions: [UAC001]
@@ -661,14 +661,14 @@ declared_impact:
 
 ### Expanded Test Validates (test-cases.schema.yaml)
 
-`validates` gains models, stories, UI, and ownership:
+`validates` gains models, processes, UI, and ownership:
 
 ```yaml
 validates:
   operations: [CMD001]
   concepts: [CN001]
   models: [SubmitOrderRequest, Order]
-  stories: [STR001]
+  processes: [PRC001]
   ui:
     screens: [SCR002]
     actions: [UAC001]
@@ -791,7 +791,7 @@ Stereotypes are author-declared, not inferred. The Event Storming view derives a
 | **Decision** | ADR document or config reflecting the decision | `docs/adrs/003-use-event-sourcing.md` |
 | **Test Case** | Test file exercising the scenario | `tests/integration/createOrder.test.ts` |
 | **Model** | Schema definition file | `src/schemas/OrderSchema.json` |
-| **Story** | Acceptance test or E2E test for the flow | `tests/e2e/orderFlow.spec.ts` |
+| **Process** | Acceptance test or E2E test for the flow | `tests/e2e/orderFlow.spec.ts` |
 
 #### When NOT to reference
 
@@ -895,7 +895,7 @@ questions:
     priority: critical
     answered_by: [QRY003]
     concepts: [CN001, CN002]
-    motivated_by: [G001]
+    motivated_by: [GL001]
     stakeholders: [ACT001]
 
   - id: QN002
@@ -1074,7 +1074,7 @@ orders/
 | OpenAPI | domain.yaml + models.yaml + arch.yaml (contracts) |
 | AsyncAPI | domain.yaml + models.yaml + arch.yaml (contracts) |
 | Event Storming | domain.yaml (with produces/reacts_to) + concepts.yaml (actors) |
-| BPMN | story.yaml (with process) + domain.yaml (with causal links) + concepts.yaml (actors) |
+| BPMN | story.yaml (processes with trigger, end_states, lanes) + domain.yaml (with causal links) + concepts.yaml (actors) |
 | Context Map | arch.yaml (parties, contexts, dependencies) |
 | UML State | concepts.yaml (states) + rules.yaml (transitions) |
 | UML Sequence | story.yaml + arch.yaml (contracts) |
@@ -1135,7 +1135,7 @@ npm run validate -- .blueprint/v2.8
 - Schema validation failures (invalid enum values, wrong types)
 
 #### Warnings (report but load)
-- Story steps that don't match domain causal chain (steps are convenience view, not SoT)
+- Process steps that don't match domain causal chain (steps are convenience view, not SoT)
 - Non-conventional produces usage (event producing something, query producing, etc.)
 - Operation with task_type=user-decision but no initiated_by referencing a human actor
 - Orphaned entities (defined but never referenced)
@@ -1326,8 +1326,8 @@ migration:
   date: "2026-02-18"
   status: pending
   description: "Add PaymentRetry concept and Retry Payment command with exponential backoff."
-  related_decisions: [D012]
-  rationale: "Payment gateway timeouts require structured retry logic. See ADR D012."
+  related_decisions: [DC012]
+  rationale: "Payment gateway timeouts require structured retry logic. See ADR DC012."
   tags: [payment, reliability]
 
 changes:
@@ -1400,7 +1400,7 @@ migration:
   status: draft
   description: "Split Order into Order (header) and OrderLineItem (detail) for partial fulfillment."
   depends_on: [MIG001]
-  related_decisions: [D015]
+  related_decisions: [DC015]
   breaking: true
   semver_impact: major
   rationale: "Current Order aggregate too large. Partial fulfillment requires line-item granularity."
@@ -1612,7 +1612,7 @@ Blueprint sections map to PRD (Product Requirements Document) sections:
 
 ### User Stories (`story.schema.yaml`)
 
-New optional `user_stories[]` array in story.yaml, alongside existing `stories[]`:
+New optional `user_stories[]` array in story.yaml, alongside the narrative processes (`stories[]` at the time; `processes[]` since v2.8.10):
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -1641,7 +1641,7 @@ New optional `use_cases[]` array with dual-mode steps:
 | `main_scenario` | step[] | No | Ordered steps |
 | `extensions` | extension[] | No | Alternative flows |
 | `user_stories` | user_story_ref[] | No | Grouped stories |
-| `stories` | story_ref[] | No | Implementing STR### stories |
+| `processes` | process_ref[] | No | Implementing PRC### processes |
 | `delivery_priority` | enum | No | MoSCoW |
 | `release_target` | string | No | Target release |
 
