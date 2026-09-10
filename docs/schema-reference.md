@@ -100,12 +100,13 @@ When `layout.mode: slices` is set in `blueprint.yaml`, domain slices are **busin
     ...
 ```
 
-A context declares which slice owns it with `domain_ref` on the context, naming a slice from
-`layout.slices`. It is optional: a context whose `arch.yaml` sits in a slice directory belongs to
-that slice already. Declare it when a context belongs to a slice other than the one its location
-implies, or when the file sits at the model root and so implies none.
+A context declares the domain it realizes with `domain_ref`, naming a `DMN###` from the root
+`domains[]` registry. That is the problem space, and it is a different question from which folder
+the files sit in: a slice is a filesystem partition, and which slice holds a domain's model is
+derived from where its contexts are declared.
 
 - **Slices:** Each subfolder is a full artifact set. Use `{slice}.{PREFIX}{NNN}` IDs (e.g. `adventure.CN001`, `identity.CMD001`).
+- **Id bands:** A slice may reserve numeric ranges of a typed id prefix with `bands[]`, each naming a `prefix`, a `from` and a `to`. Several slices allocating into one prefix have to divide the number space between them; declaring the division lets an allocator reserve inside it, and semantic validation report an id that landed outside it. Optional per prefix - a prefix nobody bands is unconstrained.
 - **Root files:** Only add root-level design/governance files for **shared entities** (used by multiple slices) or **system-level content** (arch, goals, quality). Do not create root `concepts.yaml`, `rules.yaml`, etc. if they would only duplicate slice content.
 - **Note:** A "domain slice" is a business domain directory (subfolder); the file `domain.yaml` is a blueprint artifact — the two are unrelated. Bounded contexts are defined in `arch.yaml`.
 

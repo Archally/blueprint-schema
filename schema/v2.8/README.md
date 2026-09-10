@@ -19,7 +19,7 @@ The entry-point schema: it composes the design and governance layers into one mo
 
 ### [`metamodel.schema.yaml`](./metamodel.schema.yaml) - the shared vocabulary (the model's *legend*)
 
-Cross-cutting definitions for all blueprint layers. Every design and governance schema imports from it, so identifiers and shared shapes mean the same thing in every layer. It defines **104 shared definitions**, including:
+Cross-cutting definitions for all blueprint layers. Every design and governance schema imports from it, so identifiers and shared shapes mean the same thing in every layer. It defines **105 shared definitions**, including:
 
 - **Typed ID references** (62 forms) - one per entity type (`CN001` concept, `CMD001` command, `EVT001` event …), optionally context-prefixed (`billing.CN001`). These turn the model into a navigable graph.
 - **Versioning** - `semver` content versions plus `schema_version`, which also accepts older document versions for forward-compatibility.

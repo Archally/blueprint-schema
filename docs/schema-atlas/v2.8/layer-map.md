@@ -11,7 +11,7 @@ Version-root schemas that belong to neither plane and apply across every layer: 
 | Schema file | Title | Root props | Object defs | Summary |
 | --- | --- | --- | --- | --- |
 | [`blueprint.schema.yaml`](./entity-catalog.md#blueprint) | Blueprint Meta-Schema | 15 | 6 | Meta-schema composing all blueprint layers into Design + Governance planes with cross-cutting metamodel. Supersedes v1… |
-| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | Blueprint Metamodel | 0 | 8 | Cross-cutting definitions for all blueprint layers. Provides typed ID refs, versioning, SpecPath, and shared vocabulary… |
+| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | Blueprint Metamodel | 0 | 9 | Cross-cutting definitions for all blueprint layers. Provides typed ID refs, versioning, SpecPath, and shared vocabulary… |
 | [`migration.schema.yaml`](./entity-catalog.md#migration) | Blueprint Migration Schema | 4 | 4 | Versioned, ordered changes to a blueprint model instance. Enables AS-IS to TO-BE model transformation with traceability… |
 | [`migrations.schema.yaml`](./entity-catalog.md#migrations) | Blueprint Migration Register | 4 | 2 | An ordered record of the changes a blueprint model has been through and the ones it is planned to go through, written f… |
 | [`profiles/infrastructure/profiles.schema.yaml`](./entity-catalog.md#profiles-infrastructure-profiles) | Blueprint Infrastructure Resource-Type Profile | 6 | 4 | Validates a resource-type catalog profile file (v2.7.7). A profile is DATA, not schema: the resource-type catalog is sh… |
@@ -65,7 +65,7 @@ graph LR
     blueprint_schema_yaml -->|1| governance_roadmap_schema_yaml
     blueprint_schema_yaml -->|1| governance_test_cases_schema_yaml
     blueprint_schema_yaml -->|1| governance_value_stream_schema_yaml
-    blueprint_schema_yaml -->|17| metamodel_schema_yaml
+    blueprint_schema_yaml -->|18| metamodel_schema_yaml
     blueprint_schema_yaml -->|1| migration_schema_yaml
     migration_schema_yaml -->|7| metamodel_schema_yaml
     migrations_schema_yaml -->|6| metamodel_schema_yaml

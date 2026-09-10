@@ -124,6 +124,7 @@ A slice folder - `name` is the kebab-case subfolder under the blueprint root. A 
 | `complexity` | `ref → complexity_pattern` | — |  | Dominant problem-type of the slice: crud / presentation / transformation / integration / cdc / concurrency / state-management. The implementation-complexity ax… |
 | `model_traits` | `array<ref → model_traits_item>` | — |  | Behavioural archetype(s) of the slice (Wirfs-Brock role stereotypes). |
 | `owner` | `ref → owned_by` | — |  | Owning team/department/party (references governance/organization). |
+| `bands` | `array<ref → id_band>` | — |  | Numeric ranges of typed id prefixes this slice reserves. Declared here rather than in a registry keyed by slice name, so ownership is stated by position and a… |
 | `subdomains` | `array<union>` | — |  | SOFT-DEPRECATED (v2.8.6). Subdomains within this slice. They are problem-space partitions and belong in `domains[].subdomains[]`, where each carries an id a co… |
 
 _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/slice`_
@@ -177,6 +178,21 @@ Open metadata bag for entity extensions. Authors may add domain-specific key-val
 _No declared properties (open or composed object)._
 
 _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/entity_properties`_
+
+#### `id_band`
+
+A numeric range of one typed id prefix, reserved to the slice that declares it. Two entities of the same family cannot both be `CAT0100`, so a model with several slices allocating into one prefix has to divide the number space between them. This states that division, so the allocator can honour it and the validator can report an id that ignored it. A band is declared inside the slice that owns it…
+
+**Required:** `prefix`, `from`, `to`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `prefix` | `string` | ✓ |  | The typed id prefix this band divides, without its digits - `CAT`, `SVC`, `CN`. Must be a band the schema line declares; `npm run id-band-check --list` prints… |
+| `from` | `integer` | ✓ |  | First number in the band, inclusive. |
+| `to` | `integer` | ✓ |  | Last number in the band, inclusive. Not below `from`. |
+| `notes` | `string` | — |  | Why this range, or what the slice reserves it for. Free text, read by nobody. |
+
+_Source: `schema/v2.8/metamodel.schema.yaml#/$defs/id_band`_
 
 #### `owned_by`
 

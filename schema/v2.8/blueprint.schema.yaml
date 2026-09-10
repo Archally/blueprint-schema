@@ -439,6 +439,17 @@ $defs:
       owner:
         $ref: "metamodel.schema.yaml#/$defs/owned_by"
         description: "Owning team/department/party (references governance/organization)."
+      bands:
+        type: array
+        items:
+          $ref: "metamodel.schema.yaml#/$defs/id_band"
+        description: >
+          Numeric ranges of typed id prefixes this slice reserves. Declared here rather than in a
+          registry keyed by slice name, so ownership is stated by position and a band cannot name
+          a slice that does not exist. Two bands of one prefix may not overlap, whichever slices
+          declare them, and an id of a banded prefix declared in this slice's files belongs inside
+          one of its bands - both are reported by semantic validation. Optional: a prefix nobody
+          bands is unconstrained.
       subdomains:
         type: array
         description: >

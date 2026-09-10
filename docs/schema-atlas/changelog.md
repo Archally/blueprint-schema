@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 23 |
-| Additive (minor) | 159 |
+| Additive (minor) | 160 |
 | Clarification (patch) | 0 |
-| **Total changes** | 182 |
+| **Total changes** | 183 |
 
 ## ⚠ Breaking changes
 
@@ -197,7 +197,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (136)
+## Added (137)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -516,6 +516,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `metamodel.schema.yaml#/$defs/finding_ref` — New definition `finding_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/finding_ref`_
+
+- [additive] `metamodel.schema.yaml#/$defs/id_band` — New definition `id_band` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/id_band`_
 
 - [additive] `metamodel.schema.yaml#/$defs/impacts_links/properties/environments` — Property `environments` added (optional).
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links/properties/environments`_
