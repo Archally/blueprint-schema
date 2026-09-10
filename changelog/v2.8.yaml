@@ -24,6 +24,12 @@ entries:
       `decisions.schema.yaml`, `concepts.schema.yaml` and `story.schema.yaml`. The table of bands
       accepted in two spellings, and the release-history rows, name both, which is their purpose.
 
+      The six `output:` properties on the contract kinds answer to one shared definition, which
+      states what the field identifies - two services declaring the same value contribute to one
+      artifact, merged additively - and what the extension selects for serialization.
+      `bounded_context_ref` states its current severity: a reference to an unknown `BC###` is a
+      cross-reference error.
+
       No pattern, property, enum or requirement changed. A document valid under 2.8.12 is valid
       here, and the reverse holds.
   - version: "2.8.12"
@@ -255,7 +261,7 @@ entries:
       target scope, and a binding resolves a need per environment. Nothing derived from the
       string, and being single-valued it could not state a party present in two environments,
       which parties routinely are through their services. `$defs.party.required` is now `[id,
-      name]`, and the removal is declared in the version's divergence ledger with its reason.
+      name]`.
       The schema update tool removes the line and reports each removal with the value it
       carried, so a model reaching 2.8 arrives valid and its author is told what went and where
       it can go instead.

@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 23 |
-| Additive (minor) | 134 |
+| Additive (minor) | 135 |
 | Clarification (patch) | 0 |
-| **Total changes** | 157 |
+| **Total changes** | 158 |
 
 ## ⚠ Breaking changes
 
@@ -182,7 +182,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (116)
+## Added (117)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -216,6 +216,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - **[breaking]** `design/arch.schema.yaml#/$defs/context/properties/id` — Property `id` added (required — breaking).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/context/properties/id`_
+
+- [additive] `design/arch.schema.yaml#/$defs/contract_output` — New definition `contract_output` added to `design/arch.schema.yaml`.
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contract_output`_
 
 - [additive] `design/arch.schema.yaml#/$defs/dependency/properties/bounded_context_ref` — Property `bounded_context_ref` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/dependency/properties/bounded_context_ref`_

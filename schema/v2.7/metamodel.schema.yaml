@@ -1012,3 +1012,16 @@ x-gdsm:
       date: "2026-09-06"
       evidence: "`render.manifest.schema.yaml`, `$defs/target.view`."
       schema_version: "2.7.16"
+    - lesson: >
+        Use `anyOf` for a field admitting several forms, and `oneOf` only where the branches
+        share no value by construction. A typed id is also a plain string, so a field admitting
+        "a name or an `ACT###`" has two branches that both match a typed value, and `oneOf`
+        rejects exactly the form it was written to admit. The values decide, not the shape of
+        the field.
+      category: structure
+      date: "2026-09-07"
+      evidence: >
+        `service.servers[].environment` uses `oneOf` correctly: a name from a closed enum and an
+        `x-` prefixed name share no value. A branch admitting any string overlaps every other
+        branch beside it, and belongs under `anyOf`.
+      schema_version: "2.7.18"

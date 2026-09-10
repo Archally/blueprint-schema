@@ -369,8 +369,7 @@ $defs:
       assumptions / KPIs). Operation→bounded-context membership is NOT declared with
       this ref - it is derived from arch service contracts (`expose`/`send` = handled
       / produced), so there is no `bounded_context_ref` on domain files. A
-      ref to an unknown BC### is a resolvability WARNING (promoted to error in v2.8,
-      when BC###/SVC### become required). The legacy kebab-context-name form (e.g.
+      ref to an unknown BC### is a cross-reference error. The legacy kebab-context-name form (e.g.
       `customer-management`) is a deprecated compatibility shim for existing BCC refs;
       BC### is canonical.
     anyOf:
@@ -1288,3 +1287,151 @@ x-gdsm:
         were one domain, and a renderer had to treat the slice vocabulary as the domain
         vocabulary.
       schema_version: "2.8.6"
+    - lesson: >
+        A relationship a schema states in a `description:` is not a relationship the model has.
+        A reference field is checked by the validator (does the id resolve?) and read by an
+        extractor (does an edge exist?), and those are different questions with different
+        answers: a chain can be stated in prose, resolve at every hop, and produce no edges at
+        all. Before relying on a chain the schema describes, ask the graph for its first hop;
+        before adding a `_ref` field, name the extractor that will read it.
+      category: semantics
+      date: "2026-09-09"
+      evidence: >
+        `design/quality.schema.yaml` and `governance/leverage.schema.yaml` both state the chain
+        finding -> risk -> decision -> migration, which three reference fields carry and 651
+        authored references across the corpus populate. Whether a reference answers a graph
+        query is a separate fact from whether it resolves, and only asking the graph settles it.
+      schema_version: "2.8.12"
+    - lesson: >
+        Folding a stored inverse in extraction protects the GRAPH and nothing else. Where a
+        schema carries both directions of one relationship, the extractor can collapse them into
+        one edge so the graph answers once, and every consumer that reads the raw field is still
+        reading half the relationship. A renderer, an export or a report that takes the authored
+        array will contradict the picture drawn beside it. Either both directions are authored
+        and something checks that they agree, or one is authored and every consumer reads the
+        derived edge.
+      category: structure
+      date: "2026-09-09"
+      evidence: >
+        `leverage_point.enables` is the authored inverse of `depends_on`, and 7 of 7 authored
+        edges across the readable models are exact mirrors. Extraction folds the two into one
+        relation type, so a consumer reading the authored array answers from what that model
+        happened to write. `governance/decisions.schema.yaml` carries `supersedes` and
+        `superseded_by` as an authored pair, so the suite holds both shapes.
+      schema_version: "2.8.12"
+    - lesson: >
+        Choose a rename's reach from what references the thing being renamed, not from what the
+        previous rename did. A band referenced across layers moves everywhere, because a
+        reference left behind dangles. A band nothing references moves at its declaration site
+        only, because the same three-character shape occurs in ordinary prose and a text sweep
+        would rewrite a sentence to fix a reference that does not exist. Whichever is chosen,
+        report what was left alone rather than staying silent about it.
+      category: gotcha
+      date: "2026-09-09"
+      evidence: >
+        `W###` is declared 13 times across the corpus, every one an `id:` under a `watchlist:`
+        key, and referenced zero times. A structural rewrite moved all 13 in 5 files; a textual
+        one anchored the same way would also have matched a part number in a title.
+      schema_version: "2.8.12"
+    - lesson: >
+        Two prioritisation vocabularies are declared on this line and they are not
+        interchangeable. `priority_scale` (low / medium / high / critical) grades how essential
+        it is to ACT on something, and is what a goal, a risk or a finding takes.
+        `delivery_priority` (must-have / should-have / could-have / wont-have) follows MoSCoW and
+        grades a deliverable's place in a release. Read a field's own `x-vocabulary-distinct`
+        before assuming that two ladders of the same arity answer the same question, and never
+        map one onto the other by position.
+      category: structure
+      date: "2026-09-08"
+      evidence: >
+        `metamodel.schema.yaml` declares `priority_scale` and `delivery_priority` as separate
+        `$defs`, each naming the question it answers, and `delivery_priority` is referenced four
+        times. Three of the four anchors on `priority_scale` are worded closely enough to MoSCoW
+        that a reader who skips the anchors will merge the two.
+      schema_version: "2.8.5"
+    - lesson: >
+        Use `anyOf` for a field admitting several forms, and `oneOf` only where the branches
+        share no value by construction. A typed id is also a plain string, so a field admitting
+        "a name or an `ACT###`" has two branches that both match a typed value, and `oneOf`
+        rejects exactly the form it was written to admit. The values decide, not the shape of
+        the field.
+      category: structure
+      date: "2026-09-07"
+      evidence: >
+        `service.servers[].environment` uses `oneOf` correctly: a name from a closed enum, an
+        `ENV###`, and an `x-` prefixed name share no value. The `propertyNames` on
+        `resource.environments` uses `anyOf`, because its last branch admits any string and so
+        overlaps the first two.
+      schema_version: "2.8.2"
+    - lesson: >
+        `propertyNames` is the only place a map's KEYS can be declared references. Nothing about
+        the text `production` or `ENV001` says which is meant to point at an entity, so a map
+        whose keys are references says so there or nowhere. Declared there, a schema-derived
+        reference walk resolves the keys with no list anyone maintains, and versioning comes
+        free. A `propertyNames` carrying only a `pattern` still says nothing about pointing at an
+        entity, which is what keeps the derivation from over-reading maps like `operations` and
+        `errors`.
+      category: semantics
+      date: "2026-09-07"
+      evidence: >
+        `design/infrastructure.schema.yaml` declares the `propertyNames` of
+        `resource.environments` as an `anyOf` over a typed `environment_ref`, the constant `ALL`,
+        and any string. The typed branch is the one that resolves; a key naming an environment
+        the model does not declare is reported as a dangling reference in the same words as any
+        other.
+      schema_version: "2.8.2"
+    - lesson: >
+        `actor.staffed_by` names the team whose members PERFORM a role, and its absence is what
+        says the role is performed outside the organization: a customer, a regulator, a
+        third-party system. `owned_by` says who maintains the DEFINITION. The two legitimately
+        differ, because a product team can own the definition of an end-user role nobody staffs,
+        so `owned_by` alone cannot answer whether an actor is internal.
+      category: semantics
+      date: "2026-09-07"
+      evidence: >
+        Measured 2026-09-10 across the committed models: 30 `staffed_by` declarations, in 2
+        models. Models that mean staffing commonly write `owned_by` instead, which leaves the
+        internal-versus-external question unanswered.
+      schema_version: "2.8.2"
+    - lesson: >
+        `discovery_stage` grades how well the MODEL knows a claim - hypothesis, exploring,
+        validated, committed, obsolete - not how far the thing itself has progressed. It is not a
+        delivery ladder and does not substitute for one. Two of its values are impure and worth
+        knowing before reading a rollup: `committed` records a decision fact (stakeholders agreed
+        and resources allocated) and `obsolete` records a lifecycle fact, inside an otherwise
+        epistemic ladder.
+      category: semantics
+      date: "2026-09-07"
+      evidence: >
+        Measured 2026-09-10: 5875 `discovery_stage` declarations across the committed models,
+        5334 of them (91%) in one brownfield reverse-engineered model, with 9 of 18 models
+        carrying none. In practice the field is used as a reverse-engineering instrument rather
+        than as a maturity grade.
+      schema_version: "2.8.2"
+    - lesson: >
+        Three obvious key names for "what this is about" already carry a meaning on this line, so
+        check before minting a fourth. `subject` is the source of a triple
+        (`design/concepts.schema.yaml`, `migration.schema.yaml`); `about` is what a party
+        relation covers (`governance/organization.schema.yaml`); `area` is a leverage point's
+        concern area (`governance/leverage.schema.yaml`). A key name that already carries a
+        meaning in the same suite is not available for a second one, however apt.
+      category: gotcha
+      date: "2026-09-07"
+      evidence: >
+        Verified 2026-09-10 against this tree: `subject` is required on a concept triple and on a
+        migration change record, `about` appears twice in the organization layer, and `area` is a
+        free-text grouping label on an intervention.
+      schema_version: "2.8.2"
+    - lesson: >
+        The legal values of `evidence[].kind` are the enum in this file, never a list in a skill,
+        a guide or an agent prompt. Those lists are glosses, they drift, and nothing about a
+        gloss says whether the schema admits what it names. Read the enum from the schema before
+        writing an evidence record, and treat a value found only in prose as unproven.
+      category: gotcha
+      date: "2026-09-05"
+      evidence: >
+        The enum carries ten values and gained `workshop` on 2026-09-05, which meant editing four
+        prose documents by hand. `npm run evidence-kind-docs-check` reads the enum and reports a
+        gloss naming a value the enum does not admit.
+      schema_version: "2.8.1"
+      enforced_by: "npm run evidence-kind-docs-check"

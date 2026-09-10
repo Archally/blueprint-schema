@@ -82,6 +82,19 @@ properties:
 
 $defs:
 
+  contract_output:
+    type: string
+    description: >-
+      Identity of the generated contract artifact: `<name>`, `<slice>/<name>`, or
+      `_global/<name>`. Two services declaring the same value contribute to ONE artifact -
+      their specs are merged additively - so this names the physical contract, not one
+      service's copy of it. A leading slice name places the artifact in that slice;
+      `_global/` marks it cross-cutting; a bare name is placed by the declaring file. A
+      first segment that names no declared slice is kept as a subdirectory and reported.
+      The extension selects the serialization: `.yaml` and `.yml`, the kind-identifying
+      `.openapi`, `.asyncapi` and `.arazzo`, and `.openrpc`, which is JSON-only by its
+      own specification. Anything else is written verbatim.
+
   party:
     type: object
     description: >
@@ -529,14 +542,7 @@ $defs:
             type: string
             description: "Path to the GraphQL schema definition file (.graphql)."
           output:
-            type: string
-            description: >-
-              Identity of the generated contract artifact: `<name>`, `<slice>/<name>`, or
-              `_global/<name>`. Two services declaring the same value contribute to ONE artifact -
-              their specs are merged additively - so this names the physical contract, not one
-              service's copy of it. A leading slice name places the artifact in that slice;
-              `_global/` marks it cross-cutting; a bare name is placed by the declaring file. A
-              first segment that names no declared slice is kept as a subdirectory and reported.
+            $ref: "#/$defs/contract_output"
           queries:
             type: array
             items:
@@ -591,14 +597,7 @@ $defs:
         type: string
         description: "Path to the OpenAPI specification file."
       output:
-        type: string
-        description: >-
-          Identity of the generated contract artifact: `<name>`, `<slice>/<name>`, or
-          `_global/<name>`. Two services declaring the same value contribute to ONE artifact -
-          their specs are merged additively - so this names the physical contract, not one
-          service's copy of it. A leading slice name places the artifact in that slice;
-          `_global/` marks it cross-cutting; a bare name is placed by the declaring file. A
-          first segment that names no declared slice is kept as a subdirectory and reported.
+        $ref: "#/$defs/contract_output"
       expose:
         type: array
         items:
@@ -622,10 +621,7 @@ $defs:
         type: string
         description: "Path to the OpenAPI or .http file describing outbound calls."
       output:
-        type: string
-        description: >-
-          Identity of the generated client artifact, in the same form as a contract `output:`:
-          `<name>`, `<slice>/<name>`, or `_global/<name>`.
+        $ref: "#/$defs/contract_output"
       call:
         type: array
         items:
@@ -649,8 +645,7 @@ $defs:
         type: string
         description: "Path to the AsyncAPI specification file."
       output:
-        type: string
-        description: "Generated output path."
+        $ref: "#/$defs/contract_output"
       send:
         type: array
         items:
@@ -682,8 +677,7 @@ $defs:
         type: string
         description: "Path to the OpenRPC specification file."
       output:
-        type: string
-        description: "Generated output path."
+        $ref: "#/$defs/contract_output"
       expose:
         type: array
         items:
@@ -712,8 +706,7 @@ $defs:
         type: string
         description: "Path to the workflow specification file."
       output:
-        type: string
-        description: "Generated output path."
+        $ref: "#/$defs/contract_output"
       workflows:
         type: array
         items:

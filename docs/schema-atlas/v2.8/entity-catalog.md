@@ -884,7 +884,7 @@ OpenAPI endpoint contract: what the service exposes over HTTP.
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `file` | `string` | — |  | Path to the OpenAPI specification file. |
-| `output` | `string` | ✓ |  | Identity of the generated contract artifact: `<name>`, `<slice>/<name>`, or `_global/<name>`. Two services declaring the same value contribute to ONE artifact… |
+| `output` | `ref → contract_output` | ✓ |  |  |
 | `expose` | `array<ref → operation_ref>` | — |  | Operations exposed by this HTTP contract. |
 | `input_structures` | `ref → contract_structures` | — |  | Named input data structures accepted by this contract. |
 | `output_structures` | `ref → contract_structures` | — |  | Named output data structures produced by this contract. |
@@ -900,7 +900,7 @@ Outbound HTTP client contract: what endpoints this service calls.
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `file` | `string` | — |  | Path to the OpenAPI or .http file describing outbound calls. |
-| `output` | `string` | ✓ |  | Identity of the generated client artifact, in the same form as a contract `output:`: `<name>`, `<slice>/<name>`, or `_global/<name>`. |
+| `output` | `ref → contract_output` | ✓ |  |  |
 | `call` | `array<ref → operation_ref>` | — |  | Operations this service calls via HTTP. |
 | `input_structures` | `ref → contract_structures` | — |  | Named input structures sent to the dependency. |
 | `output_structures` | `ref → contract_structures` | — |  | Named output structures received from the dependency. |
@@ -916,7 +916,7 @@ AsyncAPI messaging contract: topics and channels this service publishes to or co
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `file` | `string` | — |  | Path to the AsyncAPI specification file. |
-| `output` | `string` | ✓ |  | Generated output path. |
+| `output` | `ref → contract_output` | ✓ |  |  |
 | `send` | `array<ref → operation_ref>` | — |  | Operations this service publishes via messaging. |
 | `receive` | `array<ref → operation_ref>` | — |  | Operations this service consumes via messaging. |
 | `brokerId` | `string` | — |  | Message broker identifier (e.g. rabbitmq-prod, kafka-main). |
@@ -934,7 +934,7 @@ OpenRPC contract: remote methods exposed or called.
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `file` | `string` | — |  | Path to the OpenRPC specification file. |
-| `output` | `string` | ✓ |  | Generated output path. |
+| `output` | `ref → contract_output` | ✓ |  |  |
 | `expose` | `array<ref → operation_ref>` | — |  | Operations exposed via RPC by this service. |
 | `call` | `array<ref → operation_ref>` | — |  | Operations this service calls via RPC. |
 | `input_structures` | `ref → contract_structures` | — |  | Named input structures for RPC calls. |
@@ -951,7 +951,7 @@ Workflow contract (Arazzo or CNCF Serverless Workflow).
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `file` | `string` | — |  | Path to the workflow specification file. |
-| `output` | `string` | ✓ |  | Generated output path. |
+| `output` | `ref → contract_output` | ✓ |  |  |
 | `workflows` | `array<string>` | — |  | Workflow names defined in this contract. |
 | `input_structures` | `ref → contract_structures` | — |  | Named input structures for workflow triggers. |
 | `output_structures` | `ref → contract_structures` | — |  | Named output structures produced by workflows. |
@@ -977,6 +977,12 @@ Observable side effects of this service beyond its direct contracts. Filesystem,
 | `stderr` | `array<object>` | — |  | Standard error output produced (primarily for CLI components). |
 
 _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service_side_effects`_
+
+#### Value definitions
+
+| Definition | Type | Values | Description |
+| --- | --- | --- | --- |
+| `contract_output` | `string` |  | Identity of the generated contract artifact: `<name>`, `<slice>/<name>`, or `_global/<name>`. Two services declaring the same value contribute to ONE artifact… |
 
 <a id="design-concepts"></a>
 
