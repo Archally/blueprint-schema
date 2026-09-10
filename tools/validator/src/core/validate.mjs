@@ -153,10 +153,12 @@ export function checkContractOutputSlice(relFile, serviceName, kind, output, sli
 }
 
 /**
- * Every contract `output:` the model declares, across all services.
+ * Every contract document the model declares, across all services, in EITHER spelling.
  *
  * The counterpart vocabulary to `declaredSlices`: where that one answers "is this prefix a slice",
- * this answers "is this path a contract this model actually produces".
+ * this answers "is this a contract this model actually produces". A model mid-migration declares
+ * some contracts by `contract_name` and some by the superseded `output:`, so both belong in the set
+ * - a consumer naming one of them is naming a real document either way.
  */
 export function declaredContractOutputs(parsedFiles) {
   const outputs = new Set();
@@ -165,12 +167,52 @@ export function declaredContractOutputs(parsedFiles) {
     for (const declared of archContextsOf(data)) {
       for (const [service] of servicesOf(declared)) {
         for (const contract of Object.values(service?.contracts ?? {})) {
-          if (contract && typeof contract.output === "string") outputs.add(contract.output);
+          if (!contract) continue;
+          if (typeof contract.output === "string") outputs.add(contract.output);
+          if (typeof contract.contract_name === "string") outputs.add(contract.contract_name);
         }
       }
     }
   }
   return outputs;
+}
+
+/**
+ * A contract still naming its document with the superseded `output:`.
+ *
+ * Warning, never an error: `output:` is accepted for the whole v2.8 line, and a model that has not
+ * migrated is correct, not broken. What the warning buys is that the removal does not arrive as a
+ * surprise - it names the replacement and the line the field goes away in, so the reader can act
+ * before then rather than after.
+ */
+export function checkDeprecatedContractOutput(relFile, serviceName, kind, contract) {
+  if (!contract || typeof contract.output !== "string" || contract.output.trim() === "") return null;
+  return (
+    `[${relFile}] Service "${serviceName}" ${kind} names its contract with \`output\`, which is ` +
+    `superseded - state the name, the placement and the serialization separately instead: ` +
+    `\`contract_name\` names the document, \`slice\` or \`cross_cutting\` places it, and the contract ` +
+    `kind selects the format. Accepted until the next major line.`
+  );
+}
+
+/**
+ * A contract's declared `slice:` against the slice vocabulary.
+ *
+ * Unlike the prefix rule below it, this one does NOT exempt a model that declares no slices. A
+ * prefix inside a path is ambiguous - it may always have been a subdirectory - so with no
+ * vocabulary there is nothing for it to be mistaken for. A `slice:` is not ambiguous: the author
+ * named a slice, and a model declaring none disagrees with that outright. Reporting it is the only
+ * thing that distinguishes the disagreement from correct placement.
+ */
+export function checkContractSlice(relFile, serviceName, kind, slice, slices) {
+  if (typeof slice !== "string" || slice.trim() === "") return null;
+  if (slices.has(slice)) return null;
+  const known = [...slices].sort().join(", ") || "(none declared)";
+  return (
+    `[${relFile}] Service "${serviceName}" ${kind} places its contract in slice "${slice}", ` +
+    `which this model does not declare. Declared slices: ${known}. Declare it under ` +
+    `\`layout.slices\`, or use \`cross_cutting: true\` if the contract belongs to no single slice.`
+  );
 }
 
 /**
@@ -460,6 +502,12 @@ export function validateModel(args) {
               relFile, service.name, kind, contract?.output, sliceNames,
             );
             if (finding) warnings.push(finding);
+            const sliceFinding = checkContractSlice(
+              relFile, service.name, kind, contract?.slice, sliceNames,
+            );
+            if (sliceFinding) warnings.push(sliceFinding);
+            const deprecated = checkDeprecatedContractOutput(relFile, service.name, kind, contract);
+            if (deprecated) warnings.push(deprecated);
           }
         }
       }

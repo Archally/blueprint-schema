@@ -879,12 +879,13 @@ _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contracts`_
 
 OpenAPI endpoint contract: what the service exposes over HTTP.
 
-**Required:** `output`
-
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `file` | `string` | — |  | Path to the OpenAPI specification file. |
-| `output` | `ref → contract_output` | ✓ |  |  |
+| `contract_name` | `ref → contract_name` | — |  |  |
+| `slice` | `ref → contract_slice` | — |  |  |
+| `cross_cutting` | `ref → contract_cross_cutting` | — |  |  |
+| `output` | `ref → contract_output` | — |  |  |
 | `expose` | `array<ref → operation_ref>` | — |  | Operations exposed by this HTTP contract. |
 | `input_structures` | `ref → contract_structures` | — |  | Named input data structures accepted by this contract. |
 | `output_structures` | `ref → contract_structures` | — |  | Named output data structures produced by this contract. |
@@ -895,12 +896,13 @@ _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/endpoint_contract`_
 
 Outbound HTTP client contract: what endpoints this service calls.
 
-**Required:** `output`
-
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `file` | `string` | — |  | Path to the OpenAPI or .http file describing outbound calls. |
-| `output` | `ref → contract_output` | ✓ |  |  |
+| `contract_name` | `ref → contract_name` | — |  |  |
+| `slice` | `ref → contract_slice` | — |  |  |
+| `cross_cutting` | `ref → contract_cross_cutting` | — |  |  |
+| `output` | `ref → contract_output` | — |  |  |
 | `call` | `array<ref → operation_ref>` | — |  | Operations this service calls via HTTP. |
 | `input_structures` | `ref → contract_structures` | — |  | Named input structures sent to the dependency. |
 | `output_structures` | `ref → contract_structures` | — |  | Named output structures received from the dependency. |
@@ -911,12 +913,13 @@ _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/http_client_contract`_
 
 AsyncAPI messaging contract: topics and channels this service publishes to or consumes from.
 
-**Required:** `output`
-
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `file` | `string` | — |  | Path to the AsyncAPI specification file. |
-| `output` | `ref → contract_output` | ✓ |  |  |
+| `contract_name` | `ref → contract_name` | — |  |  |
+| `slice` | `ref → contract_slice` | — |  |  |
+| `cross_cutting` | `ref → contract_cross_cutting` | — |  |  |
+| `output` | `ref → contract_output` | — |  |  |
 | `send` | `array<ref → operation_ref>` | — |  | Operations this service publishes via messaging. |
 | `receive` | `array<ref → operation_ref>` | — |  | Operations this service consumes via messaging. |
 | `brokerId` | `string` | — |  | Message broker identifier (e.g. rabbitmq-prod, kafka-main). |
@@ -929,12 +932,13 @@ _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract`_
 
 OpenRPC contract: remote methods exposed or called.
 
-**Required:** `output`
-
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `file` | `string` | — |  | Path to the OpenRPC specification file. |
-| `output` | `ref → contract_output` | ✓ |  |  |
+| `contract_name` | `ref → contract_name` | — |  |  |
+| `slice` | `ref → contract_slice` | — |  |  |
+| `cross_cutting` | `ref → contract_cross_cutting` | — |  |  |
+| `output` | `ref → contract_output` | — |  |  |
 | `expose` | `array<ref → operation_ref>` | — |  | Operations exposed via RPC by this service. |
 | `call` | `array<ref → operation_ref>` | — |  | Operations this service calls via RPC. |
 | `input_structures` | `ref → contract_structures` | — |  | Named input structures for RPC calls. |
@@ -946,12 +950,13 @@ _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/rpc_contract`_
 
 Workflow contract (Arazzo or CNCF Serverless Workflow).
 
-**Required:** `output`
-
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `file` | `string` | — |  | Path to the workflow specification file. |
-| `output` | `ref → contract_output` | ✓ |  |  |
+| `contract_name` | `ref → contract_name` | — |  |  |
+| `slice` | `ref → contract_slice` | — |  |  |
+| `cross_cutting` | `ref → contract_cross_cutting` | — |  |  |
+| `output` | `ref → contract_output` | — |  |  |
 | `workflows` | `array<string>` | — |  | Workflow names defined in this contract. |
 | `input_structures` | `ref → contract_structures` | — |  | Named input structures for workflow triggers. |
 | `output_structures` | `ref → contract_structures` | — |  | Named output structures produced by workflows. |
@@ -982,7 +987,11 @@ _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service_side_effects`_
 
 | Definition | Type | Values | Description |
 | --- | --- | --- | --- |
-| `contract_output` | `string` |  | Identity of the generated contract artifact: `<name>`, `<slice>/<name>`, or `_global/<name>`. Two services declaring the same value contribute to ONE artifact… |
+| `contract_output` | `string` |  | SOFT-DEPRECATED (v2.8.14). Identity of the generated contract artifact, with the document's name, its placement and its serialization fused into one string. St… |
+| `contract_name` | `string` |  | Name of the contract document this interface contributes to. Two services declaring the same name under the same contract kind contribute to ONE document - the… |
+| `contract_slice` | `string` |  | Slice the contract document belongs to, naming a slice declared at the blueprint root. Absent, the document belongs to the slice its declaring file sits in. A… |
+| `contract_cross_cutting` | `any` |  | The contract document spans the model rather than belonging to one slice. Written only as `true` - its absence is the negative - and never beside `slice`. |
+| `contract_identity` | `union` |  | The naming and placement rules every contract kind shares. A document is named once, by `contract_name` or by the superseded `output`, and placed once, by `sli… |
 
 <a id="design-concepts"></a>
 

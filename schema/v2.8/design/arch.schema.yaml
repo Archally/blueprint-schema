@@ -85,7 +85,12 @@ $defs:
   contract_output:
     type: string
     description: >-
-      Identity of the generated contract artifact: `<name>`, `<slice>/<name>`, or
+      SOFT-DEPRECATED (v2.8.14). Identity of the generated contract artifact, with the document's
+      name, its placement and its serialization fused into one string. State the three separately
+      instead: `contract_name` names the document, `slice` or `cross_cutting` places it, and the
+      contract kind selects the serialization. Still accepted until the next major line, so an
+      unmigrated model keeps validating; the schema-update tool splits one into the three.
+      The forms are `<name>`, `<slice>/<name>`, or
       `_global/<name>`. Two services declaring the same value contribute to ONE artifact -
       their specs are merged additively - so this names the physical contract, not one
       service's copy of it. A leading slice name places the artifact in that slice;
@@ -94,6 +99,50 @@ $defs:
       The extension selects the serialization: `.yaml` and `.yml`, the kind-identifying
       `.openapi`, `.asyncapi` and `.arazzo`, and `.openrpc`, which is JSON-only by its
       own specification. Anything else is written verbatim.
+
+  contract_name:
+    type: string
+    pattern: "^[A-Za-z0-9][A-Za-z0-9_-]*$"
+    description: >-
+      Name of the contract document this interface contributes to. Two services declaring the same
+      name under the same contract kind contribute to ONE document - their specs are merged
+      additively - so this names the physical contract, not one service's copy of it. The kind
+      selects the serialization, so the name carries no extension; `slice` and `cross_cutting`
+      place the document, so it carries no path separator.
+
+  contract_slice:
+    type: string
+    pattern: "^[a-z][a-z0-9-]*$"
+    description: >-
+      Slice the contract document belongs to, naming a slice declared at the blueprint root. Absent,
+      the document belongs to the slice its declaring file sits in. A document belonging to no single
+      slice says so with `cross_cutting` instead.
+
+  contract_cross_cutting:
+    const: true
+    description: >-
+      The contract document spans the model rather than belonging to one slice. Written only as
+      `true` - its absence is the negative - and never beside `slice`.
+
+  contract_identity:
+    description: >-
+      The naming and placement rules every contract kind shares. A document is named once, by
+      `contract_name` or by the superseded `output`, and placed once, by `slice` or by
+      `cross_cutting`. Two names, or two placements, would be two answers to one question with
+      nothing to say which is current.
+    anyOf:
+      - required: [contract_name]
+      - required: [output]
+    # Written as `dependentSchemas` rather than `not: {required: [...]}` for the ERROR PATH: the
+    # latter reports the whole contract as "must NOT be valid", which does not say which key to
+    # remove. This reports at the key the author just added, which is the one to take back out.
+    dependentSchemas:
+      output:
+        properties:
+          contract_name: false
+      slice:
+        properties:
+          cross_cutting: false
 
   party:
     type: object
@@ -535,12 +584,19 @@ $defs:
       graphql:
         type: object
         additionalProperties: false
-        required: [output]
+        allOf:
+          - $ref: "#/$defs/contract_identity"
         description: "GraphQL API contract."
         properties:
           file:
             type: string
             description: "Path to the GraphQL schema definition file (.graphql)."
+          contract_name:
+            $ref: "#/$defs/contract_name"
+          slice:
+            $ref: "#/$defs/contract_slice"
+          cross_cutting:
+            $ref: "#/$defs/contract_cross_cutting"
           output:
             $ref: "#/$defs/contract_output"
           queries:
@@ -590,12 +646,18 @@ $defs:
     type: object
     description: "OpenAPI endpoint contract: what the service exposes over HTTP."
     additionalProperties: false
-    required:
-      - output
+    allOf:
+      - $ref: "#/$defs/contract_identity"
     properties:
       file:
         type: string
         description: "Path to the OpenAPI specification file."
+      contract_name:
+        $ref: "#/$defs/contract_name"
+      slice:
+        $ref: "#/$defs/contract_slice"
+      cross_cutting:
+        $ref: "#/$defs/contract_cross_cutting"
       output:
         $ref: "#/$defs/contract_output"
       expose:
@@ -614,12 +676,18 @@ $defs:
     type: object
     description: "Outbound HTTP client contract: what endpoints this service calls."
     additionalProperties: false
-    required:
-      - output
+    allOf:
+      - $ref: "#/$defs/contract_identity"
     properties:
       file:
         type: string
         description: "Path to the OpenAPI or .http file describing outbound calls."
+      contract_name:
+        $ref: "#/$defs/contract_name"
+      slice:
+        $ref: "#/$defs/contract_slice"
+      cross_cutting:
+        $ref: "#/$defs/contract_cross_cutting"
       output:
         $ref: "#/$defs/contract_output"
       call:
@@ -638,12 +706,18 @@ $defs:
     type: object
     description: "AsyncAPI messaging contract: topics and channels this service publishes to or consumes from."
     additionalProperties: false
-    required:
-      - output
+    allOf:
+      - $ref: "#/$defs/contract_identity"
     properties:
       file:
         type: string
         description: "Path to the AsyncAPI specification file."
+      contract_name:
+        $ref: "#/$defs/contract_name"
+      slice:
+        $ref: "#/$defs/contract_slice"
+      cross_cutting:
+        $ref: "#/$defs/contract_cross_cutting"
       output:
         $ref: "#/$defs/contract_output"
       send:
@@ -670,12 +744,18 @@ $defs:
     type: object
     description: "OpenRPC contract: remote methods exposed or called."
     additionalProperties: false
-    required:
-      - output
+    allOf:
+      - $ref: "#/$defs/contract_identity"
     properties:
       file:
         type: string
         description: "Path to the OpenRPC specification file."
+      contract_name:
+        $ref: "#/$defs/contract_name"
+      slice:
+        $ref: "#/$defs/contract_slice"
+      cross_cutting:
+        $ref: "#/$defs/contract_cross_cutting"
       output:
         $ref: "#/$defs/contract_output"
       expose:
@@ -699,12 +779,18 @@ $defs:
     type: object
     description: "Workflow contract (Arazzo or CNCF Serverless Workflow)."
     additionalProperties: false
-    required:
-      - output
+    allOf:
+      - $ref: "#/$defs/contract_identity"
     properties:
       file:
         type: string
         description: "Path to the workflow specification file."
+      contract_name:
+        $ref: "#/$defs/contract_name"
+      slice:
+        $ref: "#/$defs/contract_slice"
+      cross_cutting:
+        $ref: "#/$defs/contract_cross_cutting"
       output:
         $ref: "#/$defs/contract_output"
       workflows:

@@ -5,6 +5,31 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.14"
+    date: "2026-09-10"
+    summary: >
+      A contract states its name, its placement and its serialization separately. `contract_name`
+      names the document an interface contributes to; `slice` names the slice that document belongs
+      to, or `cross_cutting: true` says it belongs to no single one; and the contract kind selects
+      the format. So the name carries no path separator and no extension.
+
+      Two services declaring the same `contract_name` under the same kind contribute to ONE
+      document, merged additively - the same grouping the field it replaces carried, stated as a
+      name rather than as a path.
+
+      Every contract kind shares the rules: a document is named once, and placed once. Naming it
+      remains mandatory; `contract_name` beside `output` is an error, and so is `slice` beside
+      `cross_cutting`.
+
+      `output:` is superseded and accepted for the rest of the 2.8 line. The validator reports each
+      surviving declaration and names the keys that replace it, and reports a `slice` naming a slice
+      the model does not declare. `schema-update` splits every declaration: the name is the basename
+      up to its first dot, a declared slice prefix becomes `slice`, `_global/` becomes
+      `cross_cutting: true`, and a build-folder prefix is dropped and reported. A prefix that is
+      neither is reported and its declaration left as it was. A test case's `contract.file` moves in
+      the same run.
+
+      A document valid under 2.8.13 is valid here.
   - version: "2.8.13"
     date: "2026-09-10"
     summary: >

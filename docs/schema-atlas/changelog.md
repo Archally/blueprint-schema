@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 23 |
-| Additive (minor) | 135 |
+| Additive (minor) | 159 |
 | Clarification (patch) | 0 |
-| **Total changes** | 158 |
+| **Total changes** | 182 |
 
 ## ⚠ Breaking changes
 
@@ -98,13 +98,28 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
   - _Note: Renamed org.schema.yaml → organization.schema.yaml for naming consistency._
   - _Sources: `schema/v2.6/governance/org.schema.yaml`, `schema/v2.8/governance/organization.schema.yaml`_
 
-## Requiredness changed (5)
+## Requiredness changed (10)
+
+- [additive] `design/arch.schema.yaml#/$defs/channel_contract/properties/output` — Property `output` became optional.
+  - _Sources: `schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract/properties/output`, `schema/v2.6/design/arch.schema.yaml#/$defs/channel_contract/properties/output`_
 
 - **[breaking]** `design/arch.schema.yaml#/$defs/dependency/properties/relationship` — Property `relationship` became required (breaking).
   - _Sources: `schema/v2.8/design/arch.schema.yaml#/$defs/dependency/properties/relationship`, `schema/v2.6/design/arch.schema.yaml#/$defs/dependency/properties/relationship`_
 
+- [additive] `design/arch.schema.yaml#/$defs/endpoint_contract/properties/output` — Property `output` became optional.
+  - _Sources: `schema/v2.8/design/arch.schema.yaml#/$defs/endpoint_contract/properties/output`, `schema/v2.6/design/arch.schema.yaml#/$defs/endpoint_contract/properties/output`_
+
+- [additive] `design/arch.schema.yaml#/$defs/flow_contract/properties/output` — Property `output` became optional.
+  - _Sources: `schema/v2.8/design/arch.schema.yaml#/$defs/flow_contract/properties/output`, `schema/v2.6/design/arch.schema.yaml#/$defs/flow_contract/properties/output`_
+
+- [additive] `design/arch.schema.yaml#/$defs/http_client_contract/properties/output` — Property `output` became optional.
+  - _Sources: `schema/v2.8/design/arch.schema.yaml#/$defs/http_client_contract/properties/output`, `schema/v2.6/design/arch.schema.yaml#/$defs/http_client_contract/properties/output`_
+
 - [additive] `design/arch.schema.yaml#/$defs/party/properties/contexts` — Property `contexts` became optional.
   - _Sources: `schema/v2.8/design/arch.schema.yaml#/$defs/party/properties/contexts`, `schema/v2.6/design/arch.schema.yaml#/$defs/party/properties/contexts`_
+
+- [additive] `design/arch.schema.yaml#/$defs/rpc_contract/properties/output` — Property `output` became optional.
+  - _Sources: `schema/v2.8/design/arch.schema.yaml#/$defs/rpc_contract/properties/output`, `schema/v2.6/design/arch.schema.yaml#/$defs/rpc_contract/properties/output`_
 
 - [additive] `design/arch.schema.yaml#/properties/parties` — Property `parties` became optional.
   - _Sources: `schema/v2.8/design/arch.schema.yaml#/properties/parties`, `schema/v2.6/design/arch.schema.yaml#/properties/parties`_
@@ -182,7 +197,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (117)
+## Added (136)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -211,20 +226,77 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `blueprint.schema.yaml#/properties/trackers` — Property `trackers` added (optional).
   - _Source: `schema/v2.8/blueprint.schema.yaml#/properties/trackers`_
 
+- [additive] `design/arch.schema.yaml#/$defs/channel_contract/properties/contract_name` — Property `contract_name` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract/properties/contract_name`_
+
+- [additive] `design/arch.schema.yaml#/$defs/channel_contract/properties/cross_cutting` — Property `cross_cutting` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract/properties/cross_cutting`_
+
+- [additive] `design/arch.schema.yaml#/$defs/channel_contract/properties/slice` — Property `slice` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract/properties/slice`_
+
 - [additive] `design/arch.schema.yaml#/$defs/context/properties/domain_ref` — Property `domain_ref` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/context/properties/domain_ref`_
 
 - **[breaking]** `design/arch.schema.yaml#/$defs/context/properties/id` — Property `id` added (required — breaking).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/context/properties/id`_
 
+- [additive] `design/arch.schema.yaml#/$defs/contract_cross_cutting` — New definition `contract_cross_cutting` added to `design/arch.schema.yaml`.
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contract_cross_cutting`_
+
+- [additive] `design/arch.schema.yaml#/$defs/contract_identity` — New definition `contract_identity` added to `design/arch.schema.yaml`.
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contract_identity`_
+
+- [additive] `design/arch.schema.yaml#/$defs/contract_name` — New definition `contract_name` added to `design/arch.schema.yaml`.
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contract_name`_
+
 - [additive] `design/arch.schema.yaml#/$defs/contract_output` — New definition `contract_output` added to `design/arch.schema.yaml`.
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contract_output`_
+
+- [additive] `design/arch.schema.yaml#/$defs/contract_slice` — New definition `contract_slice` added to `design/arch.schema.yaml`.
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contract_slice`_
 
 - [additive] `design/arch.schema.yaml#/$defs/dependency/properties/bounded_context_ref` — Property `bounded_context_ref` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/dependency/properties/bounded_context_ref`_
 
+- [additive] `design/arch.schema.yaml#/$defs/endpoint_contract/properties/contract_name` — Property `contract_name` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/endpoint_contract/properties/contract_name`_
+
+- [additive] `design/arch.schema.yaml#/$defs/endpoint_contract/properties/cross_cutting` — Property `cross_cutting` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/endpoint_contract/properties/cross_cutting`_
+
+- [additive] `design/arch.schema.yaml#/$defs/endpoint_contract/properties/slice` — Property `slice` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/endpoint_contract/properties/slice`_
+
+- [additive] `design/arch.schema.yaml#/$defs/flow_contract/properties/contract_name` — Property `contract_name` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/flow_contract/properties/contract_name`_
+
+- [additive] `design/arch.schema.yaml#/$defs/flow_contract/properties/cross_cutting` — Property `cross_cutting` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/flow_contract/properties/cross_cutting`_
+
+- [additive] `design/arch.schema.yaml#/$defs/flow_contract/properties/slice` — Property `slice` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/flow_contract/properties/slice`_
+
+- [additive] `design/arch.schema.yaml#/$defs/http_client_contract/properties/contract_name` — Property `contract_name` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/http_client_contract/properties/contract_name`_
+
+- [additive] `design/arch.schema.yaml#/$defs/http_client_contract/properties/cross_cutting` — Property `cross_cutting` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/http_client_contract/properties/cross_cutting`_
+
+- [additive] `design/arch.schema.yaml#/$defs/http_client_contract/properties/slice` — Property `slice` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/http_client_contract/properties/slice`_
+
 - **[breaking]** `design/arch.schema.yaml#/$defs/party/properties/id` — Property `id` added (required — breaking).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/party/properties/id`_
+
+- [additive] `design/arch.schema.yaml#/$defs/rpc_contract/properties/contract_name` — Property `contract_name` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/rpc_contract/properties/contract_name`_
+
+- [additive] `design/arch.schema.yaml#/$defs/rpc_contract/properties/cross_cutting` — Property `cross_cutting` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/rpc_contract/properties/cross_cutting`_
+
+- [additive] `design/arch.schema.yaml#/$defs/rpc_contract/properties/slice` — Property `slice` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/rpc_contract/properties/slice`_
 
 - [additive] `design/arch.schema.yaml#/$defs/service_need` — New definition `service_need` added to `design/arch.schema.yaml`.
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service_need`_
