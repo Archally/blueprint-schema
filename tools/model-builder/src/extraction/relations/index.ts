@@ -40,6 +40,8 @@ import { extractQualityRelations } from './quality.js';
 import { extractDomainRegistryRelations } from './domains.js';
 import { extractOperationDomainRelations } from './operationDomain.js';
 import { extractPersonaConcernRelations } from './personaConcern.js';
+import { extractCoverageRelations } from './coverage.js';
+import { extractContractTrafficRelations } from './contractTraffic.js';
 
 /**
  * Build all relations from the entity list.
@@ -107,11 +109,25 @@ export function buildRelations(
 
   // Deduplicate by relation id (guards against identical refs in same collection)
   const seen = new Set<string>();
-  const relations = allRelations.filter((r) => {
+  const direct = allRelations.filter((r) => {
     if (seen.has(r.id)) return false;
     seen.add(r.id);
     return true;
   });
+
+  // A SECOND PASS, over the edges the first one produced rather than over documents. Coverage is a
+  // join of `handled_by` and `operation_in_domain`, so it cannot be computed beside them; deriving
+  // it from the raw refs again would introduce a second matching rule for one question.
+  const derived = [
+    ...extractCoverageRelations(entities, direct),
+    ...extractContractTrafficRelations(entities, direct),
+  ].filter((r) => {
+    if (seen.has(r.id)) return false;
+    seen.add(r.id);
+    return true;
+  });
+
+  const relations = [...direct, ...derived];
 
   return {
     relations,

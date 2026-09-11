@@ -430,6 +430,25 @@ export const RELATION_TYPE = {
   // source two ways - while the first is more precise than that edge's `declared`, because here
   // the entity never declares and the file always does.
   OperationInDomain: 'operation_in_domain',
+  // Which problem-space domains a context SERVES, which is n-to-n and is a different question from
+  // the n-to-1 home `ContextRealizesDomain` carries. Derived by joining `HandledBy` with
+  // `OperationInDomain`, so it walks the path the model already walks and introduces no second
+  // matching rule; `covers[]` supplies the exception, for coverage no contract can express.
+  // `data.resolution` is `contract`, `name` or `declared`. `name` is the weaker derived case: the
+  // operations reached the context through the name-and-scope fallback rather than a contract, and
+  // `handled_by` records that one as `exact` too, so reading its `match` alone would report a
+  // coverage nobody wired as contract evidence. `data.match` therefore appears only on a
+  // contract-carried edge, beside `operation_count` and `contract_operation_count`.
+  ContextCoversDomain: 'context_covers_domain',
+  // Context-to-context traffic the contract surface proves: an operation one context's service
+  // exposes and another's calls. Drawn consumer to provider, the direction a call travels. It sits
+  // BESIDE the declared `ContextDependsOn` and never replaces it - the corpus derives 46 pairs
+  // against 352 declared, and four of the six models with a context map derive none at all, so
+  // promoting derivation to the only source would turn every unauthored contract into a denial.
+  // `data` carries `protocols`, `operations`, `operation_count` and `broker_ids`; there is no
+  // `match`, because this path resolves refs through the documented formats only and has no
+  // looser tier for such a field to describe.
+  ContractTraffic: 'contract_traffic',
 } as const;
 
 export type RelationType = (typeof RELATION_TYPE)[keyof typeof RELATION_TYPE];

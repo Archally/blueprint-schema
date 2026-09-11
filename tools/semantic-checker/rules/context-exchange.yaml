@@ -1,0 +1,60 @@
+engineVersion: "0.1"
+rules:
+  - id: undeclared-exchange
+    severity: warn
+    description: >-
+      Two bounded contexts exchange operations through their contracts, and no dependency between
+      them is declared. One context's service calls or receives an operation the other exposes or
+      sends, which is a coupling with a protocol, a direction and an operation count behind it - and
+      the context map a reader draws from `dependencies` does not show it. Fix in the model by
+      declaring the dependency, which is where the strategic relationship lives: the contracts can
+      say how two contexts are connected, and only an author can say on whose terms. Reported from
+      the consumer, the context whose service makes the call, so each pair appears once. A
+      declaration in either direction satisfies it, because an author who recorded the coupling from
+      the other end has recorded it. Silent in a model whose contracts wire nothing. Override
+      per-project via .blueprint-lint.yaml (e.g. `undeclared-exchange: off`).
+    find:
+      entity_type: Context
+    check:
+      custom:
+        module: ./context-exchange.mjs
+        export: undeclaredExchange
+    message: 'Context {subject} "{subject_name}" exchanges operations with {counterparts} through its contracts and declares no dependency on them: {operations} operation(s) over {protocols}. Declare the dependency and state the relationship, which is the part no contract records.'
+
+  - id: unevidenced-dependency
+    severity: info
+    description: >-
+      A declared dependency between two bounded contexts that no contract evidences. INFORMATION
+      rather than a warning, deliberately: most of these are real coupling the contract surface
+      cannot see - a shared database, a file drop, a scheduled job - and on one model 119 of 132
+      declared dependencies land here. A report that fires that often is switched off within a week,
+      and a switched-off report is worse than none. It becomes a warning once the non-API contract
+      kinds exist and the derivation can see what it is blind to today. Until then, read it as "the
+      contracts do not show this one" and not as "this one is wrong". Reported from the context that
+      declared it. Override per-project via .blueprint-lint.yaml.
+    find:
+      entity_type: Context
+    check:
+      custom:
+        module: ./context-exchange.mjs
+        export: unevidencedDependency
+    message: 'Context {subject} "{subject_name}" declares a dependency on {counterparts} that no contract evidences. Either the coupling runs through a surface the contracts do not describe yet, or the entry outlived the connection.'
+
+  - id: dependency-direction-disagreement
+    severity: warn
+    description: >-
+      A declared dependency whose direction the contracts contradict: the model says this context
+      depends on the other, and every operation between the two flows the other way. Unlike an
+      undeclared exchange or an unevidenced dependency this is not a silence but a contradiction -
+      one of the two statements is wrong. Which one is a question for an author: a dependency
+      entry may record an intent the contracts have not caught up with, and a contract may have
+      been wired backwards. Fires only where traffic runs one way and not the other, so a pair
+      exchanging operations in both directions is never reported. Override per-project via
+      .blueprint-lint.yaml.
+    find:
+      entity_type: Context
+    check:
+      custom:
+        module: ./context-exchange.mjs
+        export: dependencyDirectionDisagreement
+    message: 'Context {subject} "{subject_name}" declares a dependency on {counterparts}, and the contracts show every operation flowing the other way. One of the two is wrong.'

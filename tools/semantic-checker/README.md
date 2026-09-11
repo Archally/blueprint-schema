@@ -106,6 +106,9 @@ Severities: `error` (fails), `warn`, `info`, `off`.
 | `adapter.ts` | `BlueprintModel` → engine `CheckableModel` |
 | `rules/*.yaml` | the declarative rule packs the CLI loads (inventory: the Rules table above) |
 | `adapter.test.ts` | adapter unit test (field mapping, plane derivation, relation renames) |
+| `undeclared-exchange` | warn | every pair of contexts whose contracts carry operations between them has a dependency declared, either way round - the contracts say how two contexts are connected, and only an author says on whose terms |
+| `dependency-direction-disagreement` | warn | a declared dependency runs the way its operations do; declared one way with every operation flowing the other is a contradiction rather than a silence, and one of the two statements is wrong |
+| `unevidenced-dependency` | info | reports a declared dependency no contract evidences; info because most are real coupling the contract surface cannot describe yet - a shared store, a file drop, a scheduled job - rather than a stale entry |
 
 ## Custom rules
 
