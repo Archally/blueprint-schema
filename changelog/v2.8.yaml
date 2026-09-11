@@ -5,6 +5,54 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.20"
+    date: "2026-09-12"
+    summary: >
+      A bounded context serves more than one problem-space domain, and the model now says so without
+      losing the one answer a drawing needs. `domain_ref` is the PRIMARY region, the home: one
+      reference, because a context belonging to three domains has no box. Which areas a context
+      serves at all is a different question, and it is answered separately.
+
+
+      Coverage is derived rather than declared. A context's services expose and call operations
+      through their contracts, and each operation belongs to the domain its document header states,
+      so coverage is the join of two things the model already carries. Every coverage edge records
+      which source answered: `contract` where a contract carried it, `name` where the operation
+      reached its context by the name-and-scope fallback, `declared` where an author wrote it. It
+      also carries how many operations stand behind the claim and how many of those a contract
+      carried, because those are different numbers and only the second is contract evidence.
+
+
+      `covers[]` on a context is the exception channel, for coverage no contract can express. `ref`
+      is required; `extent` accepts `full` or `partial` and is optional; `reason` is required
+      wherever `extent` appears, since a partial claim a reader cannot check is one nobody can act
+      on. An ABSENT `extent` means the model has not said, and never `full`.
+
+
+      `dependency.coupling` states how two contexts are connected in the three values the contract
+      surface computes: `http`, `message`, `rpc`. `type` keeps its free-string shape and keeps
+      working; `coupling` is its typed form and is the one to prefer in a new model. State it where
+      the contracts do not: where they do, they already carry the direction, the operations and the
+      broker, which a single word cannot.
+
+
+      Three checks compare what a model declares against what its contracts prove. A pair the
+      contracts carry with no dependency declared either way is a warning, and is the finding worth
+      having: the coupling exists and the context map does not show it. A declared pair no contract
+      evidences is information rather than a warning, because most are real coupling the contract
+      surface cannot describe yet - a shared store, a file drop, a scheduled job. A pair declared one
+      way whose operations all flow the other is a warning, and is the one contradiction rather than
+      a silence.
+
+
+      Declaration remains the primary source and is not being replaced. A derivation that finds
+      nothing returns the empty set, which is indistinguishable from a model that has nothing there,
+      so the two sources are compared and never reconciled automatically.
+
+
+      Additive. No property is removed or narrowed, no value is withdrawn, and a document valid under
+      2.8.19 is valid here with the same meaning.
+
   - version: "2.8.19"
     date: "2026-09-11"
     summary: >
