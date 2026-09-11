@@ -207,6 +207,21 @@ Entity ownership. Exactly one of team, department, or party. File-level default;
 
 _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/owned_by`_
 
+#### `domain_coverage`
+
+One entry of a bounded context's `covers[]`: a problem-space domain the context serves that its contracts do not reach. The exception channel, not the primary mechanism - coverage is normally derived from the contract surface, and an entry here is for what no contract can express.
+
+**Required:** `ref`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `ref` | `ref → domain_ref` | ✓ |  | The domain (`DMN###`) this context serves, by id from `blueprint.yaml`'s `domains[]`. |
+| `extent` | `string` | — | `full`, `partial` | How much of the domain the context serves. `partial` is the marked value and is the reason the field exists; `full` is available for a model that wants to say… |
+| `reason` | `string` | — |  | Why the contract surface does not show this coverage. Required wherever `extent` is stated, because a partial claim a reader cannot check is a claim nobody can… |
+| `description` | `string` | — |  | Human-readable note. |
+
+_Source: `schema/v2.8/metamodel.schema.yaml#/$defs/domain_coverage`_
+
 #### `logic_tuple`
 
 When/then/else structure for rule logic. 'when' omitted for invariants; 'then' always required.
@@ -356,6 +371,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `binding_ref` | `string` |  | Reference to a binding by its typed id (e.g. BND001 or prod.BND001). A binding resolves (resource-type x environment) -> a concrete platform / module + params… |
 | `deployment_scope_ref` | `string` |  | Reference to a deployment scope by its typed id (e.g. DSC001 or shared.DSC001). A DeploymentScope is a substrate-neutral management / lifecycle / ownership / b… |
 | `infra_relation` | `string` | `hosted_on`, `connects_to`, `depends_on`, `attaches_to`, `routes_to` | TOSCA-derived relation vocabulary for typed inter-resource edges in the infrastructure layer (snake_case, TOSCA-verbatim). `hosted_on` is the canonical placeme… |
+| `coupling` | `string` | `http`, `message`, `rpc` | How two bounded contexts are connected: `http` for request and response over an API, `message` for events across a broker, `rpc` for a procedure call. The same… |
 | `context_relationship` | `string` | `shared-kernel`, `customer-supplier`, `conformist`, `anticorruption-layer`, `open-host-service`, `published-language` … (8) | DDD strategic relationship between bounded contexts. Captures architectural intent beyond technical integration. |
 | `spec_path` | `string` |  | Addressable path to any blueprint element. Format: [context.]layer[.category].ID[.field]. Examples: rules.classification.CR003, billing.rules.classification.CR… |
 | `change_kind` | `string` | `add`, `modify`, `deprecate`, `remove`, `rename`, `split` … (7) | Change type for change-impact analysis, as a decision records what it did to a spec path. Semver impact: add is minor, modify is minor or major, deprecate is m… |
@@ -770,7 +786,8 @@ A bounded context with its domain model, services, and dependencies.
 | `id` | `ref → bounded_context_ref` | ✓ |  | Stable bounded-context id (BC###) - the target of inter-context `dependency.bounded_context_ref` edges, the DERIVED operation to context membership (`handled-b… |
 | `name` | `string` | ✓ |  | Context name (unique within the party or document that declares it). |
 | `kind` | `ref → context_kind` | ✓ |  | DDD classification of this bounded context, by the problem-space domain it realizes. The slice vocabulary in blueprint.schema classifies that domain itself; th… |
-| `domain_ref` | `union` | — |  | The region of the problem space this bounded context realizes: a domain (`DMN###`) or one of its subdomains (`SDM###`), by id from `blueprint.yaml`'s `domains[… |
+| `domain_ref` | `union` | — |  | The PRIMARY region of the problem space this bounded context realizes - its home: a domain (`DMN###`) or one of its subdomains (`SDM###`), by id from `blueprin… |
+| `covers` | `array<ref → domain_coverage>` | — |  | Problem-space domains this context serves that its contracts do not reach. THE EXCEPTION CHANNEL. Coverage is normally derived - a context's services expose an… |
 | `complexity` | `ref → complexity_pattern` | — |  | Dominant implementation-complexity / problem-type pattern. Distinct from `model_traits` (behavioural archetype) and `kind` (strategic value). |
 | `business_model_role` | `string` | — | `revenue-generator`, `engagement-creator`, `compliance-enforcer` | BCC v5 Strategic Classification - Business Model Role. Captures HOW the context contributes to the business. Distinct from `kind` (which captures WHETHER the c… |
 | `evolution` | `string` | — | `genesis`, `custom`, `product`, `commodity` | BCC v5 Strategic Classification - Wardley Evolution stage. Used in the dedicated Wardley map view (step-10a) and as a third badge in the BCC node's strategic h… |
@@ -810,7 +827,8 @@ Dependency on another bounded context or external system. Technical connections 
 | --- | --- | --- | --- | --- |
 | `name` | `string` | ✓ |  | Name of the dependency (context or external system name). |
 | `bounded_context_ref` | `ref → bounded_context_ref` | — |  | Optional target bounded-context id (BC###) - the id-based inter-context edge, preferred over matching the `name` string (deprecated fallback). Use for dependen… |
-| `type` | `string` | — |  | Technical integration type (e.g. api, events, shared-db, file, grpc). |
+| `type` | `string` | — |  | Technical integration type, as free text (e.g. api, events, shared-db, file, grpc). The typed form of the same idea is `coupling`, which takes the three values… |
+| `coupling` | `ref → coupling` | — |  | How this dependency is connected, in the vocabulary the contract surface computes. State it where the contracts do not: where they do, they already carry the d… |
 | `relationship` | `ref → context_relationship` | ✓ |  | DDD strategic relationship pattern. Captures architectural intent beyond technical integration. |
 | `direction` | `string` | — | `upstream`, `downstream`, `peer` | This context's role: upstream=we provide, downstream=we consume, peer=bidirectional. |
 | `language_boundary` | `boolean` | — |  | Whether this dependency crosses a ubiquitous language boundary. When true, translation may be needed. |

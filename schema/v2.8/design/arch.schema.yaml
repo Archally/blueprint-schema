@@ -224,9 +224,16 @@ $defs:
           - $ref: "../metamodel.schema.yaml#/$defs/domain_ref"
           - $ref: "../metamodel.schema.yaml#/$defs/subdomain_ref"
         description: >
-          The region of the problem space this bounded context realizes: a domain (`DMN###`) or
-          one of its subdomains (`SDM###`), by id from `blueprint.yaml`'s `domains[]`. ONE
-          reference either way. Naming a subdomain also places the context in the domain that
+          The PRIMARY region of the problem space this bounded context realizes - its home: a
+          domain (`DMN###`) or one of its subdomains (`SDM###`), by id from `blueprint.yaml`'s
+          `domains[]`. ONE reference either way, because this is the field a drawing groups by and
+          a context in three domains has no box.
+
+          It is not the whole answer to "which problem-space areas does this context serve". That
+          question is n-to-n and is answered by coverage, which is derived from the contract
+          surface - context to services to contracts to operations to the domain each operation
+          belongs to - with `covers[]` beside it for what no contract can express. Naming a home
+          here neither states nor limits that coverage. Naming a subdomain also places the context in the domain that
           contains it - that membership is derived from the registry, never declared twice, so a
           context named against a subdomain groups with its domain's other contexts wherever
           domains are drawn or counted. Optional.
@@ -244,6 +251,19 @@ $defs:
           sits in, matched against the domain names. State it when a context belongs to a
           domain other than the one its folder is named after. A slice name is not accepted
           here; the schema-update tool rewrites one to the id of the domain seeded from that slice.
+      covers:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/domain_coverage"
+        description: >
+          Problem-space domains this context serves that its contracts do not reach. THE EXCEPTION
+          CHANNEL. Coverage is normally derived - a context's services expose and call operations,
+          and each operation belongs to a domain - and a derivation costs nothing to author, cannot
+          go stale, and is precise to the operation. An entry here is for the coverage that
+          derivation cannot see: work done outside any declared contract.
+
+          Declaring one does not replace the derived answer; both are sources over the same
+          proposition and each carries where it came from.
       complexity:
         $ref: "../metamodel.schema.yaml#/$defs/complexity_pattern"
         description: "Dominant implementation-complexity / problem-type pattern. Distinct from `model_traits` (behavioural archetype) and `kind` (strategic value)."
@@ -347,7 +367,17 @@ $defs:
           fallback). Use for dependencies on another bounded context in this model.
       type:
         type: string
-        description: "Technical integration type (e.g. api, events, shared-db, file, grpc)."
+        description: >
+          Technical integration type, as free text (e.g. api, events, shared-db, file, grpc). The
+          typed form of the same idea is `coupling`, which takes the three values the contract
+          surface computes; prefer it in a new model.
+      coupling:
+        $ref: "../metamodel.schema.yaml#/$defs/coupling"
+        description: >
+          How this dependency is connected, in the vocabulary the contract surface computes. State
+          it where the contracts do not: where they do, they already carry the direction, the
+          operations and the broker as well, and a second statement of one fact is a disagreement
+          waiting to happen.
       relationship:
         $ref: "../metamodel.schema.yaml#/$defs/context_relationship"
         description: "DDD strategic relationship pattern. Captures architectural intent beyond technical integration."

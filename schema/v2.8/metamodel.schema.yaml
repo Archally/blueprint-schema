@@ -760,6 +760,55 @@ $defs:
       attribute-level output refs; `depends_on` is the ordering-only fallback.
       Exactly these five verbs - no synonyms (no `manages`, `uses`, ...).
 
+  coupling:
+    type: string
+    enum: [http, message, rpc]
+    description: >
+      How two bounded contexts are connected: `http` for request and response over an API,
+      `message` for events across a broker, `rpc` for a procedure call. The same three values the
+      contract surface computes from a model's own contract refs, so a declared coupling and a
+      derived one are comparable rather than two vocabularies for one fact.
+      Where the contracts already say it, they are the better source: they carry the direction, the
+      operations and the broker as well, which a single word cannot.
+
+  domain_coverage:
+    type: object
+    description: >
+      One entry of a bounded context's `covers[]`: a problem-space domain the context serves that
+      its contracts do not reach. The exception channel, not the primary mechanism - coverage is
+      normally derived from the contract surface, and an entry here is for what no contract can
+      express.
+    additionalProperties: false
+    required:
+      - ref
+    properties:
+      ref:
+        $ref: "#/$defs/domain_ref"
+        description: "The domain (`DMN###`) this context serves, by id from `blueprint.yaml`'s `domains[]`."
+      extent:
+        type: string
+        enum: [full, partial]
+        description: >
+          How much of the domain the context serves. `partial` is the marked value and is the reason
+          the field exists; `full` is available for a model that wants to say it. ABSENT MEANS
+          UNSTATED, never `full`: a reader that needs the distinction reports the silence as a gap
+          rather than assuming an answer nobody wrote.
+        examples: [partial]
+      reason:
+        type: string
+        description: >
+          Why the contract surface does not show this coverage. Required wherever `extent` is
+          stated, because a partial claim a reader cannot check is a claim nobody can act on.
+        examples: ["Batch reconciliation runs against the ledger directly, outside any declared contract."]
+      description:
+        type: string
+        description: "Human-readable note."
+    allOf:
+      - if:
+          required: [extent]
+        then:
+          required: [reason]
+
   context_relationship:
     type: string
     enum:

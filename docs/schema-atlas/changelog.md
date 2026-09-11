@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 24 |
-| Additive (minor) | 176 |
+| Additive (minor) | 180 |
 | Clarification (patch) | 0 |
-| **Total changes** | 200 |
+| **Total changes** | 204 |
 
 ## ⚠ Breaking changes
 
@@ -201,7 +201,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (153)
+## Added (157)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -239,6 +239,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/channel_contract/properties/slice` — Property `slice` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract/properties/slice`_
 
+- [additive] `design/arch.schema.yaml#/$defs/context/properties/covers` — Property `covers` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/context/properties/covers`_
+
 - [additive] `design/arch.schema.yaml#/$defs/context/properties/domain_ref` — Property `domain_ref` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/context/properties/domain_ref`_
 
@@ -262,6 +265,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/arch.schema.yaml#/$defs/dependency/properties/bounded_context_ref` — Property `bounded_context_ref` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/dependency/properties/bounded_context_ref`_
+
+- [additive] `design/arch.schema.yaml#/$defs/dependency/properties/coupling` — Property `coupling` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/dependency/properties/coupling`_
 
 - [additive] `design/arch.schema.yaml#/$defs/endpoint_contract/properties/contract_name` — Property `contract_name` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/endpoint_contract/properties/contract_name`_
@@ -545,8 +551,14 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `metamodel.schema.yaml#/$defs/context_kind` — New definition `context_kind` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/context_kind`_
 
+- [additive] `metamodel.schema.yaml#/$defs/coupling` — New definition `coupling` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/coupling`_
+
 - [additive] `metamodel.schema.yaml#/$defs/deployment_scope_ref` — New definition `deployment_scope_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/deployment_scope_ref`_
+
+- [additive] `metamodel.schema.yaml#/$defs/domain_coverage` — New definition `domain_coverage` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/domain_coverage`_
 
 - [additive] `metamodel.schema.yaml#/$defs/domain_ref` — New definition `domain_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/domain_ref`_

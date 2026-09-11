@@ -11,7 +11,7 @@ Version-root schemas that belong to neither plane and apply across every layer: 
 | Schema file | Title | Root props | Object defs | Summary |
 | --- | --- | --- | --- | --- |
 | [`blueprint.schema.yaml`](./entity-catalog.md#blueprint) | Blueprint Meta-Schema | 15 | 6 | Meta-schema composing all blueprint layers into Design + Governance planes with cross-cutting metamodel. Supersedes v1… |
-| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | Blueprint Metamodel | 0 | 9 | Cross-cutting definitions for all blueprint layers. Provides typed ID refs, versioning, SpecPath, and shared vocabulary… |
+| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | Blueprint Metamodel | 0 | 10 | Cross-cutting definitions for all blueprint layers. Provides typed ID refs, versioning, SpecPath, and shared vocabulary… |
 | [`migration.schema.yaml`](./entity-catalog.md#migration) | Blueprint Migration Schema | 4 | 4 | Versioned, ordered changes to a blueprint model instance. Enables AS-IS to TO-BE model transformation with traceability… |
 | [`migrations.schema.yaml`](./entity-catalog.md#migrations) | Blueprint Migration Register | 4 | 2 | An ordered record of the changes a blueprint model has been through and the ones it is planned to go through, written f… |
 | [`profiles/infrastructure/profiles.schema.yaml`](./entity-catalog.md#profiles-infrastructure-profiles) | Blueprint Infrastructure Resource-Type Profile | 6 | 4 | Validates a resource-type catalog profile file (v2.7.7). A profile is DATA, not schema: the resource-type catalog is sh… |
@@ -105,7 +105,7 @@ graph LR
         design_story_schema_yaml["story"]
     end
     metamodel_schema_yaml(["metamodel"])
-    design_arch_schema_yaml -->|43| metamodel_schema_yaml
+    design_arch_schema_yaml -->|45| metamodel_schema_yaml
     design_concepts_schema_yaml -->|40| metamodel_schema_yaml
     design_domain_schema_yaml -->|51| metamodel_schema_yaml
     design_dynamics_schema_yaml -->|23| metamodel_schema_yaml

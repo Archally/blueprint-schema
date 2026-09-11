@@ -32,6 +32,10 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/governance/roadmap.schema.yaml#/$defs/work_item/properties/executor/examples/1`: `["Backend Team"]`
 
+- `schema/v2.8/metamodel.schema.yaml#/$defs/domain_coverage/properties/extent/examples/0`: `"partial"`
+
+- `schema/v2.8/metamodel.schema.yaml#/$defs/domain_coverage/properties/reason/examples/0`: `"Batch reconciliation runs against the ledger directly, outside any declared contract."`
+
 - `schema/v2.8/migrations.schema.yaml#/properties/version/examples/0`: `"1.0.0"`
 
 - `schema/v2.8/migrations.schema.yaml#/$defs/register_entry/properties/name/examples/0`: `"Accounting Domain Bootstrap"`
