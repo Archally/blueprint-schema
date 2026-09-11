@@ -1,6 +1,6 @@
 # PrestaShop-v9
 
-> Generated from blueprint model. 2049 entities, 3164 relations.
+> Generated from blueprint model. 2092 entities, 3794 relations.
 
 ## Context Map
 
@@ -364,6 +364,7 @@ graph LR
     modules_QRY003["modules.QRY003: GetHookStatus"]
     orders_CMD017["orders.CMD017: GenerateInvoice"]
     orders_EVT007["orders.EVT007: InvoiceGenerated"]
+    orders_EVT005["orders.EVT005: OrderStatusChanged"]
     orders_ACT003["orders.ACT003: Store owner and operator."]
     orders_CMD018["orders.CMD018: UpdateInvoiceNote"]
     orders_CMD019["orders.CMD019: AddPayment"]
@@ -384,7 +385,6 @@ graph LR
     orders_CMD001["orders.CMD001: PlaceOrder"]
     orders_EVT001["orders.EVT001: OrderPlaced"]
     orders_CMD004["orders.CMD004: UpdateOrderStatus"]
-    orders_EVT005["orders.EVT005: OrderStatusChanged"]
     orders_CMD002["orders.CMD002: CancelOrder"]
     orders_EVT002["orders.EVT002: OrderCancelled"]
     orders_CMD005["orders.CMD005: BulkChangeOrderStatus"]
@@ -803,6 +803,7 @@ graph LR
     modules_QRY002 -->|"initiated by"| modules_ACT001
     modules_QRY003 -->|"initiated by"| modules_ACT001
     orders_CMD017 -->|"produces"| orders_EVT007
+    orders_CMD017 -->|"reacts to"| orders_EVT005
     orders_CMD017 -->|"initiated by"| orders_ACT003
     orders_CMD018 -->|"initiated by"| orders_ACT003
     orders_CMD019 -->|"produces"| orders_EVT008
@@ -824,6 +825,7 @@ graph LR
     orders_CMD001 -->|"produces"| orders_EVT001
     orders_CMD001 -->|"initiated by"| orders_ACT001
     orders_CMD004 -->|"produces"| orders_EVT005
+    orders_CMD004 -->|"reacts to"| orders_EVT001
     orders_CMD004 -->|"initiated by"| orders_ACT003
     orders_CMD004 -->|"initiated by"| orders_ACT004
     orders_CMD002 -->|"produces"| orders_EVT002
@@ -1652,7 +1654,6 @@ graph TD
         shop_ERR003["shop.ERR003: AliasNotFound"]
     end
     subgraph design_arch["design.arch"]
-        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
         Admin["Admin: Employee accounts, profiles, security, API clients, configuration."]
         AdminService["AdminService: REST API for employee, security, and configuration management."]
         AdminService_openapi["AdminService.openapi"]
@@ -1682,6 +1683,7 @@ graph TD
         OrderService_openapi["OrderService.openapi"]
         OrderService_asyncapi["OrderService.asyncapi"]
         ApiIntegrators["ApiIntegrators: Third-party systems integrating with PrestaShop over the Admin REST API using OAuth2. Not built or operated by PrestaShop; modelled so the dependency on the Admin API surface is visible."]
+        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
         ExternalApiConsumers["ExternalApiConsumers: External systems consuming PrestaShop Admin API via OAuth2."]
         AdminApiClient["AdminApiClient: External API consumer using PrestaShop Admin REST API with OAuth2 authentication."]
         AdminApiClient_httpClient["AdminApiClient.httpClient"]
@@ -2175,10 +2177,10 @@ graph TD
         shop_VR003["shop.VR003: Contact email format"]
         shop_VR004["shop.VR004: Search engine server uniqueness"]
     end
-    subgraph design_story["design.story"]
-        admin_STR001["admin.STR001: Employee Onboarding"]
-        admin_STR002["admin.STR002: API Integration Setup"]
-        admin_STR003["admin.STR003: Security Session Cleanup"]
+    subgraph design_process["design.process"]
+        admin_PRC001["admin.PRC001: Employee Onboarding"]
+        admin_PRC002["admin.PRC002: API Integration Setup"]
+        admin_PRC003["admin.PRC003: Security Session Cleanup"]
         admin_US001["admin.US001: create new employee accounts with appropriate profile and shop access"]
         admin_US002["admin.US002: manage access control profiles and their permission matrices"]
         admin_US003["admin.US003: set up and manage Admin API clients for third-party integrations"]
@@ -2186,9 +2188,9 @@ graph TD
         admin_US005["admin.US005: create and execute saved SQL queries for reporting"]
         admin_UC001["admin.UC001: Onboard Employee"]
         admin_UC002["admin.UC002: Configure API Client"]
-        catalog_STR001["catalog.STR001: Add a product to catalog"]
-        catalog_STR002["catalog.STR002: Manage product variants"]
-        catalog_STR003["catalog.STR003: Organize category hierarchy"]
+        catalog_PRC001["catalog.PRC001: Add a product to catalog"]
+        catalog_PRC002["catalog.PRC002: Manage product variants"]
+        catalog_PRC003["catalog.PRC003: Organize category hierarchy"]
         catalog_US001["catalog.US001: CategoryManager creates a product."]
         catalog_US002["catalog.US002: CategoryManager bulk imports products."]
         catalog_US003["catalog.US003: Shopper searches the catalog."]
@@ -2200,8 +2202,8 @@ graph TD
         catalog_UC001["catalog.UC001: CategoryManager adds a new product to the catalog."]
         catalog_UC002["catalog.UC002: Shopper searches the catalog with keywords and filters."]
         catalog_UC003["catalog.UC003: CategoryManager generates combinations and configures variant details."]
-        checkout_STR001["checkout.STR001: Shopper cart journey"]
-        checkout_STR002["checkout.STR002: Discount campaign setup"]
+        checkout_PRC001["checkout.PRC001: Shopper cart journey"]
+        checkout_PRC002["checkout.PRC002: Discount campaign setup"]
         checkout_US001["checkout.US001: add a product to my cart"]
         checkout_US002["checkout.US002: remove an item from my cart"]
         checkout_US003["checkout.US003: apply a voucher code to my cart"]
@@ -2213,8 +2215,8 @@ graph TD
         checkout_UC002["checkout.UC002: Back-office operator creates and configures a cart for order creation."]
         checkout_UC003["checkout.UC003: Shopper applies a voucher code to receive a discount on their cart."]
         checkout_UC004["checkout.UC004: Marketing manager creates a promotional discount with conditions and limits."]
-        content_STR001["content.STR001: CMS Page Publishing"]
-        content_STR002["content.STR002: Theme Activation"]
+        content_PRC001["content.PRC001: CMS Page Publishing"]
+        content_PRC002["content.PRC002: Theme Activation"]
         content_US001["content.US001: create and publish a CMS page with SEO metadata"]
         content_US002["content.US002: organize CMS pages into a hierarchical category structure"]
         content_US003["content.US003: import and activate a new storefront theme"]
@@ -2223,8 +2225,8 @@ graph TD
         content_US006["content.US006: generate email templates for a theme in a specific language"]
         content_UC001["content.UC001: Publish CMS Page"]
         content_UC002["content.UC002: Switch Store Theme"]
-        customers_STR001["customers.STR001: Customer account lifecycle"]
-        customers_STR002["customers.STR002: Customer service interaction"]
+        customers_PRC001["customers.PRC001: Customer account lifecycle"]
+        customers_PRC002["customers.PRC002: Customer service interaction"]
         customers_US001["customers.US001: register a customer account"]
         customers_US002["customers.US002: add and manage my delivery addresses"]
         customers_US003["customers.US003: convert a guest account to a registered customer"]
@@ -2234,8 +2236,8 @@ graph TD
         customers_UC001["customers.UC001: New customer creates an account with email, password, and basic profile."]
         customers_UC002["customers.UC002: Customer adds, edits, or deletes delivery and invoice addresses."]
         customers_UC003["customers.UC003: Agent views customer thread, replies, and resolves the issue."]
-        international_STR001["international.STR001: Multi-Currency Store Setup"]
-        international_STR002["international.STR002: Tax Rules Configuration"]
+        international_PRC001["international.PRC001: Multi-Currency Store Setup"]
+        international_PRC002["international.PRC002: Tax Rules Configuration"]
         international_US001["international.US001: add and configure currencies for an international store"]
         international_US002["international.US002: refresh exchange rates from an external provider"]
         international_US003["international.US003: configure store languages"]
@@ -2244,19 +2246,19 @@ graph TD
         international_US006["international.US006: set up EU VAT rules across multiple countries"]
         international_UC001["international.UC001: Configure Multi-Currency Store"]
         international_UC002["international.UC002: Set Up EU VAT Tax Rules"]
-        modules_STR001["modules.STR001: Module Installation & Activation"]
-        modules_STR002["modules.STR002: Module Troubleshooting"]
+        modules_PRC001["modules.PRC001: Module Installation & Activation"]
+        modules_PRC002["modules.PRC002: Module Troubleshooting"]
         modules_US001["modules.US001: install a new module to extend store functionality"]
         modules_US002["modules.US002: disable a problematic module quickly without uninstalling"]
         modules_US003["modules.US003: upgrade installed modules to their latest versions"]
         modules_US004["modules.US004: manage hook activation to control extension points"]
         modules_UC001["modules.UC001: Install Module"]
         modules_UC002["modules.UC002: Troubleshoot Module"]
-        orders_STR001["orders.STR001: Place an order"]
-        orders_STR002["orders.STR002: Cancel and refund"]
-        orders_STR003["orders.STR003: Manage order products"]
-        orders_STR004["orders.STR004: Generate invoice and record payment"]
-        orders_STR005["orders.STR005: Process return and credit slip"]
+        orders_PRC001["orders.PRC001: Place an order"]
+        orders_PRC002["orders.PRC002: Cancel and refund"]
+        orders_PRC003["orders.PRC003: Manage order products"]
+        orders_PRC004["orders.PRC004: Generate invoice and record payment"]
+        orders_PRC005["orders.PRC005: Process return and credit slip"]
         orders_US001["orders.US001: Shopper places an order."]
         orders_US002["orders.US002: Merchant cancels an order."]
         orders_US003["orders.US003: Administrator processes refund."]
@@ -2267,8 +2269,8 @@ graph TD
         orders_UC002["orders.UC002: Merchant cancels an unshipped order."]
         orders_UC003["orders.UC003: Merchant reviews filtered order history for business insights."]
         orders_UC004["orders.UC004: Administrator processes a merchandise return and generates a credit slip."]
-        shipping_STR001["shipping.STR001: Carrier Configuration"]
-        shipping_STR002["shipping.STR002: Order Shipment Fulfillment"]
+        shipping_PRC001["shipping.PRC001: Carrier Configuration"]
+        shipping_PRC002["shipping.PRC002: Order Shipment Fulfillment"]
         shipping_US001["shipping.US001: create a new carrier with zone and range configuration"]
         shipping_US002["shipping.US002: enable or disable carriers"]
         shipping_US003["shipping.US003: configure free shipping for a carrier"]
@@ -2277,8 +2279,8 @@ graph TD
         shipping_US006["shipping.US006: merge products from multiple shipments into one"]
         shipping_UC001["shipping.UC001: Configure Carrier"]
         shipping_UC002["shipping.UC002: Manage Order Shipments"]
-        shop_STR001["shop.STR001: Store Branding Setup"]
-        shop_STR002["shop.STR002: Search Alias Configuration"]
+        shop_PRC001["shop.PRC001: Store Branding Setup"]
+        shop_PRC002["shop.PRC002: Search Alias Configuration"]
         shop_US001["shop.US001: upload and manage store branding images (logos and favicon)"]
         shop_US002["shop.US002: manage search term aliases to map customer search variants to canonical terms"]
         shop_US003["shop.US003: configure SEO referrer search engines for analytics tracking"]
@@ -2377,6 +2379,51 @@ graph TD
         shop_EC001["shop.EC001: Search index rebuild should not disrupt active customer searches."]
         shop_ER001["shop.ER001: Uploading a logo with an invalid file extension is rejected."]
         shop_ER002["shop.ER002: Creating an alias with an empty search term is rejected."]
+    end
+    subgraph blueprint["blueprint"]
+        DMN001["DMN001: admin"]
+        SDM001["SDM001: api"]
+        SDM002["SDM002: config"]
+        SDM003["SDM003: identity"]
+        DMN002["DMN002: catalog"]
+        SDM004["SDM004: category"]
+        SDM005["SDM005: characteristics"]
+        SDM006["SDM006: combination"]
+        SDM007["SDM007: image-settings"]
+        SDM008["SDM008: media"]
+        SDM009["SDM009: pricing"]
+        SDM010["SDM010: product"]
+        SDM011["SDM011: supply-chain"]
+        DMN003["DMN003: checkout"]
+        SDM012["SDM012: cart"]
+        SDM013["SDM013: discount"]
+        SDM014["SDM014: pricing"]
+        DMN004["DMN004: content"]
+        SDM015["SDM015: cms"]
+        SDM016["SDM016: seo"]
+        SDM017["SDM017: theme"]
+        DMN005["DMN005: customers"]
+        SDM018["SDM018: address"]
+        SDM019["SDM019: customer"]
+        SDM020["SDM020: customer-service"]
+        SDM021["SDM021: title"]
+        DMN006["DMN006: international"]
+        SDM022["SDM022: currency"]
+        SDM023["SDM023: geography"]
+        SDM024["SDM024: language"]
+        SDM025["SDM025: localization"]
+        SDM026["SDM026: taxation"]
+        DMN007["DMN007: modules"]
+        DMN008["DMN008: orders"]
+        SDM027["SDM027: invoice-payment"]
+        SDM028["SDM028: order"]
+        SDM029["SDM029: order-admin"]
+        SDM030["SDM030: refunds"]
+        SDM031["SDM031: returns"]
+        DMN009["DMN009: shipping"]
+        SDM032["SDM032: carrier"]
+        SDM033["SDM033: shipment"]
+        DMN010["DMN010: shop"]
     end
     subgraph governance_capability["governance.capability"]
         CAP013["CAP013: Content Management"]
@@ -3042,6 +3089,7 @@ graph TD
     checkout_CN001 -.->|"association"| checkout_CN003
     checkout_CN004 -.->|"association"| checkout_CN005
     content_CN001 -.->|"association"| content_CN002
+    content_CN002 -.->|"association"| content_CN002
     customers_CN001 -.->|"association"| customers_CN004
     customers_CN001 -.->|"association"| customers_CN005
     customers_CN001 -.->|"association"| customers_CN002
@@ -3571,6 +3619,7 @@ graph TD
     modules_QRY003 -.->|"initiated_by"| modules_ACT001
     orders_CMD017 -.->|"governed_by"| orders_SR002
     orders_CMD017 -.->|"produces"| orders_EVT007
+    orders_CMD017 -.->|"reacts_to"| orders_EVT005
     orders_CMD017 -.->|"initiated_by"| orders_ACT003
     orders_CMD018 -.->|"initiated_by"| orders_ACT003
     orders_CMD019 -.->|"governed_by"| orders_VR002
@@ -3597,6 +3646,7 @@ graph TD
     orders_CMD004 -.->|"governed_by"| orders_CR001
     orders_CMD004 -.->|"governed_by"| orders_TR001
     orders_CMD004 -.->|"produces"| orders_EVT005
+    orders_CMD004 -.->|"reacts_to"| orders_EVT001
     orders_CMD004 -.->|"initiated_by"| orders_ACT003
     orders_CMD004 -.->|"initiated_by"| orders_ACT004
     orders_CMD002 -.->|"governed_by"| orders_CR001
@@ -4105,70 +4155,92 @@ graph TD
     Orders -.->|"context_depends_on"| International
     Shipping -.->|"context_depends_on"| International
     Shop -.->|"context_depends_on"| International
-    admin_STR001 -.->|"story_orders_operation"| admin_CMD001
-    admin_STR001 -.->|"story_orders_operation"| admin_CMD013
-    admin_STR002 -.->|"story_orders_operation"| admin_CMD021
-    admin_STR002 -.->|"story_orders_operation"| admin_CMD024
-    admin_STR003 -.->|"story_orders_operation"| admin_CMD019
-    catalog_STR001 -.->|"story_orders_operation"| catalog_CMD001
-    catalog_STR001 -.->|"story_orders_operation"| catalog_EVT001
-    catalog_STR002 -.->|"story_orders_operation"| catalog_CMD011
-    catalog_STR002 -.->|"story_orders_operation"| catalog_EVT004
-    catalog_STR003 -.->|"story_orders_operation"| catalog_CMD025
-    catalog_STR003 -.->|"story_orders_operation"| catalog_EVT009
-    checkout_STR001 -.->|"story_orders_operation"| checkout_CMD009
-    checkout_STR001 -.->|"story_orders_operation"| checkout_CMD014
-    checkout_STR001 -.->|"story_orders_operation"| checkout_CMD002
-    checkout_STR002 -.->|"story_orders_operation"| checkout_CMD016
-    checkout_STR002 -.->|"story_orders_operation"| checkout_CMD019
-    content_STR001 -.->|"story_orders_operation"| content_CMD001
-    content_STR001 -.->|"story_orders_operation"| content_CMD019
-    content_STR001 -.->|"story_orders_operation"| content_QRY001
-    content_STR002 -.->|"story_orders_operation"| content_CMD013
-    content_STR002 -.->|"story_orders_operation"| content_CMD014
-    content_STR002 -.->|"story_orders_operation"| content_CMD017
-    customers_STR001 -.->|"story_orders_operation"| customers_CMD001
-    customers_STR001 -.->|"story_orders_operation"| customers_CMD012
-    customers_STR001 -.->|"story_orders_operation"| customers_CMD003
-    customers_STR002 -.->|"story_orders_operation"| customers_CMD016
-    customers_STR002 -.->|"story_orders_operation"| customers_CMD017
-    international_STR001 -.->|"story_orders_operation"| international_CMD001
-    international_STR001 -.->|"story_orders_operation"| international_CMD005
-    international_STR001 -.->|"story_orders_operation"| international_CMD006
-    international_STR002 -.->|"story_orders_operation"| international_CMD023
-    international_STR002 -.->|"story_orders_operation"| international_CMD027
-    international_STR002 -.->|"story_orders_operation"| international_CMD028
-    modules_STR001 -.->|"story_orders_operation"| modules_CMD008
-    modules_STR001 -.->|"story_orders_operation"| modules_CMD001
-    modules_STR001 -.->|"story_orders_operation"| modules_QRY001
-    modules_STR002 -.->|"story_orders_operation"| modules_CMD003
-    modules_STR002 -.->|"story_orders_operation"| modules_CMD006
-    orders_STR001 -.->|"story_orders_operation"| orders_CMD001
-    orders_STR001 -.->|"story_orders_operation"| orders_EVT001
-    orders_STR002 -.->|"story_orders_operation"| orders_CMD002
-    orders_STR002 -.->|"story_orders_operation"| orders_EVT002
-    orders_STR002 -.->|"story_orders_operation"| orders_CMD003
-    orders_STR002 -.->|"story_orders_operation"| orders_EVT003
-    orders_STR002 -.->|"story_orders_operation"| orders_EVT006
-    orders_STR003 -.->|"story_orders_operation"| orders_CMD020
-    orders_STR003 -.->|"story_orders_operation"| orders_EVT009
-    orders_STR004 -.->|"story_orders_operation"| orders_CMD017
-    orders_STR004 -.->|"story_orders_operation"| orders_EVT007
-    orders_STR004 -.->|"story_orders_operation"| orders_CMD019
-    orders_STR004 -.->|"story_orders_operation"| orders_EVT008
-    orders_STR005 -.->|"story_orders_operation"| orders_CMD023
-    orders_STR005 -.->|"story_orders_operation"| orders_EVT010
-    orders_STR005 -.->|"story_orders_operation"| orders_CMD016
-    orders_STR005 -.->|"story_orders_operation"| orders_EVT003
-    orders_STR005 -.->|"story_orders_operation"| orders_EVT006
-    shipping_STR001 -.->|"story_orders_operation"| shipping_CMD001
-    shipping_STR001 -.->|"story_orders_operation"| shipping_CMD008
-    shipping_STR001 -.->|"story_orders_operation"| shipping_CMD010
-    shipping_STR002 -.->|"story_orders_operation"| shipping_CMD011
-    shipping_STR002 -.->|"story_orders_operation"| shipping_CMD013
-    shipping_STR002 -.->|"story_orders_operation"| shipping_CMD015
-    shop_STR001 -.->|"story_orders_operation"| shop_CMD001
-    shop_STR002 -.->|"story_orders_operation"| shop_CMD010
+    AdminService -.->|"system_ref"| PrestaShop
+    CatalogService -.->|"system_ref"| PrestaShop
+    CheckoutService -.->|"system_ref"| PrestaShop
+    ContentService -.->|"system_ref"| PrestaShop
+    CustomerService -.->|"system_ref"| PrestaShop
+    InternationalService -.->|"system_ref"| PrestaShop
+    ModuleManager -.->|"system_ref"| PrestaShop
+    OrderService -.->|"system_ref"| PrestaShop
+    AdminApiClient -.->|"system_ref"| ApiIntegrators
+    ShippingService -.->|"system_ref"| PrestaShop
+    ShopService -.->|"system_ref"| PrestaShop
+    Admin -.->|"spans"| PrestaShop
+    Catalog -.->|"spans"| PrestaShop
+    Checkout -.->|"spans"| PrestaShop
+    Content -.->|"spans"| PrestaShop
+    Customers -.->|"spans"| PrestaShop
+    International -.->|"spans"| PrestaShop
+    Modules -.->|"spans"| PrestaShop
+    Orders -.->|"spans"| PrestaShop
+    ExternalApiConsumers -.->|"spans"| ApiIntegrators
+    Shipping -.->|"spans"| PrestaShop
+    Shop -.->|"spans"| PrestaShop
+    admin_PRC001 -.->|"process_orders_operation"| admin_CMD001
+    admin_PRC001 -.->|"process_orders_operation"| admin_CMD013
+    admin_PRC002 -.->|"process_orders_operation"| admin_CMD021
+    admin_PRC002 -.->|"process_orders_operation"| admin_CMD024
+    admin_PRC003 -.->|"process_orders_operation"| admin_CMD019
+    catalog_PRC001 -.->|"process_orders_operation"| catalog_CMD001
+    catalog_PRC001 -.->|"process_orders_operation"| catalog_EVT001
+    catalog_PRC002 -.->|"process_orders_operation"| catalog_CMD011
+    catalog_PRC002 -.->|"process_orders_operation"| catalog_EVT004
+    catalog_PRC003 -.->|"process_orders_operation"| catalog_CMD025
+    catalog_PRC003 -.->|"process_orders_operation"| catalog_EVT009
+    checkout_PRC001 -.->|"process_orders_operation"| checkout_CMD009
+    checkout_PRC001 -.->|"process_orders_operation"| checkout_CMD014
+    checkout_PRC001 -.->|"process_orders_operation"| checkout_CMD002
+    checkout_PRC002 -.->|"process_orders_operation"| checkout_CMD016
+    checkout_PRC002 -.->|"process_orders_operation"| checkout_CMD019
+    content_PRC001 -.->|"process_orders_operation"| content_CMD001
+    content_PRC001 -.->|"process_orders_operation"| content_CMD019
+    content_PRC001 -.->|"process_orders_operation"| content_QRY001
+    content_PRC002 -.->|"process_orders_operation"| content_CMD013
+    content_PRC002 -.->|"process_orders_operation"| content_CMD014
+    content_PRC002 -.->|"process_orders_operation"| content_CMD017
+    customers_PRC001 -.->|"process_orders_operation"| customers_CMD001
+    customers_PRC001 -.->|"process_orders_operation"| customers_CMD012
+    customers_PRC001 -.->|"process_orders_operation"| customers_CMD003
+    customers_PRC002 -.->|"process_orders_operation"| customers_CMD016
+    customers_PRC002 -.->|"process_orders_operation"| customers_CMD017
+    international_PRC001 -.->|"process_orders_operation"| international_CMD001
+    international_PRC001 -.->|"process_orders_operation"| international_CMD005
+    international_PRC001 -.->|"process_orders_operation"| international_CMD006
+    international_PRC002 -.->|"process_orders_operation"| international_CMD023
+    international_PRC002 -.->|"process_orders_operation"| international_CMD027
+    international_PRC002 -.->|"process_orders_operation"| international_CMD028
+    modules_PRC001 -.->|"process_orders_operation"| modules_CMD008
+    modules_PRC001 -.->|"process_orders_operation"| modules_CMD001
+    modules_PRC001 -.->|"process_orders_operation"| modules_QRY001
+    modules_PRC002 -.->|"process_orders_operation"| modules_CMD003
+    modules_PRC002 -.->|"process_orders_operation"| modules_CMD006
+    orders_PRC001 -.->|"process_orders_operation"| orders_CMD001
+    orders_PRC001 -.->|"process_orders_operation"| orders_EVT001
+    orders_PRC002 -.->|"process_orders_operation"| orders_CMD002
+    orders_PRC002 -.->|"process_orders_operation"| orders_EVT002
+    orders_PRC002 -.->|"process_orders_operation"| orders_CMD003
+    orders_PRC002 -.->|"process_orders_operation"| orders_EVT003
+    orders_PRC002 -.->|"process_orders_operation"| orders_EVT006
+    orders_PRC003 -.->|"process_orders_operation"| orders_CMD020
+    orders_PRC003 -.->|"process_orders_operation"| orders_EVT009
+    orders_PRC004 -.->|"process_orders_operation"| orders_CMD017
+    orders_PRC004 -.->|"process_orders_operation"| orders_EVT007
+    orders_PRC004 -.->|"process_orders_operation"| orders_CMD019
+    orders_PRC004 -.->|"process_orders_operation"| orders_EVT008
+    orders_PRC005 -.->|"process_orders_operation"| orders_CMD023
+    orders_PRC005 -.->|"process_orders_operation"| orders_EVT010
+    orders_PRC005 -.->|"process_orders_operation"| orders_CMD016
+    orders_PRC005 -.->|"process_orders_operation"| orders_EVT003
+    orders_PRC005 -.->|"process_orders_operation"| orders_EVT006
+    shipping_PRC001 -.->|"process_orders_operation"| shipping_CMD001
+    shipping_PRC001 -.->|"process_orders_operation"| shipping_CMD008
+    shipping_PRC001 -.->|"process_orders_operation"| shipping_CMD010
+    shipping_PRC002 -.->|"process_orders_operation"| shipping_CMD011
+    shipping_PRC002 -.->|"process_orders_operation"| shipping_CMD013
+    shipping_PRC002 -.->|"process_orders_operation"| shipping_CMD015
+    shop_PRC001 -.->|"process_orders_operation"| shop_CMD001
+    shop_PRC002 -.->|"process_orders_operation"| shop_CMD010
     PRT001 -.->|"org_contains_dept"| DPT001
     PRT001 -.->|"org_contains_dept"| DPT002
     PRT001 -.->|"org_contains_dept"| DPT003
@@ -4219,7 +4291,6 @@ graph TD
     admin_SCR001 -.->|"screen_uses_model"| EmployeeList
     admin_SCR001 -.->|"screen_motivated_by"| admin_G001
     admin_SCR002 -.->|"screen_uses_model"| EmployeeForm
-    admin_SCR002 -.->|"screen_story"| admin_STR001
     admin_SCR003 -.->|"screen_uses_model"| PermissionMatrix
     admin_SCR003 -.->|"screen_motivated_by"| admin_G001
     admin_SCR004 -.->|"screen_uses_model"| ApiClientList
@@ -4247,11 +4318,9 @@ graph TD
     admin_UNV002 -.->|"nav_to"| admin_SCR003
     checkout_SCR001 -.->|"screen_uses_model"| CartForViewing
     checkout_SCR001 -.->|"screen_motivated_by"| checkout_G001
-    checkout_SCR001 -.->|"screen_story"| checkout_STR001
     checkout_SCR002 -.->|"screen_uses_model"| DiscountList
     checkout_SCR002 -.->|"screen_motivated_by"| checkout_G002
     checkout_SCR003 -.->|"screen_uses_model"| DiscountForEditing
-    checkout_SCR003 -.->|"screen_story"| checkout_STR002
     checkout_SCR004 -.->|"screen_uses_model"| CatalogPriceRuleList
     checkout_UAC001 -.->|"action_on_screen"| checkout_SCR001
     checkout_UAC001 -.->|"action_triggers_operation"| checkout_CMD009
@@ -4271,7 +4340,6 @@ graph TD
     content_SCR001 -.->|"screen_uses_model"| CmsPageList
     content_SCR001 -.->|"screen_motivated_by"| content_G001
     content_SCR002 -.->|"screen_uses_model"| EditableCmsPage
-    content_SCR002 -.->|"screen_story"| content_STR001
     content_SCR003 -.->|"screen_uses_model"| CmsPageCategoryList
     content_SCR003 -.->|"screen_motivated_by"| content_G001
     content_SCR004 -.->|"screen_uses_model"| EditableCmsPageCategory
@@ -4299,9 +4367,7 @@ graph TD
     customers_SCR001 -.->|"screen_uses_model"| CustomerList
     customers_SCR001 -.->|"screen_motivated_by"| customers_G001
     customers_SCR002 -.->|"screen_uses_model"| CustomerForViewing
-    customers_SCR002 -.->|"screen_story"| customers_STR001
     customers_SCR003 -.->|"screen_uses_model"| CustomerThreadForViewing
-    customers_SCR003 -.->|"screen_story"| customers_STR002
     customers_SCR004 -.->|"screen_uses_model"| CustomerAddressForEditing
     customers_SCR004 -.->|"screen_motivated_by"| customers_G002
     customers_UAC001 -.->|"action_on_screen"| customers_SCR001
@@ -4320,13 +4386,11 @@ graph TD
     international_SCR001 -.->|"screen_uses_model"| CurrencyList
     international_SCR001 -.->|"screen_motivated_by"| international_G001
     international_SCR002 -.->|"screen_uses_model"| CurrencyForEditing
-    international_SCR002 -.->|"screen_story"| international_STR001
     international_SCR003 -.->|"screen_uses_model"| LanguageList
     international_SCR003 -.->|"screen_motivated_by"| international_G003
     international_SCR004 -.->|"screen_uses_model"| ZoneList
     international_SCR005 -.->|"screen_uses_model"| CountryList
     international_SCR006 -.->|"screen_uses_model"| TaxRulesGroupForEditing
-    international_SCR006 -.->|"screen_story"| international_STR002
     international_UAC001 -.->|"action_on_screen"| international_SCR001
     international_UAC001 -.->|"action_triggers_operation"| international_CMD001
     international_UAC002 -.->|"action_on_screen"| international_SCR001
@@ -4343,7 +4407,6 @@ graph TD
     modules_SCR001 -.->|"screen_uses_model"| ModuleList
     modules_SCR001 -.->|"screen_motivated_by"| modules_G001
     modules_SCR002 -.->|"screen_uses_model"| ModuleUpload
-    modules_SCR002 -.->|"screen_story"| modules_STR001
     modules_SCR003 -.->|"screen_uses_model"| HookList
     modules_SCR003 -.->|"screen_motivated_by"| modules_G003
     modules_UAC001 -.->|"action_on_screen"| modules_SCR001
@@ -4356,12 +4419,6 @@ graph TD
     modules_UAC004 -.->|"action_triggers_operation"| modules_CMD009
     modules_UNV001 -.->|"nav_from"| modules_SCR001
     modules_UNV001 -.->|"nav_to"| modules_SCR002
-    orders_SCR001 -.->|"screen_story"| orders_STR001
-    orders_SCR001 -.->|"screen_story"| orders_STR002
-    orders_SCR002 -.->|"screen_story"| orders_STR002
-    orders_SCR002 -.->|"screen_story"| orders_STR003
-    orders_SCR002 -.->|"screen_story"| orders_STR004
-    orders_SCR003 -.->|"screen_story"| orders_STR005
     orders_UAC001 -.->|"action_on_screen"| orders_SCR001
     orders_UAC001 -.->|"action_triggers_operation"| orders_QRY001
     orders_UAC002 -.->|"action_on_screen"| orders_SCR002
@@ -4382,11 +4439,9 @@ graph TD
     shipping_SCR001 -.->|"screen_uses_model"| CarrierList
     shipping_SCR001 -.->|"screen_motivated_by"| shipping_G002
     shipping_SCR002 -.->|"screen_uses_model"| CarrierForEditing
-    shipping_SCR002 -.->|"screen_story"| shipping_STR001
     shipping_SCR003 -.->|"screen_uses_model"| OrderShipmentList
     shipping_SCR003 -.->|"screen_motivated_by"| shipping_G003
     shipping_SCR004 -.->|"screen_uses_model"| ShipmentForViewing
-    shipping_SCR004 -.->|"screen_story"| shipping_STR002
     shipping_UAC001 -.->|"action_on_screen"| shipping_SCR001
     shipping_UAC001 -.->|"action_triggers_operation"| shipping_CMD001
     shipping_UAC002 -.->|"action_on_screen"| shipping_SCR001
@@ -4760,7 +4815,7 @@ graph TD
     orders_UC003 -.->|"use_case_operation"| orders_QRY001
     orders_UC004 -.->|"use_case_actor"| orders_ACT004
     orders_UC004 -.->|"use_case_user_story"| orders_US003
-    orders_UC004 -.->|"use_case_story"| orders_STR005
+    orders_UC004 -.->|"use_case_process"| orders_PRC005
     orders_UC004 -.->|"use_case_operation"| orders_CMD023
     orders_UC004 -.->|"use_case_operation"| orders_EVT010
     orders_UC004 -.->|"use_case_operation"| orders_CMD016
@@ -4884,6 +4939,12 @@ graph TD
     orders_INQ003 -.->|"inquiry_owner"| orders_ACT002
     shipping_INQ001 -.->|"inquiry_goal"| shipping_G001
     shop_INQ001 -.->|"inquiry_goal"| shop_G001
+    catalog_R001 -.->|"risk_affects"| catalog_EVT002
+    content_R002 -.->|"risk_affects"| content_CMD016
+    international_R001 -.->|"risk_affects"| international_CMD005
+    modules_R001 -.->|"risk_affects"| modules_CMD003
+    orders_R004 -.->|"risk_affects"| orders_CMD024
+    shipping_R003 -.->|"risk_affects"| shipping_CMD012
     CAP005 -.->|"capability_goal"| catalog_G001
     CAP005 -.->|"capability_goal"| catalog_G002
     CAP011 -.->|"capability_goal"| orders_G002
@@ -4953,6 +5014,10 @@ graph TD
     LP005 -.->|"leverage_fitness_function"| FF005
     LP005 -.->|"leverage_value_stream"| VS001
     LP005 -.->|"leverage_capability"| CAP003
+    AdminService -.->|"deployed_in_environment"| prestashop_ENV001
+    CatalogService -.->|"deployed_in_environment"| prestashop_ENV001
+    CheckoutService -.->|"deployed_in_environment"| prestashop_ENV001
+    OrderService -.->|"deployed_in_environment"| prestashop_ENV001
     prestashop_IR001 -.->|"hosted_on"| prestashop_IR005
     prestashop_IR001 -.->|"grouped_in"| prestashop_DSC003
     prestashop_IR002 -.->|"hosted_on"| prestashop_IR005
@@ -5504,6 +5569,618 @@ graph TD
     shipping_ORD001 -.->|"ordering_operation"| shipping_CMD013
     shipping_ORD001 -.->|"ordering_requires"| shipping_CMD011
     shipping_RC001 -.->|"race_condition_affects"| shipping_CMD013
+    admin_KPI001 -.->|"kpi_goal"| admin_G001
+    admin_KPI002 -.->|"kpi_goal"| admin_G002
+    admin_SLO001 -.->|"slo_operation"| admin_CMD021
+    admin_SLO001 -.->|"slo_operation"| admin_CMD024
+    catalog_KPI001 -.->|"kpi_goal"| catalog_G001
+    catalog_KPI002 -.->|"kpi_goal"| catalog_G003
+    catalog_KPI003 -.->|"kpi_goal"| catalog_G004
+    catalog_SLO001 -.->|"slo_operation"| catalog_QRY001
+    catalog_SLO002 -.->|"slo_operation"| catalog_CMD001
+    catalog_SLO002 -.->|"slo_operation"| catalog_CMD002
+    checkout_KPI001 -.->|"kpi_goal"| checkout_G001
+    checkout_KPI002 -.->|"kpi_goal"| checkout_G002
+    checkout_KPI003 -.->|"kpi_goal"| checkout_G003
+    checkout_SLO001 -.->|"slo_operation"| checkout_CMD009
+    checkout_SLO002 -.->|"slo_operation"| checkout_CMD014
+    checkout_SLO003 -.->|"slo_operation"| checkout_CMD016
+    checkout_SLO003 -.->|"slo_operation"| checkout_CMD017
+    checkout_SEC001 -.->|"security_operation"| checkout_CMD014
+    content_KPI001 -.->|"kpi_goal"| content_G002
+    content_KPI002 -.->|"kpi_goal"| content_G001
+    content_KPI003 -.->|"kpi_goal"| content_G003
+    content_SLO001 -.->|"slo_operation"| content_QRY001
+    content_SLO002 -.->|"slo_operation"| content_CMD014
+    customers_KPI001 -.->|"kpi_goal"| customers_G001
+    customers_KPI002 -.->|"kpi_goal"| customers_G002
+    customers_KPI003 -.->|"kpi_goal"| customers_G001
+    customers_SLO001 -.->|"slo_operation"| customers_CMD016
+    customers_SLO002 -.->|"slo_operation"| customers_CMD001
+    customers_SEC001 -.->|"security_operation"| customers_CMD001
+    customers_SEC001 -.->|"security_operation"| customers_CMD002
+    customers_SEC001 -.->|"security_operation"| customers_CMD012
+    international_KPI001 -.->|"kpi_goal"| international_G001
+    international_KPI002 -.->|"kpi_goal"| international_G002
+    international_KPI003 -.->|"kpi_goal"| international_G003
+    international_SLO001 -.->|"slo_operation"| international_QRY010
+    international_SLO002 -.->|"slo_operation"| international_CMD005
+    modules_KPI001 -.->|"kpi_goal"| modules_G001
+    modules_KPI002 -.->|"kpi_goal"| modules_G002
+    modules_SLO001 -.->|"slo_operation"| modules_CMD001
+    modules_SLO001 -.->|"slo_operation"| modules_CMD002
+    modules_SLO001 -.->|"slo_operation"| modules_CMD007
+    orders_MT001 -.->|"metric_measures"| orders_CMD001
+    orders_MT002 -.->|"metric_measures"| orders_CMD003
+    orders_MT002 -.->|"metric_measures"| orders_CMD015
+    orders_MT002 -.->|"metric_measures"| orders_CMD016
+    KPI001 -.->|"kpi_metric"| orders_MT001
+    KPI001 -.->|"kpi_goal"| orders_G003
+    KPI002 -.->|"kpi_goal"| orders_G001
+    KPI003 -.->|"kpi_goal"| orders_G004
+    SLO001 -.->|"slo_operation"| orders_CMD001
+    SLO001 -.->|"slo_operation"| orders_QRY001
+    SLO002 -.->|"slo_operation"| orders_QRY001
+    SLO003 -.->|"slo_operation"| orders_CMD003
+    SLO003 -.->|"slo_operation"| orders_CMD015
+    orders_SEC001 -.->|"security_operation"| orders_QRY001
+    orders_SEC001 -.->|"security_operation"| orders_QRY002
+    orders_SEC001 -.->|"security_operation"| orders_QRY003
+    orders_SEC002 -.->|"security_operation"| orders_CMD003
+    orders_SEC002 -.->|"security_operation"| orders_CMD015
+    orders_SEC002 -.->|"security_operation"| orders_CMD016
+    orders_CMP001 -.->|"compliance_concept"| orders_CN002
+    orders_CMP001 -.->|"compliance_concept"| orders_CN004
+    orders_CMP002 -.->|"compliance_concept"| orders_CN002
+    orders_CMP002 -.->|"compliance_concept"| orders_CN007
+    shipping_KPI001 -.->|"kpi_goal"| shipping_G001
+    shipping_KPI002 -.->|"kpi_goal"| shipping_G002
+    shipping_KPI003 -.->|"kpi_goal"| shipping_G003
+    shipping_SLO001 -.->|"slo_operation"| shipping_CMD001
+    shipping_SLO001 -.->|"slo_operation"| shipping_CMD002
+    shipping_SLO001 -.->|"slo_operation"| shipping_CMD008
+    shipping_SLO002 -.->|"slo_operation"| shipping_CMD011
+    shipping_SLO002 -.->|"slo_operation"| shipping_CMD013
+    shop_KPI001 -.->|"kpi_goal"| shop_G002
+    shop_KPI002 -.->|"kpi_goal"| shop_G002
+    shop_SLO001 -.->|"slo_operation"| shop_CMD014
+    SDM001 -.->|"subdomain_of_domain"| DMN001
+    SDM002 -.->|"subdomain_of_domain"| DMN001
+    SDM003 -.->|"subdomain_of_domain"| DMN001
+    SDM004 -.->|"subdomain_of_domain"| DMN002
+    SDM005 -.->|"subdomain_of_domain"| DMN002
+    SDM006 -.->|"subdomain_of_domain"| DMN002
+    SDM007 -.->|"subdomain_of_domain"| DMN002
+    SDM008 -.->|"subdomain_of_domain"| DMN002
+    SDM009 -.->|"subdomain_of_domain"| DMN002
+    SDM010 -.->|"subdomain_of_domain"| DMN002
+    SDM011 -.->|"subdomain_of_domain"| DMN002
+    SDM012 -.->|"subdomain_of_domain"| DMN003
+    SDM013 -.->|"subdomain_of_domain"| DMN003
+    SDM014 -.->|"subdomain_of_domain"| DMN003
+    SDM015 -.->|"subdomain_of_domain"| DMN004
+    SDM016 -.->|"subdomain_of_domain"| DMN004
+    SDM017 -.->|"subdomain_of_domain"| DMN004
+    SDM018 -.->|"subdomain_of_domain"| DMN005
+    SDM019 -.->|"subdomain_of_domain"| DMN005
+    SDM020 -.->|"subdomain_of_domain"| DMN005
+    SDM021 -.->|"subdomain_of_domain"| DMN005
+    SDM022 -.->|"subdomain_of_domain"| DMN006
+    SDM023 -.->|"subdomain_of_domain"| DMN006
+    SDM024 -.->|"subdomain_of_domain"| DMN006
+    SDM025 -.->|"subdomain_of_domain"| DMN006
+    SDM026 -.->|"subdomain_of_domain"| DMN006
+    SDM027 -.->|"subdomain_of_domain"| DMN008
+    SDM028 -.->|"subdomain_of_domain"| DMN008
+    SDM029 -.->|"subdomain_of_domain"| DMN008
+    SDM030 -.->|"subdomain_of_domain"| DMN008
+    SDM031 -.->|"subdomain_of_domain"| DMN008
+    SDM032 -.->|"subdomain_of_domain"| DMN009
+    SDM033 -.->|"subdomain_of_domain"| DMN009
+    Admin -.->|"context_realizes_domain"| DMN001
+    Catalog -.->|"context_realizes_domain"| DMN002
+    Checkout -.->|"context_realizes_domain"| DMN003
+    Content -.->|"context_realizes_domain"| DMN004
+    Customers -.->|"context_realizes_domain"| DMN005
+    International -.->|"context_realizes_domain"| DMN006
+    Modules -.->|"context_realizes_domain"| DMN007
+    Orders -.->|"context_realizes_domain"| DMN008
+    Shipping -.->|"context_realizes_domain"| DMN009
+    Shop -.->|"context_realizes_domain"| DMN010
+    admin_CMD021 -.->|"operation_in_domain"| DMN001
+    admin_EVT014 -.->|"operation_in_domain"| DMN001
+    admin_CMD022 -.->|"operation_in_domain"| DMN001
+    admin_EVT015 -.->|"operation_in_domain"| DMN001
+    admin_CMD023 -.->|"operation_in_domain"| DMN001
+    admin_EVT016 -.->|"operation_in_domain"| DMN001
+    admin_CMD024 -.->|"operation_in_domain"| DMN001
+    admin_EVT017 -.->|"operation_in_domain"| DMN001
+    admin_QRY005 -.->|"operation_in_domain"| DMN001
+    admin_CMD025 -.->|"operation_in_domain"| DMN001
+    admin_EVT018 -.->|"operation_in_domain"| DMN001
+    admin_CMD026 -.->|"operation_in_domain"| DMN001
+    admin_EVT019 -.->|"operation_in_domain"| DMN001
+    admin_CMD027 -.->|"operation_in_domain"| DMN001
+    admin_EVT020 -.->|"operation_in_domain"| DMN001
+    admin_CMD028 -.->|"operation_in_domain"| DMN001
+    admin_QRY006 -.->|"operation_in_domain"| DMN001
+    admin_CMD029 -.->|"operation_in_domain"| DMN001
+    admin_EVT021 -.->|"operation_in_domain"| DMN001
+    admin_CMD030 -.->|"operation_in_domain"| DMN001
+    admin_EVT022 -.->|"operation_in_domain"| DMN001
+    admin_CMD031 -.->|"operation_in_domain"| DMN001
+    admin_EVT023 -.->|"operation_in_domain"| DMN001
+    admin_CMD032 -.->|"operation_in_domain"| DMN001
+    admin_CMD033 -.->|"operation_in_domain"| DMN001
+    admin_EVT024 -.->|"operation_in_domain"| DMN001
+    admin_QRY007 -.->|"operation_in_domain"| DMN001
+    admin_QRY008 -.->|"operation_in_domain"| DMN001
+    admin_QRY009 -.->|"operation_in_domain"| DMN001
+    admin_CMD034 -.->|"operation_in_domain"| DMN001
+    admin_EVT025 -.->|"operation_in_domain"| DMN001
+    admin_CMD035 -.->|"operation_in_domain"| DMN001
+    admin_EVT026 -.->|"operation_in_domain"| DMN001
+    admin_CMD001 -.->|"operation_in_domain"| DMN001
+    admin_EVT001 -.->|"operation_in_domain"| DMN001
+    admin_CMD002 -.->|"operation_in_domain"| DMN001
+    admin_EVT002 -.->|"operation_in_domain"| DMN001
+    admin_CMD003 -.->|"operation_in_domain"| DMN001
+    admin_EVT003 -.->|"operation_in_domain"| DMN001
+    admin_CMD004 -.->|"operation_in_domain"| DMN001
+    admin_EVT004 -.->|"operation_in_domain"| DMN001
+    admin_CMD005 -.->|"operation_in_domain"| DMN001
+    admin_CMD006 -.->|"operation_in_domain"| DMN001
+    admin_CMD007 -.->|"operation_in_domain"| DMN001
+    admin_EVT005 -.->|"operation_in_domain"| DMN001
+    admin_CMD008 -.->|"operation_in_domain"| DMN001
+    admin_EVT006 -.->|"operation_in_domain"| DMN001
+    admin_QRY001 -.->|"operation_in_domain"| DMN001
+    admin_QRY002 -.->|"operation_in_domain"| DMN001
+    admin_CMD009 -.->|"operation_in_domain"| DMN001
+    admin_EVT007 -.->|"operation_in_domain"| DMN001
+    admin_CMD010 -.->|"operation_in_domain"| DMN001
+    admin_EVT008 -.->|"operation_in_domain"| DMN001
+    admin_CMD011 -.->|"operation_in_domain"| DMN001
+    admin_EVT009 -.->|"operation_in_domain"| DMN001
+    admin_CMD012 -.->|"operation_in_domain"| DMN001
+    admin_QRY003 -.->|"operation_in_domain"| DMN001
+    admin_CMD013 -.->|"operation_in_domain"| DMN001
+    admin_EVT010 -.->|"operation_in_domain"| DMN001
+    admin_CMD014 -.->|"operation_in_domain"| DMN001
+    admin_EVT011 -.->|"operation_in_domain"| DMN001
+    admin_QRY004 -.->|"operation_in_domain"| DMN001
+    admin_CMD015 -.->|"operation_in_domain"| DMN001
+    admin_EVT012 -.->|"operation_in_domain"| DMN001
+    admin_CMD016 -.->|"operation_in_domain"| DMN001
+    admin_EVT013 -.->|"operation_in_domain"| DMN001
+    admin_CMD017 -.->|"operation_in_domain"| DMN001
+    admin_CMD018 -.->|"operation_in_domain"| DMN001
+    admin_CMD019 -.->|"operation_in_domain"| DMN001
+    admin_CMD020 -.->|"operation_in_domain"| DMN001
+    catalog_CMD025 -.->|"operation_in_domain"| DMN002
+    catalog_CMD026 -.->|"operation_in_domain"| DMN002
+    catalog_CMD027 -.->|"operation_in_domain"| DMN002
+    catalog_CMD028 -.->|"operation_in_domain"| DMN002
+    catalog_CMD029 -.->|"operation_in_domain"| DMN002
+    catalog_QRY005 -.->|"operation_in_domain"| DMN002
+    catalog_QRY006 -.->|"operation_in_domain"| DMN002
+    catalog_EVT009 -.->|"operation_in_domain"| DMN002
+    catalog_EVT010 -.->|"operation_in_domain"| DMN002
+    catalog_CMD030 -.->|"operation_in_domain"| DMN002
+    catalog_CMD031 -.->|"operation_in_domain"| DMN002
+    catalog_CMD032 -.->|"operation_in_domain"| DMN002
+    catalog_CMD033 -.->|"operation_in_domain"| DMN002
+    catalog_QRY007 -.->|"operation_in_domain"| DMN002
+    catalog_QRY008 -.->|"operation_in_domain"| DMN002
+    catalog_CMD011 -.->|"operation_in_domain"| DMN002
+    catalog_CMD012 -.->|"operation_in_domain"| DMN002
+    catalog_CMD013 -.->|"operation_in_domain"| DMN002
+    catalog_CMD014 -.->|"operation_in_domain"| DMN002
+    catalog_CMD015 -.->|"operation_in_domain"| DMN002
+    catalog_QRY003 -.->|"operation_in_domain"| DMN002
+    catalog_QRY004 -.->|"operation_in_domain"| DMN002
+    catalog_EVT004 -.->|"operation_in_domain"| DMN002
+    catalog_EVT005 -.->|"operation_in_domain"| DMN002
+    catalog_CMD040 -.->|"operation_in_domain"| DMN002
+    catalog_CMD041 -.->|"operation_in_domain"| DMN002
+    catalog_CMD016 -.->|"operation_in_domain"| DMN002
+    catalog_CMD017 -.->|"operation_in_domain"| DMN002
+    catalog_CMD018 -.->|"operation_in_domain"| DMN002
+    catalog_CMD019 -.->|"operation_in_domain"| DMN002
+    catalog_CMD020 -.->|"operation_in_domain"| DMN002
+    catalog_EVT006 -.->|"operation_in_domain"| DMN002
+    catalog_CMD021 -.->|"operation_in_domain"| DMN002
+    catalog_CMD022 -.->|"operation_in_domain"| DMN002
+    catalog_CMD023 -.->|"operation_in_domain"| DMN002
+    catalog_CMD024 -.->|"operation_in_domain"| DMN002
+    catalog_EVT007 -.->|"operation_in_domain"| DMN002
+    catalog_CMD001 -.->|"operation_in_domain"| DMN002
+    catalog_CMD002 -.->|"operation_in_domain"| DMN002
+    catalog_CMD003 -.->|"operation_in_domain"| DMN002
+    catalog_CMD004 -.->|"operation_in_domain"| DMN002
+    catalog_CMD005 -.->|"operation_in_domain"| DMN002
+    catalog_CMD006 -.->|"operation_in_domain"| DMN002
+    catalog_CMD007 -.->|"operation_in_domain"| DMN002
+    catalog_CMD008 -.->|"operation_in_domain"| DMN002
+    catalog_CMD009 -.->|"operation_in_domain"| DMN002
+    catalog_CMD010 -.->|"operation_in_domain"| DMN002
+    catalog_QRY001 -.->|"operation_in_domain"| DMN002
+    catalog_QRY002 -.->|"operation_in_domain"| DMN002
+    catalog_QRY009 -.->|"operation_in_domain"| DMN002
+    catalog_EVT001 -.->|"operation_in_domain"| DMN002
+    catalog_EVT002 -.->|"operation_in_domain"| DMN002
+    catalog_EVT003 -.->|"operation_in_domain"| DMN002
+    catalog_EVT008 -.->|"operation_in_domain"| DMN002
+    catalog_CMD034 -.->|"operation_in_domain"| DMN002
+    catalog_CMD035 -.->|"operation_in_domain"| DMN002
+    catalog_CMD036 -.->|"operation_in_domain"| DMN002
+    catalog_CMD037 -.->|"operation_in_domain"| DMN002
+    catalog_CMD038 -.->|"operation_in_domain"| DMN002
+    catalog_CMD039 -.->|"operation_in_domain"| DMN002
+    catalog_QRY010 -.->|"operation_in_domain"| DMN002
+    catalog_QRY011 -.->|"operation_in_domain"| DMN002
+    checkout_CMD001 -.->|"operation_in_domain"| DMN003
+    checkout_CMD002 -.->|"operation_in_domain"| DMN003
+    checkout_CMD003 -.->|"operation_in_domain"| DMN003
+    checkout_CMD004 -.->|"operation_in_domain"| DMN003
+    checkout_CMD005 -.->|"operation_in_domain"| DMN003
+    checkout_CMD006 -.->|"operation_in_domain"| DMN003
+    checkout_CMD007 -.->|"operation_in_domain"| DMN003
+    checkout_CMD008 -.->|"operation_in_domain"| DMN003
+    checkout_EVT001 -.->|"operation_in_domain"| DMN003
+    checkout_EVT002 -.->|"operation_in_domain"| DMN003
+    checkout_EVT003 -.->|"operation_in_domain"| DMN003
+    checkout_QRY001 -.->|"operation_in_domain"| DMN003
+    checkout_QRY002 -.->|"operation_in_domain"| DMN003
+    checkout_QRY003 -.->|"operation_in_domain"| DMN003
+    checkout_CMD009 -.->|"operation_in_domain"| DMN003
+    checkout_CMD010 -.->|"operation_in_domain"| DMN003
+    checkout_CMD011 -.->|"operation_in_domain"| DMN003
+    checkout_CMD012 -.->|"operation_in_domain"| DMN003
+    checkout_CMD013 -.->|"operation_in_domain"| DMN003
+    checkout_EVT004 -.->|"operation_in_domain"| DMN003
+    checkout_CMD014 -.->|"operation_in_domain"| DMN003
+    checkout_CMD015 -.->|"operation_in_domain"| DMN003
+    checkout_QRY004 -.->|"operation_in_domain"| DMN003
+    checkout_EVT005 -.->|"operation_in_domain"| DMN003
+    checkout_EVT006 -.->|"operation_in_domain"| DMN003
+    checkout_CMD016 -.->|"operation_in_domain"| DMN003
+    checkout_CMD017 -.->|"operation_in_domain"| DMN003
+    checkout_CMD018 -.->|"operation_in_domain"| DMN003
+    checkout_CMD019 -.->|"operation_in_domain"| DMN003
+    checkout_CMD020 -.->|"operation_in_domain"| DMN003
+    checkout_QRY005 -.->|"operation_in_domain"| DMN003
+    checkout_QRY006 -.->|"operation_in_domain"| DMN003
+    checkout_EVT007 -.->|"operation_in_domain"| DMN003
+    checkout_EVT008 -.->|"operation_in_domain"| DMN003
+    checkout_EVT009 -.->|"operation_in_domain"| DMN003
+    checkout_CMD021 -.->|"operation_in_domain"| DMN003
+    checkout_CMD022 -.->|"operation_in_domain"| DMN003
+    checkout_CMD023 -.->|"operation_in_domain"| DMN003
+    checkout_QRY007 -.->|"operation_in_domain"| DMN003
+    checkout_QRY008 -.->|"operation_in_domain"| DMN003
+    checkout_EVT010 -.->|"operation_in_domain"| DMN003
+    checkout_EVT011 -.->|"operation_in_domain"| DMN003
+    checkout_EVT012 -.->|"operation_in_domain"| DMN003
+    content_CMD001 -.->|"operation_in_domain"| DMN004
+    content_CMD002 -.->|"operation_in_domain"| DMN004
+    content_CMD003 -.->|"operation_in_domain"| DMN004
+    content_CMD004 -.->|"operation_in_domain"| DMN004
+    content_CMD005 -.->|"operation_in_domain"| DMN004
+    content_CMD006 -.->|"operation_in_domain"| DMN004
+    content_EVT001 -.->|"operation_in_domain"| DMN004
+    content_EVT002 -.->|"operation_in_domain"| DMN004
+    content_EVT003 -.->|"operation_in_domain"| DMN004
+    content_EVT004 -.->|"operation_in_domain"| DMN004
+    content_QRY001 -.->|"operation_in_domain"| DMN004
+    content_QRY002 -.->|"operation_in_domain"| DMN004
+    content_CMD007 -.->|"operation_in_domain"| DMN004
+    content_CMD008 -.->|"operation_in_domain"| DMN004
+    content_CMD009 -.->|"operation_in_domain"| DMN004
+    content_CMD010 -.->|"operation_in_domain"| DMN004
+    content_CMD011 -.->|"operation_in_domain"| DMN004
+    content_CMD012 -.->|"operation_in_domain"| DMN004
+    content_EVT005 -.->|"operation_in_domain"| DMN004
+    content_EVT006 -.->|"operation_in_domain"| DMN004
+    content_EVT007 -.->|"operation_in_domain"| DMN004
+    content_EVT008 -.->|"operation_in_domain"| DMN004
+    content_QRY003 -.->|"operation_in_domain"| DMN004
+    content_QRY004 -.->|"operation_in_domain"| DMN004
+    content_QRY005 -.->|"operation_in_domain"| DMN004
+    content_QRY006 -.->|"operation_in_domain"| DMN004
+    content_CMD019 -.->|"operation_in_domain"| DMN004
+    content_CMD020 -.->|"operation_in_domain"| DMN004
+    content_EVT015 -.->|"operation_in_domain"| DMN004
+    content_EVT016 -.->|"operation_in_domain"| DMN004
+    content_QRY007 -.->|"operation_in_domain"| DMN004
+    content_QRY008 -.->|"operation_in_domain"| DMN004
+    content_CMD013 -.->|"operation_in_domain"| DMN004
+    content_CMD014 -.->|"operation_in_domain"| DMN004
+    content_CMD015 -.->|"operation_in_domain"| DMN004
+    content_CMD016 -.->|"operation_in_domain"| DMN004
+    content_CMD017 -.->|"operation_in_domain"| DMN004
+    content_CMD018 -.->|"operation_in_domain"| DMN004
+    content_EVT009 -.->|"operation_in_domain"| DMN004
+    content_EVT010 -.->|"operation_in_domain"| DMN004
+    content_EVT011 -.->|"operation_in_domain"| DMN004
+    content_EVT012 -.->|"operation_in_domain"| DMN004
+    content_EVT013 -.->|"operation_in_domain"| DMN004
+    content_EVT014 -.->|"operation_in_domain"| DMN004
+    customers_CMD012 -.->|"operation_in_domain"| DMN005
+    customers_CMD013 -.->|"operation_in_domain"| DMN005
+    customers_CMD014 -.->|"operation_in_domain"| DMN005
+    customers_CMD015 -.->|"operation_in_domain"| DMN005
+    customers_QRY009 -.->|"operation_in_domain"| DMN005
+    customers_QRY010 -.->|"operation_in_domain"| DMN005
+    customers_EVT007 -.->|"operation_in_domain"| DMN005
+    customers_EVT008 -.->|"operation_in_domain"| DMN005
+    customers_EVT009 -.->|"operation_in_domain"| DMN005
+    customers_CMD001 -.->|"operation_in_domain"| DMN005
+    customers_CMD002 -.->|"operation_in_domain"| DMN005
+    customers_CMD003 -.->|"operation_in_domain"| DMN005
+    customers_CMD004 -.->|"operation_in_domain"| DMN005
+    customers_CMD005 -.->|"operation_in_domain"| DMN005
+    customers_CMD006 -.->|"operation_in_domain"| DMN005
+    customers_CMD007 -.->|"operation_in_domain"| DMN005
+    customers_CMD008 -.->|"operation_in_domain"| DMN005
+    customers_EVT001 -.->|"operation_in_domain"| DMN005
+    customers_EVT002 -.->|"operation_in_domain"| DMN005
+    customers_EVT003 -.->|"operation_in_domain"| DMN005
+    customers_EVT004 -.->|"operation_in_domain"| DMN005
+    customers_QRY001 -.->|"operation_in_domain"| DMN005
+    customers_QRY002 -.->|"operation_in_domain"| DMN005
+    customers_QRY003 -.->|"operation_in_domain"| DMN005
+    customers_QRY004 -.->|"operation_in_domain"| DMN005
+    customers_QRY005 -.->|"operation_in_domain"| DMN005
+    customers_QRY006 -.->|"operation_in_domain"| DMN005
+    customers_QRY007 -.->|"operation_in_domain"| DMN005
+    customers_CMD009 -.->|"operation_in_domain"| DMN005
+    customers_CMD010 -.->|"operation_in_domain"| DMN005
+    customers_CMD011 -.->|"operation_in_domain"| DMN005
+    customers_QRY008 -.->|"operation_in_domain"| DMN005
+    customers_EVT005 -.->|"operation_in_domain"| DMN005
+    customers_EVT006 -.->|"operation_in_domain"| DMN005
+    customers_CMD016 -.->|"operation_in_domain"| DMN005
+    customers_CMD017 -.->|"operation_in_domain"| DMN005
+    customers_CMD018 -.->|"operation_in_domain"| DMN005
+    customers_CMD019 -.->|"operation_in_domain"| DMN005
+    customers_QRY011 -.->|"operation_in_domain"| DMN005
+    customers_QRY012 -.->|"operation_in_domain"| DMN005
+    customers_EVT010 -.->|"operation_in_domain"| DMN005
+    customers_EVT011 -.->|"operation_in_domain"| DMN005
+    customers_EVT012 -.->|"operation_in_domain"| DMN005
+    customers_CMD020 -.->|"operation_in_domain"| DMN005
+    customers_CMD021 -.->|"operation_in_domain"| DMN005
+    customers_CMD022 -.->|"operation_in_domain"| DMN005
+    customers_QRY013 -.->|"operation_in_domain"| DMN005
+    customers_EVT013 -.->|"operation_in_domain"| DMN005
+    customers_EVT014 -.->|"operation_in_domain"| DMN005
+    international_CMD001 -.->|"operation_in_domain"| DMN006
+    international_CMD002 -.->|"operation_in_domain"| DMN006
+    international_CMD003 -.->|"operation_in_domain"| DMN006
+    international_CMD004 -.->|"operation_in_domain"| DMN006
+    international_CMD005 -.->|"operation_in_domain"| DMN006
+    international_CMD006 -.->|"operation_in_domain"| DMN006
+    international_EVT001 -.->|"operation_in_domain"| DMN006
+    international_EVT002 -.->|"operation_in_domain"| DMN006
+    international_EVT003 -.->|"operation_in_domain"| DMN006
+    international_EVT004 -.->|"operation_in_domain"| DMN006
+    international_EVT005 -.->|"operation_in_domain"| DMN006
+    international_EVT006 -.->|"operation_in_domain"| DMN006
+    international_QRY001 -.->|"operation_in_domain"| DMN006
+    international_QRY002 -.->|"operation_in_domain"| DMN006
+    international_QRY003 -.->|"operation_in_domain"| DMN006
+    international_CMD011 -.->|"operation_in_domain"| DMN006
+    international_CMD012 -.->|"operation_in_domain"| DMN006
+    international_CMD013 -.->|"operation_in_domain"| DMN006
+    international_CMD014 -.->|"operation_in_domain"| DMN006
+    international_CMD015 -.->|"operation_in_domain"| DMN006
+    international_CMD016 -.->|"operation_in_domain"| DMN006
+    international_CMD017 -.->|"operation_in_domain"| DMN006
+    international_CMD018 -.->|"operation_in_domain"| DMN006
+    international_CMD019 -.->|"operation_in_domain"| DMN006
+    international_CMD020 -.->|"operation_in_domain"| DMN006
+    international_CMD021 -.->|"operation_in_domain"| DMN006
+    international_CMD022 -.->|"operation_in_domain"| DMN006
+    international_EVT011 -.->|"operation_in_domain"| DMN006
+    international_EVT012 -.->|"operation_in_domain"| DMN006
+    international_EVT013 -.->|"operation_in_domain"| DMN006
+    international_EVT014 -.->|"operation_in_domain"| DMN006
+    international_EVT015 -.->|"operation_in_domain"| DMN006
+    international_EVT016 -.->|"operation_in_domain"| DMN006
+    international_EVT017 -.->|"operation_in_domain"| DMN006
+    international_EVT018 -.->|"operation_in_domain"| DMN006
+    international_EVT019 -.->|"operation_in_domain"| DMN006
+    international_EVT020 -.->|"operation_in_domain"| DMN006
+    international_EVT021 -.->|"operation_in_domain"| DMN006
+    international_EVT022 -.->|"operation_in_domain"| DMN006
+    international_QRY005 -.->|"operation_in_domain"| DMN006
+    international_QRY006 -.->|"operation_in_domain"| DMN006
+    international_QRY007 -.->|"operation_in_domain"| DMN006
+    international_QRY008 -.->|"operation_in_domain"| DMN006
+    international_CMD007 -.->|"operation_in_domain"| DMN006
+    international_CMD008 -.->|"operation_in_domain"| DMN006
+    international_CMD009 -.->|"operation_in_domain"| DMN006
+    international_CMD010 -.->|"operation_in_domain"| DMN006
+    international_EVT007 -.->|"operation_in_domain"| DMN006
+    international_EVT008 -.->|"operation_in_domain"| DMN006
+    international_EVT009 -.->|"operation_in_domain"| DMN006
+    international_EVT010 -.->|"operation_in_domain"| DMN006
+    international_QRY004 -.->|"operation_in_domain"| DMN006
+    international_CMD023 -.->|"operation_in_domain"| DMN006
+    international_CMD024 -.->|"operation_in_domain"| DMN006
+    international_CMD025 -.->|"operation_in_domain"| DMN006
+    international_CMD026 -.->|"operation_in_domain"| DMN006
+    international_CMD027 -.->|"operation_in_domain"| DMN006
+    international_CMD028 -.->|"operation_in_domain"| DMN006
+    international_CMD029 -.->|"operation_in_domain"| DMN006
+    international_CMD030 -.->|"operation_in_domain"| DMN006
+    international_EVT023 -.->|"operation_in_domain"| DMN006
+    international_EVT024 -.->|"operation_in_domain"| DMN006
+    international_EVT025 -.->|"operation_in_domain"| DMN006
+    international_EVT026 -.->|"operation_in_domain"| DMN006
+    international_EVT027 -.->|"operation_in_domain"| DMN006
+    international_EVT028 -.->|"operation_in_domain"| DMN006
+    international_EVT029 -.->|"operation_in_domain"| DMN006
+    international_EVT030 -.->|"operation_in_domain"| DMN006
+    international_QRY009 -.->|"operation_in_domain"| DMN006
+    international_QRY010 -.->|"operation_in_domain"| DMN006
+    modules_CMD001 -.->|"operation_in_domain"| DMN007
+    modules_CMD002 -.->|"operation_in_domain"| DMN007
+    modules_CMD003 -.->|"operation_in_domain"| DMN007
+    modules_CMD004 -.->|"operation_in_domain"| DMN007
+    modules_CMD005 -.->|"operation_in_domain"| DMN007
+    modules_CMD006 -.->|"operation_in_domain"| DMN007
+    modules_CMD007 -.->|"operation_in_domain"| DMN007
+    modules_CMD008 -.->|"operation_in_domain"| DMN007
+    modules_EVT001 -.->|"operation_in_domain"| DMN007
+    modules_EVT002 -.->|"operation_in_domain"| DMN007
+    modules_EVT003 -.->|"operation_in_domain"| DMN007
+    modules_EVT004 -.->|"operation_in_domain"| DMN007
+    modules_EVT005 -.->|"operation_in_domain"| DMN007
+    modules_EVT006 -.->|"operation_in_domain"| DMN007
+    modules_QRY001 -.->|"operation_in_domain"| DMN007
+    modules_CMD009 -.->|"operation_in_domain"| DMN007
+    modules_EVT007 -.->|"operation_in_domain"| DMN007
+    modules_QRY002 -.->|"operation_in_domain"| DMN007
+    modules_QRY003 -.->|"operation_in_domain"| DMN007
+    orders_CMD017 -.->|"operation_in_domain"| DMN008
+    orders_CMD018 -.->|"operation_in_domain"| DMN008
+    orders_CMD019 -.->|"operation_in_domain"| DMN008
+    orders_EVT007 -.->|"operation_in_domain"| DMN008
+    orders_EVT008 -.->|"operation_in_domain"| DMN008
+    orders_CMD024 -.->|"operation_in_domain"| DMN008
+    orders_CMD025 -.->|"operation_in_domain"| DMN008
+    orders_CMD026 -.->|"operation_in_domain"| DMN008
+    orders_CMD027 -.->|"operation_in_domain"| DMN008
+    orders_CMD028 -.->|"operation_in_domain"| DMN008
+    orders_CMD029 -.->|"operation_in_domain"| DMN008
+    orders_CMD030 -.->|"operation_in_domain"| DMN008
+    orders_CMD031 -.->|"operation_in_domain"| DMN008
+    orders_CMD032 -.->|"operation_in_domain"| DMN008
+    orders_CMD033 -.->|"operation_in_domain"| DMN008
+    orders_CMD034 -.->|"operation_in_domain"| DMN008
+    orders_CMD035 -.->|"operation_in_domain"| DMN008
+    orders_CMD036 -.->|"operation_in_domain"| DMN008
+    orders_QRY005 -.->|"operation_in_domain"| DMN008
+    orders_QRY006 -.->|"operation_in_domain"| DMN008
+    orders_CMD001 -.->|"operation_in_domain"| DMN008
+    orders_CMD004 -.->|"operation_in_domain"| DMN008
+    orders_CMD002 -.->|"operation_in_domain"| DMN008
+    orders_CMD005 -.->|"operation_in_domain"| DMN008
+    orders_CMD006 -.->|"operation_in_domain"| DMN008
+    orders_CMD007 -.->|"operation_in_domain"| DMN008
+    orders_CMD008 -.->|"operation_in_domain"| DMN008
+    orders_CMD009 -.->|"operation_in_domain"| DMN008
+    orders_CMD010 -.->|"operation_in_domain"| DMN008
+    orders_CMD011 -.->|"operation_in_domain"| DMN008
+    orders_CMD012 -.->|"operation_in_domain"| DMN008
+    orders_CMD013 -.->|"operation_in_domain"| DMN008
+    orders_CMD014 -.->|"operation_in_domain"| DMN008
+    orders_EVT001 -.->|"operation_in_domain"| DMN008
+    orders_EVT002 -.->|"operation_in_domain"| DMN008
+    orders_EVT004 -.->|"operation_in_domain"| DMN008
+    orders_EVT005 -.->|"operation_in_domain"| DMN008
+    orders_QRY001 -.->|"operation_in_domain"| DMN008
+    orders_QRY002 -.->|"operation_in_domain"| DMN008
+    orders_QRY003 -.->|"operation_in_domain"| DMN008
+    orders_CMD020 -.->|"operation_in_domain"| DMN008
+    orders_CMD021 -.->|"operation_in_domain"| DMN008
+    orders_CMD022 -.->|"operation_in_domain"| DMN008
+    orders_EVT009 -.->|"operation_in_domain"| DMN008
+    orders_CMD003 -.->|"operation_in_domain"| DMN008
+    orders_CMD015 -.->|"operation_in_domain"| DMN008
+    orders_CMD016 -.->|"operation_in_domain"| DMN008
+    orders_EVT003 -.->|"operation_in_domain"| DMN008
+    orders_EVT006 -.->|"operation_in_domain"| DMN008
+    orders_CMD023 -.->|"operation_in_domain"| DMN008
+    orders_EVT010 -.->|"operation_in_domain"| DMN008
+    orders_QRY004 -.->|"operation_in_domain"| DMN008
+    shipping_CMD001 -.->|"operation_in_domain"| DMN009
+    shipping_CMD002 -.->|"operation_in_domain"| DMN009
+    shipping_CMD003 -.->|"operation_in_domain"| DMN009
+    shipping_CMD004 -.->|"operation_in_domain"| DMN009
+    shipping_CMD005 -.->|"operation_in_domain"| DMN009
+    shipping_CMD006 -.->|"operation_in_domain"| DMN009
+    shipping_CMD007 -.->|"operation_in_domain"| DMN009
+    shipping_CMD008 -.->|"operation_in_domain"| DMN009
+    shipping_CMD009 -.->|"operation_in_domain"| DMN009
+    shipping_CMD010 -.->|"operation_in_domain"| DMN009
+    shipping_EVT001 -.->|"operation_in_domain"| DMN009
+    shipping_EVT002 -.->|"operation_in_domain"| DMN009
+    shipping_EVT003 -.->|"operation_in_domain"| DMN009
+    shipping_EVT004 -.->|"operation_in_domain"| DMN009
+    shipping_EVT005 -.->|"operation_in_domain"| DMN009
+    shipping_EVT006 -.->|"operation_in_domain"| DMN009
+    shipping_EVT007 -.->|"operation_in_domain"| DMN009
+    shipping_EVT008 -.->|"operation_in_domain"| DMN009
+    shipping_QRY001 -.->|"operation_in_domain"| DMN009
+    shipping_QRY002 -.->|"operation_in_domain"| DMN009
+    shipping_QRY003 -.->|"operation_in_domain"| DMN009
+    shipping_QRY004 -.->|"operation_in_domain"| DMN009
+    shipping_CMD011 -.->|"operation_in_domain"| DMN009
+    shipping_CMD012 -.->|"operation_in_domain"| DMN009
+    shipping_CMD013 -.->|"operation_in_domain"| DMN009
+    shipping_CMD014 -.->|"operation_in_domain"| DMN009
+    shipping_CMD015 -.->|"operation_in_domain"| DMN009
+    shipping_CMD016 -.->|"operation_in_domain"| DMN009
+    shipping_CMD017 -.->|"operation_in_domain"| DMN009
+    shipping_EVT009 -.->|"operation_in_domain"| DMN009
+    shipping_EVT010 -.->|"operation_in_domain"| DMN009
+    shipping_EVT011 -.->|"operation_in_domain"| DMN009
+    shipping_EVT012 -.->|"operation_in_domain"| DMN009
+    shipping_EVT013 -.->|"operation_in_domain"| DMN009
+    shipping_EVT014 -.->|"operation_in_domain"| DMN009
+    shipping_EVT015 -.->|"operation_in_domain"| DMN009
+    shipping_QRY005 -.->|"operation_in_domain"| DMN009
+    shipping_QRY006 -.->|"operation_in_domain"| DMN009
+    shipping_QRY007 -.->|"operation_in_domain"| DMN009
+    shipping_QRY008 -.->|"operation_in_domain"| DMN009
+    shipping_QRY009 -.->|"operation_in_domain"| DMN009
+    shipping_QRY010 -.->|"operation_in_domain"| DMN009
+    shipping_QRY011 -.->|"operation_in_domain"| DMN009
+    shop_CMD001 -.->|"operation_in_domain"| DMN010
+    shop_EVT001 -.->|"operation_in_domain"| DMN010
+    shop_QRY001 -.->|"operation_in_domain"| DMN010
+    shop_QRY002 -.->|"operation_in_domain"| DMN010
+    shop_CMD002 -.->|"operation_in_domain"| DMN010
+    shop_EVT002 -.->|"operation_in_domain"| DMN010
+    shop_CMD003 -.->|"operation_in_domain"| DMN010
+    shop_EVT003 -.->|"operation_in_domain"| DMN010
+    shop_CMD004 -.->|"operation_in_domain"| DMN010
+    shop_CMD005 -.->|"operation_in_domain"| DMN010
+    shop_QRY003 -.->|"operation_in_domain"| DMN010
+    shop_CMD006 -.->|"operation_in_domain"| DMN010
+    shop_EVT004 -.->|"operation_in_domain"| DMN010
+    shop_CMD007 -.->|"operation_in_domain"| DMN010
+    shop_EVT005 -.->|"operation_in_domain"| DMN010
+    shop_CMD008 -.->|"operation_in_domain"| DMN010
+    shop_EVT006 -.->|"operation_in_domain"| DMN010
+    shop_CMD009 -.->|"operation_in_domain"| DMN010
+    shop_QRY004 -.->|"operation_in_domain"| DMN010
+    shop_CMD010 -.->|"operation_in_domain"| DMN010
+    shop_EVT007 -.->|"operation_in_domain"| DMN010
+    shop_CMD011 -.->|"operation_in_domain"| DMN010
+    shop_EVT008 -.->|"operation_in_domain"| DMN010
+    shop_CMD012 -.->|"operation_in_domain"| DMN010
+    shop_EVT009 -.->|"operation_in_domain"| DMN010
+    shop_CMD013 -.->|"operation_in_domain"| DMN010
+    shop_QRY005 -.->|"operation_in_domain"| DMN010
+    shop_QRY006 -.->|"operation_in_domain"| DMN010
+    shop_QRY007 -.->|"operation_in_domain"| DMN010
+    shop_CMD014 -.->|"operation_in_domain"| DMN010
+    shop_EVT010 -.->|"operation_in_domain"| DMN010
+    shop_CMD015 -.->|"operation_in_domain"| DMN010
+    shop_EVT011 -.->|"operation_in_domain"| DMN010
+    shop_CMD016 -.->|"operation_in_domain"| DMN010
+    shop_EVT012 -.->|"operation_in_domain"| DMN010
+    shop_QRY008 -.->|"operation_in_domain"| DMN010
+    shop_CMD017 -.->|"operation_in_domain"| DMN010
+    shop_EVT013 -.->|"operation_in_domain"| DMN010
+    shop_QRY009 -.->|"operation_in_domain"| DMN010
+    shop_CMD018 -.->|"operation_in_domain"| DMN010
+    shop_EVT014 -.->|"operation_in_domain"| DMN010
+    shop_QRY010 -.->|"operation_in_domain"| DMN010
     admin_CN005 -.->|"code_ref"| src_Core_Domain_ApiClient_Command_AddApiClientCommand_php
     admin_CN005 -.->|"code_ref"| src_Core_Domain_ApiClient_Command_ForceApiClientSecretCommand_php
     admin_CN005 -.->|"code_ref"| src_Core_Domain_ApiClient_Command_GenerateApiClientSecretCommand_php
@@ -6201,7 +6878,7 @@ graph TD
 
 ## Entity Catalog
 
-**2049 entities** across 51 types.
+**2092 entities** across 53 types.
 
 | ID | Type | Name | Layer | Source |
 |----|------|------|-------|--------|
@@ -6927,6 +7604,16 @@ graph TD
 | prestashop.DSC003 | DeploymentScope | prestashop-data | design.infrastructure | infrastructure.yaml |
 | checkout.DR001 | DerivationRule | Cart total derivation | design.rules | checkout/rules.yaml |
 | orders.DR001 | DerivationRule | Estimated delivery from shipping method | design.rules | orders/rules.yaml |
+| DMN001 | Domain | admin | blueprint | blueprint.yaml |
+| DMN002 | Domain | catalog | blueprint | blueprint.yaml |
+| DMN003 | Domain | checkout | blueprint | blueprint.yaml |
+| DMN004 | Domain | content | blueprint | blueprint.yaml |
+| DMN005 | Domain | customers | blueprint | blueprint.yaml |
+| DMN006 | Domain | international | blueprint | blueprint.yaml |
+| DMN007 | Domain | modules | blueprint | blueprint.yaml |
+| DMN008 | Domain | orders | blueprint | blueprint.yaml |
+| DMN009 | Domain | shipping | blueprint | blueprint.yaml |
+| DMN010 | Domain | shop | blueprint | blueprint.yaml |
 | admin.RC001 | Dynamics | Concurrent employee profile edit | design.dynamics | admin/dynamics.yaml |
 | catalog.ORD001 | Dynamics | Search index update must follow product creation, not precede it. | design.dynamics | catalog/dynamics.yaml |
 | catalog.PAR001 | Dynamics | Bulk product import | design.dynamics | catalog/dynamics.yaml |
@@ -7776,8 +8463,33 @@ graph TD
 | shop.QRY009 | Operation | GetNotificationLastElements | design.domain | shop/domain.yaml |
 | shop.QRY010 | Operation | GetShowcaseCardIsClosed | design.domain | shop/domain.yaml |
 | ApiIntegrators | Party | Third-party systems integrating with PrestaShop over the Admin REST API using OAuth2. Not built or operated by PrestaShop; modelled so the dependency on the Admin API surface is visible. | design.arch | prestashop.arch.yaml |
-| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | admin/arch.yaml |
+| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | prestashop.arch.yaml |
 | PRT001 | Party | PrestaShop SA | governance.org | organization.yaml |
+| admin.PRC001 | Process | Employee Onboarding | design.process | admin/story.yaml |
+| admin.PRC002 | Process | API Integration Setup | design.process | admin/story.yaml |
+| admin.PRC003 | Process | Security Session Cleanup | design.process | admin/story.yaml |
+| catalog.PRC001 | Process | Add a product to catalog | design.process | catalog/story.yaml |
+| catalog.PRC002 | Process | Manage product variants | design.process | catalog/story.yaml |
+| catalog.PRC003 | Process | Organize category hierarchy | design.process | catalog/story.yaml |
+| checkout.PRC001 | Process | Shopper cart journey | design.process | checkout/story.yaml |
+| checkout.PRC002 | Process | Discount campaign setup | design.process | checkout/story.yaml |
+| content.PRC001 | Process | CMS Page Publishing | design.process | content/story.yaml |
+| content.PRC002 | Process | Theme Activation | design.process | content/story.yaml |
+| customers.PRC001 | Process | Customer account lifecycle | design.process | customers/story.yaml |
+| customers.PRC002 | Process | Customer service interaction | design.process | customers/story.yaml |
+| international.PRC001 | Process | Multi-Currency Store Setup | design.process | international/story.yaml |
+| international.PRC002 | Process | Tax Rules Configuration | design.process | international/story.yaml |
+| modules.PRC001 | Process | Module Installation & Activation | design.process | modules/story.yaml |
+| modules.PRC002 | Process | Module Troubleshooting | design.process | modules/story.yaml |
+| orders.PRC001 | Process | Place an order | design.process | orders/story.yaml |
+| orders.PRC002 | Process | Cancel and refund | design.process | orders/story.yaml |
+| orders.PRC003 | Process | Manage order products | design.process | orders/story.yaml |
+| orders.PRC004 | Process | Generate invoice and record payment | design.process | orders/story.yaml |
+| orders.PRC005 | Process | Process return and credit slip | design.process | orders/story.yaml |
+| shipping.PRC001 | Process | Carrier Configuration | design.process | shipping/story.yaml |
+| shipping.PRC002 | Process | Order Shipment Fulfillment | design.process | shipping/story.yaml |
+| shop.PRC001 | Process | Store Branding Setup | design.process | shop/story.yaml |
+| shop.PRC002 | Process | Search Alias Configuration | design.process | shop/story.yaml |
 | catalog.RES001 | Resilience | Search Index Recovery | design.quality | catalog/quality.yaml |
 | admin.R001 | Risk | Privilege escalation risk | governance.motivation | admin/motivation.yaml |
 | admin.R002 | Risk | SQL injection risk | governance.motivation | admin/motivation.yaml |
@@ -7885,31 +8597,6 @@ graph TD
 | SLO001 | SLO | Order API Availability | design.quality | orders/quality.yaml |
 | SLO002 | SLO | Order Query Response Time | design.quality | orders/quality.yaml |
 | SLO003 | SLO | Refund Processing SLO | design.quality | orders/quality.yaml |
-| admin.STR001 | Story | Employee Onboarding | design.story | admin/story.yaml |
-| admin.STR002 | Story | API Integration Setup | design.story | admin/story.yaml |
-| admin.STR003 | Story | Security Session Cleanup | design.story | admin/story.yaml |
-| catalog.STR001 | Story | Add a product to catalog | design.story | catalog/story.yaml |
-| catalog.STR002 | Story | Manage product variants | design.story | catalog/story.yaml |
-| catalog.STR003 | Story | Organize category hierarchy | design.story | catalog/story.yaml |
-| checkout.STR001 | Story | Shopper cart journey | design.story | checkout/story.yaml |
-| checkout.STR002 | Story | Discount campaign setup | design.story | checkout/story.yaml |
-| content.STR001 | Story | CMS Page Publishing | design.story | content/story.yaml |
-| content.STR002 | Story | Theme Activation | design.story | content/story.yaml |
-| customers.STR001 | Story | Customer account lifecycle | design.story | customers/story.yaml |
-| customers.STR002 | Story | Customer service interaction | design.story | customers/story.yaml |
-| international.STR001 | Story | Multi-Currency Store Setup | design.story | international/story.yaml |
-| international.STR002 | Story | Tax Rules Configuration | design.story | international/story.yaml |
-| modules.STR001 | Story | Module Installation & Activation | design.story | modules/story.yaml |
-| modules.STR002 | Story | Module Troubleshooting | design.story | modules/story.yaml |
-| orders.STR001 | Story | Place an order | design.story | orders/story.yaml |
-| orders.STR002 | Story | Cancel and refund | design.story | orders/story.yaml |
-| orders.STR003 | Story | Manage order products | design.story | orders/story.yaml |
-| orders.STR004 | Story | Generate invoice and record payment | design.story | orders/story.yaml |
-| orders.STR005 | Story | Process return and credit slip | design.story | orders/story.yaml |
-| shipping.STR001 | Story | Carrier Configuration | design.story | shipping/story.yaml |
-| shipping.STR002 | Story | Order Shipment Fulfillment | design.story | shipping/story.yaml |
-| shop.STR001 | Story | Store Branding Setup | design.story | shop/story.yaml |
-| shop.STR002 | Story | Search Alias Configuration | design.story | shop/story.yaml |
 | admin.SR001 | StructuralRule | Employee requires profile assignment | design.rules | admin/rules.yaml |
 | catalog.SR001 | StructuralRule | Product must have valid type configuration | design.rules | catalog/rules.yaml |
 | catalog.SR002 | StructuralRule | Category tree maximum depth | design.rules | catalog/rules.yaml |
@@ -7923,6 +8610,39 @@ graph TD
 | orders.SR001 | StructuralRule | Order must have at least one line | design.rules | orders/rules.yaml |
 | orders.SR002 | StructuralRule | Invoice requires paid status | design.rules | orders/rules.yaml |
 | shipping.SR001 | StructuralRule | Carrier requires at least one zone | design.rules | shipping/rules.yaml |
+| SDM001 | Subdomain | api | blueprint | blueprint.yaml |
+| SDM002 | Subdomain | config | blueprint | blueprint.yaml |
+| SDM003 | Subdomain | identity | blueprint | blueprint.yaml |
+| SDM004 | Subdomain | category | blueprint | blueprint.yaml |
+| SDM005 | Subdomain | characteristics | blueprint | blueprint.yaml |
+| SDM006 | Subdomain | combination | blueprint | blueprint.yaml |
+| SDM007 | Subdomain | image-settings | blueprint | blueprint.yaml |
+| SDM008 | Subdomain | media | blueprint | blueprint.yaml |
+| SDM009 | Subdomain | pricing | blueprint | blueprint.yaml |
+| SDM010 | Subdomain | product | blueprint | blueprint.yaml |
+| SDM011 | Subdomain | supply-chain | blueprint | blueprint.yaml |
+| SDM012 | Subdomain | cart | blueprint | blueprint.yaml |
+| SDM013 | Subdomain | discount | blueprint | blueprint.yaml |
+| SDM014 | Subdomain | pricing | blueprint | blueprint.yaml |
+| SDM015 | Subdomain | cms | blueprint | blueprint.yaml |
+| SDM016 | Subdomain | seo | blueprint | blueprint.yaml |
+| SDM017 | Subdomain | theme | blueprint | blueprint.yaml |
+| SDM018 | Subdomain | address | blueprint | blueprint.yaml |
+| SDM019 | Subdomain | customer | blueprint | blueprint.yaml |
+| SDM020 | Subdomain | customer-service | blueprint | blueprint.yaml |
+| SDM021 | Subdomain | title | blueprint | blueprint.yaml |
+| SDM022 | Subdomain | currency | blueprint | blueprint.yaml |
+| SDM023 | Subdomain | geography | blueprint | blueprint.yaml |
+| SDM024 | Subdomain | language | blueprint | blueprint.yaml |
+| SDM025 | Subdomain | localization | blueprint | blueprint.yaml |
+| SDM026 | Subdomain | taxation | blueprint | blueprint.yaml |
+| SDM027 | Subdomain | invoice-payment | blueprint | blueprint.yaml |
+| SDM028 | Subdomain | order | blueprint | blueprint.yaml |
+| SDM029 | Subdomain | order-admin | blueprint | blueprint.yaml |
+| SDM030 | Subdomain | refunds | blueprint | blueprint.yaml |
+| SDM031 | Subdomain | returns | blueprint | blueprint.yaml |
+| SDM032 | Subdomain | carrier | blueprint | blueprint.yaml |
+| SDM033 | Subdomain | shipment | blueprint | blueprint.yaml |
 | TM001 | Team | Order Platform Team | governance.org | organization.yaml |
 | TM002 | Team | Catalog Team | governance.org | organization.yaml |
 | TM003 | Team | Checkout & Payments Team | governance.org | organization.yaml |
@@ -8105,89 +8825,89 @@ graph TD
 | shipping.UNV001 | UINavigation | Navigate to carrier configuration. | design.ui | shipping/interactions.yaml |
 | shipping.UNV002 | UINavigation | Navigate to shipment detail. | design.ui | shipping/interactions.yaml |
 | shop.UNV001 | UINavigation | Navigate from SEO referrers to search aliases. | design.ui | shop/interactions.yaml |
-| admin.UC001 | UseCase | Onboard Employee | design.story | admin/story.yaml |
-| admin.UC002 | UseCase | Configure API Client | design.story | admin/story.yaml |
-| catalog.UC001 | UseCase | CategoryManager adds a new product to the catalog. | design.story | catalog/story.yaml |
-| catalog.UC002 | UseCase | Shopper searches the catalog with keywords and filters. | design.story | catalog/story.yaml |
-| catalog.UC003 | UseCase | CategoryManager generates combinations and configures variant details. | design.story | catalog/story.yaml |
-| checkout.UC001 | UseCase | Shopper adds a product to the shopping cart. | design.story | checkout/story.yaml |
-| checkout.UC002 | UseCase | Back-office operator creates and configures a cart for order creation. | design.story | checkout/story.yaml |
-| checkout.UC003 | UseCase | Shopper applies a voucher code to receive a discount on their cart. | design.story | checkout/story.yaml |
-| checkout.UC004 | UseCase | Marketing manager creates a promotional discount with conditions and limits. | design.story | checkout/story.yaml |
-| content.UC001 | UseCase | Publish CMS Page | design.story | content/story.yaml |
-| content.UC002 | UseCase | Switch Store Theme | design.story | content/story.yaml |
-| customers.UC001 | UseCase | New customer creates an account with email, password, and basic profile. | design.story | customers/story.yaml |
-| customers.UC002 | UseCase | Customer adds, edits, or deletes delivery and invoice addresses. | design.story | customers/story.yaml |
-| customers.UC003 | UseCase | Agent views customer thread, replies, and resolves the issue. | design.story | customers/story.yaml |
-| international.UC001 | UseCase | Configure Multi-Currency Store | design.story | international/story.yaml |
-| international.UC002 | UseCase | Set Up EU VAT Tax Rules | design.story | international/story.yaml |
-| modules.UC001 | UseCase | Install Module | design.story | modules/story.yaml |
-| modules.UC002 | UseCase | Troubleshoot Module | design.story | modules/story.yaml |
-| orders.UC001 | UseCase | Shopper completes checkout and creates an order. | design.story | orders/story.yaml |
-| orders.UC002 | UseCase | Merchant cancels an unshipped order. | design.story | orders/story.yaml |
-| orders.UC003 | UseCase | Merchant reviews filtered order history for business insights. | design.story | orders/story.yaml |
-| orders.UC004 | UseCase | Administrator processes a merchandise return and generates a credit slip. | design.story | orders/story.yaml |
-| shipping.UC001 | UseCase | Configure Carrier | design.story | shipping/story.yaml |
-| shipping.UC002 | UseCase | Manage Order Shipments | design.story | shipping/story.yaml |
-| shop.UC001 | UseCase | Configure Store Branding | design.story | shop/story.yaml |
-| admin.US001 | UserStory | create new employee accounts with appropriate profile and shop access | design.story | admin/story.yaml |
-| admin.US002 | UserStory | manage access control profiles and their permission matrices | design.story | admin/story.yaml |
-| admin.US003 | UserStory | set up and manage Admin API clients for third-party integrations | design.story | admin/story.yaml |
-| admin.US004 | UserStory | monitor and clear active sessions during security incidents | design.story | admin/story.yaml |
-| admin.US005 | UserStory | create and execute saved SQL queries for reporting | design.story | admin/story.yaml |
-| catalog.US001 | UserStory | CategoryManager creates a product. | design.story | catalog/story.yaml |
-| catalog.US002 | UserStory | CategoryManager bulk imports products. | design.story | catalog/story.yaml |
-| catalog.US003 | UserStory | Shopper searches the catalog. | design.story | catalog/story.yaml |
-| catalog.US004 | UserStory | CategoryManager generates combinations for a product. | design.story | catalog/story.yaml |
-| catalog.US005 | UserStory | CategoryManager manages category tree. | design.story | catalog/story.yaml |
-| catalog.US006 | UserStory | CategoryManager manages product pricing rules. | design.story | catalog/story.yaml |
-| catalog.US007 | UserStory | CategoryManager manages product gallery. | design.story | catalog/story.yaml |
-| catalog.US008 | UserStory | Merchant reviews product detail. | design.story | catalog/story.yaml |
-| checkout.US001 | UserStory | add a product to my cart | design.story | checkout/story.yaml |
-| checkout.US002 | UserStory | remove an item from my cart | design.story | checkout/story.yaml |
-| checkout.US003 | UserStory | apply a voucher code to my cart | design.story | checkout/story.yaml |
-| checkout.US004 | UserStory | create a discount campaign with conditions and usage limits | design.story | checkout/story.yaml |
-| checkout.US005 | UserStory | duplicate an existing discount as a campaign template | design.story | checkout/story.yaml |
-| checkout.US006 | UserStory | configure catalog price rules for wholesale customers | design.story | checkout/story.yaml |
-| checkout.US007 | UserStory | create and send a pre-built cart to a customer | design.story | checkout/story.yaml |
-| content.US001 | UserStory | create and publish a CMS page with SEO metadata | design.story | content/story.yaml |
-| content.US002 | UserStory | organize CMS pages into a hierarchical category structure | design.story | content/story.yaml |
-| content.US003 | UserStory | import and activate a new storefront theme | design.story | content/story.yaml |
-| content.US004 | UserStory | configure SEO metadata for all page types | design.story | content/story.yaml |
-| content.US005 | UserStory | reset theme layouts after a major theme update | design.story | content/story.yaml |
-| content.US006 | UserStory | generate email templates for a theme in a specific language | design.story | content/story.yaml |
-| customers.US001 | UserStory | register a customer account | design.story | customers/story.yaml |
-| customers.US002 | UserStory | add and manage my delivery addresses | design.story | customers/story.yaml |
-| customers.US003 | UserStory | convert a guest account to a registered customer | design.story | customers/story.yaml |
-| customers.US004 | UserStory | reply to a customer service thread | design.story | customers/story.yaml |
-| customers.US005 | UserStory | set up a B2B customer group with wholesale pricing | design.story | customers/story.yaml |
-| customers.US006 | UserStory | request deletion of my personal data | design.story | customers/story.yaml |
-| international.US001 | UserStory | add and configure currencies for an international store | design.story | international/story.yaml |
-| international.US002 | UserStory | refresh exchange rates from an external provider | design.story | international/story.yaml |
-| international.US003 | UserStory | configure store languages | design.story | international/story.yaml |
-| international.US004 | UserStory | manage geographic zones, countries, and states | design.story | international/story.yaml |
-| international.US005 | UserStory | configure tax rates and tax rules groups | design.story | international/story.yaml |
-| international.US006 | UserStory | set up EU VAT rules across multiple countries | design.story | international/story.yaml |
-| modules.US001 | UserStory | install a new module to extend store functionality | design.story | modules/story.yaml |
-| modules.US002 | UserStory | disable a problematic module quickly without uninstalling | design.story | modules/story.yaml |
-| modules.US003 | UserStory | upgrade installed modules to their latest versions | design.story | modules/story.yaml |
-| modules.US004 | UserStory | manage hook activation to control extension points | design.story | modules/story.yaml |
-| orders.US001 | UserStory | Shopper places an order. | design.story | orders/story.yaml |
-| orders.US002 | UserStory | Merchant cancels an order. | design.story | orders/story.yaml |
-| orders.US003 | UserStory | Administrator processes refund. | design.story | orders/story.yaml |
-| orders.US004 | UserStory | Merchant views order history. | design.story | orders/story.yaml |
-| orders.US005 | UserStory | Merchant generates invoice. | design.story | orders/story.yaml |
-| orders.US006 | UserStory | Merchant records offline payment. | design.story | orders/story.yaml |
-| shipping.US001 | UserStory | create a new carrier with zone and range configuration | design.story | shipping/story.yaml |
-| shipping.US002 | UserStory | enable or disable carriers | design.story | shipping/story.yaml |
-| shipping.US003 | UserStory | configure free shipping for a carrier | design.story | shipping/story.yaml |
-| shipping.US004 | UserStory | create a shipment for an order and assign products | design.story | shipping/story.yaml |
-| shipping.US005 | UserStory | split a shipment into multiple parcels | design.story | shipping/story.yaml |
-| shipping.US006 | UserStory | merge products from multiple shipments into one | design.story | shipping/story.yaml |
-| shop.US001 | UserStory | upload and manage store branding images (logos and favicon) | design.story | shop/story.yaml |
-| shop.US002 | UserStory | manage search term aliases to map customer search variants to canonical terms | design.story | shop/story.yaml |
-| shop.US003 | UserStory | configure SEO referrer search engines for analytics tracking | design.story | shop/story.yaml |
-| shop.US004 | UserStory | manage 'Contact Us' form departments | design.story | shop/story.yaml |
+| admin.UC001 | UseCase | Onboard Employee | design.process | admin/story.yaml |
+| admin.UC002 | UseCase | Configure API Client | design.process | admin/story.yaml |
+| catalog.UC001 | UseCase | CategoryManager adds a new product to the catalog. | design.process | catalog/story.yaml |
+| catalog.UC002 | UseCase | Shopper searches the catalog with keywords and filters. | design.process | catalog/story.yaml |
+| catalog.UC003 | UseCase | CategoryManager generates combinations and configures variant details. | design.process | catalog/story.yaml |
+| checkout.UC001 | UseCase | Shopper adds a product to the shopping cart. | design.process | checkout/story.yaml |
+| checkout.UC002 | UseCase | Back-office operator creates and configures a cart for order creation. | design.process | checkout/story.yaml |
+| checkout.UC003 | UseCase | Shopper applies a voucher code to receive a discount on their cart. | design.process | checkout/story.yaml |
+| checkout.UC004 | UseCase | Marketing manager creates a promotional discount with conditions and limits. | design.process | checkout/story.yaml |
+| content.UC001 | UseCase | Publish CMS Page | design.process | content/story.yaml |
+| content.UC002 | UseCase | Switch Store Theme | design.process | content/story.yaml |
+| customers.UC001 | UseCase | New customer creates an account with email, password, and basic profile. | design.process | customers/story.yaml |
+| customers.UC002 | UseCase | Customer adds, edits, or deletes delivery and invoice addresses. | design.process | customers/story.yaml |
+| customers.UC003 | UseCase | Agent views customer thread, replies, and resolves the issue. | design.process | customers/story.yaml |
+| international.UC001 | UseCase | Configure Multi-Currency Store | design.process | international/story.yaml |
+| international.UC002 | UseCase | Set Up EU VAT Tax Rules | design.process | international/story.yaml |
+| modules.UC001 | UseCase | Install Module | design.process | modules/story.yaml |
+| modules.UC002 | UseCase | Troubleshoot Module | design.process | modules/story.yaml |
+| orders.UC001 | UseCase | Shopper completes checkout and creates an order. | design.process | orders/story.yaml |
+| orders.UC002 | UseCase | Merchant cancels an unshipped order. | design.process | orders/story.yaml |
+| orders.UC003 | UseCase | Merchant reviews filtered order history for business insights. | design.process | orders/story.yaml |
+| orders.UC004 | UseCase | Administrator processes a merchandise return and generates a credit slip. | design.process | orders/story.yaml |
+| shipping.UC001 | UseCase | Configure Carrier | design.process | shipping/story.yaml |
+| shipping.UC002 | UseCase | Manage Order Shipments | design.process | shipping/story.yaml |
+| shop.UC001 | UseCase | Configure Store Branding | design.process | shop/story.yaml |
+| admin.US001 | UserStory | create new employee accounts with appropriate profile and shop access | design.process | admin/story.yaml |
+| admin.US002 | UserStory | manage access control profiles and their permission matrices | design.process | admin/story.yaml |
+| admin.US003 | UserStory | set up and manage Admin API clients for third-party integrations | design.process | admin/story.yaml |
+| admin.US004 | UserStory | monitor and clear active sessions during security incidents | design.process | admin/story.yaml |
+| admin.US005 | UserStory | create and execute saved SQL queries for reporting | design.process | admin/story.yaml |
+| catalog.US001 | UserStory | CategoryManager creates a product. | design.process | catalog/story.yaml |
+| catalog.US002 | UserStory | CategoryManager bulk imports products. | design.process | catalog/story.yaml |
+| catalog.US003 | UserStory | Shopper searches the catalog. | design.process | catalog/story.yaml |
+| catalog.US004 | UserStory | CategoryManager generates combinations for a product. | design.process | catalog/story.yaml |
+| catalog.US005 | UserStory | CategoryManager manages category tree. | design.process | catalog/story.yaml |
+| catalog.US006 | UserStory | CategoryManager manages product pricing rules. | design.process | catalog/story.yaml |
+| catalog.US007 | UserStory | CategoryManager manages product gallery. | design.process | catalog/story.yaml |
+| catalog.US008 | UserStory | Merchant reviews product detail. | design.process | catalog/story.yaml |
+| checkout.US001 | UserStory | add a product to my cart | design.process | checkout/story.yaml |
+| checkout.US002 | UserStory | remove an item from my cart | design.process | checkout/story.yaml |
+| checkout.US003 | UserStory | apply a voucher code to my cart | design.process | checkout/story.yaml |
+| checkout.US004 | UserStory | create a discount campaign with conditions and usage limits | design.process | checkout/story.yaml |
+| checkout.US005 | UserStory | duplicate an existing discount as a campaign template | design.process | checkout/story.yaml |
+| checkout.US006 | UserStory | configure catalog price rules for wholesale customers | design.process | checkout/story.yaml |
+| checkout.US007 | UserStory | create and send a pre-built cart to a customer | design.process | checkout/story.yaml |
+| content.US001 | UserStory | create and publish a CMS page with SEO metadata | design.process | content/story.yaml |
+| content.US002 | UserStory | organize CMS pages into a hierarchical category structure | design.process | content/story.yaml |
+| content.US003 | UserStory | import and activate a new storefront theme | design.process | content/story.yaml |
+| content.US004 | UserStory | configure SEO metadata for all page types | design.process | content/story.yaml |
+| content.US005 | UserStory | reset theme layouts after a major theme update | design.process | content/story.yaml |
+| content.US006 | UserStory | generate email templates for a theme in a specific language | design.process | content/story.yaml |
+| customers.US001 | UserStory | register a customer account | design.process | customers/story.yaml |
+| customers.US002 | UserStory | add and manage my delivery addresses | design.process | customers/story.yaml |
+| customers.US003 | UserStory | convert a guest account to a registered customer | design.process | customers/story.yaml |
+| customers.US004 | UserStory | reply to a customer service thread | design.process | customers/story.yaml |
+| customers.US005 | UserStory | set up a B2B customer group with wholesale pricing | design.process | customers/story.yaml |
+| customers.US006 | UserStory | request deletion of my personal data | design.process | customers/story.yaml |
+| international.US001 | UserStory | add and configure currencies for an international store | design.process | international/story.yaml |
+| international.US002 | UserStory | refresh exchange rates from an external provider | design.process | international/story.yaml |
+| international.US003 | UserStory | configure store languages | design.process | international/story.yaml |
+| international.US004 | UserStory | manage geographic zones, countries, and states | design.process | international/story.yaml |
+| international.US005 | UserStory | configure tax rates and tax rules groups | design.process | international/story.yaml |
+| international.US006 | UserStory | set up EU VAT rules across multiple countries | design.process | international/story.yaml |
+| modules.US001 | UserStory | install a new module to extend store functionality | design.process | modules/story.yaml |
+| modules.US002 | UserStory | disable a problematic module quickly without uninstalling | design.process | modules/story.yaml |
+| modules.US003 | UserStory | upgrade installed modules to their latest versions | design.process | modules/story.yaml |
+| modules.US004 | UserStory | manage hook activation to control extension points | design.process | modules/story.yaml |
+| orders.US001 | UserStory | Shopper places an order. | design.process | orders/story.yaml |
+| orders.US002 | UserStory | Merchant cancels an order. | design.process | orders/story.yaml |
+| orders.US003 | UserStory | Administrator processes refund. | design.process | orders/story.yaml |
+| orders.US004 | UserStory | Merchant views order history. | design.process | orders/story.yaml |
+| orders.US005 | UserStory | Merchant generates invoice. | design.process | orders/story.yaml |
+| orders.US006 | UserStory | Merchant records offline payment. | design.process | orders/story.yaml |
+| shipping.US001 | UserStory | create a new carrier with zone and range configuration | design.process | shipping/story.yaml |
+| shipping.US002 | UserStory | enable or disable carriers | design.process | shipping/story.yaml |
+| shipping.US003 | UserStory | configure free shipping for a carrier | design.process | shipping/story.yaml |
+| shipping.US004 | UserStory | create a shipment for an order and assign products | design.process | shipping/story.yaml |
+| shipping.US005 | UserStory | split a shipment into multiple parcels | design.process | shipping/story.yaml |
+| shipping.US006 | UserStory | merge products from multiple shipments into one | design.process | shipping/story.yaml |
+| shop.US001 | UserStory | upload and manage store branding images (logos and favicon) | design.process | shop/story.yaml |
+| shop.US002 | UserStory | manage search term aliases to map customer search variants to canonical terms | design.process | shop/story.yaml |
+| shop.US003 | UserStory | configure SEO referrer search engines for analytics tracking | design.process | shop/story.yaml |
+| shop.US004 | UserStory | manage 'Contact Us' form departments | design.process | shop/story.yaml |
 | admin.VR001 | ValidationRule | Employee email uniqueness | design.rules | admin/rules.yaml |
 | admin.VR002 | ValidationRule | Password strength policy | design.rules | admin/rules.yaml |
 | admin.VR003 | ValidationRule | Profile deletion requires no assigned employees | design.rules | admin/rules.yaml |
@@ -8271,10 +8991,11 @@ graph TD
 | Missing | 43 |
 | Screen | 41 |
 | Goal | 35 |
+| Subdomain | 33 |
 | Risk | 30 |
 | Association | 27 |
 | KPI | 27 |
-| Story | 25 |
+| Process | 25 |
 | UseCase | 25 |
 | Actor | 20 |
 | Enumeration | 20 |
@@ -8290,6 +9011,7 @@ graph TD
 | Context | 11 |
 | Service | 11 |
 | Assumption | 10 |
+| Domain | 10 |
 | Team | 10 |
 | TradeOff | 9 |
 | Decision | 8 |
@@ -8313,7 +9035,7 @@ graph TD
 
 ## Relations
 
-**3164 relations** discovered.
+**3794 relations** discovered.
 
 | Source | Type | Target |
 |--------|------|--------|
@@ -8423,6 +9145,7 @@ graph TD
 | checkout.CN001 (Concept) | association | checkout.CN003 (Concept) |
 | checkout.CN004 (Concept) | association | checkout.CN005 (Concept) |
 | content.CN001 (Concept) | association | content.CN002 (Concept) |
+| content.CN002 (Concept) | association | content.CN002 (Concept) |
 | customers.CN001 (Concept) | association | customers.CN004 (Concept) |
 | customers.CN001 (Concept) | association | customers.CN005 (Concept) |
 | customers.CN001 (Concept) | association | customers.CN002 (Concept) |
@@ -9172,6 +9895,10 @@ graph TD
 | D006 (Decision) | code_ref | https://github.com/PrestaShop/docs/blob/9.x/development/architecture/migration-guide/_index.md (CodeFile) |
 | D007 (Decision) | code_ref | src/Core/Domain/ApiClient/ (CodeFile) |
 | D007 (Decision) | code_ref | https://github.com/PrestaShop/docs/blob/9.x/development/webservice/_index.md (CodeFile) |
+| orders.CMP001 (Compliance) | compliance_concept | orders.CN002 (Concept) |
+| orders.CMP001 (Compliance) | compliance_concept | orders.CN004 (Concept) |
+| orders.CMP002 (Compliance) | compliance_concept | orders.CN002 (Concept) |
+| orders.CMP002 (Compliance) | compliance_concept | orders.CN007 (Concept) |
 | checkout.TR001 (TransitionRule) | concept | checkout.CN001 (Concept) |
 | checkout.TR002 (TransitionRule) | concept | checkout.CN001 (Concept) |
 | checkout.TR003 (TransitionRule) | concept | checkout.CN001 (Concept) |
@@ -9305,6 +10032,16 @@ graph TD
 | Orders (Context) | context_depends_on | International (Context) |
 | Shipping (Context) | context_depends_on | International (Context) |
 | Shop (Context) | context_depends_on | International (Context) |
+| Admin (Context) | context_realizes_domain | DMN001 (Domain) |
+| Catalog (Context) | context_realizes_domain | DMN002 (Domain) |
+| Checkout (Context) | context_realizes_domain | DMN003 (Domain) |
+| Content (Context) | context_realizes_domain | DMN004 (Domain) |
+| Customers (Context) | context_realizes_domain | DMN005 (Domain) |
+| International (Context) | context_realizes_domain | DMN006 (Domain) |
+| Modules (Context) | context_realizes_domain | DMN007 (Domain) |
+| Orders (Context) | context_realizes_domain | DMN008 (Domain) |
+| Shipping (Context) | context_realizes_domain | DMN009 (Domain) |
+| Shop (Context) | context_realizes_domain | DMN010 (Domain) |
 | AdminApiClient.httpClient (Contract) | contract_calls | admin.CMD021 (Operation) |
 | AdminApiClient.httpClient (Contract) | contract_calls | admin.QRY001 (Operation) |
 | AdminApiClient.httpClient (Contract) | contract_calls | catalog.QRY001 (Operation) |
@@ -9349,6 +10086,10 @@ graph TD
 | OrderService.asyncapi (Contract) | contract_sends | orders.EVT002 (Operation) |
 | OrderService.asyncapi (Contract) | contract_sends | orders.EVT003 (Operation) |
 | OrderService.asyncapi (Contract) | contract_sends | orders.EVT004 (Operation) |
+| AdminService (Service) | deployed_in_environment | prestashop.ENV001 (Environment) |
+| CatalogService (Service) | deployed_in_environment | prestashop.ENV001 (Environment) |
+| CheckoutService (Service) | deployed_in_environment | prestashop.ENV001 (Environment) |
+| OrderService (Service) | deployed_in_environment | prestashop.ENV001 (Environment) |
 | DPT001 (Department) | dept_has_team | TM001 (Team) |
 | DPT001 (Department) | dept_has_team | TM002 (Team) |
 | DPT001 (Department) | dept_has_team | TM003 (Team) |
@@ -10224,6 +10965,34 @@ graph TD
 | orders.INQ001 (Inquiry) | inquiry_stakeholder | orders.ACT002 (Actor) |
 | orders.INQ002 (Inquiry) | inquiry_stakeholder | orders.ACT001 (Actor) |
 | TM003 (Team) | interacts_with | TM002 (Team) |
+| admin.KPI001 (KPI) | kpi_goal | admin.G001 (Goal) |
+| admin.KPI002 (KPI) | kpi_goal | admin.G002 (Goal) |
+| catalog.KPI001 (KPI) | kpi_goal | catalog.G001 (Goal) |
+| catalog.KPI002 (KPI) | kpi_goal | catalog.G003 (Goal) |
+| catalog.KPI003 (KPI) | kpi_goal | catalog.G004 (Goal) |
+| checkout.KPI001 (KPI) | kpi_goal | checkout.G001 (Goal) |
+| checkout.KPI002 (KPI) | kpi_goal | checkout.G002 (Goal) |
+| checkout.KPI003 (KPI) | kpi_goal | checkout.G003 (Goal) |
+| content.KPI001 (KPI) | kpi_goal | content.G002 (Goal) |
+| content.KPI002 (KPI) | kpi_goal | content.G001 (Goal) |
+| content.KPI003 (KPI) | kpi_goal | content.G003 (Goal) |
+| customers.KPI001 (KPI) | kpi_goal | customers.G001 (Goal) |
+| customers.KPI002 (KPI) | kpi_goal | customers.G002 (Goal) |
+| customers.KPI003 (KPI) | kpi_goal | customers.G001 (Goal) |
+| international.KPI001 (KPI) | kpi_goal | international.G001 (Goal) |
+| international.KPI002 (KPI) | kpi_goal | international.G002 (Goal) |
+| international.KPI003 (KPI) | kpi_goal | international.G003 (Goal) |
+| modules.KPI001 (KPI) | kpi_goal | modules.G001 (Goal) |
+| modules.KPI002 (KPI) | kpi_goal | modules.G002 (Goal) |
+| KPI001 (KPI) | kpi_goal | orders.G003 (Goal) |
+| KPI002 (KPI) | kpi_goal | orders.G001 (Goal) |
+| KPI003 (KPI) | kpi_goal | orders.G004 (Goal) |
+| shipping.KPI001 (KPI) | kpi_goal | shipping.G001 (Goal) |
+| shipping.KPI002 (KPI) | kpi_goal | shipping.G002 (Goal) |
+| shipping.KPI003 (KPI) | kpi_goal | shipping.G003 (Goal) |
+| shop.KPI001 (KPI) | kpi_goal | shop.G002 (Goal) |
+| shop.KPI002 (KPI) | kpi_goal | shop.G002 (Goal) |
+| KPI001 (KPI) | kpi_metric | orders.MT001 (Metric) |
 | LP001 (LeveragePoint) | leverage_capability | CAP003 (Capability) |
 | LP002 (LeveragePoint) | leverage_capability | CAP004 (Capability) |
 | LP004 (LeveragePoint) | leverage_capability | CAP006 (Capability) |
@@ -10252,6 +11021,10 @@ graph TD
 | orders.CMD003 (Operation) | materializes | orders.CN009 (Concept) |
 | orders.CMD015 (Operation) | materializes | orders.CN009 (Concept) |
 | orders.CMD016 (Operation) | materializes | orders.CN009 (Concept) |
+| orders.MT001 (Metric) | metric_measures | orders.CMD001 (Operation) |
+| orders.MT002 (Metric) | metric_measures | orders.CMD003 (Operation) |
+| orders.MT002 (Metric) | metric_measures | orders.CMD015 (Operation) |
+| orders.MT002 (Metric) | metric_measures | orders.CMD016 (Operation) |
 | MS001 (Milestone) | milestone_deliverable | CAP001 (Capability) |
 | MS001 (Milestone) | milestone_deliverable | CAP003 (Capability) |
 | MS001 (Milestone) | milestone_deliverable | orders.US001 (UserStory) |
@@ -10318,6 +11091,500 @@ graph TD
 | shop.UNV001 (UINavigation) | nav_to | shop.SCR004 (Screen) |
 | prestashop.DSC002 (DeploymentScope) | nested_in | prestashop.DSC001 (DeploymentScope) |
 | prestashop.DSC003 (DeploymentScope) | nested_in | prestashop.DSC001 (DeploymentScope) |
+| admin.CMD021 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT014 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD022 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT015 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD023 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT016 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD024 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT017 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.QRY005 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD025 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT018 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD026 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT019 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD027 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT020 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD028 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.QRY006 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD029 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT021 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD030 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT022 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD031 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT023 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD032 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD033 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT024 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.QRY007 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.QRY008 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.QRY009 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD034 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT025 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD035 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT026 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD001 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT001 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD002 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT002 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD003 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT003 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD004 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT004 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD005 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD006 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD007 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT005 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD008 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT006 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.QRY001 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.QRY002 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD009 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT007 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD010 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT008 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD011 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT009 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD012 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.QRY003 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD013 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT010 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD014 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT011 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.QRY004 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD015 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT012 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD016 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.EVT013 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD017 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD018 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD019 (Operation) | operation_in_domain | DMN001 (Domain) |
+| admin.CMD020 (Operation) | operation_in_domain | DMN001 (Domain) |
+| catalog.CMD025 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD026 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD027 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD028 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD029 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.QRY005 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.QRY006 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.EVT009 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.EVT010 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD030 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD031 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD032 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD033 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.QRY007 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.QRY008 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD011 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD012 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD013 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD014 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD015 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.QRY003 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.QRY004 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.EVT004 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.EVT005 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD040 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD041 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD016 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD017 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD018 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD019 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD020 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.EVT006 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD021 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD022 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD023 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD024 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.EVT007 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD001 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD002 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD003 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD004 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD005 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD006 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD007 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD008 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD009 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD010 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.QRY001 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.QRY002 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.QRY009 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.EVT001 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.EVT002 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.EVT003 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.EVT008 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD034 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD035 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD036 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD037 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD038 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.CMD039 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.QRY010 (Operation) | operation_in_domain | DMN002 (Domain) |
+| catalog.QRY011 (Operation) | operation_in_domain | DMN002 (Domain) |
+| checkout.CMD001 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD002 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD003 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD004 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD005 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD006 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD007 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD008 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.EVT001 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.EVT002 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.EVT003 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.QRY001 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.QRY002 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.QRY003 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD009 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD010 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD011 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD012 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD013 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.EVT004 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD014 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD015 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.QRY004 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.EVT005 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.EVT006 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD016 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD017 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD018 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD019 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD020 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.QRY005 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.QRY006 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.EVT007 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.EVT008 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.EVT009 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD021 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD022 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.CMD023 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.QRY007 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.QRY008 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.EVT010 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.EVT011 (Operation) | operation_in_domain | DMN003 (Domain) |
+| checkout.EVT012 (Operation) | operation_in_domain | DMN003 (Domain) |
+| content.CMD001 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD002 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD003 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD004 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD005 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD006 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.EVT001 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.EVT002 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.EVT003 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.EVT004 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.QRY001 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.QRY002 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD007 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD008 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD009 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD010 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD011 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD012 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.EVT005 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.EVT006 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.EVT007 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.EVT008 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.QRY003 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.QRY004 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.QRY005 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.QRY006 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD019 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD020 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.EVT015 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.EVT016 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.QRY007 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.QRY008 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD013 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD014 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD015 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD016 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD017 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.CMD018 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.EVT009 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.EVT010 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.EVT011 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.EVT012 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.EVT013 (Operation) | operation_in_domain | DMN004 (Domain) |
+| content.EVT014 (Operation) | operation_in_domain | DMN004 (Domain) |
+| customers.CMD012 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD013 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD014 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD015 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.QRY009 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.QRY010 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.EVT007 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.EVT008 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.EVT009 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD001 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD002 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD003 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD004 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD005 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD006 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD007 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD008 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.EVT001 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.EVT002 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.EVT003 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.EVT004 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.QRY001 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.QRY002 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.QRY003 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.QRY004 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.QRY005 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.QRY006 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.QRY007 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD009 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD010 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD011 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.QRY008 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.EVT005 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.EVT006 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD016 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD017 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD018 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD019 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.QRY011 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.QRY012 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.EVT010 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.EVT011 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.EVT012 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD020 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD021 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.CMD022 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.QRY013 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.EVT013 (Operation) | operation_in_domain | DMN005 (Domain) |
+| customers.EVT014 (Operation) | operation_in_domain | DMN005 (Domain) |
+| international.CMD001 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD002 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD003 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD004 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD005 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD006 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT001 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT002 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT003 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT004 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT005 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT006 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.QRY001 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.QRY002 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.QRY003 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD011 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD012 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD013 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD014 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD015 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD016 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD017 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD018 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD019 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD020 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD021 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD022 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT011 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT012 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT013 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT014 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT015 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT016 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT017 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT018 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT019 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT020 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT021 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT022 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.QRY005 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.QRY006 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.QRY007 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.QRY008 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD007 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD008 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD009 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD010 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT007 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT008 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT009 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT010 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.QRY004 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD023 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD024 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD025 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD026 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD027 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD028 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD029 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.CMD030 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT023 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT024 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT025 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT026 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT027 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT028 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT029 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.EVT030 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.QRY009 (Operation) | operation_in_domain | DMN006 (Domain) |
+| international.QRY010 (Operation) | operation_in_domain | DMN006 (Domain) |
+| modules.CMD001 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.CMD002 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.CMD003 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.CMD004 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.CMD005 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.CMD006 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.CMD007 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.CMD008 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.EVT001 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.EVT002 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.EVT003 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.EVT004 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.EVT005 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.EVT006 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.QRY001 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.CMD009 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.EVT007 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.QRY002 (Operation) | operation_in_domain | DMN007 (Domain) |
+| modules.QRY003 (Operation) | operation_in_domain | DMN007 (Domain) |
+| orders.CMD017 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD018 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD019 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.EVT007 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.EVT008 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD024 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD025 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD026 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD027 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD028 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD029 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD030 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD031 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD032 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD033 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD034 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD035 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD036 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.QRY005 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.QRY006 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD001 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD004 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD002 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD005 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD006 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD007 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD008 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD009 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD010 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD011 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD012 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD013 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD014 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.EVT001 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.EVT002 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.EVT004 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.EVT005 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.QRY001 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.QRY002 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.QRY003 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD020 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD021 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD022 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.EVT009 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD003 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD015 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD016 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.EVT003 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.EVT006 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.CMD023 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.EVT010 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.QRY004 (Operation) | operation_in_domain | DMN008 (Domain) |
+| shipping.CMD001 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.CMD002 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.CMD003 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.CMD004 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.CMD005 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.CMD006 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.CMD007 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.CMD008 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.CMD009 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.CMD010 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.EVT001 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.EVT002 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.EVT003 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.EVT004 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.EVT005 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.EVT006 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.EVT007 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.EVT008 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.QRY001 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.QRY002 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.QRY003 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.QRY004 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.CMD011 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.CMD012 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.CMD013 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.CMD014 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.CMD015 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.CMD016 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.CMD017 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.EVT009 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.EVT010 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.EVT011 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.EVT012 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.EVT013 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.EVT014 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.EVT015 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.QRY005 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.QRY006 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.QRY007 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.QRY008 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.QRY009 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.QRY010 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shipping.QRY011 (Operation) | operation_in_domain | DMN009 (Domain) |
+| shop.CMD001 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.EVT001 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.QRY001 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.QRY002 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD002 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.EVT002 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD003 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.EVT003 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD004 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD005 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.QRY003 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD006 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.EVT004 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD007 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.EVT005 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD008 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.EVT006 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD009 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.QRY004 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD010 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.EVT007 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD011 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.EVT008 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD012 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.EVT009 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD013 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.QRY005 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.QRY006 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.QRY007 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD014 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.EVT010 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD015 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.EVT011 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD016 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.EVT012 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.QRY008 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD017 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.EVT013 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.QRY009 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.CMD018 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.EVT014 (Operation) | operation_in_domain | DMN010 (Domain) |
+| shop.QRY010 (Operation) | operation_in_domain | DMN010 (Domain) |
 | catalog.ORD001 (Dynamics) | ordering_operation | catalog.EVT001 (Operation) |
 | checkout.ORD001 (Dynamics) | ordering_operation | checkout.CMD014 (Operation) |
 | content.ORD001 (Dynamics) | ordering_operation | content.CMD019 (Operation) |
@@ -10382,6 +11649,70 @@ graph TD
 | customers.CMD001 (Operation) | payload_model | MDL300 (Models) |
 | customers.CMD002 (Operation) | payload_model | MDL301 (Models) |
 | orders.CMD001 (Operation) | payload_model | MDL100 (Models) |
+| admin.PRC001 (Process) | process_orders_operation | admin.CMD001 (Operation) |
+| admin.PRC001 (Process) | process_orders_operation | admin.CMD013 (Operation) |
+| admin.PRC002 (Process) | process_orders_operation | admin.CMD021 (Operation) |
+| admin.PRC002 (Process) | process_orders_operation | admin.CMD024 (Operation) |
+| admin.PRC003 (Process) | process_orders_operation | admin.CMD019 (Operation) |
+| catalog.PRC001 (Process) | process_orders_operation | catalog.CMD001 (Operation) |
+| catalog.PRC001 (Process) | process_orders_operation | catalog.EVT001 (Operation) |
+| catalog.PRC002 (Process) | process_orders_operation | catalog.CMD011 (Operation) |
+| catalog.PRC002 (Process) | process_orders_operation | catalog.EVT004 (Operation) |
+| catalog.PRC003 (Process) | process_orders_operation | catalog.CMD025 (Operation) |
+| catalog.PRC003 (Process) | process_orders_operation | catalog.EVT009 (Operation) |
+| checkout.PRC001 (Process) | process_orders_operation | checkout.CMD009 (Operation) |
+| checkout.PRC001 (Process) | process_orders_operation | checkout.CMD014 (Operation) |
+| checkout.PRC001 (Process) | process_orders_operation | checkout.CMD002 (Operation) |
+| checkout.PRC002 (Process) | process_orders_operation | checkout.CMD016 (Operation) |
+| checkout.PRC002 (Process) | process_orders_operation | checkout.CMD019 (Operation) |
+| content.PRC001 (Process) | process_orders_operation | content.CMD001 (Operation) |
+| content.PRC001 (Process) | process_orders_operation | content.CMD019 (Operation) |
+| content.PRC001 (Process) | process_orders_operation | content.QRY001 (Operation) |
+| content.PRC002 (Process) | process_orders_operation | content.CMD013 (Operation) |
+| content.PRC002 (Process) | process_orders_operation | content.CMD014 (Operation) |
+| content.PRC002 (Process) | process_orders_operation | content.CMD017 (Operation) |
+| customers.PRC001 (Process) | process_orders_operation | customers.CMD001 (Operation) |
+| customers.PRC001 (Process) | process_orders_operation | customers.CMD012 (Operation) |
+| customers.PRC001 (Process) | process_orders_operation | customers.CMD003 (Operation) |
+| customers.PRC002 (Process) | process_orders_operation | customers.CMD016 (Operation) |
+| customers.PRC002 (Process) | process_orders_operation | customers.CMD017 (Operation) |
+| international.PRC001 (Process) | process_orders_operation | international.CMD001 (Operation) |
+| international.PRC001 (Process) | process_orders_operation | international.CMD005 (Operation) |
+| international.PRC001 (Process) | process_orders_operation | international.CMD006 (Operation) |
+| international.PRC002 (Process) | process_orders_operation | international.CMD023 (Operation) |
+| international.PRC002 (Process) | process_orders_operation | international.CMD027 (Operation) |
+| international.PRC002 (Process) | process_orders_operation | international.CMD028 (Operation) |
+| modules.PRC001 (Process) | process_orders_operation | modules.CMD008 (Operation) |
+| modules.PRC001 (Process) | process_orders_operation | modules.CMD001 (Operation) |
+| modules.PRC001 (Process) | process_orders_operation | modules.QRY001 (Operation) |
+| modules.PRC002 (Process) | process_orders_operation | modules.CMD003 (Operation) |
+| modules.PRC002 (Process) | process_orders_operation | modules.CMD006 (Operation) |
+| orders.PRC001 (Process) | process_orders_operation | orders.CMD001 (Operation) |
+| orders.PRC001 (Process) | process_orders_operation | orders.EVT001 (Operation) |
+| orders.PRC002 (Process) | process_orders_operation | orders.CMD002 (Operation) |
+| orders.PRC002 (Process) | process_orders_operation | orders.EVT002 (Operation) |
+| orders.PRC002 (Process) | process_orders_operation | orders.CMD003 (Operation) |
+| orders.PRC002 (Process) | process_orders_operation | orders.EVT003 (Operation) |
+| orders.PRC002 (Process) | process_orders_operation | orders.EVT006 (Operation) |
+| orders.PRC003 (Process) | process_orders_operation | orders.CMD020 (Operation) |
+| orders.PRC003 (Process) | process_orders_operation | orders.EVT009 (Operation) |
+| orders.PRC004 (Process) | process_orders_operation | orders.CMD017 (Operation) |
+| orders.PRC004 (Process) | process_orders_operation | orders.EVT007 (Operation) |
+| orders.PRC004 (Process) | process_orders_operation | orders.CMD019 (Operation) |
+| orders.PRC004 (Process) | process_orders_operation | orders.EVT008 (Operation) |
+| orders.PRC005 (Process) | process_orders_operation | orders.CMD023 (Operation) |
+| orders.PRC005 (Process) | process_orders_operation | orders.EVT010 (Operation) |
+| orders.PRC005 (Process) | process_orders_operation | orders.CMD016 (Operation) |
+| orders.PRC005 (Process) | process_orders_operation | orders.EVT003 (Operation) |
+| orders.PRC005 (Process) | process_orders_operation | orders.EVT006 (Operation) |
+| shipping.PRC001 (Process) | process_orders_operation | shipping.CMD001 (Operation) |
+| shipping.PRC001 (Process) | process_orders_operation | shipping.CMD008 (Operation) |
+| shipping.PRC001 (Process) | process_orders_operation | shipping.CMD010 (Operation) |
+| shipping.PRC002 (Process) | process_orders_operation | shipping.CMD011 (Operation) |
+| shipping.PRC002 (Process) | process_orders_operation | shipping.CMD013 (Operation) |
+| shipping.PRC002 (Process) | process_orders_operation | shipping.CMD015 (Operation) |
+| shop.PRC001 (Process) | process_orders_operation | shop.CMD001 (Operation) |
+| shop.PRC002 (Process) | process_orders_operation | shop.CMD010 (Operation) |
 | admin.CMD021 (Operation) | produces | admin.EVT014 (Operation) |
 | admin.CMD022 (Operation) | produces | admin.EVT015 (Operation) |
 | admin.CMD023 (Operation) | produces | admin.EVT016 (Operation) |
@@ -10645,12 +11976,20 @@ graph TD
 | orders.RC003 (Dynamics) | race_condition_affects | orders.CMD002 (Operation) |
 | orders.RC003 (Dynamics) | race_condition_affects | orders.CMD015 (Operation) |
 | shipping.RC001 (Dynamics) | race_condition_affects | shipping.CMD013 (Operation) |
+| orders.CMD017 (Operation) | reacts_to | orders.EVT005 (Operation) |
+| orders.CMD004 (Operation) | reacts_to | orders.EVT001 (Operation) |
 | catalog.CN003 (Concept) | relationship | catalog.CN001 (Concept) |
 | catalog.CN004 (Concept) | relationship | catalog.CN001 (Concept) |
 | orders.CN003 (Concept) | relationship | orders.CN002 (Concept) |
 | orders.CN006 (Concept) | relationship | orders.CN002 (Concept) |
 | orders.CN005 (Concept) | relationship | orders.CN002 (Concept) |
 | orders.CN009 (Concept) | relationship | orders.CN002 (Concept) |
+| catalog.R001 (Risk) | risk_affects | catalog.EVT002 (Operation) |
+| content.R002 (Risk) | risk_affects | content.CMD016 (Operation) |
+| international.R001 (Risk) | risk_affects | international.CMD005 (Operation) |
+| modules.R001 (Risk) | risk_affects | modules.CMD003 (Operation) |
+| orders.R004 (Risk) | risk_affects | orders.CMD024 (Operation) |
+| shipping.R003 (Risk) | risk_affects | shipping.CMD012 (Operation) |
 | catalog.R001 (Risk) | risk_goal | catalog.G001 (Goal) |
 | catalog.R002 (Risk) | risk_goal | catalog.G001 (Goal) |
 | checkout.R001 (Risk) | risk_goal | checkout.G001 (Goal) |
@@ -10705,23 +12044,6 @@ graph TD
 | shop.SCR001 (Screen) | screen_motivated_by | shop.G001 (Goal) |
 | shop.SCR003 (Screen) | screen_motivated_by | shop.G003 (Goal) |
 | shop.SCR004 (Screen) | screen_motivated_by | shop.G002 (Goal) |
-| admin.SCR002 (Screen) | screen_story | admin.STR001 (Story) |
-| checkout.SCR001 (Screen) | screen_story | checkout.STR001 (Story) |
-| checkout.SCR003 (Screen) | screen_story | checkout.STR002 (Story) |
-| content.SCR002 (Screen) | screen_story | content.STR001 (Story) |
-| customers.SCR002 (Screen) | screen_story | customers.STR001 (Story) |
-| customers.SCR003 (Screen) | screen_story | customers.STR002 (Story) |
-| international.SCR002 (Screen) | screen_story | international.STR001 (Story) |
-| international.SCR006 (Screen) | screen_story | international.STR002 (Story) |
-| modules.SCR002 (Screen) | screen_story | modules.STR001 (Story) |
-| orders.SCR001 (Screen) | screen_story | orders.STR001 (Story) |
-| orders.SCR001 (Screen) | screen_story | orders.STR002 (Story) |
-| orders.SCR002 (Screen) | screen_story | orders.STR002 (Story) |
-| orders.SCR002 (Screen) | screen_story | orders.STR003 (Story) |
-| orders.SCR002 (Screen) | screen_story | orders.STR004 (Story) |
-| orders.SCR003 (Screen) | screen_story | orders.STR005 (Story) |
-| shipping.SCR002 (Screen) | screen_story | shipping.STR001 (Story) |
-| shipping.SCR004 (Screen) | screen_story | shipping.STR002 (Story) |
 | admin.SCR001 (Screen) | screen_uses_model | EmployeeList (Missing) |
 | admin.SCR002 (Screen) | screen_uses_model | EmployeeForm (Missing) |
 | admin.SCR003 (Screen) | screen_uses_model | PermissionMatrix (Missing) |
@@ -10761,70 +12083,100 @@ graph TD
 | shop.SCR003 (Screen) | screen_uses_model | SearchEngineList (Missing) |
 | shop.SCR004 (Screen) | screen_uses_model | AliasList (Missing) |
 | shop.SCR005 (Screen) | screen_uses_model | ContactList (Missing) |
-| admin.STR001 (Story) | story_orders_operation | admin.CMD001 (Operation) |
-| admin.STR001 (Story) | story_orders_operation | admin.CMD013 (Operation) |
-| admin.STR002 (Story) | story_orders_operation | admin.CMD021 (Operation) |
-| admin.STR002 (Story) | story_orders_operation | admin.CMD024 (Operation) |
-| admin.STR003 (Story) | story_orders_operation | admin.CMD019 (Operation) |
-| catalog.STR001 (Story) | story_orders_operation | catalog.CMD001 (Operation) |
-| catalog.STR001 (Story) | story_orders_operation | catalog.EVT001 (Operation) |
-| catalog.STR002 (Story) | story_orders_operation | catalog.CMD011 (Operation) |
-| catalog.STR002 (Story) | story_orders_operation | catalog.EVT004 (Operation) |
-| catalog.STR003 (Story) | story_orders_operation | catalog.CMD025 (Operation) |
-| catalog.STR003 (Story) | story_orders_operation | catalog.EVT009 (Operation) |
-| checkout.STR001 (Story) | story_orders_operation | checkout.CMD009 (Operation) |
-| checkout.STR001 (Story) | story_orders_operation | checkout.CMD014 (Operation) |
-| checkout.STR001 (Story) | story_orders_operation | checkout.CMD002 (Operation) |
-| checkout.STR002 (Story) | story_orders_operation | checkout.CMD016 (Operation) |
-| checkout.STR002 (Story) | story_orders_operation | checkout.CMD019 (Operation) |
-| content.STR001 (Story) | story_orders_operation | content.CMD001 (Operation) |
-| content.STR001 (Story) | story_orders_operation | content.CMD019 (Operation) |
-| content.STR001 (Story) | story_orders_operation | content.QRY001 (Operation) |
-| content.STR002 (Story) | story_orders_operation | content.CMD013 (Operation) |
-| content.STR002 (Story) | story_orders_operation | content.CMD014 (Operation) |
-| content.STR002 (Story) | story_orders_operation | content.CMD017 (Operation) |
-| customers.STR001 (Story) | story_orders_operation | customers.CMD001 (Operation) |
-| customers.STR001 (Story) | story_orders_operation | customers.CMD012 (Operation) |
-| customers.STR001 (Story) | story_orders_operation | customers.CMD003 (Operation) |
-| customers.STR002 (Story) | story_orders_operation | customers.CMD016 (Operation) |
-| customers.STR002 (Story) | story_orders_operation | customers.CMD017 (Operation) |
-| international.STR001 (Story) | story_orders_operation | international.CMD001 (Operation) |
-| international.STR001 (Story) | story_orders_operation | international.CMD005 (Operation) |
-| international.STR001 (Story) | story_orders_operation | international.CMD006 (Operation) |
-| international.STR002 (Story) | story_orders_operation | international.CMD023 (Operation) |
-| international.STR002 (Story) | story_orders_operation | international.CMD027 (Operation) |
-| international.STR002 (Story) | story_orders_operation | international.CMD028 (Operation) |
-| modules.STR001 (Story) | story_orders_operation | modules.CMD008 (Operation) |
-| modules.STR001 (Story) | story_orders_operation | modules.CMD001 (Operation) |
-| modules.STR001 (Story) | story_orders_operation | modules.QRY001 (Operation) |
-| modules.STR002 (Story) | story_orders_operation | modules.CMD003 (Operation) |
-| modules.STR002 (Story) | story_orders_operation | modules.CMD006 (Operation) |
-| orders.STR001 (Story) | story_orders_operation | orders.CMD001 (Operation) |
-| orders.STR001 (Story) | story_orders_operation | orders.EVT001 (Operation) |
-| orders.STR002 (Story) | story_orders_operation | orders.CMD002 (Operation) |
-| orders.STR002 (Story) | story_orders_operation | orders.EVT002 (Operation) |
-| orders.STR002 (Story) | story_orders_operation | orders.CMD003 (Operation) |
-| orders.STR002 (Story) | story_orders_operation | orders.EVT003 (Operation) |
-| orders.STR002 (Story) | story_orders_operation | orders.EVT006 (Operation) |
-| orders.STR003 (Story) | story_orders_operation | orders.CMD020 (Operation) |
-| orders.STR003 (Story) | story_orders_operation | orders.EVT009 (Operation) |
-| orders.STR004 (Story) | story_orders_operation | orders.CMD017 (Operation) |
-| orders.STR004 (Story) | story_orders_operation | orders.EVT007 (Operation) |
-| orders.STR004 (Story) | story_orders_operation | orders.CMD019 (Operation) |
-| orders.STR004 (Story) | story_orders_operation | orders.EVT008 (Operation) |
-| orders.STR005 (Story) | story_orders_operation | orders.CMD023 (Operation) |
-| orders.STR005 (Story) | story_orders_operation | orders.EVT010 (Operation) |
-| orders.STR005 (Story) | story_orders_operation | orders.CMD016 (Operation) |
-| orders.STR005 (Story) | story_orders_operation | orders.EVT003 (Operation) |
-| orders.STR005 (Story) | story_orders_operation | orders.EVT006 (Operation) |
-| shipping.STR001 (Story) | story_orders_operation | shipping.CMD001 (Operation) |
-| shipping.STR001 (Story) | story_orders_operation | shipping.CMD008 (Operation) |
-| shipping.STR001 (Story) | story_orders_operation | shipping.CMD010 (Operation) |
-| shipping.STR002 (Story) | story_orders_operation | shipping.CMD011 (Operation) |
-| shipping.STR002 (Story) | story_orders_operation | shipping.CMD013 (Operation) |
-| shipping.STR002 (Story) | story_orders_operation | shipping.CMD015 (Operation) |
-| shop.STR001 (Story) | story_orders_operation | shop.CMD001 (Operation) |
-| shop.STR002 (Story) | story_orders_operation | shop.CMD010 (Operation) |
+| checkout.SEC001 (Security) | security_operation | checkout.CMD014 (Operation) |
+| customers.SEC001 (Security) | security_operation | customers.CMD001 (Operation) |
+| customers.SEC001 (Security) | security_operation | customers.CMD002 (Operation) |
+| customers.SEC001 (Security) | security_operation | customers.CMD012 (Operation) |
+| orders.SEC001 (Security) | security_operation | orders.QRY001 (Operation) |
+| orders.SEC001 (Security) | security_operation | orders.QRY002 (Operation) |
+| orders.SEC001 (Security) | security_operation | orders.QRY003 (Operation) |
+| orders.SEC002 (Security) | security_operation | orders.CMD003 (Operation) |
+| orders.SEC002 (Security) | security_operation | orders.CMD015 (Operation) |
+| orders.SEC002 (Security) | security_operation | orders.CMD016 (Operation) |
+| admin.SLO001 (SLO) | slo_operation | admin.CMD021 (Operation) |
+| admin.SLO001 (SLO) | slo_operation | admin.CMD024 (Operation) |
+| catalog.SLO001 (SLO) | slo_operation | catalog.QRY001 (Operation) |
+| catalog.SLO002 (SLO) | slo_operation | catalog.CMD001 (Operation) |
+| catalog.SLO002 (SLO) | slo_operation | catalog.CMD002 (Operation) |
+| checkout.SLO001 (SLO) | slo_operation | checkout.CMD009 (Operation) |
+| checkout.SLO002 (SLO) | slo_operation | checkout.CMD014 (Operation) |
+| checkout.SLO003 (SLO) | slo_operation | checkout.CMD016 (Operation) |
+| checkout.SLO003 (SLO) | slo_operation | checkout.CMD017 (Operation) |
+| content.SLO001 (SLO) | slo_operation | content.QRY001 (Operation) |
+| content.SLO002 (SLO) | slo_operation | content.CMD014 (Operation) |
+| customers.SLO001 (SLO) | slo_operation | customers.CMD016 (Operation) |
+| customers.SLO002 (SLO) | slo_operation | customers.CMD001 (Operation) |
+| international.SLO001 (SLO) | slo_operation | international.QRY010 (Operation) |
+| international.SLO002 (SLO) | slo_operation | international.CMD005 (Operation) |
+| modules.SLO001 (SLO) | slo_operation | modules.CMD001 (Operation) |
+| modules.SLO001 (SLO) | slo_operation | modules.CMD002 (Operation) |
+| modules.SLO001 (SLO) | slo_operation | modules.CMD007 (Operation) |
+| SLO001 (SLO) | slo_operation | orders.CMD001 (Operation) |
+| SLO001 (SLO) | slo_operation | orders.QRY001 (Operation) |
+| SLO002 (SLO) | slo_operation | orders.QRY001 (Operation) |
+| SLO003 (SLO) | slo_operation | orders.CMD003 (Operation) |
+| SLO003 (SLO) | slo_operation | orders.CMD015 (Operation) |
+| shipping.SLO001 (SLO) | slo_operation | shipping.CMD001 (Operation) |
+| shipping.SLO001 (SLO) | slo_operation | shipping.CMD002 (Operation) |
+| shipping.SLO001 (SLO) | slo_operation | shipping.CMD008 (Operation) |
+| shipping.SLO002 (SLO) | slo_operation | shipping.CMD011 (Operation) |
+| shipping.SLO002 (SLO) | slo_operation | shipping.CMD013 (Operation) |
+| shop.SLO001 (SLO) | slo_operation | shop.CMD014 (Operation) |
+| Admin (Context) | spans | PrestaShop (Party) |
+| Catalog (Context) | spans | PrestaShop (Party) |
+| Checkout (Context) | spans | PrestaShop (Party) |
+| Content (Context) | spans | PrestaShop (Party) |
+| Customers (Context) | spans | PrestaShop (Party) |
+| International (Context) | spans | PrestaShop (Party) |
+| Modules (Context) | spans | PrestaShop (Party) |
+| Orders (Context) | spans | PrestaShop (Party) |
+| ExternalApiConsumers (Context) | spans | ApiIntegrators (Party) |
+| Shipping (Context) | spans | PrestaShop (Party) |
+| Shop (Context) | spans | PrestaShop (Party) |
+| SDM001 (Subdomain) | subdomain_of_domain | DMN001 (Domain) |
+| SDM002 (Subdomain) | subdomain_of_domain | DMN001 (Domain) |
+| SDM003 (Subdomain) | subdomain_of_domain | DMN001 (Domain) |
+| SDM004 (Subdomain) | subdomain_of_domain | DMN002 (Domain) |
+| SDM005 (Subdomain) | subdomain_of_domain | DMN002 (Domain) |
+| SDM006 (Subdomain) | subdomain_of_domain | DMN002 (Domain) |
+| SDM007 (Subdomain) | subdomain_of_domain | DMN002 (Domain) |
+| SDM008 (Subdomain) | subdomain_of_domain | DMN002 (Domain) |
+| SDM009 (Subdomain) | subdomain_of_domain | DMN002 (Domain) |
+| SDM010 (Subdomain) | subdomain_of_domain | DMN002 (Domain) |
+| SDM011 (Subdomain) | subdomain_of_domain | DMN002 (Domain) |
+| SDM012 (Subdomain) | subdomain_of_domain | DMN003 (Domain) |
+| SDM013 (Subdomain) | subdomain_of_domain | DMN003 (Domain) |
+| SDM014 (Subdomain) | subdomain_of_domain | DMN003 (Domain) |
+| SDM015 (Subdomain) | subdomain_of_domain | DMN004 (Domain) |
+| SDM016 (Subdomain) | subdomain_of_domain | DMN004 (Domain) |
+| SDM017 (Subdomain) | subdomain_of_domain | DMN004 (Domain) |
+| SDM018 (Subdomain) | subdomain_of_domain | DMN005 (Domain) |
+| SDM019 (Subdomain) | subdomain_of_domain | DMN005 (Domain) |
+| SDM020 (Subdomain) | subdomain_of_domain | DMN005 (Domain) |
+| SDM021 (Subdomain) | subdomain_of_domain | DMN005 (Domain) |
+| SDM022 (Subdomain) | subdomain_of_domain | DMN006 (Domain) |
+| SDM023 (Subdomain) | subdomain_of_domain | DMN006 (Domain) |
+| SDM024 (Subdomain) | subdomain_of_domain | DMN006 (Domain) |
+| SDM025 (Subdomain) | subdomain_of_domain | DMN006 (Domain) |
+| SDM026 (Subdomain) | subdomain_of_domain | DMN006 (Domain) |
+| SDM027 (Subdomain) | subdomain_of_domain | DMN008 (Domain) |
+| SDM028 (Subdomain) | subdomain_of_domain | DMN008 (Domain) |
+| SDM029 (Subdomain) | subdomain_of_domain | DMN008 (Domain) |
+| SDM030 (Subdomain) | subdomain_of_domain | DMN008 (Domain) |
+| SDM031 (Subdomain) | subdomain_of_domain | DMN008 (Domain) |
+| SDM032 (Subdomain) | subdomain_of_domain | DMN009 (Domain) |
+| SDM033 (Subdomain) | subdomain_of_domain | DMN009 (Domain) |
+| AdminService (Service) | system_ref | PrestaShop (Party) |
+| CatalogService (Service) | system_ref | PrestaShop (Party) |
+| CheckoutService (Service) | system_ref | PrestaShop (Party) |
+| ContentService (Service) | system_ref | PrestaShop (Party) |
+| CustomerService (Service) | system_ref | PrestaShop (Party) |
+| InternationalService (Service) | system_ref | PrestaShop (Party) |
+| ModuleManager (Service) | system_ref | PrestaShop (Party) |
+| OrderService (Service) | system_ref | PrestaShop (Party) |
+| AdminApiClient (Service) | system_ref | ApiIntegrators (Party) |
+| ShippingService (Service) | system_ref | PrestaShop (Party) |
+| ShopService (Service) | system_ref | PrestaShop (Party) |
 | orders.CN002 (Concept) | transition_rules | orders.TR001 (TransitionRule) |
 | admin.UC001 (UseCase) | use_case_actor | admin.ACT001 (Actor) |
 | admin.UC002 (UseCase) | use_case_actor | admin.ACT003 (Actor) |
@@ -10921,7 +12273,7 @@ graph TD
 | shipping.UC002 (UseCase) | use_case_operation | shipping.CMD012 (Operation) |
 | shop.UC001 (UseCase) | use_case_operation | shop.CMD001 (Operation) |
 | shop.UC001 (UseCase) | use_case_operation | shop.CMD001 (Operation) |
-| orders.UC004 (UseCase) | use_case_story | orders.STR005 (Story) |
+| orders.UC004 (UseCase) | use_case_process | orders.PRC005 (Process) |
 | admin.UC001 (UseCase) | use_case_user_story | admin.US001 (UserStory) |
 | admin.UC001 (UseCase) | use_case_user_story | admin.US002 (UserStory) |
 | admin.UC002 (UseCase) | use_case_user_story | admin.US003 (UserStory) |
@@ -11488,6 +12840,7 @@ graph TD
 |---------------|-------|
 | code_ref | 691 |
 | handled_by | 494 |
+| operation_in_domain | 494 |
 | validates | 248 |
 | produces | 232 |
 | initiated_by | 226 |
@@ -11495,22 +12848,24 @@ graph TD
 | governed_by | 107 |
 | concepts | 91 |
 | use_case_operation | 70 |
-| story_orders_operation | 64 |
+| process_orders_operation | 64 |
 | user_story_actor | 58 |
 | action_triggers_operation | 53 |
 | action_on_screen | 44 |
 | screen_uses_model | 39 |
 | user_story_test_case | 39 |
+| subdomain_of_domain | 33 |
 | contract_exposes | 31 |
 | use_case_user_story | 31 |
-| association | 26 |
+| slo_operation | 29 |
+| association | 27 |
+| kpi_goal | 27 |
 | use_case_actor | 25 |
 | risk_goal | 24 |
 | owned_by | 23 |
 | screen_motivated_by | 22 |
 | value_stream_capability | 21 |
 | inquiry_goal | 18 |
-| screen_story | 17 |
 | provides | 16 |
 | context_depends_on | 16 |
 | nav_from | 16 |
@@ -11522,15 +12877,20 @@ graph TD
 | payload_model | 12 |
 | binds | 12 |
 | contains | 11 |
+| system_ref | 11 |
+| spans | 11 |
 | user_story_use_case | 11 |
 | capability_goal | 11 |
 | motivation_refs | 10 |
 | dept_has_team | 10 |
 | org_contains_team | 10 |
+| security_operation | 10 |
+| context_realizes_domain | 10 |
 | value_stream_kpi | 9 |
 | contract_sends | 7 |
 | relationship | 6 |
 | milestone_dependency | 6 |
+| risk_affects | 6 |
 | leverage_decision | 6 |
 | ordering_operation | 6 |
 | ordering_requires | 6 |
@@ -11545,8 +12905,11 @@ graph TD
 | leverage_fitness_function | 4 |
 | leverage_realized_by | 4 |
 | leverage_capability | 4 |
+| deployed_in_environment | 4 |
 | hosted_on | 4 |
 | parallelism_operation | 4 |
+| metric_measures | 4 |
+| compliance_concept | 4 |
 | materializes | 3 |
 | org_contains_dept | 3 |
 | roadmap_value_stream | 3 |
@@ -11554,6 +12917,7 @@ graph TD
 | risk_owner | 3 |
 | value_stream_actor | 3 |
 | connects_to | 3 |
+| reacts_to | 2 |
 | roadmap_realizes_decision | 2 |
 | inquiry_owner | 2 |
 | leverage_depends_on | 2 |
@@ -11561,11 +12925,12 @@ graph TD
 | transition_rules | 1 |
 | contract_receives | 1 |
 | interacts_with | 1 |
-| use_case_story | 1 |
+| use_case_process | 1 |
+| kpi_metric | 1 |
 
 ## Coverage Gaps
 
-### Orphan Entities (202)
+### Orphan Entities (150)
 
 Entities with no incoming or outgoing relations:
 
@@ -11670,8 +13035,6 @@ Entities with no incoming or outgoing relations:
 - **shop.ERR001** (Error) — LogoExtensionNotSupported
 - **shop.ERR002** (Error) — SearchEngineNotFound
 - **shop.ERR003** (Error) — AliasNotFound
-- **PrestaShop** (Party) — PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
-- **ApiIntegrators** (Party) — Third-party systems integrating with PrestaShop over the Admin REST API using OAuth2. Not built or operated by PrestaShop; modelled so the dependency on the Admin API surface is visible.
 - **MDL012** (Models) — Partial update payload for an existing category.
 - **MDL014** (Models) — Recursive tree node for category hierarchy display.
 - **MDL016** (Models) — Full attribute group with its values for editing.
@@ -11688,7 +13051,6 @@ Entities with no incoming or outgoing relations:
 - **admin.A001** (Assumption) — PHP 8.1+ is the minimum supported runtime
 - **admin.T001** (TradeOff) — no description
 - **admin.INQ002** (Inquiry) — Legacy configuration CQRS gap
-- **catalog.G003** (Goal) — Responsive catalog back-office
 - **catalog.NG001** (NonGoal) — No built-in B2B tiered/volume pricing engine
 - **catalog.NG002** (NonGoal) — No AI-powered product recommendations in core
 - **catalog.R003** (Risk) — Multi-store product data drift
@@ -11703,11 +13065,9 @@ Entities with no incoming or outgoing relations:
 - **customers.T001** (TradeOff) — no description
 - **international.NG001** (NonGoal) — No automatic regulatory compliance monitoring
 - **international.A001** (Assumption) — Currency exchange rates from ECB or similar free feeds remain available
-- **modules.G002** (Goal) — Safe module upgrades
 - **modules.NG001** (NonGoal) — No containerized or sandboxed module isolation
 - **modules.A001** (Assumption) — Third-party modules may hook into any public class or method
 - **modules.T001** (TradeOff) — no description
-- **orders.G004** (Goal) — EU VAT invoice compliance
 - **orders.NG001** (NonGoal) — PrestaShop will not implement its own payment gateway
 - **orders.NG002** (NonGoal) — No real-time inventory sync with physical POS
 - **orders.A003** (Assumption) — EU VAT rates will not change more than twice per year
@@ -11720,57 +13080,10 @@ Entities with no incoming or outgoing relations:
 - **shop.A001** (Assumption) — MySQL/MariaDB is the only supported RDBMS
 - **shop.T001** (TradeOff) — no description
 - **shop.INQ002** (Inquiry) — Store CRUD gap
-- **admin.KPI002** (KPI) — API Client Uptime
-- **admin.SLO001** (SLO) — Authentication Latency SLO
-- **catalog.KPI002** (KPI) — Catalog Completeness
-- **catalog.KPI003** (KPI) — API Coverage
-- **catalog.SLO001** (SLO) — Search API Latency
-- **catalog.SLO002** (SLO) — Product Save Latency
 - **catalog.SLO003** (SLO) — Bulk Import Throughput
 - **catalog.RES001** (Resilience) — Search Index Recovery
-- **checkout.KPI002** (KPI) — Discount Calculation Accuracy
-- **checkout.KPI003** (KPI) — Active Discount Campaign Count
-- **checkout.SLO001** (SLO) — Add-to-Cart Latency
-- **checkout.SLO002** (SLO) — Cart Rule Evaluation Latency
-- **checkout.SLO003** (SLO) — Discount CRUD Response Time
-- **checkout.SEC001** (Security) — Voucher Code Brute-Force Protection
 - **checkout.CMP001** (Compliance) — Promotion Transparency
-- **content.KPI001** (KPI) — SEO Metadata Coverage
-- **content.KPI002** (KPI) — CMS Content Completeness
-- **content.KPI003** (KPI) — Theme Activation Success Rate
-- **content.SLO001** (SLO) — CMS Page Load Time
-- **content.SLO002** (SLO) — Theme Switch Availability
-- **customers.KPI001** (KPI) — Registration Success Rate
-- **customers.KPI002** (KPI) — Address Validation Pass Rate
-- **customers.KPI003** (KPI) — Guest-to-Customer Conversion Rate
-- **customers.SLO001** (SLO) — Customer Service First Response Time
-- **customers.SLO002** (SLO) — Registration API Latency
-- **customers.SEC001** (Security) — PII Encryption at Rest
 - **customers.CMP001** (Compliance) — GDPR Data Subject Rights
-- **international.KPI001** (KPI) — Exchange Rate Freshness
-- **international.KPI002** (KPI) — Tax Rule Coverage
-- **international.KPI003** (KPI) — Localization Completeness
-- **international.SLO001** (SLO) — Tax Calculation Accuracy
-- **international.SLO002** (SLO) — Exchange Rate Refresh Latency
-- **modules.KPI002** (KPI) — Module Upgrade Success Rate
-- **modules.SLO001** (SLO) — Module Lifecycle Operation Latency
-- **orders.MT001** (Metric) — Order Processing Latency
-- **orders.MT002** (Metric) — Refund Processing Time
-- **KPI002** (KPI) — Checkout-to-Confirmation Time
-- **KPI003** (KPI) — Invoice Generation Compliance Rate
-- **SLO001** (SLO) — Order API Availability
-- **SLO002** (SLO) — Order Query Response Time
-- **SLO003** (SLO) — Refund Processing SLO
-- **orders.SEC001** (Security) — Order Data Access Control
-- **orders.SEC002** (Security) — Refund Authorization
-- **orders.CMP001** (Compliance) — GDPR Order Data Retention
-- **orders.CMP002** (Compliance) — EU Consumer Rights - 14-day Return Window
-- **shipping.KPI002** (KPI) — Zone Coverage Completeness
-- **shipping.KPI003** (KPI) — Shipment Fulfillment Rate
-- **shipping.SLO001** (SLO) — Carrier Configuration API Latency
-- **shipping.SLO002** (SLO) — Shipment Creation Latency
-- **shop.KPI002** (KPI) — Search Alias Coverage
-- **shop.SLO001** (SLO) — Search Indexation Latency
 
 ### Untested Rules (12)
 
