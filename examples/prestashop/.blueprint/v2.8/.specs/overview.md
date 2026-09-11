@@ -1,6 +1,6 @@
 # PrestaShop-v9
 
-> Generated from blueprint model. 2092 entities, 3794 relations.
+> Generated from blueprint model. 2092 entities, 3808 relations.
 
 ## Context Map
 
@@ -33,6 +33,10 @@ graph LR
     Orders -->|"depends on"| International
     Shipping -->|"depends on"| International
     Shop -->|"depends on"| International
+    Checkout -->|"contract traffic"| Orders
+    ExternalApiConsumers -->|"contract traffic"| Admin
+    ExternalApiConsumers -->|"contract traffic"| Catalog
+    ExternalApiConsumers -->|"contract traffic"| Orders
 ```
 
 > *[Archally Pro](https://archally.pro)* — Interactive Context Map with drag-and-drop, filtering, and detail panels.
@@ -6872,6 +6876,20 @@ graph TD
     D006 -.->|"code_ref"| https___github_com_PrestaShop_docs_blob_9_x_development_architecture_migration_guide__index_md
     D007 -.->|"code_ref"| src_Core_Domain_ApiClient_
     D007 -.->|"code_ref"| https___github_com_PrestaShop_docs_blob_9_x_development_webservice__index_md
+    Admin -.->|"context_covers_domain"| DMN001
+    Catalog -.->|"context_covers_domain"| DMN002
+    Checkout -.->|"context_covers_domain"| DMN003
+    Content -.->|"context_covers_domain"| DMN004
+    Customers -.->|"context_covers_domain"| DMN005
+    International -.->|"context_covers_domain"| DMN006
+    Modules -.->|"context_covers_domain"| DMN007
+    Orders -.->|"context_covers_domain"| DMN008
+    Shipping -.->|"context_covers_domain"| DMN009
+    Shop -.->|"context_covers_domain"| DMN010
+    Checkout -.->|"contract_traffic"| Orders
+    ExternalApiConsumers -.->|"contract_traffic"| Admin
+    ExternalApiConsumers -.->|"contract_traffic"| Catalog
+    ExternalApiConsumers -.->|"contract_traffic"| Orders
 ```
 
 > *[Archally Pro](https://archally.pro)* — Interactive Entity Graph with force-directed layout, layer filtering, node search, and relation inspector.
@@ -9035,7 +9053,7 @@ graph TD
 
 ## Relations
 
-**3794 relations** discovered.
+**3808 relations** discovered.
 
 | Source | Type | Target |
 |--------|------|--------|
@@ -10016,6 +10034,16 @@ graph TD
 | ExternalApiConsumers (Context) | contains | AdminApiClient (Service) |
 | Shipping (Context) | contains | ShippingService (Service) |
 | Shop (Context) | contains | ShopService (Service) |
+| Admin (Context) | context_covers_domain | DMN001 (Domain) |
+| Catalog (Context) | context_covers_domain | DMN002 (Domain) |
+| Checkout (Context) | context_covers_domain | DMN003 (Domain) |
+| Content (Context) | context_covers_domain | DMN004 (Domain) |
+| Customers (Context) | context_covers_domain | DMN005 (Domain) |
+| International (Context) | context_covers_domain | DMN006 (Domain) |
+| Modules (Context) | context_covers_domain | DMN007 (Domain) |
+| Orders (Context) | context_covers_domain | DMN008 (Domain) |
+| Shipping (Context) | context_covers_domain | DMN009 (Domain) |
+| Shop (Context) | context_covers_domain | DMN010 (Domain) |
 | Catalog (Context) | context_depends_on | International (Context) |
 | Catalog (Context) | context_depends_on | Modules (Context) |
 | Checkout (Context) | context_depends_on | Catalog (Context) |
@@ -10086,6 +10114,10 @@ graph TD
 | OrderService.asyncapi (Contract) | contract_sends | orders.EVT002 (Operation) |
 | OrderService.asyncapi (Contract) | contract_sends | orders.EVT003 (Operation) |
 | OrderService.asyncapi (Contract) | contract_sends | orders.EVT004 (Operation) |
+| Checkout (Context) | contract_traffic | Orders (Context) |
+| ExternalApiConsumers (Context) | contract_traffic | Admin (Context) |
+| ExternalApiConsumers (Context) | contract_traffic | Catalog (Context) |
+| ExternalApiConsumers (Context) | contract_traffic | Orders (Context) |
 | AdminService (Service) | deployed_in_environment | prestashop.ENV001 (Environment) |
 | CatalogService (Service) | deployed_in_environment | prestashop.ENV001 (Environment) |
 | CheckoutService (Service) | deployed_in_environment | prestashop.ENV001 (Environment) |
@@ -12886,6 +12918,7 @@ graph TD
 | org_contains_team | 10 |
 | security_operation | 10 |
 | context_realizes_domain | 10 |
+| context_covers_domain | 10 |
 | value_stream_kpi | 9 |
 | contract_sends | 7 |
 | relationship | 6 |
@@ -12910,6 +12943,7 @@ graph TD
 | parallelism_operation | 4 |
 | metric_measures | 4 |
 | compliance_concept | 4 |
+| contract_traffic | 4 |
 | materializes | 3 |
 | org_contains_dept | 3 |
 | roadmap_value_stream | 3 |
