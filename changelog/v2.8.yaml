@@ -5,6 +5,147 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.19"
+    date: "2026-09-11"
+    summary: >
+      A region of the model can say what it is about, on an axis of its own. `modeling_space` takes
+      three values: `business-domain`, the business the product serves; `technical-capability`, the
+      system's own machinery rather than the business it serves; `endeavour`, producing or running
+      the system rather than the system's subject matter. It is declared on an entry of the root
+      `domains[]` registry, is optional, and its absence means `business-domain`.
+
+
+      It is independent of `type`, which grades how important a region is to the business as core,
+      supporting or generic. A region about the system's own machinery is still core, supporting or
+      generic to the business, and can now state both.
+
+
+      The registry's description names what it holds. A bounded context reaches its region through
+      this registry and has no other way to name one, so a region about the system's machinery or
+      about the endeavour is declared here beside the business domains.
+
+
+      Both definitions state what is unsettled. `technical-capability` is a value of
+      `modeling_space` and a value of `subdomain_kind`, answering a different question in each, and
+      nothing reconciles a region that carries it on both axes or carries one on each and
+      disagrees. Which axis keeps the value is open, so a consumer should not branch on the value
+      set without allowing for it to change before the next major line.
+
+
+      Additive. No property is removed or narrowed, no value is withdrawn, and a document valid
+      under 2.8.18 is valid here with the same meaning.
+  - version: "2.8.18"
+    date: "2026-09-11"
+    summary: >
+      An operation says which problem-space domain it is part of. `domain_ref` on a domain
+      document's header states it once for every operation in the file, accepting a `DMN###`. A
+      domain document describes one domain and the file is a free partition, so a model may split a
+      domain across several documents and state the same reference in each; an operation declares no
+      reference of its own.
+
+
+      Where the header is absent, the domain is the one whose name matches the document's slice
+      folder. Every operation-to-domain edge records which source answered, `file-header` or
+      `folder`, so a reader can tell a model's own statement from a default the filesystem
+      supplied. A folder matching no declared domain, or matching two, leaves the operation with no
+      domain rather than a guessed one.
+
+
+      The header accepts a domain and not a subdomain, because a subdomain takes no identity of its
+      own on the next major line.
+
+
+      Separately, a service names the operations it provides with `provides:`. The former spelling
+      `handles:` said two things at once, who provides the operation and how it is invoked, and the
+      second of those is `dispatch:` on the operation. Both keys are accepted with identical meaning
+      and identical effect on the graph, and a service declaring both means the union of what it
+      wrote. `handles:` is the superseded spelling, removal on the next major line, and a model
+      still using it is told so once per service.
+
+
+      Additive. No field is removed or narrowed, and a document valid under 2.8.17 is valid here.
+  - version: "2.8.17"
+    date: "2026-09-11"
+    summary: >
+      A `tags` list describes what it is attached to and nothing else. A document-level `tags`
+      describes the document, an entity-level `tags` describes the entity, nothing propagates
+      between them, and an entity carries exactly the tags it declares. The definition and the
+      schema reference both state that rule.
+
+
+      Whether a file-level default is wanted is a separate question and is not answered here. No
+      document changes validity, and no entity gains or loses a tag.
+  - version: "2.8.17"
+    date: "2026-09-10"
+    summary: >
+      A bounded context reaches its domain the way `domain_ref` describes. A context that declares
+      the field names its domain; a context that declares nothing reaches the domain whose name
+      matches the slice folder its file sits in.
+
+
+      Every context-to-domain edge records which source it came from, `declared` or `folder`, so a
+      reader can tell a model's own statement from a default the filesystem supplied. A folder
+      naming no declared domain produces no edge and no placeholder, because a folder is not a
+      dangling reference; a folder name matching two domains produces none either, since an
+      ambiguous default is not a default.
+
+
+      Nothing changes for a document: no field is added, removed or narrowed.
+  - version: "2.8.17"
+    date: "2026-09-10"
+    summary: >
+      A subdomain takes no identity of its own. It is a partition of one domain and is always
+      reached through it, named inside the domain that contains it, and the containing domain is
+      what another entity points at. `subdomain.id`, `$defs/subdomain_ref` and the subdomain arm of
+      `bounded_context.domain_ref` are soft-deprecated, with removal on the next major line.
+
+
+      The subdomain itself stays, with its name, its kind, its complexity and its traits. Nothing
+      changes for a document today: `id` is still required and still validates, a context that names
+      a subdomain keeps validating, and it keeps grouping under that subdomain's domain, which is
+      the value the reference resolves to in any case.
+  - version: "2.8.17"
+    date: "2026-09-10"
+    summary: >
+      A typed id may carry a qualifier before it, as in `billing.CN001`. The qualifier names the
+      scope of the document the id is declared in, so that bare ids do not collide across files.
+      Nothing resolves it, and whether it coincides with the name of a bounded context, of a domain
+      or of neither is a property of one model rather than of the schema.
+
+
+      The definition is `$defs/scope_prefix`, with a description that says what the value is, and
+      twenty-seven references across nineteen schema files resolve to it. `$defs/context_prefix`
+      does not resolve, so a schema of your own that names the definition rather than matching the
+      pattern is the one thing to repoint.
+
+
+      No document changes validity: the qualifier is matched by pattern, and a model never names a
+      definition.
+  - version: "2.8.17"
+    date: "2026-09-10"
+    summary: >
+      The model says who expects what of it. `Persona` (`PER###`) is an entity in its own right: the
+      archetype gains an optional identifier and an `actor_ref`, and a `personas[]` collection at the
+      concepts document root declares one where something else has to name it. The inline form is
+      unchanged, a persona written under its actor validates exactly as before, and it may now take
+      an identifier without moving, which is what makes it referenceable in place.
+
+
+      `Concern` (`CNC###`) is what a persona expects: a `statement` in their own terms, the
+      `persona_ref` who holds it, an optional `priority` and `status`, and an `about_ref` naming the
+      part of the model the expectation is about. `about_ref` accepts a user story, a use case, a
+      business process, a screen or a concept and nothing else, because an expectation about a
+      command or an event is an expectation nobody holds; naming one is an error rather than a
+      warning, since a permissive reference would carry the name without the meaning.
+
+
+      A user story may name the concern it addresses through `concern_ref`. `benefit` says why one
+      story is worth doing; the concern is the standing expectation several stories can serve, and it
+      is the thing a view is measured against.
+
+
+      Additive throughout. A model that declares neither entity validates and checks exactly as
+      before.
   - version: "2.8.16"
     date: "2026-09-10"
     summary: >
