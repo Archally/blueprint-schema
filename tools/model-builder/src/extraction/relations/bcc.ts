@@ -11,7 +11,7 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  * - Assumption → Context (bounded_context_ref) [optional, BCC linkage]
  * - KPI → Context (bounded_context_ref) [optional, BCC verification metric linkage]
  *
- * The bounded_context_ref value is a kebab-case context name (context_prefix
+ * The bounded_context_ref value is a kebab-case context name (scope_prefix
  * pattern), which the resolver matches against Context.displayId.
  */
 export function extractBccRelations(

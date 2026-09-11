@@ -60,7 +60,11 @@ export function extractDomainRegistryRelations(
   const relations: Relation[] = [];
   const seenContextRealizesDomain = new Set<string>();
 
-  const addContextRealizesDomain = (contextEntityId: string, targetId: string): void => {
+  const addContextRealizesDomain = (
+    contextEntityId: string,
+    targetId: string,
+    resolution: 'declared' | 'folder'
+  ): void => {
     const id = `${contextEntityId}--${RELATION_TYPE.ContextRealizesDomain}--${targetId}`;
     if (seenContextRealizesDomain.has(id)) return;
     seenContextRealizesDomain.add(id);
@@ -69,8 +73,27 @@ export function extractDomainRegistryRelations(
       source_entity_id: contextEntityId,
       target_entity_id: targetId,
       type: RELATION_TYPE.ContextRealizesDomain,
+      data: { resolution },
     });
   };
+
+  /**
+   * The declared domains, keyed by name, for the folder fallback below.
+   *
+   * A name is folded to lower case and hyphens are read as spaces, because a folder is written
+   * `order-mgmt` where the registry writes `order mgmt` and the two are one name. A name declared
+   * twice is dropped from the table rather than resolved arbitrarily: an ambiguous default is not a
+   * default, and picking either domain would attach a context to one of them for no stated reason.
+   */
+  const domainsByName = new Map<string, string | null>();
+  const foldName = (value: string): string => value.toLowerCase().replace(/-/g, ' ').trim();
+  for (const entity of entities) {
+    if (entity.type !== ENTITY_TYPE.Domain) continue;
+    const name = (entity.data as Record<string, unknown> | undefined)?.name;
+    if (typeof name !== 'string' || name.length === 0) continue;
+    const key = foldName(name);
+    domainsByName.set(key, domainsByName.has(key) ? null : entity.id);
+  }
 
   for (const entity of entities) {
     if (entity.type !== ENTITY_TYPE.Subdomain) continue;
@@ -91,11 +114,23 @@ export function extractDomainRegistryRelations(
     if (entity.type !== ENTITY_TYPE.Context) continue;
     const data = entity.data as Record<string, unknown> | undefined;
     const domainRef = data?.domain_ref;
-    if (typeof domainRef !== 'string' || domainRef.length === 0) continue;
+
+    // No declaration: the slice folder the context's file sits in, matched against the declared
+    // domain names. This is the fallback `bounded_context.domain_ref` documents, and declaring the
+    // field overrides it - which is why it is reached only when nothing was declared. The edge
+    // records `resolution: 'folder'` so a consumer can tell a model's own statement from a default
+    // the filesystem supplied, and nothing here resolves to a placeholder: a folder naming no
+    // declared domain is not a dangling reference, it is a folder.
+    if (typeof domainRef !== 'string' || domainRef.length === 0) {
+      const folder = entityDomain(entity);
+      const targetId = folder === 'default' ? undefined : domainsByName.get(foldName(folder));
+      if (targetId) addContextRealizesDomain(entity.id, targetId, 'folder');
+      continue;
+    }
 
     if (DOMAIN_ID_PATTERN.test(domainRef)) {
       const targetId = resolveOrPlaceholder(domainRef, entityDomain(entity), entities, placeholders);
-      addContextRealizesDomain(entity.id, targetId);
+      addContextRealizesDomain(entity.id, targetId, 'declared');
       continue;
     }
 
@@ -127,7 +162,7 @@ export function extractDomainRegistryRelations(
             entities,
             placeholders
           );
-          addContextRealizesDomain(entity.id, domainTargetId);
+          addContextRealizesDomain(entity.id, domainTargetId, 'declared');
         }
       }
       continue;

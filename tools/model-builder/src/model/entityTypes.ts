@@ -5,6 +5,7 @@
 export const ENTITY_TYPE = {
   Concept: 'Concept',
   Actor: 'Actor',
+  Persona: 'Persona',
   Enumeration: 'Enumeration',
   Association: 'Association',
   StructuralRule: 'StructuralRule',
@@ -23,6 +24,7 @@ export const ENTITY_TYPE = {
   Assumption: 'Assumption',
   TradeOff: 'TradeOff',
   Inquiry: 'Inquiry',
+  Concern: 'Concern',
   // v2.7.7 vision CR (D045): the product's singular identity claim / north-star — a
   // first-class governance entity distinct from Goal (measurable) and the root description
   // (a blurb). Extracted from the singular `motivation.vision` object (at most one per model);

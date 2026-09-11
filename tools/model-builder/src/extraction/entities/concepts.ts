@@ -78,6 +78,41 @@ export function extractConcepts(doc: ParsedBlueprintDocument): Entity[] {
     }
   }
 
+  // A persona is declared either at the document root, where it carries its own `PER###`, or
+  // inline under the actor it refines. Both are read here, because an inline persona may now carry
+  // an identifier too, and one that is referenceable but absent from the graph would resolve in the
+  // validator and reach no consumer. The inline case is stamped with `_actor`, the placement
+  // convention this package already uses for nested arch units, so the relation builder draws the
+  // edge from position rather than re-walking the document.
+  const personas = data.personas as Record<string, unknown>[] | undefined;
+  if (Array.isArray(personas)) {
+    for (const item of personas) {
+      if (item && typeof item === 'object' && item.id != null) {
+        entities.push(toEntity(doc, ENTITY_TYPE.Persona, item as Record<string, unknown>, 'id', contextLink));
+      }
+    }
+  }
+
+  if (Array.isArray(actors)) {
+    for (const actor of actors) {
+      if (!actor || typeof actor !== 'object' || actor.id == null) continue;
+      const inline = (actor as Record<string, unknown>).personas as Record<string, unknown>[] | undefined;
+      if (!Array.isArray(inline)) continue;
+      for (const item of inline) {
+        if (!item || typeof item !== 'object' || item.id == null) continue;
+        entities.push(
+          toEntity(
+            doc,
+            ENTITY_TYPE.Persona,
+            { ...(item as Record<string, unknown>), _actor: String(actor.id) },
+            'id',
+            contextLink,
+          ),
+        );
+      }
+    }
+  }
+
   const enumerations = data.enumerations as Record<string, unknown>[] | undefined;
   if (Array.isArray(enumerations)) {
     for (const item of enumerations) {

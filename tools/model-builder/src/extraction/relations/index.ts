@@ -38,6 +38,8 @@ import { extractMembershipRelations } from './membership.js';
 import { extractDynamicsRelations } from './dynamics.js';
 import { extractQualityRelations } from './quality.js';
 import { extractDomainRegistryRelations } from './domains.js';
+import { extractOperationDomainRelations } from './operationDomain.js';
+import { extractPersonaConcernRelations } from './personaConcern.js';
 
 /**
  * Build all relations from the entity list.
@@ -63,6 +65,7 @@ export function buildRelations(
 
   const allRelations: Relation[] = [
     ...extractConceptRelations(entities, placeholders),
+    ...extractPersonaConcernRelations(entities, placeholders),
     ...extractRuleRelations(entities, placeholders),
     ...extractDomainRelations(entities, placeholders),
     ...extractPayloadModelRelations(entities, placeholders),
@@ -98,6 +101,7 @@ export function buildRelations(
     ...extractDynamicsRelations(entities, placeholders),
     ...extractQualityRelations(entities, placeholders),
     ...extractDomainRegistryRelations(entities, placeholders),
+    ...extractOperationDomainRelations(entities, placeholders),
     ...codeRefRelations,
   ];
 

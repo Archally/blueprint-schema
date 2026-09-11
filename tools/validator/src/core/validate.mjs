@@ -202,6 +202,24 @@ export function checkDeprecatedContractOutput(relFile, serviceName, kind, contra
 }
 
 /**
+ * A service still naming its in-process operations with the superseded `handles:`.
+ *
+ * Warning, never an error, for the reason `checkDeprecatedContractOutput` above is one: the key is
+ * accepted for the whole v2.8 line with identical meaning and identical effect on the graph, so a
+ * model that has not migrated is correct rather than broken. The warning exists so the removal does
+ * not arrive as a surprise, and it names the replacement.
+ */
+export function checkDeprecatedServiceHandles(relFile, serviceName, service) {
+  if (!service || !Array.isArray(service.handles) || service.handles.length === 0) return null;
+  return (
+    `[${relFile}] Service "${serviceName}" names its in-process operations with \`handles\`, which ` +
+    `is superseded by \`provides\` - same meaning, same binding. \`handles\` said who provides the ` +
+    `operation and how it is invoked at once, and the second of those is \`dispatch\` on the ` +
+    `operation. Accepted until the next major line.`
+  );
+}
+
+/**
  * A contract's declared `slice:` against the slice vocabulary.
  *
  * Unlike the prefix rule below it, this one does NOT exempt a model that declares no slices. A
@@ -507,6 +525,10 @@ export function validateModel(args) {
           ? `in party "${declared.party.name}"`
           : `in context "${declared.context.name}"`;
         for (const [service] of servicesOf(declared)) {
+          // Before the contracts guard below, which `continue`s: a service binding in-process is
+          // exactly the one that may carry no contracts block at all.
+          const handlesFinding = checkDeprecatedServiceHandles(relFile, service.name, service);
+          if (handlesFinding) warnings.push(handlesFinding);
           if (!service.contracts) {
             warnings.push(`[${relFile}] Service "${service.name}" ${placement} has no contracts block`);
             continue;

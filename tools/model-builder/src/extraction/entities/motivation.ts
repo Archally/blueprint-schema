@@ -13,6 +13,7 @@ const MOTIVATION_COLLECTIONS: { key: string; type: string }[] = [
   { key: 'assumptions', type: ENTITY_TYPE.Assumption },
   { key: 'trade_offs', type: ENTITY_TYPE.TradeOff },
   { key: 'inquiries', type: ENTITY_TYPE.Inquiry },
+  { key: 'concerns', type: ENTITY_TYPE.Concern },
 ];
 
 function toMotivationEntity(
@@ -24,7 +25,10 @@ function toMotivationEntity(
   const id = makeInternalId(doc.scope, doc.filePath, displayId);
   const statement = item.statement != null ? String(item.statement) : undefined;
   const summary = item.summary != null ? String(item.summary) : statement;
-  const name = item.name != null ? String(item.name) : undefined;
+  // A concern names itself with `title`; every other collection here uses `name`. One fallback
+  // rather than a second entity shape, since both answer the same question.
+  const name =
+    item.name != null ? String(item.name) : item.title != null ? String(item.title) : undefined;
   return {
     id,
     displayId,

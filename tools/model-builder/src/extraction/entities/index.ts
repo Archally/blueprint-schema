@@ -2,6 +2,7 @@ import type { Entity } from '../../model/types.js';
 import type { ParsedBlueprintDocument, DocumentsBySchemaType } from '../../model/types.js';
 import { getSchemaTypeFromPath } from './id.js';
 import { annotateOwnershipDefaults } from './ownershipDefaults.js';
+import { annotateDomainDefaults } from './domainDefaults.js';
 import { annotateSystemDefaults } from './systemDefaults.js';
 import { extractConcepts } from './concepts.js';
 import { extractRules } from './rules.js';
@@ -69,6 +70,7 @@ export function extractAllEntities(documentsByType: DocumentsBySchemaType): Enti
     for (const doc of docs) {
       annotateOwnershipDefaults(doc);
       annotateSystemDefaults(doc);
+      annotateDomainDefaults(doc);
       entities.push(...extract(doc));
     }
   }
@@ -86,6 +88,7 @@ export function extractEntitiesFromDocument(doc: ParsedBlueprintDocument): Entit
   if (!extract) return [];
   annotateOwnershipDefaults(doc);
   annotateSystemDefaults(doc);
+  annotateDomainDefaults(doc);
   return extract(doc);
 }
 

@@ -11,6 +11,18 @@ export const RELATION_TYPE = {
   Interaction: 'interaction',
   // concepts.schema: named cross-concept association (association.subject → association.object)
   Association: 'association',
+  // --- Stakeholder and expectation -----------------------------------------
+  // concepts.schema: the actor whose role a persona is an archetype of. Declared by a root-level
+  // persona through `actor_ref`, and stated by position for one written inside its actor.
+  PersonaActor: 'persona_actor',
+  // motivation.schema: the persona who holds a concern (concern.persona_ref)
+  ConcernPersona: 'concern_persona',
+  // motivation.schema: what a concern is about (concern.about_ref) - a user story, a use case, a
+  // business process, a screen or a concept. One edge type for all five, because a consumer asking
+  // "what does this persona expect of that?" asks the same question whichever of them it names.
+  ConcernAbout: 'concern_about',
+  // story.schema: the standing expectation a user story addresses (user_story.concern_ref)
+  UserStoryConcern: 'user_story_concern',
   // rules.schema: rule references to concepts it constrains (rule.concepts[])
   Concepts: 'concepts',
   // rules.schema: transition rule references to its owning concept (transition_rule.concept)
@@ -410,6 +422,14 @@ export const RELATION_TYPE = {
   // than a distinct type, so a consumer grouping contexts by domain sees one shape regardless of
   // which the author named.
   ContextRealizesSubdomain: 'context_realizes_subdomain',
+  // An operation's problem-space domain, from the `domain_ref` in its document's header rather
+  // than from the operation, which declares none by design. `data.resolution` says which source
+  // answered: `file-header` where the document stated it, `folder` where the slice folder's name
+  // matched a declared domain. The second word is deliberately the one `ContextRealizesDomain`
+  // uses for the identical fallback - two edges answering "which domain" must not spell one
+  // source two ways - while the first is more precise than that edge's `declared`, because here
+  // the entity never declares and the file always does.
+  OperationInDomain: 'operation_in_domain',
 } as const;
 
 export type RelationType = (typeof RELATION_TYPE)[keyof typeof RELATION_TYPE];

@@ -188,7 +188,7 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
     addProvided(contract, [...asStringArray(data.expose), ...asStringArray(data.send)]);
   }
 
-  // ── Service `handles:` — provide-membership with no transport asserted ────────
+  // ── Service `provides:` / `handles:` — provide-membership, no transport asserted ─
   //
   // The third binding source, and the only one that is not a contract. `expose:` and `send:` both
   // sit inside a contract, and a contract names a protocol: declaring either asserts a channel that
@@ -198,11 +198,17 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
   //
   // Read from the SERVICE rather than a contract, which is why it needs its own pass. Everything
   // after this point is shared: the same exact/loose fold, the same m:n behaviour, and the same
-  // `resolution: 'contract'` tag - a `handles:` bind is declared by the author in the model, so it
-  // is a real declaration and not the deprecated name/scope fallback.
+  // `resolution: 'contract'` tag - the bind is declared by the author in the model, so it is a real
+  // declaration and not the deprecated name/scope fallback.
+  //
+  // `provides:` is the key; `handles:` is its superseded spelling, accepted with identical meaning
+  // through the v2.8 line. Both are read and their lists are concatenated rather than one winning:
+  // a service declaring both means the union of what it wrote, and `addProvided` already folds a
+  // repeated reference, so an operation named under both keys binds once.
   for (const service of entities) {
     if (service.type !== ENTITY_TYPE.Service) continue;
-    addProvided(service, asStringArray(getData(service).handles));
+    const data = getData(service);
+    addProvided(service, [...asStringArray(data.provides), ...asStringArray(data.handles)]);
   }
 
   // Name/scope fallback (deprecated) — mirrors resolver `ownedBy`.
@@ -306,6 +312,37 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
  * Guard: if the model declares NO bounded contexts (no arch layer yet), resolvability
  * is not meaningful — returns [] rather than flooding an early-stage domain-only model.
  */
+/**
+ * Why nothing bound an operation, for the operations `reason: 'unbound'` names.
+ *
+ * "Unbound" is one word for several situations a reviewer has to act on differently, and until now
+ * the report could not tell them apart. All three are DERIVED from the graph rather than authored:
+ * an author states a domain in a file header and services in a context, and whether those two meet
+ * is a fact about the model, not a field in it.
+ *
+ *   - `no-domain-ref` - the operation reaches no domain at all. Its document declares no
+ *     `domain_ref` and its slice folder matches no declared domain, so the problem-space half of
+ *     the binding was never authored. This is what every unbound operation in every model in this
+ *     repository reports today, because no model declares a header yet.
+ *   - `no-context-for-domain` - it reaches a domain, and no bounded context realizes that domain.
+ *     The two halves exist and do not meet, which is a modelling gap rather than a missing field.
+ *   - `multi-context-domain` - it reaches a domain that more than one context realizes, so there is
+ *     no single answer to derive. Read today from `context_realizes_domain`, the home reference
+ *     alone; a context's `covers[]` will widen the set it is computed over without changing what
+ *     the word means.
+ *   - `single-context-domain` - it reaches a domain that exactly one context realizes. Nothing is
+ *     wrong with the model: this operation's context IS derivable, and the deriving rule is the one
+ *     deliberately deferred to the step that brings `covers[]` with it. Counting them is how that
+ *     rule's value is known before it is written, and it is the number the fallback-retirement step
+ *     needs. Every word here describes the MODEL rather than the tooling, so the vocabulary does not
+ *     have to change when the rule lands - these operations simply stop being unbound.
+ */
+export type UnboundReason =
+  | 'no-domain-ref'
+  | 'no-context-for-domain'
+  | 'single-context-domain'
+  | 'multi-context-domain';
+
 export interface MembershipGap {
   entityId: string;
   displayId: string;
@@ -313,11 +350,46 @@ export interface MembershipGap {
   reason: 'unbound' | 'dangling' | 'loose-bind';
   /** The dangling `bounded_context_ref` value, when reason === 'dangling'. */
   ref: string | null;
+  /** Why nothing bound it, for an Operation whose reason is `unbound`; null otherwise. */
+  unboundReason: UnboundReason | null;
   fileOrigin: string | null;
 }
 
 function isLoose(relation: Relation): boolean {
   return (relation.data as { match?: string } | undefined)?.match === 'loose';
+}
+
+/**
+ * Index the problem-space half of the graph, and answer `UnboundReason` for any operation id.
+ *
+ * Exported because two callers need the same answer about different populations, and the whole
+ * point of the reason is that it cannot disagree with the binder. `findMembershipGaps` asks it
+ * about operations that ARE unbound; the ownership report asks it about operations bound only by
+ * the fallback, to say what would become of them if the fallback were removed. Re-deriving it in
+ * the second place is how the two would come to say different things about one operation.
+ *
+ * Reads only materialized edges - `operation_in_domain` for the domain an operation reaches, and
+ * `context_realizes_domain` for the contexts that realize it.
+ */
+export function buildUnboundReasonIndex(relations: Relation[]): (entityId: string) => UnboundReason {
+  const domainOfOperation = new Map<string, string>();
+  const contextsPerDomain = new Map<string, Set<string>>();
+  for (const relation of relations) {
+    if (relation.type === RELATION_TYPE.OperationInDomain) {
+      domainOfOperation.set(relation.source_entity_id, relation.target_entity_id);
+    } else if (relation.type === RELATION_TYPE.ContextRealizesDomain) {
+      const seen = contextsPerDomain.get(relation.target_entity_id) ?? new Set<string>();
+      seen.add(relation.source_entity_id);
+      contextsPerDomain.set(relation.target_entity_id, seen);
+    }
+  }
+  return (entityId: string): UnboundReason => {
+    const domainId = domainOfOperation.get(entityId);
+    if (!domainId) return 'no-domain-ref';
+    const contexts = contextsPerDomain.get(domainId);
+    if (!contexts || contexts.size === 0) return 'no-context-for-domain';
+    return contexts.size === 1 ? 'single-context-domain' : 'multi-context-domain';
+  };
 }
 
 export function findMembershipGaps(entities: Entity[], relations: Relation[]): MembershipGap[] {
@@ -340,20 +412,28 @@ export function findMembershipGaps(entities: Entity[], relations: Relation[]): M
     }
   }
 
+  const unboundReasonOf = buildUnboundReasonIndex(relations);
+
   const gaps: MembershipGap[] = [];
-  const push = (entity: Entity, reason: MembershipGap['reason'], ref: string | null = null) =>
+  const push = (
+    entity: Entity,
+    reason: MembershipGap['reason'],
+    ref: string | null = null,
+    unboundReason: UnboundReason | null = null
+  ) =>
     gaps.push({
       entityId: entity.id,
       displayId: entity.displayId,
       entityType: entity.type === ENTITY_TYPE.Operation ? 'Operation' : 'Question',
       reason,
       ref,
+      unboundReason,
       fileOrigin: entity.fileOrigin ?? null,
     });
 
   for (const entity of entities) {
     if (entity.type === ENTITY_TYPE.Operation) {
-      if (!boundOps.has(entity.id)) push(entity, 'unbound');
+      if (!boundOps.has(entity.id)) push(entity, 'unbound', null, unboundReasonOf(entity.id));
       else if (!exactOps.has(entity.id)) push(entity, 'loose-bind');
     } else if (entity.type === ENTITY_TYPE.Question) {
       if (boundQuestions.has(entity.id)) {
