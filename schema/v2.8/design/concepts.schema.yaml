@@ -15,7 +15,7 @@ properties:
     $ref: "../metamodel.schema.yaml#/$defs/schema_version"
     description: "Schema version this document conforms to. Omit to assume latest."
   scope:
-    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
     description: "Bounded context this file belongs to."
   tags:
     $ref: "../metamodel.schema.yaml#/$defs/tags"
@@ -42,6 +42,14 @@ properties:
     description: "Cross-concept relationships where neither side clearly owns the other."
     items:
       $ref: "#/$defs/association"
+  personas:
+    type: array
+    description: >
+      Personas declared in their own right, each carrying a `PER###` other entities can point at.
+      The same archetypes may also be written inline under the actor they refine; declare one here
+      when something else has to name it, such as a concern that says whose expectation it is.
+    items:
+      $ref: "#/$defs/persona_declaration"
 
 $defs:
 
@@ -347,14 +355,29 @@ $defs:
 
   persona:
     type: object
-    description: "UX persona archetype with goals, pain points, JTBD, and demographics."
+    description: >
+      A persona archetype: goals, pain points, jobs to be done and demographics for one way of
+      living an actor's role. Written inline under the actor it belongs to, or at the document root
+      with an identifier, which is what lets another entity name it.
     additionalProperties: false
     required:
       - name
     properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/persona_ref"
+        description: >
+          Unique persona identifier (e.g. PER001 or shop.PER001). Required at the document root,
+          where the persona is declared in its own right; optional inline, where it is what makes an
+          inline persona referenceable without moving it.
       name:
         type: string
         description: "Persona archetype name (e.g., 'Impulse Buyer', 'Research Shopper')."
+      actor_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        description: >
+          The actor whose role this persona is an archetype of. For a persona written inline under
+          an actor the answer is already the position it sits in, so leave it absent there and set
+          it on a root-level declaration.
       quote:
         type: string
         description: "Representative quote capturing core frustration or goal."
@@ -398,6 +421,20 @@ $defs:
           team_size:
             type: string
             description: "Team size (e.g., '5-10')."
+      description:
+        type: string
+        description: "Human-readable description of this persona."
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  persona_declaration:
+    description: >
+      A persona declared at the document root rather than inline under an actor. The shape is the
+      archetype's, with the identifier required: an entity other entities point at has to have one.
+    allOf:
+      - $ref: "#/$defs/persona"
+      - required:
+          - id
 
   enumeration:
     type: object

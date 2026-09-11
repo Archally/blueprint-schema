@@ -19,7 +19,7 @@ properties:
     $ref: "../metamodel.schema.yaml#/$defs/schema_version"
     description: "Schema version this document conforms to. Omit to assume latest."
   scope:
-    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
     description: "Bounded context this process file belongs to."
   stage:
     type: string
@@ -291,6 +291,12 @@ $defs:
           lists that can disagree. Still accepted and still read, and removal is on the next major
           line. `user-story-use-case-back-reference` reports each use, and says whether the use case
           already lists the story back: where it does not, add it there before removing this.
+      concern_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/concern_ref"
+        description: >
+          The stakeholder concern this story addresses. `benefit` says why the story is worth doing;
+          this says whose standing expectation it serves, and a concern may be served by several
+          stories. The inverse is `concern.about_ref` naming this story.
       operations:
         type: array
         items:

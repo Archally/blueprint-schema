@@ -142,6 +142,7 @@ the Pattern column says otherwise.
 | Concept | `CN\d{3}` | `CN001`, `billing.CN001` |
 | Concept attribute | `CAT\d{3,}` | `CAT001` |
 | Actor | `ACT\d{3}` | `ACT001` |
+| Persona | `PER\d{3,}` | `PER001` |
 | Enumeration | `EN\d{3}` | `EN001` |
 | Association | `(ASC\|AS)\d{3}` | `ASC001` |
 | Rule | `(SR\|CR\|DR\|EQ\|VR)\d{3}` | `SR001`, `billing.SR001` |
@@ -228,6 +229,7 @@ Rule prefixes: `SR`=structural, `CR`=classification, `DR`=derivation, `EQ`=equiv
 | Assumption | `(ASM\|A)\d{3}` | `ASM001` |
 | Trade-off | `(TRO\|T)\d{3}` | `TRO001` |
 | Inquiry | `INQ\d{3,}` | `INQ001` |
+| Concern | `CNC\d{3,}` | `CNC001` |
 | Question | `QN\d{3,}` | `QN001`, `billing.QN001` |
 | Finding | `FN\d{3}` | `FN001` |
 | Leverage point | `LP\d{3}` | `LP001` |
@@ -1027,7 +1029,7 @@ contracts:
 
 Tags are free-form string arrays for flexible multi-dimensional categorization.
 
-**Root-level tags** apply to all entities in the file. **Entity-level tags** are merged with root tags during loading. Effective tags = root tags + entity tags.
+**Root-level tags** describe the document. **Entity-level tags** describe the entity. Nothing propagates between them: an entity carries exactly the tags it declares, and a tag on the document reaches no entity.
 
 **Common tag patterns:**
 - DDD tactical: `aggregate-root`, `value-object`, `entity`, `domain-service`

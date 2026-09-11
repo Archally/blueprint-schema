@@ -25,7 +25,7 @@ properties:
     $ref: "../metamodel.schema.yaml#/$defs/schema_version"
     description: "Schema version this document conforms to. Omit to assume latest."
   scope:
-    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
     description: >
       Bounded context this architecture file belongs to. Used only for
       context-scoped arch fragments (future). Root-level arch files describe
@@ -230,6 +230,11 @@ $defs:
           contains it - that membership is derived from the registry, never declared twice, so a
           context named against a subdomain groups with its domain's other contexts wherever
           domains are drawn or counted. Optional.
+
+          The subdomain arm is SOFT-DEPRECATED (v2.8.17): a subdomain takes no identity of its own
+          on the next major line, so a new context names its domain. One already naming a subdomain
+          keeps validating and keeps grouping under that subdomain's domain, which is the value the
+          reference resolves to anyway.
 
           Used to draw the domain map - an overview that groups contexts into domains and
           aggregates the dependencies between them, which is the readable view of a model with
@@ -494,19 +499,32 @@ $defs:
                     items:
                       type: string
                     description: "Allowed values for this variable."
+      provides:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: >-
+          Operations this service provides, with no transport described. Provider-side, like a
+          contract's `expose:`/`send:`, and it materializes the same `handled_by` binding - but it
+          names no channel, because an in-process call has none. The opposite of a `call:` list,
+          which names operations this service DEPENDS ON rather than owns.
+          It is the residual, not the first answer: where a contract already names the operation, or
+          where the operation's domain is served by exactly one context, the binding is derived and
+          writing it here repeats what the model states elsewhere. Reach for it when neither
+          derivation can reach the operation.
+          Several services in different bounded contexts may each declare the same operation, and
+          each declaration is one binding: an operation the domain shares is genuinely provided in
+          more than one place. Declared on the service rather than under `contracts:` because every
+          key there names a protocol with a generated specification, and this has neither.
       handles:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
         description: >-
-          Operations this service handles in-process, with no transport asserted. Provider-side,
-          like a contract's `expose:`/`send:`, and it materializes the same `handled_by` binding -
-          but it names no channel, because an in-process call has none. The opposite of a
-          `call:` list, which names operations this service DEPENDS ON rather than owns.
-          Several services in different bounded contexts may each declare the same operation, and
-          each declaration is one binding: an operation the domain shares is genuinely handled in
-          more than one place. Declared on the service rather than under `contracts:` because every
-          key there names a protocol with a generated specification, and this has neither.
+          SOFT-DEPRECATED (v2.8.18): the superseded spelling of `provides:`, accepted with identical meaning and identical effect
+          on the graph until the next major line. `handles` named two things at once - who provides
+          the operation and how it is invoked - and the second of those is `dispatch:`, on the
+          operation. A service may declare either key; declaring both merges them.
       contracts:
         $ref: "#/$defs/contracts"
         description: "External contracts exposing and consuming interfaces for this service."

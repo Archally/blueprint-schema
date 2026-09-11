@@ -14,7 +14,7 @@ properties:
     $ref: "../metamodel.schema.yaml#/$defs/schema_version"
     description: "Schema version this document conforms to. Omit to assume latest."
   scope:
-    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
     description: "Bounded context this UI file belongs to."
   tags:
     $ref: "../metamodel.schema.yaml#/$defs/tags"

@@ -22,6 +22,7 @@ Metamodel `*_ref` definitions turn a model into a navigable graph — each entit
 | `CMD` | `operation_ref` | Any operation reference. Two formats supported: (1) ID-based: optional context prefix + kind + digits (e.g., CMD001, orders.CMD001). (2) Domain:key: domainRef… |
 | `CMP` | `compliance_ref` | Reference to a compliance requirement (e.g. CMP001 or billing.CMP001). |
 | `CN` | `concept_ref` | Reference to a concept (e.g. CN001 or billing.CN001). |
+| `CNC` | `concern_ref` | Reference to a stakeholder concern (e.g. CNC001 or orders.CNC001). A concern is a durable expectation a view of the model has to satisfy, not a task to close. |
 | `DC` | `decision_ref` | Reference to a decision (e.g. DC001 or billing.DC001). `D###` is the band's retired spelling: it still validates on this line and stops validating in the next… |
 | `DMN` | `domain_ref` | Reference to a domain declared in blueprint.yaml `domains[]` (e.g. DMN001). Model-wide, so no context prefix. |
 | `DOC` | `document_ref` | Document operation identifier. Documents represent full state transfers. |
@@ -46,6 +47,7 @@ Metamodel `*_ref` definitions turn a model into a navigable graph — each entit
 | `ORD` | `ordering_ref` | Reference to a dynamics ordering constraint (e.g. ORD001 or billing.ORD001). |
 | `PA` | `process_activity_ref` | Reference to a process activity (e.g. PA001 or billing.PA001). |
 | `PAR` | `parallelism_ref` | Reference to a dynamics parallelism opportunity (e.g. PAR001 or billing.PAR001). |
+| `PER` | `persona_ref` | Reference to a persona (e.g. PER001 or shop.PER001). A persona is a named archetype of an actor: the same role can be lived very differently by two people, and… |
 | `PRC` | `process_ref` | Reference to a business process (e.g. PRC001 or orders.PRC001). |
 | `PRT` | `party_ref` | Reference to a party, system or organizational (e.g. PRT001 or billing.PRT001). A party is one node however many documents declare it: declarations fold on the… |
 | `QN` | `question_ref` | Reference to a domain competency question (e.g. QN001 or billing.QN001). Questions are first-class entities representing knowledge requirements of a bounded co… |
@@ -55,7 +57,7 @@ Metamodel `*_ref` definitions turn a model into a navigable graph — each entit
 | `RSK` | `risk_ref` | Reference to a motivation risk (e.g. RSK001 or billing.RSK001). `R###` is the band's retired spelling: it still validates on this line and stops validating in… |
 | `RT` | `resource_type_ref` | Reference to a resource type in the neutral resource-type catalog (e.g. RT001 or azure.RT001). A resource type carries an inputs/outputs contract and is realis… |
 | `SCR` | `screen_ref` | Reference to a UI screen (e.g. SCR001 or orders.SCR001). |
-| `SDM` | `subdomain_ref` | Reference to a subdomain declared under its domain in blueprint.yaml `domains[].subdomains[]` (e.g. SDM001). |
+| `SDM` | `subdomain_ref` | Reference to a subdomain declared under its domain in blueprint.yaml `domains[].subdomains[]` (e.g. SDM001). SOFT-DEPRECATED (v2.8.17). A subdomain is a partit… |
 | `SEC` | `security_ref` | Reference to a security requirement (e.g. SEC001 or billing.SEC001). |
 | `SLA` | `sla_ref` | Reference to a service level agreement (e.g. SLA001 or billing.SLA001). |
 | `SLO` | `slo_ref` | Reference to a service level objective (e.g. SLO001 or billing.SLO001). |
@@ -68,6 +70,7 @@ Metamodel `*_ref` definitions turn a model into a navigable graph — each entit
 | `UAC` | `ui_action_ref` | Reference to a UI action (e.g. UAC001 or orders.UAC001). |
 | `UC` | `use_case_ref` | Reference to a use case (UC + 3+ digits, optional context prefix). |
 | `UNV` | `ui_nav_ref` | Reference to a UI navigation element (e.g. UNV001 or orders.UNV001). |
+| `US` | `usage_ref` | Reference to the part of the model a concern is about. Restricted to the entities a stakeholder actually meets: a user story, a use case, a business process, a… |
 | `US` | `user_story_ref` | Reference to a user story (US + 3+ digits, optional context prefix). |
 | `VS` | `value_stream_ref` | Reference to a value stream (e.g. VS001 or orders.VS001). |
 | `WI` | `work_item_ref` | Reference to a roadmap work item / WBS node (WI + 3+ digits, optional context prefix). Work items are the execution tier beneath milestones (epic → subscope →… |
@@ -82,7 +85,7 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub �
 
 | Schema file | Inbound refs |
 | --- | --- |
-| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 694 |
+| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 705 |
 | [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | 1 |
 | [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | 1 |
 | [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | 1 |
@@ -113,22 +116,22 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub �
 | `blueprint.schema.yaml` | `governance/roadmap.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `governance/test-cases.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `governance/value-stream.schema.yaml` | 1 |
-| `blueprint.schema.yaml` | `metamodel.schema.yaml` | 18 |
+| `blueprint.schema.yaml` | `metamodel.schema.yaml` | 19 |
 | `blueprint.schema.yaml` | `migration.schema.yaml` | 1 |
-| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 42 |
-| `design/concepts.schema.yaml` | `metamodel.schema.yaml` | 37 |
-| `design/domain.schema.yaml` | `metamodel.schema.yaml` | 50 |
+| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 43 |
+| `design/concepts.schema.yaml` | `metamodel.schema.yaml` | 40 |
+| `design/domain.schema.yaml` | `metamodel.schema.yaml` | 51 |
 | `design/dynamics.schema.yaml` | `metamodel.schema.yaml` | 23 |
 | `design/infrastructure.schema.yaml` | `metamodel.schema.yaml` | 27 |
 | `design/interactions.schema.yaml` | `metamodel.schema.yaml` | 29 |
 | `design/models.schema.yaml` | `metamodel.schema.yaml` | 13 |
 | `design/quality.schema.yaml` | `metamodel.schema.yaml` | 74 |
 | `design/rules.schema.yaml` | `metamodel.schema.yaml` | 24 |
-| `design/story.schema.yaml` | `metamodel.schema.yaml` | 58 |
+| `design/story.schema.yaml` | `metamodel.schema.yaml` | 59 |
 | `governance/capability.schema.yaml` | `metamodel.schema.yaml` | 21 |
 | `governance/decisions.schema.yaml` | `metamodel.schema.yaml` | 47 |
 | `governance/leverage.schema.yaml` | `metamodel.schema.yaml` | 30 |
-| `governance/motivation.schema.yaml` | `metamodel.schema.yaml` | 83 |
+| `governance/motivation.schema.yaml` | `metamodel.schema.yaml` | 87 |
 | `governance/organization.schema.yaml` | `metamodel.schema.yaml` | 21 |
 | `governance/roadmap.schema.yaml` | `metamodel.schema.yaml` | 37 |
 | `governance/test-cases.schema.yaml` | `metamodel.schema.yaml` | 28 |

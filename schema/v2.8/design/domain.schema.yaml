@@ -22,13 +22,23 @@ properties:
     $ref: "../metamodel.schema.yaml#/$defs/schema_version"
     description: "Schema version this document conforms to. Omit to assume latest."
   scope:
-    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
     description: "Bounded context this domain belongs to."
   tags:
     $ref: "../metamodel.schema.yaml#/$defs/tags"
   owned_by:
     $ref: "../metamodel.schema.yaml#/$defs/owned_by"
     description: "File-level ownership default. Entities inherit unless overridden."
+  domain_ref:
+    $ref: "../metamodel.schema.yaml#/$defs/domain_ref"
+    description: >
+      The problem-space domain every operation in this document belongs to, stated once in the
+      header. An operation carries no reference of its own: a domain document describes one domain
+      by design, and the file is a free partition, so a model may split a domain across
+      `orders.domain.yaml` and `orders-returns.domain.yaml` and state the same reference in each.
+      Where the header is absent, the domain is the one whose name matches the document's slice
+      folder; a folder matching no declared domain, or matching two, leaves the operation with no
+      domain rather than a guessed one.
   operations:
     type: object
     description: >

@@ -37,7 +37,7 @@ _Source: `schema/v2.8/blueprint.schema.yaml` · root type `object`_
 | `trackers` | `object` | — |  | Registry of external issue/document trackers used to turn a `tracker_ref` (on roadmap work-items, milestones, blockers, …) into a clickable link. The map KEY i… |
 | `default_tracker` | `string` | — |  | Tracker id (a key of `trackers`) used to resolve a bare `tracker_ref` key that carries no `<tracker>:` prefix. Omit if refs always carry a prefix or a full URL. |
 | `layout` | `union` | — |  | Blueprint file layout. Omit for legacy single-folder layout using design/governance paths. |
-| `domains` | `array<ref → domain>` | — |  | The model's problem-space registry: the domains this system exists for, each with the subdomains it divides into. Two levels, declared once here and referenced… |
+| `domains` | `array<ref → domain>` | — |  | The model's top-level region registry, each entry with the subdomains it divides into. Most entries are the problem-space domains the system exists for, which… |
 | `constitution` | `object` | — |  | Core design principles and conventions governing this blueprint. Machine-readable codification of architectural standards. |
 | `migrations` | `array<union>` | — |  | Ordered list of model migrations. Loader applies pending migrations on top of AS-IS model to produce TO-BE state. Each item is either an inline migration or a… |
 | `design` | `object` | — |  | What the system is and how it works: domain model, behavior, and quality attributes. |
@@ -85,6 +85,7 @@ A region of the problem space: a business domain, or a cross-cutting technical c
 | `name` | `string` | ✓ |  | Domain name as the business says it (e.g. Ordering, Catalog). |
 | `description` | `string` | — |  | What this domain is about - the business responsibility it names. |
 | `type` | `ref → subdomain_kind` | — |  | DDD strategic importance of this domain. |
+| `modeling_space` | `ref → modeling_space` | — |  | What this region is about: the business the product serves, the system's own machinery, or the endeavour that produces the system. Absent means the business th… |
 | `complexity` | `ref → complexity_pattern` | — |  | Dominant problem-type of the domain's model. Use the subdomain entries when the domain is split-natured (e.g. order-lifecycle=state-management, inventory-reser… |
 | `model_traits` | `array<ref → model_traits_item>` | — |  | Behavioural archetype(s) of the domain model (Wirfs-Brock role stereotypes). |
 | `owner` | `ref → owned_by` | — |  | Owning team/department/party (references governance/organization). |
@@ -100,7 +101,7 @@ A partition of one domain, classified on the same axis as the domain that contai
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
-| `id` | `string` | ✓ |  | Subdomain id. Model-wide, no context prefix (SDM001). |
+| `id` | `string` | ✓ |  | Subdomain id. Model-wide, no context prefix (SDM001). SOFT-DEPRECATED (v2.8.17). A subdomain is a partition of one domain and is always reached through it, so… |
 | `name` | `string` | ✓ |  | Subdomain name (e.g. cart, checkout, fulfillment). |
 | `description` | `string` | — |  | What this subdomain covers. |
 | `type` | `ref → subdomain_kind` | — |  | DDD importance of this subdomain, on the same axis as its domain. |
@@ -167,7 +168,7 @@ Common header for blueprint documents. Only 'version' required; 'schemaVersion' 
 | --- | --- | --- | --- | --- |
 | `version` | `ref → semver` | ✓ |  | Content version of this document. |
 | `schemaVersion` | `ref → semver` | — |  | Schema definition version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context this file belongs to. Enables scoping in multi-context blueprints. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context this file belongs to. Enables scoping in multi-context blueprints. |
 
 _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/versioned_header`_
 
@@ -282,8 +283,8 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `entity_version` | `ref → semver` |  | Optional SemVer for individual entity lifecycle tracking. |
 | `schema_version` | `string` | `2.8.0`, `2.7.0`, `2.6.0`, `2.5.0`, `2.4.0`, `2.3.0` … (7) | Blueprint schema version. v2.8 schemas accept v2.7, v2.6, v2.5, v2.4, v2.3, and v2.2 documents for backward compatibility. |
 | `tracker_ref` | `string` |  | External issue-tracker or document reference. A bare key (e.g. 'ABC-1234') resolves through the blueprint's `trackers` registry using `default_tracker`; a '<tr… |
-| `context_prefix` | `string` |  | Bounded context name in kebab-case (e.g. billing, order-mgmt). |
-| `tags` | `array<string>` |  | Free-form tags for grouping. Root-level inherited by entities; entity-level merged with root during loading. |
+| `scope_prefix` | `string` |  | Namespace qualifier on a typed id, in kebab-case (e.g. billing, order-mgmt). It names the scope of the document the id is declared in, so that bare ids do not… |
+| `tags` | `array<string>` |  | Free-form tags for grouping. A document-level `tags` describes the document; an entity-level `tags` describes the entity. Nothing propagates between them: an e… |
 | `concept_ref` | `string` |  | Reference to a concept (e.g. CN001 or billing.CN001). |
 | `rule_ref` | `string` |  | Reference to a rule by type prefix: SR=structural, CR=classification, DR=derivation, EQ=equivalence, VR=validation. |
 | `command_ref` | `string` |  | Command operation identifier. Commands express intent to change state. |
@@ -299,10 +300,13 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `assumption_ref` | `string` |  | Reference to a motivation assumption (e.g. ASM001 or billing.ASM001). `A###` is the band's retired spelling: it still validates on this line and stops validati… |
 | `trade_off_ref` | `string` |  | Reference to a motivation trade-off (e.g. TRO001 or billing.TRO001). `T###` is the band's retired spelling: it still validates on this line and stops validatin… |
 | `inquiry_ref` | `string` |  | Reference to a governance inquiry (e.g. INQ001 or orders.INQ001). |
+| `concern_ref` | `string` |  | Reference to a stakeholder concern (e.g. CNC001 or orders.CNC001). A concern is a durable expectation a view of the model has to satisfy, not a task to close. |
+| `usage_ref` | `union` |  | Reference to the part of the model a concern is about. Restricted to the entities a stakeholder actually meets: a user story, a use case, a business process, a… |
 | `parallelism_ref` | `string` |  | Reference to a dynamics parallelism opportunity (e.g. PAR001 or billing.PAR001). |
 | `ordering_ref` | `string` |  | Reference to a dynamics ordering constraint (e.g. ORD001 or billing.ORD001). |
 | `race_condition_ref` | `string` |  | Reference to a dynamics race condition (e.g. RC001 or billing.RC001). |
 | `actor_ref` | `string` |  | Reference to an actor (e.g. ACT001 or billing.ACT001). |
+| `persona_ref` | `string` |  | Reference to a persona (e.g. PER001 or shop.PER001). A persona is a named archetype of an actor: the same role can be lived very differently by two people, and… |
 | `enumeration_ref` | `string` |  | Reference to an enumeration (e.g. EN001 or billing.EN001). |
 | `association_ref` | `string` |  | Reference to an association (e.g. ASC001 or billing.ASC001). `AS###` is the band's retired spelling: it still validates on this line and stops validating in th… |
 | `transition_ref` | `string` |  | Reference to a state transition rule (e.g. TR001 or billing.TR001). |
@@ -315,7 +319,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `fitness_function_ref` | `string` |  | Reference to an architectural fitness function (e.g. FF001 or billing.FF001). |
 | `migration_ref` | `string` |  | Reference to a blueprint model migration (e.g. MIG001 or billing.MIG001). |
 | `domain_ref` | `string` |  | Reference to a domain declared in blueprint.yaml `domains[]` (e.g. DMN001). Model-wide, so no context prefix. |
-| `subdomain_ref` | `string` |  | Reference to a subdomain declared under its domain in blueprint.yaml `domains[].subdomains[]` (e.g. SDM001). |
+| `subdomain_ref` | `string` |  | Reference to a subdomain declared under its domain in blueprint.yaml `domains[].subdomains[]` (e.g. SDM001). SOFT-DEPRECATED (v2.8.17). A subdomain is a partit… |
 | `model_ref` | `union` |  | Reference to a model component. Four forms supported: (1) Typed ID: MDL + digits with optional context prefix (MDL001, billing.MDL003). (2) PascalCase name mat… |
 | `attribute_ref` | `string` |  | Concept attribute identifier (e.g. CAT001 or catalog.CAT001). Optional context prefix for cross-context disambiguation. |
 | `screen_ref` | `string` |  | Reference to a UI screen (e.g. SCR001 or orders.SCR001). |
@@ -372,6 +376,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `story_status` | `string` | `draft`, `refined`, `ready`, `in-progress`, `done`, `deferred` | Authoring and delivery lifecycle of a user story or a use case. |
 | `milestone_status` | `string` | `planned`, `in-progress`, `achieved`, `deferred`, `cancelled` | Delivery lifecycle of a milestone or a work item, which sit on one axis. |
 | `subdomain_kind` | `string` | `core-domain`, `supporting-domain`, `generic-domain`, `technical-capability` | DDD strategic importance of a domain or subdomain. core-domain: the competitive advantage, worth the deepest model. supporting-domain: necessary to the core an… |
+| `modeling_space` | `string` | `business-domain`, `technical-capability`, `endeavour` | What a region of the model is about. business-domain: the business the product serves. technical-capability: the system's own machinery rather than the busines… |
 | `context_kind` | `string` | `core`, `generic-core`, `support`, `generic` | DDD classification of a bounded context, by the domain it realizes. core: realizes the competitive advantage. generic-core: a core capability built on a generi… |
 | `evidence` | `array<object>` |  | Evidence chain justifying this entity's discovery_stage and certainty. |
 
@@ -722,7 +727,7 @@ _Source: `schema/v2.8/design/arch.schema.yaml` · root type `object`_
 | `description` | `string` | — |  | Human-readable description of this architecture. |
 | `version` | `ref → semver` | — |  | Content version of this architecture document. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context this architecture file belongs to. Used only for context-scoped arch fragments (future). Root-level arch files describe systems and MUST NOT de… |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context this architecture file belongs to. Used only for context-scoped arch fragments (future). Root-level arch files describe systems and MUST NOT de… |
 | `stage` | `string` | — |  | Architecture maturity stage (e.g. draft, review, approved, production). |
 | `domains` | `object` | — |  | SOFT-DEPRECATED (v2.8.0). Free-string map naming the domains this architecture belongs to (name to identifier or description). Nothing resolves it. A domain is… |
 | `processes` | `array<string>` | — |  | Process file references providing narrative context for this architecture. |
@@ -849,7 +854,8 @@ A deployable service or component within a bounded context.
 | `needs` | `array<ref → service_need>` | — |  | Abstract infrastructure NEEDS (Score `type`/`class`/`id`/`params` vocabulary) this service declares - TYPE-level intent, resolved to a concrete resource per en… |
 | `owned_by` | `ref → owned_by` | — |  | Service-level ownership override. |
 | `servers` | `array<object>` | — |  | Server instances where this service is deployed. Follows OpenAPI server object pattern. |
-| `handles` | `array<ref → operation_ref>` | — |  | Operations this service handles in-process, with no transport asserted. Provider-side, like a contract's `expose:`/`send:`, and it materializes the same `handl… |
+| `provides` | `array<ref → operation_ref>` | — |  | Operations this service provides, with no transport described. Provider-side, like a contract's `expose:`/`send:`, and it materializes the same `handled_by` bi… |
+| `handles` | `array<ref → operation_ref>` | — |  | SOFT-DEPRECATED (v2.8.18): the superseded spelling of `provides:`, accepted with identical meaning and identical effect on the graph until the next major line.… |
 | `contracts` | `ref → contracts` | — |  | External contracts exposing and consuming interfaces for this service. |
 | `side_effects` | `ref → service_side_effects` | — |  | Observable side effects beyond request/response: filesystem, stdout, stderr. |
 | `tags` | `ref → tags` | — |  |  |
@@ -1027,13 +1033,14 @@ _Source: `schema/v2.8/design/concepts.schema.yaml` · root type `object`_
 | --- | --- | --- | --- | --- |
 | `version` | `ref → semver` | ✓ |  | Content version of this document. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context this file belongs to. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context this file belongs to. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
 | `concepts` | `array<ref → concept>` | ✓ |  | Domain vocabulary entries: entities, value objects, aggregates. |
 | `actors` | `array<ref → actor>` | — |  | Stakeholders, users, systems, and roles interacting with the domain. |
 | `enumerations` | `array<ref → enumeration>` | — |  | Closed value sets (e.g. order statuses, payment types). |
 | `associations` | `array<ref → association>` | — |  | Cross-concept relationships where neither side clearly owns the other. |
+| `personas` | `array<ref → persona_declaration>` | — |  | Personas declared in their own right, each carrying a `PER###` other entities can point at. The same archetypes may also be written inline under the actor they… |
 
 #### Definitions
 
@@ -1118,13 +1125,15 @@ _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/actor`_
 
 #### `persona`
 
-UX persona archetype with goals, pain points, JTBD, and demographics.
+A persona archetype: goals, pain points, jobs to be done and demographics for one way of living an actor's role. Written inline under the actor it belongs to, or at the document root with an identifier, which is what lets another entity name it.
 
 **Required:** `name`
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
+| `id` | `ref → persona_ref` | — |  | Unique persona identifier (e.g. PER001 or shop.PER001). Required at the document root, where the persona is declared in its own right; optional inline, where i… |
 | `name` | `string` | ✓ |  | Persona archetype name (e.g., 'Impulse Buyer', 'Research Shopper'). |
+| `actor_ref` | `ref → actor_ref` | — |  | The actor whose role this persona is an archetype of. For a persona written inline under an actor the answer is already the position it sits in, so leave it ab… |
 | `quote` | `string` | — |  | Representative quote capturing core frustration or goal. |
 | `goals` | `array<string>` | — |  | What this persona is trying to achieve. |
 | `pain_points` | `array<string>` | — |  | Current frustrations and obstacles. |
@@ -1133,6 +1142,8 @@ UX persona archetype with goals, pain points, JTBD, and demographics.
 | `job_to_be_done` | `string` | — |  | JTBD-style core functional job. |
 | `context` | `string` | — |  | Typical environment or workflow context. |
 | `demographics` | `object` | — |  | Demographic attributes. Open object - keys vary by domain. Common: role, industry, team_size, experience_years. |
+| `description` | `string` | — |  | Human-readable description of this persona. |
+| `tags` | `ref → tags` | — |  |  |
 
 _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/persona`_
 
@@ -1195,6 +1206,12 @@ Cross-concept relationship where neither side clearly owns the other.
 
 _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/association`_
 
+#### Value definitions
+
+| Definition | Type | Values | Description |
+| --- | --- | --- | --- |
+| `persona_declaration` | `composition` |  | A persona declared at the document root rather than inline under an actor. The shape is the archetype's, with the identifier required: an entity other entities… |
+
 <a id="design-domain"></a>
 
 ### `design/domain.schema.yaml`
@@ -1215,9 +1232,10 @@ _Source: `schema/v2.8/design/domain.schema.yaml` · root type `object`_
 | `description` | `string` | — |  | Business domain description summarizing this domain from business perspective. |
 | `version` | `ref → semver` | ✓ |  | Content version of this domain configuration. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context this domain belongs to. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context this domain belongs to. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
+| `domain_ref` | `ref → domain_ref` | — |  | The problem-space domain every operation in this document belongs to, stated once in the header. An operation carries no reference of its own: a domain documen… |
 | `operations` | `object` | ✓ |  | Domain operations as a dictionary. The key is a camelCase identifier and is the operation's readable address: `arch.yaml` contract lists name it as `<slice>:<k… |
 | `errors` | `object` | — |  | Unified error type catalog as a dictionary. The key is a camelCase identifier chosen by the author, in the same idiom operations use, and each error also carri… |
 | `questions` | `array<ref → question>` | — |  | Competency questions this domain was created to answer. Each question represents an independent knowledge requirement that the domain must satisfy. Questions e… |
@@ -1560,7 +1578,7 @@ _Source: `schema/v2.8/design/dynamics.schema.yaml` · root type `object`_
 | --- | --- | --- | --- | --- |
 | `version` | `ref → semver` | ✓ |  | Content version of this dynamics document. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context this dynamics file belongs to. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context this dynamics file belongs to. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
 | `execution` | `ref → execution_model` | — |  | Fundamental execution model for this domain's operations. |
@@ -1724,7 +1742,7 @@ _Source: `schema/v2.8/design/infrastructure.schema.yaml` · root type `object`_
 | --- | --- | --- | --- | --- |
 | `version` | `ref → semver` | ✓ |  | Content version of this resources document. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context this resources file belongs to. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context this resources file belongs to. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
 | `name` | `string` | — |  | Name of this resource group or service collection. |
@@ -2098,7 +2116,7 @@ _Source: `schema/v2.8/design/interactions.schema.yaml` · root type `object`_
 | --- | --- | --- | --- | --- |
 | `version` | `ref → semver` | ✓ |  | Content version of this UI document. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context this UI file belongs to. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context this UI file belongs to. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
 | `screens` | `array<ref → screen>` | — |  | UI screens the user interacts with. Each screen links to the models it displays, goals it serves, and stories it participates in. |
@@ -2190,7 +2208,7 @@ _Source: `schema/v2.8/design/models.schema.yaml` · root type `object`_
 | --- | --- | --- | --- | --- |
 | `version` | `ref → semver` | ✓ |  | Content version of this models document. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context this models file belongs to. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context this models file belongs to. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
 | `components` | `object` | ✓ |  | Container for reusable data model definitions. Follows OpenAPI/AsyncAPI components structure. |
@@ -2340,7 +2358,7 @@ _Source: `schema/v2.8/design/quality.schema.yaml` · root type `object`_
 | --- | --- | --- | --- | --- |
 | `version` | `ref → semver` | ✓ |  | Content version of this quality document. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context this quality file belongs to. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context this quality file belongs to. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
 | `metrics` | `array<ref → metric>` | — |  | Quantitative measurements of system behavior. Foundation for KPIs, SLOs, and observability - define what you measure before defining targets. |
@@ -2393,7 +2411,7 @@ A Key Performance Indicator - metric with business target. Links operational mea
 | `target` | `string` | ✓ |  | Target value (e.g. '99.5%', '< 200ms p95', '> 1000 orders/hour'). |
 | `window` | `string` | — |  | Measurement window (e.g. '30d rolling', 'calendar month', 'per release'). |
 | `goal` | `ref → goal_ref` | — |  | Motivation goal this KPI tracks. Closes the goal→KPI→metric traceability chain. |
-| `bounded_context_ref` | `ref → context_prefix` | — |  | Optional bounded context this KPI verifies. When set, the KPI surfaces in the BCC v5 node footer (Verification Metrics section) for that context. Added in v2.6… |
+| `bounded_context_ref` | `ref → scope_prefix` | — |  | Optional bounded context this KPI verifies. When set, the KPI surfaces in the BCC v5 node footer (Verification Metrics section) for that context. Added in v2.6… |
 | `thresholds` | `object` | — |  | Alert thresholds - when the metric crosses these levels, action is needed. |
 | `owner` | `ref → actor_ref` | — |  | Actor (ACT###) responsible for this KPI. |
 | `description` | `string` | — |  | Human-readable description. |
@@ -2601,7 +2619,7 @@ _Source: `schema/v2.8/design/rules.schema.yaml` · root type `object`_
 | --- | --- | --- | --- | --- |
 | `version` | `ref → semver` | ✓ |  | Content version of this document. Bump major for removed/renamed rules, minor for new rules, patch for logic clarifications. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context this file belongs to. When set, all rule IDs are addressable as scope.ID from outside. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context this file belongs to. When set, all rule IDs are addressable as scope.ID from outside. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
 | `structural` | `array<ref → rule>` | — |  | Invariant rules that must always hold true. Express fundamental domain constraints that cannot be violated. |
@@ -2705,7 +2723,7 @@ _Source: `schema/v2.8/design/story.schema.yaml` · root type `object`_
 | `name` | `string` | ✓ |  | Domain or service name these processes belong to. |
 | `version` | `ref → semver` | ✓ |  | Content version of this process document. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context this process file belongs to. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context this process file belongs to. |
 | `stage` | `string` | — |  | Development stage (e.g. draft, review, approved). |
 | `domains` | `object` | — |  | SOFT-DEPRECATED (v2.8.15). Free-string map naming the domains these processes touch (name to identifier or description). Nothing resolves it. A domain is decla… |
 | `tags` | `ref → tags` | — |  |  |
@@ -2783,6 +2801,7 @@ Agile user story: a user-level goal someone INTENDS to deliver. Format: As a [ac
 | `story_points` | `integer` | — |  | Relative effort estimate for sprint planning. |
 | `status` | `ref → story_status` | — |  | User story lifecycle status. |
 | `use_case` | `ref → use_case_ref` | — |  | SOFT-DEPRECATED (v2.8.9). The use case this story belongs to, named from the story. The link is stated by the use case instead - `use_case.user_stories[]` - so… |
+| `concern_ref` | `ref → concern_ref` | — |  | The stakeholder concern this story addresses. `benefit` says why the story is worth doing; this says whose standing expectation it serves, and a concern may be… |
 | `operations` | `array<ref → operation_ref>` | — |  | Domain operations this story exercises. |
 | `test_cases` | `array<ref → test_ref>` | — |  | Test cases validating this story. |
 | `version` | `ref → entity_version` | — |  |  |
@@ -2866,7 +2885,7 @@ _Source: `schema/v2.8/governance/capability.schema.yaml` · root type `object`_
 | --- | --- | --- | --- | --- |
 | `version` | `ref → semver` | ✓ |  | Content version of this capability document. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context or business domain this capability map covers. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context or business domain this capability map covers. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
 | `capabilities` | `array<ref → capability>` | ✓ |  | Top-level business capabilities. Level 1 capabilities decompose into level 2 via nested children, level 2 into level 3, etc. Typical maps have 2-3 levels. |
@@ -2923,7 +2942,7 @@ _Source: `schema/v2.8/governance/decisions.schema.yaml` · root type `object`_
 | --- | --- | --- | --- | --- |
 | `version` | `ref → semver` | ✓ |  | Content version. Bump minor for new decisions, patch for status updates. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context this decisions file belongs to. Enables filtering in multi-context blueprints. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context this decisions file belongs to. Enables filtering in multi-context blueprints. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
 | `decisions` | `array<ref → decision>` | ✓ |  | Architecture Decision Log. Chronological, append-only. Each entry is immutable once landed - supersede rather than modify. |
@@ -3077,8 +3096,8 @@ BCC v5 Business Decision - a key rule or policy that governs the behaviour of on
 | `id` | `ref → business_decision_ref` | ✓ |  | Unique business decision identifier (e.g. BD001 or orders.BD001). |
 | `name` | `string` | ✓ |  | Short human-readable name. Used in displayId fallback when no context prefix is set. |
 | `description` | `string` | ✓ |  | Full statement of the decision. Free text; may be multi-paragraph. |
-| `bounded_context_ref` | `ref → context_prefix` | ✓ |  | Owning bounded context (kebab-case context name). A single decision may apply to multiple contexts via linked_contexts[]. |
-| `linked_contexts` | `array<ref → context_prefix>` | — |  | Other contexts this decision affects (cross-context policy). |
+| `bounded_context_ref` | `ref → scope_prefix` | ✓ |  | Owning bounded context (kebab-case context name). A single decision may apply to multiple contexts via linked_contexts[]. |
+| `linked_contexts` | `array<ref → scope_prefix>` | — |  | Other contexts this decision affects (cross-context policy). |
 | `linked_user_stories` | `array<ref → user_story_ref>` | — |  | User stories that motivated this decision. |
 | `version` | `ref → entity_version` | — |  | Decision version for individual lifecycle tracking. |
 | `owned_by` | `ref → owned_by` | — |  | Entity-level ownership override. |
@@ -3106,7 +3125,7 @@ _Source: `schema/v2.8/governance/leverage.schema.yaml` · root type `object`_
 | --- | --- | --- | --- | --- |
 | `version` | `ref → semver` | ✓ |  | Content version of this leverage map. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context / slice this leverage map covers (omit for a systemic, root-level map). |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context / slice this leverage map covers (omit for a systemic, root-level map). |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Leverage points inherit unless overridden. |
 | `horizon` | `string` | — |  | Planning horizon this map targets (e.g. 'H2-2026', 'next 2 quarters'). Free-text. |
@@ -3192,7 +3211,7 @@ _Source: `schema/v2.8/governance/motivation.schema.yaml` · root type `object`_
 | --- | --- | --- | --- | --- |
 | `version` | `ref → semver` | ✓ |  | Content version of this motivation document. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context this motivation file belongs to. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context this motivation file belongs to. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
 | `vision` | `ref → vision` | — |  | The product's singular identity claim / north-star - what it fundamentally IS and aspires to become. Distinct from goals (measurable objectives that operationa… |
@@ -3202,6 +3221,7 @@ _Source: `schema/v2.8/governance/motivation.schema.yaml` · root type `object`_
 | `assumptions` | `array<ref → assumption>` | — |  | Things believed true but not yet verified. Wrong assumptions invalidate decisions. Each documents the consequence if false. |
 | `trade_offs` | `array<ref → trade_off>` | — |  | Conscious compromises between competing concerns. Makes implicit architectural tension explicit with rationale. |
 | `inquiries` | `array<ref → inquiry>` | — |  | Governance inquiries - unresolved strategic or stakeholder concerns that need investigation or decision before work can proceed. |
+| `concerns` | `array<ref → concern>` | — |  | What each persona expects of the system, durably enough that a view of the model can be judged against it. |
 
 #### Definitions
 
@@ -3317,7 +3337,7 @@ Something believed to be true but not yet verified. Carries risk if wrong; conse
 | `description` | `string` | — |  | Human-readable description. |
 | `statement` | `string` | ✓ |  | What is assumed to be true. |
 | `consequence` | `string` | ✓ |  | What happens if this assumption is wrong - the risk carried by the assumption. |
-| `bounded_context_ref` | `ref → context_prefix` | — |  | Optional bounded context this assumption applies to. When set, the assumption surfaces in the BCC v5 node footer (Assumptions section) for that context. Added… |
+| `bounded_context_ref` | `ref → scope_prefix` | — |  | Optional bounded context this assumption applies to. When set, the assumption surfaces in the BCC v5 node footer (Assumptions section) for that context. Added… |
 | `risk_refs` | `array<ref → risk_ref>` | — |  | Risks associated with this assumption being wrong. |
 | `version` | `ref → entity_version` | — |  | Assumption version for lifecycle tracking. |
 | `discovery_stage` | `ref → discovery_stage` | — |  | Epistemic maturity of this assumption. |
@@ -3386,6 +3406,26 @@ Governance inquiry - an unresolved strategic or stakeholder concern that needs i
 
 _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry`_
 
+#### `concern`
+
+A stakeholder's durable expectation of the system, held by a persona and about one part of the model that persona meets. A view of the model satisfies its concerns or it does not, which is the sense in which a concern tests a view the way a test case tests a story. Distinct from the two entities it is most easily confused with. An inquiry (INQ###) is a question the team has to answer before work…
+
+**Required:** `id`, `statement`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `id` | `ref → concern_ref` | ✓ |  | Unique concern identifier (CNC + 3+ digits, optional context prefix). |
+| `title` | `string` | — |  | Short name for listings (e.g. 'Knows an order is on its way'). |
+| `statement` | `string` | ✓ |  | What the persona expects, in their terms. It may read as a question ('Can I tell when my order will arrive?') or as a claim ('I can tell when my order will arr… |
+| `persona_ref` | `ref → persona_ref` | — |  | The persona who holds this concern. |
+| `about_ref` | `ref → usage_ref` | — |  | The part of the model this concern is about: a user story, a use case, a business process, a screen or a concept. |
+| `priority` | `string` | — | `must`, `should` | How much a view that leaves this concern unsatisfied still counts. must=the view fails without it, should=the view is weaker without it. |
+| `status` | `string` | — | `answered`, `partial`, `unanswered` | How far the model goes toward satisfying this concern: answered=fully, partial=in part, unanswered=not yet. A statement about the model, not about the work. |
+| `description` | `string` | — |  | Additional context: where the expectation comes from, and what would falsify it. |
+| `tags` | `ref → tags` | — |  |  |
+
+_Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/concern`_
+
 <a id="governance-organization"></a>
 
 ### `governance/organization.schema.yaml`
@@ -3406,7 +3446,7 @@ _Source: `schema/v2.8/governance/organization.schema.yaml` · root type `object`
 | --- | --- | --- | --- | --- |
 | `version` | `ref → semver` | ✓ |  | Content version of this organization document. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context this organization file belongs to. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context this organization file belongs to. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. |
 | `subject_party` | `ref → party_ref` | — |  | Which party this model is written from - "us". Optional, and the anchor every relative statement about the organization needs: without it, calling a party inte… |
@@ -3524,7 +3564,7 @@ _Source: `schema/v2.8/governance/roadmap.schema.yaml` · root type `object`_
 | --- | --- | --- | --- | --- |
 | `version` | `ref → semver` | ✓ |  | Content version of this roadmap document. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context this roadmap covers. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context this roadmap covers. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Milestones inherit unless overridden. |
 | `milestones` | `array<ref → milestone>` | ✓ |  | Product milestones ordered by target date. |
@@ -3633,7 +3673,7 @@ _Source: `schema/v2.8/governance/test-cases.schema.yaml` · root type `object`_
 | --- | --- | --- | --- | --- |
 | `version` | `ref → semver` | ✓ |  | Content version. Bump minor for new tests, patch for assertion updates. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context this test-cases file belongs to. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context this test-cases file belongs to. |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
 | `happy_path` | `array<ref → test_case>` | — |  | Tests for normal, expected operation. Validates primary success scenarios - the golden path. Every blueprint should have at least one. |
 | `edge_cases` | `array<ref → test_case>` | — |  | Tests for boundary conditions and unusual but valid inputs: empty collections, maximum values, concurrent access, unusual combinations. |
@@ -3758,7 +3798,7 @@ _Source: `schema/v2.8/governance/value-stream.schema.yaml` · root type `object`
 | --- | --- | --- | --- | --- |
 | `version` | `ref → semver` | ✓ |  | Content version of this value stream document. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
-| `scope` | `ref → context_prefix` | — |  | Bounded context or business domain this value stream map covers. |
+| `scope` | `ref → scope_prefix` | — |  | Bounded context or business domain this value stream map covers. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Entities inherit unless overridden. |
 | `value_streams` | `array<ref → value_stream>` | ✓ |  | Value streams representing end-to-end flows of value delivery. |

@@ -15,7 +15,7 @@ properties:
     $ref: "../metamodel.schema.yaml#/$defs/schema_version"
     description: "Schema version this document conforms to. Omit to assume latest."
   scope:
-    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
     description: "Bounded context this decisions file belongs to. Enables filtering in multi-context blueprints."
   tags:
     $ref: "../metamodel.schema.yaml#/$defs/tags"
@@ -435,12 +435,12 @@ $defs:
         type: string
         description: "Full statement of the decision. Free text; may be multi-paragraph."
       bounded_context_ref:
-        $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+        $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
         description: "Owning bounded context (kebab-case context name). A single decision may apply to multiple contexts via linked_contexts[]."
       linked_contexts:
         type: array
         items:
-          $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+          $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
         description: "Other contexts this decision affects (cross-context policy)."
       linked_user_stories:
         type: array

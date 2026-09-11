@@ -14,7 +14,7 @@ properties:
     $ref: "../metamodel.schema.yaml#/$defs/schema_version"
     description: "Schema version this document conforms to. Omit to assume latest."
   scope:
-    $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+    $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
     description: "Bounded context this motivation file belongs to."
   tags:
     $ref: "../metamodel.schema.yaml#/$defs/tags"
@@ -54,6 +54,11 @@ properties:
     description: "Governance inquiries - unresolved strategic or stakeholder concerns that need investigation or decision before work can proceed."
     items:
       $ref: "#/$defs/inquiry"
+  concerns:
+    type: array
+    description: "What each persona expects of the system, durably enough that a view of the model can be judged against it."
+    items:
+      $ref: "#/$defs/concern"
 
 $defs:
 
@@ -161,7 +166,7 @@ $defs:
           context_refs:
             type: array
             items:
-              $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+              $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
             description: "Bounded contexts / slices affected."
           process_refs:
             type: array
@@ -297,7 +302,7 @@ $defs:
           context_refs:
             type: array
             items:
-              $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+              $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
             description: "Bounded contexts / slices affected."
           process_refs:
             type: array
@@ -346,7 +351,7 @@ $defs:
         type: string
         description: "What happens if this assumption is wrong - the risk carried by the assumption."
       bounded_context_ref:
-        $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+        $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
         description: >
           Optional bounded context this assumption applies to. When set, the
           assumption surfaces in the BCC v5 node footer (Assumptions section)
@@ -495,7 +500,7 @@ $defs:
           context_refs:
             type: array
             items:
-              $ref: "../metamodel.schema.yaml#/$defs/context_prefix"
+              $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
             description: "Bounded contexts / slices affected."
           process_refs:
             type: array
@@ -546,5 +551,59 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/owned_by"
       properties:
         $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  concern:
+    type: object
+    description: >
+      A stakeholder's durable expectation of the system, held by a persona and about one part of
+      the model that persona meets. A view of the model satisfies its concerns or it does not, which
+      is the sense in which a concern tests a view the way a test case tests a story.
+      Distinct from the two entities it is most easily confused with. An inquiry (INQ###) is a
+      question the team has to answer before work proceeds, and it closes; a concern outlives every
+      answer. A domain question (QN###) asks whether a bounded context models enough of its subject;
+      a concern asks whether what is modelled reaches the person who needs it.
+    additionalProperties: false
+    required:
+      - id
+      - statement
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/concern_ref"
+        description: "Unique concern identifier (CNC + 3+ digits, optional context prefix)."
+      title:
+        type: string
+        maxLength: 200
+        description: "Short name for listings (e.g. 'Knows an order is on its way')."
+      statement:
+        type: string
+        description: >
+          What the persona expects, in their terms. It may read as a question ('Can I tell when my
+          order will arrive?') or as a claim ('I can tell when my order will arrive'); both say the
+          same thing and the question form is often the plainer one.
+      persona_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/persona_ref"
+        description: "The persona who holds this concern."
+      about_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/usage_ref"
+        description: >
+          The part of the model this concern is about: a user story, a use case, a business process,
+          a screen or a concept.
+      priority:
+        type: string
+        enum: [must, should]
+        description: >
+          How much a view that leaves this concern unsatisfied still counts. must=the view fails
+          without it, should=the view is weaker without it.
+      status:
+        type: string
+        enum: [answered, partial, unanswered]
+        description: >
+          How far the model goes toward satisfying this concern: answered=fully, partial=in part,
+          unanswered=not yet. A statement about the model, not about the work.
+      description:
+        type: string
+        description: "Additional context: where the expectation comes from, and what would falsify it."
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"

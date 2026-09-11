@@ -28,7 +28,7 @@ $defs:
         $ref: "#/$defs/semver"
         description: "Schema definition version this document conforms to. Omit to assume latest."
       scope:
-        $ref: "#/$defs/context_prefix"
+        $ref: "#/$defs/scope_prefix"
         description: "Bounded context this file belongs to. Enables scoping in multi-context blueprints."
     required:
       - version
@@ -68,10 +68,14 @@ $defs:
   # Bounded Context
   # ---------------------------------------------------------------------------
 
-  context_prefix:
+  scope_prefix:
     type: string
     pattern: "^[a-z][a-z0-9-]*$"
-    description: "Bounded context name in kebab-case (e.g. billing, order-mgmt)."
+    description: >
+      Namespace qualifier on a typed id, in kebab-case (e.g. billing, order-mgmt). It names the
+      scope of the document the id is declared in, so that bare ids do not collide across files.
+      A name rather than a reference: nothing resolves it, and it names neither a domain nor a
+      bounded context, whatever the two happen to be called in a given model.
 
   # ---------------------------------------------------------------------------
   # Tags (cross-cutting)
@@ -81,7 +85,10 @@ $defs:
     type: array
     items:
       type: string
-    description: "Free-form tags for grouping. Root-level inherited by entities; entity-level merged with root during loading."
+    description: >
+      Free-form tags for grouping. A document-level `tags` describes the document; an entity-level
+      `tags` describes the entity. Nothing propagates between them: an entity carries exactly the
+      tags it declares.
 
   # ---------------------------------------------------------------------------
   # Id band ownership
@@ -224,6 +231,36 @@ $defs:
     pattern: "^([a-z][a-z0-9-]*\\.)?INQ\\d{3,}$"
     description: "Reference to a governance inquiry (e.g. INQ001 or orders.INQ001)."
 
+  concern_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?CNC\\d{3,}$"
+    description: >
+      Reference to a stakeholder concern (e.g. CNC001 or orders.CNC001). A concern is a durable
+      expectation a view of the model has to satisfy, not a task to close.
+
+  usage_ref:
+    description: >
+      Reference to the part of the model a concern is about. Restricted to the entities a
+      stakeholder actually meets: a user story, a use case, a business process, a screen or a
+      concept. An aggregate, an event or a command is how the system is built rather than how it is
+      used, so it is not a legal target here and naming one is an error.
+    anyOf:
+      - type: string
+        pattern: "^([a-z][a-z0-9-]*\\.)?US\\d{3,}$"
+        description: "A user story (e.g. US001)."
+      - type: string
+        pattern: "^([a-z][a-z0-9-]*\\.)?UC\\d{3,}$"
+        description: "A use case (e.g. UC001)."
+      - type: string
+        pattern: "^([a-z][a-z0-9-]*\\.)?PRC\\d{3}$"
+        description: "A business process (e.g. PRC001)."
+      - type: string
+        pattern: "^([a-z][a-z0-9-]*\\.)?SCR\\d{3}$"
+        description: "A screen (e.g. SCR001)."
+      - type: string
+        pattern: "^([a-z][a-z0-9-]*\\.)?CN\\d{3}$"
+        description: "A concept (e.g. CN001)."
+
   parallelism_ref:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?PAR\\d{3}$"
@@ -243,6 +280,14 @@ $defs:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?ACT\\d{3}$"
     description: "Reference to an actor (e.g. ACT001 or billing.ACT001)."
+
+  persona_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?PER\\d{3,}$"
+    description: >
+      Reference to a persona (e.g. PER001 or shop.PER001). A persona is a named archetype of an
+      actor: the same role can be lived very differently by two people, and it is the archetype,
+      not the role, that a design is judged against.
 
   enumeration_ref:
     type: string
@@ -324,7 +369,10 @@ $defs:
   subdomain_ref:
     type: string
     pattern: "^SDM\\d{3,}$"
-    description: "Reference to a subdomain declared under its domain in blueprint.yaml `domains[].subdomains[]` (e.g. SDM001)."
+    description: >
+      Reference to a subdomain declared under its domain in blueprint.yaml `domains[].subdomains[]`
+      (e.g. SDM001). SOFT-DEPRECATED (v2.8.17). A subdomain is a partition of one domain and is always reached through it, so it takes no identity of its own on the next major line: it is named by its own `name` inside the domain that contains it, and the containing domain is what another entity points at. Still accepted here, and `id` stays required while it exists.
+      A reference that names a subdomain becomes a reference to the domain containing it.
 
   model_ref:
     description: >
@@ -974,8 +1022,32 @@ $defs:
       core-domain: the competitive advantage, worth the deepest model.
       supporting-domain: necessary to the core and specific to this business.
       generic-domain: necessary and available off the shelf.
-      technical-capability: a cross-cutting technical concern rather than a business
-      subdomain, which may still carry a deep model.
+      technical-capability: a region about the system's own machinery rather than about the
+      business it serves.
+      PROVISIONAL. That fourth value answers a different question from the other three: they grade
+      how important a region is to the business, it names what the region is about. `modeling_space`
+      carries the same statement on an axis of its own, so the two can be declared together or
+      disagree, and nothing reconciles them. Which of the two keeps the value is unsettled and is
+      expected to be decided before the next major line.
+
+  modeling_space:
+    type: string
+    enum: [business-domain, technical-capability, endeavour]
+    x-vocabulary-distinct: "Names what a region's subject matter is, which is a different question from how strategically important it is."
+    description: >
+      What a region of the model is about.
+      business-domain: the business the product serves.
+      technical-capability: the system's own machinery rather than the business it serves.
+      endeavour: producing or running the system rather than the system's subject matter.
+      Absent means `business-domain`, so a model that states nothing is read as describing the
+      business it serves.
+      Distinct from `subdomain_kind`, which grades strategic importance, and from
+      `complexity_pattern`, which names the problem type. The three are independent: a region
+      about the system's own machinery is still core, supporting or generic to the business.
+      PROVISIONAL. `technical-capability` is also a value of `subdomain_kind`, so a region may
+      carry the word on both axes, or carry one on each and disagree, and nothing reconciles the
+      two. Treat the value set as unsettled - it may gain, lose or rename values before the next
+      major line, and a consumer should not branch on it without allowing for that.
 
   context_kind:
     type: string

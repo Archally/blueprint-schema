@@ -65,7 +65,7 @@ graph LR
     blueprint_schema_yaml -->|1| governance_roadmap_schema_yaml
     blueprint_schema_yaml -->|1| governance_test_cases_schema_yaml
     blueprint_schema_yaml -->|1| governance_value_stream_schema_yaml
-    blueprint_schema_yaml -->|18| metamodel_schema_yaml
+    blueprint_schema_yaml -->|19| metamodel_schema_yaml
     blueprint_schema_yaml -->|1| migration_schema_yaml
     migration_schema_yaml -->|7| metamodel_schema_yaml
     migrations_schema_yaml -->|6| metamodel_schema_yaml
@@ -78,8 +78,8 @@ What & how: domain model, behavior, contracts, and quality attributes.
 | Schema file | Title | Root props | Object defs | Summary |
 | --- | --- | --- | --- | --- |
 | [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | Blueprint Architecture | 13 | 15 | Design Plane - L0: Bounded context topology. Parties, contexts, services with contracts (interfaces), enriched dependen… |
-| [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | Blueprint Concepts | 9 | 7 | Design Plane - Layer 2: Domain vocabulary. Defines concepts (entities, value objects, aggregates), actors, enumerations… |
-| [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | Blueprint Domain Operations | 10 | 18 | Design Plane - Layer 3: Domain operations with protocol bindings, rule governance, pre/postconditions, and side effects… |
+| [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | Blueprint Concepts | 10 | 7 | Design Plane - Layer 2: Domain vocabulary. Defines concepts (entities, value objects, aggregates), actors, enumerations… |
+| [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | Blueprint Domain Operations | 11 | 18 | Design Plane - Layer 3: Domain operations with protocol bindings, rule governance, pre/postconditions, and side effects… |
 | [`design/dynamics.schema.yaml`](./entity-catalog.md#design-dynamics) | Blueprint Dynamics | 10 | 8 | Design Plane: Runtime concurrency and execution behavior. Covers execution model, parallelism, ordering constraints, ra… |
 | [`design/infrastructure.schema.yaml`](./entity-catalog.md#design-infrastructure) | Blueprint Infrastructure Resources | 12 | 22 | Design Plane: Infrastructure resource definitions and deployment topology. Declares platform resources (databases, queu… |
 | [`design/interactions.schema.yaml`](./entity-catalog.md#design-interactions) | Blueprint UI | 9 | 3 | Design Plane: User interface screens, actions, and navigation. Cross-links to models, operations, goals, decisions, tes… |
@@ -105,16 +105,16 @@ graph LR
         design_story_schema_yaml["story"]
     end
     metamodel_schema_yaml(["metamodel"])
-    design_arch_schema_yaml -->|42| metamodel_schema_yaml
-    design_concepts_schema_yaml -->|37| metamodel_schema_yaml
-    design_domain_schema_yaml -->|50| metamodel_schema_yaml
+    design_arch_schema_yaml -->|43| metamodel_schema_yaml
+    design_concepts_schema_yaml -->|40| metamodel_schema_yaml
+    design_domain_schema_yaml -->|51| metamodel_schema_yaml
     design_dynamics_schema_yaml -->|23| metamodel_schema_yaml
     design_infrastructure_schema_yaml -->|27| metamodel_schema_yaml
     design_interactions_schema_yaml -->|29| metamodel_schema_yaml
     design_models_schema_yaml -->|13| metamodel_schema_yaml
     design_quality_schema_yaml -->|74| metamodel_schema_yaml
     design_rules_schema_yaml -->|24| metamodel_schema_yaml
-    design_story_schema_yaml -->|58| metamodel_schema_yaml
+    design_story_schema_yaml -->|59| metamodel_schema_yaml
 ```
 
 ## Governance Plane
@@ -126,7 +126,7 @@ Why & proof: strategic intent, decisions, capabilities, and quality evidence.
 | [`governance/capability.schema.yaml`](./entity-catalog.md#governance-capability) | Blueprint Business Capabilities | 6 | 1 | Governance Plane: Business Capability Map - a hierarchical view of what the business can do, independent of organizatio… |
 | [`governance/decisions.schema.yaml`](./entity-catalog.md#governance-decisions) | Blueprint Decisions | 7 | 9 | Governance Plane: Architecture Decision Log (ADR). Chronological, append-only record of design decisions with typed imp… |
 | [`governance/leverage.schema.yaml`](./entity-catalog.md#governance-leverage) | Blueprint Leverage Map | 10 | 2 | Governance Plane: Leverage Map - the prioritization tier that sits ABOVE the AS-IS remediation chain (finding → risk →… |
-| [`governance/motivation.schema.yaml`](./entity-catalog.md#governance-motivation) | Blueprint Motivation | 12 | 7 | Governance Plane: Strategic intent - goals, non-goals, risks, assumptions, and trade-offs. Decisions reference motivati… |
+| [`governance/motivation.schema.yaml`](./entity-catalog.md#governance-motivation) | Blueprint Motivation | 13 | 8 | Governance Plane: Strategic intent - goals, non-goals, risks, assumptions, and trade-offs. Decisions reference motivati… |
 | [`governance/organization.schema.yaml`](./entity-catalog.md#governance-organization) | Blueprint Organization | 7 | 5 | Governance Plane: Organizational hierarchy - Party > Department > Team. Defines who owns what in the blueprint. Teams a… |
 | [`governance/roadmap.schema.yaml`](./entity-catalog.md#governance-roadmap) | Blueprint Roadmap | 8 | 2 | Governance Plane: Product roadmap milestones with deliverables, success criteria, and dependencies. Used for PRD timeli… |
 | [`governance/test-cases.schema.yaml`](./entity-catalog.md#governance-test-cases) | Blueprint Test Cases | 9 | 5 | Governance Plane: Test cases organized as happy-path, edge-case, and error-case suites. Owns validates references as th… |
@@ -150,7 +150,7 @@ graph LR
     governance_capability_schema_yaml -->|21| metamodel_schema_yaml
     governance_decisions_schema_yaml -->|47| metamodel_schema_yaml
     governance_leverage_schema_yaml -->|30| metamodel_schema_yaml
-    governance_motivation_schema_yaml -->|83| metamodel_schema_yaml
+    governance_motivation_schema_yaml -->|87| metamodel_schema_yaml
     governance_organization_schema_yaml -->|21| metamodel_schema_yaml
     governance_roadmap_schema_yaml -->|37| metamodel_schema_yaml
     governance_test_cases_schema_yaml -->|28| metamodel_schema_yaml

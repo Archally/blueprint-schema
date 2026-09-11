@@ -118,8 +118,11 @@ properties:
   domains:
     type: array
     description: >
-      The model's problem-space registry: the domains this system exists for, each with the
-      subdomains it divides into. Two levels, declared once here and referenced everywhere else
+      The model's top-level region registry, each entry with the subdomains it divides into.
+      Most entries are the problem-space domains the system exists for, which is what an entry
+      declaring no `modeling_space` states. An entry may also name the system's own machinery or
+      the endeavour that produces the system, because a bounded context reaches its region through
+      this registry and has no other way to name one. Two levels, declared once here and referenced everywhere else
       by id: a bounded context names the domain it realizes with `domain_ref`, and which slice
       folder holds a domain's model is derived from where its contexts are declared, never
       declared. `layout.slices` describes files; this describes the business. A slice and a
@@ -344,6 +347,12 @@ $defs:
       type:
         $ref: "metamodel.schema.yaml#/$defs/subdomain_kind"
         description: "DDD strategic importance of this domain."
+      modeling_space:
+        $ref: "metamodel.schema.yaml#/$defs/modeling_space"
+        description: >
+          What this region is about: the business the product serves, the system's own machinery,
+          or the endeavour that produces the system. Absent means the business the product serves.
+          Independent of `type`, which grades importance rather than naming a subject.
       complexity:
         $ref: "metamodel.schema.yaml#/$defs/complexity_pattern"
         description: >
@@ -377,7 +386,8 @@ $defs:
       id:
         type: string
         pattern: "^SDM\\d{3,}$"
-        description: "Subdomain id. Model-wide, no context prefix (SDM001)."
+        description: >
+          Subdomain id. Model-wide, no context prefix (SDM001). SOFT-DEPRECATED (v2.8.17). A subdomain is a partition of one domain and is always reached through it, so it takes no identity of its own on the next major line: it is named by its own `name` inside the domain that contains it, and the containing domain is what another entity points at. Still accepted here, and `id` stays required while it exists.
       name:
         type: string
         description: "Subdomain name (e.g. cart, checkout, fulfillment)."
