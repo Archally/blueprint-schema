@@ -24,6 +24,7 @@ import { extractRg } from './rg.js';
 import { extractInfrastructure } from './infrastructure.js';
 import { extractDynamics } from './dynamics.js';
 import { extractDomains } from './domains.js';
+import { extractMigrations } from './migrations.js';
 
 const EXTRACTORS: Record<string, (doc: ParsedBlueprintDocument) => Entity[]> = {
   blueprint: extractDomains,
@@ -48,6 +49,10 @@ const EXTRACTORS: Record<string, (doc: ParsedBlueprintDocument) => Entity[]> = {
   organization: extractOrg,
   ui: extractUI,
   interactions: extractUI,
+  // One extractor, both documents: `migrations.yaml` holds an array, `*.migration.yaml` a single
+  // object, and the extractor reads whichever the document carries.
+  migration: extractMigrations,
+  migrations: extractMigrations,
   roadmap: extractRoadmap,
   'value-stream': extractValueStream,
   leverage: extractLeverage,

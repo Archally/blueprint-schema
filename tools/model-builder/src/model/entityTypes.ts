@@ -80,6 +80,11 @@ export const ENTITY_TYPE = {
   // aggregates/entities/events inside a bounded context rather than the strategic problem space.
   Domain: 'Domain',
   Subdomain: 'Subdomain',
+  // Where the model has been, from either document that records it: the reader-facing
+  // register (`migrations.yaml`) and the executable change program (`*.migration.yaml`).
+  // One type for both, with `_genre` on the node saying which - the reader-facing facts are
+  // the same facts, and the two `status` vocabularies are not, which is what `_genre` is for.
+  Migration: 'Migration',
 } as const;
 
 export type EntityType = (typeof ENTITY_TYPE)[keyof typeof ENTITY_TYPE];
@@ -114,4 +119,9 @@ export const SCHEMA_TYPE_TO_LAYER: Record<string, string> = {
   'value-stream': 'governance.value-stream',
   leverage: 'governance.leverage',
   blueprint: 'blueprint',
+  // A migration sits outside both planes. Its layer is its own, and because both adapters
+  // derive a plane from the layer prefix and accept only `design` and `governance`, this one
+  // yields no plane without either of them learning what a migration is.
+  migration: 'migrations',
+  migrations: 'migrations',
 };

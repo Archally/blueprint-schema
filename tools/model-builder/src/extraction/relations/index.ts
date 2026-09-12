@@ -41,6 +41,7 @@ import { extractDomainRegistryRelations } from './domains.js';
 import { extractOperationDomainRelations } from './operationDomain.js';
 import { extractPersonaConcernRelations } from './personaConcern.js';
 import { extractCoverageRelations } from './coverage.js';
+import { extractMigrationRelations } from './migrations.js';
 import { extractContractTrafficRelations } from './contractTraffic.js';
 
 /**
@@ -104,6 +105,7 @@ export function buildRelations(
     ...extractQualityRelations(entities, placeholders),
     ...extractDomainRegistryRelations(entities, placeholders),
     ...extractOperationDomainRelations(entities, placeholders),
+    ...extractMigrationRelations(entities),
     ...codeRefRelations,
   ];
 

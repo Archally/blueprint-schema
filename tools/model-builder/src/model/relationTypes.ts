@@ -202,6 +202,13 @@ export const RELATION_TYPE = {
   // v2.8.1: where a governance concern sticks on the domain model - risk.affects.*_refs[],
   // inquiry.affects.*_refs[], finding.affects.*_refs[] (operation, concept, story). One type per
   // source, as `race_condition_affects`: the target's own type says what was affected.
+  // A migration's three edges. All three are PREFIXED with the source type, for the reason the
+  // `ContextDependsOn` / `LeverageDependsOn` comments below give: a bare `depends_on` already names
+  // the TOSCA infrastructure verb, and a declarative rule matching the string would match both.
+  MigrationDependsOn: 'migration_depends_on',
+  MigrationRelatesToDecision: 'migration_relates_to_decision',
+  // The coarse edge the ruling put in place of a per-change one, agnostic to what the change does.
+  MigrationAffects: 'migration_affects',
   RiskAffects: 'risk_affects',
   InquiryAffects: 'inquiry_affects',
   FindingAffects: 'finding_affects',
