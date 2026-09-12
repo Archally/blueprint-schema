@@ -5,6 +5,39 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.21"
+    date: "2026-09-12"
+    summary: >
+      A coupling is stated once. `dependency.coupling` says how two bounded contexts are connected,
+      in the three values the contract surface computes from a model's own contract refs. Where the
+      contracts reach the pair they have computed it already, and they carry the direction, the
+      operations and the broker with it, so a coupling declared there is a second statement of one
+      fact - and two statements of one fact drift apart on the first change that touches only one of
+      them.
+
+
+      `restated-coupling` reports that, as a warning, from the context that declared it. The finding
+      names both words, what the model declared and what the contracts compute, so a reader sees at
+      once whether the two agree. Agreement and contradiction are one finding rather than two,
+      because deleting the declaration is the fix for both; the message says which of the two it
+      found. Traffic in either direction counts, since the claim is about the pair and not about
+      which end calls the other.
+
+
+      A coupling no contract reaches is silent, and that is the case the field exists for: a shared
+      store, a file drop, a scheduled job. The rule is a warning for the whole 2.8 line and becomes
+      an error on the next major line.
+
+
+      A declared coupling now travels on the context dependency edge as well, beside the strategic
+      relationship, the direction and the free-text integration type, so a report or a drawing can
+      read what the model said. It stays a field of its own rather than folding into the free-text
+      one: only the typed value is comparable with what the contracts compute.
+
+
+      Additive. No property is added, removed or narrowed, no value is withdrawn, and a document
+      valid under 2.8.20 is valid here with the same meaning.
+
   - version: "2.8.20"
     date: "2026-09-12"
     summary: >
