@@ -5,6 +5,30 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.25"
+    date: "2026-09-12"
+    summary: >
+      The metamodel carries `x-gdsm.modeling_guidance`, a ledger of durable lessons about modelling
+      with this suite, served on request rather than loaded into a session. It gains three entries.
+
+
+      A `description:` that names a fallback, an inheritance, a default or a derivation is a claim
+      about the builder and holds only while the builder does that; one that names a shape is
+      decided by the schema itself.
+
+
+      Acceptance is not reachability. The schema decides what a document may say and the extractor
+      decides what travels on the graph, so a check written over a property the extractor drops
+      passes against a fixture and returns nothing on every real model.
+
+
+      Where a model states one proposition twice, the duplication is the defect rather than the
+      disagreement, so it takes one rule id and one severity.
+
+
+      Annotation only. No validation changes, no value is withdrawn, and every document valid under
+      2.8.24 is valid here with the same meaning.
+
   - version: "2.8.24"
     date: "2026-09-12"
     summary: >
