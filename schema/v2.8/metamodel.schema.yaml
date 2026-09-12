@@ -1646,3 +1646,49 @@ x-gdsm:
         A subdomain nested in the root `domains[]` registry declares `type`; one nested in a slice
         declares `kind`. Both are accepted and both mean the region's strategic importance.
       schema_version: "2.8.20"
+    - lesson: >
+        A `description:` that names a fallback, an inheritance, a default or a derivation is a claim
+        about the builder, and it holds only while the builder does that. One that names a shape -
+        what a field holds, what values it admits - is decided by the schema itself and needs no
+        second reading. Check the first kind against the code that implements it, because the two
+        are compared by nothing else. Such a claim also travels: its wording is copied into the
+        modeler prompt and the hand-written reference, so grep the phrasing across both before
+        estimating what changing it costs.
+      category: gotcha
+      date: "2026-09-12"
+      evidence: >
+        Both kinds sit side by side in this suite. `tags` describes what a tag attaches to and makes
+        no promise beyond it. The header-level defaults - `owned_by`, `system_ref` and `domain_ref` -
+        each describe an inheritance, and each is carried by an annotation pass the builder runs
+        before extraction.
+      schema_version: "2.8.25"
+    - lesson: >
+        Acceptance is not reachability. The schema decides what a document may say; the extractor
+        decides what travels on the graph, and the two are separate lists. Before writing a rule, a
+        report or a renderer over a property, confirm the extractor puts that property on the entity
+        or the edge it will be read from. A check that reads a property the extractor drops passes
+        against a hand-built fixture and returns nothing on every real model, which is the one
+        failure shape indistinguishable from a clean result. Carry a typed property as its own field
+        rather than folding it into a free-text sibling, because only the typed one can be compared
+        with anything derived.
+      category: structure
+      date: "2026-09-12"
+      evidence: >
+        A context dependency carries `relationship`, `direction`, `integration_type` and
+        `language_boundary` onto its edge. A property the schema admits on the same object reaches
+        the graph only once the extractor names it.
+      schema_version: "2.8.25"
+    - lesson: >
+        Where a model states one proposition twice, the defect is the duplication rather than the
+        disagreement, so it takes ONE rule id whose message names which of the two it found.
+        Splitting agreement from contradiction moves the tool while the author is acting on it: a
+        model that resolves a contradiction by deleting the duplicate would trip the second id the
+        moment it stopped tripping the first. The same test sets the severity - two readings sharing
+        one fix share one severity.
+      category: semantics
+      date: "2026-09-12"
+      evidence: >
+        `restated-coupling` reports a `coupling` declared on a dependency the contracts already
+        compute, whether the declared word agrees with the computed one or not. Deleting the
+        declaration is the fix in both readings.
+      schema_version: "2.8.25"
