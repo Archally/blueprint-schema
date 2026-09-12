@@ -14,6 +14,12 @@ import { createPlaceholder } from './resolver.js';
  * strategic intent. Without this, `dependencies[]` lived only inside Context.data and depended-upon
  * contexts showed up as false "orphan-entities".
  *
+ * `coupling` and `type` are carried as two fields rather than merged, because they are two
+ * statements and only one of them is comparable with anything. `coupling` takes the three values
+ * the contract surface computes, so a declared one and a derived one can be compared; `type` is free
+ * text and lands on `integration_type` as whatever the author wrote. Folding the second into the
+ * first would invent a comparison the model never made.
+ *
  * Ported from the public `tools/model-builder/src/extraction/relations/archDependencies.ts`; keep the
  * two in lockstep (both stacks run one shared semantic-rule pack).
  *
@@ -54,6 +60,7 @@ export function extractArchDependencyRelations(
         data: {
           ...(dependency.relationship != null ? { relationship: dependency.relationship } : {}),
           ...(dependency.direction != null ? { direction: dependency.direction } : {}),
+          ...(dependency.coupling != null ? { coupling: dependency.coupling } : {}),
           ...(dependency.type != null ? { integration_type: dependency.type } : {}),
           ...(dependency.language_boundary != null ? { language_boundary: dependency.language_boundary } : {}),
         },

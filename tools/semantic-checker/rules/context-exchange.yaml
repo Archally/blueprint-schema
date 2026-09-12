@@ -58,3 +58,26 @@ rules:
         module: ./context-exchange.mjs
         export: dependencyDirectionDisagreement
     message: 'Context {subject} "{subject_name}" declares a dependency on {counterparts}, and the contracts show every operation flowing the other way. One of the two is wrong.'
+
+  - id: restated-coupling
+    severity: warn
+    description: >-
+      A coupling declared on a dependency that the contracts already compute for the same pair.
+      `coupling` exists for the connections the contract surface cannot see - a shared database, a
+      file drop, a scheduled job - and where the contracts do reach a pair they are the better
+      source: they carry the direction, the operations and the broker as well, none of which
+      survives being restated as a single word. Two sources over one proposition drift, and the
+      model then says two things. Fix in the model by deleting the declared coupling, which is the
+      fix whether the two agree or contradict each other - so both are one finding here and the
+      message says which one it is. Traffic in either direction counts, because the claim is about
+      the pair rather than about who calls whom. Silent where no contract reaches the pair, which is
+      the case the field exists for. Reported from the context that declared it. A warning for the
+      whole v2.8 line and an error at the next major. Override per-project via .blueprint-lint.yaml
+      (e.g. `restated-coupling: off`).
+    find:
+      entity_type: Context
+    check:
+      custom:
+        module: ./context-exchange.mjs
+        export: restatedCoupling
+    message: 'Context {subject} "{subject_name}" declares a coupling its own contracts already compute for the same pair: {comparison}. State a coupling only where the contracts cannot reach the pair - where they can, they carry the direction, the operations and the broker too. Accepted until the next major line.'

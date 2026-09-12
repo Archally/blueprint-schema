@@ -36,6 +36,14 @@ function index(model) {
 
   /** @type {Set<string>} declared pairs, as `source>target`. */
   const declared = new Set();
+  /**
+   * @type {Map<string, string>} the coupling an author declared on a pair, where they declared one.
+   *
+   * Kept beside `declared` rather than folded into it: the three rules below ask only whether a pair
+   * was declared, and a set answers that in the shape they already read. A pair with no `coupling:`
+   * is absent here, which is the distinction the fourth rule turns on.
+   */
+  const couplings = new Map();
   /** @type {Map<string, {protocols: string[], operationCount: number}>} derived, `consumer>provider`. */
   const derived = new Map();
   const names = new Map();
@@ -46,7 +54,10 @@ function index(model) {
 
   for (const relation of model.relations ?? []) {
     if (relation.type === DEPENDS_ON) {
-      declared.add(`${relation.source}>${relation.target}`);
+      const pair = `${relation.source}>${relation.target}`;
+      declared.add(pair);
+      const coupling = relation.data?.coupling;
+      if (typeof coupling === 'string' && coupling.length > 0) couplings.set(pair, coupling);
     } else if (relation.type === TRAFFIC) {
       const data = relation.data ?? {};
       derived.set(`${relation.source}>${relation.target}`, {
@@ -56,7 +67,7 @@ function index(model) {
     }
   }
 
-  const built = { declared, derived, names };
+  const built = { declared, couplings, derived, names };
   cache.set(model, built);
   return built;
 }
@@ -160,4 +171,53 @@ export const dependencyDirectionDisagreement = (model, subject) => {
 
   if (reversed.size === 0) return { ok: true };
   return { ok: false, context: { ...subjectOf(subject), counterparts: label(names, reversed) } };
+};
+
+/**
+ * A coupling stated twice: declared on the dependency, and already computed by the contracts.
+ *
+ * `coupling` exists for the connections the contract surface cannot see - a shared database, a file
+ * drop, a scheduled job. Where the contracts DO reach the pair they are the better source, because
+ * they carry the direction, the operations and the broker as well, and none of that survives being
+ * restated as one word. Two sources over one proposition drift, and the model then says two things.
+ *
+ * Reported from the context that declared it, which is the end that owns the field and the end that
+ * can delete it.
+ *
+ * Either direction of traffic counts. The claim is about the PAIR - the contracts compute a protocol
+ * between these two contexts - and a declaration does not become a second source only when it points
+ * the same way. Where the traffic runs the other way `dependency-direction-disagreement` also fires,
+ * on a different defect with a different fix.
+ *
+ * Agreement and disagreement are ONE rule, not two. Deleting the declaration is the fix in both
+ * cases, so splitting them would mean a model that corrects a contradiction by removing the field
+ * immediately trips the other id - the tool moving while the author is acting on it.
+ */
+export const restatedCoupling = (model, subject) => {
+  const { couplings, derived, names } = index(model);
+  /** @type {Array<{ name: string, declared: string, computed: string[] }>} */
+  const restated = [];
+
+  for (const [pair, coupling] of couplings) {
+    const [from, to] = pair.split('>');
+    if (from !== subject?.id) continue;
+    const traffic = derived.get(pair) ?? derived.get(`${to}>${from}`);
+    if (!traffic) continue; // The only source. This is exactly what the field is for.
+    restated.push({ name: names.get(to) ?? to, declared: coupling, computed: traffic.protocols });
+  }
+
+  if (restated.length === 0) return { ok: true };
+
+  restated.sort((a, b) => a.name.localeCompare(b.name));
+  const comparison = restated
+    .map((entry) => {
+      const computed = entry.computed.length > 0 ? entry.computed.join('/') : 'nothing';
+      const agrees = entry.computed.includes(entry.declared);
+      return `${entry.name}: declared "${entry.declared}", the contracts compute "${computed}"${
+        agrees ? '' : ' - these disagree'
+      }`;
+    })
+    .join('; ');
+
+  return { ok: false, context: { ...subjectOf(subject), comparison } };
 };

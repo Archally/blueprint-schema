@@ -109,6 +109,7 @@ Severities: `error` (fails), `warn`, `info`, `off`.
 | `undeclared-exchange` | warn | every pair of contexts whose contracts carry operations between them has a dependency declared, either way round - the contracts say how two contexts are connected, and only an author says on whose terms |
 | `dependency-direction-disagreement` | warn | a declared dependency runs the way its operations do; declared one way with every operation flowing the other is a contradiction rather than a silence, and one of the two statements is wrong |
 | `unevidenced-dependency` | info | reports a declared dependency no contract evidences; info because most are real coupling the contract surface cannot describe yet - a shared store, a file drop, a scheduled job - rather than a stale entry |
+| `restated-coupling` | warn | a `coupling` is declared only where the contracts cannot reach the pair; where they can they compute it already, and carry the direction, the operations and the broker with it. The finding names both the declared word and the computed one, so agreement and contradiction are one finding with one fix - delete the declaration. An error on the next major line |
 
 ## Custom rules
 
