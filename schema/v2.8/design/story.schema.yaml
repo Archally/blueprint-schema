@@ -224,6 +224,57 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/process_activity_ref"
         description: "Optional explicit links to subsequent activities. When absent, flow is inferred from domain causal links."
+      gateway:
+        $ref: "../metamodel.schema.yaml#/$defs/gateway_kind"
+        description: >
+          How this activity's outgoing branches relate: `and` takes every branch, `xor` exactly
+          one, `or` one or more. Declared once on the activity that forks, because the split is one
+          fact about the whole set of branches rather than a property of any single one. An
+          activity with one successor needs no gateway.
+      join:
+        type: object
+        additionalProperties: false
+        required: [mode]
+        description: >
+          How the branches arriving at this activity converge. Without it a convergence is only
+          inferred from the number of incoming arrows, which cannot tell waiting for every branch
+          apart from continuing on the first.
+        properties:
+          mode:
+            $ref: "../metamodel.schema.yaml#/$defs/gateway_kind"
+            description: "`and` waits for every incoming branch, `xor` continues on exactly one, `or` on those that were taken."
+      next:
+        type: array
+        description: >
+          Where this activity goes next, and why. Each entry names the following activity and may
+          state the condition under which that branch is taken. Use it in preference to
+          `next_activities`, which names the following activities and can say nothing about what
+          chooses between them; an activity declares one or the other, never both.
+        items:
+          type: object
+          additionalProperties: false
+          required: [to]
+          properties:
+            to:
+              $ref: "../metamodel.schema.yaml#/$defs/process_activity_ref"
+              description: "The activity this branch leads to."
+            condition:
+              type: string
+              description: >
+                The business condition under which this branch is taken, in the model's own terms
+                rather than in the terms of a transport. It reaches generated Arazzo as a step
+                criterion, so it reads as a statement about the domain and not about a response.
+              examples:
+                - "the order total is above the free-shipping threshold"
+                - "credit score >= 600"
+      calls_subprocess:
+        $ref: "../metamodel.schema.yaml#/$defs/process_ref"
+        description: >
+          Another process this activity runs as a subprocess. The called process keeps its own
+          identity and its own activities; this activity is the point in the calling process where
+          it runs. Use it to join processes that together describe one flow, rather than repeating
+          the called process's activities here. The call is a property of the activity, beside its
+          step sequence rather than inside it.
       path_type:
         type: string
         enum: [happy, error, compensation]

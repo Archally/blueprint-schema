@@ -854,6 +854,15 @@ $defs:
     enum: [major, minor, patch]
     description: "Semantic versioning impact: major=breaking, minor=backward-compatible addition, patch=docs or clarification."
 
+  gateway_kind:
+    type: string
+    enum: [and, xor, or]
+    x-vocabulary-distinct: "Gateway semantics for process control flow. One vocabulary for both directions: a fork and a merge of the same kind are the same statement read from opposite ends."
+    description: >
+      How several branches of a process relate to one another: `and` takes every branch, `xor`
+      exactly one, `or` one or more. The same three words describe a fork and a merge, because a
+      merge is the fork read from the other end.
+
   # ---------------------------------------------------------------------------
   # Rule Vocabulary (SBVR)
   # ---------------------------------------------------------------------------
