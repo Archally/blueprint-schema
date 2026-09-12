@@ -1594,3 +1594,46 @@ x-gdsm:
         gloss naming a value the enum does not admit.
       schema_version: "2.8.1"
       enforced_by: "npm run evidence-kind-docs-check"
+    - lesson: >
+        A controlled vocabulary answers exactly one question, and `x-vocabulary-distinct` states
+        which. Before adding a value, check that it is an ANSWER to that question rather than a
+        different question wearing the same clothes. A value that classifies the subject on a second
+        axis, instead of grading it on the declared one, costs the entity the ability to answer
+        either: the one slot is spent, and neither reading can be recovered from it. Where a second
+        axis is genuinely wanted, it is a second field.
+      category: semantics
+      date: "2026-09-12"
+      evidence: >
+        `subdomain_kind` declares that it classifies a region of the problem space by strategic
+        importance, and `modeling_space` classifies the same region by what its subject matter is.
+        The two are independent by design, so a region about the system's own machinery is still
+        core, supporting or generic to the business and can state both.
+      schema_version: "2.8.20"
+    - lesson: >
+        A default declared once in a document header is implemented one way in this suite: annotate
+        the parsed document BEFORE extraction, write the inherited value under its own key, and let
+        the resulting edge record which source answered. Keeping the inherited value separate is
+        what lets a consumer tell what the model SAID from what it INHERITED. Merging it into the
+        declared field destroys that distinction permanently, and no later pass can restore it,
+        which is why a field whose two levels describe different subjects is given no inheritance
+        at all.
+      category: structure
+      date: "2026-09-12"
+      evidence: >
+        Three fields inherit from a header this way - `owned_by`, `system_ref` and `domain_ref` -
+        each writing `_owned_by_default`, `_system_ref_default` and `_domain_ref_default` in turn.
+        `tags` deliberately does not: a document-level `tags` describes the document and an
+        entity-level one describes the entity, so an entity carries exactly the tags it declares.
+      schema_version: "2.8.20"
+    - lesson: >
+        Where one concept is reachable at two nesting levels, confirm the property name at each
+        before counting occurrences or before adding a sibling. Two spellings of one concept are
+        legitimate history; a measurement that assumes one of them is not, and it fails silently -
+        a count that reads the wrong key reports zero, which is indistinguishable from a key nobody
+        uses.
+      category: structure
+      date: "2026-09-12"
+      evidence: >
+        A subdomain nested in the root `domains[]` registry declares `type`; one nested in a slice
+        declares `kind`. Both are accepted and both mean the region's strategic importance.
+      schema_version: "2.8.20"
