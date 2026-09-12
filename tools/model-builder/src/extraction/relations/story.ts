@@ -82,6 +82,50 @@ export function buildStoryRelations(
         data: { position: op.position, component: op.component },
       });
     }
+
+    relations.push(...buildSubprocessCalls(story, entities));
+  }
+
+  return relations;
+}
+
+/**
+ * `Process --calls_subprocess--> Process`, one edge per activity that names a process to run.
+ *
+ * The call is declared on the ACTIVITY and the edge joins the two processes, because an activity is
+ * not an entity of this graph - it is carried raw on its process. The activity is named on the edge
+ * instead, so a reader can say which point of the caller runs the callee.
+ *
+ * A ref that resolves to nothing draws NO edge and mints no placeholder, unlike the operation refs
+ * above. `calls_subprocess` is typed as a `process_ref` in the schema, so the validator's derived
+ * reference keys already report a dangling one as a cross-reference error; a `Missing` node here
+ * would be the same defect stated twice, once as a finding and once as something that looks like
+ * part of the model.
+ */
+function buildSubprocessCalls(story: Entity, entities: Entity[]): Relation[] {
+  const activities = (story.data as { activities?: Array<Record<string, unknown>> })?.activities;
+  if (!Array.isArray(activities)) return [];
+
+  const sourceDomain = entityDomain(story);
+  const relations: Relation[] = [];
+
+  for (const activity of activities) {
+    if (!activity || typeof activity !== 'object') continue;
+    const ref = activity.calls_subprocess;
+    if (typeof ref !== 'string' || ref.length === 0) continue;
+
+    const targetId = resolveRef(ref, sourceDomain, entities);
+    if (!targetId || targetId === story.id) continue;
+
+    const from = typeof activity.id === 'string' ? activity.id : null;
+    relations.push({
+      id: `${story.id}_calls_${targetId}${from ? `_${from}` : ''}`,
+      source_entity_id: story.id,
+      target_entity_id: targetId,
+      type: RELATION_TYPE.ProcessCallsSubprocess,
+      predicate: from ? `calls as a subprocess at ${from}` : 'calls as a subprocess',
+      data: from ? { activity: from } : undefined,
+    });
   }
 
   return relations;

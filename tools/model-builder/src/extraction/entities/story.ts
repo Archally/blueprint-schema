@@ -199,7 +199,7 @@ export function extractStory(doc: ParsedBlueprintDocument): Entity[] {
         // so downstream consumers (e.g., Mermaid flowchart generator) can access
         // activity boundaries, path_type, triggered_by, next_activities and the lanes.
         // Kept as `unknown` here; downstream parses against story.schema.yaml shape.
-        activities: Array.isArray(s.activities) && s.activities.length > 0 ? s.activities : undefined,
+        activities: Array.isArray(s.activities) && s.activities.length > 0 ? withNormalisedNext(s.activities) : undefined,
         // From v2.8.10 these are direct properties; before it they were nested under `process`,
         // which after the rename would have read `process.process`. Normalized here so a consumer
         // reads one shape whichever line the model is on.
@@ -253,4 +253,54 @@ export function extractStory(doc: ParsedBlueprintDocument): Entity[] {
   }
 
   return entities;
+}
+
+/**
+ * One shape for an activity's successors, whichever of the two the author wrote.
+ *
+ * `next[]` states a branch and the condition that takes it; `next_activities[]` states only the
+ * successors. Every consumer of a process needs the same answer to "where does this go next", and
+ * asking each of them to know both shapes is how two diagrams of one process come to disagree.
+ *
+ * The derived answer is `_next`, underscore-prefixed the way the other derived fields on raw data
+ * are, so the authored keys survive verbatim beside it and a consumer can still tell what the model
+ * actually says. An activity declaring both is not normal and not silently merged: `next` wins,
+ * because it is the shape that can carry everything the other one can.
+ */
+export interface NormalisedBranch {
+  to: string;
+  condition?: string;
+}
+
+function normaliseNext(activity: Record<string, unknown>): NormalisedBranch[] | undefined {
+  const declared = activity.next;
+  if (Array.isArray(declared)) {
+    const branches = declared
+      .filter((branch): branch is Record<string, unknown> => Boolean(branch) && typeof branch === 'object')
+      .map((branch) => {
+        const to = typeof branch.to === 'string' ? branch.to : null;
+        if (!to) return null;
+        return typeof branch.condition === 'string' && branch.condition.length > 0 ?
+            { to, condition: branch.condition }
+          : { to };
+      })
+      .filter((branch): branch is NormalisedBranch => branch !== null);
+    return branches.length > 0 ? branches : undefined;
+  }
+
+  const legacy = activity.next_activities;
+  if (Array.isArray(legacy)) {
+    const branches = legacy.filter((to): to is string => typeof to === 'string' && to.length > 0).map((to) => ({ to }));
+    return branches.length > 0 ? branches : undefined;
+  }
+
+  return undefined;
+}
+
+function withNormalisedNext(activities: unknown[]): unknown[] {
+  return activities.map((activity) => {
+    if (!activity || typeof activity !== 'object') return activity;
+    const next = normaliseNext(activity as Record<string, unknown>);
+    return next ? { ...(activity as Record<string, unknown>), _next: next } : activity;
+  });
 }

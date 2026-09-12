@@ -220,6 +220,30 @@ export function checkDeprecatedServiceHandles(relFile, serviceName, service) {
 }
 
 /**
+ * An activity still naming its successors with the superseded `next_activities:`.
+ *
+ * Warning, never an error, for the reason the two deprecation checks above are: the key is accepted
+ * for the whole v2.8 line and means exactly what it meant, so a model that has not migrated is
+ * correct rather than broken. `next` says the same thing and can also say what chooses between two
+ * branches, which the older key has no room for.
+ *
+ * One finding per ACTIVITY, so the count is the number of places an author would edit. And only on
+ * the 2.8 line: `next` is a v2.8 key, so telling a v2.7 model to use it would name a field its own
+ * schema rejects.
+ */
+export function checkDeprecatedNextActivities(relFile, processId, activity) {
+  if (!activity || !Array.isArray(activity.next_activities) || activity.next_activities.length === 0) {
+    return null;
+  }
+  const where = activity.id ? `Activity "${activity.id}"` : "An activity";
+  return (
+    `[${relFile}] ${where} of process "${processId}" names its successors with ` +
+    `\`next_activities\`, which is superseded by \`next\` - same successors, and a \`condition\` ` +
+    `per branch saying what takes it. Accepted until the next major line.`
+  );
+}
+
+/**
  * A contract's declared `slice:` against the slice vocabulary.
  *
  * Unlike the prefix rule below it, this one does NOT exempt a model that declares no slices. A
@@ -369,6 +393,7 @@ export function validateModel(args) {
   // operation was expected to carry an `exchange` block, so a v2.6 model is still held to that.
   const version = detectSchemaVersion(args);
   const eventsExemptFromExchange = atLeast(version, 2, 7);
+  const nextSupersedesNextActivities = atLeast(version, 2, 8);
   // From v2.8 the infrastructure id fields carry their typed patterns, so Ajv rejects what this
   // warning used to describe. See TYPED_ID above for why both must never fire on one value.
   const typedIdsEnforcedBySchema = atLeast(version, 2, 8);
@@ -513,6 +538,20 @@ export function validateModel(args) {
           : !op.exchange;
         if (missingExchange) {
           warnings.push(`[${relFile}] Operation "${key}" (${op.id ?? "no-id"}) has no exchange block`);
+        }
+      }
+    }
+
+    if (schemaType === "story" && nextSupersedesNextActivities) {
+      for (const key of ["processes", "stories"]) {
+        const list = data?.[key];
+        if (!Array.isArray(list)) continue;
+        for (const process of list) {
+          if (!Array.isArray(process?.activities)) continue;
+          for (const activity of process.activities) {
+            const finding = checkDeprecatedNextActivities(relFile, process.id ?? "no-id", activity);
+            if (finding) warnings.push(finding);
+          }
         }
       }
     }
