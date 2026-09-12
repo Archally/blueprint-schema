@@ -5,6 +5,45 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.23"
+    date: "2026-09-12"
+    summary: >
+      A process activity could name the activities it leads to and nothing else. It could not say
+      what chooses between two of them, how several branches converge, or that it runs another
+      process at this point. A model with a fork carried the fork and not the reason for it, and a
+      process continuing in another document simply stopped.
+
+
+      `next[]` supersedes `next_activities[]`. Each entry names the activity the branch leads to
+      and may carry the `condition` that takes it, stated in the model's own terms rather than in a
+      transport's. The older key keeps working for the whole 2.8 line and warns once per activity,
+      naming its replacement; a model still using it is correct rather than out of date. Both
+      shapes reach every consumer as one derived list, so two drawings of one process cannot
+      disagree about where it goes.
+
+
+      `gateway` says how an activity's outgoing branches relate and `join` says how the arriving
+      ones converge - `and` for every branch, `xor` for exactly one, `or` for one or more. Both sit
+      on the activity: a split is one fact about a whole set of branches rather than a property of
+      any single one, and a merge is a fork read from the other end, which is why one vocabulary
+      covers both directions.
+
+
+      `calls_subprocess` names another process this activity runs. The called process keeps its own
+      identity and its own activities, so processes that together describe one flow can be joined
+      instead of each ending where its document does. A call naming no process is a cross-reference
+      error: it draws no edge and invents no node.
+
+
+      What the model states reaches what a reader sees. A branch condition labels the arrow on a
+      process flowchart, and in a generated Arazzo workflow it becomes the criterion on the
+      transition - the one criterion in such a workflow that came from the domain rather than from
+      a status code or a response body.
+
+
+      Additive. Every field is optional, no value is withdrawn, and a document valid under 2.8.22
+      is valid here with the same meaning.
+
   - version: "2.8.22"
     date: "2026-09-12"
     summary: >
