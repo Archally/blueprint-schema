@@ -5,6 +5,50 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.22"
+    date: "2026-09-12"
+    summary: >
+      A model records where it has been in one of two documents, and both now reach the graph.
+      `migrations.yaml` is the register, an ordered list of entries written for a reader whose
+      changes are prose. `<name>.migration.yaml` is a change program, one migration authored for
+      execution with a typed target per change. Both were read and validated and then dropped, so
+      asking a model about a migration it had itself recorded returned nothing.
+
+
+      Both now produce a `Migration` node. One type for both, because the reader-facing facts are
+      the same facts - an id, a name, when it happened, where it stands and what it touched - and
+      `_genre` on the node says which document it came from. That is not decoration: the two
+      `status` vocabularies are different vocabularies. `cancelled` means a migration never
+      happened and `rolled-back` means it happened and was undone, so the two sets are kept
+      verbatim rather than merged into one. `_impact` is the opposite case and is resolved, because
+      the register spells the field `impact` and the change program `semver_impact` while both take
+      the same values.
+
+
+      A migration takes no plane. It is neither design nor governance, and its layer says so.
+
+
+      Three edges, all from declared fields. `migration_depends_on` follows `depends_on`;
+      `migration_relates_to_decision` follows `related_decisions`; and `migration_affects` is one
+      coarse edge to every entity the migration names, agnostic to what the change does to it. The
+      coarse form is deliberate: an edge saying a migration REMOVES an entity points at a node the
+      graph expressing it does not contain, and the same objection in reverse applies to one that
+      adds.
+
+
+      An entity a migration names and the model does not hold produces no edge and no placeholder.
+      A change program's `add` targets describe the model after the migration, so a target absent
+      from the graph is the ordinary case rather than a broken reference.
+
+
+      One consequence to expect in a report: a migration that names no entity and depends on
+      nothing now stands alone in the graph, and `orphan-entities` says so. The register carries an
+      `entity` field on every change for exactly this, and naming one connects the record.
+
+
+      Additive. No property is added, removed or narrowed, no value is withdrawn, and a document
+      valid under 2.8.21 is valid here with the same meaning.
+
   - version: "2.8.21"
     date: "2026-09-12"
     summary: >
