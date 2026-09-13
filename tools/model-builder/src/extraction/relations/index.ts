@@ -34,7 +34,7 @@ import { extractLeverageRelations } from './leverage.js';
 import { extractBccRelations } from './bcc.js';
 import { extractRgRelations } from './rg.js';
 import { extractInfrastructureRelations } from './infrastructure.js';
-import { extractMembershipRelations } from './membership.js';
+import { applyDomainHopTier, extractMembershipRelations } from './membership.js';
 import { extractDynamicsRelations } from './dynamics.js';
 import { extractQualityRelations } from './quality.js';
 import { extractDomainRegistryRelations } from './domains.js';
@@ -117,19 +117,27 @@ export function buildRelations(
     return true;
   });
 
+  // TIER 2 completes `handled_by` before anything reads it. The domain hop joins
+  // `operation_in_domain` with `context_realizes_domain`, so it belongs here rather than in the
+  // binder, which sees documents and not edges - and it has to run BEFORE coverage, because
+  // coverage reads the finished binding and a half-tiered one would credit the fallback for
+  // operations the domain hop owns.
+  const bound = applyDomainHopTier(entities, direct);
+  for (const r of bound) seen.add(r.id);
+
   // A SECOND PASS, over the edges the first one produced rather than over documents. Coverage is a
   // join of `handled_by` and `operation_in_domain`, so it cannot be computed beside them; deriving
   // it from the raw refs again would introduce a second matching rule for one question.
   const derived = [
-    ...extractCoverageRelations(entities, direct),
-    ...extractContractTrafficRelations(entities, direct),
+    ...extractCoverageRelations(entities, bound),
+    ...extractContractTrafficRelations(entities, bound),
   ].filter((r) => {
     if (seen.has(r.id)) return false;
     seen.add(r.id);
     return true;
   });
 
-  const relations = [...direct, ...derived];
+  const relations = [...bound, ...derived];
 
   return {
     relations,

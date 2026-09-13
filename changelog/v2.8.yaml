@@ -5,6 +5,34 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.28"
+    date: "2026-09-14"
+    summary: >
+      An operation reaches its bounded context in one of three ways, and until now two of them
+      existed. A service contract naming the operation binds it, and a domain file whose name or
+      folder matches a context binds it as a deprecated default. Between those sits the binding
+      this release adds: where a document places an operation in a domain and exactly one bounded
+      context realizes that domain, the operation belongs to that context, and the model states it
+      without a contract.
+
+
+      The new binding records `resolution: domain` on the `handled_by` edge and outranks the
+      name-and-folder default. Where the two agree, the edge carries the derived one; where they
+      name different contexts, the derived one stands. A contract binding is untouched by it: an
+      author who names an operation in a contract has stated where it is handled, and nothing
+      derived replaces a statement.
+
+
+      Domain coverage - which problem-space domains a context serves - is derived from the
+      operations a context handles and the domains those operations sit in. It now passes over the
+      operations the new binding placed, because those were placed BY the domain link: counting
+      them as evidence about it would restate what the model already says, once per operation. A
+      coverage figure therefore counts the operations a contract wired, which is what it reports.
+
+
+      Additive: no property is added, removed or narrowed, and every document that validated before
+      validates now with the same meaning.
+
   - version: "2.8.27"
     date: "2026-09-13"
     summary: >

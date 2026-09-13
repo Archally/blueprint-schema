@@ -380,6 +380,22 @@ function isLoose(relation: Relation): boolean {
  * `context_realizes_domain` for the contexts that realize it.
  */
 export function buildUnboundReasonIndex(relations: Relation[]): (entityId: string) => UnboundReason {
+  return buildProblemSpaceIndex(relations).reasonOf;
+}
+
+/**
+ * The problem-space half of the graph, read once and answering both questions that depend on it.
+ *
+ * `reasonOf` says WHY an operation has no context. `contextOf` says WHICH context the domain hop
+ * binds it to, and returns null in precisely the three situations `reasonOf` names as something
+ * other than `single-context-domain`. They are one index rather than two because the tier and the
+ * projection of the tier must never disagree about an operation - that is the property D31-8 was
+ * written for, applied to the rule the projection had been standing in for.
+ */
+export function buildProblemSpaceIndex(relations: Relation[]): {
+  reasonOf: (entityId: string) => UnboundReason;
+  contextOf: (entityId: string) => string | null;
+} {
   const domainOfOperation = new Map<string, string>();
   const contextsPerDomain = new Map<string, Set<string>>();
   for (const relation of relations) {
@@ -391,13 +407,105 @@ export function buildUnboundReasonIndex(relations: Relation[]): (entityId: strin
       contextsPerDomain.set(relation.target_entity_id, seen);
     }
   }
-  return (entityId: string): UnboundReason => {
+  const contextsFor = (entityId: string): Set<string> | null => {
     const domainId = domainOfOperation.get(entityId);
-    if (!domainId) return 'no-domain-ref';
-    const contexts = contextsPerDomain.get(domainId);
-    if (!contexts || contexts.size === 0) return 'no-context-for-domain';
-    return contexts.size === 1 ? 'single-context-domain' : 'multi-context-domain';
+    if (!domainId) return null;
+    return contextsPerDomain.get(domainId) ?? null;
   };
+  return {
+    reasonOf: (entityId: string): UnboundReason => {
+      if (!domainOfOperation.has(entityId)) return 'no-domain-ref';
+      const contexts = contextsFor(entityId);
+      if (!contexts || contexts.size === 0) return 'no-context-for-domain';
+      return contexts.size === 1 ? 'single-context-domain' : 'multi-context-domain';
+    },
+    contextOf: (entityId: string): string | null => {
+      const contexts = contextsFor(entityId);
+      if (!contexts || contexts.size !== 1) return null;
+      return [...contexts][0] ?? null;
+    },
+  };
+}
+
+/** `handled_by` tier, read off the edge. Ordered: a lower number outranks a higher one. */
+function tierOf(relation: Relation): 1 | 2 | 3 {
+  const resolution = (relation.data as { resolution?: unknown } | undefined)?.resolution;
+  if (resolution === 'contract') return 1;
+  if (resolution === 'domain') return 2;
+  return 3;
+}
+
+/**
+ * TIER 2 - an operation binds to the single bounded context that realizes its domain.
+ *
+ * Runs over the edges the document pass produced rather than over the documents, because it joins
+ * `operation_in_domain` with `context_realizes_domain` and the binder sees neither: both are
+ * materialized by later extractors, and `extractMembershipRelations` takes no relations at all.
+ *
+ * It sits BETWEEN the contract binding and the deprecated name/scope fallback, which is what makes
+ * it a tier rather than a second opinion:
+ *
+ *   - an operation any contract provides is left alone - tier 1 is the author's own statement;
+ *   - otherwise, where the domain hop answers, it REPLACES the fallback. The two tiers bind the
+ *     same operation to the same context and the relation id is `<op>--handled_by--<ctx>`, so
+ *     leaving both would collide on one id and the deduplicator would keep whichever was pushed
+ *     first - one pair carrying one resolution, chosen by insertion order. Where the two disagree
+ *     about WHICH context, the higher tier wins and the fallback edge goes, because that is what
+ *     "tier" means;
+ *   - where the domain hop does not answer, nothing changes and the fallback keeps its operations.
+ *
+ * `match` is `exact`: the domain hop matched no ref at all, and `exact` is the value the fallback
+ * already uses for the same reason - there is no widened surface to have matched loosely.
+ */
+export function applyDomainHopTier(entities: Entity[], relations: Relation[]): Relation[] {
+  const operations = entities.filter((e) => e.type === ENTITY_TYPE.Operation);
+  if (operations.length === 0) return relations;
+
+  const { contextOf } = buildProblemSpaceIndex(relations);
+  const edgesByOperation = new Map<string, Relation[]>();
+  for (const relation of relations) {
+    if (relation.type !== RELATION_TYPE.HandledBy) continue;
+    const bucket = edgesByOperation.get(relation.source_entity_id);
+    if (bucket) bucket.push(relation);
+    else edgesByOperation.set(relation.source_entity_id, [relation]);
+  }
+
+  const promoted = new Set<string>();
+  const superseded = new Set<string>();
+  const added: Relation[] = [];
+  for (const operation of operations) {
+    const edges = edgesByOperation.get(operation.id) ?? [];
+    if (edges.some((edge) => tierOf(edge) === 1)) continue;
+    const contextId = contextOf(operation.id);
+    if (!contextId) continue;
+    let agreed = false;
+    for (const edge of edges) {
+      if (edge.target_entity_id === contextId) {
+        promoted.add(edge.id);
+        agreed = true;
+      } else {
+        superseded.add(edge.id);
+      }
+    }
+    if (agreed) continue;
+    added.push({
+      id: relationId(operation.id, RELATION_TYPE.HandledBy, contextId),
+      source_entity_id: operation.id,
+      target_entity_id: contextId,
+      type: RELATION_TYPE.HandledBy,
+      data: { resolution: 'domain', match: 'exact' },
+    });
+  }
+  if (promoted.size === 0 && superseded.size === 0 && added.length === 0) return relations;
+
+  const kept = relations
+    .filter((relation) => !superseded.has(relation.id))
+    .map((relation) =>
+      promoted.has(relation.id)
+        ? { ...relation, data: { ...(relation.data as object), resolution: 'domain' } }
+        : relation,
+    );
+  return [...kept, ...added];
 }
 
 export function findMembershipGaps(entities: Entity[], relations: Relation[]): MembershipGap[] {

@@ -93,6 +93,12 @@ export function extractCoverageRelations(entities: Entity[], relations: Relation
 
   for (const relation of relations) {
     if (relation.type === RELATION_TYPE.HandledBy) {
+      // A TIER-2 edge is this very join run backwards - the domain hop binds an operation to the
+      // single context that realizes its domain, so feeding it back in would assert that the
+      // context covers a domain it already realizes. One tautology per operation, and nothing in
+      // the output would distinguish it from coverage somebody evidenced. A binding derived FROM
+      // the domain link cannot be evidence ABOUT the domain link.
+      if ((relation.data as { resolution?: unknown } | undefined)?.resolution === 'domain') continue;
       let bucket = contextsByOperation.get(relation.source_entity_id);
       if (!bucket) {
         bucket = new Map();
