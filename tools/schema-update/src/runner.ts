@@ -12,6 +12,7 @@ import { update as update008 } from './updates/008-arch-root-contexts.js';
 import { update as update009 } from './updates/009-domain-registry.js';
 import { update as update010 } from './updates/010-retire-watch-item-band.js';
 import { update as update011 } from './updates/011-contract-identity.js';
+import { update as update012 } from './updates/012-next-branches.js';
 
 // Version order, single pass — see resolveChain. `004` follows `002`: both are in-place 2.7
 // restructures, and a v2.6 model must receive 001 → 002 → 004 in one run. `005` is the only hop off
@@ -32,7 +33,7 @@ import { update as update011 } from './updates/011-contract-identity.js';
 // above it touches, so its position is free too. It runs after `008` because `008` moves service
 // declarations between the nested and root forms, and this one reads the enclosing keys to decide
 // what an `output:` belongs to - a model should reach its final shape before that reading happens.
-const ALL_UPDATES: SchemaUpdate[] = [update001, update002, update004, update005, update007, update006, update008, update009, update010, update011];
+const ALL_UPDATES: SchemaUpdate[] = [update001, update002, update004, update005, update007, update006, update008, update009, update010, update011, update012];
 
 export function detectVersion(blueprintDir: string): string | null {
   const dirName = path.basename(path.resolve(blueprintDir));
