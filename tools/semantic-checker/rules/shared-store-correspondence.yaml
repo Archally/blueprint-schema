@@ -1,0 +1,30 @@
+engineVersion: "0.1"
+rules:
+  - id: shared-store-without-common-resource
+    severity: info
+    description: >-
+      A `shareddata` contract declares that one service writes data another reads out of a store they
+      both reach. Where both services also name what they run on, the two statements can be compared:
+      if their infrastructure lists have nothing in common, the contract says they share a store and
+      the infrastructure layer says they touch different ones. One of the two is wrong, and nothing
+      here can say which - an author knows something the resource list does not record, and a
+      resource list records something an author forgot.
+      A service names its infrastructure at one of two levels: `resource_refs` names IR### instances,
+      `needs` names the type-level requirement a binding resolves per environment. Both are read, and
+      only the same level is compared - `IR001` and `orders-db` are different rungs of one ladder,
+      not two answers to one question. A service declaring both is read at the instance level.
+      It VERIFIES a declaration and never infers one: two services naming one resource is an ordinary
+      fact about a log sink or a cache, not evidence of an integration, so a shared store is only
+      ever something the author declared. It is silent where either service names no infrastructure
+      at all - that is a model whose infrastructure layer has not been written, which is legitimate,
+      and reporting it would name the absence of a layer rather than a disagreement.
+      INFO for that reason: it depends on an optional layer, so a model can be complete and correct
+      without ever satisfying it. Override per-project via .blueprint-lint.yaml
+      (e.g. `shared-store-without-common-resource: off`).
+    find:
+      entity_type: Contract
+    check:
+      custom:
+        module: ./shared-store-correspondence.mjs
+        export: sharedStoreWithoutCommonResource
+    message: 'Contract {subject} on "{subject_name}" declares a shared store with {counterparts}, and their infrastructure lists have no entry in common - this service reaches {resources}, declared as `{altitude}`. Point both at the same one, or drop the `shareddata` contract if they do not share a store.'

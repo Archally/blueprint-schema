@@ -1,0 +1,28 @@
+engineVersion: "0.1"
+rules:
+  - id: inprocess-dispatch-without-provider
+    severity: warn
+    description: >-
+      An operation whose `dispatch` says in-process has already asserted two things: that it exists,
+      and that it executes with no wire of its own. What it has not said is WHERE - which service
+      owns it. That makes this a stronger finding than an unbound operation carrying no `dispatch`,
+      where the author may simply not have reached the solution side yet: here the author reached
+      it, stated the invocation model, and stopped short of naming the owner. Fix by declaring the
+      operation under the owning service's `contracts.inprocess.provide`. Never by removing
+      `dispatch` - that silences the finding by deleting a true statement, and the operation is then
+      expected to carry a transport it does not have. Both spellings of the value are read, since
+      both are accepted. Override per-project via .blueprint-lint.yaml
+      (e.g. `inprocess-dispatch-without-provider: off`).
+    # Subjects: operations that declare in-process dispatch. Healthy = the model binds it to a
+    # context, which `handled_by` records however the binding was declared.
+    find:
+      entity_type: Operation
+    filter:
+      field_in:
+        data.dispatch: [inprocess, in-process]
+    check:
+      has_relation:
+        direction: out
+        type: handled_by
+        exists: true
+    message: 'Operation "{displayId}" ({name|''unnamed''}) declares in-process dispatch, and no service provides it - so no bounded context holds it. Declare it under the owning service''s `contracts.inprocess.provide`.'

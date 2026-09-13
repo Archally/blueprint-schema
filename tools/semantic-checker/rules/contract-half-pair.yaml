@@ -1,0 +1,101 @@
+engineVersion: "0.1"
+# A coupling that crosses no wire has both of its ends inside the model. These four rules hold it
+# to that, and they are deliberately scoped to the three kinds where the claim is true.
+#
+# WHY NOT THE WIRE KINDS. An HTTP API can have a caller nobody modelled - a browser, a partner, a
+# script - so an `expose:` with no matching `call:` is the normal state of a public surface rather
+# than an omission. Applied there, this shape would fire on every externally-facing operation in
+# every model. A call inside one process, a store two services share, and a transfer between two
+# of them cannot have an end outside the model: something in here writes, and something in here
+# reads. So the question "is this pair half-declared?" is decidable for these three and for no
+# others.
+#
+# The one legitimate firing is an entry point that was never modelled as a service - a scheduler, a
+# console command, a test harness. The fix is to model it, or to stop declaring the half that is
+# there; a contract stating one end of a two-ended fact is a claim the model cannot support.
+# Warnings, all four, for the whole line. Override per-project via .blueprint-lint.yaml.
+rules:
+  - id: inprocess-consume-without-provide
+    severity: warn
+    description: >-
+      An operation consumed in-process that no service provides in-process. The consumer declared a
+      dependency on something the model does not say anyone owns, so nothing pairs the two ends and
+      no dependency edge is drawn between their contexts. Fix by declaring the owner's
+      `contracts.inprocess.provide`, or by removing the `consume:` entry if the call does not exist.
+    find:
+      entity_type: Operation
+    check:
+      any_of:
+        - has_relation:
+            direction: in
+            type: contract_consumes
+            exists: false
+        - has_relation:
+            direction: in
+            type: contract_provides
+            exists: true
+    message: 'Operation "{displayId}" ({name|''unnamed''}) is consumed in-process and provided by nobody. Declare the owning service''s `contracts.inprocess.provide`, or drop the `consume:` entry.'
+
+  - id: inprocess-provide-without-consume
+    severity: warn
+    description: >-
+      An operation provided in-process that no service consumes in-process. Either a caller exists
+      and is not modelled, or the operation is reached some other way and the in-process contract
+      states a coupling that is not there. Both are answered by the same principle: model both ends
+      or declare neither. An operation genuinely reachable only from outside belongs under the
+      contract kind that names how it is reached.
+    find:
+      entity_type: Operation
+    check:
+      any_of:
+        - has_relation:
+            direction: in
+            type: contract_provides
+            exists: false
+        - has_relation:
+            direction: in
+            type: contract_consumes
+            exists: true
+    message: 'Operation "{displayId}" ({name|''unnamed''}) is provided in-process and consumed by nobody. Model the caller, or drop the `provide:` entry.'
+
+  - id: shared-document-read-without-writer
+    severity: warn
+    description: >-
+      A document read out of a shared store or a scheduled transfer that no service writes. The
+      reader is bound to a schema the model does not say anyone produces, which is the coupling this
+      kind exists to make visible stated with its subject missing. Fix by declaring the producing
+      service's `write:`, or by removing the `read:` entry.
+    find:
+      entity_type: Operation
+    check:
+      any_of:
+        - has_relation:
+            direction: in
+            type: contract_reads
+            exists: false
+        - has_relation:
+            direction: in
+            type: contract_writes
+            exists: true
+    message: 'Operation "{displayId}" ({name|''unnamed''}) is read from a shared store or a transfer that nobody writes. Declare the producing service''s `write:`, or drop the `read:` entry.'
+
+  - id: shared-document-write-without-reader
+    severity: warn
+    description: >-
+      A document written into a shared store or a scheduled transfer that no service reads. A store
+      nobody reads is not an integration, and the contract kind claims one - so either the reader is
+      unmodelled, or what is really being described is this service's own persistence, which is not
+      a contract at all.
+    find:
+      entity_type: Operation
+    check:
+      any_of:
+        - has_relation:
+            direction: in
+            type: contract_writes
+            exists: false
+        - has_relation:
+            direction: in
+            type: contract_reads
+            exists: true
+    message: 'Operation "{displayId}" ({name|''unnamed''}) is written into a shared store or a transfer that nobody reads. Model the reader, or drop the `write:` entry if the store is this service''s own.'
