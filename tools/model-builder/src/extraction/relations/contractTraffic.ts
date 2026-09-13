@@ -20,8 +20,11 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  * reader to judge, not a contradiction for a builder to resolve.
  *
  * THE PATH, all of it over edges this builder already emits:
- *   Context --contains--> Service --provides--> Contract --expose|send--> Operation      (provider)
- *   Context --contains--> Service --provides--> Contract --call|receive--> Operation     (consumer)
+ *   Context --contains--> Service --provides--> Contract --expose|send|provide|write--> Operation
+ *   Context --contains--> Service --provides--> Contract --call|receive|consume|read--> Operation
+ * One path, not two. A Contract entity is built for every key under `contracts:`, so the couplings
+ * that cross no wire arrive on the same walk; what separates them is the protocol their kind maps
+ * to, and a protocol mismatch already fails the join below.
  * An operation with a provider and a consumer in DIFFERENT contexts is one unit of traffic, drawn
  * from the consumer to the provider, which is the direction a call travels.
  *
@@ -41,18 +44,30 @@ const PROTOCOL_BY_CONTRACT_TYPE: Readonly<Record<string, string>> = Object.freez
   asyncapi: 'message',
   channel: 'message',
   openrpc: 'rpc',
+  // The three that cross no wire speak themselves: the kind IS the protocol, because there is no
+  // wire whose name could stand in for it.
+  inprocess: 'inprocess',
+  shareddata: 'shareddata',
+  scheduledtransfer: 'scheduledtransfer',
 });
 
 /** Verbs that make a contract's service the PROVIDER of the operation. */
 const PROVIDER_VERBS: ReadonlySet<string> = new Set([
   RELATION_TYPE.ContractExposes,
   RELATION_TYPE.ContractSends,
+  RELATION_TYPE.ContractProvides,
+  // The writer is the provider on both data kinds even though it calls nobody: it owns the schema,
+  // and the reader is bound to it without being asked. The edge runs reader to writer for the same
+  // reason a call edge runs caller to callee - it points at what the other end depends on.
+  RELATION_TYPE.ContractWrites,
 ]);
 
 /** Verbs that make a contract's service the CONSUMER of the operation. */
 const CONSUMER_VERBS: ReadonlySet<string> = new Set([
   RELATION_TYPE.ContractCalls,
   RELATION_TYPE.ContractReceives,
+  RELATION_TYPE.ContractConsumes,
+  RELATION_TYPE.ContractReads,
 ]);
 
 interface Side {

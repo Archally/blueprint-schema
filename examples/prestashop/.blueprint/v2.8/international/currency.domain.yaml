@@ -89,7 +89,7 @@ operations:
     delivery_priority: should-have
     initiated_by: [international.ACT001]
     produces:
-      operations: [international.EVT005]
+      operations: [international.EVT005, international.DOC001]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Currency/Command/RefreshExchangeRatesCommand.php"
@@ -189,6 +189,22 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Currency/Query/GetReferenceCurrency.php"
         role: implementation
+
+  # ── The rate table the refresh leaves behind (1 DOC) ──
+  #
+  # Every context pricing in a non-default currency reads these rates, and reads them as of the last
+  # run rather than as of now. The lag is the coupling: assumption orders.A001 says the cron refresh
+  # exists because of shared hosting and would be a pub/sub topic without it, which is the same
+  # coupling moved onto a wire.
+
+  exchangeRateSnapshot:
+    id: international.DOC001
+    kind: document
+    name: "ExchangeRateSnapshot"
+    description: "The conversion rate for every non-reference currency, as left by the last refresh run. A reader sees the rates the run wrote, not the rates the provider holds now."
+    code_refs:
+      - path: "classes/Currency.php"
+        role: model
 
 errors:
   currencyNotFound:

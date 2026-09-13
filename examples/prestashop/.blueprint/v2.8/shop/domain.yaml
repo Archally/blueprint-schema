@@ -488,6 +488,24 @@ operations:
       - path: "src/Core/Domain/ShowcaseCard/Query/GetShowcaseCardIsClosed.php"
         role: implementation
 
+  # ── Shared multi-store context (1 DOC) ──
+  #
+  # Not an API. Shop owns the multi-store tables and every other context reads them straight out of
+  # the one database the monolith runs on, without asking and without a call. That is the Shared
+  # Database style, and the `shareddata` contracts on the services below are what make the coupling
+  # visible: the reader is bound to a schema it does not own.
+
+  shopContextRecord:
+    id: shop.DOC001
+    kind: document
+    name: "ShopContextRecord"
+    description: "The active shop, its group, its URL and the multi-store mode flag, as written into the shared relational database. Read directly by contexts that must scope their own rows to a shop - Shop is asked for none of it."
+    code_refs:
+      - path: "classes/shop/Shop.php"
+        role: model
+      - path: "classes/shop/ShopGroup.php"
+        role: model
+
 errors:
   logoExtensionNotSupported:
     id: shop.ERR001

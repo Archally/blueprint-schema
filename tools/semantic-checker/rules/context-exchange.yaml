@@ -25,12 +25,14 @@ rules:
     severity: info
     description: >-
       A declared dependency between two bounded contexts that no contract evidences. INFORMATION
-      rather than a warning, deliberately: most of these are real coupling the contract surface
-      cannot see - a shared database, a file drop, a scheduled job - and on one model 119 of 132
-      declared dependencies land here. A report that fires that often is switched off within a week,
-      and a switched-off report is worse than none. It becomes a warning once the non-API contract
-      kinds exist and the derivation can see what it is blind to today. Until then, read it as "the
-      contracts do not show this one" and not as "this one is wrong". Reported from the context that
+      rather than a warning, deliberately: most of these are real coupling a model can now describe
+      and usually has not yet - a shared store, a scheduled transfer, a call inside one process - and
+      on one model 119 of 132 declared dependencies land here. A report that fires that often is
+      switched off within a week, and a switched-off report is worse than none. The derivation reads
+      those three kinds, so what stands between this and a warning is adoption rather than
+      expressiveness: it becomes a warning when a model declaring its couplings honestly no longer
+      lands here in quantity. Until then, read it as "the contracts do not show this one" and not as
+      "this one is wrong". Reported from the context that
       declared it. Override per-project via .blueprint-lint.yaml.
     find:
       entity_type: Context

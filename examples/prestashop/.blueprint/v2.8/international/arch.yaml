@@ -28,6 +28,11 @@ contexts:
         kind: api
         summary: REST API for currency, tax, country, and language management.
         contracts:
+          scheduledtransfer:
+            contract_name: exchange-rates
+            slice: international
+            write:
+              - international:exchangeRateSnapshot
           openapi:
             output: international/international-api.openapi
             expose:

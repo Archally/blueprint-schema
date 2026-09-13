@@ -38,6 +38,11 @@ contexts:
           - { type_ref: RT001, class: self-hosted, id: prestashop-db }
           - { type_ref: RT004, class: self-hosted, id: prestashop-cache }
         contracts:
+          shareddata:
+            contract_name: shop-context
+            slice: shop
+            write:
+              - shop:shopContextRecord
           openapi:
             output: shop/shop-api.openapi
             expose:

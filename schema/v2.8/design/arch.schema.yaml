@@ -529,32 +529,17 @@ $defs:
                     items:
                       type: string
                     description: "Allowed values for this variable."
-      provides:
-        type: array
-        items:
-          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
-        description: >-
-          Operations this service provides, with no transport described. Provider-side, like a
-          contract's `expose:`/`send:`, and it materializes the same `handled_by` binding - but it
-          names no channel, because an in-process call has none. The opposite of a `call:` list,
-          which names operations this service DEPENDS ON rather than owns.
-          It is the residual, not the first answer: where a contract already names the operation, or
-          where the operation's domain is served by exactly one context, the binding is derived and
-          writing it here repeats what the model states elsewhere. Reach for it when neither
-          derivation can reach the operation.
-          Several services in different bounded contexts may each declare the same operation, and
-          each declaration is one binding: an operation the domain shares is genuinely provided in
-          more than one place. Declared on the service rather than under `contracts:` because every
-          key there names a protocol with a generated specification, and this has neither.
       handles:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
         description: >-
-          SOFT-DEPRECATED (v2.8.18): the superseded spelling of `provides:`, accepted with identical meaning and identical effect
-          on the graph until the next major line. `handles` named two things at once - who provides
-          the operation and how it is invoked - and the second of those is `dispatch:`, on the
-          operation. A service may declare either key; declaring both merges them.
+          SOFT-DEPRECATED: declare these operations under `contracts.inprocess.provide` instead,
+          which states the same binding and also says which coupling it belongs to. Accepted here
+          with identical meaning and identical effect on the graph until the next major line; a
+          service may declare either, and declaring both merges them.
+          `handles` named two things at once - who provides the operation and how it is invoked -
+          and the second of those is `dispatch:`, on the operation.
       contracts:
         $ref: "#/$defs/contracts"
         description: "External contracts exposing and consuming interfaces for this service."
@@ -609,7 +594,13 @@ $defs:
 
   contracts:
     type: object
-    description: "Contract interfaces for this service. Each entry specifies what is exposed or consumed per protocol."
+    description: >-
+      Integration contracts for this service: what it provides to, and consumes from, everything
+      outside itself. Each contract kind names one coupling style. The wire kinds name a
+      specification and carry the document generated from it; `inprocess`, `shareddata` and
+      `scheduledtransfer` name couplings that are not protocols, and `inprocess` carries no document
+      at all, because no notation describes what it couples. `security_schemes` is not a kind - it
+      declares the authentication the wire kinds reference.
     additionalProperties: false
     properties:
       openapi:
@@ -630,6 +621,15 @@ $defs:
       cncfsw:
         $ref: "#/$defs/flow_contract"
         description: "Serverless workflow contract (CNCF Serverless Workflow specification)."
+      inprocess:
+        $ref: "#/$defs/inprocess_contract"
+        description: "In-process coupling - operations provided to, or consumed from, the same process."
+      shareddata:
+        $ref: "#/$defs/shared_data_contract"
+        description: "Shared-data coupling - a store one service writes and another reads."
+      scheduledtransfer:
+        $ref: "#/$defs/scheduled_transfer_contract"
+        description: "Scheduled-transfer coupling - a run on a schedule moves data between services."
       graphql:
         type: object
         additionalProperties: false
@@ -853,6 +853,127 @@ $defs:
       output_structures:
         $ref: "#/$defs/contract_structures"
         description: "Named output structures produced by workflows."
+
+  inprocess_contract:
+    type: object
+    description: >-
+      In-process coupling: operations this service provides to, or consumes from, code running in the
+      same process and the same deployment unit - a method call, an injected dependency, an in-VM
+      event. The one contract kind that names no document: no notation describes a module's published
+      interface in a transport-independent, hand-authorable form, so this kind carries no `file:`, no
+      `contract_name` and no placement. There is nothing to generate, nothing to name and nowhere to
+      put it. What it states is the coupling itself, which is what a dependency picture is made of.
+    additionalProperties: false
+    properties:
+      provide:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: >-
+          Operations this service owns and makes callable in-process. The transport-free counterpart
+          of a contract's `expose:` or `send:`, and it materializes the same `handled_by` binding.
+      consume:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: >-
+          Operations this service depends on and calls in-process, owned by another service. The
+          transport-free counterpart of `call:` and `receive:`. Listing an operation here says how
+          THIS coupling reaches it and nothing about the operation itself: one operation may be
+          reached in-process from a sibling module and over a wire from outside, which is two
+          contracts over one operation. What the operation's own invocation model is, `dispatch:`
+          says.
+
+  shared_data_contract:
+    type: object
+    description: >-
+      Shared-data coupling: a store both services reach, where one writes the data and the other
+      reads it, and neither calls the other. The Shared Database style in Enterprise Integration
+      Patterns - the quickest coupling to build and the hardest to change, because the reader is
+      bound to the writer's schema without being asked and nothing in either service records the
+      dependency. Declaring it here is what makes it visible. Its operations are `document`
+      transfers; the specification a generator emits for it is a data contract describing the
+      dataset.
+    additionalProperties: false
+    allOf:
+      - $ref: "#/$defs/contract_identity"
+    properties:
+      file:
+        type: string
+        description: "Path to the data contract describing the shared dataset."
+      contract_name:
+        $ref: "#/$defs/contract_name"
+      slice:
+        $ref: "#/$defs/contract_slice"
+      cross_cutting:
+        $ref: "#/$defs/contract_cross_cutting"
+      output:
+        $ref: "#/$defs/contract_output"
+      write:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: >-
+          Document operations whose data this service writes into the shared store. The writer owns
+          the schema, so this is the provider end even though no call is made.
+      read:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: >-
+          Document operations this service reads out of the shared store, written by another service.
+          The consumer end: this service is bound to a schema it does not own.
+      input_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named structures this service writes into the shared store."
+      output_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named structures this service reads out of the shared store."
+
+  scheduled_transfer_contract:
+    type: object
+    description: >-
+      Scheduled-transfer coupling: a run on a schedule moves data from one service to another - an
+      export and an import, a nightly extract, a batch feed. The File Transfer style in Enterprise
+      Integration Patterns, named for the schedule rather than for the file because the medium is
+      incidental and the timing is not: the reader sees the writer's data as of the last run, and
+      every consequence of the coupling follows from that lag. Its operations are `document`
+      transfers; the specification a generator emits for it is a data contract describing the
+      dataset.
+    additionalProperties: false
+    allOf:
+      - $ref: "#/$defs/contract_identity"
+    properties:
+      file:
+        type: string
+        description: "Path to the data contract describing the transferred dataset."
+      contract_name:
+        $ref: "#/$defs/contract_name"
+      slice:
+        $ref: "#/$defs/contract_slice"
+      cross_cutting:
+        $ref: "#/$defs/contract_cross_cutting"
+      output:
+        $ref: "#/$defs/contract_output"
+      write:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: >-
+          Document operations this service produces for the transfer. The producing end owns the
+          schema and the schedule.
+      read:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: >-
+          Document operations this service ingests from the transfer, produced by another service.
+      input_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named structures this service produces for the transfer."
+      output_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named structures this service ingests from the transfer."
 
   contract_structures:
     type: object

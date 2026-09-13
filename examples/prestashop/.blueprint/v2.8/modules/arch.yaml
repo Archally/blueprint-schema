@@ -33,6 +33,10 @@ contexts:
         kind: service
         summary: Module lifecycle orchestrator with hook execution pipeline.
         contracts:
+          inprocess:
+            provide:
+              - modules:executeHook
+              - modules:renderDisplayHook
           openapi:
             output: modules/modules-api.openapi
             expose:

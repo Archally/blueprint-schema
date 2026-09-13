@@ -700,38 +700,53 @@ Service contracts use typed protocol sections with `operation_ref[]`:
 services:
   - name: order-api
     kind: api              # service | worker | api | webapp | cli | library | function
-    handles: [pricing:recalculateTotals]   # in-process; no transport asserted
     contracts:
       openapi:
         expose: [orders:submitOrder, orders:getOrder]
       asyncapi:
         send: [orders:orderSubmitted]
         receive: [orders:sendConfirmation]
+      inprocess:
+        provide: [pricing:recalculateTotals]
 ```
 
-An operation belongs to the bounded context(s) whose services provide it, and there are three ways
-to say so. `expose:` and `send:` sit inside a contract, so declaring either asserts a channel.
-`handles:` sits on the service and asserts none: it is for an operation called in-process, which has
-no protocol and therefore no contract to put it in.
+An operation belongs to the bounded context(s) whose services provide it, and every way of saying so
+lives inside a contract. Each kind names the medium the coupling travels over, and the verb names
+which end this service is.
 
-| Key | Where | Direction | Asserts a transport |
+| Kind | Provider verb | Consumer verb | The medium |
 |---|---|---|---|
-| `expose:` | inside a contract | provider | yes, the contract's protocol |
-| `send:` | inside a contract | provider | yes, the contract's protocol |
-| `handles:` | on the service | provider | no |
-| `call:` | inside a contract | **consumer** | yes |
+| `openapi` | `expose:` | - | HTTP, described by an OpenAPI document |
+| `httpClient` | - | `call:` | the same, seen from the caller |
+| `asyncapi` | `send:` | `receive:` | a broker or queue, described by an AsyncAPI document |
+| `openrpc` | `expose:` | `call:` | JSON-RPC |
+| `inprocess` | `provide:` | `consume:` | none - a call inside one process and one deployment unit |
+| `shareddata` | `write:` | `read:` | a store one service writes and another reads |
+| `scheduledtransfer` | `write:` | `read:` | a run on a schedule that moves data between the two |
 
-`call:` is the one to be careful with. It reads like a sibling of the other three and is the
-opposite direction: it names operations this service DEPENDS ON, not ones it owns. Binding a
-service to an operation it merely calls would record the caller as the handler.
+The last three cross no wire, and they are declared for the same reason as the rest: the coupling is
+real whether or not a spec file describes it. On the two data kinds the WRITER is the provider even
+though it calls nobody - it owns the schema, and the reader is bound to it without being asked.
 
-All three provider keys are m:n. Two services in different bounded contexts may each declare the
-same operation, and each declaration produces its own binding, because an operation the domain
-shares really is handled in more than one place.
+`inprocess` is the one kind that names no document. No notation describes a module's published
+interface in a transport-independent, hand-authorable form, so it carries no `file:`, no
+`contract_name` and no placement. The two data kinds keep all three, because the dataset they move
+is what a data contract describes.
+
+Consumer verbs are the ones to be careful with. `call:`, `receive:`, `consume:` and `read:` name
+operations this service DEPENDS ON, not ones it owns. Binding a service to an operation it merely
+reaches would record the caller as the handler.
+
+Every provider verb is m:n. Two services in different bounded contexts may each declare the same
+operation, and each declaration produces its own binding, because an operation the domain shares
+really is handled in more than one place.
 
 Never add a channel an operation does not have in order to silence the `unbound-operation` rule: the
 model then states a transport that does not exist, and every diagram generated from it draws that
-transport as fact. `handles:` exists so the honest answer is expressible.
+transport as fact. `inprocess.provide` exists so the honest answer is expressible.
+
+`service.handles:` is the superseded spelling of `contracts.inprocess.provide`. It is still read for
+the rest of the 2.8 line, and the Archally Pro `bp schema-update` verb relocates it.
 
 ---
 

@@ -185,7 +185,15 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
   for (const contract of entities) {
     if (contract.type !== ENTITY_TYPE.Contract) continue;
     const data = getData(contract);
-    addProvided(contract, [...asStringArray(data.expose), ...asStringArray(data.send)]);
+    addProvided(contract, [
+      ...asStringArray(data.expose),
+      ...asStringArray(data.send),
+      // The transport-free provider verbs bind exactly as `expose` and `send` do. What they do NOT
+      // do is assert a channel, which is the whole reason they exist; the binding is the same fact
+      // either way, so it is materialised on the same edge.
+      ...asStringArray(data.provide),
+      ...asStringArray(data.write),
+    ]);
   }
 
   // ── Service `provides:` / `handles:` — provide-membership, no transport asserted ─
@@ -201,14 +209,14 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
   // `resolution: 'contract'` tag - the bind is declared by the author in the model, so it is a real
   // declaration and not the deprecated name/scope fallback.
   //
-  // `provides:` is the key; `handles:` is its superseded spelling, accepted with identical meaning
-  // through the v2.8 line. Both are read and their lists are concatenated rather than one winning:
-  // a service declaring both means the union of what it wrote, and `addProvided` already folds a
-  // repeated reference, so an operation named under both keys binds once.
+  // `contracts.inprocess.provide` is where this now lives, and the contract pass above reads it.
+  // `handles:` is the superseded spelling on the service itself, accepted with identical meaning
+  // through the v2.8 line; `addProvided` folds a repeated reference, so an operation named both
+  // here and under the in-process contract binds once.
   for (const service of entities) {
     if (service.type !== ENTITY_TYPE.Service) continue;
     const data = getData(service);
-    addProvided(service, [...asStringArray(data.provides), ...asStringArray(data.handles)]);
+    addProvided(service, asStringArray(data.handles));
   }
 
   // Name/scope fallback (deprecated) — mirrors resolver `ownedBy`.

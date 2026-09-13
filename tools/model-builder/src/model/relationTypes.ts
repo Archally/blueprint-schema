@@ -73,6 +73,16 @@ export const RELATION_TYPE = {
   ContractCalls: 'contract_calls',
   ContractSends: 'contract_sends',
   ContractReceives: 'contract_receives',
+  // The same wiring for the three couplings that cross no wire. Separate types rather than a reuse
+  // of the four above, because those four assert a channel: a rule or a view that reads
+  // `contract_exposes` as "this operation has a transport surface" would be right about every
+  // existing edge and wrong about an in-process one. `contract_writes` and `contract_reads` serve
+  // BOTH data kinds, as `contract_exposes` already serves openapi and openrpc - the contract's own
+  // `_contractType` says which kind produced the edge.
+  ContractProvides: 'contract_provides',
+  ContractConsumes: 'contract_consumes',
+  ContractWrites: 'contract_writes',
+  ContractReads: 'contract_reads',
   // motivation.schema: goal tracked by KPI (goal.kpi)
   GoalKpi: 'goal.kpi',
   // --- quality.schema: the measurement chain and the requirement planes ------

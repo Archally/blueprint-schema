@@ -296,6 +296,37 @@ operations:
       - path: "src/Core/Domain/Hook/QueryResult/HookStatus.php"
         role: model
 
+  # --- Hook Execution ---
+  #
+  # `updateHookStatus` above administers a hook; these two are what a hook IS at runtime. Both cross
+  # no wire: the dispatcher and every module callback registered to the hook run inside one PHP
+  # request, in one deployment unit. That is the monolith's principal extension mechanism, and the
+  # `inprocess` contract kind on the services below is what records which context reaches which.
+
+  executeHook:
+    id: modules.CMD010
+    kind: command
+    dispatch: inprocess
+    name: "ExecuteHook"
+    description: "Invoke every module callback registered to a named action hook and return their combined result. Core code calls this at each extension point; the registered modules execute inside the same request with no transport between them. A hook disabled through UpdateHookStatus executes nothing."
+    delivery_priority: must-have
+    code_refs:
+      - path: "classes/Hook.php"
+        role: implementation
+      - path: "src/Adapter/HookManager.php"
+        role: implementation
+
+  renderDisplayHook:
+    id: modules.CMD011
+    kind: command
+    dispatch: inprocess
+    name: "RenderDisplayHook"
+    description: "Invoke every module callback registered to a named display hook and concatenate the markup they return. Called from the theme's templates rather than from a service, so no service consumes it - the caller sits outside the part of the system this model describes."
+    delivery_priority: should-have
+    code_refs:
+      - path: "classes/Hook.php"
+        role: implementation
+
 errors:
   moduleNotFound:
     id: modules.ERR001

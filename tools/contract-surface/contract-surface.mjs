@@ -15,6 +15,16 @@
 //   · HTTP     `openapi.expose` (provider)  <-> `httpClient.call` (consumer)
 //   · Message  `asyncapi.send` (producer)   <-> `asyncapi.receive` (consumer)
 //   · RPC      `openrpc.expose`             <-> `openrpc.call`
+//
+// Three more pairings cross no wire, and they join on exactly the same terms - a provider verb and
+// a consumer verb naming one operation ref - which is why they can be read by the same code:
+//
+//   · In-process       `inprocess.provide`         <-> `inprocess.consume`
+//   · Shared data      `shareddata.write`          <-> `shareddata.read`
+//   · Scheduled xfer   `scheduledtransfer.write`   <-> `scheduledtransfer.read`
+//
+// On the data pairings the writer is the provider even though it calls nobody: it owns the schema,
+// and the reader is bound to it. Neither carries a broker.
 //   · Matching is EXACT STRING EQUALITY on the ref. No scope stripping, no normalisation — a
 //     `contracts.DOC001` is not a `customers.DOC001`, and loosening that would silently invent
 //     edges between unrelated contexts.
@@ -39,7 +49,7 @@
 // they do today.
 
 /**
- * @typedef {'http'|'message'|'rpc'} EdgeProtocol
+ * @typedef {'http'|'message'|'rpc'|'inprocess'|'shareddata'|'scheduledtransfer'} EdgeProtocol
  *
  * The accepted input. `contracts` is deliberately `unknown` rather than a union of the two shapes:
  * the generator's `ServiceContracts` is an INTERFACE, and TypeScript gives interfaces no implicit
@@ -61,6 +71,12 @@
  * @property {string[]} receive     asyncapi.receive
  * @property {string[]} rpcExpose   openrpc.expose
  * @property {string[]} rpcCall     openrpc.call
+ * @property {string[]} provide       inprocess.provide
+ * @property {string[]} consume       inprocess.consume
+ * @property {string[]} sharedWrite   shareddata.write
+ * @property {string[]} sharedRead    shareddata.read
+ * @property {string[]} transferWrite scheduledtransfer.write
+ * @property {string[]} transferRead  scheduledtransfer.read
  * @property {string|null} brokerId asyncapi.brokerId
  * @property {SurfaceInput} source  the originating service, handed straight back to the caller
  *
@@ -92,11 +108,19 @@ export function normaliseService(service) {
     for (const entry of contracts) {
       const kind = entry?.kind;
       if (!kind) continue;
-      const slot = byKind[kind] ?? (byKind[kind] = { expose: [], call: [], send: [], receive: [], brokerId: null });
+      const slot = byKind[kind] ?? (byKind[kind] = {
+        expose: [], call: [], send: [], receive: [],
+        provide: [], consume: [], write: [], read: [],
+        brokerId: null,
+      });
       slot.expose.push(...asArray(entry.expose));
       slot.call.push(...asArray(entry.call));
       slot.send.push(...asArray(entry.send));
       slot.receive.push(...asArray(entry.receive));
+      slot.provide.push(...asArray(entry.provide));
+      slot.consume.push(...asArray(entry.consume));
+      slot.write.push(...asArray(entry.write));
+      slot.read.push(...asArray(entry.read));
       slot.brokerId = slot.brokerId ?? entry.brokerId ?? null;
     }
   } else if (contracts && typeof contracts === 'object') {
@@ -112,6 +136,12 @@ export function normaliseService(service) {
     receive: pick('asyncapi', 'receive'),
     rpcExpose: pick('openrpc', 'expose'),
     rpcCall: pick('openrpc', 'call'),
+    provide: pick('inprocess', 'provide'),
+    consume: pick('inprocess', 'consume'),
+    sharedWrite: pick('shareddata', 'write'),
+    sharedRead: pick('shareddata', 'read'),
+    transferWrite: pick('scheduledtransfer', 'write'),
+    transferRead: pick('scheduledtransfer', 'read'),
     brokerId: byKind.asyncapi?.brokerId ?? null,
     source: service,
   };
@@ -134,6 +164,12 @@ export function normaliseService(service) {
  *   receiversByOp: Map<string, SurfaceService[]>,
  *   rpcProvidersByOp: Map<string, SurfaceService[]>,
  *   rpcConsumersByOp: Map<string, SurfaceService[]>,
+ *   inProcessProvidersByOp: Map<string, SurfaceService[]>,
+ *   inProcessConsumersByOp: Map<string, SurfaceService[]>,
+ *   sharedWritersByOp: Map<string, SurfaceService[]>,
+ *   sharedReadersByOp: Map<string, SurfaceService[]>,
+ *   transferWritersByOp: Map<string, SurfaceService[]>,
+ *   transferReadersByOp: Map<string, SurfaceService[]>,
  * }}
  */
 export function buildContractSurface(services) {
@@ -149,6 +185,12 @@ export function buildContractSurface(services) {
   const receiversByOp = index();
   const rpcProvidersByOp = index();
   const rpcConsumersByOp = index();
+  const inProcessProvidersByOp = index();
+  const inProcessConsumersByOp = index();
+  const sharedWritersByOp = index();
+  const sharedReadersByOp = index();
+  const transferWritersByOp = index();
+  const transferReadersByOp = index();
 
   const add = (/** @type {Map<string, SurfaceService[]>} */ map, /** @type {string[]} */ refs, /** @type {SurfaceService} */ service) => {
     for (const ref of refs) {
@@ -165,9 +207,21 @@ export function buildContractSurface(services) {
     add(receiversByOp, service.receive, service);
     add(rpcProvidersByOp, service.rpcExpose, service);
     add(rpcConsumersByOp, service.rpcCall, service);
+    add(inProcessProvidersByOp, service.provide, service);
+    add(inProcessConsumersByOp, service.consume, service);
+    add(sharedWritersByOp, service.sharedWrite, service);
+    add(sharedReadersByOp, service.sharedRead, service);
+    add(transferWritersByOp, service.transferWrite, service);
+    add(transferReadersByOp, service.transferRead, service);
   }
 
-  return { services: normalised, byId, providersByOp, consumersByOp, producersByOp, receiversByOp, rpcProvidersByOp, rpcConsumersByOp };
+  return {
+    services: normalised, byId,
+    providersByOp, consumersByOp, producersByOp, receiversByOp, rpcProvidersByOp, rpcConsumersByOp,
+    inProcessProvidersByOp, inProcessConsumersByOp,
+    sharedWritersByOp, sharedReadersByOp,
+    transferWritersByOp, transferReadersByOp,
+  };
 }
 
 /**
@@ -224,6 +278,11 @@ export function deriveServiceEdges(surface) {
   join(surface.consumersByOp, surface.providersByOp, 'http', 'HTTP call');
   join(surface.receiversByOp, surface.producersByOp, 'message', 'Received event');
   join(surface.rpcConsumersByOp, surface.rpcProvidersByOp, 'rpc', 'OpenRPC call');
+  // The three that cross no wire. Same join, same dedupe key, same warning when one end is
+  // declared and the other is not - the pairings differ only in which verbs name them.
+  join(surface.inProcessConsumersByOp, surface.inProcessProvidersByOp, 'inprocess', 'In-process call');
+  join(surface.sharedReadersByOp, surface.sharedWritersByOp, 'shareddata', 'Shared-data read');
+  join(surface.transferReadersByOp, surface.transferWritersByOp, 'scheduledtransfer', 'Scheduled-transfer read');
 
   const edges = [...accumulator.values()].map((edge) => ({ ...edge, operations: edge.operations.slice().sort() }));
   edges.sort((a, b) =>
@@ -320,8 +379,18 @@ export function aggregateEdges(edges, groupOf) {
   return grouped;
 }
 
-/** Protocol order for display — HTTP first, then message, then RPC. Stable across renderers. */
-export const PROTOCOL_ORDER = Object.freeze(['http', 'message', 'rpc']);
+/**
+ * Protocol order for display. The three that cross a wire come first, then the three that cross
+ * none, so a reader meets the transports before the couplings that have none. Stable across
+ * renderers: a protocol missing from this list is one no legend, plate or filter can show, whatever
+ * the derivation produced.
+ */
+export const PROTOCOL_ORDER = Object.freeze([
+  'http', 'message', 'rpc', 'inprocess', 'shareddata', 'scheduledtransfer',
+]);
 
 /** Short display glyph per protocol. Text, not colour — it has to survive a greyscale print. */
-export const PROTOCOL_LABEL = Object.freeze({ http: 'HTTP', message: 'MSG', rpc: 'RPC' });
+export const PROTOCOL_LABEL = Object.freeze({
+  http: 'HTTP', message: 'MSG', rpc: 'RPC',
+  inprocess: 'IN-PROC', shareddata: 'STORE', scheduledtransfer: 'XFER',
+});

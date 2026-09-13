@@ -130,11 +130,12 @@ export const undeclaredExchange = (model, subject) => {
 /**
  * A declared dependency the contracts do not evidence.
  *
- * INFO, not warn, and the reason is a measurement: most of these are legitimate coupling the
- * contract surface cannot see yet - a shared database, a file drop, a scheduled job. On one model
- * 119 of 132 declared dependencies land here, and a report that fires 119 times is switched off
- * within a week. It promotes to a warning once the non-API contract kinds exist and the derivation
- * can see what it is currently blind to.
+ * INFO, not warn, and the reason is a measurement: most of these are legitimate coupling a model
+ * can now describe and usually has not yet - a shared store, a scheduled transfer, a call inside one
+ * process. On one model 119 of 132 declared dependencies land here, and a report that fires 119
+ * times is switched off within a week. The derivation reads those three kinds, so what stands
+ * between this and a warning is adoption rather than expressiveness: it promotes when a model that
+ * declares its couplings no longer lands here in quantity.
  */
 export const unevidencedDependency = (model, subject) => {
   const { declared, derived, names } = index(model);

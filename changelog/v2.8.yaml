@@ -5,6 +5,57 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.27"
+    date: "2026-09-13"
+    summary: >
+      A service could already say what it publishes over a wire and what it calls over one. Three
+      couplings that cross no wire had at most one end, so nothing paired them into a dependency,
+      and the picture of a modular monolith came out empty.
+
+
+      `contracts:` gains three kinds. `inprocess` takes `provide` and `consume` for a call inside one
+      process and one deployment unit. `shareddata` takes `write` and `read` for a store one service
+      writes and another reads - the Shared Database style, where the reader is bound to a schema it
+      does not own. `scheduledtransfer` takes the same pair for a run on a schedule that moves data
+      between two services, where the reader sees the writer's data as of the last run. All six verbs
+      name `operation_ref`, as every existing contract verb does, so one derivation reads them all.
+
+
+      On the two data kinds the WRITER is the provider even though it calls nobody: it owns the
+      schema, and the derived dependency points from reader to writer.
+
+
+      `inprocess` is the one kind that names no document. No notation describes a module's published
+      interface in a transport-independent, hand-authorable form, so it carries no `file:`, no
+      `contract_name` and no placement. The two data kinds keep all three, because the dataset they
+      move is what a data contract describes.
+
+
+      The transport-free provider verb now lives with the others. `service.provides` is withdrawn and
+      its operations belong under `contracts.inprocess.provide`; the superseded `service.handles`
+      keeps working for the rest of this line and names its new home. `coupling` gains `inprocess`,
+      `shareddata` and `scheduledtransfer`, so a declared coupling and a derived one stay in one
+      vocabulary. `dispatch` accepts `inprocess` beside `in-process`, spelling one concept as the
+      contract kind spells it; both are read for the rest of this line.
+
+
+      `schema-update` carries both migrations, so a model on either superseded spelling moves without
+      a hand edit. Each keeps the author's own list form, comments, key order and line endings, each
+      is idempotent, and each reports what it will not touch rather than guessing: a service already
+      declaring `contracts.inprocess`, a `contracts:` or a `dispatch:` written in flow form, a
+      `provides:` that has no replacement to move to, and a prose sentence naming either spelling.
+
+
+      The checker gains six rules. Four report a half-declared pair - a consume with no provide, a
+      read with no write, and each the other way round - scoped to the three kinds whose two ends are
+      both inside the model. One reports an operation whose `dispatch` says in-process and names no
+      provider, which is a stronger finding than an unbound operation carrying no `dispatch`. One
+      compares a `shareddata` contract against the infrastructure both ends name, where both name
+      any, and reports two services that share a contract and no store.
+
+
+      A document declaring none of the new kinds is valid here exactly as it was under 2.8.26.
+
   - version: "2.8.26"
     date: "2026-09-13"
     summary: >

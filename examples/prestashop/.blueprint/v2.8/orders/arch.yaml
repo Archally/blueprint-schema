@@ -69,6 +69,11 @@ contexts:
           - url: http://localhost:8080/api
             environment: development
         contracts:
+          scheduledtransfer:
+            contract_name: exchange-rates
+            slice: international
+            read:
+              - international:exchangeRateSnapshot
           openapi:
             output: orders/orders-api.openapi
             expose:

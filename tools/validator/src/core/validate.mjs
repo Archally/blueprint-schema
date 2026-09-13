@@ -209,13 +209,25 @@ export function checkDeprecatedContractOutput(relFile, serviceName, kind, contra
  * model that has not migrated is correct rather than broken. The warning exists so the removal does
  * not arrive as a surprise, and it names the replacement.
  */
+/**
+ * Does this `dispatch` value say the operation executes in-process?
+ *
+ * One concept, two accepted spellings: `inprocess` is current and `in-process` is read for the
+ * rest of the 2.8 line. Every check that turns on the value asks here, so a model that migrates
+ * between them keeps whatever the value bought it.
+ */
+export function isInProcess(dispatch) {
+  return dispatch === "inprocess" || dispatch === "in-process";
+}
+
 export function checkDeprecatedServiceHandles(relFile, serviceName, service) {
   if (!service || !Array.isArray(service.handles) || service.handles.length === 0) return null;
   return (
     `[${relFile}] Service "${serviceName}" names its in-process operations with \`handles\`, which ` +
-    `is superseded by \`provides\` - same meaning, same binding. \`handles\` said who provides the ` +
-    `operation and how it is invoked at once, and the second of those is \`dispatch\` on the ` +
-    `operation. Accepted until the next major line.`
+    `is superseded by \`contracts.inprocess.provide\` - same meaning, same binding, and it also ` +
+    `says which coupling the operation belongs to. \`handles\` said who provides the operation and ` +
+    `how it is invoked at once, and the second of those is \`dispatch\` on the operation. Accepted ` +
+    `until the next major line.`
   );
 }
 
@@ -389,7 +401,10 @@ export function validateModel(args) {
   // Rules are not uniform across schema versions, so behaviour follows the version the model
   // DECLARES rather than the newest one this validator knows. From v2.7, only invocable
   // operations (commands and queries) need a wire binding — events are domain facts and are
-  // exempt, and `dispatch: in-process` is intentionally transport-less. Before v2.7 every
+  // exempt, and an operation whose `dispatch` says in-process is intentionally transport-less.
+  // Both spellings of that value carry the exemption: `inprocess` is the current one and
+  // `in-process` is accepted for the rest of the 2.8 line, and an exemption that recognised only
+  // one of them would start warning about a model the moment it migrated. Before v2.7 every
   // operation was expected to carry an `exchange` block, so a v2.6 model is still held to that.
   const version = detectSchemaVersion(args);
   const eventsExemptFromExchange = atLeast(version, 2, 7);
@@ -534,7 +549,7 @@ export function validateModel(args) {
         );
         if (payloadFinding) warnings.push(payloadFinding);
         const missingExchange = eventsExemptFromExchange
-          ? (op.kind === "command" || op.kind === "query") && !op.exchange && op.dispatch !== "in-process"
+          ? (op.kind === "command" || op.kind === "query") && !op.exchange && !isInProcess(op.dispatch)
           : !op.exchange;
         if (missingExchange) {
           warnings.push(`[${relFile}] Operation "${key}" (${op.id ?? "no-id"}) has no exchange block`);

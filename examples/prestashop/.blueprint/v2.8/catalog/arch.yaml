@@ -38,6 +38,14 @@ contexts:
         direction: upstream
         description: Exposes hooks for module-driven catalog extensions.
         bounded_context_ref: prestashop.BC007
+      - name: Shop
+        type: shared-db
+        relationship: conformist
+        direction: downstream
+        description: >-
+          Reads the multi-store context straight out of the shared database. Shop owns the schema
+          and is never asked, so Catalog conforms to whatever shape it is in.
+        bounded_context_ref: prestashop.BC011
     services:
       - id: prestashop.SVC002
         name: CatalogService
@@ -53,6 +61,19 @@ contexts:
           - url: http://localhost:8080/api
             environment: development
         contracts:
+          inprocess:
+            # Catalog code calls the dispatcher at each extension point, which is the same act as
+            # the open-host-service the context declares above: exposing a hook IS calling
+            # `Hook::exec` where the extension belongs.
+            consume:
+              - modules:executeHook
+          shareddata:
+            # The dataset belongs to Shop, so the contract document is placed there rather than in
+            # the reading slice - both ends name one document.
+            contract_name: shop-context
+            slice: shop
+            read:
+              - shop:shopContextRecord
           openapi:
             output: catalog/catalog-api.openapi
             expose:

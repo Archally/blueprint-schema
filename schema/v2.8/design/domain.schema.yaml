@@ -161,9 +161,9 @@ $defs:
             minItems: 1
       dispatch:
         type: string
-        enum: [in-process]
+        enum: [inprocess, in-process]
         description: >
-          Invocation model, ORTHOGONAL to `exchange` (which is the wire transport). Set `in-process` to
+          Invocation model, ORTHOGONAL to `exchange` (which is the wire transport). Set `inprocess` to
           declare that this command/query EXECUTES in-process and has no wire transport of its own -
           cross-cutting middleware, a request-scoped context or data-access step, pure compute, a write
           embedded in a parent aggregate's endpoint, or an in-process delegation/write-back from a
@@ -172,6 +172,12 @@ $defs:
           check). It exempts the operation from the `missing-exchange-binding` completeness check - so use
           it only for operations that genuinely execute with no transport, NOT for unimplemented/phantom
           gaps (those should keep surfacing). Events are already exempt and should not set `dispatch`.
+          `in-process` is the superseded spelling of the same value, accepted until the next major
+          line; `inprocess` is the current one, spelled as the `inprocess` contract kind is.
+          The two fields answer different questions and neither derives from the other: `dispatch:`
+          is the operation's own invocation model, one value, mutually exclusive with `exchange:`;
+          a contract kind says how ONE coupling reaches the operation, and an operation may sit in
+          more than one contract.
       payload:
         $ref: "#/$defs/payload"
         description: "Message payload schema and content type."

@@ -15,6 +15,14 @@ import { buildOperationKeyIndex, resolveOperationRefOrPlaceholder } from './oper
  *   - call[]    (http-client / rpc)  operations this service calls      → ContractCalls
  *   - send[]    (channel / AsyncAPI) operations this service publishes  → ContractSends
  *   - receive[] (channel / AsyncAPI) operations this service consumes   → ContractReceives
+ *   - provide[] (inprocess)          operations provided in-process     -> ContractProvides
+ *   - consume[] (inprocess)          operations called in-process       -> ContractConsumes
+ *   - write[]   (shareddata / xfer)  documents this service writes      -> ContractWrites
+ *   - read[]    (shareddata / xfer)  documents this service reads       -> ContractReads
+ *
+ * The last four cross no wire. They are wired here rather than through a path of their own
+ * because a Contract entity is built for every key under `contracts:`, whatever the key, so the
+ * walk that reaches the seven protocol kinds already reaches these three.
  *
  * Each operation_ref is resolved in BOTH formats the schema documents - the ID-based
  * "orders.CMD001" and the human-readable "orders:placeOrder" (see `operationRef.ts`, which explains
@@ -38,6 +46,10 @@ const CONTRACT_VERBS: ReadonlyArray<{ field: string; type: string }> = [
   { field: 'call', type: RELATION_TYPE.ContractCalls },
   { field: 'send', type: RELATION_TYPE.ContractSends },
   { field: 'receive', type: RELATION_TYPE.ContractReceives },
+  { field: 'provide', type: RELATION_TYPE.ContractProvides },
+  { field: 'consume', type: RELATION_TYPE.ContractConsumes },
+  { field: 'write', type: RELATION_TYPE.ContractWrites },
+  { field: 'read', type: RELATION_TYPE.ContractReads },
 ];
 
 export function extractArchContractRelations(

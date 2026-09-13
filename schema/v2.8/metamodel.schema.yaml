@@ -762,10 +762,12 @@ $defs:
 
   coupling:
     type: string
-    enum: [http, message, rpc]
+    enum: [http, message, rpc, inprocess, shareddata, scheduledtransfer]
     description: >
       How two bounded contexts are connected: `http` for request and response over an API,
-      `message` for events across a broker, `rpc` for a procedure call. The same three values the
+      `message` for events across a broker, `rpc` for a procedure call, `inprocess` for a call
+      inside one process, `shareddata` for a store one side writes and the other reads, and
+      `scheduledtransfer` for a run on a schedule that moves data between them. The same values the
       contract surface computes from a model's own contract refs, so a declared coupling and a
       derived one are comparable rather than two vocabularies for one fact.
       Where the contracts already say it, they are the better source: they carry the direction, the
