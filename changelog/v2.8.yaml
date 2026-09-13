@@ -5,6 +5,33 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.26"
+    date: "2026-09-13"
+    summary: >
+      `next[]` arrived in 2.8.23 and `next_activities[]` keeps working for the whole 2.8 line, so a
+      model on the older key is correct rather than out of date. Moving between them was a hand edit
+      until now.
+
+
+      `schema-update` carries the migration. Each successor becomes a `to:` entry that can hold the
+      condition taking that branch. A lone successor stays on its line, because a condition there
+      chooses nothing; a fork expands to block style, because a fork is where a condition belongs
+      and adding one to a flow mapping means restructuring it first. An empty list migrates as an
+      empty list.
+
+
+      It invents no condition. The older key carries none, so every entry arrives with `to:` alone
+      and the reason is the author's to add. Comments, key order, quoting and line endings survive,
+      because the module edits text rather than reparsing the document, and a second run plans
+      nothing.
+
+
+      An activity that would end up declaring `next` twice is left alone and named, since an
+      activity declares one key or the other and never both.
+
+
+      Tooling only. The schema is unchanged and every document valid under 2.8.25 is valid here.
+
   - version: "2.8.25"
     date: "2026-09-12"
     summary: >
