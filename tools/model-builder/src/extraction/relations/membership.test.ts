@@ -71,10 +71,11 @@ describe('extractMembershipRelations — scoped_to (question→BC, D17)', () => 
     expect((edgesOf(rels, RELATION_TYPE.ScopedTo)[0]!.data as { resolution: string }).resolution).toBe('ref');
   });
 
-  it('accepts the legacy kebab-context-name form (D7 shim)', () => {
+  // `bounded_context_ref` names a typed id or it names nothing.
+  it('rejects the kebab-context-name form, and the question is dangling rather than scoped', () => {
     const q = question('q-2', 'QN002', { bounded_context_ref: 'shipping' });
     const rels = extractMembershipRelations([orders, shipping, q]);
-    expect(targetsFrom(rels, RELATION_TYPE.ScopedTo, 'q-2')).toEqual(['ctx-shipping']);
+    expect(targetsFrom(rels, RELATION_TYPE.ScopedTo, 'q-2')).toEqual([]);
   });
 
   it('falls back to name/scope when no explicit ref, tagged legacy', () => {
@@ -164,17 +165,19 @@ describe('extractMembershipRelations — match provenance + loose-bind advisory 
   const handledEdge = (src: string) =>
     rels.find((r) => r.type === RELATION_TYPE.HandledBy && r.source_entity_id === src);
 
-  it('tags an exact domainName:opName bind as match=exact', () => {
-    expect((handledEdge('op-e')!.data as { match: string }).match).toBe('exact');
+  it('binds an exact domainName:opName ref, and the edge records only its resolution', () => {
+    const data = handledEdge('op-e')!.data as Record<string, unknown>;
+    expect(data.resolution).toBe('contract');
+    expect(data).not.toHaveProperty('match');
   });
 
-  it('tags a scope-qualified + case-folded bind as match=loose', () => {
-    expect((handledEdge('op-l')!.data as { match: string }).match).toBe('loose');
+  it('does not bind a scope-qualified, case-folded ref at all', () => {
+    expect(handledEdge('op-l')).toBeUndefined();
   });
 
-  it('findMembershipGaps reports the loose-only bind as loose-bind, not the exact one', () => {
+  it('findMembershipGaps reports the ref that no longer matches as unbound', () => {
     const byId = new Map(findMembershipGaps(es, rels).map((g) => [g.entityId, g.reason]));
-    expect(byId.get('op-l')).toBe('loose-bind');
+    expect(byId.get('op-l')).toBe('unbound');
     expect(byId.has('op-e')).toBe(false);
   });
 });
@@ -194,18 +197,19 @@ describe('extractMembershipRelations — camelCase contract-ref convergence (v2.
   const rels = extractMembershipRelations(es);
   const edge = rels.find((r) => r.type === RELATION_TYPE.HandledBy && r.source_entity_id === 'op-gp');
 
-  it('binds a spaced-name op to its context via a camelCase contract ref', () => {
+  it('still binds the spaced-name op to its context, by name rather than by ref', () => {
     expect(edge).toBeDefined();
     expect(edge!.target_entity_id).toBe('ctx-cat');
   });
 
-  it('tags the camelCase bind as contract + loose (a ref worth tightening)', () => {
-    expect((edge!.data as { resolution: string; match: string }).resolution).toBe('contract');
-    expect((edge!.data as { resolution: string; match: string }).match).toBe('loose');
+  it('records the bind as the name/scope fallback, because no contract ref matched it', () => {
+    const data = edge!.data as Record<string, unknown>;
+    expect(data.resolution).toBe('legacy');
+    expect(data).not.toHaveProperty('match');
   });
 
-  it('findMembershipGaps flags it as loose-bind, not unbound', () => {
+  it('findMembershipGaps reports nothing, because the fallback bound it', () => {
     const byId = new Map(findMembershipGaps(es, rels).map((g) => [g.entityId, g.reason]));
-    expect(byId.get('op-gp')).toBe('loose-bind');
+    expect(byId.has('op-gp')).toBe(false);
   });
 });

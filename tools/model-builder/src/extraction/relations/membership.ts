@@ -45,66 +45,24 @@ function typedIdOf(entity: Entity): string | null {
 }
 
 /**
- * The ref forms an operation may appear as inside a contract's expose/send list —
- * the canonical `domainName:operationName` pair plus the typed id (`CMD001`) and its
- * scope-prefixed form (`scope.CMD001`). Mirrors resolver `operationRefsOf`.
+ * The ref forms an operation can be matched by: the canonical `domainName:operationName` pair,
+ * the typed id (`CMD001`) and its scope-prefixed form (`scope.CMD001`). Mirrors resolver
+ * `operationRefsOf`.
+ *
+ * A contract ref names an operation by one of these, exactly and in exact case. There is no
+ * second, wider tier: a ref that does not match is unbound, and the report says so.
  */
-/**
- * The ref forms an operation can be matched by, split by matching PRECISION so the
- * binder can report HOW an op bound (D1 — nothing silently fuzzy-matched):
- *   - `precise`: the fine-grained keys — `domainName:opName` (domain-file qualified) +
- *     the typed id (`CMD001`) and its scope-prefixed form (`scope.CMD001`). An
- *     exact-case hit on one of these is an unambiguous `exact` bind.
- *   - `scoped`: the coarse `scope:opName` form (prestashop's convention). It drops the
- *     domain-file disambiguator, so a hit here (or any case-folded hit) is a `loose`
- *     bind — correct convention-bridging, but wider surface → advisory-worthy.
- */
-/**
- * Spaced/kebab/snake operation name → camelCase API-operationId form
- * (`"Get Product"` → `getProduct`). VERBATIM port of the contract generator's
- * `toCamelCase` (viewer/generator/v2.6/src/generators/mermaid/shared/resolve-ownership.ts) —
- * so the core `handled_by` binding recognises the SAME `${context}:${camelCase}` contract-ref
- * convention the generator already groups by (v2.7.6 convergence, one ownership rule).
- */
-function toCamelCase(name: string): string {
-  const words = name.split(/[\s\-_]+/).filter(Boolean);
-  if (words.length === 0) return '';
-  return (
-    words[0].toLowerCase() +
-    words
-      .slice(1)
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join('')
-  );
-}
-
-function operationRefForms(entity: Entity): { precise: string[]; loose: string[] } {
-  const precise: string[] = [];
-  const loose: string[] = [];
+function operationRefForms(entity: Entity): string[] {
+  const forms: string[] = [];
   const domainName = contextNameOf(entity);
-  const scope = scopeOf(entity);
   const opName = entity.term ?? entity.displayId;
-  if (opName && domainName) precise.push(`${domainName}:${opName}`);
+  if (opName && domainName) forms.push(`${domainName}:${opName}`);
   if (entity.displayId) {
-    precise.push(entity.displayId);
-    if (scope) precise.push(`${scope}.${entity.displayId}`);
+    forms.push(entity.displayId);
+    const scope = scopeOf(entity);
+    if (scope) forms.push(`${scope}.${entity.displayId}`);
   }
-  // Loose surface — matched case-folded only, so a hit here is `match: 'loose'`:
-  //   - the coarse `scope:opName` (prestashop's scope-qualified convention), and
-  //   - v2.7.6 CONVERGENCE: the generator's `${context}:${camelCase(opName)}` API-operationId
-  //     form (ecommerce `catalog:getProduct` ← "Get Product"), under BOTH the scope and the
-  //     domain-file name (the generator keys on one `source_ref.context`; we cover both). This
-  //     makes the core `handled_by` binder agree with the generator's contract grouping — the
-  //     prerequisite for collapsing the two ownership resolvers in the tool merge.
-  if (opName && scope && scope !== domainName) loose.push(`${scope}:${opName}`);
-  if (opName) {
-    const camel = toCamelCase(opName);
-    if (camel) {
-      if (scope) loose.push(`${scope}:${camel}`);
-      if (domainName) loose.push(`${domainName}:${camel}`);
-    }
-  }
-  return { precise, loose };
+  return forms;
 }
 
 /** Contract send/receive/expose/call entries: plain strings or {domainName, operationName}. */
@@ -150,12 +108,10 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
   }
 
   // PROVIDE-membership: contextId -> op-refs its services provide (expose, send, provide, write).
-  // Kept in BOTH exact case (for `exact` binds) and case-folded (for `loose` binds —
-  // contract refs are commonly camelCase `catalog:addProduct` while operation names are
-  // PascalCase `AddProduct`, an inherent API↔domain convention gap the binder bridges).
+  // Exact case only. `allProvided` is the union across every context, which is what decides
+  // whether the deprecated name/scope fallback may apply to an operation at all.
   const providedExactByContextId = new Map<string, Set<string>>();
-  const providedFoldedByContextId = new Map<string, Set<string>>();
-  const allProvidedFolded = new Set<string>();
+  const allProvided = new Set<string>();
   const ensure = (map: Map<string, Set<string>>, key: string): Set<string> => {
     let set = map.get(key);
     if (!set) {
@@ -173,12 +129,9 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
     const owner = contextsByPartyAndName.get(`${party}::${ownerName}`);
     if (!owner) return;
     const exactSet = ensure(providedExactByContextId, owner.id);
-    const foldedSet = ensure(providedFoldedByContextId, owner.id);
     for (const ref of refs) {
       exactSet.add(ref);
-      const folded = ref.toLowerCase();
-      foldedSet.add(folded);
-      allProvidedFolded.add(folded);
+      allProvided.add(ref);
     }
   };
 
@@ -217,17 +170,11 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
 
   // ── Operation --handled_by--> Context (m:n) ──────────────────────────────
   for (const op of operations) {
-    const { precise, loose } = operationRefForms(op);
-    const allFolded = [...precise, ...loose].map((r) => r.toLowerCase());
-    const providedAnywhere = allFolded.some((ref) => allProvidedFolded.has(ref));
+    const forms = operationRefForms(op);
+    const providedAnywhere = forms.some((ref) => allProvided.has(ref));
     for (const ctx of contexts) {
       const exactHere = providedExactByContextId.get(ctx.id);
-      const foldedHere = providedFoldedByContextId.get(ctx.id);
-      // `exact`: a precise ref (domainName:opName / typed id) hit in exact case.
-      // `loose`: matched only via the coarse `scope:opName` and/or a case-fold.
-      const matchExact = exactHere ? precise.some((ref) => exactHere.has(ref)) : false;
-      const matchLoose = !matchExact && foldedHere ? allFolded.some((ref) => foldedHere.has(ref)) : false;
-      const byContract = matchExact || matchLoose;
+      const byContract = exactHere ? forms.some((ref) => exactHere.has(ref)) : false;
       // Contract-provide is primary (m:n); the deprecated name/scope fallback applies
       // ONLY to operations no contract provides anywhere (else the contract graph owns it).
       const byLegacy = !byContract && !providedAnywhere && ownedBy(op, ctx);
@@ -237,9 +184,7 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
         source_entity_id: op.id,
         target_entity_id: ctx.id,
         type: RELATION_TYPE.HandledBy,
-        // `match: 'loose'` only for the wider-surface contract binds (scope/case); legacy
-        // name/scope is an exact equality, so it is `exact`.
-        data: { resolution: byContract ? 'contract' : 'legacy', match: matchLoose ? 'loose' : 'exact' },
+        data: { resolution: byContract ? 'contract' : 'legacy' },
       });
     }
   }
@@ -249,23 +194,17 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
     const rawRef = getData(question).bounded_context_ref;
     const ref = typeof rawRef === 'string' && rawRef.length > 0 ? rawRef : null;
     if (ref) {
-      // Explicit ref is PRIMARY and single-valued. `exact`: an exact-case typed-id
-      // (BC###, prefixed) hit. `loose`: matched only via the deprecated kebab-context-name
-      // shim (case-insensitive). First match wins.
-      const refLower = ref.toLowerCase();
-      let target = contexts.find((ctx) => typedIdOf(ctx) === ref);
-      let match: 'exact' | 'loose' = 'exact';
-      if (!target) {
-        target = contexts.find((ctx) => (ctx.term ?? ctx.displayId).toLowerCase() === refLower);
-        match = 'loose';
-      }
+      // Explicit ref is PRIMARY and single-valued: an exact-case typed id (BC###, prefixed).
+      // The deprecated kebab-context-name shim that used to catch a case-folded context NAME is
+      // gone; a ref naming anything else is `dangling`, which is what the report already says.
+      const target = contexts.find((ctx) => typedIdOf(ctx) === ref);
       if (target) {
         relations.push({
           id: relationId(question.id, RELATION_TYPE.ScopedTo, target.id),
           source_entity_id: question.id,
           target_entity_id: target.id,
           type: RELATION_TYPE.ScopedTo,
-          data: { resolution: 'ref', match },
+          data: { resolution: 'ref' },
         });
       }
       // A ref pointing at an unknown BC### resolves to no edge → the question is
@@ -280,7 +219,7 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
         source_entity_id: question.id,
         target_entity_id: ctx.id,
         type: RELATION_TYPE.ScopedTo,
-        data: { resolution: 'legacy', match: 'exact' },
+        data: { resolution: 'legacy' },
       });
     }
   }
@@ -298,10 +237,8 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
  *     and no name/scope match).
  *   - Question with no `scoped_to` edge → `unbound` (no ref, no name/scope match) OR
  *     `dangling` (it HAS a `bounded_context_ref` but it points at an unknown BC###).
- *   - Operation/Question bound ONLY via a `loose` edge (scope-qualified ref and/or
- *     case-fold, no exact match anywhere) → `loose-bind` (Decyzja-1-A advisory): the
- *     binding works but rests on the widened match surface — verify it, and consider
- *     aligning the contract ref to the operation's exact name/qualifier.
+ *   There is no third, advisory kind. A ref either names an operation this model declares,
+ *     or it does not and the operation is `unbound`.
  *
  * Guard: if the model declares NO bounded contexts (no arch layer yet), resolvability
  * is not meaningful — returns [] rather than flooding an early-stage domain-only model.
@@ -341,16 +278,12 @@ export interface MembershipGap {
   entityId: string;
   displayId: string;
   entityType: 'Operation' | 'Question';
-  reason: 'unbound' | 'dangling' | 'loose-bind';
+  reason: 'unbound' | 'dangling';
   /** The dangling `bounded_context_ref` value, when reason === 'dangling'. */
   ref: string | null;
   /** Why nothing bound it, for an Operation whose reason is `unbound`; null otherwise. */
   unboundReason: UnboundReason | null;
   fileOrigin: string | null;
-}
-
-function isLoose(relation: Relation): boolean {
-  return (relation.data as { match?: string } | undefined)?.match === 'loose';
 }
 
 /**
@@ -440,8 +373,10 @@ function tierOf(relation: Relation): 1 | 2 | 3 {
  *     "tier" means;
  *   - where the domain hop does not answer, nothing changes and the fallback keeps its operations.
  *
- * `match` is `exact`: the domain hop matched no ref at all, and `exact` is the value the fallback
- * already uses for the same reason - there is no widened surface to have matched loosely.
+ * The edge carries `resolution: 'domain'` and nothing else. There is no `match` field on any
+ * membership edge: every bind is an exact-case hit on a ref the model declares, so a field
+ * recording HOW tightly it matched would have one value and would read as a distinction that
+ * still exists.
  */
 export function applyDomainHopTier(entities: Entity[], relations: Relation[]): Relation[] {
   const operations = entities.filter((e) => e.type === ENTITY_TYPE.Operation);
@@ -479,7 +414,7 @@ export function applyDomainHopTier(entities: Entity[], relations: Relation[]): R
       source_entity_id: operation.id,
       target_entity_id: contextId,
       type: RELATION_TYPE.HandledBy,
-      data: { resolution: 'domain', match: 'exact' },
+      data: { resolution: 'domain' },
     });
   }
   if (promoted.size === 0 && superseded.size === 0 && added.length === 0) return relations;
@@ -498,20 +433,11 @@ export function findMembershipGaps(entities: Entity[], relations: Relation[]): M
   const hasContext = entities.some((e) => e.type === ENTITY_TYPE.Context);
   if (!hasContext) return [];
 
-  // For each bound entity, track whether ANY of its edges is an exact match — an entity
-  // with edges but NO exact edge is a `loose-bind` (bound only on the widened surface).
   const boundOps = new Set<string>();
-  const exactOps = new Set<string>();
   const boundQuestions = new Set<string>();
-  const exactQuestions = new Set<string>();
   for (const relation of relations) {
-    if (relation.type === RELATION_TYPE.HandledBy) {
-      boundOps.add(relation.source_entity_id);
-      if (!isLoose(relation)) exactOps.add(relation.source_entity_id);
-    } else if (relation.type === RELATION_TYPE.ScopedTo) {
-      boundQuestions.add(relation.source_entity_id);
-      if (!isLoose(relation)) exactQuestions.add(relation.source_entity_id);
-    }
+    if (relation.type === RELATION_TYPE.HandledBy) boundOps.add(relation.source_entity_id);
+    else if (relation.type === RELATION_TYPE.ScopedTo) boundQuestions.add(relation.source_entity_id);
   }
 
   const unboundReasonOf = buildUnboundReasonIndex(relations);
@@ -536,12 +462,8 @@ export function findMembershipGaps(entities: Entity[], relations: Relation[]): M
   for (const entity of entities) {
     if (entity.type === ENTITY_TYPE.Operation) {
       if (!boundOps.has(entity.id)) push(entity, 'unbound', null, unboundReasonOf(entity.id));
-      else if (!exactOps.has(entity.id)) push(entity, 'loose-bind');
     } else if (entity.type === ENTITY_TYPE.Question) {
-      if (boundQuestions.has(entity.id)) {
-        if (!exactQuestions.has(entity.id)) push(entity, 'loose-bind');
-        continue;
-      }
+      if (boundQuestions.has(entity.id)) continue;
       const rawRef = getData(entity).bounded_context_ref;
       const ref = typeof rawRef === 'string' && rawRef.length > 0 ? rawRef : null;
       push(entity, ref ? 'dangling' : 'unbound', ref);
