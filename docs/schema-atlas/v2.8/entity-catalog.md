@@ -182,7 +182,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/entity_properties`_
 
 #### `id_band`
 
-A numeric range of one typed id prefix, reserved to the slice that declares it. Two entities of the same family cannot both be `CAT0100`, so a model with several slices allocating into one prefix has to divide the number space between them. This states that division, so the allocator can honour it and the validator can report an id that ignored it. A band is declared inside the slice that owns it…
+A numeric range of one typed id prefix, reserved to the slice that declares it. This states that division, so the allocator can honour it and the validator can report an id that ignored it. A band is declared inside the slice that owns it, which is how a band cannot name a slice the model does not have. Optional per prefix: a prefix with no band declared is unconstrained, and a model declaring no…
 
 **Required:** `prefix`, `from`, `to`
 
