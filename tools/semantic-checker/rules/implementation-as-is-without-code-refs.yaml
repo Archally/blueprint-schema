@@ -1,0 +1,24 @@
+engineVersion: "0.1"
+rules:
+  - id: implementation-as-is-without-code-refs
+    severity: warn
+    description: >-
+      An element that says it is implemented should say where. In a model that traces code,
+      `as-is` with no `code_refs` (or, for a resource, no `iac_refs`) is a claim nothing backs.
+      If the code is only partly there, the value is `wip`, not `as-is`; if it is not there at
+      all, `to-be`. The rule is warn by default because tracing code is a property of the project
+      rather than of the schema: a model authored from interviews, and a greenfield slice inside a
+      brownfield model, both hold `as-is` elements with no code reference and no defect. A project
+      that does not trace code lowers this to `off` via .blueprint-lint.yaml (e.g.
+      `implementation-as-is-without-code-refs: off`); one whose code is the source of truth raises
+      it to `error`.
+    find:
+      all: true
+    filter:
+      field_eq:
+        data.implementation: as-is
+    check:
+      any_of:
+        - all_non_empty: [data.code_refs]
+        - all_non_empty: [data.iac_refs]
+    message: 'Element "{displayId}" ({name|''unnamed''}) says it is implemented (as-is) but names no code_refs or iac_refs. Add the reference, or set implementation to wip or to-be.'

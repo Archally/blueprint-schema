@@ -1,0 +1,21 @@
+engineVersion: "0.1"
+rules:
+  - id: implementation-to-be-with-code-refs
+    severity: info
+    description: >-
+      An element that says it does not exist yet, but names code, is either partly built or
+      mislabelled. Reported at info because the reader decides which: a reference can point at the
+      place the element will live, at a predecessor it replaces, or at a first landed slice, and
+      only the last of those makes the marker wrong. `wip` is the value for a partial
+      implementation, `as-is` for a finished one. No rule reports `wip`, because both evidence
+      states are legitimate for it. Override per-project via .blueprint-lint.yaml (e.g.
+      `implementation-to-be-with-code-refs: off`).
+    find:
+      all: true
+    filter:
+      field_eq:
+        data.implementation: to-be
+    check:
+      not:
+        any_non_empty: [data.code_refs, data.iac_refs]
+    message: 'Element "{displayId}" ({name|''unnamed''}) is marked to-be but names code_refs or iac_refs. If the code is landing, set implementation to wip; if it is done, as-is.'

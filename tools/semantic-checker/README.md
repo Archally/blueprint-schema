@@ -70,6 +70,8 @@ npx @archally/blueprint-schema blueprint-check <dir> --config .blueprint-lint.ya
 | `shared-document-write-without-reader` | warn | a document written into a shared store or a scheduled transfer is read by some service. A store nobody reads is not an integration, and the contract kind claims one |
 | `inprocess-dispatch-without-provider` | warn | an operation whose `dispatch` says in-process names the service that provides it. Stronger than an unbound operation carrying no `dispatch`: the author has already asserted the operation exists and executes |
 | `shared-store-without-common-resource` | info | the two ends of a `shareddata` contract reference some infrastructure in common, where both name any. Compared within one altitude - instance refs against instance refs, type-level needs against needs - so the two encodings are never read as disagreeing; silent where either end names none |
+| `implementation-as-is-without-code-refs` | warn | an element marked `implementation: as-is` names the code or infrastructure behind it, through `code_refs` or `iac_refs`. Raise it to `error` where the code is the source of truth; lower it to `off` where the model does not trace code, which is the case a schema constraint could not have allowed for |
+| `implementation-to-be-with-code-refs` | info | an element marked `implementation: to-be` names no `code_refs` or `iac_refs`. Info, because a reference can name the place the element will live as legitimately as a slice already landed; `wip` is the value for a partial implementation and `as-is` for a finished one |
 
 The adapter maps `BlueprintModel → CheckableModel` (`term`→`name`, plane derived from the layer
 prefix, `validates`→`validated-by`, `question_answered_by`→`answered-by`). Output is now ordered
