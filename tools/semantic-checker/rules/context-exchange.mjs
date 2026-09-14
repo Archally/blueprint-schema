@@ -6,10 +6,10 @@
  *
  * THE TWO SOURCES
  *   · `context_depends_on` is DECLARED - a `dependency` entry an author wrote. It is primary, and
- *     it stays primary: measured across this corpus, 46 derived pairs stand against 352 declared,
- *     and four of the six models with a context map derive nothing at all. A derivation that finds
- *     nothing returns the empty set, which is indistinguishable from "there is nothing there", so
- *     promoting derivation to the only source would turn every unauthored contract into a denial.
+ *     it stays primary. Derivation reaches far fewer pairs than declaration does, and in a model
+ *     whose contracts wire nothing it reaches none at all. A derivation that finds nothing returns
+ *     the empty set, which is indistinguishable from "there is nothing there", so promoting
+ *     derivation to the only source would turn every unauthored contract into a denial.
  *   · `contract_traffic` is DERIVED - one context's service calls an operation another's exposes.
  *     It carries the protocol, the operations and the broker, which a declaration cannot.
  *
@@ -130,12 +130,12 @@ export const undeclaredExchange = (model, subject) => {
 /**
  * A declared dependency the contracts do not evidence.
  *
- * INFO, not warn, and the reason is a measurement: most of these are legitimate coupling a model
- * can now describe and usually has not yet - a shared store, a scheduled transfer, a call inside one
- * process. On one model 119 of 132 declared dependencies land here, and a report that fires 119
- * times is switched off within a week. The derivation reads those three kinds, so what stands
+ * INFO, not warn: most of these are legitimate coupling a model can now describe and usually has
+ * not yet - a shared store, a scheduled transfer, a call inside one process. Where the contracts
+ * describe none of them the whole context map lands here at once, and a report that fires that
+ * broadly is switched off within a week. The derivation reads all three kinds, so what stands
  * between this and a warning is adoption rather than expressiveness: it promotes when a model that
- * declares its couplings no longer lands here in quantity.
+ * describes its couplings through contracts no longer lands here in quantity.
  */
 export const unevidencedDependency = (model, subject) => {
   const { declared, derived, names } = index(model);

@@ -12,9 +12,10 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  * service that exposes an operation and a service that calls the same operation are, between them,
  * a statement about traffic.
  *
- * DERIVATION IS A SECOND SOURCE, NEVER THE ONLY ONE. Measured across the corpus, 46 derived pairs
- * stand against 352 declared dependencies, and four of the six models with a context map derive
- * nothing at all. A derivation that finds nothing does not fail, it returns the empty set - which
+ * DERIVATION IS A SECOND SOURCE, NEVER THE ONLY ONE. It reaches far fewer pairs than declaration
+ * does, and in a model whose contracts wire nothing it reaches none at all: most models arrive here
+ * with a context map and no contract surface behind it. A derivation that finds nothing does not
+ * fail, it returns the empty set - which
  * is indistinguishable from "there is nothing there". So this edge sits BESIDE
  * `context_depends_on` and never replaces it; a pair with one and not the other is a finding for a
  * reader to judge, not a contradiction for a builder to resolve.

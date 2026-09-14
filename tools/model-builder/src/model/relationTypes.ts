@@ -461,9 +461,10 @@ export const RELATION_TYPE = {
   ContextCoversDomain: 'context_covers_domain',
   // Context-to-context traffic the contract surface proves: an operation one context's service
   // exposes and another's calls. Drawn consumer to provider, the direction a call travels. It sits
-  // BESIDE the declared `ContextDependsOn` and never replaces it - the corpus derives 46 pairs
-  // against 352 declared, and four of the six models with a context map derive none at all, so
-  // promoting derivation to the only source would turn every unauthored contract into a denial.
+  // BESIDE the declared `ContextDependsOn` and never replaces it - derivation reaches far fewer
+  // pairs than declaration does, and in a model whose contracts wire nothing it reaches none at
+  // all, so promoting derivation to the only source would turn every unauthored contract into a
+  // denial.
   // `data` carries `protocols`, `operations`, `operation_count` and `broker_ids`; there is no
   // `match`, because this path resolves refs through the documented formats only and has no
   // looser tier for such a field to describe.

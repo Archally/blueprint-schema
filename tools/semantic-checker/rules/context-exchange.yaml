@@ -26,14 +26,16 @@ rules:
     description: >-
       A declared dependency between two bounded contexts that no contract evidences. INFORMATION
       rather than a warning, deliberately: most of these are real coupling a model can now describe
-      and usually has not yet - a shared store, a scheduled transfer, a call inside one process - and
-      on one model 119 of 132 declared dependencies land here. A report that fires that often is
-      switched off within a week, and a switched-off report is worse than none. The derivation reads
-      those three kinds, so what stands between this and a warning is adoption rather than
-      expressiveness: it becomes a warning when a model declaring its couplings honestly no longer
-      lands here in quantity. Until then, read it as "the contracts do not show this one" and not as
-      "this one is wrong". Reported from the context that
-      declared it. Override per-project via .blueprint-lint.yaml.
+      and usually has not yet - a shared store, a scheduled transfer, a call inside one process. The
+      derivation reads all three kinds, so what stands between this and a warning is adoption rather
+      than expressiveness. Where the contracts describe none of a model's couplings its whole context
+      map lands here at once, and a report that fires that broadly is switched off within a week,
+      which is worse than none. Read it as "the contracts do not show this one" and not as "this one
+      is wrong": the finding is about the contract surface as much as about the entry. It becomes a
+      warning when a model that describes its couplings through contracts no longer lands here in
+      quantity, which is a question to ask of the model in front of you rather than a threshold this
+      rule can carry. Reported from the context that declared it. Override per-project via
+      .blueprint-lint.yaml.
     find:
       entity_type: Context
     check:

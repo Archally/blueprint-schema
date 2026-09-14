@@ -5,6 +5,28 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.31"
+    date: "2026-09-14"
+    summary: >
+      `unevidenced-dependency` reports a declared dependency between two bounded contexts that no
+      contract evidences. It is an `info` rather than a warning, and it now says why in terms you
+      can apply to your own model instead of quoting a count taken elsewhere.
+
+
+      The severity is unchanged and no rule changes what it reports. A declared dependency the
+      contracts do not evidence is ordinarily real coupling the contracts have not been written for
+      yet - a shared store, a scheduled transfer, a call inside one process - and the derivation
+      reads all three of those kinds. So what stands between this report and a warning is adoption
+      of the contract surface rather than anything the schema cannot express, and it promotes when a
+      model that describes its couplings through contracts no longer lands here in quantity.
+
+
+      The same explanation appears wherever a derived `contract_traffic` edge is described as
+      sitting beside a declared dependency rather than replacing it, and all of those keep the
+      argument and drop the figures: derivation reaches far fewer pairs than declaration does, and
+      in a model whose contracts wire nothing it reaches none at all, so a derivation that finds
+      nothing is indistinguishable from there being nothing there.
+
   - version: "2.8.30"
     date: "2026-09-14"
     summary: >
