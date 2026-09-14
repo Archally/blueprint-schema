@@ -97,13 +97,42 @@ $defs:
   id_band:
     type: object
     description: >
-      A numeric range of one typed id prefix, reserved to the slice that declares it. Two
-      entities of the same family cannot both be `CAT0100`, so a model with several slices
-      allocating into one prefix has to divide the number space between them. This states that
-      division, so the allocator can honour it and the validator can report an id that ignored
-      it. A band is declared inside the slice that owns it, which is how a band cannot name a
-      slice the model does not have. Optional per prefix: a prefix with no band declared is
+      A numeric range of one typed id prefix, reserved to the slice that declares it. This states
+      that division, so the allocator can honour it and the validator can report an id that
+      ignored it. A band is declared inside the slice that owns it, which is how a band cannot
+      name a slice the model does not have. Optional per prefix: a prefix with no band declared is
       unconstrained, and a model declaring no bands is checked exactly as it was before.
+
+
+      RESERVE A BAND FOR A PREFIX WHOSE IDS CARRY NO SCOPE. Those share one model-wide numbering
+      space - two entities cannot both be `CAT0100` - so several slices allocating into the prefix
+      have to divide the numbers between them, and the division is worth writing down. An id that
+      carries a scope (`catalog.CN001`) is already partitioned by it: every slice can start at 001
+      and none of them collide, so a band around one reserves nothing that was at risk. A model
+      whose ids are all scoped declares no bands, and that is the finished state rather than an
+      omission.
+
+
+      A slice may reserve SEVERAL ranges of one prefix, by listing an entry per range. A slice
+      that has outgrown its first range says so by adding a second rather than by widening the
+      first over numbers another slice holds:
+
+
+      ```
+
+      bands:
+        - prefix: CAT
+          from: 1000
+          to: 1020
+        - prefix: CAT
+          from: 3000
+          to: 3100
+      ```
+
+
+      An id is in band when it falls inside ANY of them, a report names all of them, and two
+      ranges of one slice are not an overlap. The allocator fills them in ascending order, so a
+      second range is reached only once the first is full.
     additionalProperties: false
     required:
       - prefix
