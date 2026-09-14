@@ -121,6 +121,9 @@ $defs:
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
 
+      implementation:
+        $ref: "../metamodel.schema.yaml#/$defs/implementation"
+        description: "Whether this screen exists yet. Absent means unclear."
   action:
     type: object
     description: "A user action on a screen that triggers domain operations."
@@ -157,6 +160,9 @@ $defs:
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
 
+      implementation:
+        $ref: "../metamodel.schema.yaml#/$defs/implementation"
+        description: "Whether this action exists yet. Absent means unclear."
   navigation:
     type: object
     description: "A directed transition between two screens with optional condition."
@@ -187,3 +193,7 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+      implementation:
+        $ref: "../metamodel.schema.yaml#/$defs/implementation"
+        description: "Whether this navigation exists yet. Absent means unclear."

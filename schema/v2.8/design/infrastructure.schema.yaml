@@ -181,6 +181,9 @@ $defs:
       iac_refs:
         $ref: "#/$defs/iac_refs"
         description: "Infrastructure-as-Code traceability for this resource - the analogue of code_refs for infra. Spans cloud provisioners AND on-prem config-management."
+      implementation:
+        $ref: "../metamodel.schema.yaml#/$defs/implementation"
+        description: "Whether this resource exists yet. Absent means unclear. For a resource, iac_refs are the evidence the as-is check reads, beside code_refs."
       lifecycle:
         $ref: "#/$defs/lifecycle"
         description: "Optional lifecycle/protection posture (architect-altitude)."

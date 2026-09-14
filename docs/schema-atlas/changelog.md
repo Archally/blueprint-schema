@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 24 |
-| Additive (minor) | 185 |
+| Additive (minor) | 199 |
 | Clarification (patch) | 0 |
-| **Total changes** | 209 |
+| **Total changes** | 223 |
 
 ## ⚠ Breaking changes
 
@@ -201,7 +201,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (162)
+## Added (176)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -329,6 +329,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - **[breaking]** `design/arch.schema.yaml#/$defs/service/properties/id` — Property `id` added (required — breaking).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/id`_
 
+- [additive] `design/arch.schema.yaml#/$defs/service/properties/implementation` — Property `implementation` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/implementation`_
+
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/needs` — Property `needs` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/needs`_
 
@@ -353,17 +356,29 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/properties/system_ref` — Property `system_ref` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/properties/system_ref`_
 
+- [additive] `design/concepts.schema.yaml#/$defs/actor/properties/implementation` — Property `implementation` added (optional).
+  - _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/actor/properties/implementation`_
+
 - [additive] `design/concepts.schema.yaml#/$defs/actor/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/actor/properties/provenance`_
 
 - [additive] `design/concepts.schema.yaml#/$defs/actor/properties/staffed_by` — Property `staffed_by` added (optional).
   - _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/actor/properties/staffed_by`_
 
+- [additive] `design/concepts.schema.yaml#/$defs/association/properties/implementation` — Property `implementation` added (optional).
+  - _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/association/properties/implementation`_
+
 - [additive] `design/concepts.schema.yaml#/$defs/association/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/association/properties/provenance`_
 
+- [additive] `design/concepts.schema.yaml#/$defs/concept/properties/implementation` — Property `implementation` added (optional).
+  - _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/concept/properties/implementation`_
+
 - [additive] `design/concepts.schema.yaml#/$defs/concept/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/concept/properties/provenance`_
+
+- [additive] `design/concepts.schema.yaml#/$defs/enumeration/properties/implementation` — Property `implementation` added (optional).
+  - _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/enumeration/properties/implementation`_
 
 - [additive] `design/concepts.schema.yaml#/$defs/enumeration/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/enumeration/properties/provenance`_
@@ -386,8 +401,14 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/concepts.schema.yaml#/properties/personas` — Property `personas` added (optional).
   - _Source: `schema/v2.8/design/concepts.schema.yaml#/properties/personas`_
 
+- [additive] `design/domain.schema.yaml#/$defs/error_entry/properties/implementation` — Property `implementation` added (optional).
+  - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/error_entry/properties/implementation`_
+
 - [additive] `design/domain.schema.yaml#/$defs/operation/properties/dispatch` — Property `dispatch` added (optional).
   - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/operation/properties/dispatch`_
+
+- [additive] `design/domain.schema.yaml#/$defs/operation/properties/implementation` — Property `implementation` added (optional).
+  - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/operation/properties/implementation`_
 
 - [additive] `design/domain.schema.yaml#/$defs/operation/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/operation/properties/provenance`_
@@ -398,8 +419,20 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/domain.schema.yaml#/properties/domain_ref` — Property `domain_ref` added (optional).
   - _Source: `schema/v2.8/design/domain.schema.yaml#/properties/domain_ref`_
 
+- [additive] `design/dynamics.schema.yaml#/$defs/ordering_constraint/properties/implementation` — Property `implementation` added (optional).
+  - _Source: `schema/v2.8/design/dynamics.schema.yaml#/$defs/ordering_constraint/properties/implementation`_
+
+- [additive] `design/dynamics.schema.yaml#/$defs/parallelism_opportunity/properties/implementation` — Property `implementation` added (optional).
+  - _Source: `schema/v2.8/design/dynamics.schema.yaml#/$defs/parallelism_opportunity/properties/implementation`_
+
+- [additive] `design/dynamics.schema.yaml#/$defs/race_condition/properties/implementation` — Property `implementation` added (optional).
+  - _Source: `schema/v2.8/design/dynamics.schema.yaml#/$defs/race_condition/properties/implementation`_
+
 - [additive] `design/models.schema.yaml#/$defs/model_property` — New definition `model_property` added to `design/models.schema.yaml`.
   - _Source: `schema/v2.8/design/models.schema.yaml#/$defs/model_property`_
+
+- [additive] `design/models.schema.yaml#/$defs/model_schema/properties/implementation` — Property `implementation` added (optional).
+  - _Source: `schema/v2.8/design/models.schema.yaml#/$defs/model_schema/properties/implementation`_
 
 - [additive] `design/models.schema.yaml#/$defs/model_schema/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.8/design/models.schema.yaml#/$defs/model_schema/properties/provenance`_
@@ -416,8 +449,14 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/quality.schema.yaml#/properties/findings` — Property `findings` added (optional).
   - _Source: `schema/v2.8/design/quality.schema.yaml#/properties/findings`_
 
+- [additive] `design/rules.schema.yaml#/$defs/rule/properties/implementation` — Property `implementation` added (optional).
+  - _Source: `schema/v2.8/design/rules.schema.yaml#/$defs/rule/properties/implementation`_
+
 - [additive] `design/rules.schema.yaml#/$defs/rule/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.8/design/rules.schema.yaml#/$defs/rule/properties/provenance`_
+
+- [additive] `design/rules.schema.yaml#/$defs/transition_rule/properties/implementation` — Property `implementation` added (optional).
+  - _Source: `schema/v2.8/design/rules.schema.yaml#/$defs/transition_rule/properties/implementation`_
 
 - [additive] `design/rules.schema.yaml#/$defs/transition_rule/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.8/design/rules.schema.yaml#/$defs/transition_rule/properties/provenance`_
@@ -592,6 +631,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `metamodel.schema.yaml#/$defs/impacts_links/properties/infrastructure` — Property `infrastructure` added (optional).
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links/properties/infrastructure`_
+
+- [additive] `metamodel.schema.yaml#/$defs/implementation` — New definition `implementation` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/implementation`_
 
 - [additive] `metamodel.schema.yaml#/$defs/importance_scale` — New definition `importance_scale` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/importance_scale`_

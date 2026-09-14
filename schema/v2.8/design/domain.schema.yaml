@@ -452,6 +452,9 @@ $defs:
         description: "Open metadata bag for operation extensions."
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      implementation:
+        $ref: "../metamodel.schema.yaml#/$defs/implementation"
+        description: "Whether the system has this operation yet. Absent means unclear."
       provenance:
         $ref: "../metamodel.schema.yaml#/$defs/provenance"
         description: "Epistemic provenance for this operation (brownfield modeling confidence)."
@@ -809,6 +812,9 @@ $defs:
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
 
+      implementation:
+        $ref: "../metamodel.schema.yaml#/$defs/implementation"
+        description: "Whether the system raises this error yet. Absent means unclear."
   response_header:
     type: object
     description: "HTTP response header definition."

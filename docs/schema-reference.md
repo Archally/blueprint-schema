@@ -477,6 +477,41 @@ Enforcement levels:
 - **Recommended:** Tooling warns if missing; not schema-enforced
 - **Optional:** Available for depth; no validation
 
+### Implementation status (`implementation`)
+
+`code_refs` say *where* an element is implemented. `implementation` says *whether* it is, and it is
+a status rather than a reference, which is why it has no row in the table above.
+
+| Value | Meaning |
+|---|---|
+| `as-is` | The element exists in the system today. In a model that traces code, `code_refs` say where. |
+| `wip` | It is being built. Some code exists; the element is not yet what the model describes. |
+| `to-be` | It is planned or proposed and does not exist yet. |
+| `unclear` | The modeler looked and cannot say. |
+
+**Absent means unclear, never `as-is`.** A model states implementation; it is not assumed, and it
+is not inferred from the presence of `code_refs` - a reference can name the file an element will
+live in as legitimately as one it already occupies.
+
+Eighteen definitions carry the field, being every design-plane definition that also carries
+`code_refs` apart from `user_story` and `use_case`, which state intent and carry their own delivery
+state: `concept`, `actor`, `enumeration` and `association`; `operation` and `error_entry`;
+`service`; `resource`; `rule` and `transition_rule`; `process`; `screen`, `action` and
+`navigation`; `parallelism_opportunity`, `ordering_constraint` and `race_condition`; and
+`model_schema`. Governance entities do not carry it: an element can claim to be implemented only
+where it can also say where in the code it is.
+
+Two semantic rules compare the claim with the evidence.
+`implementation-as-is-without-code-refs` reports an `as-is` element that names neither `code_refs`
+nor - for a resource - `iac_refs`. `implementation-to-be-with-code-refs` notes a `to-be` element
+that names one. An element marked `wip` is reported by neither. Both severities are per project in
+`.blueprint-lint.yaml`: a model authored from interviews, and a greenfield slice inside a brownfield
+model, both hold `as-is` elements with nothing to point at and no defect, so this is a project's
+decision and not a schema constraint.
+
+Applying a change program does not move the marker. A change to the model does not put code in
+production, so each step from `to-be` through `wip` to `as-is` is a stated change.
+
 ---
 
 ## 10. v2.1 New Fields

@@ -968,6 +968,19 @@ $defs:
       $ref: "#/$defs/code_ref_entry"
     description: "Source code files implementing or reflecting this entity."
 
+  implementation:
+    type: string
+    enum: [as-is, wip, to-be, unclear]
+    x-vocabulary-distinct: "Whether the system has this element yet: a status, not a pointer. code_refs say where the implementation is; this says whether it is there. Neither how sure the modeling judgement is (provenance) nor where a change program stands (migration status)."
+    description: >
+      Whether the element is implemented. Absent means unclear, never as-is: a model states
+      implementation, it is not assumed.
+      as-is: it exists in the system today; in a model that traces code, code_refs say where.
+      wip: it is being built; some code exists, the element is not yet what the model describes.
+      to-be: it is planned or proposed and does not exist yet, whether or not a change program names it.
+      unclear: the modeler looked and cannot say.
+      A reader of any rendered artifact is told which of the four every drawn element is.
+
   # ---------------------------------------------------------------------------
   # Delivery Planning (v2.5)
   # Cross-cutting definitions for PRD generation and release planning.

@@ -105,16 +105,16 @@ graph LR
         design_story_schema_yaml["story"]
     end
     metamodel_schema_yaml(["metamodel"])
-    design_arch_schema_yaml -->|49| metamodel_schema_yaml
-    design_concepts_schema_yaml -->|40| metamodel_schema_yaml
-    design_domain_schema_yaml -->|51| metamodel_schema_yaml
-    design_dynamics_schema_yaml -->|23| metamodel_schema_yaml
-    design_infrastructure_schema_yaml -->|27| metamodel_schema_yaml
-    design_interactions_schema_yaml -->|29| metamodel_schema_yaml
-    design_models_schema_yaml -->|13| metamodel_schema_yaml
+    design_arch_schema_yaml -->|50| metamodel_schema_yaml
+    design_concepts_schema_yaml -->|44| metamodel_schema_yaml
+    design_domain_schema_yaml -->|53| metamodel_schema_yaml
+    design_dynamics_schema_yaml -->|26| metamodel_schema_yaml
+    design_infrastructure_schema_yaml -->|28| metamodel_schema_yaml
+    design_interactions_schema_yaml -->|32| metamodel_schema_yaml
+    design_models_schema_yaml -->|14| metamodel_schema_yaml
     design_quality_schema_yaml -->|74| metamodel_schema_yaml
-    design_rules_schema_yaml -->|24| metamodel_schema_yaml
-    design_story_schema_yaml -->|63| metamodel_schema_yaml
+    design_rules_schema_yaml -->|26| metamodel_schema_yaml
+    design_story_schema_yaml -->|64| metamodel_schema_yaml
 ```
 
 ## Governance Plane

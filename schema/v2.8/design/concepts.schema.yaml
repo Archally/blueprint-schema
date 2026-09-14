@@ -233,6 +233,9 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      implementation:
+        $ref: "../metamodel.schema.yaml#/$defs/implementation"
+        description: "Whether the system has this concept yet. Absent means unclear."
       provenance:
         $ref: "../metamodel.schema.yaml#/$defs/provenance"
         description: "Epistemic provenance for this concept (brownfield modeling confidence)."
@@ -349,6 +352,9 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      implementation:
+        $ref: "../metamodel.schema.yaml#/$defs/implementation"
+        description: "Whether the system has this actor yet. Absent means unclear."
       provenance:
         $ref: "../metamodel.schema.yaml#/$defs/provenance"
         description: "Epistemic provenance for this actor (brownfield modeling confidence)."
@@ -501,6 +507,9 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      implementation:
+        $ref: "../metamodel.schema.yaml#/$defs/implementation"
+        description: "Whether the system has this enumeration yet. Absent means unclear."
       provenance:
         $ref: "../metamodel.schema.yaml#/$defs/provenance"
         description: "Epistemic provenance for this enumeration (brownfield modeling confidence)."
@@ -569,6 +578,9 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      implementation:
+        $ref: "../metamodel.schema.yaml#/$defs/implementation"
+        description: "Whether the system has this association yet. Absent means unclear."
       provenance:
         $ref: "../metamodel.schema.yaml#/$defs/provenance"
         description: "Epistemic provenance for this association (brownfield modeling confidence)."

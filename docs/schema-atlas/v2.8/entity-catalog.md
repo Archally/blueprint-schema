@@ -380,6 +380,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `sbvr_modality` | `string` | `necessary`, `obligatory`, `prohibited`, `permitted` | SBVR deontic modality expressing rule strength. |
 | `decision_status` | `string` | `proposed`, `accepted`, `landed`, `rejected`, `deprecated` | Decision lifecycle: proposed→accepted→landed; rejected or deprecated at any stage. |
 | `code_refs` | `array<ref → code_ref_entry>` |  | Source code files implementing or reflecting this entity. |
+| `implementation` | `string` | `as-is`, `wip`, `to-be`, `unclear` | Whether the element is implemented. Absent means unclear, never as-is: a model states implementation, it is not assumed. as-is: it exists in the system today;… |
 | `delivery_priority` | `string` | `must-have`, `should-have`, `could-have`, `wont-have` | MoSCoW delivery priority for release planning and PRD generation. must-have: required for target release. should-have: important but not critical. could-have:… |
 | `release_target` | `union` |  | Target release, as either a milestone id (MS###) that resolves to a declared milestone or a free-form label ("MVP", "v1.1", "Q3-2026"). The typed branch is lis… |
 | `discovery_stage` | `string` | `hypothesis`, `exploring`, `validated`, `committed`, `obsolete` | Epistemic maturity of a governance entity. hypothesis: initial idea, no evidence yet. exploring: actively being investigated or researched. validated: evidence… |
@@ -877,6 +878,7 @@ A deployable service or component within a bounded context.
 | `side_effects` | `ref → service_side_effects` | — |  | Observable side effects beyond request/response: filesystem, stdout, stderr. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether this service exists yet. Absent means unclear. |
 | `provenance` | `ref → provenance` | — |  | Epistemic provenance for this service (brownfield modeling confidence). |
 
 _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service`_
@@ -1145,6 +1147,7 @@ Core domain vocabulary entry. Minimum: id + name (v2.3) or id + term (v2.1/v2.2 
 | `owned_by` | `ref → owned_by` | — |  | Concept-level ownership override. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether the system has this concept yet. Absent means unclear. |
 | `provenance` | `ref → provenance` | — |  | Epistemic provenance for this concept (brownfield modeling confidence). |
 
 _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/concept`_
@@ -1186,6 +1189,7 @@ Stakeholder, user, system, or role interacting with the domain.
 | `staffed_by` | `ref → team_ref` | — |  | The team whose members perform this role (TM###). Distinct from `owned_by`, which says who maintains the definition: a product team can own the definition of a… |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether the system has this actor yet. Absent means unclear. |
 | `provenance` | `ref → provenance` | — |  | Epistemic provenance for this actor (brownfield modeling confidence). |
 
 _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/actor`_
@@ -1232,6 +1236,7 @@ Closed value set for a domain category (e.g. order statuses, payment types).
 | `properties` | `ref → entity_properties` | — |  |  |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether the system has this enumeration yet. Absent means unclear. |
 | `provenance` | `ref → provenance` | — |  | Epistemic provenance for this enumeration (brownfield modeling confidence). |
 
 _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/enumeration`_
@@ -1269,6 +1274,7 @@ Cross-concept relationship where neither side clearly owns the other.
 | `properties` | `ref → entity_properties` | — |  |  |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether the system has this association yet. Absent means unclear. |
 | `provenance` | `ref → provenance` | — |  | Epistemic provenance for this association (brownfield modeling confidence). |
 
 _Source: `schema/v2.8/design/concepts.schema.yaml#/$defs/association`_
@@ -1350,6 +1356,7 @@ A domain operation with protocol binding, rule governance, and behavioral proper
 | `release_target` | `ref → release_target` | — |  | Target release or milestone for this operation. |
 | `properties` | `ref → entity_properties` | — |  | Open metadata bag for operation extensions. |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether the system has this operation yet. Absent means unclear. |
 | `provenance` | `ref → provenance` | — |  | Epistemic provenance for this operation (brownfield modeling confidence). |
 
 _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/operation`_
@@ -1565,6 +1572,7 @@ Domain error type for consistent API error responses.
 | `properties` | `ref → entity_properties` | — |  |  |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether the system raises this error yet. Absent means unclear. |
 
 _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/error_entry`_
 
@@ -1690,6 +1698,7 @@ An identified opportunity to run operations concurrently. Documents relationship
 | `properties` | `ref → entity_properties` | — |  |  |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether this opportunity is taken in the system yet. Absent means unclear. |
 
 _Source: `schema/v2.8/design/dynamics.schema.yaml#/$defs/parallelism_opportunity`_
 
@@ -1715,6 +1724,7 @@ Runtime ordering constraint between operations. Absorbs v1 execution_order and c
 | `properties` | `ref → entity_properties` | — |  |  |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether this constraint holds in the system yet. Absent means unclear. |
 
 _Source: `schema/v2.8/design/dynamics.schema.yaml#/$defs/ordering_constraint`_
 
@@ -1738,6 +1748,7 @@ A documented concurrency hazard with mitigation strategy. Proactive identificati
 | `properties` | `ref → entity_properties` | — |  |  |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether this race exists in the system today. Absent means unclear. |
 
 _Source: `schema/v2.8/design/dynamics.schema.yaml#/$defs/race_condition`_
 
@@ -1847,6 +1858,7 @@ An infrastructure resource with platform identity and per-environment configurat
 | `hosting_model` | `string` | — | `managed-service`, `vm`, `container`, `bare-metal`, `serverless`, `network-link` … (7) | Substrate-neutral realization classifier: HOW the resource is hosted - a managed cloud/PaaS service, an IaaS/on-prem VM, a container, bare metal, serverless, a… |
 | `relations` | `array<ref → infra_relation_edge>` | — |  | Typed inter-resource relations (TOSCA vocabulary) - the typed replacement for untyped links in the `properties` bag. `hosted_on` is the canonical placement edg… |
 | `iac_refs` | `ref → iac_refs` | — |  | Infrastructure-as-Code traceability for this resource - the analogue of code_refs for infra. Spans cloud provisioners AND on-prem config-management. |
+| `implementation` | `ref → implementation` | — |  | Whether this resource exists yet. Absent means unclear. For a resource, iac_refs are the evidence the as-is check reads, beside code_refs. |
 | `lifecycle` | `ref → lifecycle` | — |  | Optional lifecycle/protection posture (architect-altitude). |
 | `exposure` | `string` | — | `public`, `internal`, `dmz`, `private`, `air-gapped`, `vpn-only` … (7) | Neutral network-exposure posture: reachable from the internet (public), internal-only (internal), perimeter (dmz), isolated (private / air-gapped), reachable o… |
 | `exposure_detail` | `string` | — |  | Optional provider-specific exposure mechanism (free-text): e.g. 'azure-private-endpoint', 'vnet-integrated', 'aws-privatelink', 'on-prem firewall DMZ'. Retains… |
@@ -2215,6 +2227,7 @@ A UI screen or view the user interacts with. Links to models, goals, decisions, 
 | `owned_by` | `ref → owned_by` | — |  | Screen-level ownership override. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether this screen exists yet. Absent means unclear. |
 
 _Source: `schema/v2.8/design/interactions.schema.yaml#/$defs/screen`_
 
@@ -2235,6 +2248,7 @@ A user action on a screen that triggers domain operations.
 | `owned_by` | `ref → owned_by` | — |  | Action-level ownership override. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether this action exists yet. Absent means unclear. |
 
 _Source: `schema/v2.8/design/interactions.schema.yaml#/$defs/action`_
 
@@ -2254,6 +2268,7 @@ A directed transition between two screens with optional condition.
 | `properties` | `ref → entity_properties` | — |  |  |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether this navigation exists yet. Absent means unclear. |
 
 _Source: `schema/v2.8/design/interactions.schema.yaml#/$defs/navigation`_
 
@@ -2303,6 +2318,7 @@ Composite data model with concept traceability via represents[].
 | `owned_by` | `ref → owned_by` | — |  | Model-level ownership override. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether this payload model exists in the code yet. Absent means unclear. |
 | `provenance` | `ref → provenance` | — |  | Epistemic provenance for this model (brownfield modeling confidence). |
 
 _Source: `schema/v2.8/design/models.schema.yaml#/$defs/model_schema`_
@@ -2724,6 +2740,7 @@ Business rule. Minimum: id, name.
 | `owned_by` | `ref → owned_by` | — |  | Rule-level ownership override. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether the system enforces this rule yet. Absent means unclear. |
 | `provenance` | `ref → provenance` | — |  | Epistemic provenance for this rule (brownfield modeling confidence). Distinct from rule.certainty (definitive\|heuristic). |
 
 _Source: `schema/v2.8/design/rules.schema.yaml#/$defs/rule`_
@@ -2753,6 +2770,7 @@ State transition rule. Defines when and how a concept moves between lifecycle st
 | `owned_by` | `ref → owned_by` | — |  | Transition rule-level ownership override. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether the system enforces this transition yet. Absent means unclear. |
 | `provenance` | `ref → provenance` | — |  | Epistemic provenance for this transition rule (brownfield modeling confidence). |
 
 _Source: `schema/v2.8/design/rules.schema.yaml#/$defs/transition_rule`_
@@ -2824,6 +2842,7 @@ A business process: a named narrative of actor and operation collaboration. A pr
 | `owned_by` | `ref → owned_by` | — |  | Process-level ownership override. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `implementation` | `ref → implementation` | — |  | Whether the system runs this process yet. Absent means unclear. Not on user_story or use_case, which state intent and carry their own delivery state. |
 
 _Source: `schema/v2.8/design/story.schema.yaml#/$defs/process`_
 

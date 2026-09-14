@@ -159,6 +159,9 @@ $defs:
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
 
+      implementation:
+        $ref: "../metamodel.schema.yaml#/$defs/implementation"
+        description: "Whether the system runs this process yet. Absent means unclear. Not on user_story or use_case, which state intent and carry their own delivery state."
   process_activity:
     type: object
     description: >

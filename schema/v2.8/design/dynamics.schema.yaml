@@ -124,6 +124,9 @@ $defs:
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
 
+      implementation:
+        $ref: "../metamodel.schema.yaml#/$defs/implementation"
+        description: "Whether this opportunity is taken in the system yet. Absent means unclear."
   ordering_constraint:
     type: object
     description: "Runtime ordering constraint between operations. Absorbs v1 execution_order and can_parallel_with. This is runtime sequencing; logical/narrative ordering is in story.schema.yaml."
@@ -179,6 +182,9 @@ $defs:
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
 
+      implementation:
+        $ref: "../metamodel.schema.yaml#/$defs/implementation"
+        description: "Whether this constraint holds in the system yet. Absent means unclear."
   race_condition:
     type: object
     description: "A documented concurrency hazard with mitigation strategy. Proactive identification prevents production incidents."
@@ -227,6 +233,9 @@ $defs:
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
 
+      implementation:
+        $ref: "../metamodel.schema.yaml#/$defs/implementation"
+        description: "Whether this race exists in the system today. Absent means unclear."
   resource_profile:
     type: object
     description: "Resource consumption characteristics for capacity planning and performance optimization."

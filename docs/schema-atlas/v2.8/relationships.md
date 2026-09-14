@@ -85,7 +85,7 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub â€
 
 | Schema file | Inbound refs |
 | --- | --- |
-| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 715 |
+| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 733 |
 | [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | 1 |
 | [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | 1 |
 | [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | 1 |
@@ -118,16 +118,16 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub â€
 | `blueprint.schema.yaml` | `governance/value-stream.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `metamodel.schema.yaml` | 19 |
 | `blueprint.schema.yaml` | `migration.schema.yaml` | 1 |
-| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 49 |
-| `design/concepts.schema.yaml` | `metamodel.schema.yaml` | 40 |
-| `design/domain.schema.yaml` | `metamodel.schema.yaml` | 51 |
-| `design/dynamics.schema.yaml` | `metamodel.schema.yaml` | 23 |
-| `design/infrastructure.schema.yaml` | `metamodel.schema.yaml` | 27 |
-| `design/interactions.schema.yaml` | `metamodel.schema.yaml` | 29 |
-| `design/models.schema.yaml` | `metamodel.schema.yaml` | 13 |
+| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 50 |
+| `design/concepts.schema.yaml` | `metamodel.schema.yaml` | 44 |
+| `design/domain.schema.yaml` | `metamodel.schema.yaml` | 53 |
+| `design/dynamics.schema.yaml` | `metamodel.schema.yaml` | 26 |
+| `design/infrastructure.schema.yaml` | `metamodel.schema.yaml` | 28 |
+| `design/interactions.schema.yaml` | `metamodel.schema.yaml` | 32 |
+| `design/models.schema.yaml` | `metamodel.schema.yaml` | 14 |
 | `design/quality.schema.yaml` | `metamodel.schema.yaml` | 74 |
-| `design/rules.schema.yaml` | `metamodel.schema.yaml` | 24 |
-| `design/story.schema.yaml` | `metamodel.schema.yaml` | 63 |
+| `design/rules.schema.yaml` | `metamodel.schema.yaml` | 26 |
+| `design/story.schema.yaml` | `metamodel.schema.yaml` | 64 |
 | `governance/capability.schema.yaml` | `metamodel.schema.yaml` | 21 |
 | `governance/decisions.schema.yaml` | `metamodel.schema.yaml` | 47 |
 | `governance/leverage.schema.yaml` | `metamodel.schema.yaml` | 30 |
