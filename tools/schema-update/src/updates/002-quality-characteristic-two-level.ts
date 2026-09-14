@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../types.js';
+import { modelYamlFiles } from '../model-files.js';
 
 // v2.7.4 made `finding.quality_characteristic` strictly the ISO/IEC 25010:2011 top-level 8 (+ safety).
 // The pre-2.7.4 enum mixed a top-level characteristic with four of its own maintainability
@@ -21,19 +22,6 @@ const QC_LINE = new RegExp(
   'gm',
 );
 
-function walkYamlFiles(directory: string): string[] {
-  const results: string[] = [];
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-    const fullPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      results.push(...walkYamlFiles(fullPath));
-    } else if (/\.(yaml|yml)$/i.test(entry.name)) {
-      results.push(fullPath);
-    }
-  }
-  return results;
-}
-
 // A demoted value used inline (flow-style `{..., quality_characteristic: modularity, ...}`) is NOT
 // matched by the block-style line regex — flag it so a human can fix it by hand rather than silently
 // leaving an invalid value behind.
@@ -50,7 +38,7 @@ function buildPlan(blueprintDir: string): UpdatePlan {
     return { sourceVersion: '2.7', targetVersion: '2.7', description: update.description, changes: [], warnings: [`Directory not found: ${absoluteDir}`] };
   }
 
-  for (const filePath of walkYamlFiles(absoluteDir)) {
+  for (const filePath of modelYamlFiles(absoluteDir)) {
     const content = fs.readFileSync(filePath, 'utf8');
     const relativePath = path.relative(absoluteDir, filePath);
     const blockMatches = [...content.matchAll(QC_LINE)];

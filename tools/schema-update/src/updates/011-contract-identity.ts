@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../types.js';
+import { modelYamlFiles } from '../model-files.js';
 
 // A contract's `output:` fused three facts into one string (v2.8.14): the document's name, where the
 // artifact lands, and how it is serialized. This module states them separately - `contract_name`
@@ -189,14 +190,9 @@ export function rewriteTestCaseContractFiles(text: string): { text: string; rewr
   return { text: lines.join(newline), rewritten };
 }
 
-function walkYaml(dir: string, out: string[] = []): string[] {
-  if (!fs.existsSync(dir)) return out;
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) walkYaml(full, out);
-    else if (YAML_FILE.test(entry.name)) out.push(full);
-  }
-  return out;
+/** The model's YAML, or nothing where the directory does not exist. */
+function walkYaml(dir: string): string[] {
+  return fs.existsSync(dir) ? modelYamlFiles(dir) : [];
 }
 
 /**

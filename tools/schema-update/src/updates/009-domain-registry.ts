@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../types.js';
+import { modelYamlFiles } from '../model-files.js';
 
 // A slice is a folder; a domain is a region of the problem space. From v2.8.6 the two are declared
 // apart: `blueprint.yaml` carries a root `domains[]` registry (each domain with a `DMN###` id and
@@ -441,24 +442,17 @@ interface GlossaryEntry {
  */
 function loadDocuments(root: string): Document[] {
   const found: Document[] = [];
-  const walk = (directory: string) => {
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-      const absolutePath = path.join(directory, entry.name);
-      if (entry.isDirectory()) {
-        walk(absolutePath);
-        continue;
-      }
-      const arch = ARCH_FILE.test(entry.name);
-      if (!arch && !STORY_FILE.test(entry.name)) continue;
-      found.push({
-        relativePath: path.relative(root, absolutePath).split(path.sep).join('/'),
-        absolutePath,
-        arch,
-        lines: scanLines(fs.readFileSync(absolutePath, 'utf8')),
-      });
-    }
-  };
-  walk(root);
+  for (const absolutePath of modelYamlFiles(root)) {
+    const name = path.basename(absolutePath);
+    const arch = ARCH_FILE.test(name);
+    if (!arch && !STORY_FILE.test(name)) continue;
+    found.push({
+      relativePath: path.relative(root, absolutePath).split(path.sep).join('/'),
+      absolutePath,
+      arch,
+      lines: scanLines(fs.readFileSync(absolutePath, 'utf8')),
+    });
+  }
   return found.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
 }
 

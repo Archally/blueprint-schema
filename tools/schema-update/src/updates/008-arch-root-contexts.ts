@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../types.js';
+import { modelYamlFiles } from '../model-files.js';
 
 // A bounded context is declared once, a party is declared once, and a service names the system it
 // is a component of.
@@ -147,16 +148,6 @@ function scanLines(content: string): SourceLine[] {
     lines.push({ text: content.slice(position, carriage ? newline - 1 : newline), eol: carriage ? '\r\n' : '\n' });
     position = newline + 1;
   }
-}
-
-function walkYamlFiles(directory: string): string[] {
-  const results: string[] = [];
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
-    const fullPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) results.push(...walkYamlFiles(fullPath));
-    else if (/\.(yaml|yml)$/i.test(entry.name)) results.push(fullPath);
-  }
-  return results;
 }
 
 const isBlank = (text: string): boolean => text.trim() === '';
@@ -407,7 +398,7 @@ function analyse(absoluteDir: string): Analysis {
   const warnings: string[] = [];
   const documents: ArchDocument[] = [];
 
-  for (const absolutePath of walkYamlFiles(absoluteDir)) {
+  for (const absolutePath of modelYamlFiles(absoluteDir)) {
     const relativePath = path.relative(absoluteDir, absolutePath).replace(/\\/g, '/');
     if (!ARCH_FILE.test(path.basename(relativePath))) continue;
     documents.push(parseDocument(absolutePath, relativePath, warnings));

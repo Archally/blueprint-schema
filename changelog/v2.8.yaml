@@ -5,6 +5,33 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.35"
+    date: "2026-09-14"
+    summary: >
+      A model keeps its change programs under `.migrations/`, and a change program names model
+      entities by their ids. The schema-update chain was rewriting the version stamp in those files
+      and nothing else in them, so a change program came out of a migration declaring the new schema
+      line while still holding the previous line's ids and vocabulary. Those documents then failed
+      validation, and the references in them pointed at nothing.
+
+
+      A change program is a model document, because its ids are references rather than dates:
+      renaming an entity does not change what happened, it changes what the thing is called, and a
+      reference nobody can follow is broken rather than archival. Your version control holds the
+      literal history either way. So the chain now migrates `.migrations/` like any other part of
+      the model.
+
+
+      Directories beside it that hold tooling rather than documents - reports, scripts, notes - are
+      still left alone. The set of dot-directories the chain treats as part of the model is named in
+      one place, so a new side-car of your own is skipped without you doing anything.
+
+
+      The vocabulary a change program uses to classify what it touches moves with the entities:
+      `entity_type: story` becomes `process` and `activity` becomes `process-activity`. The rewrite
+      is scoped to that field, so the relation names that share those words - `next_activity`,
+      `screen_story`, `story_orders_operation` - are untouched.
+
   - version: "2.8.34"
     date: "2026-09-14"
     summary: >

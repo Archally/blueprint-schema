@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../types.js';
+import { modelFiles } from '../model-files.js';
 
 // The entity the schema has always described as a process is called one (v2.8.10). `story` and
 // `user_story` sat in one file for two different things - what the modelled system does, and what
@@ -48,8 +49,6 @@ import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../t
 // does not parse, and leaving it renamed but unflattened would produce the `process.process` the
 // flatten exists to prevent.
 
-const YAML_FILE = /\.(yaml|yml)$/i;
-const PROSE_FILE = /\.(md|markdown)$/i;
 const OLD_BAND = /\b(STR|SA)\d{3}\b/;
 const BLOCK_KEY = /^(\s*)process:\s*$/;
 const FLOW_BLOCK = /^(\s*)process:\s*[[{]/;
@@ -119,7 +118,19 @@ function rewriteText(text: string): { text: string; bands: number; keys: number 
     .replace(/\bSA(\d{3})\b/g, (_, digits) => { bands += 1; return `PA${digits}`; })
     .replace(/^(\s*)(- )?stories:/gm, (_, indent, dash) => { keys += 1; return `${indent}${dash ?? ''}processes:`; })
     .replace(/^(\s*)(- )?story_refs:/gm, (_, indent, dash) => { keys += 1; return `${indent}${dash ?? ''}process_refs:`; })
-    .replace(/^(\s*)(- )?storyUri:/gm, (_, indent, dash) => { keys += 1; return `${indent}${dash ?? ''}processUri:`; });
+    .replace(/^(\s*)(- )?storyUri:/gm, (_, indent, dash) => { keys += 1; return `${indent}${dash ?? ''}processUri:`; })
+    // A change program classifies each entity it touches with `entity_type:`, drawn from the same
+    // vocabulary the rename moves. The key keeps its name and the VALUE moves with the entity, so
+    // the rewrite is scoped to this field: the words appear elsewhere as prose and as relation
+    // names (`next_activity`, `screen_story`), which this rename leaves alone.
+    .replace(
+      /^(\s*)(- )?entity_type:([ \t]*)(story|activity)([ \t]*)(#.*)?$/gm,
+      (_, indent, dash, gap, value, trail, comment) => {
+        keys += 1;
+        const moved = value === 'story' ? 'process' : 'process-activity';
+        return `${indent}${dash ?? ''}entity_type:${gap}${moved}${comment ? `${trail}${comment}` : ''}`;
+      },
+    );
   return { text: renamed, bands, keys };
 }
 
@@ -132,22 +143,6 @@ interface FileAnalysis {
   bands: number;
   keys: number;
   refused: number;
-}
-
-function modelFiles(root: string): { yaml: string[]; prose: string[] } {
-  const yaml: string[] = [];
-  const prose: string[] = [];
-  const walk = (dir: string): void => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name.startsWith('.')) continue;
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) walk(full);
-      else if (YAML_FILE.test(entry.name)) yaml.push(full);
-      else if (PROSE_FILE.test(entry.name)) prose.push(full);
-    }
-  };
-  walk(root);
-  return { yaml: yaml.sort(), prose: prose.sort() };
 }
 
 function analyse(blueprintDir: string): { files: FileAnalysis[]; changes: PlannedChange[]; warnings: string[] } {

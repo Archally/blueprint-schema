@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../types.js';
+import { modelYamlFiles } from '../model-files.js';
 
 // A party is a PARTIAL CLASS: `arch.yaml` and `organization.yaml` each declare a part, neither is
 // authoritative, and `PRT###` is the identifier that says the parts are one thing. Arch documents
@@ -76,16 +77,6 @@ function scanLines(content: string): SourceLine[] {
     });
     position = newline + 1;
   }
-}
-
-function walkYamlFiles(directory: string): string[] {
-  const results: string[] = [];
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
-    const fullPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) results.push(...walkYamlFiles(fullPath));
-    else if (/\.(yaml|yml)$/i.test(entry.name)) results.push(fullPath);
-  }
-  return results;
 }
 
 /**
@@ -193,7 +184,7 @@ function analyse(absoluteDir: string): Analysis {
   const ambiguousOrgNames = new Set<string>();
   const usedIds = new Set<string>();
 
-  for (const absolutePath of walkYamlFiles(absoluteDir)) {
+  for (const absolutePath of modelYamlFiles(absoluteDir)) {
     const relativePath = path.relative(absoluteDir, absolutePath).replace(/\\/g, '/');
     const content = fs.readFileSync(absolutePath, 'utf8');
 

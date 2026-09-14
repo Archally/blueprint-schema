@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../types.js';
+import { modelFiles } from '../model-files.js';
 
 // A service says which operations it owns, and since v2.8.27 it says so under the coupling that
 // carries them.
@@ -44,8 +45,6 @@ import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../t
 // It has no replacement, so there is nothing to relocate it to; a model carrying one is rejected
 // outright rather than deprecated, and the module names the line and leaves it.
 
-const YAML_FILE = /\.(yaml|yml)$/i;
-const PROSE_FILE = /\.(md|markdown)$/i;
 const HANDLES_KEY = /^(\s*)handles:(.*)$/;
 const PROVIDES_KEY = /^\s*provides:/;
 const CONTRACTS_KEY = /^(\s*)contracts:(.*)$/;
@@ -208,22 +207,6 @@ interface FileAnalysis {
   services: number;
   refs: number;
   minted: number;
-}
-
-function modelFiles(root: string): { yaml: string[]; prose: string[] } {
-  const yaml: string[] = [];
-  const prose: string[] = [];
-  const walk = (dir: string): void => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name.startsWith('.')) continue;
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) walk(full);
-      else if (YAML_FILE.test(entry.name)) yaml.push(full);
-      else if (PROSE_FILE.test(entry.name)) prose.push(full);
-    }
-  };
-  walk(root);
-  return { yaml: yaml.sort(), prose: prose.sort() };
 }
 
 /** Every `handles:` in one file planned as a relocation, plus what the module declines to touch. */

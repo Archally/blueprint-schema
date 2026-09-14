@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../types.js';
+import { modelYamlFiles } from '../model-files.js';
 
 const FILE_RENAMES: Array<{ from: RegExp; to: string; label: string }> = [
   { from: /^((?:.*\.)?)org\.(yaml|yml)$/i, to: '$1organization.$2', label: 'org → organization' },
@@ -13,22 +14,9 @@ const BLUEPRINT_YAML_KEYS: Record<string, string> = {
   org: 'organization',
 };
 
-function walkYamlFiles(directory: string): string[] {
-  const results: string[] = [];
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-    const fullPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      results.push(...walkYamlFiles(fullPath));
-    } else if (/\.(yaml|yml)$/i.test(entry.name)) {
-      results.push(fullPath);
-    }
-  }
-  return results;
-}
-
 function findFilesToRename(blueprintDir: string): PlannedChange[] {
   const changes: PlannedChange[] = [];
-  const files = walkYamlFiles(blueprintDir);
+  const files = modelYamlFiles(blueprintDir);
 
   for (const filePath of files) {
     const fileName = path.basename(filePath);
@@ -53,7 +41,7 @@ function findFilesToRename(blueprintDir: string): PlannedChange[] {
 
 function findBlueprintYamlEdits(blueprintDir: string): PlannedChange[] {
   const changes: PlannedChange[] = [];
-  const blueprintFiles = walkYamlFiles(blueprintDir).filter(
+  const blueprintFiles = modelYamlFiles(blueprintDir).filter(
     (f) => path.basename(f) === 'blueprint.yaml' || path.basename(f) === 'blueprint.yml'
   );
 

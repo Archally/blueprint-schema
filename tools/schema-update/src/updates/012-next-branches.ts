@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../types.js';
+import { modelFiles } from '../model-files.js';
 
 // An activity says where it goes next, and since v2.8.23 it can also say what takes each branch.
 //
@@ -37,8 +38,6 @@ import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../t
 // declares one or the other and never both, so writing the second key would produce a document the
 // validator rejects, which is worse than a migration that stops and says so.
 
-const YAML_FILE = /\.(yaml|yml)$/i;
-const PROSE_FILE = /\.(md|markdown)$/i;
 const FLOW_LIST = /^(\s*)next_activities:\s*\[([^\]]*)\]\s*$/;
 const BLOCK_KEY = /^(\s*)next_activities:\s*$/;
 const LIST_ITEM = /^(\s*)-\s+(.+?)\s*$/;
@@ -169,22 +168,6 @@ interface FileAnalysis {
   single: number;
   forks: number;
   empty: number;
-}
-
-function modelFiles(root: string): { yaml: string[]; prose: string[] } {
-  const yaml: string[] = [];
-  const prose: string[] = [];
-  const walk = (dir: string): void => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name.startsWith('.')) continue;
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) walk(full);
-      else if (YAML_FILE.test(entry.name)) yaml.push(full);
-      else if (PROSE_FILE.test(entry.name)) prose.push(full);
-    }
-  };
-  walk(root);
-  return { yaml: yaml.sort(), prose: prose.sort() };
 }
 
 function analyse(blueprintDir: string): { files: FileAnalysis[]; changes: PlannedChange[]; warnings: string[] } {

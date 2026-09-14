@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../types.js';
+import { modelFiles, modelYamlFiles } from '../model-files.js';
 
 // Six one-letter id bands get an unambiguous spelling (v2.8.11). A one-letter band is a
 // prefix-collision hazard against every longer band starting with the same letter, and the schema
@@ -48,8 +49,6 @@ export const BAND_RENAMES: ReadonlyArray<readonly [string, string]> = [
   ['A', 'ASM'],
 ];
 
-const YAML_FILE = /\.(yaml|yml)$/i;
-
 /**
  * One band's rewrite, anchored on both sides.
  *
@@ -91,26 +90,12 @@ interface FileAnalysis {
   total: number;
 }
 
-function yamlFiles(root: string): string[] {
-  const found: string[] = [];
-  const walk = (dir: string): void => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name.startsWith('.')) continue;
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) walk(full);
-      else if (YAML_FILE.test(entry.name)) found.push(full);
-    }
-  };
-  walk(root);
-  return found.sort();
-}
-
 function analyse(blueprintDir: string): { files: FileAnalysis[]; changes: PlannedChange[]; warnings: string[] } {
   const files: FileAnalysis[] = [];
   const changes: PlannedChange[] = [];
   const warnings: string[] = [];
 
-  for (const absolutePath of yamlFiles(blueprintDir)) {
+  for (const absolutePath of modelYamlFiles(blueprintDir)) {
     const original = fs.readFileSync(absolutePath, 'utf8');
     const { text: rewritten, counts, total } = rebandText(original);
     if (total === 0) continue;
@@ -125,17 +110,7 @@ function analyse(blueprintDir: string): { files: FileAnalysis[]; changes: Planne
   // A model's own prose is not rewritten - a sentence is not a reference this tool can retarget
   // without reading it - but a README naming a band the migration retires is stale the moment it
   // lands, and silently so.
-  const prose: string[] = [];
-  const walkProse = (dir: string): void => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name.startsWith('.')) continue;
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) walkProse(full);
-      else if (/\.(md|markdown)$/i.test(entry.name)) prose.push(full);
-    }
-  };
-  walkProse(blueprintDir);
-  for (const absolutePath of prose) {
+  for (const absolutePath of modelFiles(blueprintDir).prose) {
     const { total } = rebandText(fs.readFileSync(absolutePath, 'utf8'));
     if (total === 0) continue;
     const relativePath = path.relative(blueprintDir, absolutePath).split(path.sep).join('/');

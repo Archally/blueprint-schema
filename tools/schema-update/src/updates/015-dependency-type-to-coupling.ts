@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../types.js';
+import { modelFiles } from '../model-files.js';
 
 // A context dependency says how it is connected, and since v2.8.33 it says so in the vocabulary the
 // contract surface computes.
@@ -51,8 +52,6 @@ import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../t
 // IDEMPOTENT BY CONSTRUCTION. A migrated entry has no `type:` to match, so a second run plans
 // nothing.
 
-const YAML_FILE = /\.(yaml|yml)$/i;
-const PROSE_FILE = /\.(md|markdown)$/i;
 const DEPENDENCIES_KEY = /^(\s*)dependencies:(.*)$/;
 const LIST_OPENER = /^(\s*)-(\s+)(\S.*)$/;
 /** Required on a context dependency, and declared by nothing else that spells the key. */
@@ -253,22 +252,6 @@ interface FileAnalysis {
   rewritten: string;
   count: number;
   values: Map<string, number>;
-}
-
-function modelFiles(root: string): { yaml: string[]; prose: string[] } {
-  const yaml: string[] = [];
-  const prose: string[] = [];
-  const walk = (dir: string): void => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name.startsWith('.')) continue;
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) walk(full);
-      else if (YAML_FILE.test(entry.name)) yaml.push(full);
-      else if (PROSE_FILE.test(entry.name)) prose.push(full);
-    }
-  };
-  walk(root);
-  return { yaml: yaml.sort(), prose: prose.sort() };
 }
 
 function analyse(blueprintDir: string): { files: FileAnalysis[]; changes: PlannedChange[]; warnings: string[] } {

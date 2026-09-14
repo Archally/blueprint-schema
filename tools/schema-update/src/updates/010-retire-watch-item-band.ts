@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../types.js';
+import { modelYamlFiles } from '../model-files.js';
 
 // The seventh one-letter id band gets an unambiguous spelling (v2.8.12): a watch item's `W001`
 // becomes `WCH001`. `W` is a prefix of `WI` (work item) and of longer bands in the realm and
@@ -80,14 +81,9 @@ export function rebandWatchlist(text: string): { text: string; ids: number; unto
   return { text: rewritten, ids, untouched: remaining };
 }
 
-function walkYaml(dir: string, out: string[] = []): string[] {
-  if (!fs.existsSync(dir)) return out;
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) walkYaml(full, out);
-    else if (YAML_FILE.test(entry.name)) out.push(full);
-  }
-  return out;
+/** The model's YAML, or nothing where the directory does not exist. */
+function walkYaml(dir: string): string[] {
+  return fs.existsSync(dir) ? modelYamlFiles(dir) : [];
 }
 
 function analyse(modelDir: string): { changes: PlannedChange[]; warnings: string[] } {

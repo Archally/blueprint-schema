@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../types.js';
+import { modelFiles } from '../model-files.js';
 
 // An operation says how it is invoked, and since v2.8.27 the transport-free value is spelled the
 // way the contract kind that carries it is spelled.
@@ -28,8 +29,6 @@ import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../t
 // models are written CRLF throughout, and a pass that reserialized the document would rewrite every
 // line of them to report a one-word change.
 
-const YAML_FILE = /\.(yaml|yml)$/i;
-const PROSE_FILE = /\.(md|markdown)$/i;
 const DISPATCH_VALUE = /^(\s*dispatch:\s*)(['"]?)in-process\2(\s*(?:#.*)?)$/;
 const DISPATCH_IN_FLOW = /[{,]\s*dispatch:\s*(['"]?)in-process\1\s*[,}]/;
 
@@ -57,22 +56,6 @@ interface FileAnalysis {
   relativePath: string;
   rewritten: string;
   sites: number;
-}
-
-function modelFiles(root: string): { yaml: string[]; prose: string[] } {
-  const yaml: string[] = [];
-  const prose: string[] = [];
-  const walk = (dir: string): void => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name.startsWith('.')) continue;
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) walk(full);
-      else if (YAML_FILE.test(entry.name)) yaml.push(full);
-      else if (PROSE_FILE.test(entry.name)) prose.push(full);
-    }
-  };
-  walk(root);
-  return { yaml: yaml.sort(), prose: prose.sort() };
 }
 
 function analyse(blueprintDir: string): { files: FileAnalysis[]; changes: PlannedChange[]; warnings: string[] } {

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { SchemaUpdate, PlannedChange, UpdatePlan, UpdateResult } from '../types.js';
+import { modelYamlFiles } from '../model-files.js';
 
 // v2.8 makes the typed-id conventions binding. "Free-string id" sounds like one defect and is two,
 // with different shapes and different risk:
@@ -127,16 +128,6 @@ function scanLines(content: string): SourceLine[] {
     });
     position = newline + 1;
   }
-}
-
-function walkYamlFiles(directory: string): string[] {
-  const results: string[] = [];
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
-    const fullPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) results.push(...walkYamlFiles(fullPath));
-    else if (/\.(yaml|yml)$/i.test(entry.name)) results.push(fullPath);
-  }
-  return results;
 }
 
 const indentOf = (text: string): number => text.length - text.replace(/^[ \t]*/, '').length;
@@ -329,7 +320,7 @@ function analyse(absoluteDir: string): Analysis {
   const infraFiles: { relativePath: string; absolutePath: string }[] = [];
   const allFiles: { relativePath: string; absolutePath: string; isInfra: boolean }[] = [];
 
-  for (const absolutePath of walkYamlFiles(absoluteDir)) {
+  for (const absolutePath of modelYamlFiles(absoluteDir)) {
     const relativePath = path.relative(absoluteDir, absolutePath).replace(/\\/g, '/');
     const content = fs.readFileSync(absolutePath, 'utf8');
     harvestIds(content, usedIds);
