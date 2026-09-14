@@ -10,6 +10,7 @@ import { getSchemaTypeFromPath } from '../extraction/entities/id.js';
 import { extractAllEntities } from '../extraction/entities/index.js';
 import { buildRelations } from '../extraction/relations/index.js';
 import { mergeParties, remapRelationEndpoints } from '../extraction/entities/partyIdentity.js';
+import { annotateEventReach } from '../extraction/entities/eventReach.js';
 import {
   extractDomainDescriptions,
   extractRepositoryConfig,
@@ -69,8 +70,25 @@ export function buildBlueprintModel(
   // is why the older arch-only merge could ignore this.)
   const extracted = extractAllEntities(documentsByType);
   const { relations: rawRelations, addedEntities } = buildRelations(extracted, documentsByType);
-  const { entities, idRemap } = mergeParties([...extracted, ...addedEntities]);
+  const {
+    entities,
+    idRemap,
+    warnings: partyWarnings,
+    conflicts: partyConflicts,
+  } = mergeParties([...extracted, ...addedEntities]);
   const relations = remapRelationEndpoints(rawRelations, idRemap);
+
+  // Which events leave their context, written onto each event. Derived here rather than by each
+  // consumer, and AFTER the party fold: two of its three signals are relations, and one of them is
+  // only correct once endpoints are final.
+  annotateEventReach(entities, relations);
+
+  for (const warning of partyWarnings) {
+    console.warn(
+      `Party '${warning.party}' declared in ${warning.files.length} files with no shared id; `
+        + `merged on name. Assign a PRT### to make this explicit: ${warning.files.join(', ')}`,
+    );
+  }
   const domainDescriptions = extractDomainDescriptions(documentsByType);
   const repository = extractRepositoryConfig(documentsByType.blueprint);
   const repositories = extractRepositoriesConfig(documentsByType.blueprint);
@@ -90,6 +108,8 @@ export function buildBlueprintModel(
       domain_descriptions: domainDescriptions,
       ...(repository && { repository }),
       ...(repositories && { repositories }),
+      // What the party fold could not reconcile: reported, never resolved, and absent when empty.
+      ...(partyConflicts.length > 0 && { party_conflicts: partyConflicts }),
     },
   };
 
