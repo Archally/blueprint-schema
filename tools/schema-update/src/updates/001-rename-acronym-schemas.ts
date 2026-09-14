@@ -14,6 +14,14 @@ const BLUEPRINT_YAML_KEYS: Record<string, string> = {
   org: 'organization',
 };
 
+/** What a model that has been through this hop declares it is written against. */
+const TARGET_SCHEMA_VERSION = '2.7.0';
+/** A `schemaVersion:` line at the document root, with or without quotes and a trailing comment. */
+const SCHEMA_VERSION_LINE = /^schemaVersion:[ \t]*["']?(\d+\.\d+\.\d+)["']?[ \t]*(#.*)?$/m;
+const SCHEMA_VERSION_REWRITE = /^(schemaVersion:[ \t]*["']?)(\d+\.\d+\.\d+)(["']?)/m;
+/** Marks the changes this hop applies as a version bump rather than as an acronym rename. */
+const VERSION_DETAIL = 'schemaVersion';
+
 function findFilesToRename(blueprintDir: string): PlannedChange[] {
   const changes: PlannedChange[] = [];
   const files = modelYamlFiles(blueprintDir);
@@ -75,6 +83,28 @@ function findBlueprintYamlEdits(blueprintDir: string): PlannedChange[] {
   return changes;
 }
 
+/**
+ * Every file whose `schemaVersion` still names the version this hop migrates AWAY from.
+ *
+ * The directory a model sits in and the version it declares are two different statements, and only
+ * the second travels with the file. Leaving it behind produces a `v2.7/` tree whose documents say
+ * they are 2.6 - which `bp validate` reports, correctly, as a disagreement between the model and
+ * the schema it was loaded against.
+ */
+function findSchemaVersionEdits(blueprintDir: string): PlannedChange[] {
+  const changes: PlannedChange[] = [];
+  for (const filePath of modelYamlFiles(blueprintDir)) {
+    const match = SCHEMA_VERSION_LINE.exec(fs.readFileSync(filePath, 'utf8'));
+    if (!match || match[1] === TARGET_SCHEMA_VERSION) continue;
+    changes.push({
+      type: 'edit-yaml',
+      path: path.relative(blueprintDir, filePath),
+      detail: `${VERSION_DETAIL} ${match[1]} -> ${TARGET_SCHEMA_VERSION}`,
+    });
+  }
+  return changes;
+}
+
 function findDirectoryCopy(blueprintDir: string): PlannedChange | null {
   const dirName = path.basename(blueprintDir);
   if (dirName === 'v2.6') {
@@ -99,10 +129,11 @@ function buildPlan(blueprintDir: string): UpdatePlan {
   const dirRename = findDirectoryCopy(absoluteDir);
   changes.push(...findFilesToRename(absoluteDir));
   changes.push(...findBlueprintYamlEdits(absoluteDir));
+  changes.push(...findSchemaVersionEdits(absoluteDir));
   if (dirRename) changes.push(dirRename);
 
   if (changes.length === 0) {
-    warnings.push('No files matching rg.yaml, ui.yaml, or org.yaml found — model may already be v2.7');
+    warnings.push('No acronym files and no schemaVersion below 2.7.0 — the model is already v2.7');
   }
 
   return {
@@ -146,7 +177,27 @@ function applyPlan(blueprintDir: string): UpdateResult {
     }
   }
 
-  // Apply file renames first
+  // Say 2.7 in the documents, not only in the directory name. Read-modify-write on the whole file
+  // so every other byte - key order, comments, line endings - survives untouched.
+  //
+  // BEFORE the renames, because a change's `path` is the name the file had when the plan was built.
+  // Bumping afterwards looks for `orders/rg.yaml` in a tree where it is now `orders/infrastructure.yaml`,
+  // and the hop fails on a file it had just moved itself.
+  for (const change of plan.changes.filter((c) => c.type === 'edit-yaml' && c.detail.startsWith(VERSION_DETAIL))) {
+    const filePath = path.join(workDir, change.path);
+    try {
+      const content = fs.readFileSync(filePath, 'utf8');
+      fs.writeFileSync(
+        filePath,
+        content.replace(SCHEMA_VERSION_REWRITE, (_m, lead: string, _from: string, close: string) => `${lead}${TARGET_SCHEMA_VERSION}${close}`),
+        'utf8',
+      );
+    } catch (error) {
+      errors.push(`Failed to bump schemaVersion in ${change.path}: ${(error as Error).message}`);
+    }
+  }
+
+  // Apply file renames
   for (const change of plan.changes.filter((c) => c.type === 'rename-file')) {
     const oldPath = path.join(workDir, change.path);
     const newName = change.detail.split(' → ')[1]!.split(' (')[0]!;
@@ -158,8 +209,9 @@ function applyPlan(blueprintDir: string): UpdateResult {
     }
   }
 
-  // Apply YAML edits
-  for (const change of plan.changes.filter((c) => c.type === 'edit-yaml')) {
+  // Apply the acronym key and path-reference edits. Version bumps are a separate pass below, so a
+  // file that only needs its version rewritten is not run through six replacements that cannot match.
+  for (const change of plan.changes.filter((c) => c.type === 'edit-yaml' && !c.detail.startsWith(VERSION_DETAIL))) {
     const filePath = path.join(workDir, change.path);
     try {
       let content = fs.readFileSync(filePath, 'utf8');
