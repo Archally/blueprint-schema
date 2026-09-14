@@ -259,6 +259,52 @@ export function checkDeprecatedNextActivities(relFile, processId, activity) {
 }
 
 /**
+ * A context dependency still naming its integration with the superseded free-string `type:`.
+ *
+ * Warning rather than error, like the two above: the key is accepted for the whole 2.8 line and
+ * means what it always meant. What `coupling` adds is comparability - it takes the same six values
+ * the contract surface computes, so a declared coupling and a derived one can be set against each
+ * other, which a free string never could.
+ *
+ * One finding per DEPENDENCY ENTRY, so the count is the number of places an author would edit.
+ * The message names the mapped value where one exists and says so plainly where it does not: three
+ * of the corpus spellings name a medium rather than a coupling, and guessing for them would put a
+ * word in the model that no one chose.
+ *
+ * Only on the 2.8 line, because `coupling` is a v2.8 key and an earlier model told to write it
+ * would be told to write a field its own schema rejects.
+ */
+const COUPLING_FOR_TYPE = Object.freeze({
+  api: "http",
+  http: "http",
+  rest: "http",
+  events: "message",
+  event: "message",
+  messaging: "message",
+  grpc: "rpc",
+  rpc: "rpc",
+  "shared-db": "shareddata",
+  shared_db: "shareddata",
+  database: "shareddata",
+});
+
+export function checkDeprecatedDependencyType(relFile, contextName, dependency) {
+  if (!dependency || typeof dependency.type !== "string" || dependency.type.trim() === "") return null;
+  const authored = dependency.type.trim();
+  const mapped = COUPLING_FOR_TYPE[authored.toLowerCase()];
+  const advice = mapped
+    ? `Write \`coupling: ${mapped}\` instead.`
+    : `\`coupling\` has no value for it - "${authored}" names a medium rather than a coupling, so ` +
+      `which of the six applies is a decision only an author can make.`;
+  return (
+    `[${relFile}] Context "${contextName}" states its dependency on "${dependency.name}" with ` +
+    `\`type: ${authored}\`, which is superseded by \`coupling\`. ${advice} Where the contracts ` +
+    `already reach this pair, declare neither: they carry the direction, the operations and the ` +
+    `broker as well. Accepted until the next major line.`
+  );
+}
+
+/**
  * A contract's declared `slice:` against the slice vocabulary.
  *
  * Unlike the prefix rule below it, this one does NOT exempt a model that declares no slices. A
@@ -414,6 +460,9 @@ export function validateModel(args) {
   const nextSupersedesNextActivities = atLeast(version, 2, 8);
   // `handles:` is a property the 2.8 schema no longer declares, and the earlier lines still do.
   const handlesRemovedFromSchema = atLeast(version, 2, 8);
+  // `coupling` is a v2.8 key. Telling an earlier model to write it would name a field its own
+  // schema rejects, which is the defect this file has now been bitten by twice.
+  const couplingSupersedesDependencyType = atLeast(version, 2, 8);
   // From v2.8 the infrastructure id fields carry their typed patterns, so Ajv rejects what this
   // warning used to describe. See TYPED_ID above for why both must never fire on one value.
   const typedIdsEnforcedBySchema = atLeast(version, 2, 8);
@@ -583,6 +632,14 @@ export function validateModel(args) {
         const placement = declared.party
           ? `in party "${declared.party.name}"`
           : `in context "${declared.context.name}"`;
+        // Before the service walk: `dependencies` sits on the CONTEXT, not on a service, and a
+        // context may declare them while containing no service at all.
+        if (couplingSupersedesDependencyType && Array.isArray(declared.context?.dependencies)) {
+          for (const dependency of declared.context.dependencies) {
+            const finding = checkDeprecatedDependencyType(relFile, declared.context.name, dependency);
+            if (finding) warnings.push(finding);
+          }
+        }
         for (const [service] of servicesOf(declared)) {
           // Before the contracts guard below, which `continue`s: a service binding in-process is
           // exactly the one that may carry no contracts block at all.

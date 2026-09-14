@@ -15,6 +15,7 @@ import { update as update011 } from './updates/011-contract-identity.js';
 import { update as update012 } from './updates/012-next-branches.js';
 import { update as update013 } from './updates/013-handles-to-inprocess-contract.js';
 import { update as update014 } from './updates/014-dispatch-inprocess.js';
+import { update as update015 } from './updates/015-dependency-type-to-coupling.js';
 
 // Version order, single pass — see resolveChain. `004` follows `002`: both are in-place 2.7
 // restructures, and a v2.6 model must receive 001 → 002 → 004 in one run. `005` is the only hop off
@@ -41,7 +42,12 @@ import { update as update014 } from './updates/014-dispatch-inprocess.js';
 // container goes, and a model should reach its final shape before that reading happens.
 // `014` rewrites one value on an operation, so it shares no file region with anything above it and
 // its position is free. It sits last because that is when it was specified.
-const ALL_UPDATES: SchemaUpdate[] = [update001, update002, update004, update005, update007, update006, update008, update009, update010, update011, update012, update013, update014];
+// `015` rewrites a key and its value inside a context's `dependencies:` list. `008` moves service
+// declarations between the nested and root forms and leaves `dependencies:` on the context either
+// way, so the two share no region - but it runs after `008` regardless, on the same principle as
+// `011` and `013`: this module reads the enclosing keys to decide which `type:` is a dependency's,
+// and a model should reach its final shape before that reading happens.
+const ALL_UPDATES: SchemaUpdate[] = [update001, update002, update004, update005, update007, update006, update008, update009, update010, update011, update012, update013, update014, update015];
 
 export function detectVersion(blueprintDir: string): string | null {
   const dirName = path.basename(path.resolve(blueprintDir));

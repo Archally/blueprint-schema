@@ -368,9 +368,16 @@ $defs:
       type:
         type: string
         description: >
-          Technical integration type, as free text (e.g. api, events, shared-db, file, grpc). The
-          typed form of the same idea is `coupling`, which takes the three values the contract
-          surface computes; prefer it in a new model.
+          SOFT-DEPRECATED (v2.8.33). Technical integration type, as free text. Accepted for the
+          whole 2.8 line and removed at the next major.
+          Write `coupling` instead. It takes the six values the contract surface computes - `http`,
+          `message`, `rpc`, `inprocess`, `shareddata`, `scheduledtransfer` - so a declared coupling
+          and a derived one are comparable, where a free string is a second vocabulary for the same
+          fact and cannot be compared with anything. `api` and `http` become `http`, `events`
+          becomes `message`, a shared store becomes `shareddata`; a value naming a medium rather
+          than a coupling has no mechanical successor and is a decision for an author.
+          Where the contracts already reach the pair, declare neither: they carry the direction, the
+          operations and the broker as well.
       coupling:
         $ref: "../metamodel.schema.yaml#/$defs/coupling"
         description: >

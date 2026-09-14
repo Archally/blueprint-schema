@@ -5,6 +5,34 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.33"
+    date: "2026-09-14"
+    summary: >
+      A bounded context's dependency said how it was connected in free text, under `type:`. Write
+      `coupling:` instead. It takes the six values the contract surface computes from a model's own
+      contract refs - `http`, `message`, `rpc`, `inprocess`, `shareddata`, `scheduledtransfer` - so
+      a coupling you declare and one the contracts derive become comparable, where a free string was
+      a second vocabulary for the same fact and could be compared with nothing.
+
+
+      `type:` is soft-deprecated: accepted for the whole 2.8 line, warned once per declaration, and
+      removed at the next major. Its own description had said `coupling` takes three values where
+      the enum has six, which would have told anyone holding an `api` declaration that it had no
+      successor. It now names all six and how the common spellings map: `api` and `http` become
+      `http`, `events` becomes `message`, `grpc` becomes `rpc`, a shared store becomes `shareddata`.
+
+
+      The schema-update chain rewrites the key and maps the value, one line at a time, preserving
+      comments and formatting. It refuses three kinds of site rather than guess, and reports each: a
+      value naming a medium rather than a coupling, where which of the six applies is a fact about
+      the system and not about the string; an entry that already declares `coupling`, where one of
+      the two statements is wrong; and flow form, where splicing means rewriting your line.
+
+
+      Where the contracts already reach a pair, declare neither key: they carry the direction, the
+      operations and the broker as well. `restated-coupling` reports that case and says to delete
+      the declaration, so the mechanical half is automated and the judgement stays with you.
+
   - version: "2.8.32"
     date: "2026-09-14"
     summary: >
