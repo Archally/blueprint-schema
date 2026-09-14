@@ -223,7 +223,13 @@ $defs:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/process_activity_ref"
-        description: "Optional explicit links to subsequent activities. When absent, flow is inferred from domain causal links."
+        description: >
+          SOFT-DEPRECATED (v2.8.23). Explicit links to subsequent activities. Use `next`, which
+          names the same successors and can also state the condition under which each branch is
+          taken, which this key has no room for; an activity declares one or the other, never
+          both, and the schema-update tool rewrites one into the other. Still accepted and still
+          read until the next major line. With neither present, flow is inferred from domain
+          causal links.
       gateway:
         $ref: "../metamodel.schema.yaml#/$defs/gateway_kind"
         description: >

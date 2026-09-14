@@ -506,7 +506,19 @@ it from the name.
 - **activities[]**: Replaces operations[]. Each activity has required `id` (PA001) and `name`.
 - **entry_operation**: Domain operation where the activity begins; the generator follows the causal chain from here. Optional - an activity whose operation is not yet modelled leaves it out, and `activity-without-entry-operation` reports the gap.
 - **steps[]**: Optional convenience view of operations in activity. Domain causal links are authoritative; validator WARNS if steps contradict.
-- **next_activities**, **path_type** (happy|error|compensation): Optional flow metadata.
+- **next[]**: Where an activity goes next. Each entry names the following activity in `to` and may
+  carry a `condition` saying what takes that branch, in the model's own terms; the condition reaches
+  a generated Arazzo step as its criterion.
+- **gateway** (and|xor|or): How an activity's outgoing branches relate. Declared once on the activity
+  that forks, so three branches cannot state the fact three times and disagree.
+- **join**: How the branches arriving at an activity converge, with its own `mode` on the same
+  vocabulary - a merge is a fork read from the other end.
+- **calls_subprocess**: The process this activity runs inside the current one, joining two processes
+  through the activity that invokes one of them.
+- **next_activities**: The successors alone, with no room for what chooses between them. Superseded
+  by `next` since v2.8.23; accepted and read until the next major line, warned once per activity, and
+  rewritten by the schema-update chain. An activity declares one or the other, never both.
+- **path_type** (happy|error|compensation): Optional flow metadata.
 - **trigger**, **end_states**, **lanes**: Optional BPMN metadata, direct properties of the process.
 - **tags**: Root, process, and activity level.
 

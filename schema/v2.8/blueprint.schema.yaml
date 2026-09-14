@@ -464,8 +464,10 @@ $defs:
         type: array
         description: >
           SOFT-DEPRECATED (v2.8.6). Subdomains within this slice. They are problem-space
-          partitions and belong in `domains[].subdomains[]`, where each carries an id a
-          context can name; the schema-update tool moves them and rewrites every `domain_ref`.
+          partitions and belong in `domains[].subdomains[]`, under the domain they divide; the
+          schema-update tool moves them and rewrites every `domain_ref`. A subdomain there
+          carries an `SDM###` id, itself soft-deprecated since v2.8.17, because a subdomain is
+          always reached through its domain: a context written today names the containing domain.
           Still accepted until the next major line. The file-name prefix convention
           (order.*.yaml) stays a convention and is derived, never declared.
         items:

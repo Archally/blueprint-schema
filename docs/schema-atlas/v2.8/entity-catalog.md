@@ -126,7 +126,7 @@ A slice folder - `name` is the kebab-case subfolder under the blueprint root. A 
 | `model_traits` | `array<ref → model_traits_item>` | — |  | Behavioural archetype(s) of the slice (Wirfs-Brock role stereotypes). |
 | `owner` | `ref → owned_by` | — |  | Owning team/department/party (references governance/organization). |
 | `bands` | `array<ref → id_band>` | — |  | Numeric ranges of typed id prefixes this slice reserves. Declared here rather than in a registry keyed by slice name, so ownership is stated by position and a… |
-| `subdomains` | `array<union>` | — |  | SOFT-DEPRECATED (v2.8.6). Subdomains within this slice. They are problem-space partitions and belong in `domains[].subdomains[]`, where each carries an id a co… |
+| `subdomains` | `array<union>` | — |  | SOFT-DEPRECATED (v2.8.6). Subdomains within this slice. They are problem-space partitions and belong in `domains[].subdomains[]`, under the domain they divide;… |
 
 _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/slice`_
 
@@ -828,7 +828,7 @@ Dependency on another bounded context or external system. Technical connections 
 | --- | --- | --- | --- | --- |
 | `name` | `string` | ✓ |  | Name of the dependency (context or external system name). |
 | `bounded_context_ref` | `ref → bounded_context_ref` | — |  | Optional target bounded-context id (BC###) - the id-based inter-context edge, preferred over matching the `name` string (deprecated fallback). Use for dependen… |
-| `type` | `string` | — |  | Technical integration type, as free text (e.g. api, events, shared-db, file, grpc). The typed form of the same idea is `coupling`, which takes the three values… |
+| `type` | `string` | — |  | SOFT-DEPRECATED (v2.8.33). Technical integration type, as free text. Accepted for the whole 2.8 line and removed at the next major. Write `coupling` instead. I… |
 | `coupling` | `ref → coupling` | — |  | How this dependency is connected, in the vocabulary the contract surface computes. State it where the contracts do not: where they do, they already carry the d… |
 | `relationship` | `ref → context_relationship` | ✓ |  | DDD strategic relationship pattern. Captures architectural intent beyond technical integration. |
 | `direction` | `string` | — | `upstream`, `downstream`, `peer` | This context's role: upstream=we provide, downstream=we consume, peer=bidirectional. |
@@ -2842,7 +2842,7 @@ An activity within a process. Entry point into the domain causal chain (produces
 | `entry_operation` | `ref → operation_ref` | — |  | Domain operation where this activity begins. Generator follows causal chain (produces/reacts_to) from here. Optional: an activity whose operation is not yet mo… |
 | `triggered_by` | `array<union>` | — |  | What initiates this activity: an actor (for first activity) or an event operation (for reactive activities). |
 | `steps` | `array<object>` | — |  | The operations this activity runs, in order, each with an optional note. This list is the model's statement of within-activity ORDER and INCLUSION: which opera… |
-| `next_activities` | `array<ref → process_activity_ref>` | — |  | Optional explicit links to subsequent activities. When absent, flow is inferred from domain causal links. |
+| `next_activities` | `array<ref → process_activity_ref>` | — |  | SOFT-DEPRECATED (v2.8.23). Explicit links to subsequent activities. Use `next`, which names the same successors and can also state the condition under which ea… |
 | `gateway` | `ref → gateway_kind` | — |  | How this activity's outgoing branches relate: `and` takes every branch, `xor` exactly one, `or` one or more. Declared once on the activity that forks, because… |
 | `join` | `object` | — |  | How the branches arriving at this activity converge. Without it a convergence is only inferred from the number of incoming arrows, which cannot tell waiting fo… |
 | `next` | `array<object>` | — |  | Where this activity goes next, and why. Each entry names the following activity and may state the condition under which that branch is taken. Use it in prefere… |
