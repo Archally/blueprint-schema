@@ -209,10 +209,16 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
   // `resolution: 'contract'` tag - the bind is declared by the author in the model, so it is a real
   // declaration and not the deprecated name/scope fallback.
   //
-  // `contracts.inprocess.provide` is where this now lives, and the contract pass above reads it.
-  // `handles:` is the superseded spelling on the service itself, accepted with identical meaning
-  // through the v2.8 line; `addProvided` folds a repeated reference, so an operation named both
-  // here and under the in-process contract binds once.
+  // `contracts.inprocess.provide` is where this lives, and the contract pass above reads it.
+  //
+  // `handles:` is read HERE and is deliberately not removed with the property. The 2.8 schema no
+  // longer declares it, but the builder serves every line at once and the earlier ones do: three
+  // models carry it across 38 services and 165 operation refs, and dropping the read would unbind
+  // every one of them against a schema that still accepts the key. The read retires when the last
+  // model on those lines does, not when the property does.
+  //
+  // `addProvided` folds a repeated reference, so an operation named both here and under the
+  // in-process contract binds once.
   for (const service of entities) {
     if (service.type !== ENTITY_TYPE.Service) continue;
     const data = getData(service);

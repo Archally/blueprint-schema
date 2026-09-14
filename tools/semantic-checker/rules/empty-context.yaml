@@ -5,8 +5,9 @@ rules:
     description: >-
       A bounded context that declares services and handles no operation. Membership is the
       materialized `handled_by` edge (Operation -> BoundedContext), bound by a service contract's
-      `expose`/`send`, by `handles:` on the service, or by the domain-file name/scope fallback; a
-      context with services and no incoming `handled_by` renders as a canvas with boxes and nothing
+      `expose`/`send`, by `contracts.inprocess.provide`, by the domain a single context realizes, or by
+      the domain-file name/scope fallback; a context with services and no incoming `handled_by`
+      renders as a canvas with boxes and nothing
       on them. A context that declares NO services is out of scope: it is a boundary the model names
       rather than builds, and it handles nothing by construction. Advisory rather than an error, for
       the same reason `unbound-operation` is: a context is empty for three reasons and only one is a
@@ -28,4 +29,4 @@ rules:
             direction: in
             type: handled_by
             exists: true
-    message: 'Context "{displayId}" ({name|''unnamed''}) declares services and handles no operation - nothing is bound to it by a contract''s expose/send, by handles:, or by a domain file''s name/scope. If it provides nothing by design (a library, an API client), that is what its services'' contracts should say; otherwise bind the operations it handles.'
+    message: 'Context "{displayId}" ({name|''unnamed''}) declares services and handles no operation - nothing is bound to it by a contract''s expose/send, by contracts.inprocess.provide, by the domain a single context realizes, or by a domain file''s name/scope. If it provides nothing by design (a library, an API client), that is what its services'' contracts should say; otherwise bind the operations it handles.'

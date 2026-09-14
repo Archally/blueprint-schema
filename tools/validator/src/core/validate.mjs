@@ -202,12 +202,16 @@ export function checkDeprecatedContractOutput(relFile, serviceName, kind, contra
 }
 
 /**
- * A service still naming its in-process operations with the superseded `handles:`.
+ * A service on the 2.8 line still naming its operations with `handles:`.
  *
- * Warning, never an error, for the reason `checkDeprecatedContractOutput` above is one: the key is
- * accepted for the whole v2.8 line with identical meaning and identical effect on the graph, so a
- * model that has not migrated is correct rather than broken. The warning exists so the removal does
- * not arrive as a surprise, and it names the replacement.
+ * The schema rejects the key outright, so this is guidance beside a schema error rather than a
+ * finding of its own: Ajv says the object has a property it may not have, and this says which
+ * property to write instead. The two are not a homonym - one names the rule broken, the other names
+ * the edit.
+ *
+ * Silent below 2.8, and that is the whole reason it is gated. `handles:` is CURRENT on the earlier
+ * lines and `contracts.inprocess.provide` is a 2.8 key, so an unguarded check tells a v2.7 author to
+ * write a field their own schema rejects - it did, 19 times on one model and 8 on another.
  */
 /**
  * Does this `dispatch` value say the operation executes in-process?
@@ -223,11 +227,10 @@ export function isInProcess(dispatch) {
 export function checkDeprecatedServiceHandles(relFile, serviceName, service) {
   if (!service || !Array.isArray(service.handles) || service.handles.length === 0) return null;
   return (
-    `[${relFile}] Service "${serviceName}" names its in-process operations with \`handles\`, which ` +
-    `is superseded by \`contracts.inprocess.provide\` - same meaning, same binding, and it also ` +
-    `says which coupling the operation belongs to. \`handles\` said who provides the operation and ` +
-    `how it is invoked at once, and the second of those is \`dispatch\` on the operation. Accepted ` +
-    `until the next major line.`
+    `[${relFile}] Service "${serviceName}" names its operations with \`handles\`, which this line ` +
+    `does not declare. Write them under \`contracts.inprocess.provide\` - same binding, and it also ` +
+    `says which coupling they belong to. \`handles\` named who provides the operation and how it is ` +
+    `invoked at once, and the second of those is \`dispatch\` on the operation.`
   );
 }
 
@@ -409,6 +412,8 @@ export function validateModel(args) {
   const version = detectSchemaVersion(args);
   const eventsExemptFromExchange = atLeast(version, 2, 7);
   const nextSupersedesNextActivities = atLeast(version, 2, 8);
+  // `handles:` is a property the 2.8 schema no longer declares, and the earlier lines still do.
+  const handlesRemovedFromSchema = atLeast(version, 2, 8);
   // From v2.8 the infrastructure id fields carry their typed patterns, so Ajv rejects what this
   // warning used to describe. See TYPED_ID above for why both must never fire on one value.
   const typedIdsEnforcedBySchema = atLeast(version, 2, 8);
@@ -581,8 +586,10 @@ export function validateModel(args) {
         for (const [service] of servicesOf(declared)) {
           // Before the contracts guard below, which `continue`s: a service binding in-process is
           // exactly the one that may carry no contracts block at all.
-          const handlesFinding = checkDeprecatedServiceHandles(relFile, service.name, service);
-          if (handlesFinding) warnings.push(handlesFinding);
+          if (handlesRemovedFromSchema) {
+            const handlesFinding = checkDeprecatedServiceHandles(relFile, service.name, service);
+            if (handlesFinding) warnings.push(handlesFinding);
+          }
           if (!service.contracts) {
             warnings.push(`[${relFile}] Service "${service.name}" ${placement} has no contracts block`);
             continue;

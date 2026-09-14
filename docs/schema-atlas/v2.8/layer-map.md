@@ -77,7 +77,7 @@ What & how: domain model, behavior, contracts, and quality attributes.
 
 | Schema file | Title | Root props | Object defs | Summary |
 | --- | --- | --- | --- | --- |
-| [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | Blueprint Architecture | 13 | 15 | Design Plane - L0: Bounded context topology. Parties, contexts, services with contracts (interfaces), enriched dependen… |
+| [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | Blueprint Architecture | 13 | 18 | Design Plane - L0: Bounded context topology. Parties, contexts, services with contracts (interfaces), enriched dependen… |
 | [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | Blueprint Concepts | 10 | 7 | Design Plane - Layer 2: Domain vocabulary. Defines concepts (entities, value objects, aggregates), actors, enumerations… |
 | [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | Blueprint Domain Operations | 11 | 18 | Design Plane - Layer 3: Domain operations with protocol bindings, rule governance, pre/postconditions, and side effects… |
 | [`design/dynamics.schema.yaml`](./entity-catalog.md#design-dynamics) | Blueprint Dynamics | 10 | 8 | Design Plane: Runtime concurrency and execution behavior. Covers execution model, parallelism, ordering constraints, ra… |
@@ -105,7 +105,7 @@ graph LR
         design_story_schema_yaml["story"]
     end
     metamodel_schema_yaml(["metamodel"])
-    design_arch_schema_yaml -->|45| metamodel_schema_yaml
+    design_arch_schema_yaml -->|49| metamodel_schema_yaml
     design_concepts_schema_yaml -->|40| metamodel_schema_yaml
     design_domain_schema_yaml -->|51| metamodel_schema_yaml
     design_dynamics_schema_yaml -->|23| metamodel_schema_yaml
@@ -114,7 +114,7 @@ graph LR
     design_models_schema_yaml -->|13| metamodel_schema_yaml
     design_quality_schema_yaml -->|74| metamodel_schema_yaml
     design_rules_schema_yaml -->|24| metamodel_schema_yaml
-    design_story_schema_yaml -->|59| metamodel_schema_yaml
+    design_story_schema_yaml -->|63| metamodel_schema_yaml
 ```
 
 ## Governance Plane

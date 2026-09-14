@@ -745,8 +745,9 @@ Never add a channel an operation does not have in order to silence the `unbound-
 model then states a transport that does not exist, and every diagram generated from it draws that
 transport as fact. `inprocess.provide` exists so the honest answer is expressible.
 
-`service.handles:` is the superseded spelling of `contracts.inprocess.provide`. It is still read for
-the rest of the 2.8 line, and the Archally Pro `bp schema-update` verb relocates it.
+A service declares the operations it provides in-process under `contracts.inprocess.provide`.
+`service.handles:` is not a property of this line; a model arriving from an earlier one carries it, and
+the Archally Pro `bp schema-update` verb relocates it.
 
 ---
 

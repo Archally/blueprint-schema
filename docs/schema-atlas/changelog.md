@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 24 |
-| Additive (minor) | 180 |
+| Additive (minor) | 185 |
 | Clarification (patch) | 0 |
-| **Total changes** | 204 |
+| **Total changes** | 209 |
 
 ## ⚠ Breaking changes
 
@@ -201,7 +201,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (157)
+## Added (162)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -263,6 +263,15 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/contract_slice` — New definition `contract_slice` added to `design/arch.schema.yaml`.
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contract_slice`_
 
+- [additive] `design/arch.schema.yaml#/$defs/contracts/properties/inprocess` — Property `inprocess` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contracts/properties/inprocess`_
+
+- [additive] `design/arch.schema.yaml#/$defs/contracts/properties/scheduledtransfer` — Property `scheduledtransfer` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contracts/properties/scheduledtransfer`_
+
+- [additive] `design/arch.schema.yaml#/$defs/contracts/properties/shareddata` — Property `shareddata` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contracts/properties/shareddata`_
+
 - [additive] `design/arch.schema.yaml#/$defs/dependency/properties/bounded_context_ref` — Property `bounded_context_ref` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/dependency/properties/bounded_context_ref`_
 
@@ -296,6 +305,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/http_client_contract/properties/slice` — Property `slice` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/http_client_contract/properties/slice`_
 
+- [additive] `design/arch.schema.yaml#/$defs/inprocess_contract` — New definition `inprocess_contract` added to `design/arch.schema.yaml`.
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/inprocess_contract`_
+
 - **[breaking]** `design/arch.schema.yaml#/$defs/party/properties/id` — Property `id` added (required — breaking).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/party/properties/id`_
 
@@ -308,11 +320,11 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/rpc_contract/properties/slice` — Property `slice` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/rpc_contract/properties/slice`_
 
+- [additive] `design/arch.schema.yaml#/$defs/scheduled_transfer_contract` — New definition `scheduled_transfer_contract` added to `design/arch.schema.yaml`.
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/scheduled_transfer_contract`_
+
 - [additive] `design/arch.schema.yaml#/$defs/service_need` — New definition `service_need` added to `design/arch.schema.yaml`.
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service_need`_
-
-- [additive] `design/arch.schema.yaml#/$defs/service/properties/handles` — Property `handles` added (optional).
-  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/handles`_
 
 - **[breaking]** `design/arch.schema.yaml#/$defs/service/properties/id` — Property `id` added (required — breaking).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/id`_
@@ -323,14 +335,14 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/provenance`_
 
-- [additive] `design/arch.schema.yaml#/$defs/service/properties/provides` — Property `provides` added (optional).
-  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/provides`_
-
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/resource_refs` — Property `resource_refs` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/resource_refs`_
 
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/system_ref` — Property `system_ref` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/system_ref`_
+
+- [additive] `design/arch.schema.yaml#/$defs/shared_data_contract` — New definition `shared_data_contract` added to `design/arch.schema.yaml`.
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/shared_data_contract`_
 
 - [additive] `design/arch.schema.yaml#/properties/contexts` — Property `contexts` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/properties/contexts`_
@@ -568,6 +580,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `metamodel.schema.yaml#/$defs/finding_ref` — New definition `finding_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/finding_ref`_
+
+- [additive] `metamodel.schema.yaml#/$defs/gateway_kind` — New definition `gateway_kind` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/gateway_kind`_
 
 - [additive] `metamodel.schema.yaml#/$defs/id_band` — New definition `id_band` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/id_band`_

@@ -371,11 +371,12 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `binding_ref` | `string` |  | Reference to a binding by its typed id (e.g. BND001 or prod.BND001). A binding resolves (resource-type x environment) -> a concrete platform / module + params… |
 | `deployment_scope_ref` | `string` |  | Reference to a deployment scope by its typed id (e.g. DSC001 or shared.DSC001). A DeploymentScope is a substrate-neutral management / lifecycle / ownership / b… |
 | `infra_relation` | `string` | `hosted_on`, `connects_to`, `depends_on`, `attaches_to`, `routes_to` | TOSCA-derived relation vocabulary for typed inter-resource edges in the infrastructure layer (snake_case, TOSCA-verbatim). `hosted_on` is the canonical placeme… |
-| `coupling` | `string` | `http`, `message`, `rpc` | How two bounded contexts are connected: `http` for request and response over an API, `message` for events across a broker, `rpc` for a procedure call. The same… |
+| `coupling` | `string` | `http`, `message`, `rpc`, `inprocess`, `shareddata`, `scheduledtransfer` | How two bounded contexts are connected: `http` for request and response over an API, `message` for events across a broker, `rpc` for a procedure call, `inproce… |
 | `context_relationship` | `string` | `shared-kernel`, `customer-supplier`, `conformist`, `anticorruption-layer`, `open-host-service`, `published-language` … (8) | DDD strategic relationship between bounded contexts. Captures architectural intent beyond technical integration. |
 | `spec_path` | `string` |  | Addressable path to any blueprint element. Format: [context.]layer[.category].ID[.field]. Examples: rules.classification.CR003, billing.rules.classification.CR… |
 | `change_kind` | `string` | `add`, `modify`, `deprecate`, `remove`, `rename`, `split` … (7) | Change type for change-impact analysis, as a decision records what it did to a spec path. Semver impact: add is minor, modify is minor or major, deprecate is m… |
 | `semver_impact` | `string` | `major`, `minor`, `patch` | Semantic versioning impact: major=breaking, minor=backward-compatible addition, patch=docs or clarification. |
+| `gateway_kind` | `string` | `and`, `xor`, `or` | How several branches of a process relate to one another: `and` takes every branch, `xor` exactly one, `or` one or more. The same three words describe a fork an… |
 | `sbvr_modality` | `string` | `necessary`, `obligatory`, `prohibited`, `permitted` | SBVR deontic modality expressing rule strength. |
 | `decision_status` | `string` | `proposed`, `accepted`, `landed`, `rejected`, `deprecated` | Decision lifecycle: proposed→accepted→landed; rejected or deprecated at any stage. |
 | `code_refs` | `array<ref → code_ref_entry>` |  | Source code files implementing or reflecting this entity. |
@@ -872,8 +873,6 @@ A deployable service or component within a bounded context.
 | `needs` | `array<ref → service_need>` | — |  | Abstract infrastructure NEEDS (Score `type`/`class`/`id`/`params` vocabulary) this service declares - TYPE-level intent, resolved to a concrete resource per en… |
 | `owned_by` | `ref → owned_by` | — |  | Service-level ownership override. |
 | `servers` | `array<object>` | — |  | Server instances where this service is deployed. Follows OpenAPI server object pattern. |
-| `provides` | `array<ref → operation_ref>` | — |  | Operations this service provides, with no transport described. Provider-side, like a contract's `expose:`/`send:`, and it materializes the same `handled_by` bi… |
-| `handles` | `array<ref → operation_ref>` | — |  | SOFT-DEPRECATED (v2.8.18): the superseded spelling of `provides:`, accepted with identical meaning and identical effect on the graph until the next major line.… |
 | `contracts` | `ref → contracts` | — |  | External contracts exposing and consuming interfaces for this service. |
 | `side_effects` | `ref → service_side_effects` | — |  | Observable side effects beyond request/response: filesystem, stdout, stderr. |
 | `tags` | `ref → tags` | — |  |  |
@@ -900,7 +899,7 @@ _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service_need`_
 
 #### `contracts`
 
-Contract interfaces for this service. Each entry specifies what is exposed or consumed per protocol.
+Integration contracts for this service: what it provides to, and consumes from, everything outside itself. Each contract kind names one coupling style. The wire kinds name a specification and carry the document generated from it; `inprocess`, `shareddata` and `scheduledtransfer` name couplings that are not protocols, and `inprocess` carries no document at all, because no notation describes what i…
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
@@ -910,6 +909,9 @@ Contract interfaces for this service. Each entry specifies what is exposed or co
 | `openrpc` | `ref → rpc_contract` | — |  | JSON-RPC contract (OpenRPC specification). |
 | `arazzo` | `ref → flow_contract` | — |  | Workflow contract (Arazzo specification). |
 | `cncfsw` | `ref → flow_contract` | — |  | Serverless workflow contract (CNCF Serverless Workflow specification). |
+| `inprocess` | `ref → inprocess_contract` | — |  | In-process coupling - operations provided to, or consumed from, the same process. |
+| `shareddata` | `ref → shared_data_contract` | — |  | Shared-data coupling - a store one service writes and another reads. |
+| `scheduledtransfer` | `ref → scheduled_transfer_contract` | — |  | Scheduled-transfer coupling - a run on a schedule moves data between services. |
 | `graphql` | `object` | — |  | GraphQL API contract. |
 | `security_schemes` | `object` | — |  | Security scheme definitions for this service's contracts. |
 
@@ -1002,6 +1004,53 @@ Workflow contract (Arazzo or CNCF Serverless Workflow).
 | `output_structures` | `ref → contract_structures` | — |  | Named output structures produced by workflows. |
 
 _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/flow_contract`_
+
+#### `inprocess_contract`
+
+In-process coupling: operations this service provides to, or consumes from, code running in the same process and the same deployment unit - a method call, an injected dependency, an in-VM event. The one contract kind that names no document: no notation describes a module's published interface in a transport-independent, hand-authorable form, so this kind carries no `file:`, no `contract_name` and…
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `provide` | `array<ref → operation_ref>` | — |  | Operations this service owns and makes callable in-process. The transport-free counterpart of a contract's `expose:` or `send:`, and it materializes the same `… |
+| `consume` | `array<ref → operation_ref>` | — |  | Operations this service depends on and calls in-process, owned by another service. The transport-free counterpart of `call:` and `receive:`. Listing an operati… |
+
+_Source: `schema/v2.8/design/arch.schema.yaml#/$defs/inprocess_contract`_
+
+#### `shared_data_contract`
+
+Shared-data coupling: a store both services reach, where one writes the data and the other reads it, and neither calls the other. The Shared Database style in Enterprise Integration Patterns - the quickest coupling to build and the hardest to change, because the reader is bound to the writer's schema without being asked and nothing in either service records the dependency. Declaring it here is wh…
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `file` | `string` | — |  | Path to the data contract describing the shared dataset. |
+| `contract_name` | `ref → contract_name` | — |  |  |
+| `slice` | `ref → contract_slice` | — |  |  |
+| `cross_cutting` | `ref → contract_cross_cutting` | — |  |  |
+| `output` | `ref → contract_output` | — |  |  |
+| `write` | `array<ref → operation_ref>` | — |  | Document operations whose data this service writes into the shared store. The writer owns the schema, so this is the provider end even though no call is made. |
+| `read` | `array<ref → operation_ref>` | — |  | Document operations this service reads out of the shared store, written by another service. The consumer end: this service is bound to a schema it does not own. |
+| `input_structures` | `ref → contract_structures` | — |  | Named structures this service writes into the shared store. |
+| `output_structures` | `ref → contract_structures` | — |  | Named structures this service reads out of the shared store. |
+
+_Source: `schema/v2.8/design/arch.schema.yaml#/$defs/shared_data_contract`_
+
+#### `scheduled_transfer_contract`
+
+Scheduled-transfer coupling: a run on a schedule moves data from one service to another - an export and an import, a nightly extract, a batch feed. The File Transfer style in Enterprise Integration Patterns, named for the schedule rather than for the file because the medium is incidental and the timing is not: the reader sees the writer's data as of the last run, and every consequence of the coup…
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `file` | `string` | — |  | Path to the data contract describing the transferred dataset. |
+| `contract_name` | `ref → contract_name` | — |  |  |
+| `slice` | `ref → contract_slice` | — |  |  |
+| `cross_cutting` | `ref → contract_cross_cutting` | — |  |  |
+| `output` | `ref → contract_output` | — |  |  |
+| `write` | `array<ref → operation_ref>` | — |  | Document operations this service produces for the transfer. The producing end owns the schema and the schedule. |
+| `read` | `array<ref → operation_ref>` | — |  | Document operations this service ingests from the transfer, produced by another service. |
+| `input_structures` | `ref → contract_structures` | — |  | Named structures this service produces for the transfer. |
+| `output_structures` | `ref → contract_structures` | — |  | Named structures this service ingests from the transfer. |
+
+_Source: `schema/v2.8/design/arch.schema.yaml#/$defs/scheduled_transfer_contract`_
 
 #### `contract_structures`
 
@@ -1275,7 +1324,7 @@ A domain operation with protocol binding, rule governance, and behavioral proper
 | `description` | `string` | — |  | What this operation does and its domain significance. |
 | `rules` | `object` | — |  | Legacy free-text business rules. For new documents prefer governed_by, preconditions, postconditions with typed rule refs. |
 | `exchange` | `union` | — |  | Communication protocol and binding for this operation. Single exchange or array for multi-channel operations. |
-| `dispatch` | `string` | — | `in-process` | Invocation model, ORTHOGONAL to `exchange` (which is the wire transport). Set `in-process` to declare that this command/query EXECUTES in-process and has no wi… |
+| `dispatch` | `string` | — | `inprocess`, `in-process` | Invocation model, ORTHOGONAL to `exchange` (which is the wire transport). Set `inprocess` to declare that this command/query EXECUTES in-process and has no wir… |
 | `payload` | `ref → payload` | — |  | Message payload schema and content type. |
 | `responses` | `array<ref → response>` | — |  | Possible response codes and their meanings. |
 | `reasons` | `array<ref → reason>` | — |  | Business reasons that may trigger or result from this operation. |
@@ -2794,6 +2843,10 @@ An activity within a process. Entry point into the domain causal chain (produces
 | `triggered_by` | `array<union>` | — |  | What initiates this activity: an actor (for first activity) or an event operation (for reactive activities). |
 | `steps` | `array<object>` | — |  | The operations this activity runs, in order, each with an optional note. This list is the model's statement of within-activity ORDER and INCLUSION: which opera… |
 | `next_activities` | `array<ref → process_activity_ref>` | — |  | Optional explicit links to subsequent activities. When absent, flow is inferred from domain causal links. |
+| `gateway` | `ref → gateway_kind` | — |  | How this activity's outgoing branches relate: `and` takes every branch, `xor` exactly one, `or` one or more. Declared once on the activity that forks, because… |
+| `join` | `object` | — |  | How the branches arriving at this activity converge. Without it a convergence is only inferred from the number of incoming arrows, which cannot tell waiting fo… |
+| `next` | `array<object>` | — |  | Where this activity goes next, and why. Each entry names the following activity and may state the condition under which that branch is taken. Use it in prefere… |
+| `calls_subprocess` | `ref → process_ref` | — |  | Another process this activity runs as a subprocess. The called process keeps its own identity and its own activities; this activity is the point in the calling… |
 | `path_type` | `string` | — | `happy`, `error`, `compensation` | Process path classification: happy=expected flow, error=exception handling, compensation=rollback/undo. |
 | `tags` | `ref → tags` | — |  |  |
 

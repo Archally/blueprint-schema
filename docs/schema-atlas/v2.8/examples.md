@@ -6,6 +6,10 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 ## Schema-native examples
 
+- `schema/v2.8/design/story.schema.yaml#/$defs/process_activity/properties/next/items/properties/condition/examples/0`: `"the order total is above the free-shipping threshold"`
+
+- `schema/v2.8/design/story.schema.yaml#/$defs/process_activity/properties/next/items/properties/condition/examples/1`: `"credit score >= 600"`
+
 - `schema/v2.8/governance/roadmap.schema.yaml#/properties/cadence/properties/anchor_sprint/examples/0`: `30`
 
 - `schema/v2.8/governance/roadmap.schema.yaml#/properties/cadence/properties/anchor_start/examples/0`: `"2026-07-01"`

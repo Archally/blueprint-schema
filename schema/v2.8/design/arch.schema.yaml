@@ -529,17 +529,6 @@ $defs:
                     items:
                       type: string
                     description: "Allowed values for this variable."
-      handles:
-        type: array
-        items:
-          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
-        description: >-
-          SOFT-DEPRECATED: declare these operations under `contracts.inprocess.provide` instead,
-          which states the same binding and also says which coupling it belongs to. Accepted here
-          with identical meaning and identical effect on the graph until the next major line; a
-          service may declare either, and declaring both merges them.
-          `handles` named two things at once - who provides the operation and how it is invoked -
-          and the second of those is `dispatch:`, on the operation.
       contracts:
         $ref: "#/$defs/contracts"
         description: "External contracts exposing and consuming interfaces for this service."

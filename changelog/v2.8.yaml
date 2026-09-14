@@ -5,6 +5,28 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.29"
+    date: "2026-09-14"
+    summary: >
+      `service.handles` is removed. A service declares the operations it provides in-process under
+      `contracts.inprocess.provide`, which states the same binding and also says which coupling it
+      belongs to, and that is now the only place to declare it. `dispatch:` on the operation says
+      how it is invoked, which is the second thing the old key named at the same time.
+
+
+      No document on this line declares the removed key: `provides:`, the other half of the pair,
+      was withdrawn in 2.8.27 in favour of the same contract verb, and the relocation module shipped
+      alongside it, so a model arriving from an earlier line is moved rather than edited.
+
+
+      A service that still carries the key is rejected by the schema, and the validator prints the
+      replacement beside the rejection so the message says which property to write rather than only
+      which rule broke. That guidance is scoped to this line: on the earlier lines `handles` is
+      current and `contracts.inprocess.provide` does not exist, so a model there is told nothing.
+
+
+      A document declaring neither key is unchanged.
+
   - version: "2.8.28"
     date: "2026-09-14"
     summary: >
