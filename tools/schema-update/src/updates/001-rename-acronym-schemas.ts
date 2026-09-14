@@ -75,14 +75,13 @@ function findBlueprintYamlEdits(blueprintDir: string): PlannedChange[] {
   return changes;
 }
 
-function findDirectoryRename(blueprintDir: string): PlannedChange | null {
+function findDirectoryCopy(blueprintDir: string): PlannedChange | null {
   const dirName = path.basename(blueprintDir);
   if (dirName === 'v2.6') {
-    const parentDir = path.dirname(blueprintDir);
     return {
-      type: 'rename-directory',
+      type: 'copy-directory',
       path: dirName,
-      detail: `${dirName}/ → v2.7/ (version bump)`,
+      detail: `${dirName}/ → v2.7/ (version bump; ${dirName}/ is kept)`,
     };
   }
   return null;
@@ -97,7 +96,7 @@ function buildPlan(blueprintDir: string): UpdatePlan {
     return { sourceVersion: '2.6', targetVersion: '2.7', description: update.description, changes: [], warnings: [`Directory not found: ${absoluteDir}`] };
   }
 
-  const dirRename = findDirectoryRename(absoluteDir);
+  const dirRename = findDirectoryCopy(absoluteDir);
   changes.push(...findFilesToRename(absoluteDir));
   changes.push(...findBlueprintYamlEdits(absoluteDir));
   if (dirRename) changes.push(dirRename);
@@ -124,11 +123,34 @@ function applyPlan(blueprintDir: string): UpdateResult {
     return { ...plan, applied: false, errors: [] };
   }
 
+  // THE SOURCE VERSION LINE IS KEPT. The pristine tree is copied into the next version
+  // directory BEFORE anything is edited, and every edit below addresses the copy, so `v2.6/`
+  // survives the hop exactly as it was. Copying first rather than migrating in place and copying
+  // after has a second property worth more than the first: a run that fails halfway leaves the
+  // source untouched instead of half-migrated, so the remedy is to delete the partial copy.
+  const targetDir = path.join(path.dirname(absoluteDir), 'v2.7');
+  const copies = plan.changes.some((c) => c.type === 'copy-directory');
+  const workDir = copies ? targetDir : absoluteDir;
+  if (copies) {
+    if (fs.existsSync(targetDir)) {
+      return {
+        ...plan,
+        applied: false,
+        errors: [`${path.basename(targetDir)}/ already exists beside the model - move it aside before migrating.`],
+      };
+    }
+    try {
+      fs.cpSync(absoluteDir, targetDir, { recursive: true });
+    } catch (error) {
+      return { ...plan, applied: false, errors: [`Failed to copy the model to ${path.basename(targetDir)}/: ${(error as Error).message}`] };
+    }
+  }
+
   // Apply file renames first
   for (const change of plan.changes.filter((c) => c.type === 'rename-file')) {
-    const oldPath = path.join(absoluteDir, change.path);
+    const oldPath = path.join(workDir, change.path);
     const newName = change.detail.split(' → ')[1]!.split(' (')[0]!;
-    const newPath = path.join(absoluteDir, newName);
+    const newPath = path.join(workDir, newName);
     try {
       fs.renameSync(oldPath, newPath);
     } catch (error) {
@@ -138,7 +160,7 @@ function applyPlan(blueprintDir: string): UpdateResult {
 
   // Apply YAML edits
   for (const change of plan.changes.filter((c) => c.type === 'edit-yaml')) {
-    const filePath = path.join(absoluteDir, change.path);
+    const filePath = path.join(workDir, change.path);
     try {
       let content = fs.readFileSync(filePath, 'utf8');
       for (const [oldKey, newKey] of Object.entries(BLUEPRINT_YAML_KEYS)) {
@@ -153,18 +175,6 @@ function applyPlan(blueprintDir: string): UpdateResult {
       fs.writeFileSync(filePath, content, 'utf8');
     } catch (error) {
       errors.push(`Failed to edit ${change.path}: ${(error as Error).message}`);
-    }
-  }
-
-  // Apply directory rename last
-  const dirChange = plan.changes.find((c) => c.type === 'rename-directory');
-  if (dirChange) {
-    const parentDir = path.dirname(absoluteDir);
-    const newDir = path.join(parentDir, 'v2.7');
-    try {
-      fs.renameSync(absoluteDir, newDir);
-    } catch (error) {
-      errors.push(`Failed to rename directory: ${(error as Error).message}`);
     }
   }
 

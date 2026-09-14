@@ -105,14 +105,15 @@ export function listUpdates(): SchemaUpdate[] {
 /**
  * Where the model lives after `update` has been applied to `blueprintDir`.
  *
- * `001` renames the version directory itself (`v2.6/` → `v2.7/`), so a chained second hop
- * MUST run against the new path — pass the original and it operates on a directory that no
- * longer exists. Derived from the result rather than assumed: only a result that actually
- * contains a `rename-directory` change moves the root.
+ * `001` copies the model into the next version directory (`v2.6/` → `v2.7/`) and leaves the
+ * source line in place, so a chained second hop MUST run against the new path - pass the
+ * original and it re-applies the hop to a tree that is deliberately staying where it is.
+ * Derived from the result rather than assumed: only a result that actually contains a
+ * `copy-directory` change moves the root.
  */
 export function directoryAfter(blueprintDir: string, update: SchemaUpdate, changes: PlannedChange[]): string {
-  const renamed = changes.some((change) => change.type === 'rename-directory');
-  if (!renamed) return blueprintDir;
+  const copied = changes.some((change) => change.type === 'copy-directory');
+  if (!copied) return blueprintDir;
   return path.join(path.dirname(blueprintDir), `v${update.targetVersion}`);
 }
 

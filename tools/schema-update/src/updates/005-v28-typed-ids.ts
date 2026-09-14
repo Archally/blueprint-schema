@@ -296,7 +296,7 @@ interface Analysis {
   retypes: RetypeSite[];
   refs: RefSite[];
   versions: VersionSite[];
-  directoryRename: PlannedChange | null;
+  directoryCopy: PlannedChange | null;
   warnings: string[];
   /** Files whose lines were scanned, keyed by absolute path, so `apply` does not re-read them. */
   lines: Map<string, SourceLine[]>;
@@ -340,16 +340,16 @@ function analyse(absoluteDir: string): Analysis {
   const refs = collectRefSites(allFiles, lines, idMap, warnings);
   const versions = collectVersionSites(allFiles, lines);
 
-  const directoryRename =
+  const directoryCopy =
     path.basename(absoluteDir) === SOURCE_DIRECTORY
       ? {
-          type: 'rename-directory' as const,
+          type: 'copy-directory' as const,
           path: SOURCE_DIRECTORY,
-          detail: `${SOURCE_DIRECTORY}/ -> ${TARGET_DIRECTORY}/ (version bump)`,
+          detail: `${SOURCE_DIRECTORY}/ -> ${TARGET_DIRECTORY}/ (version bump; ${SOURCE_DIRECTORY}/ is kept)`,
         }
       : null;
 
-  return { mints, envRemovals, retypes, refs, versions, directoryRename, warnings, lines };
+  return { mints, envRemovals, retypes, refs, versions, directoryCopy, warnings, lines };
 }
 
 /**
@@ -790,7 +790,7 @@ function buildPlan(blueprintDir: string): UpdatePlan {
       detail: `line ${site.lineIndex + 1}: party ${site.party} - remove \`env: ${site.value}\` (not accepted from v2.8)`,
     });
   }
-  if (analysis.directoryRename) changes.push(analysis.directoryRename);
+  if (analysis.directoryCopy) changes.push(analysis.directoryCopy);
 
   const warnings = [...analysis.warnings];
   for (const site of analysis.envRemovals) {
@@ -812,7 +812,31 @@ function applyPlan(blueprintDir: string): UpdateResult {
   if (plan.changes.length === 0) return { ...plan, applied: false, errors: [] };
 
   const errors: string[] = [];
-  const analysis = analyse(absoluteDir);
+
+  // THE SOURCE VERSION LINE IS KEPT. The pristine tree is copied into the next version directory
+  // BEFORE anything is edited, and the analysis below reads the COPY, so every splice lands there
+  // and `v2.7/` survives the hop exactly as it was. Copying first rather than migrating in place
+  // and copying after also means a run that fails halfway leaves the source untouched instead of
+  // half-migrated, so the remedy is to delete the partial copy.
+  const targetDir = path.join(path.dirname(absoluteDir), TARGET_DIRECTORY);
+  const copies = plan.changes.some((c) => c.type === 'copy-directory');
+  const workDir = copies ? targetDir : absoluteDir;
+  if (copies) {
+    if (fs.existsSync(targetDir)) {
+      return {
+        ...plan,
+        applied: false,
+        errors: [`${TARGET_DIRECTORY}/ already exists beside the model - move it aside before migrating.`],
+      };
+    }
+    try {
+      fs.cpSync(absoluteDir, targetDir, { recursive: true });
+    } catch (error) {
+      return { ...plan, applied: false, errors: [`Failed to copy the model to ${TARGET_DIRECTORY}/: ${(error as Error).message}`] };
+    }
+  }
+
+  const analysis = analyse(workDir);
 
   // Edits are collected per file and per LINE, then spliced in descending offset order so each
   // splice leaves earlier offsets valid.
@@ -873,16 +897,7 @@ function applyPlan(blueprintDir: string): UpdateResult {
       }
       fs.writeFileSync(absolutePath, content, 'utf8');
     } catch (error) {
-      errors.push(`Failed to edit ${path.relative(absoluteDir, absolutePath)}: ${(error as Error).message}`);
-    }
-  }
-
-  // The directory rename runs last, so every edit above addresses a path that still exists.
-  if (analysis.directoryRename) {
-    try {
-      fs.renameSync(absoluteDir, path.join(path.dirname(absoluteDir), TARGET_DIRECTORY));
-    } catch (error) {
-      errors.push(`Failed to rename directory: ${(error as Error).message}`);
+      errors.push(`Failed to edit ${path.relative(workDir, absolutePath)}: ${(error as Error).message}`);
     }
   }
 

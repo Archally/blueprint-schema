@@ -1,7 +1,7 @@
 export type Severity = 'info' | 'warning' | 'error';
 
 export interface PlannedChange {
-  type: 'rename-file' | 'rename-directory' | 'edit-yaml' | 'remove-file';
+  type: 'rename-file' | 'copy-directory' | 'edit-yaml' | 'remove-file';
   path: string;
   detail: string;
 }

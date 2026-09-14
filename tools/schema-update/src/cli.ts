@@ -27,7 +27,7 @@ function printUsage() {
 function formatChange(change: { type: string; detail: string }) {
   const icon =
     change.type === 'rename-file' ? '  [rename]' :
-    change.type === 'rename-directory' ? '  [dir]   ' :
+    change.type === 'copy-directory' ? '  [copy]  ' :
     change.type === 'edit-yaml' ? '  [edit]  ' :
     change.type === 'remove-file' ? '  [remove]' :
     '  [?]     ';
@@ -87,7 +87,7 @@ function main() {
 
   if (dryRun) {
     // Only the FIRST hop can be planned truthfully. A later hop runs against the tree the
-    // earlier one produces — `001` even renames the version directory — so planning it against
+    // earlier one produces — `001` even copies the model into the next version directory — so planning it against
     // the current tree would print changes for files that will not be in that state. Later hops
     // are announced, not fabricated.
     const [first, ...rest] = chain;
