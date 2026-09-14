@@ -76,10 +76,12 @@ concepts:
     description: "A customer's purchase request."
 ```
 
-**3. Validate:**
+**3. Validate.** Clone this repository once, then point the validator at your model:
 
 ```bash
-npx @archally/blueprint-schema validate .blueprint/v2.8
+git clone https://github.com/Archally/blueprint-schema.git
+cd blueprint-schema && npm install
+npm run validate -- ../my-project/.blueprint/v2.8
 ```
 
 ## Architecture
@@ -415,12 +417,16 @@ Full entity ID patterns, traceability map, and schema evolution history: [Schema
 
 Three tools ship with the schema — validate, build models, and check semantics:
 
+They run from a clone of this repository. `npm install` is enough for the validator, which is plain
+JavaScript and carries the schemas with it; the model builder and the semantic checker are
+TypeScript and need `npm run build` first.
+
 ### Validator
 
 Schema validation (Ajv, draft-2020-12) + cross-file reference integrity + gap warnings.
 
 ```bash
-npx @archally/blueprint-schema validate .blueprint/v2.8
+npm run validate -- .blueprint/v2.8
 ```
 
 See [tools/validator/README.md](tools/validator/README.md) for options and exit codes.
@@ -430,10 +436,10 @@ See [tools/validator/README.md](tools/validator/README.md) for options and exit 
 Loads blueprint YAML files and produces a typed in-memory graph — 55 entity types and 43 relation types. Available as a library and as a CLI that writes `model.json`.
 
 ```bash
-# CLI — produce model.json
-npx @archally/blueprint-schema blueprint-model .blueprint/v2.8 --output model.json --pretty
+# CLI - produce model.json
+node tools/model-builder/dist/cli.js .blueprint/v2.8 --output model.json --pretty
 
-# Library — import in TypeScript
+# Library - import in TypeScript, from a workspace or a `file:` dependency on this clone
 import { buildBlueprintModel, loadFromDirectory } from '@archally/blueprint-schema/model';
 ```
 
@@ -444,7 +450,7 @@ See [tools/model-builder/README.md](tools/model-builder/README.md) for API, type
 Configurable rule engine that catches modeling issues schema validation cannot detect. Extensible via custom `RuleDefinition` functions and `.blueprint-lint.yaml` configuration.
 
 ```bash
-npx @archally/blueprint-schema blueprint-check .blueprint/v2.8
+npm run check -- .blueprint/v2.8
 ```
 
 <!-- BEGIN GENERATED: semantic-rules — generated from the rule pack; do not hand-edit -->
