@@ -5,6 +5,93 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.38"
+    date: "2026-09-14"
+    summary: >
+      A model of a system that already exists mixes what the system has with what is planned, and a
+      reader of any diagram or report generated from it asks the same question of every box: is this
+      now, or later? Until now a model could only say it in a free tag or in prose, where nothing
+      could draw it and nothing could check it.
+
+
+      Every design-plane element that can say where in the code it is can now say whether it is
+      there. `implementation` takes `as-is` (it exists in the system today), `wip` (it is being
+      built; some code exists, the element is not yet what the model describes), `to-be` (planned or
+      proposed, and not there yet) or `unclear` (you looked and cannot say).
+
+
+      Absent means unclear, never `as-is`. A model states implementation; it is not assumed, and it
+      is not inferred from the presence of `code_refs` - a reference can name the file an element
+      will live in as legitimately as one it already occupies.
+
+
+      Eighteen definitions carry it, being every design-plane definition that also carries
+      `code_refs` apart from `user_story` and `use_case`, which state intent and carry their own
+      delivery state. Governance entities do not: an element can claim to be implemented only where
+      it can also say where in the code it is.
+
+
+      Two semantic rules compare the claim with the evidence.
+      `implementation-as-is-without-code-refs` reports an `as-is` element that names neither
+      `code_refs` nor, for a resource, `iac_refs`. `implementation-to-be-with-code-refs` notes a
+      `to-be` element that names one. An element marked `wip` is reported by neither. Both
+      severities are yours to set in `.blueprint-lint.yaml`: a model authored from interviews, and a
+      greenfield slice inside a model of an existing system, both hold `as-is` elements with nothing
+      to point at and no defect, so this is your project's decision rather than a schema constraint.
+
+
+      Applying a change program does not move the marker. Applying a change to the model does not
+      put code in production, so each step from `to-be` through `wip` to `as-is` is a change you
+      state.
+
+
+      Additive: an optional property on eighteen definitions and one vocabulary in the metamodel.
+      Every document that validated before validates now, with the same meaning.
+
+  - version: "2.8.37"
+    date: "2026-09-14"
+    summary: >
+      `layout.slices[].bands[]` reserves a numeric range of a typed id prefix to one slice, and its
+      description said a band exists because two entities cannot share a number. That is true of one
+      kind of id and not of the other, and the difference decides whether declaring a band means
+      anything.
+
+
+      An id that carries a scope - `catalog.CN001` - is already partitioned by it. Every slice can
+      start at 001 and none of them collide, so a range reserved around one of them reserves nothing
+      that was at risk. An id that carries no scope shares one numbering space with every other
+      slice's, and there a range is a reservation.
+
+
+      The description now says which population a band is for, and that a model whose ids are all
+      scoped declares no bands as its finished state rather than as an omission. No field, pattern,
+      property or enum moves, and the set of documents the schema accepts is identical before and
+      after.
+
+  - version: "2.8.36"
+    date: "2026-09-14"
+    summary: >
+      A bounded context's ubiquitous language had no statement in the assembled model. Nothing on a
+      context or on a concept says which concepts a context works with, and the relationship runs
+      many-to-many, so no single field could say it.
+
+
+      Your model already states both halves. An operation names the concepts it creates or changes
+      (`materializes[].concept`) and a competency question names the concepts it is about
+      (`concepts[]`), and membership already binds each operation and question to its contexts. The
+      assembled model now joins them: `context_uses_concept` runs from a bounded context to every
+      concept one of its operations materializes or one of its questions is about, carrying which of
+      the two routes produced it and how many of each stand behind it.
+
+
+      Nothing else decides it: not the folder a concept file sits in, not a file's `scope:` and not
+      a context's name. A concept no operation or question names belongs to no context, and a
+      reference that resolves to no declared concept gives no edge.
+
+
+      Additive: no property is added, removed or narrowed, and every document that validated before
+      validates now, with the same meaning.
+
   - version: "2.8.35"
     date: "2026-09-14"
     summary: >
