@@ -149,7 +149,7 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
     contextsByPartyAndName.set(`${party}::${name}`, ctx);
   }
 
-  // PROVIDE-membership: contextId → op-refs its services provide (expose ∪ send ∪ handles).
+  // PROVIDE-membership: contextId -> op-refs its services provide (expose, send, provide, write).
   // Kept in BOTH exact case (for `exact` binds) and case-folded (for `loose` binds —
   // contract refs are commonly camelCase `catalog:addProduct` while operation names are
   // PascalCase `AddProduct`, an inherent API↔domain convention gap the binder bridges).
@@ -196,35 +196,15 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
     ]);
   }
 
-  // ── Service `provides:` / `handles:` — provide-membership, no transport asserted ─
+  // A provider that asserts no transport is `contracts.inprocess.provide`, read by the contract pass
+  // above like every other provider verb. `expose:` and `send:` name a protocol, and declaring
+  // either for an in-process call asserts a channel that does not exist - faking one to satisfy the
+  // binder is worse than the unbound report it silences, because every downstream diagram then
+  // draws a transport the system does not have.
   //
-  // The third binding source, and the only one that is not a contract. `expose:` and `send:` both
-  // sit inside a contract, and a contract names a protocol: declaring either asserts a channel that
-  // an in-process call does not have. Faking one to satisfy the binder is worse than the unbound
-  // report it silences, because the model then states a transport that does not exist and every
-  // downstream diagram draws it.
+  // `service.handles` was the older spelling of the same fact and had a pass of its own. Both are
+  // gone: the 2.8 schema does not declare the property and nothing binds through it.
   //
-  // Read from the SERVICE rather than a contract, which is why it needs its own pass. Everything
-  // after this point is shared: the same exact/loose fold, the same m:n behaviour, and the same
-  // `resolution: 'contract'` tag - the bind is declared by the author in the model, so it is a real
-  // declaration and not the deprecated name/scope fallback.
-  //
-  // `contracts.inprocess.provide` is where this lives, and the contract pass above reads it.
-  //
-  // `handles:` is read HERE and is deliberately not removed with the property. The 2.8 schema no
-  // longer declares it, but the builder serves every line at once and the earlier ones do: three
-  // models carry it across 38 services and 165 operation refs, and dropping the read would unbind
-  // every one of them against a schema that still accepts the key. The read retires when the last
-  // model on those lines does, not when the property does.
-  //
-  // `addProvided` folds a repeated reference, so an operation named both here and under the
-  // in-process contract binds once.
-  for (const service of entities) {
-    if (service.type !== ENTITY_TYPE.Service) continue;
-    const data = getData(service);
-    addProvided(service, asStringArray(data.handles));
-  }
-
   // Name/scope fallback (deprecated) — mirrors resolver `ownedBy`.
   const ownedBy = (entity: Entity, ctx: Entity): boolean => {
     const name = contextNameOf(entity);

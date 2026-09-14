@@ -5,6 +5,25 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.30"
+    date: "2026-09-14"
+    summary: >
+      2.8.29 removed `service.handles` from the schema and left the model builder reading it, so a
+      document on an earlier line still bound its operations through the key. It does not any more:
+      `contracts.inprocess.provide` is the only way to declare a provider that asserts no transport,
+      and the pass that read the older spelling is gone with the property.
+
+
+      The consequence is worth stating rather than discovering. An operation on an earlier line that
+      was named ONLY by `handles:` - not by a protocol contract, and not matching a context by name
+      or folder - now reports as unbound, and the resolvability warning says so. An operation named
+      both ways is unaffected, because the contract already bound it.
+
+
+      The schema-update chain relocates the key, which is the supported way across the boundary: the
+      relocation is part of the chain that brings a model onto this line, where the destination
+      exists.
+
   - version: "2.8.29"
     date: "2026-09-14"
     summary: >
