@@ -106,7 +106,7 @@ the files sit in: a slice is a filesystem partition, and which slice holds a dom
 derived from where its contexts are declared.
 
 - **Slices:** Each subfolder is a full artifact set. Use `{slice}.{PREFIX}{NNN}` IDs (e.g. `adventure.CN001`, `identity.CMD001`).
-- **Id bands:** A slice may reserve numeric ranges of a typed id prefix with `bands[]`, each naming a `prefix`, a `from` and a `to`. Several slices allocating into one prefix have to divide the number space between them; declaring the division lets an allocator reserve inside it, and semantic validation report an id that landed outside it. Optional per prefix - a prefix nobody bands is unconstrained.
+- **Id bands:** A slice may reserve numeric ranges of a typed id prefix with `bands[]`, each naming a `prefix`, a `from` and a `to`. Reserve one where the ids carry NO scope, because those share one numbering space across the whole model and several slices allocating into the prefix have to divide it; declaring the division lets an allocator reserve inside it, and semantic validation report an id that landed outside it. Ids written in the scoped form above need no band - every slice can start at 001 and none of them collide. Optional per prefix - a prefix nobody bands is unconstrained.
 - **Root files:** Only add root-level design/governance files for **shared entities** (used by multiple slices) or **system-level content** (arch, goals, quality). Do not create root `concepts.yaml`, `rules.yaml`, etc. if they would only duplicate slice content.
 - **Note:** A "domain slice" is a business domain directory (subfolder); the file `domain.yaml` is a blueprint artifact — the two are unrelated. Bounded contexts are defined in `arch.yaml`.
 
