@@ -23,7 +23,8 @@ const FILES = new Map<string, string>([
     `parties:
   - name: Shop
     contexts:
-      - name: Orders
+      - id: BC001
+        name: Orders
         services:
           - name: OrderService
             contracts:
@@ -42,7 +43,7 @@ operations:
 questions:
   - id: QN001
     name: What makes an order valid?
-    bounded_context_ref: Orders
+    bounded_context_ref: BC001
 `,
   ],
   [
@@ -65,7 +66,8 @@ describe('resolvability parity — unbound-operation / unbound-question over mat
   it('the public model-builder materializes handled_by / scoped_to edges', () => {
     const handledBy = builtModel.relations.filter((r) => r.type === 'handled_by');
     const scopedTo = builtModel.relations.filter((r) => r.type === 'scoped_to');
-    // CMD001 bound via contract-expose; QN001 bound via bounded_context_ref (loose name shim).
+    // CMD001 is bound by the contract that exposes it; QN001 by the typed id its
+    // `bounded_context_ref` names.
     expect(handledBy.length).toBeGreaterThanOrEqual(1);
     expect(scopedTo.length).toBeGreaterThanOrEqual(1);
   });
@@ -84,7 +86,7 @@ describe('resolvability parity — unbound-operation / unbound-question over mat
     expect(unboundOps[0]!.message).toContain('CMD099');
     expect(unboundOps.some((i) => i.message.includes('CMD001'))).toBe(false);
 
-    // QN099 is unbound (no ref, no name/scope match); QN001 is bound (bounded_context_ref: Orders).
+    // QN099 is unbound - it names no context and matches none; QN001 names BC001.
     expect(unboundQuestions).toHaveLength(1);
     expect(unboundQuestions[0]!.severity).toBe('warn');
     expect(unboundQuestions[0]!.message).toContain('QN099');
