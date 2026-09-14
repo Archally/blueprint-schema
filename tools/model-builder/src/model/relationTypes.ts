@@ -459,6 +459,13 @@ export const RELATION_TYPE = {
   // coverage nobody wired as contract evidence. `data.match` therefore appears only on a
   // contract-carried edge, beside `operation_count` and `contract_operation_count`.
   ContextCoversDomain: 'context_covers_domain',
+  // Which concepts a bounded context's language holds, which is n-to-n: every concept an operation the
+  // context handles creates or changes (`materializes[].concept`, joined through `HandledBy`) and every
+  // concept a question scoped to it is about (`concepts[]`, joined through `ScopedTo`). Derived from
+  // those four edges and nothing else - no folder, scope or name match - so a concept no operation or
+  // question names belongs to no context. `data.via` lists `operation` and/or `question`, beside
+  // `operation_count` and `question_count`.
+  ContextUsesConcept: 'context_uses_concept',
   // Context-to-context traffic the contract surface proves: an operation one context's service
   // exposes and another's calls. Drawn consumer to provider, the direction a call travels. It sits
   // BESIDE the declared `ContextDependsOn` and never replaces it - derivation reaches far fewer

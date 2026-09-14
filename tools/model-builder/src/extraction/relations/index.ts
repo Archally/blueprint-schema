@@ -41,6 +41,7 @@ import { extractDomainRegistryRelations } from './domains.js';
 import { extractOperationDomainRelations } from './operationDomain.js';
 import { extractPersonaConcernRelations } from './personaConcern.js';
 import { extractCoverageRelations } from './coverage.js';
+import { extractContextLanguageRelations } from './language.js';
 import { extractMigrationRelations } from './migrations.js';
 import { extractContractTrafficRelations } from './contractTraffic.js';
 
@@ -131,6 +132,9 @@ export function buildRelations(
   const derived = [
     ...extractCoverageRelations(entities, bound),
     ...extractContractTrafficRelations(entities, bound),
+    // A context's language joins the finished `handled_by` and `scoped_to` with `materializes` and
+    // `question_about`, so it belongs to this pass for the same reason coverage does.
+    ...extractContextLanguageRelations(entities, bound),
   ].filter((r) => {
     if (seen.has(r.id)) return false;
     seen.add(r.id);
