@@ -4,14 +4,13 @@ import { loadRules, loadExtensions, runChecker } from '@archally/semantic-checke
 import { loadFromMap, buildBlueprintModel } from '@archally/blueprint-schema/model';
 import { toCheckableModel } from './adapter.js';
 
-// v2.7.6 (D15/D17/step-12 Slice 4) — end-to-end resolvability parity:
-// the PUBLIC model-builder must materialize the `handled_by`/`scoped_to` membership edges,
-// and the PUBLIC declarative rules (`unbound-operation.yaml`/`unbound-question.yaml`) must
-// flag exactly the entities with NO such edge. This exercises the whole public pipeline
-// (loadFromMap → buildBlueprintModel → toCheckableModel → runChecker), the same path the CLI
-// uses — so it is the cross-stack parity gate: the unbound set the public rule reports equals
-// the unbound set the monorepo `findMembershipGaps` reports on the same model (identical
-// `membership.ts` derivation, identical loader markers).
+// Resolvability, end to end: an operation reaches its bounded context through a contract, a
+// question through the typed id its `bounded_context_ref` names, and everything reaching neither
+// is reported by `unbound-operation.yaml` / `unbound-question.yaml`.
+//
+// It runs the whole pipeline a model goes through - loadFromMap, buildBlueprintModel,
+// toCheckableModel, runChecker - rather than calling the rules against a hand-built graph, so it
+// fails if any stage stops materializing the membership edges the rules look for.
 
 const RULES_DIR = fileURLToPath(new URL('./rules', import.meta.url));
 
