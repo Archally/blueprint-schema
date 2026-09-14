@@ -883,6 +883,9 @@ $defs:
       dependency. Declaring it here is what makes it visible. Its operations are `document`
       transfers; the specification a generator emits for it is a data contract describing the
       dataset.
+      Against `scheduledtransfer`: the data sits in one place both services address, and the reader
+      sees it as of its own read. A store a reader polls on a schedule is still this kind, because
+      the schedule is the reader's policy rather than part of the coupling.
     additionalProperties: false
     allOf:
       - $ref: "#/$defs/contract_identity"
@@ -929,6 +932,10 @@ $defs:
       every consequence of the coupling follows from that lag. Its operations are `document`
       transfers; the specification a generator emits for it is a data contract describing the
       dataset.
+      Against `shareddata`: what makes it this kind is the RUN, not the timing. Take the schedule
+      away and ask whether the reader can still reach the writer's current data. If it can, both
+      ends address one store and the coupling is `shareddata`; if nothing arrives, the run is the
+      coupling and it belongs here.
     additionalProperties: false
     allOf:
       - $ref: "#/$defs/contract_identity"

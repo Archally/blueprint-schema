@@ -5,6 +5,32 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.32"
+    date: "2026-09-14"
+    summary: >
+      `inprocess`, `shareddata` and `scheduledtransfer` describe three couplings that carry no
+      protocol. Each said clearly what it was and none said how to choose between it and its
+      neighbours, and they are close enough that one coupling can be argued into any of them. The
+      decision is now written where you meet it, as an ordered test.
+
+
+      Does one service run the other's code? Then it is `inprocess`, whatever data moves with it,
+      because the other two exist for couplings where neither service calls the other. Otherwise:
+      does the data sit in one place both services address, or does a run copy it from one side to
+      the other?
+
+
+      The case that stays hard is a store read on a schedule. Remove the schedule and ask what the
+      reader can still do. If the store is there and still readable, the schedule was the reader's
+      own policy and the coupling is `shareddata`. If nothing arrives, the run was the delivery and
+      the kind is `scheduledtransfer`. Equivalently: whose clock decides what the reader sees, its
+      own read time or the time of the last run.
+
+
+      Nothing validates this choice and nothing can. No field in either kind records whether a run
+      exists, so a check would be guessing in both directions. What makes it worth deciding
+      deliberately is that a reader of the model takes the staleness of the data from the kind.
+
   - version: "2.8.31"
     date: "2026-09-14"
     summary: >

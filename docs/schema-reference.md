@@ -733,6 +733,35 @@ interface in a transport-independent, hand-authorable form, so it carries no `fi
 `contract_name` and no placement. The two data kinds keep all three, because the dataset they move
 is what a data contract describes.
 
+### Choosing between the three that cross no wire
+
+They are close enough that the same coupling can be argued into any of them, so decide in this
+order and stop at the first answer.
+
+**1. Does one service run the other's code?** If a call, an injected dependency or an in-VM event
+carries control from one side to the other, it is `inprocess`, whatever data moves with it. The
+other two are couplings where *neither service calls the other* - the dependency exists because one
+owns data the other needs.
+
+**2. Then: does the data sit in one place, or does something move it?** One place both services
+address is `shareddata`. A run that copies it from one side to the other is `scheduledtransfer`.
+
+**The case that is genuinely hard is a store read on a schedule**, and the way to settle it is to
+take the schedule away and ask what the reader can still do:
+
+| after removing the schedule | the reader | so the kind is |
+|---|---|---|
+| the store is still there and still readable | gets current data, just less often | `shareddata` - the schedule was the reader's own policy |
+| nothing arrives | gets nothing, because the run *was* the delivery | `scheduledtransfer` - the run is the coupling |
+
+Put the other way round, the question is **whose clock decides what the reader sees**. Under
+`shareddata` it is the reader's own read time; under `scheduledtransfer` it is the time of the last
+run, which is why that kind is named for the schedule and not for the file or the medium.
+
+Nothing validates this choice, and nothing can: no field in either kind records whether a run
+exists, and a check that guessed would be wrong in both directions. It is an authoring decision, and
+the reason to make it deliberately is that a reader of the model takes the lag from the kind.
+
 Consumer verbs are the ones to be careful with. `call:`, `receive:`, `consume:` and `read:` name
 operations this service DEPENDS ON, not ones it owns. Binding a service to an operation it merely
 reaches would record the caller as the handler.
