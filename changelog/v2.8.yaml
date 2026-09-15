@@ -5,6 +5,16 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.39"
+    date: "2026-09-16"
+    step: "a file name stops being a claim about which context owns an operation"
+    summary: |
+      An operation belongs to a bounded context because a service contract names it, or because its domain is realized by exactly one context. Beneath those two there was a third rule: if the domain file's name or its `scope:` matched a context's name, that counted as a binding.
+      That rule is removed. It read a filing convention as an assertion, and it bound an operation to EVERY context its slice declared rather than to the one meant, so a slice with two contexts gave one operation two owners and nothing said which was intended.
+      What changes for a model: an operation that binds by nothing else is now reported `unbound` by the validator - `bp validate` and `bp check` (Archally Pro), and the open standalone validator alike. This is a warning, not an error, and nothing stops validating. To bind it, name it in a service contract, or give its domain file a `domain_ref` header so the domain hop can reach it.
+      Who feels it: models authored on the 2.7 line and earlier, where this fallback was the documented way to bind. Their models are not wrong; the rule changed under them. Models on the 2.8 line that already carry contracts or a `domains[]` registry are unaffected.
+      `scope:` itself is untouched. It still qualifies a typed id, so a contract ref naming `catalog.CMD001` resolves exactly as before. What is gone is `scope` read as an ownership claim.
+      This is the sunset the v2.7.6 context-ownership change promised, delivered on a measured condition rather than on a date: every operation bound only by the fallback had to be bound by something else first.
   - version: "2.8.38"
     date: "2026-09-14"
     summary: >
