@@ -51,11 +51,12 @@ describe('extractMembershipRelations — handled_by (op→BC, D15)', () => {
     expect(targetsFrom(rels, RELATION_TYPE.HandledBy, 'op-1')).not.toContain('ctx-shipping');
   });
 
-  it('binds an un-contracted op via the deprecated name/scope fallback, tagged legacy', () => {
-    const targets = targetsFrom(rels, RELATION_TYPE.HandledBy, 'op-2');
-    expect(targets).toEqual(['ctx-shipping']);
-    const edge = edgesOf(rels, RELATION_TYPE.HandledBy).find((r) => r.source_entity_id === 'op-2');
-    expect((edge!.data as { resolution: string }).resolution).toBe('legacy');
+  // The name/scope fallback is retired. `op-2` sits in a file whose name matches the Shipping
+  // context and no contract names it, which used to be a binding. It is not one: a filing
+  // convention is where a thing is kept, not a claim about who owns it, and the old tier bound to
+  // EVERY context a slice declared rather than to the one meant.
+  it('does NOT bind an un-contracted op by its file name or scope', () => {
+    expect(targetsFrom(rels, RELATION_TYPE.HandledBy, 'op-2')).toEqual([]);
   });
 });
 
@@ -78,12 +79,11 @@ describe('extractMembershipRelations — scoped_to (question→BC, D17)', () => 
     expect(targetsFrom(rels, RELATION_TYPE.ScopedTo, 'q-2')).toEqual([]);
   });
 
-  it('falls back to name/scope when no explicit ref, tagged legacy', () => {
+  // A question states its context with `bounded_context_ref` or it is unbound.
+  it('emits NO edge when a question names no ref, whatever its file is called', () => {
     const q = question('q-3', 'QN003', { _context_name: 'Orders' });
     const rels = extractMembershipRelations([orders, shipping, q]);
-    const targets = targetsFrom(rels, RELATION_TYPE.ScopedTo, 'q-3');
-    expect(targets).toEqual(['ctx-orders']);
-    expect((edgesOf(rels, RELATION_TYPE.ScopedTo)[0]!.data as { resolution: string }).resolution).toBe('legacy');
+    expect(edgesOf(rels, RELATION_TYPE.ScopedTo)).toHaveLength(0);
   });
 
   it('emits NO edge when the explicit ref points at an unknown BC### (unbound/dangling)', () => {
@@ -122,9 +122,13 @@ describe('findMembershipGaps — resolvability (D5/D15/D17)', () => {
     expect(found[0]).toMatchObject({ entityId: 'op-x', entityType: 'Operation', reason: 'unbound' });
   });
 
-  it('does NOT flag a bound operation (name/scope match)', () => {
+  // The negative control: this operation was bound before the fallback went, and is reported
+  // unbound after. Nothing else about it changed.
+  it('flags an operation whose only claim was a matching file name', () => {
     const bound = op('op-2', 'CMD002', 'ShipOrder', 'Shipping', 'command');
-    expect(gaps([orders, shipping, bound])).toHaveLength(0);
+    const found = gaps([orders, shipping, bound]);
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({ entityId: 'op-2', entityType: 'Operation', reason: 'unbound' });
   });
 
   it('flags an unbound question (no ref, no name/scope) as unbound', () => {
@@ -197,19 +201,12 @@ describe('extractMembershipRelations — camelCase contract-ref convergence (v2.
   const rels = extractMembershipRelations(es);
   const edge = rels.find((r) => r.type === RELATION_TYPE.HandledBy && r.source_entity_id === 'op-gp');
 
-  it('still binds the spaced-name op to its context, by name rather than by ref', () => {
-    expect(edge).toBeDefined();
-    expect(edge!.target_entity_id).toBe('ctx-cat');
+  it('does not bind the spaced-name op at all, because the ref matches nothing', () => {
+    expect(edge).toBeUndefined();
   });
 
-  it('records the bind as the name/scope fallback, because no contract ref matched it', () => {
-    const data = edge!.data as Record<string, unknown>;
-    expect(data.resolution).toBe('legacy');
-    expect(data).not.toHaveProperty('match');
-  });
-
-  it('findMembershipGaps reports nothing, because the fallback bound it', () => {
+  it('reports it as unbound, which is the honest answer a fallback used to hide', () => {
     const byId = new Map(findMembershipGaps(es, rels).map((g) => [g.entityId, g.reason]));
-    expect(byId.has('op-gp')).toBe(false);
+    expect(byId.get('op-gp')).toBe('unbound');
   });
 });

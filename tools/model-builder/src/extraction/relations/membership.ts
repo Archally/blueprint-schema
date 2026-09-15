@@ -13,7 +13,7 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  *   Question  --scoped_to-->   BoundedContext   (single-valued; explicit ref PRIMARY, name/scope FALLBACK)
  *
  * This ports the EXACT resolution the backend arch resolver used to recompute
- * (`resolvers.arch.ts` buildContractIndexes + operationRefsOf + ownedBy) so the
+ * (`resolvers.arch.ts` buildContractIndexes + operationRefsOf) so the
  * observable stickies are unchanged — the resolver becomes a pure reader of these edges.
  *
  * D14: there is NO domain `bounded_context_ref` for operations (contracts are the
@@ -108,10 +108,9 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
   }
 
   // PROVIDE-membership: contextId -> op-refs its services provide (expose, send, provide, write).
-  // Exact case only. `allProvided` is the union across every context, which is what decides
-  // whether the deprecated name/scope fallback may apply to an operation at all.
+  // Exact case only. The union across every context is no longer kept: it existed to decide whether
+  // the name/scope fallback could apply to an operation, and that fallback is gone (step-32).
   const providedExactByContextId = new Map<string, Set<string>>();
-  const allProvided = new Set<string>();
   const ensure = (map: Map<string, Set<string>>, key: string): Set<string> => {
     let set = map.get(key);
     if (!set) {
@@ -129,10 +128,7 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
     const owner = contextsByPartyAndName.get(`${party}::${ownerName}`);
     if (!owner) return;
     const exactSet = ensure(providedExactByContextId, owner.id);
-    for (const ref of refs) {
-      exactSet.add(ref);
-      allProvided.add(ref);
-    }
+    for (const ref of refs) exactSet.add(ref);
   };
 
   for (const contract of entities) {
@@ -158,33 +154,24 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
   // `service.handles` was the older spelling of the same fact and had a pass of its own. Both are
   // gone: the 2.8 schema does not declare the property and nothing binds through it.
   //
-  // Name/scope fallback (deprecated) — mirrors resolver `ownedBy`.
-  const ownedBy = (entity: Entity, ctx: Entity): boolean => {
-    const name = contextNameOf(entity);
-    if (name && name === (ctx.term ?? ctx.displayId)) return true;
-    const entityScope = scopeOf(entity);
-    const ctxScope = scopeOf(ctx);
-    if (entityScope && ctxScope && entityScope === ctxScope) return true;
-    return false;
-  };
+  // The name/scope fallback is GONE (step-32). It bound an operation to a context when the domain
+  // file's name or scope matched the context's, which is a filing convention read as an assertion:
+  // it bound to EVERY context a slice declared, so a slice with two contexts gave one operation two
+  // owners and nothing said which was meant. It was retired on a measured condition rather than on
+  // a date - `fallback_only_operations` reached 0 on every pilot and on the client model first.
 
   // ── Operation --handled_by--> Context (m:n) ──────────────────────────────
   for (const op of operations) {
     const forms = operationRefForms(op);
-    const providedAnywhere = forms.some((ref) => allProvided.has(ref));
     for (const ctx of contexts) {
       const exactHere = providedExactByContextId.get(ctx.id);
-      const byContract = exactHere ? forms.some((ref) => exactHere.has(ref)) : false;
-      // Contract-provide is primary (m:n); the deprecated name/scope fallback applies
-      // ONLY to operations no contract provides anywhere (else the contract graph owns it).
-      const byLegacy = !byContract && !providedAnywhere && ownedBy(op, ctx);
-      if (!byContract && !byLegacy) continue;
+      if (!exactHere || !forms.some((ref) => exactHere.has(ref))) continue;
       relations.push({
         id: relationId(op.id, RELATION_TYPE.HandledBy, ctx.id),
         source_entity_id: op.id,
         target_entity_id: ctx.id,
         type: RELATION_TYPE.HandledBy,
-        data: { resolution: byContract ? 'contract' : 'legacy' },
+        data: { resolution: 'contract' },
       });
     }
   }
@@ -211,17 +198,9 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
       // unbound (dangling); the resolvability rule (step-12) surfaces it as a WARN.
       continue;
     }
-    // FALLBACK — deprecated name/scope heuristic (mirrors resolver `ownedBy`).
-    for (const ctx of contexts) {
-      if (!ownedBy(question, ctx)) continue;
-      relations.push({
-        id: relationId(question.id, RELATION_TYPE.ScopedTo, ctx.id),
-        source_entity_id: question.id,
-        target_entity_id: ctx.id,
-        type: RELATION_TYPE.ScopedTo,
-        data: { resolution: 'legacy' },
-      });
-    }
+    // No ref, no edge. The name/scope fallback that used to catch this is gone (step-32), so a
+    // question states its context or is reported unbound - which is the honest answer, because the
+    // fallback bound it to every context its slice declared rather than to the one meant.
   }
 
   return relations;
