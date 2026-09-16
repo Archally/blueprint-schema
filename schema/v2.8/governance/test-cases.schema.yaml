@@ -36,7 +36,7 @@ properties:
       $ref: "#/$defs/test_case"
   fitness_functions:
     type: array
-    description: "Architectural fitness functions - automated constraints validated against the blueprint structure itself. Examples: No service may have more than 5 direct dependencies; Every command operation must have at least one entry in produces."
+    description: "Constraints this model states about the architecture as a whole, each written so a reader can judge it. Whether anything checks one is a separate question: some are settled by reading the model, others describe the code, the running system or the way the team works. Examples: no service may have more than five direct dependencies; API projects reach the business layer rather than the data layer."
     items:
       $ref: "#/$defs/fitness_function"
   tags:
@@ -46,7 +46,7 @@ $defs:
 
   fitness_function:
     type: object
-    description: "Architectural fitness function - automated constraint validated against the blueprint structure itself."
+    description: "One constraint on the architecture, stated for a reader. Some are settled by reading the model, others describe the code, the running system or the way the team works, so this is a statement rather than a check that runs."
     additionalProperties: false
     required: [id, name, assertion]
     properties:
@@ -65,7 +65,7 @@ $defs:
         description: "Blueprint layer this fitness function targets."
       assertion:
         type: string
-        description: "The constraint expression to evaluate against the blueprint graph."
+        description: "The constraint itself, in words a reader can judge. Prose rather than an expression: it is the statement a person signs off on, and nothing evaluates it on its own."
       severity:
         type: string
         enum: [error, warning, info]

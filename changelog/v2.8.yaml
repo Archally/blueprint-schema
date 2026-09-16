@@ -5,6 +5,13 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.42"
+    date: "2026-09-16"
+    step: "a fitness function's description says what one is"
+    summary: |
+      A fitness function was described as an automated constraint validated against the blueprint structure. Measured across the models that carry them, more than half are not that and could not be: they state something about the code, about the running system, or about the way a team works, and nothing in a model can settle those.
+      The three descriptions now say what a fitness function is. It is one constraint on the architecture, written so a reader can judge it. Some are settled by reading the model; others are not, and whether anything checks a given one is a separate question from whether it is worth stating. `assertion` is prose, not an expression, and nothing evaluates it on its own.
+      Description text only. No property is added, removed or retyped, and every document that validated before validates now with the same meaning. The examples were replaced for the same reason: both of the old ones were model-graph, which is the half that made the sentence look true.
   - version: "2.8.41"
     date: "2026-09-16"
     step: "a fitness function becomes something the model can point at"
