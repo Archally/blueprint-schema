@@ -14,7 +14,7 @@
 //      typed-id convention warnings for the infrastructure layer
 //
 // Usage:
-//   node cli.mjs [PATH] [--model PATH] [--schemas PATH] [--compat]
+//   node cli.mjs [PATH] [--model PATH] [--schemas PATH] [--tracked-register PATH] [--compat]
 //
 // Exit codes: 0 = no errors (warnings may exist), 1 = errors, 2 = runner failure.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -223,7 +223,7 @@ function pickVersionDir(base, version) {
 }
 
 function parseArgs(argv) {
-  const args = { model: path.resolve(".blueprint/v2.8"), schemas: null, compat: false, schemaVersion: null };
+  const args = { model: path.resolve(".blueprint/v2.8"), schemas: null, compat: false, schemaVersion: null, trackedRegister: null };
   let schemasExplicit = false;
   let versionOverride = null;
 
@@ -247,6 +247,9 @@ function parseArgs(argv) {
         minor: parsed[2] === undefined ? 0 : Number(parsed[2]),
         minorGiven: parsed[2] !== undefined,
       };
+      i += 1;
+    } else if (token === "--tracked-register" && argv[i + 1]) {
+      args.trackedRegister = path.resolve(argv[i + 1]);
       i += 1;
     } else if (token === "--compat" || token === "-c") {
       args.compat = true;
@@ -291,7 +294,7 @@ function parseArgs(argv) {
 function printHelp() {
   console.log(
     [
-      "Usage: validate-blueprint [PATH] [--model PATH] [--schemas PATH] [--compat]",
+      "Usage: validate-blueprint [PATH] [--model PATH] [--schemas PATH] [--tracked-register PATH] [--compat]",
       "",
       "Validates blueprint YAML files against schemas and checks cross-references.",
       "",
@@ -299,6 +302,8 @@ function printHelp() {
       "  --model, -m    Blueprint directory to validate (default: .blueprint/v2.8)",
       "  --schemas, -s  Schema version root (default: resolved from the model's declared version)",
       "  --schema-version  Judge the model as this version (e.g. 2.6), overriding path and declaration",
+      "  --tracked-register  Also check a tracked migration register at this path. It sits beside",
+      "                 the model rather than inside it, so the model walk never reaches it",
       "  --compat, -c   Relax schema failures to warnings — EXCEPT identity (`id`) and typed",
       "                 reference (`*_ref`) violations, which stay fatal in every mode",
       "  --help, -h     Show this help",
@@ -337,6 +342,16 @@ function main() {
   if (result.skippedFiles?.length) {
     console.log(yellow(`           no schema matches these filenames, so they were not checked:`));
     result.skippedFiles.forEach((relFile) => console.log(yellow(`             - ${relFile}`)));
+  }
+  // The register is named whenever one was offered, checked or not. A line that appears only on
+  // success would leave the two outcomes that matter - "checked and clean" and "never looked at" -
+  // reported by the same silence.
+  if (result.trackedRegister) {
+    const { path: registerPath, entries, checked } = result.trackedRegister;
+    console.log(
+      `${cyan("Register:")}  ${registerPath}, ${entries === null ? "unreadable" : `${entries} migration(s)`}, ` +
+        `${checked ? "checked" : yellow("not checked")}`,
+    );
   }
   console.log("");
 

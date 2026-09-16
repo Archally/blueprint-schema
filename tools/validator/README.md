@@ -21,9 +21,17 @@ npx @archally/blueprint-schema validate .blueprint/v2.8
 |------|-------------|---------|
 | `--model`, `-m` | Blueprint directory to validate | `.blueprint/v2.8` |
 | `--schemas`, `-s` | Schema version root directory | Resolved — see below |
+| `--tracked-register` | Also check a migration register at this path | none |
 | `--compat`, `-c` | Demote schema errors to warnings | `false` |
 
 A positional argument (without flag) is treated as the model path.
+
+A project that stages its changes rather than applying them one at a time keeps them in a register
+at `.blueprint/migrations.yaml`, one level above the model directory. The model walk never arrives
+there, so reaching it takes a path. The report names the register whether or not it could be
+checked, and never folds it into the validated-file count, because it is not one of the model's
+files. A schema version with no description of a register says so by name, as a warning, and the
+model is not failed for it.
 
 ## Where schemas come from
 

@@ -11,7 +11,7 @@ A blueprint is organized into **two planes** plus **cross-cutting schemas**. Eac
 
 ## Cross-cutting schemas
 
-These five files sit at the version root - they belong to neither plane and are imported (or applied) across every layer.
+These six files sit at the version root - they belong to neither plane and are imported (or applied) across every layer.
 
 ### [`blueprint.schema.yaml`](./blueprint.schema.yaml) - root composition
 
@@ -44,6 +44,10 @@ An ordered record of the changes a blueprint model has been through and the ones
 ### [`render.manifest.schema.yaml`](./render.manifest.schema.yaml) - render manifest
 
 Declares one project's full artifact set for the `bp render` command: which renderer targets to produce, where their output lands, and the single build stamp shared by the whole run.
+
+### [`tracked-migrations.schema.yaml`](./tracked-migrations.schema.yaml) - tracked migration register
+
+The staged changes a blueprint model is carrying, each one replayable and each one reversible.
 
 ---
 

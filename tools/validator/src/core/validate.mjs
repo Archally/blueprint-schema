@@ -437,6 +437,54 @@ function describeError(rawError) {
   return base;
 }
 
+/** The schema that describes a tracked migration register, by its registry name. */
+const TRACKED_REGISTER_SCHEMA = "tracked-migrations.schema.yaml";
+
+/**
+ * Check a project's tracked migration register, which sits BESIDE the model rather than inside it.
+ *
+ * A project in tracked mode stages its changes into `.blueprint/migrations.yaml`, one level above
+ * the model directory. Nothing in the model walk reaches that path, so the register was checked by
+ * nothing: a register carrying a status no tool accepts read exactly like a correct one.
+ *
+ * The caller supplies the path because only the caller knows where the project is. This function
+ * supplies the verdict, using the same Ajv instance and the same message shape as every other
+ * document, so a finding here reads like a finding anywhere else.
+ *
+ * A schema line that does not describe the register yields a WARNING naming it, never silence and
+ * never an error: an older model is not wrong for predating a document type.
+ *
+ * @returns {{ path: string, entries: number | null, checked: boolean }} what was examined
+ */
+function checkTrackedRegister({ registerPath, modelDir, ajv, schemaErrors, warnings }) {
+  // Named relative to the model where that is short enough to read - the register sits one level
+  // above it - and absolutely otherwise. A path that climbs out of the tree tells a reader less
+  // than the path they passed in.
+  const relative = toPosixPath(path.relative(modelDir, registerPath));
+  const rel = relative.startsWith("../../") ? toPosixPath(registerPath) : relative;
+  let data;
+  try {
+    data = loadYaml(registerPath);
+  } catch (err) {
+    schemaErrors.push(`[${rel}] Parse error: ${err.message}`);
+    return { path: registerPath, entries: null, checked: false };
+  }
+
+  const validate = ajv.getSchema(SCHEMA_BASE_URI + TRACKED_REGISTER_SCHEMA);
+  if (!validate) {
+    warnings.push(`[${rel}] No validator for a tracked migration register in this schema version`);
+    return { path: registerPath, entries: Array.isArray(data) ? data.length : null, checked: false };
+  }
+
+  if (!validate(data)) {
+    for (const rawError of validate.errors ?? []) {
+      const at = rawError.instancePath ? rawError.instancePath : "/";
+      schemaErrors.push(`[${rel}] ${at} -> ${describeError(rawError)}`);
+    }
+  }
+  return { path: registerPath, entries: Array.isArray(data) ? data.length : null, checked: true };
+}
+
 export function validateModel(args) {
   const { registry } = loadSchemaRegistry(args.schemas);
   // Which id bands this schema line retires is the line's own statement, so a model checked against
@@ -715,6 +763,20 @@ export function validateModel(args) {
     schemaErrors.push(...retained);
   }
 
+  // The register is checked LAST, so a fault in it can never truncate the model's own findings.
+  // It is reported separately from `filesValidated` because it is not one of the model's files:
+  // folding it into that count would make the two numbers disagree with the directory they name.
+  const trackedRegister =
+    args.trackedRegister && fs.existsSync(args.trackedRegister)
+      ? checkTrackedRegister({
+          registerPath: args.trackedRegister,
+          modelDir,
+          ajv,
+          schemaErrors,
+          warnings,
+        })
+      : null;
+
   return {
     schemaErrors,
     crossErrors,
@@ -723,5 +785,6 @@ export function validateModel(args) {
     filesValidated,
     filesSkipped: skippedFiles.length,
     skippedFiles,
+    trackedRegister,
   };
 }

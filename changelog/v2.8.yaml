@@ -5,6 +5,16 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.40"
+    date: "2026-09-16"
+    step: "the staged changes a model is carrying become a document the validator can read"
+    summary: |
+      A project that stages its changes instead of applying them one at a time keeps them in a register beside the model, at `.blueprint/migrations.yaml`. That register is a sequence of migrations, each carrying the operations it would replay and, once applied, the ones that would undo it.
+      Nothing described it and nothing checked it. A register carrying a status no tool accepts, or an operation the model cannot replay, read exactly like a correct one, because a document no validator is pointed at looks the same as a document that always passes.
+      `tracked-migrations.schema.yaml` now describes it. Every operation is checked against its own shape alone, so a fault in a `new` is reported against `new` rather than against the five operations it never claimed to be.
+      Reaching it takes a path, because the register sits beside the model rather than inside it and the model walk never arrives there. The validator accepts `--tracked-register <path>`; `bp validate` (Archally Pro) supplies it whenever a project has one, and says so in its report: the register is named and counted whether or not it could be checked, so "checked and clean" and "never looked at" stop sharing one silence.
+      A project without a register is told nothing about a document it has not got. A schema line that does not describe one says so by name, as a warning, and the model is not failed for predating a document type.
+      Additive: a new document type on the 2.8 line, and a new option. Every document that validated before validates now.
   - version: "2.8.39"
     date: "2026-09-16"
     step: "a file name stops being a claim about which context owns an operation"

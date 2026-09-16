@@ -1,0 +1,267 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Blueprint Tracked Migration Register
+description: "The staged changes a blueprint model is carrying, each one replayable and each one reversible. A project in tracked mode collects its mutations here instead of applying them the moment they are asked for, so a set of related edits lands as one act and can be undone as one. The file sits beside the model directory rather than inside it, at `.blueprint/migrations.yaml`, because it records work ON the model rather than part of it. It is a sequence, not a mapping. A register written for a reader, describing in prose what a model has been through, is a `migrations.yaml` document inside the model directory instead; a single migration authored by hand is a `migration.yaml` document."
+type: array
+items:
+  $ref: "#/$defs/tracked_entry"
+
+$defs:
+  tracked_migration_ref:
+    type: string
+    pattern: "^MIG\\d{3,}$"
+    description: "Identifier of a migration in this register. Numbered in the order the register allocated them, from MIG001, and unscoped: a register belongs to one project, so nothing needs qualifying."
+    examples: ["MIG001", "MIG042"]
+
+  tracked_status:
+    type: string
+    enum: [draft, pending, applied, rolled-back, rejected, discarded]
+    x-vocabulary-distinct: "Where one migration stands in its own authoring lifecycle, from staged to applied to undone. Not where a migration stands in a model's history as a reader sees it, which is the migration register's `status`, and not the semantic classification of a change."
+    description: >
+      Where this migration stands.
+      draft: staged, still collecting changes. pending: complete and waiting to be applied.
+      applied: carried out against the model. rolled-back: applied and then undone.
+      rejected: a variant that lost to a sibling in its group. discarded: abandoned before being applied.
+
+  patch_op:
+    type: object
+    description: "One change, expressed so that it can be replayed against the model. Which properties an operation carries is decided by its `op`, and each `op` is checked against its own shape alone, so a fault is reported against the operation it is in rather than against every shape it is not."
+    required: [op]
+    properties:
+      op:
+        type: string
+        enum: [rename, patch, tag, rewrite-ref, new, delete]
+        description: "What this operation does to the model."
+    allOf:
+      - if: { properties: { op: { const: rename } }, required: [op] }
+        then: { $ref: "#/$defs/patch_op_rename" }
+      - if: { properties: { op: { const: patch } }, required: [op] }
+        then: { $ref: "#/$defs/patch_op_patch" }
+      - if: { properties: { op: { const: tag } }, required: [op] }
+        then: { $ref: "#/$defs/patch_op_tag" }
+      - if: { properties: { op: { const: rewrite-ref } }, required: [op] }
+        then: { $ref: "#/$defs/patch_op_rewrite_ref" }
+      - if: { properties: { op: { const: new } }, required: [op] }
+        then: { $ref: "#/$defs/patch_op_new" }
+      - if: { properties: { op: { const: delete } }, required: [op] }
+        then: { $ref: "#/$defs/patch_op_delete" }
+
+  patch_op_rename:
+    type: object
+    description: "Give an entity a new id, and redirect every reference that named the old one."
+    additionalProperties: false
+    required: [op, from, to]
+    properties:
+      op:
+        const: rename
+        description: "Names this operation."
+      from:
+        type: string
+        description: "The id the entity carries now."
+        examples: ["catalog.CN001"]
+      to:
+        type: string
+        description: "The id it takes."
+        examples: ["catalog.CN099"]
+
+  patch_op_patch:
+    type: object
+    description: "Change fields of one entity, addressed by id or by name."
+    additionalProperties: false
+    required: [op, target, ops]
+    properties:
+      op:
+        const: patch
+        description: "Names this operation."
+      target:
+        type: string
+        description: "The entity to change, by id or by name."
+        examples: ["catalog.CN001", "StockReservation"]
+      ops:
+        type: array
+        description: "The field changes to make, in order."
+        items:
+          $ref: "#/$defs/json_patch_op"
+
+  patch_op_tag:
+    type: object
+    description: "Set tags on every entity matching a selection, so a whole slice can be labelled in one act."
+    additionalProperties: false
+    required: [op, where, set]
+    properties:
+      op:
+        const: tag
+        description: "Names this operation."
+      where:
+        type: object
+        description: "The selection: each key must equal its value for an entity to be included."
+        additionalProperties:
+          type: string
+        examples: [{ slice: "catalog" }]
+      set:
+        type: object
+        description: "The tags to set on everything selected."
+        additionalProperties:
+          type: string
+        examples: [{ review: "2026-Q4" }]
+
+  patch_op_rewrite_ref:
+    type: object
+    description: "Redirect references from one id to another without touching the entities themselves. Used where a reference should move but the entity it pointed at stays."
+    additionalProperties: false
+    required: [op, from, to]
+    properties:
+      op:
+        const: rewrite-ref
+        description: "Names this operation."
+      from:
+        type: string
+        description: "The id references currently name."
+        examples: ["catalog.CN001"]
+      to:
+        type: string
+        description: "The id they should name instead."
+        examples: ["catalog.CN099"]
+      scope:
+        type: string
+        description: "Limit the rewrite to one slice. Absent rewrites everywhere in the model."
+        examples: ["checkout"]
+
+  patch_op_new:
+    type: object
+    description: "Add one entity to a file."
+    additionalProperties: false
+    required: [op, entity_type, file, data]
+    properties:
+      op:
+        const: new
+        description: "Names this operation."
+      entity_type:
+        type: string
+        description: "What kind of entity to add. Decides which container in the file receives it."
+        examples: ["concept", "command", "event", "service"]
+      file:
+        type: string
+        description: "The file to add it to, relative to the model directory."
+        examples: ["catalog/product-core.domain.yaml"]
+      data:
+        type: object
+        description: "The entity itself, in the shape its own schema declares."
+      key:
+        type: string
+        description: "The entry's key, where the container is a mapping rather than a sequence. Operations and errors are held by key, and the key is the readable address a contract list names, so it is authored data no other field carries. Absent for every container that is a sequence."
+        examples: ["reserveStock"]
+      under:
+        type: string
+        description: "The parent instance the entity hangs off, where its container is nested rather than at the root of the file. Services live under a party's context, so placing one names which context, by id or by name. Absent for every container at the root of its file."
+        examples: ["Catalog", "BC002"]
+
+  patch_op_delete:
+    type: object
+    description: "Remove one entity, addressed by id or by name."
+    additionalProperties: false
+    required: [op, target]
+    properties:
+      op:
+        const: delete
+        description: "Names this operation."
+      target:
+        type: string
+        description: "The entity to remove, by id or by name."
+        examples: ["catalog.CN001"]
+
+  json_patch_op:
+    type: object
+    description: "One field change, in JSON Patch terms (RFC 6902)."
+    required: [op, path]
+    properties:
+      op:
+        type: string
+        enum: [add, remove, replace, move, copy, test]
+        description: "What to do at `path`."
+      path:
+        type: string
+        description: "JSON Pointer to the field, relative to the entity."
+        examples: ["/name", "/tags/0"]
+      value:
+        description: "The value to write. Carried by add, replace and test."
+      from:
+        type: string
+        description: "JSON Pointer to the source field. Carried by move and copy."
+        examples: ["/description"]
+
+  validation_delta:
+    type: object
+    description: "What applying this migration did to the model's validity, measured before and after. Recorded so that a migration which introduced errors can be recognised as the one that did."
+    additionalProperties: false
+    required: [warnings_before, warnings_after, errors_before, errors_after]
+    properties:
+      warnings_before:
+        type: integer
+        minimum: 0
+        description: "Warnings the model reported before this migration applied."
+      warnings_after:
+        type: integer
+        minimum: 0
+        description: "Warnings it reported afterwards."
+      errors_before:
+        type: integer
+        minimum: 0
+        description: "Errors the model reported before this migration applied."
+      errors_after:
+        type: integer
+        minimum: 0
+        description: "Errors it reported afterwards."
+
+  tracked_entry:
+    type: object
+    description: "One migration: a named set of changes with a status, and once applied, the changes that would undo it."
+    additionalProperties: false
+    required: [id, name, status, change_set]
+    properties:
+      id:
+        $ref: "#/$defs/tracked_migration_ref"
+      name:
+        type: string
+        pattern: "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+        description: "Short name for the migration, in kebab-case, naming what it does rather than when it was made."
+        examples: ["reserve-stock-at-checkout", "refactor-orders"]
+      status:
+        $ref: "#/$defs/tracked_status"
+      author:
+        type: string
+        description: "Who staged this migration."
+        examples: ["adam"]
+      date:
+        type: string
+        pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+        description: "When the migration was created (YYYY-MM-DD)."
+        examples: ["2026-09-16"]
+      description:
+        type: string
+        description: "What this migration does and why, in plain language."
+      breaking:
+        type: boolean
+        default: false
+        description: "Whether applying this migration breaks readers of the model as it stands."
+      depends_on:
+        type: array
+        description: "Migrations that must apply before this one."
+        items:
+          $ref: "#/$defs/tracked_migration_ref"
+      variant_group:
+        type: string
+        description: "Names a set of mutually exclusive alternatives. Migrations sharing a group are competing answers to the same question: accepting one rejects its siblings, and conflicts between them are expected rather than reported."
+        examples: ["auth-rewrite"]
+      change_set:
+        type: array
+        description: "The changes this migration makes, in the order they apply. Empty while the migration is still collecting them."
+        items:
+          $ref: "#/$defs/patch_op"
+      inverse_change_set:
+        type: array
+        description: "The changes that undo this migration, recorded when it was applied. Absent until then, and removed again once the migration is rolled back."
+        items:
+          $ref: "#/$defs/patch_op"
+      validation_delta:
+        $ref: "#/$defs/validation_delta"
