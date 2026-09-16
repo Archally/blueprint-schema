@@ -1,0 +1,21 @@
+engineVersion: "0.1"
+rules:
+  - id: fitness-function-unattached
+    severity: warn
+    description: >-
+      A fitness function (FF###) states a constraint about the architecture as a whole, so unlike
+      most entities it is complete on its own: nothing has to point at it for it to mean something.
+      What an unattached one loses is its reason. A fitness function named by a leverage point is
+      the guardrail on a change someone decided to make, and the model says which change; one
+      named by nothing states a rule whose motive lives outside the model, where it cannot be
+      reviewed when the rule stops being worth enforcing.
+      So this is a recommendation rather than a defect. Healthy = at least one relation in either
+      direction, which today means a leverage point's fitness_function_refs. Override per project
+      via .blueprint-lint.yaml (e.g. `fitness-function-unattached: off`).
+    find:
+      entity_type: FitnessFunction
+    check:
+      has_relation:
+        direction: any
+        exists: true
+    message: 'Fitness function "{displayId}" ({name|''unnamed''}) is attached to nothing. It is legal on its own; consider naming it from the leverage point whose change it guards, so the model says why the rule is enforced.'

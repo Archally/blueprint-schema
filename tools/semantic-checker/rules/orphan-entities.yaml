@@ -6,7 +6,11 @@ rules:
     find:
       all: true
     filter:
-      type_not_in: [Missing, CodeFile]
+      # A fitness function is a statement about the whole model and is complete without an
+      # inbound reference, so "never referenced" is the wrong sentence for it. The
+      # recommendation it does deserve is `fitness-function-unattached`, which a project can
+      # turn off on its own without losing orphan detection everywhere else.
+      type_not_in: [Missing, CodeFile, FitnessFunction]
     check:
       has_relation:
         direction: any
