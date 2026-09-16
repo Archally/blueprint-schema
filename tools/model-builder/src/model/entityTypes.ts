@@ -33,6 +33,11 @@ export const ENTITY_TYPE = {
   Decision: 'Decision',
   BusinessDecision: 'BusinessDecision',
   TestCase: 'TestCase',
+  // An architectural constraint checked against the model itself, declared beside the test
+  // cases it sits with. Distinct from TestCase: a test case exercises one scenario, a fitness
+  // function asserts something about the whole graph. It was referenced before it was
+  // extracted, so every `fitness_function_refs` entry resolved to a Missing placeholder.
+  FitnessFunction: 'FitnessFunction',
   Capability: 'Capability',
   Metric: 'Metric',
   KPI: 'KPI',

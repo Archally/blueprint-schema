@@ -5,9 +5,11 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
 
 /**
  * Forward ref-list fields on a leverage point (LP### → target). Each authored ref string
- * becomes one outbound relation whose source is the leverage point. Unresolvable refs
- * (e.g. FF### / FN### that the model-builder does not yet extract as first-class entities)
- * degrade to Missing placeholders, exactly like every other relation extractor.
+ * becomes one outbound relation whose source is the leverage point. An unresolvable ref degrades
+ * to a Missing placeholder, exactly like every other relation extractor.
+ *
+ * Every target type this list names is extracted as a first-class entity, so a Missing here means
+ * the ref is wrong rather than that the type is unknown.
  */
 const LEVERAGE_REF_FIELDS: Array<[string, RelationType]> = [
   ['finding_refs', RELATION_TYPE.LeverageFinding],

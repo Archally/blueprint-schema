@@ -5,6 +5,14 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.41"
+    date: "2026-09-16"
+    step: "a fitness function becomes something the model can point at"
+    summary: |
+      A fitness function states a constraint about the architecture as a whole, and the schema has declared them for several versions. Nothing read them. They were not built into the model, so a leverage point naming one pointed at nothing, the reference degraded to a placeholder, and validation passed: a constraint nobody could reach looked exactly like one that was being met.
+      A fitness function is now an entity of its own. It is not a test case and never was: a test case exercises one scenario, a fitness function asserts something about the whole graph, and the two happen to live in one document. Where no separate description is written, the required `assertion` becomes the entity's description, so it never reaches a reader as a bare name.
+      What changes for a model: references to fitness functions resolve, and each one now appears in the model like any other entity. Two consequences follow, both of them the same fact seen from different sides. A fitness function that nothing references is reported as unreferenced, where before it was reported as nothing at all. On the two published example models that is 8 and 19 such warnings; a model whose fitness functions are all named by a leverage point gains none.
+      Nothing stops validating and no document changes meaning. A model that declared fitness functions before declares them now, and they are read.
   - version: "2.8.40"
     date: "2026-09-16"
     step: "the staged changes a model is carrying become a document the validator can read"

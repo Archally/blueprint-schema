@@ -47,7 +47,7 @@ export const MIGRATION_ENTITY_TYPE_MAP: Record<string, TypeMapping> = {
   decision:         { type: ENTITY_TYPE.Decision,            layer: SCHEMA_TYPE_TO_LAYER['decisions']! },
   capability:       { type: ENTITY_TYPE.Capability,          layer: SCHEMA_TYPE_TO_LAYER['capability']! },
   'test-case':      { type: ENTITY_TYPE.TestCase,            layer: SCHEMA_TYPE_TO_LAYER['test-cases']! },
-  'fitness-function': { type: ENTITY_TYPE.TestCase,          layer: SCHEMA_TYPE_TO_LAYER['test-cases']! },
+  'fitness-function': { type: ENTITY_TYPE.FitnessFunction,   layer: SCHEMA_TYPE_TO_LAYER['test-cases']! },
   metric:           { type: ENTITY_TYPE.Metric,              layer: SCHEMA_TYPE_TO_LAYER['quality']! },
   kpi:              { type: ENTITY_TYPE.KPI,                 layer: SCHEMA_TYPE_TO_LAYER['quality']! },
   slo:              { type: ENTITY_TYPE.SLO,                 layer: SCHEMA_TYPE_TO_LAYER['quality']! },
