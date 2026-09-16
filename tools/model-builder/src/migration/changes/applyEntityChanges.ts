@@ -16,13 +16,26 @@ interface TypeMapping {
   layer: string;
 }
 
+/**
+ * A migration names the kind of entity it adds; this map says which entity type that becomes.
+ *
+ * It is the SECOND route an entity can enter the model by. The first is a file: an `errors:` entry
+ * in a domain document is typed by the extractor that reads it. Both routes must land on the same
+ * type, and nothing but `applyEntityChanges.route-parity.test.ts` compares them - which is why that
+ * test exists rather than a restatement of this table.
+ *
+ * Several kinds collapse onto one type on purpose, because no distinct type exists: a dependency is
+ * a Service, a story and an activity are both a Process, and the three dynamics kinds share
+ * Dynamics. Those are decisions, and the parity test names each one so that a future split is
+ * noticed rather than assumed.
+ */
 export const MIGRATION_ENTITY_TYPE_MAP: Record<string, TypeMapping> = {
   concept:          { type: ENTITY_TYPE.Concept,            layer: SCHEMA_TYPE_TO_LAYER['concepts']! },
   actor:            { type: ENTITY_TYPE.Actor,              layer: SCHEMA_TYPE_TO_LAYER['concepts']! },
   enumeration:      { type: ENTITY_TYPE.Enumeration,        layer: SCHEMA_TYPE_TO_LAYER['concepts']! },
   association:      { type: ENTITY_TYPE.Association,         layer: SCHEMA_TYPE_TO_LAYER['concepts']! },
   operation:        { type: ENTITY_TYPE.Operation,           layer: SCHEMA_TYPE_TO_LAYER['domain']! },
-  error:            { type: ENTITY_TYPE.Operation,           layer: SCHEMA_TYPE_TO_LAYER['domain']! },
+  error:            { type: ENTITY_TYPE.Error,               layer: SCHEMA_TYPE_TO_LAYER['domain']! },
   rule:             { type: ENTITY_TYPE.StructuralRule,      layer: SCHEMA_TYPE_TO_LAYER['rules']! },
   transition:       { type: ENTITY_TYPE.TransitionRule,      layer: SCHEMA_TYPE_TO_LAYER['rules']! },
   model:            { type: ENTITY_TYPE.Models,              layer: SCHEMA_TYPE_TO_LAYER['models']! },
