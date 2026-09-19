@@ -16,6 +16,7 @@ Version-root schemas that belong to neither plane and apply across every layer: 
 | [`migrations.schema.yaml`](./entity-catalog.md#migrations) | Blueprint Migration Register | 4 | 2 | An ordered record of the changes a blueprint model has been through and the ones it is planned to go through, written f… |
 | [`profiles/infrastructure/profiles.schema.yaml`](./entity-catalog.md#profiles-infrastructure-profiles) | Blueprint Infrastructure Resource-Type Profile | 6 | 4 | Validates a resource-type catalog profile file (v2.7.7). A profile is DATA, not schema: the resource-type catalog is sh… |
 | [`render.manifest.schema.yaml`](./entity-catalog.md#render-manifest) | Blueprint Render Manifest | 12 | 1 | Declares one project's full artifact set for the `bp render` command: which renderer targets to produce, where their ou… |
+| [`tracked-migrations.schema.yaml`](./entity-catalog.md#tracked-migrations) | Blueprint Tracked Migration Register | 0 | 10 | The staged changes a blueprint model is carrying, each one replayable and each one reversible. A project in tracked mod… |
 
 ### Cross-cutting — reference dependencies
 
@@ -28,6 +29,7 @@ graph LR
         migrations_schema_yaml["migrations"]
         profiles_infrastructure_profiles_schema_yaml["profiles"]
         render_manifest_schema_yaml["render.manifest"]
+        tracked_migrations_schema_yaml["tracked-migrations"]
     end
     design_arch_schema_yaml(["arch"])
     design_concepts_schema_yaml(["concepts"])
@@ -108,7 +110,7 @@ graph LR
     design_arch_schema_yaml -->|50| metamodel_schema_yaml
     design_concepts_schema_yaml -->|44| metamodel_schema_yaml
     design_domain_schema_yaml -->|53| metamodel_schema_yaml
-    design_dynamics_schema_yaml -->|26| metamodel_schema_yaml
+    design_dynamics_schema_yaml -->|29| metamodel_schema_yaml
     design_infrastructure_schema_yaml -->|28| metamodel_schema_yaml
     design_interactions_schema_yaml -->|32| metamodel_schema_yaml
     design_models_schema_yaml -->|14| metamodel_schema_yaml

@@ -56,14 +56,14 @@ const STOP_WORDS = new Set([
 
 /**
  * Split an identifier into its constituent words.
- * `payGapReason` / `pay_gap_reason` / `pay-gap-reason` → ['pay','gap','reason'].
+ * `priceRuleReason` / `price_rule_reason` / `price-rule-reason` → ['price','rule','reason'].
  * @param {string} identifier
  * @returns {string[]}
  */
 export function splitIdentifier(identifier) {
   return String(identifier)
     .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')   // HTTPStatus  → HTTP Status
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')      // payGap      → pay Gap
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')      // priceRule   → price Rule
     .replace(/([A-Za-z])(\d)/g, '$1 $2')         // status2     → status 2
     .split(/[^A-Za-z0-9]+/)
     .filter(Boolean)
@@ -85,7 +85,7 @@ export function significantWords(text) {
  *
  * "The criteria field."          vs subject `criteria`      → true  (echo)
  * "Criteria"                     vs subject `criteria`      → true  (echo)
- * "Pay gap reason"               vs subject `payGapReason`  → true  (echo)
+ * "Price rule reason"            vs subject `priceRuleReason`  → true  (echo)
  * "Ranked factors justifying …"  vs subject `criteria`      → false (real)
  *
  * @param {string} text
@@ -113,7 +113,7 @@ export function echoesSubject(text, subject) {
  * @param {string[]} [contentRules.deny_opening] words the text must not OPEN with (case-insensitive;
  *   a multi-word entry matches as a phrase). For a step note, opening with a condition means the
  *   step branches, and a branching sequence is two activities rather than one note.
- * @param {Record<string,string>} [context]    e.g. { name: 'criteria', title: 'PayGapPayload' }
+ * @param {Record<string,string>} [context]    e.g. { name: 'criteria', title: 'PriceRulePayload' }
  * @returns {{status: 'covered'|'filler'|'missing', reason?: string}}
  */
 export function classifyValue(value, contentRules, context = {}) {

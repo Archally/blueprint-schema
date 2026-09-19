@@ -5,6 +5,20 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.44"
+    date: "2026-09-17"
+    step: "a probe is named, so what it cannot see can be queried"
+    summary: |
+      An instrument that reads a source reports what it was built to report and omits the rest, and the omission is a property of the instrument rather than of any one reading taken with it. Recorded per reading it is repeated or missing; recorded nowhere it is prose.
+      This release reserves the `PRB` band, so a probe can be a referenceable node: `probe_ref` accepts `PRB001` or `integration.PRB001`, alongside every other typed reference in the metamodel. The identifier registry in the schema reference gains its row.
+      Additive, and deliberately incomplete on its own. No document declares a probe yet and no field accepts a `probe_ref`, so every existing model validates with the verdict and the warning count it had before. The release that follows gives a probe a place to be declared.
+  - version: "2.8.43"
+    date: "2026-09-16"
+    step: "a race condition's affects is typed, so the reference it names is resolved"
+    summary: |
+      `race_condition.affects[]` accepted any string and asked for a reference format in its description. Its three siblings on the same layer, `requires`, `enables` and `can_parallel_with`, are each typed, and the difference showed at validation time rather than at authoring time: a scope-qualified id such as `pricing.QRY999` was resolved, because a scope-qualified typed id is read as a reference wherever it appears, while the bare `QRY999` the description's own wording invited was read as free text and resolved against nothing. One field either reported a dangling reference or said nothing, decided by which of the two forms the author had written.
+      The items are now an `anyOf` of `operation_ref`, `concept_ref` and `rule_ref`. A rule is in that list because a race condition points at the invariant its interleaving can violate as readily as at the operations that race, and models write all three. The reference walk derives its keys from the schema, so both forms resolve now and a dangling entry is reported either way.
+      What changes for a model: an `affects` entry that is not one of those three reference shapes was accepted before and is rejected now. Every entry in the published example models is already one of the three. The three siblings are untouched, and a model that only ever wrote ids sees no change beyond a dangling bare id becoming visible.
   - version: "2.8.42"
     date: "2026-09-16"
     step: "a fitness function's description says what one is"

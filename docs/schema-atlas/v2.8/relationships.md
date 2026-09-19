@@ -48,6 +48,7 @@ Metamodel `*_ref` definitions turn a model into a navigable graph — each entit
 | `PA` | `process_activity_ref` | Reference to a process activity (e.g. PA001 or billing.PA001). |
 | `PAR` | `parallelism_ref` | Reference to a dynamics parallelism opportunity (e.g. PAR001 or billing.PAR001). |
 | `PER` | `persona_ref` | Reference to a persona (e.g. PER001 or shop.PER001). A persona is a named archetype of an actor: the same role can be lived very differently by two people, and… |
+| `PRB` | `probe_ref` | Reference to a probe - an instrument that reads an artifact the model does not author and reports an observation about it (e.g. PRB001 or integration.PRB001).… |
 | `PRC` | `process_ref` | Reference to a business process (e.g. PRC001 or orders.PRC001). |
 | `PRT` | `party_ref` | Reference to a party, system or organizational (e.g. PRT001 or billing.PRT001). A party is one node however many documents declare it: declarations fold on the… |
 | `QN` | `question_ref` | Reference to a domain competency question (e.g. QN001 or billing.QN001). Questions are first-class entities representing knowledge requirements of a bounded co… |
@@ -85,7 +86,7 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub �
 
 | Schema file | Inbound refs |
 | --- | --- |
-| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 733 |
+| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 736 |
 | [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | 1 |
 | [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | 1 |
 | [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | 1 |
@@ -121,7 +122,7 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub �
 | `design/arch.schema.yaml` | `metamodel.schema.yaml` | 50 |
 | `design/concepts.schema.yaml` | `metamodel.schema.yaml` | 44 |
 | `design/domain.schema.yaml` | `metamodel.schema.yaml` | 53 |
-| `design/dynamics.schema.yaml` | `metamodel.schema.yaml` | 26 |
+| `design/dynamics.schema.yaml` | `metamodel.schema.yaml` | 29 |
 | `design/infrastructure.schema.yaml` | `metamodel.schema.yaml` | 28 |
 | `design/interactions.schema.yaml` | `metamodel.schema.yaml` | 32 |
 | `design/models.schema.yaml` | `metamodel.schema.yaml` | 14 |

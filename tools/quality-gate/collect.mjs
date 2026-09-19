@@ -37,7 +37,7 @@ const TEST_CASE_CATEGORIES = ['happy_path', 'edge_cases', 'error_cases', 'fitnes
  * @property {string} file        absolute path of the source file
  * @property {string} [slice]     architectural slice (first path segment under the model root)
  * @property {string} [entityId]  typed id when the subject has one
- * @property {string} subject     human locator, e.g. `JustifyPayGapPayload.criteria`
+ * @property {string} subject     human locator, e.g. `JustifyPriceRulePayload.criteria`
  * @property {unknown} value      the collected value (undefined when absent)
  * @property {Record<string,string>} [context] echo-detection context (`name`, `title`)
  */

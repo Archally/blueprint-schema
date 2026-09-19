@@ -585,6 +585,15 @@ $defs:
       risks / decisions / fitness-functions and is delivered via migrations / roadmap work-items
       (e.g. LP001 or platform.LP001). Added v2.7.4.
 
+  probe_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?PRB\\d{3,}$"
+    description: >
+      Reference to a probe - an instrument that reads an artifact the model does not author and
+      reports an observation about it (e.g. PRB001 or integration.PRB001). A probe is a referenceable
+      node so that what it does not see is recorded once against the instrument, rather than repeated
+      on, or missing from, every observation drawn with it.
+
   quality_characteristic:
     type: string
     enum:
@@ -1736,3 +1745,77 @@ x-gdsm:
         compute, whether the declared word agrees with the computed one or not. Deleting the
         declaration is the fix in both readings.
       schema_version: "2.8.25"
+    - lesson: >
+        A closed enum is a vocabulary, and the value that reads naturally in a sentence is often not
+        in it. Read the enum in the schema file before writing the value, not after the validator
+        rejects it: the rejections cluster in governance constructs, where the field names a
+        judgement and the natural English word for that judgement is the one a modeller reaches for.
+        The cost is not the rejection, which is loud and cheap. It is the near miss - a value that IS
+        in the enum and means something else, which validates and then quietly misfiles the element.
+      category: gotcha
+      date: "2026-09-17"
+      evidence: >
+        Five values were rejected in one modelling pass, each on a different construct and each a
+        plausible English word for what the modeller meant: `constrains` as a concept `predicate`
+        (the enum offers part-of, contains, owned-by, derived-from, extends, classifies), `read` as a
+        `materializes.action` (create, update, delete, archive), `operational` and `measurement` as
+        an inquiry `category` (business, technical, ux, legal, data, dependency, feasibility,
+        strategic, organizational), `neutral` as a `confidence_impact` (supports, weakens,
+        invalidates), and `cancelled` as an `end_states.type`, where the schema spells it `cancel`.
+      schema_version: "2.8.43"
+    - lesson: >
+        A process whose activities have DISJOINT actors and which declares one end state per half is
+        two processes. Split it and join the halves with `calls_subprocess` on the activity where the
+        second begins: each half then states its own trigger, its own lanes and its own end state,
+        and the call records that they are one flow. The alternative - one process with a title
+        joined by "and" - hides the second actor's work inside the first actor's flow, and every
+        projection that draws one process as one unit draws the two as one.
+      category: semantics
+      date: "2026-09-17"
+      evidence: >
+        A process titled "Respond, score, and support" had two activities, one performed by the
+        person answering and the service scoring, one by the manager acting on the score, and it
+        declared an end state for each. Split into two processes joined by `calls_subprocess`, it
+        produced two boards where it had produced one, and the second half gained the trigger and the
+        lanes it never had room to state.
+      schema_version: "2.8.43"
+    - lesson: >
+        `activities[]` inside a process are not entities. They carry an id in the same shape as one
+        (`PA###`), and nothing else about them is entity-like: the id allocator has no rule for the
+        prefix, they change no entity count, no governance `affects` ref can name one, and no
+        validator reports one as unreferenced. Mint the id by reading the process's own list, and pin
+        governance to the PROCESS rather than to the step inside it.
+      category: structure
+      date: "2026-09-17"
+      evidence: >
+        An activity added to an existing process moved no count reported by validation or by the
+        semantic checks, and its id had to be read off its sibling activities because the allocator
+        declines the prefix.
+      schema_version: "2.8.43"
+    - lesson: >
+        `tracker_ref` is declared on `process`, `user_story` and `use_case` and on nothing else. That
+        is the schema saying which constructs correspond to a unit of delivered WORK: a tracker item
+        describes something a team agreed to build, and an operation is a piece of the domain that
+        several such items may touch. Do not reach for a nested `properties.tracker_ref` on an
+        operation to close the gap - a consumer reading the field reads those three places, and a
+        fourth spelling is a value nothing will find.
+      category: structure
+      date: "2026-09-17"
+      evidence: >
+        Three declarations in `design/story.schema.yaml` and no operation construct carries one. The
+        translator that builds an Event Storming artifact reads it from processes only, so a sticky -
+        which is an operation - has no tracker to show and never will without a schema change.
+      schema_version: "2.8.43"
+    - lesson: >
+        A goal, risk, inquiry or finding that names no `affects` target is reported as an orphan, and
+        the report is right: an element that points at nothing is a note, not a model statement. Fill
+        `affects` when the element is written rather than in a later sweep. The ref also decides
+        where several projections DRAW the element, so an empty `affects` is not only a warning - it
+        is the difference between a concern pinned beside the thing it is about and a concern in an
+        unsorted heap at the edge of the board.
+      category: workflow
+      date: "2026-09-17"
+      evidence: >
+        Every governance element added in one modelling pass needed an `affects` ref to clear
+        `orphan-entities`, and the same refs are what place the element on the process boards.
+      schema_version: "2.8.43"

@@ -10,10 +10,10 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 | Impact | Count |
 | --- | --- |
-| Breaking (major) | 24 |
-| Additive (minor) | 199 |
+| Breaking (major) | 25 |
+| Additive (minor) | 201 |
 | Clarification (patch) | 0 |
-| **Total changes** | 223 |
+| **Total changes** | 226 |
 
 ## ⚠ Breaking changes
 
@@ -38,6 +38,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Requiredness changed | design/arch.schema.yaml#/$defs/dependency/properties/relationship | Property relationship became required (breaking). |
 | Requiredness changed | design/models.schema.yaml#/$defs/model_schema/properties/description | Property description became required (breaking). |
 | Requiredness changed | governance/decisions.schema.yaml#/$defs/decision/properties/summary | Property summary became required (breaking). |
+| Modified | design/dynamics.schema.yaml#/$defs/race_condition/properties/affects | Property affects type changed array<string> → array<union>. |
 | Modified | migration.schema.yaml#/$defs/entity_change/properties/entity_type | Property entity_type enum values removed: story, activity. |
 | Added | design/arch.schema.yaml#/$defs/context/properties/id | Property id added (required — breaking). |
 | Added | design/arch.schema.yaml#/$defs/party/properties/id | Property id added (required — breaking). |
@@ -139,7 +140,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `governance/motivation.schema.yaml#/$defs/inquiry/properties/resolved` — Property `resolved` marked deprecated.
   - _Sources: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/resolved`, `schema/v2.6/governance/motivation.schema.yaml#/$defs/inquiry/properties/resolved`_
 
-## Modified (20)
+## Modified (21)
 
 - [additive] `blueprint.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/blueprint.schema.yaml#/properties/schemaVersion`, `schema/v2.6/blueprint.schema.yaml#/properties/schemaVersion`_
@@ -155,6 +156,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/domain.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/design/domain.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/domain.schema.yaml#/properties/schemaVersion`_
+
+- **[breaking]** `design/dynamics.schema.yaml#/$defs/race_condition/properties/affects` — Property `affects` type changed `array<string>` → `array<union>`.
+  - _Sources: `schema/v2.8/design/dynamics.schema.yaml#/$defs/race_condition/properties/affects`, `schema/v2.6/design/dynamics.schema.yaml#/$defs/race_condition/properties/affects`_
 
 - [additive] `design/dynamics.schema.yaml#/$defs/race_condition/properties/likelihood` — Property `likelihood` enum values added: `very-high`.
   - _Sources: `schema/v2.8/design/dynamics.schema.yaml#/$defs/race_condition/properties/likelihood`, `schema/v2.6/design/dynamics.schema.yaml#/$defs/race_condition/properties/likelihood`_
@@ -201,7 +205,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (176)
+## Added (178)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -668,6 +672,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `metamodel.schema.yaml#/$defs/priority_scale` — New definition `priority_scale` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/priority_scale`_
 
+- [additive] `metamodel.schema.yaml#/$defs/probe_ref` — New definition `probe_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/probe_ref`_
+
 - [additive] `metamodel.schema.yaml#/$defs/process_activity_ref` — New definition `process_activity_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/process_activity_ref`_
 
@@ -730,6 +737,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `render.manifest.schema.yaml` — New schema file `render.manifest.schema.yaml` added.
   - _Source: `schema/v2.8/render.manifest.schema.yaml`_
+
+- [additive] `tracked-migrations.schema.yaml` — New schema file `tracked-migrations.schema.yaml` added.
+  - _Source: `schema/v2.8/tracked-migrations.schema.yaml`_
 
 ---
 

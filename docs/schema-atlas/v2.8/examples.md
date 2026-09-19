@@ -48,6 +48,62 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/migrations.schema.yaml#/$defs/register_change/properties/entity/examples/1`: `"CN006"`
 
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_migration_ref/examples/0`: `"MIG001"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_migration_ref/examples/1`: `"MIG042"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_rename/properties/from/examples/0`: `"catalog.CN001"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_rename/properties/to/examples/0`: `"catalog.CN099"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_patch/properties/target/examples/0`: `"catalog.CN001"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_patch/properties/target/examples/1`: `"StockReservation"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_tag/properties/where/examples/0`: `{"slice":"catalog"}`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_tag/properties/set/examples/0`: `{"review":"2026-Q4"}`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_rewrite_ref/properties/from/examples/0`: `"catalog.CN001"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_rewrite_ref/properties/to/examples/0`: `"catalog.CN099"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_rewrite_ref/properties/scope/examples/0`: `"checkout"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/entity_type/examples/0`: `"concept"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/entity_type/examples/1`: `"command"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/entity_type/examples/2`: `"event"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/entity_type/examples/3`: `"service"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/file/examples/0`: `"catalog/product-core.domain.yaml"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/key/examples/0`: `"reserveStock"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/under/examples/0`: `"Catalog"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/under/examples/1`: `"BC002"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_delete/properties/target/examples/0`: `"catalog.CN001"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/json_patch_op/properties/path/examples/0`: `"/name"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/json_patch_op/properties/path/examples/1`: `"/tags/0"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/json_patch_op/properties/from/examples/0`: `"/description"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry/properties/name/examples/0`: `"reserve-stock-at-checkout"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry/properties/name/examples/1`: `"refactor-orders"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry/properties/author/examples/0`: `"adam"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry/properties/date/examples/0`: `"2026-09-16"`
+
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry/properties/variant_group/examples/0`: `"auth-rewrite"`
+
 ## Reference example models
 
 Full example blueprints in this repository, validated against the schema — the best way to see the schema in use.

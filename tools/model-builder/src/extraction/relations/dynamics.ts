@@ -11,7 +11,7 @@ import { resolveOrPlaceholder, entityDomain } from './resolver.js';
  *   Ordering       --ordering_requires-->       Operation  (ordering[].requires[])
  *   Ordering       --ordering_enables-->        Operation  (ordering[].enables[])
  *   Ordering       --ordering_parallel_with-->  Operation  (ordering[].can_parallel_with[])
- *   RaceCondition  --race_condition_affects-->  Operation | Concept  (race_conditions[].affects[])
+ *   RaceCondition  --race_condition_affects-->  Operation | Concept | Rule  (race_conditions[].affects[])
  *
  * ## Why these edges are worth building rather than deferring
  *
@@ -20,19 +20,19 @@ import { resolveOrPlaceholder, entityDomain } from './resolver.js';
  * every graph view - the entities would be present and say nothing about anything, which is a
  * different failure from the one being fixed rather than a smaller amount of it.
  *
- * ## Which of these the validator already checks, and why the answer is arbitrary
+ * ## Which of these the validator checks
  *
- * The validator's reference integrity reads a field when `isRefKey` recognises its NAME.
- * `operations` is in its `LIKELY_REF_KEYS`; `requires`, `enables`, `can_parallel_with` and
- * `affects` are not, and do not end in `_ref`/`_refs`. So 110 of the 467 are checked today and 357
- * are invisible - decided by spelling, not by meaning. The validator reads YAML directly and never
- * consults the model builder, so nothing here changes it.
+ * The validator derives its reference keys from the SCHEMA (`validator/core/reference-keys.mjs`):
+ * a property typed as a metamodel `*_ref` is a reference, recorded as a parent/key pair. On the
+ * current line every field in the table above is typed, so every one of them resolves and a
+ * dangling entry fails the run whether it was written scoped or bare. `affects` is an `anyOf` of
+ * `operation_ref`, `concept_ref` and `rule_ref`, which is why its edge can land on any of the
+ * three: a race condition points at the invariant its interleaving can violate as readily as at
+ * the operations that race. The validator reads YAML directly and never consults the model builder,
+ * so nothing here changes that either way.
  *
- * The largest blind field is `race_conditions[].affects[]`: 190 refs, every one well-formed and
- * resolvable, typed in the schema as a bare `type: string` array whose description asks the author
- * to "use operation_ref ... format for traceability". Prose reaches no consumer. Promoting it to a
- * typed ref is a schema change and belongs to the release, not here - but the edge is built either
- * way, because the data is already correct.
+ * The earlier lines type `affects` as a plain string, and this extractor is reached by their
+ * documents as readily as by current ones - which is what the entry reader below is for.
  *
  * ## The family discriminator
  *
@@ -64,9 +64,10 @@ const REF_FIELDS: Record<string, { field: string; type: string }[]> = {
 };
 
 /**
- * An `affects[]` entry is a free string by schema, so some carry prose around the id -
- * `"recruitment.CMD005 (SubmitApplication - write Application + ConsentRecord)"`. Four such entries
- * exist in the corpus, all under `resources`, but the field's type permits it anywhere.
+ * On the earlier lines an `affects[]` entry is a free string, so one can carry prose around the id -
+ * `"orders.CMD005 (SubmitOrder - writes Order and Payment)"`. The current line types the field, so a
+ * document that validates against it holds an id and nothing else; this reader exists for the
+ * documents that do not, since the extractor is reached without a validation run in front of it.
  *
  * A leading id is read out; anything else is left alone rather than pattern-matched out of the
  * middle of a sentence. Extracting an id from arbitrary prose would build an edge from a guess, and

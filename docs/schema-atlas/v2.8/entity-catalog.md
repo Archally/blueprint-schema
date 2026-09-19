@@ -4,7 +4,7 @@
 
 Every schema file, its root object, and its definitions — with types, requiredness, enums, and deprecation read directly from JSON Schema. Overlay notes are labeled non-authoritative (DEC-ATL-17).
 
-**Cross-cutting:** [`blueprint.schema.yaml`](#blueprint) · [`metamodel.schema.yaml`](#metamodel) · [`migration.schema.yaml`](#migration) · [`migrations.schema.yaml`](#migrations) · [`profiles/infrastructure/profiles.schema.yaml`](#profiles-infrastructure-profiles) · [`render.manifest.schema.yaml`](#render-manifest)
+**Cross-cutting:** [`blueprint.schema.yaml`](#blueprint) · [`metamodel.schema.yaml`](#metamodel) · [`migration.schema.yaml`](#migration) · [`migrations.schema.yaml`](#migrations) · [`profiles/infrastructure/profiles.schema.yaml`](#profiles-infrastructure-profiles) · [`render.manifest.schema.yaml`](#render-manifest) · [`tracked-migrations.schema.yaml`](#tracked-migrations)
 
 **Design Plane:** [`design/arch.schema.yaml`](#design-arch) · [`design/concepts.schema.yaml`](#design-concepts) · [`design/domain.schema.yaml`](#design-domain) · [`design/dynamics.schema.yaml`](#design-dynamics) · [`design/infrastructure.schema.yaml`](#design-infrastructure) · [`design/interactions.schema.yaml`](#design-interactions) · [`design/models.schema.yaml`](#design-models) · [`design/quality.schema.yaml`](#design-quality) · [`design/rules.schema.yaml`](#design-rules) · [`design/story.schema.yaml`](#design-story)
 
@@ -355,6 +355,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `metric_ref` | `string` |  | Reference to a quality metric (e.g. MT001 or billing.MT001). |
 | `finding_ref` | `string` |  | Reference to a quality finding - an AS-IS internal-quality defect (e.g. FN001 or ordering.FN001). |
 | `leverage_ref` | `string` |  | Reference to a leverage point - a prioritized cross-cutting intervention that bundles findings / risks / decisions / fitness-functions and is delivered via mig… |
+| `probe_ref` | `string` |  | Reference to a probe - an instrument that reads an artifact the model does not author and reports an observation about it (e.g. PRB001 or integration.PRB001).… |
 | `quality_characteristic` | `string` | `functional-suitability`, `performance-efficiency`, `compatibility`, `usability`, `reliability`, `security` … (9) | ISO/IEC 25010:2011 top-level product-quality characteristic - the eight 2011 characteristics plus `safety` (the one clearly-useful 2023 addition). Names the to… |
 | `quality_subcharacteristic` | `string` | `modularity`, `reusability`, `analysability`, `modifiability`, `testability`, `confidentiality` … (36) | ISO/IEC 25010 sub-characteristic - the finer grain under a `quality_characteristic`. The pairing of a sub-characteristic to its top-level is a CONVENTION the a… |
 | `complexity_pattern` | `string` | `crud`, `presentation`, `transformation`, `integration`, `cdc`, `concurrency` … (7) | Dominant implementation-complexity / problem-type pattern of a context or subdomain: crud=record management; presentation=UI-heavy; transformation=translation/… |
@@ -722,6 +723,177 @@ _Source: `schema/v2.8/render.manifest.schema.yaml` · root type `object`_
 | `options` | `object` | — |  | Tool-specific rendering options, for a tool that has nowhere else to put them. Not a general pass-through. Most renderers already take a `view:` config validat… |
 
 _Source: `schema/v2.8/render.manifest.schema.yaml#/$defs/target`_
+
+<a id="tracked-migrations"></a>
+
+### `tracked-migrations.schema.yaml`
+
+**Blueprint Tracked Migration Register**
+
+The staged changes a blueprint model is carrying, each one replayable and each one reversible. A project in tracked mode collects its mutations here instead of applying them the moment they are asked for, so a set of related edits lands as one act and can be undone as one. The file sits beside the model directory rather than inside it, at `.blueprint/migrations.yaml`, because it records work ON the model rather than part of it. It is a sequence, not a mapping. A register written for a reader, d…
+
+_Source: `schema/v2.8/tracked-migrations.schema.yaml` · root type `array`_
+
+#### Definitions
+
+#### `patch_op`
+
+One change, expressed so that it can be replayed against the model. Which properties an operation carries is decided by its `op`, and each `op` is checked against its own shape alone, so a fault is reported against the operation it is in rather than against every shape it is not.
+
+**Required:** `op`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `op` | `string` | ✓ | `rename`, `patch`, `tag`, `rewrite-ref`, `new`, `delete` | What this operation does to the model. |
+
+_Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op`_
+
+#### `patch_op_rename`
+
+Give an entity a new id, and redirect every reference that named the old one.
+
+**Required:** `op`, `from`, `to`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `op` | `any` | ✓ |  | Names this operation. |
+| `from` | `string` | ✓ |  | The id the entity carries now. |
+| `to` | `string` | ✓ |  | The id it takes. |
+
+_Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_rename`_
+
+#### `patch_op_patch`
+
+Change fields of one entity, addressed by id or by name.
+
+**Required:** `op`, `target`, `ops`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `op` | `any` | ✓ |  | Names this operation. |
+| `target` | `string` | ✓ |  | The entity to change, by id or by name. |
+| `ops` | `array<ref → json_patch_op>` | ✓ |  | The field changes to make, in order. |
+
+_Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_patch`_
+
+#### `patch_op_tag`
+
+Set tags on every entity matching a selection, so a whole slice can be labelled in one act.
+
+**Required:** `op`, `where`, `set`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `op` | `any` | ✓ |  | Names this operation. |
+| `where` | `object` | ✓ |  | The selection: each key must equal its value for an entity to be included. |
+| `set` | `object` | ✓ |  | The tags to set on everything selected. |
+
+_Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_tag`_
+
+#### `patch_op_rewrite_ref`
+
+Redirect references from one id to another without touching the entities themselves. Used where a reference should move but the entity it pointed at stays.
+
+**Required:** `op`, `from`, `to`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `op` | `any` | ✓ |  | Names this operation. |
+| `from` | `string` | ✓ |  | The id references currently name. |
+| `to` | `string` | ✓ |  | The id they should name instead. |
+| `scope` | `string` | — |  | Limit the rewrite to one slice. Absent rewrites everywhere in the model. |
+
+_Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_rewrite_ref`_
+
+#### `patch_op_new`
+
+Add one entity to a file.
+
+**Required:** `op`, `entity_type`, `file`, `data`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `op` | `any` | ✓ |  | Names this operation. |
+| `entity_type` | `string` | ✓ |  | What kind of entity to add. Decides which container in the file receives it. |
+| `file` | `string` | ✓ |  | The file to add it to, relative to the model directory. |
+| `data` | `object` | ✓ |  | The entity itself, in the shape its own schema declares. |
+| `key` | `string` | — |  | The entry's key, where the container is a mapping rather than a sequence. Operations and errors are held by key, and the key is the readable address a contract… |
+| `under` | `string` | — |  | The parent instance the entity hangs off, where its container is nested rather than at the root of the file. Services live under a party's context, so placing… |
+
+_Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new`_
+
+#### `patch_op_delete`
+
+Remove one entity, addressed by id or by name.
+
+**Required:** `op`, `target`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `op` | `any` | ✓ |  | Names this operation. |
+| `target` | `string` | ✓ |  | The entity to remove, by id or by name. |
+
+_Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_delete`_
+
+#### `json_patch_op`
+
+One field change, in JSON Patch terms (RFC 6902).
+
+**Required:** `op`, `path`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `op` | `string` | ✓ | `add`, `remove`, `replace`, `move`, `copy`, `test` | What to do at `path`. |
+| `path` | `string` | ✓ |  | JSON Pointer to the field, relative to the entity. |
+| `value` | `any` | — |  | The value to write. Carried by add, replace and test. |
+| `from` | `string` | — |  | JSON Pointer to the source field. Carried by move and copy. |
+
+_Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/json_patch_op`_
+
+#### `validation_delta`
+
+What applying this migration did to the model's validity, measured before and after. Recorded so that a migration which introduced errors can be recognised as the one that did.
+
+**Required:** `warnings_before`, `warnings_after`, `errors_before`, `errors_after`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `warnings_before` | `integer` | ✓ |  | Warnings the model reported before this migration applied. |
+| `warnings_after` | `integer` | ✓ |  | Warnings it reported afterwards. |
+| `errors_before` | `integer` | ✓ |  | Errors the model reported before this migration applied. |
+| `errors_after` | `integer` | ✓ |  | Errors it reported afterwards. |
+
+_Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/validation_delta`_
+
+#### `tracked_entry`
+
+One migration: a named set of changes with a status, and once applied, the changes that would undo it.
+
+**Required:** `id`, `name`, `status`, `change_set`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `id` | `ref → tracked_migration_ref` | ✓ |  |  |
+| `name` | `string` | ✓ |  | Short name for the migration, in kebab-case, naming what it does rather than when it was made. |
+| `status` | `ref → tracked_status` | ✓ |  |  |
+| `author` | `string` | — |  | Who staged this migration. |
+| `date` | `string` | — |  | When the migration was created (YYYY-MM-DD). |
+| `description` | `string` | — |  | What this migration does and why, in plain language. |
+| `breaking` | `boolean` | — |  | Whether applying this migration breaks readers of the model as it stands. |
+| `depends_on` | `array<ref → tracked_migration_ref>` | — |  | Migrations that must apply before this one. |
+| `variant_group` | `string` | — |  | Names a set of mutually exclusive alternatives. Migrations sharing a group are competing answers to the same question: accepting one rejects its siblings, and… |
+| `change_set` | `array<ref → patch_op>` | ✓ |  | The changes this migration makes, in the order they apply. Empty while the migration is still collecting them. |
+| `inverse_change_set` | `array<ref → patch_op>` | — |  | The changes that undo this migration, recorded when it was applied. Absent until then, and removed again once the migration is rolled back. |
+| `validation_delta` | `ref → validation_delta` | — |  |  |
+
+_Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry`_
+
+#### Value definitions
+
+| Definition | Type | Values | Description |
+| --- | --- | --- | --- |
+| `tracked_migration_ref` | `string` |  | Identifier of a migration in this register. Numbered in the order the register allocated them, from MIG001, and unscoped: a register belongs to one project, so… |
+| `tracked_status` | `string` | `draft`, `pending`, `applied`, `rolled-back`, `rejected`, `discarded` | Where this migration stands. draft: staged, still collecting changes. pending: complete and waiting to be applied. applied: carried out against the model. roll… |
 
 ## Design Plane
 
@@ -1743,7 +1915,7 @@ A documented concurrency hazard with mitigation strategy. Proactive identificati
 | `impact` | `string` | ✓ |  | What happens if unmitigated (e.g. 'Duplicate orders created'). |
 | `likelihood` | `ref → likelihood_scale` | — |  | Probability in production based on traffic patterns, concurrency level, and timing windows. very-high: the timing window is hit under normal load, not only und… |
 | `mitigation` | `string` | ✓ |  | Strategy to prevent or handle this race (e.g. 'Optimistic locking with retry'). |
-| `affects` | `array<string>` | — |  | Operations or concepts affected. Use operation_ref (CMD/EVT/QRY/DOC + number) or concept_ref (CNnnn) format for traceability. |
+| `affects` | `array<union>` | — |  | What this hazard affects, as typed references the reference walk resolves: an operation (CMD/EVT/QRY/DOC), a concept (CN) or a rule (SR/CR/DR/EQ/VR). A rule be… |
 | `description` | `string` | — |  | Human-readable description. |
 | `properties` | `ref → entity_properties` | — |  |  |
 | `tags` | `ref → tags` | — |  |  |
@@ -3768,14 +3940,14 @@ _Source: `schema/v2.8/governance/test-cases.schema.yaml` · root type `object`_
 | `happy_path` | `array<ref → test_case>` | — |  | Tests for normal, expected operation. Validates primary success scenarios - the golden path. Every blueprint should have at least one. |
 | `edge_cases` | `array<ref → test_case>` | — |  | Tests for boundary conditions and unusual but valid inputs: empty collections, maximum values, concurrent access, unusual combinations. |
 | `error_cases` | `array<ref → test_case>` | — |  | Tests for failure scenarios and error handling. Validates graceful failure, correct error messages, and invariant maintenance. |
-| `fitness_functions` | `array<ref → fitness_function>` | — |  | Architectural fitness functions - automated constraints validated against the blueprint structure itself. Examples: No service may have more than 5 direct depe… |
+| `fitness_functions` | `array<ref → fitness_function>` | — |  | Constraints this model states about the architecture as a whole, each written so a reader can judge it. Whether anything checks one is a separate question: som… |
 | `tags` | `ref → tags` | — |  |  |
 
 #### Definitions
 
 #### `fitness_function`
 
-Architectural fitness function - automated constraint validated against the blueprint structure itself.
+One constraint on the architecture, stated for a reader. Some are settled by reading the model, others describe the code, the running system or the way the team works, so this is a statement rather than a check that runs.
 
 **Required:** `id`, `name`, `assertion`
 
@@ -3785,7 +3957,7 @@ Architectural fitness function - automated constraint validated against the blue
 | `name` | `string` | ✓ |  | Human-readable fitness function name. |
 | `description` | `string` | — |  | What this fitness function validates and why. |
 | `scope` | `string` | — | `operation`, `concept`, `rule`, `service`, `dependency`, `story` … (7) | Blueprint layer this fitness function targets. |
-| `assertion` | `string` | ✓ |  | The constraint expression to evaluate against the blueprint graph. |
+| `assertion` | `string` | ✓ |  | The constraint itself, in words a reader can judge. Prose rather than an expression: it is the statement a person signs off on, and nothing evaluates it on its… |
 | `severity` | `string` | — | `error`, `warning`, `info` | How to treat violations: error=block, warning=report, info=log. |
 | `properties` | `ref → entity_properties` | — |  |  |
 | `tags` | `ref → tags` | — |  |  |

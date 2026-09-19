@@ -5,9 +5,9 @@ import { classifyValue, echoesSubject, splitIdentifier, significantWords } from 
 
 describe('splitIdentifier', () => {
   test('splits camelCase, snake_case and kebab-case alike', () => {
-    assert.deepEqual(splitIdentifier('payGapReason'), ['pay', 'gap', 'reason']);
-    assert.deepEqual(splitIdentifier('pay_gap_reason'), ['pay', 'gap', 'reason']);
-    assert.deepEqual(splitIdentifier('pay-gap-reason'), ['pay', 'gap', 'reason']);
+    assert.deepEqual(splitIdentifier('priceRuleReason'), ['price', 'rule', 'reason']);
+    assert.deepEqual(splitIdentifier('price_rule_reason'), ['price', 'rule', 'reason']);
+    assert.deepEqual(splitIdentifier('price-rule-reason'), ['price', 'rule', 'reason']);
     assert.deepEqual(splitIdentifier('HTTPStatus2'), ['http', 'status', '2']);
   });
 });
@@ -23,13 +23,13 @@ describe('echoesSubject', () => {
   test('detects a description that merely restates its subject', () => {
     assert.equal(echoesSubject('The criteria field.', 'criteria'), true);
     assert.equal(echoesSubject('Criteria', 'criteria'), true);
-    assert.equal(echoesSubject('Pay gap reason', 'payGapReason'), true);
-    assert.equal(echoesSubject('The pay gap reason value.', 'pay_gap_reason'), true);
+    assert.equal(echoesSubject('Price rule reason', 'priceRuleReason'), true);
+    assert.equal(echoesSubject('The price rule reason value.', 'price_rule_reason'), true);
   });
 
   test('accepts a description that adds meaning beyond the name', () => {
-    assert.equal(echoesSubject('Ranked factors that justify a pay gap.', 'criteria'), false);
-    assert.equal(echoesSubject('Reason the pay gap is lawful under §3.', 'payGapReason'), false);
+    assert.equal(echoesSubject('Ranked factors that justify a price rule.', 'criteria'), false);
+    assert.equal(echoesSubject('Reason the price rule is lawful under §3.', 'priceRuleReason'), false);
   });
 
   test('treats pure stop-word prose as an echo — it says nothing at all', () => {
@@ -75,7 +75,7 @@ describe('classifyValue — presence', () => {
 
 describe('classifyValue — content heuristics (the anti-filler tier)', () => {
   const rules = { min_length: 15, deny: ['TODO', 'string', 'N/A'], deny_echo_of: ['name', 'title'] };
-  const context = { name: 'criteria', title: 'JustifyPayGapPayload' };
+  const context = { name: 'criteria', title: 'JustifyPriceRulePayload' };
 
   test('literal placeholders are filler, not coverage', () => {
     for (const placeholder of ['TODO', 'todo', 'N/A', 'n/a', 'string', 'String']) {
@@ -91,7 +91,7 @@ describe('classifyValue — content heuristics (the anti-filler tier)', () => {
   });
 
   test('a substantive description of adequate length is covered', () => {
-    const result = classifyValue('Ranked factors justifying the observed pay gap.', rules, context);
+    const result = classifyValue('Ranked factors justifying the observed price rule.', rules, context);
     assert.equal(result.status, 'covered');
   });
 

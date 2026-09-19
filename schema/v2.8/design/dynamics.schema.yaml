@@ -221,8 +221,11 @@ $defs:
       affects:
         type: array
         items:
-          type: string
-        description: "Operations or concepts affected. Use operation_ref (CMD/EVT/QRY/DOC + number) or concept_ref (CNnnn) format for traceability."
+          anyOf:
+            - $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            - $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+            - $ref: "../metamodel.schema.yaml#/$defs/rule_ref"
+        description: "What this hazard affects, as typed references the reference walk resolves: an operation (CMD/EVT/QRY/DOC), a concept (CN) or a rule (SR/CR/DR/EQ/VR). A rule belongs here when the interleaving can violate the invariant it states."
       description:
         type: string
         description: "Human-readable description."

@@ -169,6 +169,7 @@ Rule prefixes: `SR`=structural, `CR`=classification, `DR`=derivation, `EQ`=equiv
 | Service | `SVC\d{3,}` | `SVC001` |
 | Domain | `DMN\d{3,}` | `DMN001` (no context prefix) |
 | Subdomain | `SDM\d{3,}` | `SDM001` (no context prefix) |
+| Probe | `PRB\d{3,}` | `PRB001` |
 
 ### Infrastructure
 

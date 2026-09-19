@@ -6,10 +6,10 @@ A generated, human-readable projection of the JSON Schema. **JSON Schema remains
 
 | Metric | Count |
 | --- | --- |
-| Schema files | 24 |
+| Schema files | 25 |
 | Planes | 3 |
-| Object definitions | 161 |
-| Typed-ID entity types | 64 |
+| Object definitions | 171 |
+| Typed-ID entity types | 65 |
 | Cross-file reference edges | 40 |
 
 ## Plane map
@@ -17,7 +17,7 @@ A generated, human-readable projection of the JSON Schema. **JSON Schema remains
 ```mermaid
 graph TD
     ROOT["Blueprint v2.8"]
-    cross_cutting["Cross-cutting<br/>6 schema files"]
+    cross_cutting["Cross-cutting<br/>7 schema files"]
     ROOT --> cross_cutting
     design["Design Plane<br/>10 schema files"]
     ROOT --> design
@@ -37,6 +37,7 @@ Version-root schemas that belong to neither plane and apply across every layer: 
 | [`migrations.schema.yaml`](./entity-catalog.md#migrations) | Blueprint Migration Register | An ordered record of the changes a blueprint model has been through and the ones it is planned to go through, written for a reader. Each en… |
 | [`profiles/infrastructure/profiles.schema.yaml`](./entity-catalog.md#profiles-infrastructure-profiles) | Blueprint Infrastructure Resource-Type Profile | Validates a resource-type catalog profile file (v2.7.7). A profile is DATA, not schema: the resource-type catalog is shipped as versioned p… |
 | [`render.manifest.schema.yaml`](./entity-catalog.md#render-manifest) | Blueprint Render Manifest | Declares one project's full artifact set for the `bp render` command: which renderer targets to produce, where their output lands, and the… |
+| [`tracked-migrations.schema.yaml`](./entity-catalog.md#tracked-migrations) | Blueprint Tracked Migration Register | The staged changes a blueprint model is carrying, each one replayable and each one reversible. A project in tracked mode collects its mutat… |
 
 ## Design Plane
 

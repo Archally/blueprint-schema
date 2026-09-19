@@ -1,6 +1,6 @@
 {
   "name": "@archally/blueprint-schema",
-  "version": "2.8.39",
+  "version": "2.8.44",
   "description": "YAML-based schema for digital system modeling — domain-first multi-method specification format",
   "license": "SEE LICENSE IN LICENSE",
   "author": "Adam Walkowski <adam.walkowski@inperceptic.com>",

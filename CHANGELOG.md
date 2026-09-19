@@ -4,7 +4,7 @@ The release ledger. Every schema version, newest first, one file per minor line.
 
 | Line | Status | Latest | Dated | Entries |
 |---|---|---|---|---|
-| [`v2.8`](changelog/v2.8.yaml) | active | 2.8.38 | 2026-09-14 | 44 |
+| [`v2.8`](changelog/v2.8.yaml) | active | 2.8.44 | 2026-09-17 | 50 |
 | [`v2.7`](changelog/v2.7.yaml) | shipped, superseded | 2.7.18 | 2026-09-08 | 18 |
 | [`v2.6`](changelog/v2.6.yaml) | shipped, superseded | 2.6.3 | 2026-05-09 | 4 |
 
