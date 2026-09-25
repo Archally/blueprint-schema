@@ -7,3 +7,4 @@ tsconfig.json
 .gitignore
 package-lock.json
 node_modules/**
+package-vsix.mjs
