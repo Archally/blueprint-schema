@@ -33,8 +33,8 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  * and is extracted with the other three concern planes, so a finding's edges are split by what
  * they mean rather than by which file declares them.
  *
- * Two fields on these entities deliberately build no edge. `kpi.bounded_context_ref` names a
- * bounded context and is extracted with the other context associations. `sla.parties.provider` and
+ * Two fields on these entities deliberately build no edge. `kpi.domain_scope` names a
+ * problem-space scope and is extracted with the other context associations. `sla.parties.provider` and
  * `sla.parties.consumer` hold a name rather than a reference, and a name resolves to nothing.
  *
  * Unresolvable refs degrade to Missing placeholders, as in every other relation extractor.
