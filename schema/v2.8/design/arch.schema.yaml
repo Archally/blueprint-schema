@@ -81,6 +81,14 @@ properties:
       root-declared context in this document is a component of, unless the service names its own.
       A service nested under a party is a component of that party and does not read this default.
 
+  probes:
+    type: array
+    items:
+      $ref: "#/$defs/probe"
+    description: >
+      Instruments this architecture is read with. A probe is declared here when what it cannot see
+      has to be recorded somewhere other than the prose of whoever last ran it.
+
 $defs:
 
   contract_output:
@@ -207,9 +215,9 @@ $defs:
           Stable bounded-context id (BC###) - the target of inter-context
           `dependency.bounded_context_ref` edges, the DERIVED operation to context
           membership (`handled-by`, from a service contract's `expose`/`send`), and a
-          competency question's or business-decision `bounded_context_ref`. Operations do
-          NOT carry an ownership ref - their membership is contract-derived, not
-          declared on the domain file.
+          competency question's `bounded_context_ref`. Operations do NOT carry an
+          ownership ref - their membership is contract-derived, not declared on the
+          domain file.
       name:
         type: string
         description: "Context name (unique within the party or document that declares it)."
@@ -264,6 +272,26 @@ $defs:
 
           Declaring one does not replace the derived answer; both are sources over the same
           proposition and each carries where it came from.
+      value_stream_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/value_stream_ref"
+        description: >
+          The value stream this bounded context principally serves - its home in the flow of value
+          to a customer, by id from `value_streams[]`. ONE reference, for the same reason
+          `domain_ref` takes one: this is the field a drawing groups by, and a context in three
+          lanes has no lane.
+
+          It is not the whole answer to "which value streams does this context serve". That
+          question is n-to-n and is answered through capabilities - a capability names the streams
+          it belongs to and the operations that realize it, and every operation belongs to a
+          context - so a context contributing to three streams is still reached through all three.
+          Naming a home here neither states nor limits that contribution.
+
+          Where `domain_ref` names the region of the problem space a context realizes, this names
+          the flow of value it serves: a context can be the only one in its domain and still sit
+          mid-stream between two others. Used to draw the context map in lanes, one per stream.
+          A context that names none is left outside the lanes and counted there, because how much
+          of a model has not answered the question is what a reader of that view most needs to
+          know. Optional.
       complexity:
         $ref: "../metamodel.schema.yaml#/$defs/complexity_pattern"
         description: "Dominant implementation-complexity / problem-type pattern. Distinct from `model_traits` (behavioural archetype) and `kind` (strategic value)."
@@ -279,7 +307,7 @@ $defs:
         enum: [genesis, custom, product, commodity]
         description: >
           BCC v5 Strategic Classification - Wardley Evolution stage.
-          Used in the dedicated Wardley map view (step-10a) and as a third
+          Used in the dedicated Wardley map view and as a third
           badge in the BCC node's strategic header.
       model_traits:
         type: array
@@ -389,8 +417,7 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/context_relationship"
         description: "DDD strategic relationship pattern. Captures architectural intent beyond technical integration."
       direction:
-        type: string
-        enum: [upstream, downstream, peer]
+        $ref: "../metamodel.schema.yaml#/$defs/context_direction"
         description: "This context's role: upstream=we provide, downstream=we consume, peer=bidirectional."
       language_boundary:
         type: boolean
@@ -1059,3 +1086,126 @@ $defs:
             format:
               type: string
               description: "Error format (e.g. plain text, structured JSON)."
+
+  probe:
+    type: object
+    description: >
+      An instrument that reads an artifact the model does not author and reports an observation about
+      it in that artifact's own terms. A probe is identified by the question it answers and by the
+      scope of its attention: two probes reporting the same figure are not interchangeable when they
+      cannot see the same things.
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - question
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/probe_ref"
+        description: "Stable probe id (PRB###), making the instrument a referenceable node."
+      name:
+        type: string
+        description: "Probe name, as it is invoked or as its supplier calls it."
+      question:
+        type: string
+        description: >
+          The single question this probe answers, phrased as a question. A probe that answers two
+          questions is two probes. An instrument reached for outside the question it was built for
+          still returns an answer, and this field is what makes that visible.
+      summary:
+        type: string
+        maxLength: 200
+        description: "Brief description of what the probe reads and what it reports."
+      source_kind:
+        type: string
+        description: >
+          The kind of artifact this probe reads, such as a source tree, a documentation space, an
+          issue project, a dependency index or a running system. The medium constrains which
+          techniques are available; it does not pick one, and a single medium commonly needs several
+          probes with different scopes of attention.
+      attention_control:
+        type: string
+        enum: [owned, third-party]
+        description: >
+          Whether the scope of attention is under the control of whoever relies on the probe. `owned`
+          means an omission changes only when the probe changes. `third-party` means it can change
+          without notice, so an observation drawn from it carries a date and is re-established rather
+          than assumed to still hold.
+      status:
+        type: string
+        enum: [candidate, active, promoted, retired]
+        description: >
+          Lifecycle. candidate: the question has been asked more than once and a durable check is the
+          next step. active: in use. promoted: a durable check now answers the question, and the
+          probe is kept until that check has run against real material. retired: the question is
+          settled and the probe is on its way out.
+      blind_spots:
+        type: array
+        items:
+          $ref: "#/$defs/blind_spot"
+        description: >
+          What this probe does not see. An instrument is characterised as much by its omissions as by
+          its output, and recording them against the instrument rather than against each reading is
+          what lets a newly found omission be traced to everything drawn with it.
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+        description: "Where the probe lives, for one that is maintained alongside the model."
+      implementation:
+        $ref: "../metamodel.schema.yaml#/$defs/implementation"
+        description: "Whether this probe exists yet. Absent means unclear."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Who maintains the probe, for one that is maintained here."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  blind_spot:
+    type: object
+    description: >
+      One thing a probe does not report, and the standing that statement has. An omission the probe's
+      own contract declares and one found by measuring its output are different claims with different
+      lifetimes, and recording them the same way leaves the first unfalsifiable and the second
+      undated.
+    additionalProperties: false
+    required:
+      - omitted_fact
+      - basis
+    properties:
+      omitted_fact:
+        type: string
+        description: >
+          What the probe does not report, stated as the fact that is missing rather than as a fault.
+          An instrument that omits what it was never asked for is working correctly.
+      basis:
+        type: string
+        enum: [declared, observed]
+        description: >
+          `declared`: the probe's own contract states the omission, so it holds until the probe
+          changes. `observed`: it was established by measuring the probe's output, so it is dated,
+          refutable, and may be closed at the source without notice.
+      cause:
+        type: string
+        description: "Why the fact is missing - what the probe reads, or does not read, that leaves it out."
+      consequence:
+        type: string
+        description: >
+          What a reader would wrongly conclude from this probe's output if the omission were not
+          known. An omission with no stated consequence cannot be weighed against a result, which is
+          how a missing value comes to be read as a measured one.
+      observed_at:
+        type: string
+        format: date
+        description: >
+          When the omission was established (ISO 8601). An observed omission without a date cannot be
+          told apart from a current one; a declared omission takes the probe's own version instead.
+      established_by:
+        type: string
+        description: "How the omission was established - the check, comparison or reading that showed it."
+      closed_at:
+        type: string
+        format: date
+        description: >
+          When the omission stopped applying, if it has. A closed omission is kept rather than
+          deleted, so an observation taken while it was open can still be read correctly.

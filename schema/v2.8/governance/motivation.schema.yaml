@@ -350,12 +350,14 @@ $defs:
       consequence:
         type: string
         description: "What happens if this assumption is wrong - the risk carried by the assumption."
-      bounded_context_ref:
+      domain_scope:
         $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
         description: >
-          Optional bounded context this assumption applies to. When set, the
-          assumption surfaces in the BCC v5 node footer (Assumptions section)
-          for that context. Added in v2.6.3.
+          Optional problem-space scope this assumption applies to, as a kebab-case scope slug
+          (e.g. billing, order-mgmt). Matched by name, not resolved as a typed reference: the
+          assumption surfaces in the Bounded Context Canvas node footer (Assumptions section) of a
+          context carrying that scope. To point at a bounded context by id, use
+          `bounded_context_ref` (BC###) on a construct that declares one.
       risk_refs:
         type: array
         items:

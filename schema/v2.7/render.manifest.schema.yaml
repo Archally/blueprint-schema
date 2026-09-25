@@ -85,17 +85,23 @@ properties:
       Optional source-link URL template with `{file}`/`{line}` placeholders, passed through to
       every target whose renderer supports one.
   contact:
-    type: object
-    additionalProperties: false
-    properties:
-      name: { type: string }
-      url: { type: string }
-      email: { type: string }
+    oneOf:
+      - const: unspecified
+      - type: object
+        additionalProperties: false
+        properties:
+          name: { type: string }
+          url: { type: string }
+          email: { type: string }
     description: >
       Contact details stamped into generated contract specs (`info.contact`). Set this so a
       deliverable carries the owning organisation's identity rather than the generator's default.
+      The string `unspecified` states that the delivery names no contact, and reaches the spec as
+      `name` alone: OpenAPI requires `url` to be a URL and `email` to be an email address, so the
+      word in either would fail a contract linter. Omit the key to inherit the generator's default.
   license:
     oneOf:
+      - const: unspecified
       - type: boolean
       - type: object
         additionalProperties: false
@@ -107,7 +113,9 @@ properties:
       What `info.license` says in generated contract specs. A mapping with `name` (and optionally
       `url`) states the licence the delivery is under - set it so a deliverable carries the owning
       organisation's licence rather than the generator's default, the same reason `contact` exists.
-      `false` omits `info.license` entirely. Omit the key to keep the generator's configured licence.
+      The string `unspecified` states that the delivery names no licence, and reaches the spec as
+      `name` alone. `false` omits `info.license` entirely. Omit the key to keep the generator's
+      configured licence.
   defaults:
     type: object
     additionalProperties: false

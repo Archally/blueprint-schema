@@ -275,6 +275,7 @@ $defs:
           - postconditions
           - initiated_by
           - depends_on
+          - context_depends_on
           - requires
           - has_state
           - transition
@@ -373,6 +374,12 @@ $defs:
           relationship_type:
             type: string
             description: "DDD relationship pattern (for depends_on edges between contexts)."
+          relationship:
+            $ref: "metamodel.schema.yaml#/$defs/context_relationship"
+            description: "DDD context-map pattern carried on a context_depends_on edge."
+          direction:
+            $ref: "metamodel.schema.yaml#/$defs/context_direction"
+            description: "This context's role on a context_depends_on edge."
       description:
         type: string
         description: "Human-readable description of this relationship change."

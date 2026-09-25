@@ -166,7 +166,7 @@ $defs:
         enum: [genesis, custom, product, commodity]
         description: >
           BCC v5 Strategic Classification - Wardley Evolution stage.
-          Used in the dedicated Wardley map view (step-10a) and as a third
+          Used in the dedicated Wardley map view and as a third
           badge in the BCC node's strategic header.
       model_traits:
         type: array

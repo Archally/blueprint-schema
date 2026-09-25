@@ -577,7 +577,7 @@ $defs:
   # id stays schema-valid; the validator WARNs when it doesn't match the prefix.
   # They become REQUIRED in v2.8 (with resolvability warn->error), joining the
   # context-ownership BC###/SVC### promotion. Defined here but referenced only
-  # from the infra / arch / governance schemas (CR steps 02-04).
+  # from the infra / arch / governance schemas.
   # ---------------------------------------------------------------------------
 
   infra_resource_ref:

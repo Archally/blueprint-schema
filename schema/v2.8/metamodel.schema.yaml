@@ -72,10 +72,12 @@ $defs:
     type: string
     pattern: "^[a-z][a-z0-9-]*$"
     description: >
-      Namespace qualifier on a typed id, in kebab-case (e.g. billing, order-mgmt). It names the
-      scope of the document the id is declared in, so that bare ids do not collide across files.
-      A name rather than a reference: nothing resolves it, and it names neither a domain nor a
-      bounded context, whatever the two happen to be called in a given model.
+      A kebab-case scope slug (e.g. billing, order-mgmt), used in two roles. As the namespace
+      qualifier on a typed id it names the scope of the document the id is declared in, so that
+      bare ids do not collide across files. As `domain_scope` on a business decision, an assumption
+      or a KPI it names the problem-space region the element belongs to. In both roles it is a name
+      matched by value rather than a typed reference: it resolves to no entity, and a reference to a
+      bounded context is `bounded_context_ref` (BC###) instead.
 
   # ---------------------------------------------------------------------------
   # Tags (cross-cutting)
@@ -480,13 +482,15 @@ $defs:
     description: >
       Reference to a bounded context by its arch id (e.g. BC001 or shop.BC001). Used
       as the arch `context.id` (self-identity), by inter-context `dependency` targets
-      (id-based context-map edges), and by BCC entities (business decisions /
-      assumptions / KPIs). Operation→bounded-context membership is NOT declared with
-      this ref - it is derived from arch service contracts (`expose`/`send` = handled
-      / produced), so there is no `bounded_context_ref` on domain files. A
-      ref to an unknown BC### is a cross-reference error. The legacy kebab-context-name form (e.g.
-      `customer-management`) is a deprecated compatibility shim for existing BCC refs;
-      BC### is canonical.
+      (id-based context-map edges), and by a competency question, which names the one
+      context whose knowledge boundary it defines. Operation→bounded-context membership
+      is NOT declared with this ref - it is derived from arch service contracts
+      (`expose`/`send` = handled / produced), so there is no `bounded_context_ref` on a
+      domain file's operations. A ref to an unknown BC### is a cross-reference error. The
+      kebab-context-name form (e.g. `customer-management`) names a context by name rather
+      than by id and is accepted as a deprecated fallback; BC### is canonical. A business
+      decision, an assumption or a KPI names its problem-space region with `domain_scope`
+      instead, which is a scope slug rather than a reference.
     anyOf:
       - type: string
         pattern: "^([a-z][a-z0-9-]*\\.)?BC\\d{3,}$"
@@ -861,6 +865,11 @@ $defs:
       - separate-ways
       - partnership
     description: "DDD strategic relationship between bounded contexts. Captures architectural intent beyond technical integration."
+
+  context_direction:
+    type: string
+    enum: [upstream, downstream, peer]
+    description: "This context's role in a dependency: upstream=we provide, downstream=we consume, peer=bidirectional."
 
   # ---------------------------------------------------------------------------
   # SpecPath

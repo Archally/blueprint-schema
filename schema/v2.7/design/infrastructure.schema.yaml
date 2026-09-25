@@ -124,7 +124,7 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
       type_ref:
         $ref: "../metamodel.schema.yaml#/$defs/resource_type_ref"
-        description: "Optional typed reference to a resource type (RT###) in the resource-type catalog (step 04). Resolves to the type's inputs/outputs contract; the concrete platform realization is chosen per environment by a binding (BND###)."
+        description: "Optional typed reference to a resource type (RT###) in the resource-type catalog. Resolves to the type's inputs/outputs contract; the concrete platform realization is chosen per environment by a binding (BND###)."
       scope_ref:
         $ref: "../metamodel.schema.yaml#/$defs/deployment_scope_ref"
         description: "Optional management/lifecycle partition (DSC###) this resource is owned in - its resource-group / namespace / host-pool. Distinct from `hosted_on` (runtime placement): a logical DB may be `scope_ref` its own resource-group yet `hosted_on` a shared SQL elastic pool (the RG-vs-pool distinction). Absent => tooling may derive grouping from the id scope-prefix."

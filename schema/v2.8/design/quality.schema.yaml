@@ -194,12 +194,14 @@ $defs:
       goal:
         $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
         description: "Motivation goal this KPI tracks. Closes the goal→KPI→metric traceability chain."
-      bounded_context_ref:
+      domain_scope:
         $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
         description: >
-          Optional bounded context this KPI verifies. When set, the KPI
-          surfaces in the BCC v5 node footer (Verification Metrics section)
-          for that context. Added in v2.6.3.
+          Optional problem-space scope this KPI verifies, as a kebab-case scope slug
+          (e.g. billing, order-mgmt). Matched by name, not resolved as a typed reference: the KPI
+          surfaces in the Bounded Context Canvas node footer (Verification Metrics section) of a
+          context carrying that scope. To point at a bounded context by id, use
+          `bounded_context_ref` (BC###) on a construct that declares one.
       thresholds:
         type: object
         description: "Alert thresholds - when the metric crosses these levels, action is needed."

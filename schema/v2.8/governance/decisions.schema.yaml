@@ -423,7 +423,7 @@ $defs:
       - id
       - name
       - description
-      - bounded_context_ref
+      - domain_scope
     properties:
       id:
         $ref: "../metamodel.schema.yaml#/$defs/business_decision_ref"
@@ -434,9 +434,12 @@ $defs:
       description:
         type: string
         description: "Full statement of the decision. Free text; may be multi-paragraph."
-      bounded_context_ref:
+      domain_scope:
         $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
-        description: "Owning bounded context (kebab-case context name). A single decision may apply to multiple contexts via linked_contexts[]."
+        description: >
+          The problem-space scope that owns this decision, as a kebab-case scope slug
+          (e.g. billing, order-mgmt). Matched by name, not resolved as a typed reference. A single
+          decision may apply to several scopes through `linked_contexts[]`.
       linked_contexts:
         type: array
         items:
