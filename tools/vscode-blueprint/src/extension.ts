@@ -14,6 +14,7 @@ import {
   type CodeRefOpenBehavior,
   type RepoConfigSet,
 } from './codeRef';
+import { completionsFor, fieldAtCursor, type IdEntry } from './completion';
 
 /**
  * Archally Blueprint Navigation
@@ -39,6 +40,10 @@ interface Decl {
   uri: vscode.Uri;
   range: vscode.Range;
   summary: string;
+  /** `name:`/`title:` of the declared entity - what a person actually searches by (completion). */
+  name: string;
+  /** `kind:`/`stereotype:`/`type:` - the row's category in a completion list. */
+  kind: string;
 }
 
 const index = new Map<string, Decl[]>();
@@ -54,8 +59,13 @@ function selector(): vscode.DocumentSelector {
   return { language: 'yaml', scheme: 'file', pattern: currentGlob() };
 }
 
-/** Build a short one-line hover descriptor from the lines around an `id:` declaration. */
-function summarize(lines: string[], i: number, declLine: string): string {
+/**
+ * Read the entity declared at line `i`: its kind, its name, and a one-line hover descriptor.
+ *
+ * The three are returned separately rather than pre-joined because completion needs the NAME on its
+ * own - it is what the author searches by, and what goes in the row's detail beside the id.
+ */
+function describe(lines: string[], i: number, declLine: string): { kind: string; name: string; summary: string } {
   let kind = '';
   let name = '';
   let summary = '';
@@ -98,7 +108,7 @@ function summarize(lines: string[], i: number, declLine: string): string {
   if (summary.length > 160) summary = summary.slice(0, 157) + '…';
 
   const head = [kind, name].filter(Boolean).join(' ');
-  return [head, summary].filter(Boolean).join(' — ');
+  return { kind, name, summary: [head, summary].filter(Boolean).join(' — ') };
 }
 
 function removeFile(uriStr: string): void {
@@ -132,7 +142,8 @@ function indexText(uri: vscode.Uri, text: string): void {
         arr = [];
         index.set(id, arr);
       }
-      arr.push({ uri, range, summary: summarize(lines, i, line) });
+      const described = describe(lines, i, line);
+      arr.push({ uri, range, summary: described.summary, name: described.name, kind: described.kind });
       ids.add(id);
     }
   }
@@ -189,6 +200,55 @@ const hoverProvider: vscode.HoverProvider = {
       md.appendMarkdown(`📄 [${rel}:${line}](command:archallyBlueprint.goto?${gotoArgs})\n`);
     }
     return new vscode.Hover(md, range);
+  },
+};
+
+// ── id-reference completion (type part of a NAME, insert the id) ─────────────────────────────────
+// The schema completes property names and its own enums; it can never complete an id, because the
+// ids live in sibling files it does not read. This reads the same index go-to-definition uses, and
+// puts the entity's NAME in front of the matcher so a person can find `orders.CMD001` by typing
+// `subm` - nobody remembers the number.
+
+/** Every indexed id, reduced to a completion row's raw material. First declaration wins. */
+function indexEntries(): IdEntry[] {
+  const entries: IdEntry[] = [];
+  for (const [id, decls] of index) {
+    const decl = decls[0];
+    if (!decl) continue;
+    entries.push({
+      id,
+      name: decl.name,
+      kind: decl.kind,
+      file: vscode.workspace.asRelativePath(decl.uri),
+    });
+  }
+  return entries;
+}
+
+const idCompletionProvider: vscode.CompletionItemProvider = {
+  provideCompletionItems(doc, pos) {
+    const context = fieldAtCursor(doc.getText().split(/\r?\n/), pos.line, pos.character);
+    if (!context) return undefined;
+    const rows = completionsFor(context.field, indexEntries());
+    if (!rows.length) return undefined;
+
+    // Replace the whole fragment typed so far, so a scoped id (`orders.CMD001`) does not end up
+    // appended to the `orders.` the author already typed.
+    const range = new vscode.Range(pos.line, context.start, pos.line, pos.character);
+
+    return rows.map((row) => {
+      const item = new vscode.CompletionItem(
+        { label: row.id, detail: row.name ? `  ${row.name}` : undefined, description: row.file },
+        vscode.CompletionItemKind.Reference,
+      );
+      item.insertText = row.id;
+      item.filterText = row.filterText;
+      item.sortText = row.sortText;
+      item.range = range;
+      const head = [row.kind, row.name].filter(Boolean).join(' ');
+      if (head) item.documentation = new vscode.MarkdownString(`**\`${row.id}\`** - ${head}\n\n📄 ${row.file}`);
+      return item;
+    });
   },
 };
 
@@ -492,6 +552,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   context.subscriptions.push(
     vscode.languages.registerDefinitionProvider(selector(), definitionProvider),
+    // Trigger after `field: `, after a `- ` sequence item, and mid-scope (`orders.`), so the list
+    // appears while typing. Ctrl+Space works regardless, and the provider returns nothing unless
+    // the cursor sits in a field the schema says holds a reference.
+    vscode.languages.registerCompletionItemProvider(selector(), idCompletionProvider, ' ', '-', '.'),
     vscode.languages.registerHoverProvider(selector(), hoverProvider),
     vscode.languages.registerHoverProvider(selector(), codeRefHoverProvider),
     { dispose: () => linkProviderReg?.dispose() },
