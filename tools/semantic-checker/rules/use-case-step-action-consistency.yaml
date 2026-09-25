@@ -1,0 +1,46 @@
+engineVersion: "0.1"
+rules:
+  - id: use-case-step-action-operation-disagrees
+    severity: warn
+    description: >-
+      A use-case main-scenario step that names both a UI action and a domain operation, when that
+      action's `triggers_operations` does not include the step's operation. Extra operations on the
+      action are not a defect. A step that names only one of the two fields is silent. A project
+      that fills these fields may raise the rule in .blueprint-lint.yaml
+      (e.g. `use-case-step-action-operation-disagrees: error`); one that does not use them leaves
+      it at warn or turns it `off`.
+    find:
+      entity_type: UseCase
+    check:
+      custom:
+        module: ./use-case-step-action-consistency.mjs
+        export: useCaseStepActionOperationDisagrees
+    message: 'Use case "{displayId}" step {step} names UI action {action} and operation {step_operation}, but that action triggers {action_operations}.'
+
+  - id: nav-via-action-screen-disagrees
+    severity: warn
+    description: >-
+      A navigation that names `via_action`, when that action's `screen` is not this navigation's
+      `from`. Silent when `via_action` is absent. Override per-project via .blueprint-lint.yaml
+      (e.g. `nav-via-action-screen-disagrees: off`).
+    find:
+      entity_type: UINavigation
+    check:
+      custom:
+        module: ./use-case-step-action-consistency.mjs
+        export: navViaActionScreenDisagrees
+    message: 'Navigation "{displayId}" names via_action {action} on screen {action_screen}, but this navigation leaves {from}.'
+
+  - id: use-case-step-action-screen-disagrees
+    severity: warn
+    description: >-
+      A use-case main-scenario step that names both a UI action and a screen, when that action's
+      `screen` is not the step's screen. Silent when either field is absent. Override per-project
+      via .blueprint-lint.yaml (e.g. `use-case-step-action-screen-disagrees: off`).
+    find:
+      entity_type: UseCase
+    check:
+      custom:
+        module: ./use-case-step-action-consistency.mjs
+        export: useCaseStepActionScreenDisagrees
+    message: 'Use case "{displayId}" step {step} names UI action {action} on screen {action_screen}, but the step names {step_screen}.'

@@ -1,0 +1,55 @@
+engineVersion: "0.1"
+rules:
+  - id: sent-event-without-receiver
+    severity: warn
+    description: >-
+      An integration event a service contract publishes that no service contract consumes. A
+      contract's `send:` list is where the model states that an event leaves its context; the
+      matching `receive:` list is where it states who is entitled to hear it. A `send:` with no
+      answering `receive:` anywhere in the model says an event goes out and stops - the publisher
+      is named, the audience is not, and nothing downstream can draw the dependency that the
+      publication creates.
+
+      Scoped to events deliberately. `send:` and `receive:` carry commands and documents as well,
+      and a one-sided declaration means something else for those: a command is addressed to one
+      handler, and a document is written for a named reader. Only an event asserts a fact
+      broadcast to whoever cares, so only an event is missing something when nobody does. The test
+      for an integration event is the conjunction the model already states - `kind: event` on the
+      operation, and that operation named in a contract's `send:` list. The contract's own kind is
+      not consulted, because `send` and `receive` mean channel messaging whichever contract block
+      they sit in.
+
+      The question lives entirely in the architecture layer, and that too is deliberate. The same
+      gap can be approached from the story layer, by reading a story's trigger against the
+      receiving contracts - but that reaches only events some story happens to declare a trigger
+      for, and says nothing about a published event no story mentions. Reading `send:` against
+      `receive:` needs no story at all and reaches every published event, so widening this rule
+      across planes would cost coverage rather than add it.
+
+      Silent by construction on a model that declares no channel contracts. With no `send:`
+      anywhere, no event has a publisher, and a rule about publishers has nothing to say.
+
+      The one legitimate firing is a broadcast to a consumer outside the model - another product,
+      a partner, an analytics sink. The fix is to model that consumer as a service, or to accept
+      the finding. A rule cannot tell an intentional broadcast from an unfinished one, so this is
+      a question for the author rather than a verdict. Override per-project via
+      .blueprint-lint.yaml.
+    # Subjects: every event Operation. Both contract edges point AT the operation, so both are
+    # INCOMING. Healthy = no contract sends it (nothing to be missing), OR some contract receives
+    # it. The engine emits only when it is sent and received by nobody.
+    find:
+      entity_type: Operation
+    filter:
+      field_eq:
+        data.kind: event
+    check:
+      any_of:
+        - has_relation:
+            direction: in
+            type: contract_sends
+            exists: false
+        - has_relation:
+            direction: in
+            type: contract_receives
+            exists: true
+    message: 'Integration event "{displayId}" ({name|''unnamed''}) is published by a service contract and consumed by none - add it to the consuming service''s `receive:` list, or drop the `send:` entry if nothing in this model is meant to hear it.'

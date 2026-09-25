@@ -1,0 +1,69 @@
+engineVersion: "0.1"
+rules:
+  - id: operation-outside-every-contract
+    severity: info
+    description: >-
+      A command or query that says how it is reached and which context owns it, and that no
+      service contract mentions in any role. Every contract verb - `expose`, `call`, `send`,
+      `receive`, `provide`, `consume`, `write`, `read` - is a service claiming a relationship to
+      an operation. An operation named by none of them is described by the domain layer and
+      absent from the architecture layer, so no artifact generated from a contract can include it
+      and no reader can tell which service it belongs to.
+
+      Informational, not a warning, and the difference is the point. An architecture layer is
+      authored incrementally: a model early in its life legitimately describes many operations
+      before any contract names them, and a finding that scolds an author for the ordinary state
+      of a young model stops being read. The count answers a question of proportion - how much of
+      the domain the contracts actually cover - rather than naming a defect in each operation it
+      lists.
+
+      Three populations are declined on purpose, so that one gap is reported once:
+
+      Events. An internal domain event outside every contract is the correct state, not a gap -
+      most events never leave their context, and a rule that said otherwise would report every
+      well-modelled domain event in the corpus. The event case that IS a gap - a transport that
+      says the event travels off-process while no contract names it - belongs to
+      `event-transport-without-contract`.
+
+      Operations no context owns. Those are already reported by `unbound-operation`, whose message
+      asks for the same fix. It keeps its half.
+
+      Commands and queries that declare neither a transport nor an in-process dispatch. Those are
+      already reported by `missing-exchange-binding`, which asks for the earlier step of the same
+      fix: say how the operation is reached before saying which service offers it.
+
+      What remains is the case no other rule reaches - the operation is reached somehow, belongs
+      somewhere, and no contract says so.
+    # Subjects: every command/query Operation. Healthy = some contract names it in any role, OR no
+    # context owns it (unbound-operation's half), OR it declares neither transport nor dispatch
+    # (missing-exchange-binding's half). `handled_by` points Operation -> BoundedContext, so an
+    # owned operation has an OUTGOING edge; the contract edges point AT the operation and are
+    # INCOMING.
+    find:
+      entity_type: Operation
+    filter:
+      field_in:
+        data.kind: [command, query]
+    check:
+      any_of:
+        - has_relation:
+            direction: in
+            type:
+              - contract_exposes
+              - contract_calls
+              - contract_sends
+              - contract_receives
+              - contract_provides
+              - contract_consumes
+              - contract_writes
+              - contract_reads
+            exists: true
+        - has_relation:
+            direction: out
+            type: handled_by
+            exists: false
+        - not:
+            any_non_empty:
+              - data.exchange
+              - data.dispatch
+    message: 'Operation "{displayId}" ({name|''unnamed''}) declares how it is reached and belongs to a context, but no service contract names it - add it to the owning service''s contract under the verb that matches its transport.'

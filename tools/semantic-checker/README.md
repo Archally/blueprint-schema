@@ -119,6 +119,13 @@ Severities: `error` (fails), `warn`, `info`, `off`.
 | `dependency-direction-disagreement` | warn | a declared dependency runs the way its operations do; declared one way with every operation flowing the other is a contradiction rather than a silence, and one of the two statements is wrong |
 | `unevidenced-dependency` | info | reports a declared dependency no contract evidences; info because most are real coupling the contract surface cannot describe yet - a shared store, a file drop, a scheduled job - rather than a stale entry |
 | `restated-coupling` | warn | a `coupling` is declared only where the contracts cannot reach the pair; where they can they compute it already, and carry the direction, the operations and the broker with it. The finding names both the declared word and the computed one, so agreement and contradiction are one finding with one fix - delete the declaration. An error on the next major line |
+| `dangling-relation-endpoint` | warn | every relation's source and target resolve to an entity the model holds, including the `Missing` placeholder |
+| `operation-outside-every-contract` | info | every command or query that states how it is reached is named by at least one service contract, in any role |
+| `process-end-state-unreachable` | warn | every end state a process declares is produced by an operation one of its own activities runs |
+| `sent-event-without-receiver` | warn | every integration event a contract `send`s is `receive`d by at least one other contract |
+| `use-case-step-action-operation-disagrees` | warn | a use-case step naming both a UI action and an operation agrees with that action's `triggers_operations` |
+| `use-case-step-action-screen-disagrees` | warn | a use-case step naming both a UI action and a screen agrees with that action's own `screen` |
+| `nav-via-action-screen-disagrees` | warn | a navigation naming `via_action` starts `from` the screen that action belongs to |
 
 ## Custom rules
 

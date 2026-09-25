@@ -1,0 +1,38 @@
+engineVersion: "0.1"
+rules:
+  - id: process-end-state-unreachable
+    severity: warn
+    description: >-
+      A process declares an end state named after a lifecycle state, and none of the operations its
+      activities run is the one the model says makes the move into that state. An end state is a
+      name and a type; an activity carries operations, and neither names the other, so "this
+      activity ends in that state" is not something a process can state directly. What the model
+      states instead, in four independent places, is: a transition rule moves a concept INTO a
+      state (`to:`); an operation declares itself `governed_by` that transition rule, which is the
+      model's statement that this operation is what makes the move; a process's activities name the
+      operations they run; and the end state's own name contains the state's name. Where all four
+      hold and the process names none of the operations that make the move, the model contradicts
+      itself - it declares an outcome, and in the same breath lists every operation the process runs
+      without the one that produces it. Fix it by putting that operation on an activity, or by
+      removing an end state the process does not produce. The name comparison is literal: the end
+      state's name is split into lowercase word tokens and must contain the state's tokens in order
+      and adjacent, so "Order Confirmed" names the state `confirmed` while an end state whose name
+      is prose names no state and is never reported. Four absences are silence rather than a pass,
+      because each belongs to a different layer: no transition moves into a state the end state's
+      name contains; no operation anywhere is `governed_by` such a transition, so the domain layer
+      has not said which operation makes the move; the process touches no concept declaring the
+      matched state, which it would do by running an operation that `materializes` that concept or
+      that is `governed_by` another of its transitions, and without that the match is a word in a
+      sentence rather than a state; or the process names no operation at all
+      (`activity-without-entry-operation` owns that). The end state's `type` does not change the
+      test - an `error` end state named after a lifecycle state needs an operation that reaches it
+      exactly as a `complete` one does, and what keeps failure branches quiet is that a failure
+      described in prose names no state. Override per-project via .blueprint-lint.yaml (e.g.
+      `process-end-state-unreachable: off`).
+    find:
+      entity_type: Process
+    check:
+      custom:
+        module: ./process-end-state-unreachable.mjs
+        export: processEndStateUnreachable
+    message: 'Process "{displayId}" ({name|''unnamed''}) declares end state "{end_state}" ({end_state_type}), which names lifecycle state `{state}` of {concept}, but no activity of this process runs the operation that makes that move ({makers}, via {transitions}). Put that operation on an activity, or drop the end state.'

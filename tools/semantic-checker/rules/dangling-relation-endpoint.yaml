@@ -1,0 +1,30 @@
+engineVersion: "0.1"
+rules:
+  - id: dangling-relation-endpoint
+    severity: warn
+    description: >-
+      A relation whose source or target id matches no entity in the model at all - not a real
+      entity, and not the `Missing` placeholder the builder creates for an authored ref that names
+      nothing. Cross-reference validation covers authored refs and never sees this one, because the
+      endpoint was never a ref to resolve: the relation is DERIVED, and its endpoint was composed
+      rather than looked up. The model still builds, still validates, and a reader sees an arrow
+      that points at nothing with no way to tell.
+
+      WARN, not error, for the same reason every rule in this pack tops out there: this engine
+      reports on a model that already built, and an endpoint composed during the build belongs to
+      the code that produced the model rather than to the model an author wrote. It is not INFO
+      either: unlike a coverage or completeness gap, there is no legitimate reading under which a
+      dangling endpoint is fine as it stands, so this rule is silent on a healthy model and any
+      finding is worth acting on rather than filing.
+
+      Override per-project via .blueprint-lint.yaml (e.g. `dangling-relation-endpoint: off`),
+      though a finding here names a derivation rather than anything an author wrote, so the useful
+      response is almost always to correct what produced the relation rather than the project's
+      lint config.
+    find:
+      all: true
+    check:
+      custom:
+        module: ./dangling-relation-endpoint.mjs
+        export: danglingRelationEndpoint
+    message: '{count} derived relation(s) reference an id that matches no entity in this model: {relations}. A derived relation is composed from ids the model already resolved, so an endpoint that resolves to nothing comes from the extractor that built the relation. The correction belongs to that derivation rather than to the model.'
