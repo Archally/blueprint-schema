@@ -155,7 +155,14 @@ export function extractContractTrafficRelations(
   }
 
   // The join: one unit of traffic per operation a consumer calls and a provider exposes.
-  const traffic = new Map<string, TrafficAccumulator>();
+  //
+  // Keyed by a NESTED Map (consumerId -> providerId -> accumulator) rather than a delimited
+  // string. A context id is author-controlled free text - it can and does contain a space, so
+  // `${consumerId} ${providerId}` is not reversible by `split(' ')`: an id with its own embedded
+  // space splits in the wrong place and both derived endpoints end up pointing at ids no entity
+  // has. A nested Map has no delimiter to collide with, so no id content, however it is spelled,
+  // can ever be misread as part of the pair.
+  const traffic = new Map<string, Map<string, TrafficAccumulator>>();
   for (const [operationId, consumerSides] of consumers) {
     const providerSides = providers.get(operationId);
     if (!providerSides) continue;
@@ -167,11 +174,15 @@ export function extractContractTrafficRelations(
         // A context calling its own service is internal, and drawing it as an arrow to itself
         // says nothing a reader of a context map wants.
         if (consumer.contextId === provider.contextId) continue;
-        const key = `${consumer.contextId} ${provider.contextId}`;
-        let accumulated = traffic.get(key);
+        let byProvider = traffic.get(consumer.contextId);
+        if (!byProvider) {
+          byProvider = new Map();
+          traffic.set(consumer.contextId, byProvider);
+        }
+        let accumulated = byProvider.get(provider.contextId);
         if (!accumulated) {
           accumulated = { protocols: new Set(), operations: new Set(), brokerIds: new Set() };
-          traffic.set(key, accumulated);
+          byProvider.set(provider.contextId, accumulated);
         }
         accumulated.protocols.add(consumer.protocol);
         accumulated.operations.add(operationId);
@@ -183,23 +194,23 @@ export function extractContractTrafficRelations(
   }
 
   const out: Relation[] = [];
-  for (const [key, accumulated] of traffic) {
-    const [consumerId, providerId] = key.split(' ');
-    if (!consumerId || !providerId) continue;
-    const operations = [...accumulated.operations].sort();
-    out.push({
-      id: `${consumerId}--${RELATION_TYPE.ContractTraffic}--${providerId}`,
-      source_entity_id: consumerId,
-      target_entity_id: providerId,
-      type: RELATION_TYPE.ContractTraffic,
-      data: {
-        resolution: 'contract',
-        protocols: [...accumulated.protocols].sort(),
-        operations,
-        operation_count: operations.length,
-        broker_ids: [...accumulated.brokerIds].sort(),
-      },
-    });
+  for (const [consumerId, byProvider] of traffic) {
+    for (const [providerId, accumulated] of byProvider) {
+      const operations = [...accumulated.operations].sort();
+      out.push({
+        id: `${consumerId}--${RELATION_TYPE.ContractTraffic}--${providerId}`,
+        source_entity_id: consumerId,
+        target_entity_id: providerId,
+        type: RELATION_TYPE.ContractTraffic,
+        data: {
+          resolution: 'contract',
+          protocols: [...accumulated.protocols].sort(),
+          operations,
+          operation_count: operations.length,
+          broker_ids: [...accumulated.brokerIds].sort(),
+        },
+      });
+    }
   }
 
   return out;

@@ -106,18 +106,29 @@ export function extractCoverageRelations(entities: Entity[], relations: Relation
   }
 
   // The join, accumulated per context-and-domain pair.
-  const derived = new Map<string, CoverageAccumulator>();
+  //
+  // Keyed by a NESTED Map (contextId -> domainId -> accumulator) rather than a delimited string.
+  // A context id is author-controlled free text - it can and does contain a space, so
+  // `${contextId} ${domainId}` is not reversible by `split(' ')`: an id with its own embedded
+  // space splits in the wrong place and both derived endpoints end up pointing at ids no entity
+  // has. This is the identical shape of bug `contractTraffic.ts` carried and fixed by keying its
+  // join the same way - see that file's comment for why no delimiter is safe.
+  const derived = new Map<string, Map<string, CoverageAccumulator>>();
   for (const [operationId, contextBucket] of contextsByOperation) {
     const domainId = domainByOperation.get(operationId);
     if (!domainId) continue;
     for (const [contextId, binding] of contextBucket) {
-      const key = `${contextId} ${domainId}`;
-      const accumulated = derived.get(key);
+      let byDomain = derived.get(contextId);
+      if (!byDomain) {
+        byDomain = new Map();
+        derived.set(contextId, byDomain);
+      }
+      const accumulated = byDomain.get(domainId);
       if (accumulated) {
         accumulated.operationCount += 1;
         if (binding.byContract) accumulated.contractCount += 1;
       } else {
-        derived.set(key, {
+        byDomain.set(domainId, {
           operationCount: 1,
           contractCount: binding.byContract ? 1 : 0,
         });
@@ -125,8 +136,9 @@ export function extractCoverageRelations(entities: Entity[], relations: Relation
     }
   }
 
-  // Declared entries, read before emitting so a derived edge can say it was also declared.
-  const declared = new Map<string, { extent?: string; reason?: string }>();
+  // Declared entries, read before emitting so a derived edge can say it was also declared. Same
+  // nested-Map shape, for the same reason.
+  const declared = new Map<string, Map<string, { extent?: string; reason?: string }>>();
   for (const context of contexts) {
     const entries = (context.data as { covers?: unknown } | undefined)?.covers;
     if (!Array.isArray(entries)) continue;
@@ -139,48 +151,53 @@ export function extractCoverageRelations(entities: Entity[], relations: Relation
         typeof entry === 'object' && typeof entry?.extent === 'string' ? entry.extent : undefined;
       const reason =
         typeof entry === 'object' && typeof entry?.reason === 'string' ? entry.reason : undefined;
-      declared.set(`${context.id} ${target}`, { extent, reason });
+      let byDomain = declared.get(context.id);
+      if (!byDomain) {
+        byDomain = new Map();
+        declared.set(context.id, byDomain);
+      }
+      byDomain.set(target, { extent, reason });
     }
   }
 
   const out: Relation[] = [];
 
-  for (const [key, accumulated] of derived) {
-    const [contextId, domainId] = key.split(' ');
-    if (!contextId || !domainId) continue;
-    const byContract = accumulated.contractCount > 0;
-    const data: Record<string, unknown> = {
-      // `contract` only where a contract actually carried it. `name` says the coverage rests on
-      // the operation-to-context name-and-scope fallback, which is a weaker claim wearing the
-      // same shape, and a reader who cannot tell them apart will read one as the other.
-      resolution: byContract ? 'contract' : 'name',
-      operation_count: accumulated.operationCount,
-      contract_operation_count: accumulated.contractCount,
-    };
-    if (declared.has(key)) data.also_declared = true;
-    out.push({
-      id: `${contextId}--${RELATION_TYPE.ContextCoversDomain}--${domainId}`,
-      source_entity_id: contextId,
-      target_entity_id: domainId,
-      type: RELATION_TYPE.ContextCoversDomain,
-      data,
-    });
+  for (const [contextId, byDomain] of derived) {
+    for (const [domainId, accumulated] of byDomain) {
+      const byContract = accumulated.contractCount > 0;
+      const data: Record<string, unknown> = {
+        // `contract` only where a contract actually carried it. `name` says the coverage rests on
+        // the operation-to-context name-and-scope fallback, which is a weaker claim wearing the
+        // same shape, and a reader who cannot tell them apart will read one as the other.
+        resolution: byContract ? 'contract' : 'name',
+        operation_count: accumulated.operationCount,
+        contract_operation_count: accumulated.contractCount,
+      };
+      if (declared.get(contextId)?.has(domainId)) data.also_declared = true;
+      out.push({
+        id: `${contextId}--${RELATION_TYPE.ContextCoversDomain}--${domainId}`,
+        source_entity_id: contextId,
+        target_entity_id: domainId,
+        type: RELATION_TYPE.ContextCoversDomain,
+        data,
+      });
+    }
   }
 
-  for (const [key, entry] of declared) {
-    if (derived.has(key)) continue;
-    const [contextId, domainId] = key.split(' ');
-    if (!contextId || !domainId) continue;
-    const data: Record<string, unknown> = { resolution: 'declared' };
-    if (entry.extent !== undefined) data.extent = entry.extent;
-    if (entry.reason !== undefined) data.reason = entry.reason;
-    out.push({
-      id: `${contextId}--${RELATION_TYPE.ContextCoversDomain}--${domainId}`,
-      source_entity_id: contextId,
-      target_entity_id: domainId,
-      type: RELATION_TYPE.ContextCoversDomain,
-      data,
-    });
+  for (const [contextId, byDomain] of declared) {
+    for (const [domainId, entry] of byDomain) {
+      if (derived.get(contextId)?.has(domainId)) continue;
+      const data: Record<string, unknown> = { resolution: 'declared' };
+      if (entry.extent !== undefined) data.extent = entry.extent;
+      if (entry.reason !== undefined) data.reason = entry.reason;
+      out.push({
+        id: `${contextId}--${RELATION_TYPE.ContextCoversDomain}--${domainId}`,
+        source_entity_id: contextId,
+        target_entity_id: domainId,
+        type: RELATION_TYPE.ContextCoversDomain,
+        data,
+      });
+    }
   }
 
   return out;
