@@ -23,7 +23,7 @@ const STATUS_MARK = {
 
 /** @param {number|null} value */
 function percent(value) {
-  return value === null ? '   —' : `${String(Math.round(value * 100)).padStart(3)}%`;
+  return value === null ? '   -' : `${String(Math.round(value * 100)).padStart(3)}%`;
 }
 
 /** @param {number|null} value */
@@ -45,14 +45,26 @@ function bar(value) {
 export function renderReport({ modelRoot, result, fileCount, parseErrors, worstLimit = 15 }) {
   const lines = [];
   const scope = result.patchMode
-    ? `patch mode — ${result.scopedFileCount} changed file(s) of ${fileCount}`
+    ? `patch mode - ${result.scopedFileCount} changed file(s) of ${fileCount}`
     : result.sliceMode
-      ? `slice "${result.sliceMode}" — ${result.scopedFileCount} file(s) of ${fileCount}`
-      : `whole model — ${fileCount} file(s)`;
+      ? `slice "${result.sliceMode}" - ${result.scopedFileCount} file(s) of ${fileCount}`
+      : `whole model - ${fileCount} file(s)`;
 
   lines.push('');
-  lines.push(`Blueprint quality — ${modelRoot}`);
+  lines.push(`Blueprint quality - ${modelRoot}`);
   lines.push(`  schema version: ${result.schemaVersion ?? 'unknown'}   scope: ${scope}`);
+  // A file that did not parse was not measured, and a metric with nothing left to measure reads
+  // `no-data`, which prints like a pass. Worse, a breach DISAPPEARS with the file that carried it:
+  // measured on this model, breaking its six `models.yaml` files took the breach count from three
+  // to one. So the count of unmeasured files leads the report rather than trailing it, and the
+  // detail stays where it was.
+  if (parseErrors.length > 0) {
+    lines.push('');
+    lines.push(
+      `  ${parseErrors.length} file(s) DID NOT PARSE and were not measured. Every number below is`
+      + ` over the ${fileCount - parseErrors.length} file(s) that did. Run \`bp validate\` first.`,
+    );
+  }
   lines.push('');
 
   const byLayer = new Map();
@@ -97,7 +109,7 @@ export function renderReport({ modelRoot, result, fileCount, parseErrors, worstL
 
   if (parseErrors.length > 0) {
     lines.push('');
-    lines.push(`  Parse errors (${parseErrors.length}) — these files were not measured`);
+    lines.push(`  Parse errors (${parseErrors.length}) - these files were not measured`);
     for (const parseError of parseErrors.slice(0, 10)) lines.push(`    ${parseError}`);
   }
 

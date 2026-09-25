@@ -22,7 +22,8 @@
  *   --worst <n>           worst-file rows to print (default 15)
  *   --quiet               suppress the text report
  *
- * Exit codes: 0 = clean, 1 = breach in --strict, 2 = usage or runtime error.
+ * Exit codes: 0 = clean, 1 = breach in --strict, 2 = usage error, unreadable config, or a
+ *              model file that did not parse (nothing in it was measured).
  */
 
 import fs from 'node:fs';
@@ -193,7 +194,14 @@ function main() {
 
   const hasConfigError = runs.some((run) => run.result.configErrors.length > 0);
   const hasBreach = runs.some((run) => !run.result.ok);
-  if (hasConfigError) process.exit(2);
+  // A file that did not parse was not measured, and every metric it fed reads `no-data`, which
+  // prints like a pass. The verdict has to reflect that, and NOT only under `--strict`: measured on
+  // a model whose six `models.yaml` files were broken, the breach count fell from three to one,
+  // because a breach leaves with the file that carried it. A gate that reports a better score on a
+  // broken model is worse than no gate. `bp validate` is the verb that explains such a file; this
+  // one refuses to pronounce on a model it could not read.
+  const hasParseError = runs.some((run) => run.parseErrors.length > 0);
+  if (hasConfigError || hasParseError) process.exit(2);
   process.exit(options.strict && hasBreach ? 1 : 0);
 }
 
