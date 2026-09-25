@@ -16,14 +16,13 @@ pareto_core:
 #
 # On `realized_by`: the LP -> WI linkage is authored HERE and only here. `roadmap.schema.yaml`
 # declares no leverage reference in either direction, so the schema settles the "authored once"
-# question that this step and step 15 were asked to agree - there is no second place to write it.
+# question - there is no second place to write it.
 # An empty `realized_by` is a legitimate state, not a gap: the schema calls
 # prioritize-before-schedule the normal early case.
 #
-# No `finding_refs` anywhere below. Quality findings (FN###) do not exist in this model yet and
-# the FN bands belong to steps 12, 13 and 20, so a reference here would either dangle or squat on
-# another step's band. The AS-IS anchor each point carries instead is a decision, a slice risk and
-# a code reference.
+# No `finding_refs` anywhere below. Quality findings (FN###) do not exist in this model yet, so a
+# reference here would dangle. The AS-IS anchor each point carries instead is a decision, a slice
+# risk and a code reference.
 #
 # No `fitness_function_refs` either, and this is a judgement rather than an omission. All twelve
 # FF### in `fitness.test-cases.yaml` check the BLUEPRINT's own shape - every command produces

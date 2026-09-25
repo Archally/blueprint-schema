@@ -130,7 +130,7 @@ user_stories:
     benefit: "I find what I need without knowing which category it was filed under."
     summary: "Shopper searches the catalogue from the storefront."
     description: >
-      Rewritten by step 17 against the code, which contradicted three of its claims. Its
+      Rewritten against the code, which contradicted three of its claims. Its
       operation was SearchProducts, which is GET /products/search on the Admin API and has no
       part in the storefront; the storefront search is the shop's own full-text index consulted
       through classes/Search.php, and no modelled query names it, so the list is now empty and
@@ -315,7 +315,7 @@ use_cases:
     name: "Find and choose a product"
     summary: "A shopper arrives with an intent and leaves with one product in the cart, by browsing or by searching."
     description: >
-      The discovery half of the storefront. Rewritten by step 17 against the code, which
+      The discovery half of the storefront. Rewritten against the code, which
       contradicted three of the previous version's five steps. It said the system sends the
       query to Elasticsearch: PrestaShop core has no Elasticsearch, and the only twelve
       occurrences of the word in the tree are an inherited API Platform metadata parameter that

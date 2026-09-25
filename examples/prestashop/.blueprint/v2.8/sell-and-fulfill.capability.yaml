@@ -8,7 +8,7 @@ tags: [sell-and-fulfill]
 # Where a capability here does decompose it carries children; where it does not, the flat entry
 # is the whole truth rather than an unfinished one.
 #
-# `operations` lists a REPRESENTATIVE SPINE, not an inventory (step-00 D9).
+# `operations` lists a REPRESENTATIVE SPINE, not an inventory.
 
 capabilities:
   # Level 1: having something to sell

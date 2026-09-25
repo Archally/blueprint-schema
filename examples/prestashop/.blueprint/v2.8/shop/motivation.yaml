@@ -173,8 +173,8 @@ inquiries:
       Measured 2026-09-19: src/Core/Domain/Store/Command holds exactly four
       classes - DeleteStore, ToggleStoreStatus, BulkDeleteStore and
       BulkUpdateStoreStatus - so a store can be removed or switched off but
-      never created or edited through the domain layer. Step 09 met the same
-      wall from the other side: the model's CreateStorePayload binds to no
+      never created or edited through the domain layer. The same wall shows
+      from the other side: the model's CreateStorePayload binds to no
       operation because there is no create-store command to bind it to.
     category: technical
     affects:

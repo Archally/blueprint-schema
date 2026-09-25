@@ -42,8 +42,8 @@ fitness_functions:
           source: "bp check prestashop, 2026-09-19"
           date: "2026-09-19"
           summary: >-
-            47 commands in this model produce no event. Two of them are honest and were argued
-            in step 10: modules.CMD010 ExecuteHook and modules.CMD011 RenderDisplayHook produce
+            47 commands in this model produce no event. Two of them are honest:
+            modules.CMD010 ExecuteHook and modules.CMD011 RenderDisplayHook produce
             whatever the listening modules do, which the model cannot name.
           confidence_impact: weakens
 
@@ -66,7 +66,7 @@ fitness_functions:
             nothing reacts to is one.
           confidence_impact: supports
         - kind: analytics
-          source: "step 11 execution notes, bp render --check, 2026-09-19"
+          source: "bp render --check, 2026-09-19"
           date: "2026-09-19"
           summary: >-
             The second half of this assertion is currently carried by nothing: no event in the
@@ -85,7 +85,7 @@ fitness_functions:
       certainty: speculative
       evidence:
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-chosen. No semantic rule and no quality metric measures actor personas, and
@@ -160,7 +160,7 @@ fitness_functions:
       certainty: speculative
       evidence:
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-chosen. No checker and no quality metric joins goals to KPIs, so this
@@ -171,7 +171,7 @@ fitness_functions:
           date: "2026-09-19"
           summary: >-
             The model has 35 goals and 3 KPIs, and no KPI declares goal_refs at all, so 0 of 35
-            goals meet this guardrail today. The motivation chain is step 13's work.
+            goals meet this guardrail today.
           confidence_impact: weakens
 
   - id: FF007
@@ -185,7 +185,7 @@ fitness_functions:
       certainty: speculative
       evidence:
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-chosen, and the number 5 has no source. It is a common coupling heuristic,
@@ -265,7 +265,7 @@ fitness_functions:
       certainty: speculative
       evidence:
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-chosen. No checker joins an enumeration's transitions_to to a transition
@@ -303,7 +303,7 @@ fitness_functions:
           date: "2026-09-19"
           summary: >-
             None of the model's 10 narrative files declares a file-level owned_by, so the model
-            meets this guardrail nowhere. The organization layer exists (step 14's teams and
+            meets this guardrail nowhere. The organization layer exists (teams and
             departments); the join from a file to a team does not.
           confidence_impact: weakens
 

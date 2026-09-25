@@ -214,7 +214,7 @@ processes:
       classes and every one of them deletes or transitions a return that already exists, so the
       creation a shopper performs - OrderReturn::add in OrderFollowController, announced as the
       registered hook actionOrderReturn - has no modelled command and no modelled event. That
-      is the largest single storefront gap the step-17 survey found, and it belongs to the
+      is the largest single storefront gap in the model, and it belongs to the
       domain layer rather than to this narrative.
     initiated_by: [orders.ACT001]
     trigger:

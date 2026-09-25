@@ -58,7 +58,7 @@ concepts:
   - id: content.CN006
     name: "MailTemplate"
     stereotype: aggregate-root
-    description: "The HTML and plain-text body of one transactional email template, for one locale and one source (core or a named module). GenerateThemeMailTemplates writes a whole theme's set from source; EditEmailBodyTemplate and GetEmailBodyTemplateForEditing are the per-template editor a merchant uses afterwards. Added step-25: the code names this domain (src/Core/Domain/MailTemplate/, its own Command/Query/ValueObject/Exception folders) but no concept named it before this step."
+    description: "The HTML and plain-text body of one transactional email template, for one locale and one source (core or a named module). GenerateThemeMailTemplates writes a whole theme's set from source; EditEmailBodyTemplate and GetEmailBodyTemplateForEditing are the per-template editor a merchant uses afterwards. The code names this domain: src/Core/Domain/MailTemplate/, with its own Command/Query/ValueObject/Exception folders."
     tags: [aggregate-root, presentation, email]
     attributes:
       templateName:

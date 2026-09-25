@@ -59,7 +59,7 @@ happy_path:
       certainty: speculative
       evidence:
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code, and untested at every layer: nothing under tests/
@@ -224,7 +224,7 @@ edge_cases:
             loop; no exception is constructed anywhere in the handler for this case.
           confidence_impact: invalidates
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. All seven scenarios in tax_rule_management.feature bind
@@ -316,7 +316,7 @@ error_cases:
             the signed one, and no other guard exists on the path.
           confidence_impact: invalidates
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. tax_management.feature has no negative-rate scenario, so

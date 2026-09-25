@@ -156,7 +156,7 @@ assumptions:
     discovery_stage: committed
     certainty: confirmed
 
-  # Authored by step 27. Nothing already in the model was about the third-party side of the API,
+  # Nothing already in the model was about the third-party side of the API,
   # so ExternalApiConsumers had no assumption to place. Its id is namespaced to the admin file
   # because that is where it is written; `domain_scope` is what says which context it is about.
   - id: admin.ASM100

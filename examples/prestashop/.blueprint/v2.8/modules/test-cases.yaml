@@ -129,7 +129,7 @@ happy_path:
       certainty: speculative
       evidence:
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. Nothing under tests/ references UpdateHookStatusCommand.
@@ -229,7 +229,7 @@ error_cases:
       code: 403
     note: >-
       Corrected 2026-09-19: the expected code was 409. modules.ERR003 AlreadyInstalledModule
-      declares 403, which step 10 set from Module.php's exceptionToStatus map. A test case and
+      declares 403, taken from Module.php's exceptionToStatus map. A test case and
       the error it exercises must agree, and the error is the one that read the code.
     code_refs:
       - path: "tests/Integration/Behaviour/Features/Scenario/Module/install_module.feature"
@@ -266,8 +266,8 @@ error_cases:
       code: 403
     note: >-
       Corrected 2026-09-19: the expected code was 422. modules.ERR002 ModuleNotInstalled
-      declares 403, from Module.php's exceptionToStatus map, and step 10 corrected the error
-      entry without this file being in scope.
+      declares 403, from Module.php's exceptionToStatus map, and the error entry states the
+      same code.
     code_refs:
       - path: "tests/Integration/Behaviour/Features/Scenario/Module/uninstall_module.feature"
         role: test

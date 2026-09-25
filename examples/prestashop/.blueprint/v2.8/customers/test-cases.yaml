@@ -207,7 +207,7 @@ edge_cases:
             enforces it, raising AddressConstraintException.
           confidence_impact: supports
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. No Behat scenario and no PHPUnit test submits an address
@@ -292,7 +292,7 @@ error_cases:
           summary: "The refusal exists in the conversion itself and raises CustomerTransformationException."
           confidence_impact: supports
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. Like the happy path this case mirrors, the conversion
@@ -332,7 +332,7 @@ error_cases:
             exception through a different door.
           confidence_impact: supports
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             No test deletes an unknown customer id. The 404 is read from

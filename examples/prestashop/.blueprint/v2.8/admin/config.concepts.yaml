@@ -64,7 +64,7 @@ concepts:
   - id: admin.CN010
     name: "QuickAccess"
     stereotype: aggregate-root
-    description: "A shortcut in the back-office Quick Access menu: a localized label, the admin URL it points at, and whether it opens in a new window. It is an ObjectModel, which is why every change to one is observable by modules through the actionObjectQuickAccess* hook family. Adopted in step 08 because no slice referenced the code domain."
+    description: "A shortcut in the back-office Quick Access menu: a localized label, the admin URL it points at, and whether it opens in a new window. It is an ObjectModel, which is why every change to one is observable by modules through the actionObjectQuickAccess* hook family. Adopted because no slice referenced the code domain."
     tags: [aggregate-root, back-office, navigation]
     attributes:
       localizedNames:
@@ -92,7 +92,7 @@ concepts:
   - id: admin.CN011
     name: "ExtraPropertyDefinition"
     stereotype: aggregate-root
-    description: "The declaration of an additional property on a core entity: which entity carries it, its name, its type, its scope, its storage index, its validation constraints, and where it surfaces in forms, grids and the Admin API. A definition is structural, not data: registering one prepares storage for it, and deleting one can drop that storage with every value in it. Definitions may be owned by a module, in which case only their shop association may change. Adopted in step 08 because no slice referenced the code domain."
+    description: "The declaration of an additional property on a core entity: which entity carries it, its name, its type, its scope, its storage index, its validation constraints, and where it surfaces in forms, grids and the Admin API. A definition is structural, not data: registering one prepares storage for it, and deleting one can drop that storage with every value in it. Definitions may be owned by a module, in which case only their shop association may change. Adopted because no slice referenced the code domain."
     tags: [aggregate-root, extensibility, back-office]
     attributes:
       entityName:

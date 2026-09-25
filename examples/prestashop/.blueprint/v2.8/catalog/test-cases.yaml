@@ -67,7 +67,7 @@ happy_path:
             states what the search should return for a phrase.
           confidence_impact: supports
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             No test asserts search semantics for catalog.QRY001. The nearest named suite,
@@ -243,12 +243,12 @@ edge_cases:
           source: "classes/Category.php, src/Core/Domain/Category/CategorySettings.php"
           date: "2026-09-19"
           summary: >-
-            Step 11 read both files and found no maximum depth; the only maxDepth in the category
+            Neither file declares a maximum depth; the only maxDepth in the category
             code is a rendering argument on a tree-building helper. The derivation is in
             calcLevelDepth.
           confidence_impact: supports
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. No test in tests/ creates a category at depth 10 or asserts
@@ -335,7 +335,7 @@ error_cases:
             and INVALID_POSITION - no dimension constant anywhere.
           confidence_impact: supports
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. add_image.feature covers only the happy path; no test
@@ -388,7 +388,7 @@ error_cases:
             ProductNotFoundException when the id resolves to nothing. Neither path consults an order.
           confidence_impact: invalidates
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. No test deletes a product by an unknown id, so the 404 is

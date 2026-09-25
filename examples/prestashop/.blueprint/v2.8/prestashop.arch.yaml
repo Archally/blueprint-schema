@@ -76,8 +76,7 @@ contexts:
     # Engagement rather than revenue: the kernel is on no money path, but it is the mechanism the
     # module ecosystem runs on. Hook dispatch is the only publish-subscribe surface PrestaShop has,
     # so without it there are no third-party modules, and the module ecosystem is what keeps
-    # merchants and developers on the platform. This is the weakest of the twelve role claims and
-    # is recorded as such in step 27's notes.
+    # merchants and developers on the platform. This is the weakest of the twelve role claims.
     business_model_role: engagement-creator
     evolution: commodity
     # Like BC009 this context declares no operation, so the traits come from its three declared

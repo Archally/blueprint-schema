@@ -9,7 +9,7 @@ description: >
   Two deployment shapes are documented and both are modelled here as environments, because the
   resources are the same and only their realization differs (substrate-neutral authoring:
   service needs -> bindings per environment -> concrete resources):
-  the Docker Compose stack this repository ships for development (docker-compose.yml,
+  the Docker Compose stack the PrestaShop source tree ships for development (docker-compose.yml,
   docker-compose.mariadb.yml, .docker/Dockerfile, Makefile), and a self-hosted server that meets
   the published requirements (INSTALL.txt, presta-docs/basics/installation/system-requirements.md).
   PrestaShop ships no deployment definition for the second: the requirements ARE the specification.

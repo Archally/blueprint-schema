@@ -110,7 +110,7 @@ assumptions:
       the point: PrestaShop's own site describes the marketplace as offering
       thousands of modules and themes (prestashop.com/en, read 2026-09-19).
       That is a company figure about its own marketplace, not a count taken
-      from this repository, and it is cited for the order of magnitude the
+      from the PrestaShop source tree, and it is cited for the order of magnitude the
       assumption is about rather than as a measurement.
     discovery_stage: committed
     certainty: confirmed

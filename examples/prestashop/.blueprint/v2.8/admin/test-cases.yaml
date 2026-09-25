@@ -195,7 +195,7 @@ edge_cases:
             it and AdminEmployeeException carries the reason.
           confidence_impact: supports
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. The one bulk-delete scenario in employee_management.feature
@@ -241,7 +241,7 @@ edge_cases:
             the old one fails and the new one passes. That is the corrected assertion.
           confidence_impact: supports
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Read for the retired assertion. The handler touches the stored secret only; what
@@ -279,7 +279,7 @@ error_cases:
           summary: "The guard is real and raises EmailAlreadyUsedException before the employee is written."
           confidence_impact: supports
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. The only test that names the exception mocks the command
@@ -315,7 +315,7 @@ error_cases:
             result stops the delete with a named reason code.
           confidence_impact: supports
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. The single scenario in profile_management.feature

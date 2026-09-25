@@ -150,7 +150,7 @@ happy_path:
             it covers creation only.
           confidence_impact: supports
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived for the threshold half. Nothing asserts that a 100-unit threshold

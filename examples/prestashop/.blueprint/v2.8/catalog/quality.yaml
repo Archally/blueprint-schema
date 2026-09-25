@@ -75,8 +75,8 @@ kpis:
       near-identical class families into one operation:
       grep -c '^    exchange:' catalog/*.domain.yaml over
       grep -hcE '^    kind: (command|query)' catalog/*.domain.yaml.
-      The two count different things and neither is wrong. Step 18 builds the
-      contracts over whatever the slices already bound and adds no route of its
+      The two count different things and neither is wrong. The contracts are
+      built over whatever the slices already bound and add no route of their
       own, so this number moves when ps_apiresources gains a route, not when
       the model is edited.
     window: "per-release"

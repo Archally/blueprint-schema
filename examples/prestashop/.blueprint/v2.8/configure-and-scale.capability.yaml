@@ -9,7 +9,7 @@ tags: [configure-and-scale]
 # is CAP103, the back-office administration surface, which 17 admin-slice operations serve and
 # no capability named.
 #
-# `operations` lists a REPRESENTATIVE SPINE, not an inventory (step-00 D9).
+# `operations` lists a REPRESENTATIVE SPINE, not an inventory.
 
 capabilities:
   # Level 1: what the shop says
@@ -85,8 +85,7 @@ capabilities:
         summary: >
           The hook registry declares 1162 hook names; 231 more are fired from literal call
           sites and the actionObject<Class> family is fired dynamically for every persisted
-          class. 158 of the model's 201 events carry the hook they correspond to, measured by
-          step 11.
+          class. 158 of the model's 201 events carry the hook they correspond to.
         confidence_impact: supports
       - kind: documentation
         source: "https://www.prestashop.com/en/partners"

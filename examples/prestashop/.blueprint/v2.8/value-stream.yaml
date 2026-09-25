@@ -9,7 +9,7 @@ version: "1.1.0"
 #
 # No stage carries a `lead_time`. The field exists and would be the natural place for "checkout
 # takes 2-5 minutes", but nothing in the code, in presta-docs or in presta-specs measures it, and
-# an invented duration on a golden model is worse than a missing one (step-00 R10). The same
+# an invented duration on this model is worse than a missing one. The same
 # applies to `pain_points`: the ones below are code-grounded frictions, not survey findings.
 
 value_streams:

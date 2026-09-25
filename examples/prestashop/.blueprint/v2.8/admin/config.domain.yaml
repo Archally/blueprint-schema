@@ -290,7 +290,7 @@ operations:
         role: implementation
         description: "entityManager->getRepository(Tab::class)->changeStatusByClassName(); a Doctrine path"
   # ── QuickAccess (5 CMD + 1 QRY) ──
-  # Adopted by step 08: no slice referenced src/Core/Domain/QuickAccess/ before this.
+  # Adopted because no slice referenced src/Core/Domain/QuickAccess/ before this.
 
   addQuickAccess:
     id: admin.CMD036
@@ -446,7 +446,7 @@ operations:
         role: model
 
   # ── ExtraProperty (4 CMD + 1 QRY) ──
-  # Adopted by step 08: no slice referenced src/Core/Domain/ExtraProperty/ before this.
+  # Adopted because no slice referenced src/Core/Domain/ExtraProperty/ before this.
 
   addExtraPropertyDefinition:
     id: admin.CMD041
@@ -668,7 +668,7 @@ operations:
         role: model
 
   # ── BusinessEntity (1 CMD + 2 QRY) ──
-  # Adopted by step 08: no slice referenced src/Core/Domain/BusinessEntity/ before this.
+  # Adopted because no slice referenced src/Core/Domain/BusinessEntity/ before this.
 
   addBusinessEntity:
     id: admin.CMD045

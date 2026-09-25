@@ -129,7 +129,7 @@ happy_path:
             mocks the bus, so nothing in it rebuilds an index or observes one afterwards.
           confidence_impact: weakens
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. No Behat scenario dispatches SearchIndexationCommand,
@@ -178,7 +178,7 @@ edge_cases:
             mechanism, and it is the opposite of the property this case used to assert.
           confidence_impact: invalidates
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. Nothing measures the window or searches during it, so

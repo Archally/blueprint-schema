@@ -10,7 +10,7 @@ tags: [shop-and-buy]
 # `operations` lists a REPRESENTATIVE SPINE, not an inventory: the commands and queries that
 # define the ability, so a reader can jump from "what the business can do" to the code that does
 # it. The model holds 680 operations; a capability that listed all of its own would be a second
-# copy of the domain layer (step-00 D9).
+# copy of the domain layer.
 
 capabilities:
   # Level 1: discovery

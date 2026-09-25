@@ -75,7 +75,7 @@ happy_path:
             EditCarrierCommand, so it covers the outcome and not the operation.
           confidence_impact: supports
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             ToggleCarrierIsFreeCommand is real and used by the back-office controller, but no
@@ -236,7 +236,7 @@ edge_cases:
             carrier not found and a save failure. No shipped or packed check appears in it.
           confidence_impact: invalidates
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: "Modeler-derived from code. No scenario splits a shipped shipment."
           confidence_impact: weakens
@@ -305,7 +305,7 @@ error_cases:
             operation.
           confidence_impact: supports
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: "No scenario edits an unknown shipment; the refusal is read from EditShipmentHandler."
           confidence_impact: weakens

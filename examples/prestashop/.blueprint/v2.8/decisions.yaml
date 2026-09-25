@@ -383,7 +383,7 @@ decisions:
         - "GraphQL API"
       chosen: "New Admin API - resource-oriented REST with OAuth2 scopes and proper versioning"
     capability_refs: [CAP016]
-    # Added by step 27. Keeping the legacy webservice alive beside the Admin API is not a
+    # Keeping the legacy webservice alive beside the Admin API is not a
     # design preference, it rests on admin.ASM100: integrators do not migrate on a date the
     # shop sets.
     motivation_refs:
@@ -640,7 +640,7 @@ decisions:
         description: "The Symfony-side dispatcher the modern back-office pages use, alongside the legacy static entry point. dispatchWithParameters is the second of the four call shapes that take a literal hook name."
     tags: [extension-point, modules, architecture]
 
-# Bounded Context Canvas business decisions (BD###), added by step 27 for the context cards.
+# Bounded Context Canvas business decisions (BD###), for the context cards.
 #
 # A business decision is NOT an ADR. DC### above records WHY a choice was made and what was
 # rejected; a BD### states the policy that choice left in force, in the words a reader of the

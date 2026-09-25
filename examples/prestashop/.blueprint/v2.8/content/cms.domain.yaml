@@ -663,7 +663,7 @@ errors:
       A displayed/hidden change on a category failed. The code splits this into three classes by
       direction - CannotToggleCmsPageCategoryStatusException for the single toggle,
       CannotEnableCmsPageCategoryException and CannotDisableCmsPageCategoryException for the bulk
-      commands. One error is modeled for all three, per step-00 D9: the cause and the caller's
+      commands. One error is modeled for all three: the cause and the caller's
       recourse are identical and the direction is already stated by the operation.
     category: internal
     severity: error

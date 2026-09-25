@@ -73,7 +73,7 @@ happy_path:
             a CMS page category at all; the CmsPage feature file covers pages, not categories.
           confidence_impact: weakens
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. The happy path is read from AddCmsPageCategoryHandler,
@@ -114,7 +114,7 @@ happy_path:
             code, which is the part of this case worth asserting.
           confidence_impact: supports
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. Nothing in tests/ references ImportThemeCommand or
@@ -174,7 +174,7 @@ happy_path:
       certainty: speculative
       evidence:
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code, and the weakest case in this slice. Nothing in tests/
@@ -217,7 +217,7 @@ edge_cases:
             one of its own children, with CmsPageCategoryConstraintException.
           confidence_impact: supports
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. EditCmsPageCategoryCommandTest covers type checking on
@@ -260,7 +260,7 @@ edge_cases:
             theme and runs the full activation chain.
           confidence_impact: weakens
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: "Modeler-derived from code. No test enables a theme, let alone an already-active one."
           confidence_impact: weakens
@@ -276,9 +276,8 @@ error_cases:
     given:
       description: >-
         Category 'Legal' has 3 assigned CMS pages and at least one child category. Corrected
-        2026-09-19: this case asserted that such a delete is rejected with a 409, and step 10
-        had already corrected content.VR003 and content.ERR003 the other way without this file
-        being in scope. CMSCategory::delete returns false for exactly one input, id 1; for
+        2026-09-19: this case asserted that such a delete is rejected with a 409, while
+        content.VR003 and content.ERR003 already describe the behaviour the other way. CMSCategory::delete returns false for exactly one input, id 1; for
         everything else it walks getAllChildren, deletes each descendant's CMS pages and the
         descendant itself, and returns true. The cascade is the fact worth testing, because it
         loses page content silently.
@@ -306,12 +305,12 @@ error_cases:
           source: "classes/CMSCategory.php delete(), lines 247 to 265"
           date: "2026-09-19"
           summary: >-
-            Read twice, by step 10 and again here. The only false return is the root; every
+            Read twice. The only false return is the root; every
             other category deletes itself and all its descendants' pages and returns true. The
             rejection this case used to assert does not exist.
           confidence_impact: invalidates
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from code. No Behat scenario and no PHPUnit test deletes a CMS page
@@ -358,7 +357,7 @@ error_cases:
             content.ERR006 describe is absent from every class on the call path.
           confidence_impact: invalidates
         - kind: assumption
-          source: "modeler, step 19"
+          source: "modeler"
           date: "2026-09-19"
           summary: >-
             Modeler-derived from a static reading; no running instance was consulted and no test
