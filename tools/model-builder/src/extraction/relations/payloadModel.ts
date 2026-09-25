@@ -1,8 +1,8 @@
 import type { Entity, Relation } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
-import { entityDomain, createPlaceholder } from './resolver.js';
-import { resolveModelRef } from './modelRef.js';
+import { entityDomain } from './resolver.js';
+import { resolveModelRefOrPlaceholder } from './modelRef.js';
 
 /**
  * Extract operation → model relations from an operation's payload.schema (a model_ref),
@@ -30,7 +30,7 @@ export function extractPayloadModelRelations(
     if (typeof ref !== 'string' || !ref) continue;
 
     const domain = entityDomain(entity);
-    const targetId = resolveOrPlaceholder(ref, domain, entities, models, placeholders);
+    const targetId = resolveModelRefOrPlaceholder(ref, domain, entities, placeholders, models);
     relations.push({
       id: `${entity.id}--${RELATION_TYPE.PayloadModel}--${targetId}`,
       source_entity_id: entity.id,
@@ -40,20 +40,4 @@ export function extractPayloadModelRelations(
   }
 
   return relations;
-}
-
-/** Resolve through `modelRef.ts`, falling back to a shared Missing placeholder. */
-function resolveOrPlaceholder(
-  ref: string,
-  domain: string,
-  entities: Entity[],
-  models: Entity[],
-  placeholders: Map<string, Entity>
-): string {
-  const resolved = resolveModelRef(ref, domain, entities, models);
-  if (resolved) return resolved;
-
-  const placeholder = createPlaceholder(ref);
-  if (!placeholders.has(placeholder.id)) placeholders.set(placeholder.id, placeholder);
-  return placeholder.id;
 }

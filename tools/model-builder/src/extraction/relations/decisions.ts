@@ -2,6 +2,7 @@ import type { Entity, Relation } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 import { entityDomain, resolveOrPlaceholder } from './resolver.js';
+import { resolveModelRefOrPlaceholder } from './modelRef.js';
 
 const MOTIVATION_GROUPS: ReadonlyArray<{ key: string; predicate: string }> = [
   { key: 'goals', predicate: 'goal' },
@@ -12,12 +13,20 @@ const MOTIVATION_GROUPS: ReadonlyArray<{ key: string; predicate: string }> = [
   { key: 'inquiries', predicate: 'inquiry' },
 ];
 
-const IMPACT_GROUPS: ReadonlyArray<{ key: string; predicate: string }> = [
+/**
+ * `declared_impact.direct.*` - the ref TYPE differs by group, so the resolution does too.
+ *
+ * `models[]` is a `model_ref`, which `metamodel.schema.yaml` documents in four forms: typed id,
+ * bare component name, JSON Pointer and file-relative JSON Pointer. It therefore resolves through
+ * `modelRef.ts`, the one place those forms are implemented. The other five are typed ids and
+ * resolve by id.
+ */
+const IMPACT_GROUPS: ReadonlyArray<{ key: string; predicate: string; modelRef?: true }> = [
   { key: 'concepts', predicate: 'concept' },
   { key: 'rules', predicate: 'rule' },
   { key: 'operations', predicate: 'operation' },
   { key: 'tests', predicate: 'test' },
-  { key: 'models', predicate: 'model' },
+  { key: 'models', predicate: 'model', modelRef: true },
   { key: 'stories', predicate: 'story' },
 ];
 
@@ -85,12 +94,14 @@ export function extractDecisionRelations(
     const declaredImpact = data.declared_impact as Record<string, unknown> | undefined;
     const direct = declaredImpact?.direct as Record<string, unknown> | undefined;
     if (direct && typeof direct === 'object') {
-      for (const { key, predicate } of IMPACT_GROUPS) {
+      for (const { key, predicate, modelRef } of IMPACT_GROUPS) {
         const refs = (direct as Record<string, unknown>)[key];
         if (!Array.isArray(refs)) continue;
         for (const ref of refs) {
           if (typeof ref !== 'string' || !ref) continue;
-          const targetId = resolveOrPlaceholder(ref, domain, entities, placeholders);
+          const targetId = modelRef
+            ? resolveModelRefOrPlaceholder(ref, domain, entities, placeholders)
+            : resolveOrPlaceholder(ref, domain, entities, placeholders);
           relations.push({
             id: `${entity.id}--${RELATION_TYPE.DeclaredImpact}--${predicate}--${targetId}`,
             source_entity_id: entity.id,

@@ -1,5 +1,6 @@
 import type { Entity } from '../../model/types.js';
-import { entityDomain, resolveRef } from './resolver.js';
+import { ENTITY_TYPE } from '../../model/entityTypes.js';
+import { entityDomain, resolveRef, createPlaceholder } from './resolver.js';
 import { matchesModelRef, parseModelPointer, type ModelComponentRef } from './modelRefMatch.js';
 
 export { parseModelPointer } from './modelRefMatch.js';
@@ -72,4 +73,34 @@ export function resolveModelRef(
 /** Same-domain candidate when there is one, else the first - the house rule for ambiguous refs. */
 function preferred(candidates: Entity[], sourceDomain: string): Entity {
   return candidates.find((m) => entityDomain(m) === sourceDomain) ?? candidates[0]!;
+}
+
+/**
+ * Resolve a `model_ref` in any of the four documented forms, falling back to a shared Missing
+ * placeholder - the whole of what a `model_ref` call site needs.
+ *
+ * Every call site takes this entry point rather than `resolveOrPlaceholder` from `resolver.ts`.
+ * That one resolves by typed id alone, so it answers form 1 and turns forms 2, 3 and 4 into gray
+ * placeholder nodes naming components the model does declare. Measured 2026-09-20 on `ecommerce`:
+ * `declared_impact.direct.models` and `uses_models` between them produced five such placeholders -
+ * `Order`, `SubmitOrderRequest`, `SetOrderStatusRequest`, `OrderList`, `OrderLine` - each a
+ * form-2 name and each a key in `orders/models.yaml` carrying an `x-model-id`.
+ *
+ * The model set is derived here rather than passed in, so a call site cannot supply a narrower one
+ * than the resolver assumes and get a placeholder for a component that exists.
+ */
+export function resolveModelRefOrPlaceholder(
+  ref: string,
+  sourceDomain: string,
+  entities: Entity[],
+  placeholders: Map<string, Entity>,
+  models?: Entity[],
+): string {
+  const candidates = models ?? entities.filter((e) => e.type === ENTITY_TYPE.Models);
+  const resolved = resolveModelRef(ref, sourceDomain, entities, candidates);
+  if (resolved) return resolved;
+
+  const placeholder = createPlaceholder(ref);
+  if (!placeholders.has(placeholder.id)) placeholders.set(placeholder.id, placeholder);
+  return placeholder.id;
 }
