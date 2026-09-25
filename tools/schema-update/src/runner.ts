@@ -16,6 +16,7 @@ import { update as update012 } from './updates/012-next-branches.js';
 import { update as update013 } from './updates/013-handles-to-inprocess-contract.js';
 import { update as update014 } from './updates/014-dispatch-inprocess.js';
 import { update as update015 } from './updates/015-dependency-type-to-coupling.js';
+import { update as update016 } from './updates/016-bcc-domain-scope.js';
 
 // Version order, single pass — see resolveChain. `004` follows `002`: both are in-place 2.7
 // restructures, and a v2.6 model must receive 001 → 002 → 004 in one run. `005` is the only hop off
@@ -47,7 +48,10 @@ import { update as update015 } from './updates/015-dependency-type-to-coupling.j
 // way, so the two share no region - but it runs after `008` regardless, on the same principle as
 // `011` and `013`: this module reads the enclosing keys to decide which `type:` is a dependency's,
 // and a model should reach its final shape before that reading happens.
-const ALL_UPDATES: SchemaUpdate[] = [update001, update002, update004, update005, update007, update006, update008, update009, update010, update011, update012, update013, update014, update015];
+// `016` renames one key inside a document's root `business_decisions:`, `assumptions:` and `kpis:`
+// collections. No module above it writes into any of the three, so it shares no file region with
+// them and its position is free. It sits last because that is when it was specified.
+const ALL_UPDATES: SchemaUpdate[] = [update001, update002, update004, update005, update007, update006, update008, update009, update010, update011, update012, update013, update014, update015, update016];
 
 export function detectVersion(blueprintDir: string): string | null {
   const dirName = path.basename(path.resolve(blueprintDir));
