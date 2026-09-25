@@ -130,7 +130,7 @@ produces **no diff** (VAL-ATL-010), which is what makes `atlas:check` a reliable
 enforced:** once the generated output has been stable across a few schema changes with no
 formatting-only churn, flip `continue-on-error` to `false`.
 
-## Documentation migration matrix (Step 05)
+## Documentation migration matrix
 
 Every retained doc keeps an explicit role so readers know what they are looking at:
 

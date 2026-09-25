@@ -298,7 +298,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `entity_version` | `ref → semver` |  | Optional SemVer for individual entity lifecycle tracking. |
 | `schema_version` | `string` | `2.8.0`, `2.7.0`, `2.6.0`, `2.5.0`, `2.4.0`, `2.3.0` … (7) | Blueprint schema version. v2.8 schemas accept v2.7, v2.6, v2.5, v2.4, v2.3, and v2.2 documents for backward compatibility. |
 | `tracker_ref` | `string` |  | External issue-tracker or document reference. A bare key (e.g. 'ABC-1234') resolves through the blueprint's `trackers` registry using `default_tracker`; a '<tr… |
-| `scope_prefix` | `string` |  | Namespace qualifier on a typed id, in kebab-case (e.g. billing, order-mgmt). It names the scope of the document the id is declared in, so that bare ids do not… |
+| `scope_prefix` | `string` |  | A kebab-case scope slug (e.g. billing, order-mgmt), used in two roles. As the namespace qualifier on a typed id it names the scope of the document the id is de… |
 | `tags` | `array<string>` |  | Free-form tags for grouping. A document-level `tags` describes the document; an entity-level `tags` describes the entity. Nothing propagates between them: an e… |
 | `concept_ref` | `string` |  | Reference to a concept (e.g. CN001 or billing.CN001). |
 | `rule_ref` | `string` |  | Reference to a rule by type prefix: SR=structural, CR=classification, DR=derivation, EQ=equivalence, VR=validation. |
@@ -374,6 +374,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `infra_relation` | `string` | `hosted_on`, `connects_to`, `depends_on`, `attaches_to`, `routes_to` | TOSCA-derived relation vocabulary for typed inter-resource edges in the infrastructure layer (snake_case, TOSCA-verbatim). `hosted_on` is the canonical placeme… |
 | `coupling` | `string` | `http`, `message`, `rpc`, `inprocess`, `shareddata`, `scheduledtransfer` | How two bounded contexts are connected: `http` for request and response over an API, `message` for events across a broker, `rpc` for a procedure call, `inproce… |
 | `context_relationship` | `string` | `shared-kernel`, `customer-supplier`, `conformist`, `anticorruption-layer`, `open-host-service`, `published-language` … (8) | DDD strategic relationship between bounded contexts. Captures architectural intent beyond technical integration. |
+| `context_direction` | `string` | `upstream`, `downstream`, `peer` | This context's role in a dependency: upstream=we provide, downstream=we consume, peer=bidirectional. |
 | `spec_path` | `string` |  | Addressable path to any blueprint element. Format: [context.]layer[.category].ID[.field]. Examples: rules.classification.CR003, billing.rules.classification.CR… |
 | `change_kind` | `string` | `add`, `modify`, `deprecate`, `remove`, `rename`, `split` … (7) | Change type for change-impact analysis, as a decision records what it did to a spec path. Semver impact: add is minor, modify is minor or major, deprecate is m… |
 | `semver_impact` | `string` | `major`, `minor`, `patch` | Semantic versioning impact: major=breaking, minor=backward-compatible addition, patch=docs or clarification. |
@@ -474,7 +475,7 @@ A change to a relationship (edge) between two entities.
 | --- | --- | --- | --- | --- |
 | `kind` | `string` | ✓ | `add`, `remove`, `redirect`, `modify` | Edge operation: add=create, remove=delete, redirect=change target, modify=change edge properties. |
 | `subject` | `string` | ✓ |  | Source entity typed ref (e.g., CMD005). The entity this relationship originates from. |
-| `predicate` | `string` | ✓ | `relationship`, `transition_rules`, `interaction`, `association`, `produces`, `reacts_to` … (86) | Relationship type. Maps to graph edge label. |
+| `predicate` | `string` | ✓ | `relationship`, `transition_rules`, `interaction`, `association`, `produces`, `reacts_to` … (87) | Relationship type. Maps to graph edge label. |
 | `object` | `string` | ✓ |  | Target entity typed ref (e.g., EVT006). For redirect: current target. |
 | `new_object` | `string` | — |  | For redirect: the new target entity ref. |
 | `edge_properties` | `object` | — |  | Properties on the edge itself (policy, condition, mode for produces/reacts_to). |
@@ -688,7 +689,7 @@ _Source: `schema/v2.8/render.manifest.schema.yaml` · root type `object`_
 | `archive` | `boolean` | — |  | Keep every delivery instead of replacing the last one. Each run then writes beneath a folder named for its own stamp, so two deliveries never share a directory… |
 | `build_id` | `string` | — |  | Provenance token recorded INSIDE each artifact - its drawn footer and its machine-readable provenance block - identifying the code that produced it. The litera… |
 | `link_template` | `string` | — |  | Optional source-link URL template with `{file}`/`{line}` placeholders, passed through to every target whose renderer supports one. |
-| `contact` | `object` | — |  | Contact details stamped into generated contract specs (`info.contact`). Set this so a deliverable carries the owning organisation's identity rather than the ge… |
+| `contact` | `union` | — |  | Contact details stamped into generated contract specs (`info.contact`). Set this so a deliverable carries the owning organisation's identity rather than the ge… |
 | `license` | `union` | — |  | What `info.license` says in generated contract specs. A mapping with `name` (and optionally `url`) states the licence the delivery is under - set it so a deliv… |
 | `defaults` | `object` | — |  | Values applied to every target unless the target overrides them. |
 | `targets` | `array<ref → target>` | ✓ |  | The project's full artifact set, one entry per renderer invocation. |
@@ -926,6 +927,7 @@ _Source: `schema/v2.8/design/arch.schema.yaml` · root type `object`_
 | `parties` | `array<ref → party>` | — |  | System and organizational parties. In the nested form each carries the bounded contexts whose services are its components; a party declared whole carries none,… |
 | `contexts` | `array<ref → context>` | — |  | Bounded contexts declared whole at the document root, each exactly once in the model. A service under a root-declared context names the system it is a componen… |
 | `system_ref` | `ref → party_ref` | — |  | File-level default for `service.system_ref`: the system party that every service under a root-declared context in this document is a component of, unless the s… |
+| `probes` | `array<ref → probe>` | — |  | Instruments this architecture is read with. A probe is declared here when what it cannot see has to be recorded somewhere other than the prose of whoever last… |
 
 #### Definitions
 
@@ -962,9 +964,10 @@ A bounded context with its domain model, services, and dependencies.
 | `kind` | `ref → context_kind` | ✓ |  | DDD classification of this bounded context, by the problem-space domain it realizes. The slice vocabulary in blueprint.schema classifies that domain itself; th… |
 | `domain_ref` | `union` | — |  | The PRIMARY region of the problem space this bounded context realizes - its home: a domain (`DMN###`) or one of its subdomains (`SDM###`), by id from `blueprin… |
 | `covers` | `array<ref → domain_coverage>` | — |  | Problem-space domains this context serves that its contracts do not reach. THE EXCEPTION CHANNEL. Coverage is normally derived - a context's services expose an… |
+| `value_stream_ref` | `ref → value_stream_ref` | — |  | The value stream this bounded context principally serves - its home in the flow of value to a customer, by id from `value_streams[]`. ONE reference, for the sa… |
 | `complexity` | `ref → complexity_pattern` | — |  | Dominant implementation-complexity / problem-type pattern. Distinct from `model_traits` (behavioural archetype) and `kind` (strategic value). |
 | `business_model_role` | `string` | — | `revenue-generator`, `engagement-creator`, `compliance-enforcer` | BCC v5 Strategic Classification - Business Model Role. Captures HOW the context contributes to the business. Distinct from `kind` (which captures WHETHER the c… |
-| `evolution` | `string` | — | `genesis`, `custom`, `product`, `commodity` | BCC v5 Strategic Classification - Wardley Evolution stage. Used in the dedicated Wardley map view (step-10a) and as a third badge in the BCC node's strategic h… |
+| `evolution` | `string` | — | `genesis`, `custom`, `product`, `commodity` | BCC v5 Strategic Classification - Wardley Evolution stage. Used in the dedicated Wardley map view and as a third badge in the BCC node's strategic header. |
 | `model_traits` | `array<ref → model_traits_item>` | — |  | BCC v5 Model Traits - behavioural archetypes for this context. All values are role nouns ("a context that does X") for authoring consistency. Sources:   - Plan… |
 | `summary` | `string` | — |  | Brief description of this context's purpose and responsibilities. |
 | `description` | `string` | — |  | Human-readable description. |
@@ -1004,7 +1007,7 @@ Dependency on another bounded context or external system. Technical connections 
 | `type` | `string` | — |  | SOFT-DEPRECATED (v2.8.33). Technical integration type, as free text. Accepted for the whole 2.8 line and removed at the next major. Write `coupling` instead. I… |
 | `coupling` | `ref → coupling` | — |  | How this dependency is connected, in the vocabulary the contract surface computes. State it where the contracts do not: where they do, they already carry the d… |
 | `relationship` | `ref → context_relationship` | ✓ |  | DDD strategic relationship pattern. Captures architectural intent beyond technical integration. |
-| `direction` | `string` | — | `upstream`, `downstream`, `peer` | This context's role: upstream=we provide, downstream=we consume, peer=bidirectional. |
+| `direction` | `ref → context_direction` | — |  | This context's role: upstream=we provide, downstream=we consume, peer=bidirectional. |
 | `language_boundary` | `boolean` | — |  | Whether this dependency crosses a ubiquitous language boundary. When true, translation may be needed. |
 | `translation` | `string` | — |  | How the language boundary is handled (e.g. anticorruption-layer, adapter, mapper, shared-types). |
 | `description` | `string` | — |  | Human-readable description. |
@@ -1245,6 +1248,48 @@ Observable side effects of this service beyond its direct contracts. Filesystem,
 | `stderr` | `array<object>` | — |  | Standard error output produced (primarily for CLI components). |
 
 _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service_side_effects`_
+
+#### `probe`
+
+An instrument that reads an artifact the model does not author and reports an observation about it in that artifact's own terms. A probe is identified by the question it answers and by the scope of its attention: two probes reporting the same figure are not interchangeable when they cannot see the same things.
+
+**Required:** `id`, `name`, `question`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `id` | `ref → probe_ref` | ✓ |  | Stable probe id (PRB###), making the instrument a referenceable node. |
+| `name` | `string` | ✓ |  | Probe name, as it is invoked or as its supplier calls it. |
+| `question` | `string` | ✓ |  | The single question this probe answers, phrased as a question. A probe that answers two questions is two probes. An instrument reached for outside the question… |
+| `summary` | `string` | — |  | Brief description of what the probe reads and what it reports. |
+| `source_kind` | `string` | — |  | The kind of artifact this probe reads, such as a source tree, a documentation space, an issue project, a dependency index or a running system. The medium const… |
+| `attention_control` | `string` | — | `owned`, `third-party` | Whether the scope of attention is under the control of whoever relies on the probe. `owned` means an omission changes only when the probe changes. `third-party… |
+| `status` | `string` | — | `candidate`, `active`, `promoted`, `retired` | Lifecycle. candidate: the question has been asked more than once and a durable check is the next step. active: in use. promoted: a durable check now answers th… |
+| `blind_spots` | `array<ref → blind_spot>` | — |  | What this probe does not see. An instrument is characterised as much by its omissions as by its output, and recording them against the instrument rather than a… |
+| `code_refs` | `ref → code_refs` | — |  | Where the probe lives, for one that is maintained alongside the model. |
+| `implementation` | `ref → implementation` | — |  | Whether this probe exists yet. Absent means unclear. |
+| `owned_by` | `ref → owned_by` | — |  | Who maintains the probe, for one that is maintained here. |
+| `properties` | `ref → entity_properties` | — |  |  |
+| `tags` | `ref → tags` | — |  |  |
+
+_Source: `schema/v2.8/design/arch.schema.yaml#/$defs/probe`_
+
+#### `blind_spot`
+
+One thing a probe does not report, and the standing that statement has. An omission the probe's own contract declares and one found by measuring its output are different claims with different lifetimes, and recording them the same way leaves the first unfalsifiable and the second undated.
+
+**Required:** `omitted_fact`, `basis`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `omitted_fact` | `string` | ✓ |  | What the probe does not report, stated as the fact that is missing rather than as a fault. An instrument that omits what it was never asked for is working corr… |
+| `basis` | `string` | ✓ | `declared`, `observed` | `declared`: the probe's own contract states the omission, so it holds until the probe changes. `observed`: it was established by measuring the probe's output,… |
+| `cause` | `string` | — |  | Why the fact is missing - what the probe reads, or does not read, that leaves it out. |
+| `consequence` | `string` | — |  | What a reader would wrongly conclude from this probe's output if the omission were not known. An omission with no stated consequence cannot be weighed against… |
+| `observed_at` | `string` | — |  | When the omission was established (ISO 8601). An observed omission without a date cannot be told apart from a current one; a declared omission takes the probe'… |
+| `established_by` | `string` | — |  | How the omission was established - the check, comparison or reading that showed it. |
+| `closed_at` | `string` | — |  | When the omission stopped applying, if it has. A closed omission is kept rather than deleted, so an observation taken while it was open can still be read corre… |
+
+_Source: `schema/v2.8/design/arch.schema.yaml#/$defs/blind_spot`_
 
 #### Value definitions
 
@@ -2025,7 +2070,7 @@ An infrastructure resource with platform identity and per-environment configurat
 | `properties` | `ref → entity_properties` | — |  | Open metadata bag for resource-level custom attributes. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
-| `type_ref` | `ref → resource_type_ref` | — |  | Optional typed reference to a resource type (RT###) in the resource-type catalog (step 04). Resolves to the type's inputs/outputs contract; the concrete platfo… |
+| `type_ref` | `ref → resource_type_ref` | — |  | Optional typed reference to a resource type (RT###) in the resource-type catalog. Resolves to the type's inputs/outputs contract; the concrete platform realiza… |
 | `scope_ref` | `ref → deployment_scope_ref` | — |  | Optional management/lifecycle partition (DSC###) this resource is owned in - its resource-group / namespace / host-pool. Distinct from `hosted_on` (runtime pla… |
 | `hosting_model` | `string` | — | `managed-service`, `vm`, `container`, `bare-metal`, `serverless`, `network-link` … (7) | Substrate-neutral realization classifier: HOW the resource is hosted - a managed cloud/PaaS service, an IaaS/on-prem VM, a container, bare metal, serverless, a… |
 | `relations` | `array<ref → infra_relation_edge>` | — |  | Typed inter-resource relations (TOSCA vocabulary) - the typed replacement for untyped links in the `properties` bag. `hosted_on` is the canonical placement edg… |
@@ -2435,6 +2480,7 @@ A directed transition between two screens with optional condition.
 | `id` | `ref → ui_nav_ref` | ✓ |  | Unique navigation identifier (UNV001, UNV002, etc.). |
 | `from` | `ref → screen_ref` | ✓ |  | Source screen of this navigation. |
 | `to` | `ref → screen_ref` | ✓ |  | Target screen of this navigation. |
+| `via_action` | `ref → ui_action_ref` | — |  | The UI action that causes this navigation from `from` to `to`. |
 | `condition` | `string` | — |  | When this navigation is available or triggered. |
 | `description` | `string` | — |  | What this navigation transition represents. |
 | `properties` | `ref → entity_properties` | — |  |  |
@@ -2666,7 +2712,7 @@ A Key Performance Indicator - metric with business target. Links operational mea
 | `target` | `string` | ✓ |  | Target value (e.g. '99.5%', '< 200ms p95', '> 1000 orders/hour'). |
 | `window` | `string` | — |  | Measurement window (e.g. '30d rolling', 'calendar month', 'per release'). |
 | `goal` | `ref → goal_ref` | — |  | Motivation goal this KPI tracks. Closes the goal→KPI→metric traceability chain. |
-| `bounded_context_ref` | `ref → scope_prefix` | — |  | Optional bounded context this KPI verifies. When set, the KPI surfaces in the BCC v5 node footer (Verification Metrics section) for that context. Added in v2.6… |
+| `domain_scope` | `ref → scope_prefix` | — |  | Optional problem-space scope this KPI verifies, as a kebab-case scope slug (e.g. billing, order-mgmt). Matched by name, not resolved as a typed reference: the… |
 | `thresholds` | `object` | — |  | Alert thresholds - when the metric crosses these levels, action is needed. |
 | `owner` | `ref → actor_ref` | — |  | Actor (ACT###) responsible for this KPI. |
 | `description` | `string` | — |  | Human-readable description. |
@@ -3351,14 +3397,14 @@ _Source: `schema/v2.8/governance/decisions.schema.yaml#/$defs/option`_
 
 BCC v5 Business Decision - a key rule or policy that governs the behaviour of one or more bounded contexts. NOT a data-level invariant (those live in rules.schema.yaml as Rule); NOT an ADR (DC### above). These are higher-level policy statements expressing "what we will / will not do" in the bounded context's domain.
 
-**Required:** `id`, `name`, `description`, `bounded_context_ref`
+**Required:** `id`, `name`, `description`, `domain_scope`
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `id` | `ref → business_decision_ref` | ✓ |  | Unique business decision identifier (e.g. BD001 or orders.BD001). |
 | `name` | `string` | ✓ |  | Short human-readable name. Used in displayId fallback when no context prefix is set. |
 | `description` | `string` | ✓ |  | Full statement of the decision. Free text; may be multi-paragraph. |
-| `bounded_context_ref` | `ref → scope_prefix` | ✓ |  | Owning bounded context (kebab-case context name). A single decision may apply to multiple contexts via linked_contexts[]. |
+| `domain_scope` | `ref → scope_prefix` | ✓ |  | The problem-space scope that owns this decision, as a kebab-case scope slug (e.g. billing, order-mgmt). Matched by name, not resolved as a typed reference. A s… |
 | `linked_contexts` | `array<ref → scope_prefix>` | — |  | Other contexts this decision affects (cross-context policy). |
 | `linked_user_stories` | `array<ref → user_story_ref>` | — |  | User stories that motivated this decision. |
 | `version` | `ref → entity_version` | — |  | Decision version for individual lifecycle tracking. |
@@ -3599,7 +3645,7 @@ Something believed to be true but not yet verified. Carries risk if wrong; conse
 | `description` | `string` | — |  | Human-readable description. |
 | `statement` | `string` | ✓ |  | What is assumed to be true. |
 | `consequence` | `string` | ✓ |  | What happens if this assumption is wrong - the risk carried by the assumption. |
-| `bounded_context_ref` | `ref → scope_prefix` | — |  | Optional bounded context this assumption applies to. When set, the assumption surfaces in the BCC v5 node footer (Assumptions section) for that context. Added… |
+| `domain_scope` | `ref → scope_prefix` | — |  | Optional problem-space scope this assumption applies to, as a kebab-case scope slug (e.g. billing, order-mgmt). Matched by name, not resolved as a typed refere… |
 | `risk_refs` | `array<ref → risk_ref>` | — |  | Risks associated with this assumption being wrong. |
 | `version` | `ref → entity_version` | — |  | Assumption version for lifecycle tracking. |
 | `discovery_stage` | `ref → discovery_stage` | — |  | Epistemic maturity of this assumption. |
@@ -4006,6 +4052,7 @@ Typed references to blueprint entities this test validates. Tests OWN these link
 | `concepts` | `array<ref → concept_ref>` | — |  | Concepts this test verifies behavior of. |
 | `models` | `array<ref → model_ref>` | — |  | Models this test validates structure of. |
 | `processes` | `array<ref → process_ref>` | — |  | Business processes this test validates flow of. |
+| `use_cases` | `array<ref → use_case_ref>` | — |  | Use cases this test validates. The use case remains the source of the scenario; the test names which case and data it checks. |
 | `ui` | `object` | — |  | UI elements this test validates. |
 | `questions` | `array<ref → question_ref>` | — |  | Questions this test validates the answer quality of. E.g., a test may verify that "What is the current order status?" is answered correctly under various condi… |
 | `ownership` | `array<string>` | — |  | Org ownership refs (party, department, or team) this test validates. |
