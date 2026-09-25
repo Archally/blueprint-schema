@@ -151,6 +151,8 @@ export const RELATION_TYPE = {
   NavFrom: 'nav_from',
   // ui.schema: navigation target screen
   NavTo: 'nav_to',
+  // interactions.schema: navigation caused by a UI action (navigation.via_action)
+  NavViaAction: 'nav_via_action',
   // domain.schema: question answered by operation (any kind: CMD, EVT, QRY, DOC)
   QuestionAnsweredBy: 'question_answered_by',
   // domain.schema: question about concept
@@ -185,6 +187,8 @@ export const RELATION_TYPE = {
   UseCaseScreen: 'use_case_screen',
   // story.schema (v2.5): use case step references operation (main_scenario[].operation)
   UseCaseOperation: 'use_case_operation',
+  // story.schema: use case main-scenario step references a UI action (main_scenario[].ui_action)
+  UseCaseUiAction: 'use_case_ui_action',
   // story.schema (v2.8.8): use case involves an actor it does not initiate from (secondary_actors[])
   UseCaseSecondaryActor: 'use_case_secondary_actor',
   // story.schema (v2.8.8): use case always performs another (use_case.includes[])
@@ -252,8 +256,16 @@ export const RELATION_TYPE = {
   ValueStreamKpi: 'value_stream_kpi',
   // value-stream.schema (v2.6): value stream primary actor (primary_actors[])
   ValueStreamActor: 'value_stream_actor',
+  // v2.8.42: a bounded context's `value_stream_ref` - the ONE stream it principally serves, the
+  // flow-of-value counterpart to `ContextRealizesDomain`'s problem-space home. PREFIXED with the
+  // source type for the same reason that one is: the four edges above are sourced from the value
+  // stream and this one points back at it, so an unprefixed `serves` would read as a fifth
+  // outbound edge. Which streams a context CONTRIBUTES to stays n-to-n and is walked through its
+  // capabilities; this edge carries only what the context itself declares.
+  ContextServesValueStream: 'context_serves_value_stream',
   // BCC v5 (v2.6.3): bounded-context association from BD/Assumption/KPI to context
-  // Source field: bounded_context_ref on business_decision, assumption, kpi
+  // Source field: domain_scope on business_decision, assumption, kpi. The relation type keeps its
+  // own name, which consumers match on and which is not the field name it is built from.
   BoundedContextRef: 'bounded_context_ref',
   // arch.schema: Context → Context strategic dependency (context.dependencies[]), carrying the
   // declared relationship / direction / integration type.

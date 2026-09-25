@@ -131,6 +131,8 @@ interface StoryInput {
   lanes?: unknown;
   /** The same three nested, which is how every model on an earlier schema line carries them. */
   process?: { trigger?: unknown; end_states?: unknown; lanes?: unknown };
+  /** Where the work behind this story is tracked (v2.7.5). Carried through, never interpreted. */
+  tracker_ref?: unknown;
 }
 
 /**
@@ -206,6 +208,11 @@ export function extractStory(doc: ParsedBlueprintDocument): Entity[] {
         trigger: s.trigger ?? s.process?.trigger,
         end_states: s.end_states ?? s.process?.end_states,
         lanes: s.lanes ?? s.process?.lanes,
+        // This extractor names every field it keeps, so a field it does not name is DROPPED - which
+        // is why a story could declare `tracker_ref` in a valid model and no consumer could see it.
+        // Carried raw: what it means and how it becomes a link are the render kit's, not this
+        // module's, and a story that states none keeps the key absent rather than undefined-valued.
+        tracker_ref: typeof s.tracker_ref === 'string' && s.tracker_ref.trim() ? s.tracker_ref.trim() : undefined,
       },
     });
   }

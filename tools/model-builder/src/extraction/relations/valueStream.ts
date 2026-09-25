@@ -9,6 +9,10 @@ import { resolveOrPlaceholder, entityDomain } from './resolver.js';
  * - goal_refs[] → Goal (ValueStreamGoal)
  * - metrics[] → KPI (ValueStreamKpi)
  * - primary_actors[] → Actor (ValueStreamActor)
+ *
+ * And the one edge that points the other way, because it is the only one a value stream does not
+ * declare about itself:
+ * - Context.value_stream_ref → ValueStream (ContextServesValueStream)
  */
 export function extractValueStreamRelations(
   entities: Entity[],
@@ -89,6 +93,25 @@ export function extractValueStreamRelations(
         });
       }
     }
+  }
+
+  // A bounded context's own statement of the stream it serves. Sourced from the context rather
+  // than from the stream, so it sits after the loop above instead of inside it. One ref, so one
+  // edge: the n-to-n question is answered by walking the context's capabilities, and this edge
+  // never stands in for that walk.
+  for (const entity of entities) {
+    if (entity.type !== ENTITY_TYPE.Context) continue;
+    const data = entity.data as Record<string, unknown> | undefined;
+    const ref = data?.value_stream_ref;
+    if (typeof ref !== 'string' || !ref) continue;
+
+    const targetId = resolveOrPlaceholder(ref, entityDomain(entity), entities, placeholders);
+    relations.push({
+      id: `${entity.id}--${RELATION_TYPE.ContextServesValueStream}--${targetId}`,
+      source_entity_id: entity.id,
+      target_entity_id: targetId,
+      type: RELATION_TYPE.ContextServesValueStream,
+    });
   }
 
   return relations;

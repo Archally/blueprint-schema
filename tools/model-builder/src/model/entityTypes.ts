@@ -18,6 +18,12 @@ export const ENTITY_TYPE = {
   Context: 'Context',
   Service: 'Service',
   Contract: 'Contract',
+  // v2.8.44 probes (arch.yaml root `probes:`). An instrument the description is READ with, not a
+  // component of the system being described - which is what separates it from the Service it sits
+  // beside. A probe may also belong to somebody else: `attention_control: third-party` says its
+  // scope of attention can change without notice, so what it omits is dated rather than assumed.
+  // The omissions are the point, and they are carried onto the node whole (`blind_spots`).
+  Probe: 'Probe',
   Goal: 'Goal',
   NonGoal: 'NonGoal',
   Risk: 'Risk',

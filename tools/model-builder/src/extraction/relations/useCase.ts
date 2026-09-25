@@ -11,6 +11,7 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  * - user_stories[] → UseCaseUserStory (use_case → user story)
  * - processes[] → UseCaseProcess (use_case → process PRC###)
  * - main_scenario[].screen → UseCaseScreen (use_case → screen)
+ * - main_scenario[].ui_action → UseCaseUiAction (use_case → ui action); main scenario only
  * - main_scenario[].operation and extensions[].operation → UseCaseOperation
  * - main_scenario[].actor, alternative_flows[].actor → UseCaseActor (use_case → actor)
  *
@@ -111,7 +112,7 @@ export function extractUseCaseRelations(
       }
     }
 
-    // main_scenario[] and extensions[]: screen, operation and actor refs from each step.
+    // main_scenario[] and extensions[]: screen, ui_action, operation and actor refs from each step.
     //
     // A step names its performer one of two ways, and only one of them at a time: through the
     // `operation` it carries, whose `initiated_by` says who runs it, or through `actor` when the
@@ -170,6 +171,11 @@ export function extractUseCaseRelations(
 
       const screen = step.screen as string | undefined;
       if (typeof screen === 'string' && screen) pushStepRelation(RELATION_TYPE.UseCaseScreen, screen);
+
+      // ui_action is a main-scenario field. alternative_flow does not declare it (D3); even if a
+      // document smuggles the key in, the graph does not read it from a branch.
+      const uiAction = kind === 'main' ? (step.ui_action as string | undefined) : undefined;
+      if (typeof uiAction === 'string' && uiAction) pushStepRelation(RELATION_TYPE.UseCaseUiAction, uiAction);
 
       const operation = step.operation as string | undefined;
       if (typeof operation === 'string' && operation) pushStepRelation(RELATION_TYPE.UseCaseOperation, operation);

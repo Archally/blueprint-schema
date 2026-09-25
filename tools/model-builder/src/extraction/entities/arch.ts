@@ -20,9 +20,11 @@ const LAYER = SCHEMA_TYPE_TO_LAYER['arch']!;
  * `system_ref` and `spans` edges, so a consumer of the graph never needs to know which one the
  * author wrote.
  *
- * Produces Party, Context, Service and Contract entities. The internal id is the fully qualified
- * path (party.context[.service[.contractType]]); a root-declared context's party segment is empty
- * (`.context`), which no nested path can produce, so the two shapes cannot collide.
+ * Produces Party, Context, Service, Contract and Probe entities. The internal id is the fully
+ * qualified path (party.context[.service[.contractType]]); a root-declared context's party segment
+ * is empty (`.context`), which no nested path can produce, so the two shapes cannot collide. A
+ * probe is declared at the document root and takes neither segment, so its path is the bare probe
+ * id, which neither of the other two shapes can produce.
  */
 export function extractArch(doc: ParsedBlueprintDocument): Entity[] {
   const entities: Entity[] = [];
@@ -64,6 +66,32 @@ export function extractArch(doc: ParsedBlueprintDocument): Entity[] {
   const rootContexts = data.contexts as Array<Record<string, unknown>> | undefined;
   if (Array.isArray(rootContexts)) {
     for (const context of rootContexts) emitContext(context, undefined);
+  }
+
+  // Probes (v2.8.44). Root-level, so no party or context segment enters the path: an instrument is
+  // not a part of the system it reads. Every declared field is carried onto the node, `blind_spots`
+  // included and whole - summarising an omission at extraction time would put the judgement about
+  // what it costs a reader in the wrong place, and the omissions are why the node exists at all.
+  const probes = data.probes as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(probes)) {
+    for (const probe of probes) {
+      const probeId = probe.id as string | undefined;
+      if (!probeId) continue;
+      entities.push({
+        id: makeInternalId(doc.scope, doc.filePath, probeId),
+        displayId: probeId,
+        type: ENTITY_TYPE.Probe,
+        layer: LAYER,
+        fileOrigin: doc.filePath,
+        // A probe's displayId is its id, so its human name has to reach `term` or it reaches no
+        // reader: `term` is the Name column in `bp entities` and `bp query`, and the `name` field
+        // the text search ranks above the body. This is the convention every id-keyed entity
+        // already follows (Decision, Domain, Migration), not a new one.
+        term: probe.name != null ? String(probe.name) : undefined,
+        summary: probe.summary != null ? String(probe.summary) : undefined,
+        data: { ...probe, ...scoped },
+      });
+    }
   }
 
   return entities;

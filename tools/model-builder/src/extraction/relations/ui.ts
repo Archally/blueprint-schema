@@ -2,6 +2,7 @@ import type { Entity, Relation } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 import { entityDomain, resolveOrPlaceholder } from './resolver.js';
+import { resolveModelRefOrPlaceholder } from './modelRef.js';
 
 /**
  * Extract relations from UI entities:
@@ -13,6 +14,7 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  * - Action → Screen (screen ref)
  * - Action → Operation (triggers_operations[])
  * - Navigation → Screen (from, to)
+ * - Navigation → Action (via_action)
  */
 export function extractUIRelations(
   entities: Entity[],
@@ -26,12 +28,14 @@ export function extractUIRelations(
     if (!data) continue;
 
     if (entity.type === ENTITY_TYPE.Screen) {
-      // Screen → Model (uses_models[])
+      // Screen → Model (uses_models[]). `uses_models` is a `model_ref`, so all four documented
+      // forms resolve - typed id, component name, JSON Pointer, file-relative JSON Pointer - and
+      // the form handling stays in `modelRef.ts` rather than being restated here.
       const models = data.uses_models as string[] | undefined;
       if (Array.isArray(models)) {
         for (const ref of models) {
           if (typeof ref !== 'string' || !ref) continue;
-          const targetId = resolveOrPlaceholder(ref, domain, entities, placeholders);
+          const targetId = resolveModelRefOrPlaceholder(ref, domain, entities, placeholders);
           relations.push({
             id: `${entity.id}--${RELATION_TYPE.ScreenUsesModel}--${targetId}`,
             source_entity_id: entity.id,
@@ -153,6 +157,19 @@ export function extractUIRelations(
           source_entity_id: entity.id,
           target_entity_id: targetId,
           type: RELATION_TYPE.NavTo,
+        });
+      }
+
+      // Navigation → Action (via_action). Distinct from ActionOnScreen / ActionTriggersOperation:
+      // those start at the action; this starts at the navigation and names what causes from→to.
+      const viaAction = data.via_action as string | undefined;
+      if (typeof viaAction === 'string' && viaAction) {
+        const targetId = resolveOrPlaceholder(viaAction, domain, entities, placeholders);
+        relations.push({
+          id: `${entity.id}--${RELATION_TYPE.NavViaAction}--${targetId}`,
+          source_entity_id: entity.id,
+          target_entity_id: targetId,
+          type: RELATION_TYPE.NavViaAction,
         });
       }
     }
