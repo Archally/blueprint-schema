@@ -24,10 +24,18 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEST = join(HERE, 'schema');
 
-/** Where a schema tree may live, relative to this file. First match wins; none is an error. */
+/**
+ * Where a schema tree may live, relative to this file. First match wins; none is an error.
+ *
+ * v2.8 is the carried line (the schema the extension validates against). The v2.7 entries stay as
+ * a fallback for a checkout that has not caught up yet - cheap to keep, and it never shadows v2.8:
+ * both v2.8 candidates are tried before either v2.7 one.
+ */
 const CANDIDATES = [
-  '../../../schemas/blueprint/v2.7/schema', // monorepo
-  '../../schema/v2.7',                      // publication repo
+  '../../../schemas/blueprint/v2.8/schema', // monorepo
+  '../../../schemas/blueprint/v2.7/schema', // monorepo, fallback
+  '../../schema/v2.8',                      // publication repo
+  '../../schema/v2.7',                      // publication repo, fallback
 ];
 
 function findSource() {

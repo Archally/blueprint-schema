@@ -3,6 +3,19 @@
 All notable changes to this extension. Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this extension versions independently of `@archally/blueprint-schema`.
 
+## 0.5.0
+
+Carries schema v2.8; completion and validation work in any workspace, with no per-repository
+settings file required.
+
+- `sync-schema.mjs` now resolves the **v2.8** schema tree (was v2.7), with v2.7 kept as a fallback
+  candidate for a checkout that has not caught up. The bundled `schema/` tree is what `yamlValidation`
+  points at, so this is the version a packaged VSIX actually validates against.
+- **`migration.yaml` / `*.migration.yaml`** gained a `yamlValidation` entry (`./schema/migration.schema.yaml`).
+  `metamodel.schema.yaml` is deliberately not contributed - see the README's "Schema coverage" section for why.
+- `sync-schema.mjs --check` is wired into a build gate, so a VSIX can no longer be packaged from a
+  stale or missing bundled schema tree.
+
 ## 0.4.0
 
 Local `code_ref` resolution and hover.

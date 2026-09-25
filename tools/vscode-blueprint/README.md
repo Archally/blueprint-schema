@@ -36,7 +36,7 @@ It complements `redhat.vscode-yaml` (schema validation + autocomplete + hover on
 ## Install / run (dev)
 
 ```bash
-cd tools/vscode-blueprint
+cd editors/vscode/blueprint-navigation
 npm install
 npm run compile      # or: npm run watch
 ```
@@ -47,9 +47,34 @@ that contains a `.blueprint/` tree, and Ctrl+click an id like `orders.EVT006`.
 To package a `.vsix` for normal installation:
 
 ```bash
-npx @vscode/vsce package
-code --install-extension archally-blueprint-navigation-0.4.0.vsix
+npm run package    # wraps `vsce package` - see below for why this is not a bare `npx @vscode/vsce package`
+code --install-extension archally-blueprint-navigation-<version>.vsix
+cursor --install-extension archally-blueprint-navigation-<version>.vsix   # if the Cursor CLI is on PATH
 ```
+
+`npm run package` (`package-vsix.mjs`) builds in place, then copies the built extension to a
+temporary folder outside any enclosing npm workspace before invoking `vsce package` there. A bare
+`vsce package` run from inside an npm workspace can misdetect the workspace root as the
+extension's own tree and attempt to bundle far more than this folder - the wrapper avoids that
+rather than asking every packager to remember a workaround.
+
+## Schema and validation coverage
+
+This extension bundles the Archally Blueprint Schema and contributes it to `redhat.vscode-yaml`
+(`contributes.yamlValidation`), so completion and validation work in any workspace that has a
+`.blueprint/**` YAML file - no per-repository `yaml.schemas` configuration required. The bundled
+tree is copied in at packaging time (`sync-schema.mjs`, run by `vscode:prepublish`), so it is fixed
+per release rather than read from wherever the workspace happens to be.
+
+- **Schema line carried by this build: v2.8.**
+- 20 blueprint document kinds are contributed: `arch`, `blueprint`, `capability`, `concepts`,
+  `decisions`, `domain`, `dynamics`, `infrastructure`, `interactions`, `leverage`, `migration`,
+  `models`, `motivation`, `organization`, `quality`, `roadmap`, `rules`, `story`, `test-cases`,
+  `value-stream`.
+- `metamodel.schema.yaml` is deliberately not contributed. It is the shared type-definition file
+  the other schemas reference (`$ref: "../metamodel.schema.yaml#/..."`), not a document a project
+  authors - a workspace never contains a file that should validate against it, so there is no glob
+  to contribute.
 
 ## Configuration
 

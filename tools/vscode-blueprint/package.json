@@ -2,7 +2,7 @@
   "name": "archally-blueprint-navigation",
   "displayName": "Archally Blueprint Navigation",
   "description": "Go-to-definition, hover, highlight, and re-index for Archally blueprint IDs (e.g. slice.TYPE### references) across .blueprint YAML files.",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "archally",
   "license": "Apache-2.0",
   "repository": {
@@ -237,6 +237,15 @@
       },
       {
         "fileMatch": [
+          "**/.blueprint/**/migration.yaml",
+          "**/.blueprint/**/*.migration.yaml",
+          "**/.blueprint/**/migration.yml",
+          "**/.blueprint/**/*.migration.yml"
+        ],
+        "url": "./schema/migration.schema.yaml"
+      },
+      {
+        "fileMatch": [
           "**/.blueprint/**/models.yaml",
           "**/.blueprint/**/*.models.yaml",
           "**/.blueprint/**/models.yml",
@@ -321,10 +330,13 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "test": "npm run compile && node --test ./out/codeRef.test.js ./out/codeRef.local.test.js ./out/codeRef.hover.test.js",
+    "test": "npm run compile && node --test ./out/codeRef.test.js ./out/codeRef.local.test.js ./out/codeRef.hover.test.js ./out/completion.test.js",
     "vscode:prepublish": "npm run sync-schema && npm run compile",
     "sync-schema": "node sync-schema.mjs",
-    "sync-schema:check": "node sync-schema.mjs --check"
+    "sync-schema:check": "node sync-schema.mjs --check",
+    "package": "node package-vsix.mjs --no-dependencies",
+    "gen-id-fields": "node gen-id-fields.mjs",
+    "gen-id-fields:check": "node gen-id-fields.mjs --check"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
