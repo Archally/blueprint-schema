@@ -8,6 +8,7 @@ operations:
   addProductToOrder:
     id: orders.CMD020
     kind: command
+    dispatch: inprocess
     name: "AddProductToOrder"
     description: "Add a new product line to an existing order. Recalculates totals, taxes, and may affect shipping cost."
     delivery_priority: must-have
@@ -24,6 +25,7 @@ operations:
   removeProductFromOrder:
     id: orders.CMD021
     kind: command
+    dispatch: inprocess
     name: "RemoveProductFromOrder"
     description: "Remove a product line from an existing order. Recalculates totals. Cannot remove the last line (SR001)."
     delivery_priority: must-have
@@ -40,6 +42,7 @@ operations:
   updateOrderProduct:
     id: orders.CMD022
     kind: command
+    dispatch: inprocess
     name: "UpdateOrderProduct"
     description: "Update quantity or price of an existing product line in an order. Recalculates line total and order totals."
     delivery_priority: must-have
@@ -57,4 +60,76 @@ operations:
     id: orders.EVT009
     kind: event
     name: "OrderProductModified"
-    description: "Emitted when a product line is added, removed, or updated in an order. Triggers total recalculation."
+    description: >
+      A product line has been added to, updated in or removed from an order. PrestaShop publishes
+      this as the hook actionOrderEdited, fired by exactly the three handlers behind the three
+      commands that produce this event, so the model's grouping and the code's own grouping agree.
+      Subscribers are handed the order after the change; the totals have already been recalculated.
+    tags: [hook:actionOrderEdited]
+    code_refs:
+      - path: "src/Adapter/Order/CommandHandler/AddProductToOrderHandler.php"
+        role: implementation
+        description: "Fires actionOrderEdited"
+      - path: "src/Adapter/Order/CommandHandler/UpdateProductInOrderHandler.php"
+        role: implementation
+        description: "Fires actionOrderEdited"
+      - path: "src/Adapter/Order/CommandHandler/DeleteProductFromOrderHandler.php"
+        role: implementation
+        description: "Fires actionOrderEdited"
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The hook registry entry for actionOrderEdited"
+
+errors:
+  productNotInOrder:
+    id: orders.ERR012
+    name: "ProductNotInOrder"
+    description: "The line the request names is not on this order. Raised when a product id or an order-detail id is edited, removed or refunded against an order that does not carry it."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Order/Exception/CannotFindProductInOrderException.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Exception/OrderDetailNotFoundException.php"
+        role: implementation
+        description: "The order-detail row, which is the persisted form of an order line"
+
+  duplicateProductInOrder:
+    id: orders.ERR013
+    name: "DuplicateProductInOrder"
+    description: "The product being added is already a line on the order, or already on the invoice the line would join. PrestaShop merges quantities rather than carrying two lines for one product, so adding a duplicate is refused instead of silently doubling."
+    category: conflict
+    severity: error
+    http_status: 409
+    code_refs:
+      - path: "src/Core/Domain/Order/Exception/DuplicateProductInOrderException.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Exception/DuplicateProductInOrderInvoiceException.php"
+        role: implementation
+
+  cannotEditDeliveredOrderProduct:
+    id: orders.ERR014
+    name: "CannotEditDeliveredOrderProduct"
+    description: "The line has already been delivered, so its quantity and price are fixed. A delivered line is a fiscal record; correcting it is a refund or a return, not an edit."
+    category: conflict
+    severity: error
+    http_status: 409
+    code_refs:
+      - path: "src/Core/Domain/Order/Exception/CannotEditDeliveredOrderProductException.php"
+        role: implementation
+
+  cannotRemoveProductFromOrder:
+    id: orders.ERR015
+    name: "CannotRemoveProductFromOrder"
+    description: "Removing the line failed while it was being written, including the customized variant where the customization rows are deleted alongside the line. Distinct from SR001, which refuses the removal of the last line before anything is attempted."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    related_rules: [orders.SR001]
+    code_refs:
+      - path: "src/Core/Domain/Order/Exception/DeleteProductFromOrderException.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Exception/DeleteCustomizedProductFromOrderException.php"
+        role: implementation

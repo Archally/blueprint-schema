@@ -1,5 +1,5 @@
 ---
-version: "1.0.0"
+version: "1.1.0"
 scope: shipping
 
 happy_path:
@@ -11,7 +11,7 @@ happy_path:
       rules: [shipping.SR001, shipping.VR002]
     contract:
       kind: openapi
-      file: shipping/shipping-api.openapi
+      file: shipping-api
     given:
       description: "Zone 1 (Europe) exists. Shipping method is by_weight. One range defined."
       state:
@@ -26,6 +26,21 @@ happy_path:
     expected_result:
       status: success
       code: 200
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature"
+        role: test
+        description: "Scenario 'Adding new Carrier' (line 25)."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature line 25"
+          date: "2026-09-19"
+          summary: >-
+            The scenario creates a carrier with its zones, ranges and shipping method and
+            asserts the stored configuration, which is this case's assertion.
+          confidence_impact: supports
 
   - id: shipping.TC002
     name: "Toggle carrier free shipping - happy path"
@@ -41,6 +56,31 @@ happy_path:
         hasAdditionalHandlingFee: false
     expected_result:
       status: success
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature"
+        role: test
+        description: "Scenario 'Partially editing carrier with free shipping' (line 477). It reaches the same field through EditCarrierCommand, not through the toggle."
+      - path: "src/Adapter/Carrier/CommandHandler/ToggleCarrierIsFreeHandler.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature line 477"
+          date: "2026-09-19"
+          summary: >-
+            The scenario's preconditions match this case exactly (isFree false, handling fee
+            false) and it asserts free shipping is on afterwards. It exercises
+            EditCarrierCommand, so it covers the outcome and not the operation.
+          confidence_impact: supports
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            ToggleCarrierIsFreeCommand is real and used by the back-office controller, but no
+            Behat scenario and no unit test dispatches it.
+          confidence_impact: weakens
 
   - id: shipping.TC003
     name: "Create shipment for order - happy path"
@@ -58,6 +98,24 @@ happy_path:
     expected_result:
       status: success
       code: 200
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Shipment/shipment.feature"
+        role: test
+        description: "Scenario 'Create a new shipment for an order' (line 80)."
+      - path: "src/Core/Domain/Shipment/Command/CreateShipment.php"
+        role: implementation
+        description: "The constructor takes exactly orderId, carrierId, productId and quantity, which is this case's given."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Shipment/shipment.feature line 80"
+          date: "2026-09-19"
+          summary: >-
+            The scenario creates a shipment for an order with a carrier and a product quantity
+            and asserts it exists, which is this case's assertion.
+          confidence_impact: supports
 
   - id: shipping.TC004
     name: "Split shipment - happy path"
@@ -75,6 +133,23 @@ happy_path:
         carrierId: 5
     expected_result:
       status: success
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Shipment/products_with_different_carriers.feature"
+        role: test
+        description: "Scenario 'Order products with different carriers and manage shipments (split, merge, delete)' (line 92)."
+      - path: "src/Adapter/Shipment/CommandHandler/SplitShipmentHandler.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Shipment/products_with_different_carriers.feature line 92"
+          date: "2026-09-19"
+          summary: >-
+            The scenario splits a shipment, then merges and deletes, asserting the shipment set
+            after each step. The split half is this case's assertion.
+          confidence_impact: supports
 
 edge_cases:
   - id: shipping.EC001
@@ -98,22 +173,73 @@ edge_cases:
     expected_result:
       status: failure
       code: 422
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Carrier/Ranges/carrier_ranges.feature"
+        role: test
+        description: "Scenario 'Adding overlapping ranges in carrier' (line 66)."
+      - path: "src/Core/Domain/Carrier/Exception/CarrierConstraintException.php"
+        role: implementation
+        description: "INVALID_RANGES_OVERLAPPING."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Carrier/Ranges/carrier_ranges.feature line 66"
+          date: "2026-09-19"
+          summary: "The scenario submits overlapping ranges and asserts the same error code this case expects."
+          confidence_impact: supports
 
   - id: shipping.EC002
-    name: "Edit shipped shipment rejected"
-    summary: "Attempt to edit tracking number on a shipment that has already been dispatched."
+    name: "Splitting a shipment that has already shipped is refused"
+    summary: "A shipment with a tracking number cannot be split."
     validates:
-      operations: [shipping.CMD012]
-      rules: [shipping.VR006]
+      operations: [shipping.CMD015]
     given:
-      description: "Shipment 15 has status 'shipped'."
+      description: >-
+        A shipment that already carries a tracking number, asked to split. Corrected
+        2026-09-19: this case asserted that EDITING the tracking number on a shipped shipment
+        is refused. EditShipment carries only shipmentId and carrierId - there is no tracking
+        number on it, so the edit the case described is not expressible - and
+        EditShipmentHandler makes no shipped check at all. The shipped guard is real and lives
+        elsewhere: SplitShipmentHandler and MergeProductsToShipmentHandler both raise
+        CannotEditShipmentShippedException when the shipment has a tracking number.
       state:
         shipmentId: 15
-        shipmentStatus: "shipped"
-        trackingNumber: "NEW-TRACKING-123"
+        trackingNumber: "EXISTING-TRACKING-123"
     expected_result:
       status: failure
       code: 409
+    code_refs:
+      - path: "src/Adapter/Shipment/CommandHandler/SplitShipmentHandler.php"
+        role: implementation
+        description: "The tracking-number guard, raising 'Cannot split the shipment because it has already been shipped.'"
+      - path: "src/Core/Domain/Shipment/Command/EditShipment.php"
+        role: implementation
+        description: "Read for the retired claim: shipmentId and carrierId only, no tracking number."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "src/Adapter/Shipment/CommandHandler/SplitShipmentHandler.php"
+          date: "2026-09-19"
+          summary: >-
+            The guard is there and names the reason: a non-empty tracking number means shipped,
+            and a shipped shipment cannot be split.
+          confidence_impact: supports
+        - kind: codebase-analysis
+          source: "src/Adapter/Shipment/CommandHandler/EditShipmentHandler.php"
+          date: "2026-09-19"
+          summary: >-
+            Read in full for the retired claim. Its only refusals are shipment not found,
+            carrier not found and a save failure. No shipped or packed check appears in it.
+          confidence_impact: invalidates
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: "Modeler-derived from code. No scenario splits a shipped shipment."
+          confidence_impact: weakens
 
 error_cases:
   - id: shipping.ER001
@@ -130,6 +256,22 @@ error_cases:
     expected_result:
       status: failure
       code: 422
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature"
+        role: test
+        description: "Scenario 'Add a new carrier without any zone' (line 759)."
+      - path: "src/Core/Domain/Carrier/Command/AddCarrierCommand.php"
+        role: validation
+        description: "assertCarrierHasAtLeastOneZone, raising INVALID_ZONE_MISSING."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature line 759"
+          date: "2026-09-19"
+          summary: "The scenario creates a carrier with no zone and asserts the same refusal this case expects."
+          confidence_impact: supports
 
   - id: shipping.ER002
     name: "Non-existent shipment"
@@ -143,6 +285,30 @@ error_cases:
     expected_result:
       status: failure
       code: 404
+    code_refs:
+      - path: "src/Adapter/Shipment/CommandHandler/EditShipmentHandler.php"
+        role: implementation
+        description: "Two ShipmentNotFoundException throws, one for the shipment and one for its order."
+      - path: "tests/Integration/Behaviour/Features/Scenario/Shipment/shipment.feature"
+        role: test
+        description: "Scenario 'Try to fulfill a non-existing shipment' (line 154) asserts the same exception through Fulfill rather than Edit."
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Shipment/shipment.feature line 154"
+          date: "2026-09-19"
+          summary: >-
+            The scenario asserts ShipmentNotFoundException for an unknown id, but on the
+            Fulfill command. It covers the exception through a different door than this case's
+            operation.
+          confidence_impact: supports
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: "No scenario edits an unknown shipment; the refusal is read from EditShipmentHandler."
+          confidence_impact: weakens
 
   - id: shipping.ER003
     name: "Negative range value rejected"
@@ -161,3 +327,19 @@ error_cases:
     expected_result:
       status: failure
       code: 422
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Carrier/Ranges/carrier_ranges.feature"
+        role: test
+        description: "Scenario 'Adding negative ranges in carrier' (line 158), which covers a negative from and a negative to."
+      - path: "src/Core/Domain/Carrier/Exception/CarrierConstraintException.php"
+        role: implementation
+        description: "INVALID_RANGE_NEGATIVE."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Carrier/Ranges/carrier_ranges.feature line 158"
+          date: "2026-09-19"
+          summary: "The scenario submits a negative range bound and asserts the same refusal this case expects."
+          confidence_impact: supports

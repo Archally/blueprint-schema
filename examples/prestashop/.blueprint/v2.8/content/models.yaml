@@ -319,14 +319,19 @@ components:
         breadcrumb:
           type: array
           description: "Ancestry chain from root to this category for breadcrumb navigation."
+          example:
+            - categoryId: 1
+              name: "Home"
           items:
             type: object
             properties:
               categoryId:
                 type: integer
+                description: "An ancestor category, nearest the root first. The last entry is the category's own parent, never the category itself."
                 example: 1
               name:
                 type: string
+                description: "The ancestor's name in the employee's language, carried here so the trail can be printed without walking the tree again."
                 example: "Home"
       code_refs:
         - path: "src/Core/Domain/CmsPageCategory/Query/GetCmsPageCategoryForEditing.php"
@@ -352,7 +357,7 @@ components:
       properties:
         name:
           type: string
-          description: "Theme identifier name."
+          description: "The theme's technical name, which is also its folder under themes/. It is the key the shop stores, so renaming a theme folder unlinks it from the shops using it."
           example: "classic"
         version:
           type: string

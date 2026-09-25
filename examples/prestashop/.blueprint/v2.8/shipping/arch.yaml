@@ -11,8 +11,11 @@ contexts:
   - id: prestashop.BC010
     name: Shipping
     kind: support
+    value_stream_ref: VS002
     complexity: integration
+    business_model_role: revenue-generator
     evolution: product
+    model_traits: [analyser, executor]
     summary: Carrier configuration, shipping cost calculation, shipment tracking.
     owned_by:
       team: TM005
@@ -22,7 +25,7 @@ contexts:
       - Shipment creation and tracking number assignment
     dependencies:
       - name: International
-        type: api
+        coupling: http
         relationship: customer-supplier
         direction: downstream
         description: Reads zone and country data for carrier shipping rules.
@@ -34,6 +37,7 @@ contexts:
         summary: REST API for carrier management and shipping cost calculation.
         contracts:
           openapi:
-            output: shipping/shipping-api.openapi
+            contract_name: shipping-api
+            slice: shipping
             expose:
-              - shipping:getAvailableCarriers
+              - shipping.QRY003

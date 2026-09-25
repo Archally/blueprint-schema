@@ -8,6 +8,7 @@ operations:
   generateInvoice:
     id: orders.CMD017
     kind: command
+    dispatch: inprocess
     name: "GenerateInvoice"
     description: "Explicitly generate an invoice for an order. Normally invoices are auto-generated on payment acceptance, but merchants may trigger manual generation."
     delivery_priority: must-have
@@ -22,12 +23,16 @@ operations:
       operations: [orders.EVT007]
       mode: all
     code_refs:
+      - path: "classes/order/OrderHistory.php"
+        role: implementation
+        description: "Proves the reaction to orders.EVT005. Line 90 fires actionOrderStatusUpdate; line 271 then tests the new state's invoice flag and line 272 calls Order::setInvoice, which is the same call GenerateInvoiceHandler makes. The invoice is reached here directly, not through the command bus."
       - path: "src/Core/Domain/Order/Invoice/Command/GenerateInvoiceCommand.php"
         role: implementation
 
   updateInvoiceNote:
     id: orders.CMD018
     kind: command
+    dispatch: inprocess
     name: "UpdateInvoiceNote"
     description: "Add or update a note on an existing invoice. Used for fiscal or internal annotations."
     delivery_priority: should-have
@@ -39,18 +44,25 @@ operations:
   addPayment:
     id: orders.CMD019
     kind: command
+    dispatch: inprocess
     idempotent: true
-    idempotency_key: "$.body.paymentTransactionId"
     name: "AddPayment"
     description: "Manually record a payment transaction on an order. Used for offline payments (bank transfer, check) or split payment scenarios."
     delivery_priority: must-have
     initiated_by: [orders.ACT003, orders.ACT004]
+    reacts_to:
+      - operation: orders.EVT005
+        policy: "Settle the outstanding balance of every invoice when the order enters a state flagged paid, so the order's payment record matches the state the merchant just selected"
+        condition: "the new order state carries the paid flag and an invoice still has a balance above zero"
     governed_by:
       - rule: orders.VR002
     produces:
       operations: [orders.EVT008]
       mode: all
     code_refs:
+      - path: "classes/order/OrderHistory.php"
+        role: implementation
+        description: "Proves the reaction to orders.EVT005. Line 90 fires actionOrderStatusUpdate; line 277 then tests the new state's paid flag and lines 288 to 294 build an OrderPayment for each invoice balance and save it. AddPaymentHandler reaches the same record through Order::addOrderPayment; this path writes it directly, not through the command bus."
       - path: "src/Core/Domain/Order/Payment/Command/AddPaymentCommand.php"
         role: implementation
 
@@ -60,13 +72,42 @@ operations:
     id: orders.EVT007
     kind: event
     name: "InvoiceGenerated"
-    description: "Emitted when a new invoice is created for an order. Carries the invoice number and amount."
+    description: >
+      An invoice has been attached to an order. PrestaShop publishes this as the hook
+      actionSetInvoice from Order::setInvoice, and it is not only a notification: whatever a
+      module returns from it REPLACES the invoice number, which is how a country-specific
+      numbering module makes PrestaShop issue compliant invoice numbers. The invoice row also
+      fires actionObjectOrderInvoiceAddAfter through ObjectModel.
+    tags: [hook:actionSetInvoice, hook:actionObjectOrderInvoiceAddAfter]
+    code_refs:
+      - path: "classes/order/Order.php"
+        role: implementation
+        description: "setInvoice fires actionSetInvoice at line 1382 and uses the returned value as the invoice number"
+      - path: "classes/order/OrderInvoice.php"
+        role: implementation
+        description: "OrderInvoiceCore extends ObjectModel, which supplies the actionObjectOrderInvoiceAddAfter name"
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The hook registry entry for actionSetInvoice"
 
   paymentAdded:
     id: orders.EVT008
     kind: event
     name: "PaymentAdded"
-    description: "Emitted when a payment is recorded on an order. May trigger status transition to payment-accepted."
+    description: >
+      A payment has been recorded against an order. PrestaShop publishes this as the hook
+      actionPaymentCCAdd, fired by OrderPayment::add once the row is written; the name is a
+      legacy one and the hook fires for every payment, not only card payments. The row also
+      fires actionObjectOrderPaymentAddAfter through ObjectModel. Neither hook moves the order's
+      status - that is a separate decision the merchant or a module makes.
+    tags: [hook:actionPaymentCCAdd, hook:actionObjectOrderPaymentAddAfter]
+    code_refs:
+      - path: "classes/order/OrderPayment.php"
+        role: implementation
+        description: "add() fires actionPaymentCCAdd at line 53, after parent::add has succeeded"
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The hook registry entry for actionPaymentCCAdd"
 
 errors:
   paymentDeclined:
@@ -85,3 +126,48 @@ errors:
     severity: error
     http_status: 409
     related_rules: [orders.SR002]
+    code_refs:
+      - path: "src/Core/Domain/Order/Invoice/Exception/InvoiceException.php"
+        role: implementation
+
+  invoiceNotFound:
+    id: orders.ERR018
+    name: "InvoiceNotFound"
+    description: "The invoice the request names does not exist on this order. An order may carry several invoices when it is delivered in parts, so an invoice id that belongs to another order reads as missing rather than as forbidden."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Order/Invoice/Exception/InvoiceNotFoundException.php"
+        role: implementation
+
+  invalidPaymentAmount:
+    id: orders.ERR019
+    name: "InvalidPaymentAmount"
+    description: "The payment being recorded carries a negative amount. PrestaShop records a refund as a credit slip rather than as a negative payment, so a negative figure here is a mistake and not an accounting convention."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [orders.VR002]
+    code_refs:
+      - path: "src/Core/Domain/Order/Exception/NegativePaymentAmountException.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Payment/Exception/PaymentException.php"
+        role: implementation
+        description: "The base every order-payment exception extends"
+
+questions:
+
+  - id: orders.QN002
+    name: "What This Order Owes"
+    statement: "How much of this order has been paid, invoiced and refunded?"
+    category: measurement
+    priority: critical
+    bounded_context_ref: prestashop.BC008
+    answered_by: [orders.QRY001, orders.CMD019, orders.CMD017, orders.CMD003, orders.QRY004]
+    concepts: [orders.CN005, orders.CN006, orders.CN009]
+    resolved: true
+    resolution: >
+      Payments are recorded one by one against the order, invoices are generated from it,
+      and every refund leaves a credit slip. The three together are the money view a
+      merchant reconciles.

@@ -2,22 +2,87 @@
 version: "1.0.0"
 scope: shop
 
+metrics:
+  - id: shop.MT100
+    name: "Search Index Age"
+    summary: "Minutes since the inverted index last covered the current catalog"
+    type: custom
+    unit: "minutes"
+    description: >
+      A product save reindexes that product in the same request, but a change
+      that does not go through a product save - a tag edit, a category rename,
+      a bulk status switch - leaves the index behind until a rebuild. This is
+      the size of that window.
+    measures:
+      operations: [shop.CMD014]
+      concepts: [shop.CN005]
+
+  - id: shop.MT101
+    name: "Search Index Rebuild Duration"
+    summary: "Wall-clock time a full rebuild of the inverted index takes"
+    type: latency
+    unit: "ms"
+    description: >
+      A full rebuild truncates ps_search_index and ps_search_word and walks
+      every active product, so it grows with the catalog and is the reason a
+      rebuild is a scheduled act rather than a reflex.
+    measures:
+      operations: [shop.CMD014]
+      concepts: [shop.CN005]
+
 kpis:
   - id: shop.KPI001
+    domain_scope: shop
     name: "Search Index Freshness"
+    metric: shop.MT100
     target: "Search index rebuilt within 1 hour of significant catalog changes"
+    description: >
+      A product save reindexes that product in the same request; anything else that
+      changes what a product matches - a tag edit, a category rename, a bulk status
+      switch - leaves the index behind until RebuildSearchIndex runs. The target is
+      the size of that window.
     window: "daily"
-    goal: shop.G002
+    goal: shop.GL002
 
   - id: shop.KPI002
+    domain_scope: shop
     name: "Search Alias Coverage"
     target: ">= 80% of top 100 customer search terms have configured aliases"
+    description: >
+      An alias rewrites a customer's word into the word the catalog uses, before
+      the index is queried. The top-100 terms come from the shop's own search log,
+      so this target can only be checked on a shop that has traffic.
     window: "monthly"
-    goal: shop.G002
+    goal: shop.GL002
+
+  - id: shop.KPI100
+    domain_scope: shop
+    name: "Logo Surface Coverage"
+    target: "Every surface that renders a logo resolves it from the shop's configured logo set"
+    window: "per release"
+    goal: shop.GL001
+    description: >
+      UploadLogos stores one set of images per shop and GetLogosPaths is the
+      only sanctioned way to read them. A template or a document that hard-codes
+      a path instead is the way a multi-shop install ends up showing the wrong
+      brand, and it is the only thing about GL001 that can be checked.
+
+  - id: shop.KPI101
+    domain_scope: shop
+    name: "Referrer Attribution Coverage"
+    target: "Every search engine the store wants to attribute has a SearchEngine row naming its host and query-string key"
+    window: "monthly"
+    goal: shop.GL003
+    description: >
+      Attribution is a lookup: SearchEngine stores a host in server and the
+      query-string parameter that carries the keywords in getvar. A referrer
+      with no matching row is recorded as ordinary traffic, silently, so
+      coverage of the table is the whole of the capability.
 
 slos:
   - id: shop.SLO001
     name: "Search Indexation Latency"
+    metric: shop.MT101
     target: "p95 < 30s for full search index rebuild"
     window: "weekly"
     operations: [shop.CMD014]

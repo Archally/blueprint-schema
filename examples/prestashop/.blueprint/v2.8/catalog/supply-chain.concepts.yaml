@@ -11,10 +11,12 @@ concepts:
     attributes:
       manufacturerId:
         id: CAT023
-        description: "Unique manufacturer identifier"
+        description: "Unique manufacturer identifier. Products carry it as id_manufacturer, and an image file named after it is the brand logo."
+        example: "1"
       name:
         id: CAT024
-        description: "Manufacturer/brand name"
+        description: "Manufacturer or brand name, unique per shop and shown on the storefront brand page."
+        example: "Lenovo"
     code_refs:
       - path: "src/Core/Domain/Manufacturer/"
         role: model
@@ -27,10 +29,12 @@ concepts:
     attributes:
       supplierId:
         id: CAT025
-        description: "Unique supplier identifier"
+        description: "Unique supplier identifier. Deleting a supplier first removes the product_supplier rows that carry it."
+        example: "2"
       name:
         id: CAT026
-        description: "Supplier company name"
+        description: "Supplier company name, unique per shop and shown on the storefront supplier page."
+        example: "TechParts Distribution"
     code_refs:
       - path: "src/Core/Domain/Supplier/"
         role: model

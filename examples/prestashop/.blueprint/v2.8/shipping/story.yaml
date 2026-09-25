@@ -5,6 +5,7 @@ scope: shipping
 
 processes:
   - id: shipping.PRC001
+    tracker_ref: "42022"
     title: "Carrier Configuration"
     description: "A shipping manager configures a new carrier with delivery zones, cost ranges, and dimensional constraints."
     trigger:
@@ -75,6 +76,7 @@ processes:
 
 user_stories:
   - id: shipping.US001
+    tracker_ref: "https://github.com/PrestaShop/PrestaShop/pull/42022"
     actor: shipping.ACT001
     goal: "create a new carrier with zone and range configuration"
     benefit: "customers see accurate shipping options during checkout"

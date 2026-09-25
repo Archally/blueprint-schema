@@ -30,7 +30,7 @@ concepts:
       - name: on-backorder-paid
         description: "Paid but one or more items are on backorder."
       - name: on-backorder-unpaid
-        description: "Unpaid and one or more items are on backorder."
+        description: "Ordered goods are not in stock and the money has not arrived either. The shop is committed to nothing yet, which is why this state and its paid twin are held apart."
       - name: awaiting-cod-validation
         description: "Cash on delivery order; awaiting validation."
     initial_state: awaiting-check-payment
@@ -65,9 +65,11 @@ concepts:
       deliveryAddressRef:
         id: CAT106
         description: "Reference to the delivery address for this order."
+        example: "12"
       invoiceAddressRef:
         id: CAT107
         description: "Reference to the invoice/billing address for this order."
+        example: "12"
       currency:
         id: CAT108
         description: "ISO 4217 currency code used for this order."
@@ -93,9 +95,11 @@ concepts:
       orderDetailId:
         id: CAT110
         description: "Unique line item identifier."
+        example: "89"
       productName:
         id: CAT111
         description: "Product name at time of order (snapshot)."
+        example: "Classic Laptop 15-inch - Size: M, Color: Black"
       quantity:
         id: CAT112
         description: "Ordered quantity for this line."
@@ -103,9 +107,11 @@ concepts:
       unitPrice:
         id: CAT113
         description: "Unit price excluding tax at time of order."
+        example: "1049.990000"
       lineTotal:
         id: CAT114
         description: "Computed line total: unitPrice * quantity."
+        example: "2099.980000"
     relationships:
       - predicate: part-of
         object: orders.CN002
@@ -127,12 +133,15 @@ concepts:
       invoiceDate:
         id: CAT116
         description: "Date the invoice was generated."
+        example: "2026-03-19"
       totalPaidTaxIncl:
         id: CAT117
         description: "Total amount on invoice including tax."
+        example: "2519.980000"
       note:
         id: CAT118
         description: "Free-text note attached to the invoice."
+        example: "Deliver to the goods entrance, weekdays only."
     relationships:
       - predicate: part-of
         object: orders.CN002
@@ -150,6 +159,7 @@ concepts:
       paymentId:
         id: CAT119
         description: "Unique payment record identifier."
+        example: "1"
       transactionId:
         id: CAT120
         description: "Payment gateway transaction reference."
@@ -157,12 +167,15 @@ concepts:
       amount:
         id: CAT121
         description: "Payment amount in order currency."
+        example: "129.990000"
       paymentMethod:
         id: CAT122
         description: "Payment module that processed this transaction."
+        example: "Bank Wire"
       dateAdd:
         id: CAT123
         description: "Timestamp when payment was recorded."
+        example: "2026-03-19T14:25:00+01:00"
     relationships:
       - predicate: part-of
         object: orders.CN002
@@ -180,18 +193,23 @@ concepts:
       firstName:
         id: CAT124
         description: "Recipient first name."
+        example: "Jean"
       lastName:
         id: CAT125
         description: "Recipient last name."
+        example: "Dupont"
       address1:
         id: CAT126
         description: "Street address line 1."
+        example: "15 Rue de la Paix"
       city:
         id: CAT127
-        description: "City name."
+        description: "City the order ships to, copied onto the order rather than read from the address record, so editing the address later does not rewrite a shipped order."
+        example: "Paris"
       postcode:
         id: CAT128
         description: "Postal/ZIP code."
+        example: "75001"
       countryCode:
         id: CAT129
         description: "ISO 3166-1 alpha-2 country code."
@@ -393,7 +411,7 @@ enumerations:
         description: "Paid but items on backorder."
         transitions_to: [processing, cancelled, refunded]
       - name: on-backorder-unpaid
-        description: "Unpaid and items on backorder."
+        description: "Not in stock and not yet paid, so neither the shopper nor the shop is committed. It moves to payment-accepted when the money lands, or to cancelled."
         transitions_to: [payment-accepted, cancelled]
       - name: awaiting-cod-validation
         description: "Cash on delivery; awaiting validation."
@@ -406,14 +424,14 @@ enumerations:
     extensible: true
 
 associations:
-  - id: orders.AS001
+  - id: orders.ASC001
     predicate: depends-on
     subject: orders.CN002
     object: orders.CN004
     cardinality: "1:1"
     description: "Every order depends on a delivery address."
 
-  - id: orders.AS002
+  - id: orders.ASC002
     predicate: triggers
     subject: orders.CN002
     object: orders.CN006

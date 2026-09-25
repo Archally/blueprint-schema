@@ -4,28 +4,43 @@ scope: shipping
 
 kpis:
   - id: shipping.KPI001
+    domain_scope: shipping
     name: "Shipping Cost Accuracy"
     target: ">= 99.5% of orders charged correct shipping cost matching carrier range configuration"
+    description: >
+      The charged cost is looked up in the carrier's own range table, so an
+      inaccuracy here is a configuration error rather than a calculation one: an
+      overlapping range, a zone with no price, or an out-of-range behaviour that
+      quietly applies the highest band.
     window: "weekly"
-    goal: shipping.G001
+    goal: shipping.GL001
     thresholds:
       warning: "98%"
       critical: "95%"
 
   - id: shipping.KPI002
+    domain_scope: shipping
     name: "Zone Coverage Completeness"
     target: "100% of active delivery zones have at least one active carrier"
+    description: >
+      A zone with no active carrier offers no shipping option, and checkout stops
+      there. Countable from the carrier-zone table against the active zones, which
+      is the alert RSK001 asks for.
     window: "daily"
-    goal: shipping.G002
+    goal: shipping.GL002
     thresholds:
       warning: "95%"
       critical: "90%"
 
   - id: shipping.KPI003
+    domain_scope: shipping
     name: "Shipment Fulfillment Rate"
     target: ">= 95% of orders have all products assigned to shipments within 24 hours"
+    description: >
+      Counts orders whose products are all assigned to a shipment. A product left
+      unassigned is one nobody has been told to pack.
     window: "weekly"
-    goal: shipping.G003
+    goal: shipping.GL003
 
 slos:
   - id: shipping.SLO001

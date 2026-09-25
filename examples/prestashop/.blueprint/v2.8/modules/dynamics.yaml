@@ -10,6 +10,7 @@ execution:
 race_conditions:
   - id: modules.RC001
     name: "Concurrent module state change"
+    description: "The invariant at risk is that a module's registered hooks and its files on disk describe the same installation state. They are changed by separate steps, so an overlap leaves the shop dispatching to code that is no longer there."
     scenario: "Admin enables a module while another admin simultaneously uninstalls it."
     impact: "Module left in inconsistent state - hooks registered but files removed."
     likelihood: very-low

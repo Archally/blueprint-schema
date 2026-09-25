@@ -1,5 +1,11 @@
 ---
 name: "Discount Management"
+description: >-
+  The write and read side of a discount, which PrestaShop 9 introduced as its own domain,
+  Core/Domain/Discount, over the CartRule table that has carried vouchers since PrestaShop 1.5. All
+  seven operations are served by the Admin API: ps_apiresources declares eight routes under
+  /discounts and names the CQRS class behind each, so this is the most completely exposed corner of
+  the checkout slice.
 version: "1.0.0"
 scope: checkout
 tags: [discount, promotions]
@@ -8,25 +14,84 @@ operations:
   createDiscount:
     id: checkout.CMD016
     kind: command
+    responses:
+      - code: "201"
+        type: success
+        description: "The discount is stored and usable from its valid-from date."
+      - code: "422"
+        type: failure
+        description: "The fields do not make a usable rule together."
+        error: checkout.ERR007
+    payload:
+      schema: CreateCartRulePayload
+      contentType: application/json
+      description: "The discount as it is created. One resource class serves create and update, so the same shape appears on the PATCH."
+    exchange:
+      protocol: http
+      endpoint:
+        path: /discounts
+        method: POST
+        group: discount
     name: "CreateDiscount"
-    description: "Create a new discount with conditions, actions, validity period, and usage limits. Supports voucher codes, automatic discounts, free shipping, and BOGO offers."
+    description: "Create a discount: a voucher code, an automatic cart discount, free shipping or a gift, with the conditions that make it apply and the limits on how often it may be used. PrestaShop 9 stores it as a CartRule ObjectModel, which is why modules observe it through actionObjectCartRule hooks rather than a discount-specific one. The Admin API serves it at POST /discounts, scope discount_write."
     delivery_priority: must-have
     initiated_by: [checkout.ACT001]
+    reacts_to:
+      - operation: orders.EVT003
+        policy: "Issue the refund as a voucher the customer can spend, when the merchant chose credit rather than money back"
+        condition: "the refund command asked for a voucher and the refunded amount is above zero"
     governed_by:
       - rule: checkout.SR002
       - rule: checkout.VR001
     produces:
       operations: [checkout.EVT007]
       mode: all
+    materializes:
+      - concept: checkout.CN004
+        action: create
     code_refs:
+      - path: "src/Adapter/Order/CommandHandler/IssueStandardRefundHandler.php"
+        role: implementation
+        description: "Proves the reaction to orders.EVT003. Line 142 fires actionProductCancel for each refunded line; line 168 then calls VoucherGenerator::generateVoucher. IssuePartialRefundHandler (132, 159) and IssueReturnProductHandler (133, 159) repeat the pair."
+      - path: "src/Adapter/Order/Refund/VoucherGenerator.php"
+        role: implementation
+        description: "Builds a CartRule and calls add() at line 97, which is the same record AddDiscountHandler writes. The voucher is reached here directly, not through the command bus."
       - path: "src/Core/Domain/Discount/Command/AddDiscountCommand.php"
         role: implementation
+      - path: "src/Adapter/Discount/CommandHandler/AddDiscountHandler.php"
+        role: implementation
+        description: "Builds a CartRule ObjectModel and hands it to DiscountRepository::add."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/Discount.php"
+        role: api-spec
+        description: "CQRSCreate on /discounts names AddDiscountCommand; scope discount_write."
 
   updateDiscount:
     id: checkout.CMD017
     kind: command
+    responses:
+      - code: "200"
+        type: success
+        description: "The discount carries the sent fields."
+      - code: "404"
+        type: failure
+        description: "No discount with that id."
+        error: checkout.ERR006
+      - code: "422"
+        type: failure
+        description: "The change would leave the discount unusable."
+        error: checkout.ERR007
+    payload:
+      schema: CreateCartRulePayload
+      contentType: application/json
+      description: "The same shape as the create, sent partially: a PATCH carries only the fields being changed."
+    exchange:
+      protocol: http
+      endpoint:
+        path: /discounts/{discountId}
+        method: PATCH
+        group: discount
     name: "UpdateDiscount"
-    description: "Modify an existing discount's conditions, actions, validity, or usage limits."
+    description: "Change an existing discount: its conditions, its reduction, its validity window or its usage limits. The Admin API serves it as a PATCH, so a caller sends only the fields it changes and everything unsent keeps its stored value."
     delivery_priority: must-have
     initiated_by: [checkout.ACT001]
     governed_by:
@@ -35,106 +100,333 @@ operations:
     produces:
       operations: [checkout.EVT008]
       mode: all
+    materializes:
+      - concept: checkout.CN004
+        action: update
     code_refs:
       - path: "src/Core/Domain/Discount/Command/UpdateDiscountCommand.php"
         role: implementation
+      - path: "src/Adapter/Discount/CommandHandler/UpdateDiscountHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/Discount.php"
+        role: api-spec
+        description: "CQRSPartialUpdate on /discounts/{discountId} names UpdateDiscountCommand; scope discount_write."
 
   deleteDiscount:
     id: checkout.CMD018
     kind: command
+    responses:
+      - code: "204"
+        type: success
+        description: "The discounts are gone."
+      - code: "404"
+        type: failure
+        description: "No discount with that id."
+        error: checkout.ERR006
+      - code: "422"
+        type: failure
+        description: "At least one listed discount could not be removed."
+        error: checkout.ERR010
+    payload:
+      schema: DeleteDiscountsPayload
+      contentType: application/json
+      description: "Carried by the bulk route only. The by-id route takes the discount from the path and sends no body."
+      required: false
+    exchange:
+      - protocol: http
+        endpoint:
+          path: /discounts/{discountId}
+          method: DELETE
+          group: discount
+      - protocol: http
+        endpoint:
+          path: /discounts/bulk-delete
+          method: DELETE
+          group: discount
     name: "DeleteDiscount"
-    description: "Delete one or more discounts. Supports single and bulk deletion."
+    description: "Delete one discount or a named list of them. The two are one operation because they are one intent and share a handler shape, and the Admin API serves them on two routes: DELETE /discounts/{discountId} for one, DELETE /discounts/bulk-delete carrying discountIds for many. The bulk route reports per-discount failure rather than aborting the batch."
     delivery_priority: must-have
     initiated_by: [checkout.ACT001]
     produces:
       operations: [checkout.EVT009]
       mode: all
+    materializes:
+      - concept: checkout.CN004
+        action: delete
     code_refs:
       - path: "src/Core/Domain/Discount/Command/DeleteDiscountCommand.php"
         role: implementation
       - path: "src/Core/Domain/Discount/Command/BulkDeleteDiscountsCommand.php"
         role: implementation
+      - path: "src/Adapter/Discount/CommandHandler/DeleteDiscountHandler.php"
+        role: implementation
+      - path: "src/Adapter/Discount/CommandHandler/BulkDeleteDiscountsHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/Discount.php"
+        role: api-spec
+        description: "CQRSDelete on /discounts/{discountId} names DeleteDiscountCommand."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/BulkDeleteDiscounts.php"
+        role: api-spec
+        description: "CQRSDelete on /discounts/bulk-delete names BulkDeleteDiscountsCommand; the body carries discountIds."
 
   duplicateDiscount:
     id: checkout.CMD019
     kind: command
+    responses:
+      - code: "201"
+        type: success
+        description: "The copy exists, with its own id and its own code."
+      - code: "404"
+        type: failure
+        description: "No discount with that id to copy."
+        error: checkout.ERR006
+      - code: "422"
+        type: failure
+        description: "The copy could not be written."
+        error: checkout.ERR009
+    payload:
+      schema: CartRuleResource
+      contentType: application/json
+      description: "What the route returns: the new copy. The request carries no body, only the source discount in the path."
+      required: false
+    exchange:
+      protocol: http
+      endpoint:
+        path: /discounts/{discountId}/duplicate
+        method: POST
+        group: discount
     name: "DuplicateDiscount"
-    description: "Create a copy of an existing discount for reuse as a campaign template."
+    description: "Copy an existing discount, conditions and all, so a campaign can be reused without being retyped. The duplicator fires actionAdminDuplicateDiscountBefore and actionAdminDuplicateDiscountAfter around the copy, so a module can adjust the new discount before it is stored. The Admin API serves it at POST /discounts/{discountId}/duplicate."
     delivery_priority: should-have
     initiated_by: [checkout.ACT001]
     produces:
       operations: [checkout.EVT007]
       mode: all
+    materializes:
+      - concept: checkout.CN004
+        action: create
     code_refs:
       - path: "src/Core/Domain/Discount/Command/DuplicateDiscountCommand.php"
         role: implementation
+      - path: "src/Adapter/Discount/Update/DiscountDuplicator.php"
+        role: implementation
+        description: "Fires actionAdminDuplicateDiscountBefore and After around the copy."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/Discount.php"
+        role: api-spec
+        description: "CQRSCreate on /discounts/{discountId}/duplicate names DuplicateDiscountCommand."
 
   bulkUpdateDiscountStatus:
     id: checkout.CMD020
     kind: command
+    responses:
+      - code: "200"
+        type: success
+        description: "Every listed discount carries the requested state."
+      - code: "422"
+        type: failure
+        description: "At least one listed discount could not be switched; the others stay changed."
+        error: checkout.ERR010
+    payload:
+      schema: BulkUpdateDiscountStatusPayload
+      contentType: application/json
+      description: "Which discounts to switch and which way."
+    exchange:
+      protocol: http
+      endpoint:
+        path: /discounts/bulk-update-status
+        method: PATCH
+        group: discount
     name: "BulkUpdateDiscountStatus"
-    description: "Enable or disable multiple discounts at once."
+    description: "Enable or disable a named list of discounts in one call, which is how a shop switches a whole campaign on or off at a date. The Admin API serves it at PATCH /discounts/bulk-update-status; the request body's `enabled` maps to the command's newStatus."
     delivery_priority: should-have
     initiated_by: [checkout.ACT001]
     produces:
       operations: [checkout.EVT008]
       mode: all
+    materializes:
+      - concept: checkout.CN004
+        action: update
     code_refs:
       - path: "src/Core/Domain/Discount/Command/BulkUpdateDiscountsStatusCommand.php"
         role: implementation
+      - path: "src/Adapter/Discount/CommandHandler/BulkUpdateDiscountsStatusHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/BulkUpdateStatusDiscounts.php"
+        role: api-spec
+        description: "CQRSPartialUpdate on /discounts/bulk-update-status names BulkUpdateDiscountsStatusCommand; the body maps enabled to newStatus."
 
   getDiscountForEditing:
     id: checkout.QRY005
     kind: query
+    responses:
+      - code: "200"
+        type: success
+        description: "The discount in full."
+      - code: "404"
+        type: failure
+        description: "No discount with that id."
+        error: checkout.ERR006
+    payload:
+      schema: CartRuleResource
+      contentType: application/json
+      description: "What the query returns: the discount in full."
+      required: false
+    exchange:
+      protocol: http
+      endpoint:
+        path: /discounts/{discountId}
+        method: GET
+        group: discount
     name: "GetDiscountForEditing"
-    description: "Retrieve full discount configuration for the edit form."
+    description: "Read a discount in full - names, code, reduction, product conditions, customer and carrier and country restrictions, validity window and usage limits - in the shape the edit form and the Admin API both need. Served at GET /discounts/{discountId}, scope discount_read."
     delivery_priority: must-have
     code_refs:
       - path: "src/Core/Domain/Discount/Query/GetDiscountForEditing.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/Discount.php"
+        role: api-spec
+        description: "CQRSGet on /discounts/{discountId} names GetDiscountForEditing; scope discount_read."
 
   getDiscountTypes:
     id: checkout.QRY006
     kind: query
+    responses:
+      - code: "200"
+        type: success
+        description: "Every discount type a shop can pick from."
+    payload:
+      schema: DiscountTypeListItem
+      contentType: application/json
+      description: "One entry of the returned list. The request carries no body."
+      required: false
+    exchange:
+      protocol: http
+      endpoint:
+        path: /discounts/types
+        method: GET
+        group: discount
     name: "GetDiscountTypes"
-    description: "Retrieve available discount type options for form dropdowns."
+    description: "List the discount types a shop can choose from, each with its localized name and description and whether it is a core type or one a module contributed. It is what populates the type selector on the discount form, and it is the reason a module can add a discount type at all. Served at GET /discounts/types."
     delivery_priority: should-have
     code_refs:
       - path: "src/Core/Domain/Discount/Query/GetDiscountTypes.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/DiscountTypeList.php"
+        role: api-spec
+        description: "CQRSGetCollection on /discounts/types names GetDiscountTypes; scope discount_read."
 
   discountCreated:
     id: checkout.EVT007
     kind: event
     name: "DiscountCreated"
-    description: "Emitted when a new discount is created or duplicated."
+    description: >-
+      A discount now exists and can be applied to a cart. The hook a module receives is
+      actionObjectCartRuleAddAfter, and the name is the fact that explains it: PrestaShop 9
+      persists a Discount as a CartRule ObjectModel, so the dynamic hook carries the legacy class
+      name, not the domain one. The duplicate path fires a second, registered hook of its own,
+      actionAdminDuplicateDiscountAfter, carrying both the old and the new id.
+    tags: ["hook:actionObjectCartRuleAddAfter", "hook:actionAdminDuplicateDiscountAfter"]
+    code_refs:
+      - path: "src/Adapter/Discount/Repository/DiscountRepository.php"
+        role: implementation
+        description: "Line 41, add(CartRule), calls addObjectModel, which reaches ObjectModel::add."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 615 fires actionObject<Class>AddAfter; the persisted class is CartRule, so the name resolves to actionObjectCartRuleAddAfter."
+      - path: "src/Adapter/Discount/Update/DiscountDuplicator.php"
+        role: implementation
+        description: "Line 54 dispatches actionAdminDuplicateDiscountAfter with id_discount and id_discount_new."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The hook registry; actionAdminDuplicateDiscountAfter is registered, the per-class dynamic name is not."
 
   discountUpdated:
     id: checkout.EVT008
     kind: event
     name: "DiscountUpdated"
-    description: "Emitted when discount configuration or status changes."
+    description: >-
+      A discount's configuration or status changed. Modules receive
+      actionObjectCartRuleUpdateAfter, under the legacy class name a Discount is persisted as. A
+      partial update is not a quieter event: the repository sets the fields to update and then
+      calls the same ObjectModel::update, so changing one status column fires exactly the hook a
+      full edit fires, with no indication of which fields moved.
+    tags: ["hook:actionObjectCartRuleUpdateAfter"]
+    code_refs:
+      - path: "src/Adapter/Discount/Repository/DiscountRepository.php"
+        role: implementation
+        description: "Line 264, partialUpdate, calls partiallyUpdateObjectModel."
+      - path: "src/Core/Repository/AbstractObjectModelRepository.php"
+        role: implementation
+        description: "Line 141 partiallyUpdateObjectModel sets the fields to update and defers to updateObjectModel at line 104, which calls ObjectModel::update."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847 fires actionObject<Class>UpdateAfter, resolving to actionObjectCartRuleUpdateAfter."
 
   discountDeleted:
     id: checkout.EVT009
     kind: event
     name: "DiscountDeleted"
-    description: "Emitted when one or more discounts are deleted."
+    description: >-
+      One or more discounts no longer exist. Modules receive actionObjectCartRuleDeleteAfter,
+      again under the legacy persisted class name. A bulk delete is a loop over single deletes, so
+      a module receives one hook per discount and never learns that the deletions were one act.
+    tags: ["hook:actionObjectCartRuleDeleteAfter"]
+    code_refs:
+      - path: "src/Adapter/Discount/Repository/DiscountRepository.php"
+        role: implementation
+        description: "Line 278, delete(DiscountId), calls deleteObjectModel per discount."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 923 fires actionObject<Class>DeleteAfter, resolving to actionObjectCartRuleDeleteAfter."
 
 errors:
   discountNotFound:
     id: checkout.ERR006
     name: "DiscountNotFound"
-    description: "Requested discount does not exist."
-    category: validation
+    description: "No discount exists with the given id. Every Discount route in the Admin API maps it to 404, and the bulk routes raise it for the first id in the list that has no record."
+    category: not-found
     severity: error
     http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Discount/Exception/DiscountNotFoundException.php"
+        role: implementation
 
   invalidDiscountConfiguration:
     id: checkout.ERR007
     name: "InvalidDiscountConfiguration"
-    description: "Discount configuration violates business rules (e.g., negative reduction, end date before start date, invalid condition combination)."
+    description: "A discount's fields do not make a usable rule together: a negative reduction, an end date before its start, a percentage and an amount set at once, or a product condition the chosen type does not allow. It is raised while the discount is being built, before anything is written, so a rejected create leaves no record behind."
     category: validation
     severity: error
     http_status: 422
     related_rules: [checkout.SR002, checkout.VR001]
+    code_refs:
+      - path: "src/Core/Domain/Discount/Exception/DiscountConstraintException.php"
+        role: implementation
+
+  cannotWriteDiscount:
+    id: checkout.ERR009
+    name: "CannotWriteDiscount"
+    description: "A valid discount could not be stored, duplicated or removed. It is a persistence failure rather than a rejected input, which is the distinction a caller needs: the request was right and retrying it may work. The code has four classes for it, one per verb, so a log says which step failed."
+    category: internal
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Discount/Exception/CannotAddDiscountException.php"
+        role: implementation
+      - path: "src/Core/Domain/Discount/Exception/CannotUpdateDiscountException.php"
+        role: implementation
+      - path: "src/Core/Domain/Discount/Exception/CannotDeleteDiscountException.php"
+        role: implementation
+      - path: "src/Core/Domain/Discount/Exception/CannotDuplicateDiscountException.php"
+        role: implementation
+
+  bulkDiscountFailure:
+    id: checkout.ERR010
+    name: "BulkDiscountFailure"
+    description: "At least one discount in a bulk delete or a bulk status change could not be processed. The batch is not rolled back: the discounts that succeeded stay changed, which is why the caller must read the response rather than assume the whole list was applied."
+    category: conflict
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Discount/Exception/BulkDiscountException.php"
+        role: implementation

@@ -12,7 +12,7 @@ screens:
     name: "Carrier List"
     summary: "Paginated list of carriers with status indicators, shipping method, and bulk enable/disable/delete actions."
     uses_models: ["CarrierList"]
-    motivated_by: [shipping.G002]
+    motivated_by: [shipping.GL002]
 
   - id: shipping.SCR002
     name: "Carrier Configuration"
@@ -24,7 +24,7 @@ screens:
     name: "Order Shipments"
     summary: "List of shipments for a specific order with product assignments, tracking numbers, and split/merge actions."
     uses_models: ["OrderShipmentList"]
-    motivated_by: [shipping.G003]
+    motivated_by: [shipping.GL003]
 
   - id: shipping.SCR004
     name: "Shipment Detail"

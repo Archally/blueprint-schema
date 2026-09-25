@@ -14,15 +14,23 @@ operations:
     exchange:
       protocol: http
       endpoint:
-        path: /modules/{moduleName}/install
-        method: POST
+        path: /modules/{technicalName}/install
+        method: PUT
         group: modules
     responses:
       - code: "200"
         type: success
-        description: "The module after installation."
+        description: "The module after installation, read back through GetModuleInfos."
         schema: ModuleResource
         contentType: application/json
+      - code: "403"
+        type: failure
+        description: "The module is already installed."
+        error: modules.ERR003
+      - code: "404"
+        type: failure
+        description: "No module has that technical name."
+        error: modules.ERR001
     name: "InstallModule"
     description: "Install a module by technical name. Triggers dependency resolution, database schema setup, and hook registration as side effects. Module must not already be installed."
     delivery_priority: must-have
@@ -33,11 +41,17 @@ operations:
     governed_by:
       - rule: modules.VR001
       - rule: modules.TR001
+    materializes:
+      - concept: modules.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/Module/Command/InstallModuleCommand.php"
         role: implementation
       - path: "src/Core/Domain/Module/CommandHandler/InstallModuleHandlerInterface.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/Module.php"
+        role: api-spec
+        description: "CQRSUpdate '/modules/{technicalName}/install', scope module_write, reads back with GetModuleInfos; exceptionToStatus maps AlreadyInstalledModuleException to 403."
 
   uninstallModule:
     id: modules.CMD002
@@ -45,15 +59,26 @@ operations:
     exchange:
       protocol: http
       endpoint:
-        path: /modules/{moduleName}/uninstall
-        method: POST
+        path: /modules/{technicalName}/uninstall
+        method: PUT
         group: modules
+    payload:
+      schema: UninstallModulePayload
+      contentType: application/json
+      required: false
+      description: "The route declares allowEmptyBody, so a caller that does not want the files removed can send nothing."
     responses:
-      - code: "200"
+      - code: "204"
         type: success
-        description: "The module after uninstallation."
-        schema: ModuleResource
-        contentType: application/json
+        description: "The module was uninstalled. The route declares output: false, so nothing is returned."
+      - code: "403"
+        type: failure
+        description: "The module is not installed."
+        error: modules.ERR002
+      - code: "404"
+        type: failure
+        description: "No module has that technical name."
+        error: modules.ERR001
     name: "UninstallModule"
     description: "Uninstall a module. Optionally deletes module files (deleteFiles=false by default). Cascades hook unregistration."
     delivery_priority: must-have
@@ -64,34 +89,94 @@ operations:
     governed_by:
       - rule: modules.SR001
       - rule: modules.TR001
+    materializes:
+      - concept: modules.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/Module/Command/UninstallModuleCommand.php"
         role: implementation
       - path: "src/Core/Domain/Module/CommandHandler/UninstallModuleHandlerInterface.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/UninstallModule.php"
+        role: api-spec
+        description: "CQRSUpdate '/modules/{technicalName}/uninstall', output: false, allowEmptyBody: true, scope module_write."
 
   updateModuleStatus:
     id: modules.CMD003
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /modules/{technicalName}/status
+        method: PUT
+        group: modules
+    payload:
+      schema: UpdateModuleStatusPayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The module after the status change, read back through GetModuleInfos."
+        schema: ModuleResource
+        contentType: application/json
+      - code: "403"
+        type: failure
+        description: "The module is not installed, so it has no status to change."
+        error: modules.ERR002
     name: "UpdateModuleStatus"
-    description: "Enable or disable a module via a single command with an enabled boolean flag. Unified command replaces separate enable/disable - the code has no separate EnableModuleCommand or DisableModuleCommand."
+    description: "Enable or disable a module via a single command with an enabled boolean flag. Unified command replaces separate enable/disable - the code has no separate EnableModuleCommand or DisableModuleCommand. A merchant dispatches it from the module list; installing a module and switching a theme both reach the same enable and disable on their own."
     delivery_priority: must-have
     initiated_by: [modules.ACT001]
     produces:
       operations: [modules.EVT003]
       mode: all
+    reacts_to:
+      - operation: modules.EVT001
+        policy: "A newly installed module is switched on for the shops in context"
+      - operation: content.EVT010
+        policy: "A theme switches on and off the modules it declares"
+        condition: "The module is named in the theme's global_settings.modules.to_enable or to_disable list, and is on disk"
     governed_by:
       - rule: modules.SR001
       - rule: modules.TR001
+    materializes:
+      - concept: modules.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/Module/Command/UpdateModuleStatusCommand.php"
         role: implementation
       - path: "src/Core/Domain/Module/CommandHandler/UpdateModuleStatusHandlerInterface.php"
         role: implementation
+      - path: "classes/module/Module.php"
+        role: implementation
+        description: "install() calls enable() at line 465 under the comment 'Enable the module for current shops in context', a few lines before actionModuleInstallAfter fires at line 501. It is the same Module::enable() that the UpdateModuleStatus handler reaches through ModuleManager, so the switch-on is this operation by a second door - and it precedes the install hook rather than following it."
+      - path: "src/Core/Addon/Theme/ThemeManager.php"
+        role: implementation
+        description: "enable() calls doDisableModules at line 167 and doEnableModules at line 168; both build a ModuleManager and call disable() or enable() for every module the theme names, which dispatches ModuleManagementEvent and reaches the same Module::enable()."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/Module.php"
+        role: api-spec
+        description: "CQRSUpdate '/modules/{technicalName}/status', scope module_write."
 
   bulkToggleModuleStatus:
     id: modules.CMD004
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /modules/bulk-update-status
+        method: PUT
+        group: modules
+    payload:
+      schema: BulkModulesPayload
+      contentType: application/json
+    responses:
+      - code: "204"
+        type: success
+        description: "Every named module reached the requested status. The route declares output: false."
+      - code: "404"
+        type: failure
+        description: "One of the names matches no module."
+        error: modules.ERR001
     name: "BulkToggleModuleStatus"
     description: "Enable or disable multiple modules in a single batch operation. Takes an array of technical names and an expectedStatus boolean."
     delivery_priority: should-have
@@ -101,15 +186,39 @@ operations:
       mode: all
     governed_by:
       - rule: modules.SR001
+    materializes:
+      - concept: modules.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/Module/Command/BulkToggleModuleStatusCommand.php"
         role: implementation
       - path: "src/Core/Domain/Module/CommandHandler/BulkToggleModuleStatusHandlerInterface.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/BulkModules.php"
+        role: api-spec
+        description: "CQRSUpdate '/modules/bulk-update-status', scope module_write; the body's enabled maps to the command's expectedStatus."
 
   bulkUninstallModule:
     id: modules.CMD005
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /modules/bulk-uninstall
+        method: PUT
+        group: modules
+    payload:
+      schema: BulkModulesPayload
+      contentType: application/json
+      description: "The same class serves both bulk routes; only the modules array is read here."
+    responses:
+      - code: "204"
+        type: success
+        description: "Every named module was uninstalled. The route declares output: false."
+      - code: "404"
+        type: failure
+        description: "One of the names matches no module."
+        error: modules.ERR001
     name: "BulkUninstallModule"
     description: "Uninstall multiple modules in a single batch operation. Each module is wrapped in ModuleTechnicalName value object. Optionally deletes files."
     delivery_priority: should-have
@@ -119,34 +228,88 @@ operations:
       mode: all
     governed_by:
       - rule: modules.SR001
+    materializes:
+      - concept: modules.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/Module/Command/BulkUninstallModuleCommand.php"
         role: implementation
       - path: "src/Core/Domain/Module/CommandHandler/BulkUninstallModuleHandlerInterface.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/BulkModules.php"
+        role: api-spec
+        description: "CQRSUpdate '/modules/bulk-uninstall', scope module_write."
 
   resetModule:
     id: modules.CMD006
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /modules/{technicalName}/reset
+        method: PATCH
+        group: modules
+    payload:
+      schema: ResetModulePayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The module after the reset, read back through GetModuleInfos."
+        schema: ModuleResource
+        contentType: application/json
+      - code: "403"
+        type: failure
+        description: "The module is not installed, so there is nothing to reset."
+        error: modules.ERR002
     name: "ResetModule"
-    description: "Reset a module - uninstalls and reinstalls without losing configuration (keepData=true by default). Module must be installed. Results in installed+enabled state."
+    description: "Reset a module - uninstalls and reinstalls without losing configuration (keepData=true by default). Module must be installed. Results in installed+enabled state. A merchant dispatches it from the module list, and switching a theme reaches it for every module the theme asks to be reset."
     delivery_priority: should-have
     initiated_by: [modules.ACT001]
     produces:
       operations: [modules.EVT004]
       mode: all
+    reacts_to:
+      - operation: content.EVT010
+        policy: "A theme resets the modules it declares"
+        condition: "The module is named in the theme's global_settings.modules.to_reset list, is on disk and is installed"
     governed_by:
       - rule: modules.VR002
       - rule: modules.TR001
+    materializes:
+      - concept: modules.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/Module/Command/ResetModuleCommand.php"
         role: implementation
       - path: "src/Core/Domain/Module/CommandHandler/ResetModuleHandlerInterface.php"
         role: implementation
+      - path: "src/Core/Addon/Theme/ThemeManager.php"
+        role: implementation
+        description: "enable() calls doResetModules at line 169; the method at lines 341-359 builds a ModuleManager and calls reset() for every installed module the theme names, which is the same ModuleManager::reset the ResetModule handler calls."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/ResetModule.php"
+        role: api-spec
+        description: "CQRSPartialUpdate '/modules/{technicalName}/reset', the only PATCH in this slice, scope module_write."
 
   upgradeModule:
     id: modules.CMD007
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /modules/{technicalName}/upgrade
+        method: PUT
+        group: modules
+    responses:
+      - code: "200"
+        type: success
+        description: "The module after the upgrade, read back through GetModuleInfos."
+        schema: ModuleResource
+        contentType: application/json
+      - code: "409"
+        type: failure
+        description: "The module is already at the latest available version. The route declares no exceptionToStatus for this case, so it surfaces as the default."
+        error: modules.ERR004
     name: "UpgradeModule"
     description: "Upgrade an installed module to the latest available version. Fails if module is already up to date. Note: the codebase uses 'Upgrade' not 'Update' - there is no general UpdateModuleCommand."
     delivery_priority: must-have
@@ -157,15 +320,42 @@ operations:
     governed_by:
       - rule: modules.VR003
       - rule: modules.TR001
+    materializes:
+      - concept: modules.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/Module/Command/UpgradeModuleCommand.php"
         role: implementation
       - path: "src/Core/Domain/Module/CommandHandler/UpgradeModuleHandlerInterface.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/UpgradeModule.php"
+        role: api-spec
+        description: "CQRSUpdate '/modules/{technicalName}/upgrade', scope module_write."
 
   uploadModule:
     id: modules.CMD008
     kind: command
+    exchange:
+      - protocol: http
+        endpoint:
+          path: /modules/upload-source
+          method: POST
+          group: modules
+      - protocol: http
+        endpoint:
+          path: /modules/upload-archive
+          method: POST
+          group: modules
+    payload:
+      schema: UploadModulePayload
+      contentType: application/json
+      description: "upload-source takes a source string in JSON. upload-archive takes the same command through multipart/form-data, mapping the uploaded file's pathName onto source."
+    responses:
+      - code: "201"
+        type: success
+        description: "The uploaded module, read back through GetModuleInfos. It is now available to install."
+        schema: ModuleResource
+        contentType: application/json
     name: "UploadModule"
     description: "Upload a module package from a source path (zip archive). This is a pre-install step - the module becomes available for installation after upload. Takes a raw source string (no value object wrapping)."
     delivery_priority: must-have
@@ -173,11 +363,17 @@ operations:
     produces:
       operations: [modules.EVT006]
       mode: all
+    materializes:
+      - concept: modules.CN001
+        action: create
     code_refs:
       - path: "src/Core/Domain/Module/Command/UploadModuleCommand.php"
         role: implementation
       - path: "src/Core/Domain/Module/CommandHandler/UploadModuleHandlerInterface.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/UploadModule.php"
+        role: api-spec
+        description: "Two CQRSCreate routes onto one command: '/modules/upload-source' (JSON) and '/modules/upload-archive' (multipart, read: false, [archive].pathName mapped to [source]). Both scope module_write."
 
   # --- Module Events ---
 
@@ -185,37 +381,117 @@ operations:
     id: modules.EVT001
     kind: event
     name: "ModuleInstalled"
-    description: "A module has been installed. Hook registrations and database schema setup completed as side effects."
+    description: >-
+      A module has been installed: its database schema is set up and its hook registrations are in
+      place. Regrounded 2026-09-14: the mechanism is the hook actionModuleInstallAfter, fired at
+      classes/module/Module.php line 501 with the module instance in the parameters. Two more
+      hooks bracket it - actionModuleInstallBefore at line 365, and actionBeforeInstallModule at
+      ModuleManager.php line 95, which runs earlier still and through HookManager::exec rather
+      than Hook::exec.
+    tags: [hook:actionModuleInstallAfter]
+    code_refs:
+      - path: "classes/module/Module.php"
+        role: implementation
+        description: "Line 501 fires actionModuleInstallAfter; line 365 fires actionModuleInstallBefore."
+      - path: "src/Core/Module/ModuleManager.php"
+        role: implementation
+        description: "Line 95 fires actionBeforeInstallModule through HookManager::exec."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
 
   moduleUninstalled:
     id: modules.EVT002
     kind: event
     name: "ModuleUninstalled"
-    description: "A module has been uninstalled. Hook registrations removed."
+    description: >-
+      A module has been uninstalled and its hook registrations are gone. Regrounded 2026-09-14: the
+      mechanism is the hook actionModuleUninstallAfter, fired at classes/module/Module.php line
+      974, with actionModuleUninstallBefore at line 892 and actionBeforeUninstallModule earlier in
+      ModuleManager. The before hook is the last point at which another module can still read this
+      one's data.
+    tags: [hook:actionModuleUninstallAfter]
+    code_refs:
+      - path: "classes/module/Module.php"
+        role: implementation
+        description: "Line 974 fires actionModuleUninstallAfter; line 892 fires actionModuleUninstallBefore."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
 
   moduleStatusUpdated:
     id: modules.EVT003
     kind: event
     name: "ModuleStatusUpdated"
-    description: "A module's enabled/disabled status has been changed."
+    description: >-
+      A module's enabled or disabled status has been changed. Regrounded 2026-09-14, and it is the
+      one event in this slice with two hooks rather than one: the code fires actionModuleEnable at
+      classes/module/Module.php line 1019 and actionModuleDisable at line 1177, so the direction is
+      carried by the hook name and not by a parameter. A module that wants both has to register on
+      both. The before pair actionBeforeEnableModule and actionBeforeDisableModule sits in
+      ModuleManager.
+    tags: [hook:actionModuleEnable, hook:actionModuleDisable]
+    code_refs:
+      - path: "classes/module/Module.php"
+        role: implementation
+        description: "Line 1019 fires actionModuleEnable, line 1177 actionModuleDisable."
+      - path: "src/Core/Module/ModuleManager.php"
+        role: implementation
+        description: "Fires actionBeforeEnableModule and actionBeforeDisableModule through HookManager::exec."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
 
   moduleReset:
     id: modules.EVT004
     kind: event
     name: "ModuleReset"
-    description: "A module has been reset - uninstalled and reinstalled, optionally preserving data."
+    description: >-
+      A module is back at its freshly installed state, with its configuration kept or discarded.
+      Restated 2026-09-14 rather than regrounded, because what modules observe depends on which
+      branch ran. With keepData and a module that implements reset, ModuleManager calls onReset and
+      dispatches the Symfony event ModuleManagementEvent::RESET, which only core subscribers
+      receive - no hook, so other modules see nothing. Otherwise reset is uninstall followed by
+      install, and the two of those fire their own after-hooks. actionBeforeResetModule is fired at
+      ModuleManager.php line 274 either way, but it is a before hook and does not report the
+      outcome.
+    code_refs:
+      - path: "src/Core/Module/ModuleManager.php"
+        role: implementation
+        description: "reset(), lines 259-284: actionBeforeResetModule at 274, the RESET Symfony event at 281, the uninstall-then-install fallback at 283."
+      - path: "src/PrestaShopBundle/Event/ModuleManagementEvent.php"
+        role: implementation
+        description: "The Symfony event constants. This is a second notification mechanism beside hooks, and modules are not on it."
 
   moduleUpgraded:
     id: modules.EVT005
     kind: event
     name: "ModuleUpgraded"
-    description: "A module has been upgraded to a newer version."
+    description: >-
+      A module is now running a newer version, with its upgrade scripts applied. Regrounded
+      2026-09-14: the mechanism is the hook actionModuleUpgradeAfter, fired at
+      classes/module/Module.php line 723. It is the one module hook that does not pass the module
+      object: its parameters are module_name, old_version and new_version, which is what a listener
+      needs to decide whether its own stored data is stale.
+    tags: [hook:actionModuleUpgradeAfter]
+    code_refs:
+      - path: "classes/module/Module.php"
+        role: implementation
+        description: "Line 723: Hook::exec('actionModuleUpgradeAfter', ['module_name' => ..., 'old_version' => ..., 'new_version' => ...])."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
 
   moduleUploaded:
     id: modules.EVT006
     kind: event
     name: "ModuleUploaded"
-    description: "A module package has been uploaded and is available for installation."
+    description: >-
+      A module package is unpacked on disk and can now be installed. Restated 2026-09-14: no hook
+      is fired, so modules cannot observe an upload. Core does dispatch the Symfony event
+      ModuleManagementEvent::UPLOAD at ModuleManager.php line 69, which core subscribers receive
+      and modules do not. The distinction matters for a reader: the two mechanisms look alike and
+      only one of them is the extension point.
+    code_refs:
+      - path: "src/Core/Module/ModuleManager.php"
+        role: implementation
+        description: "Line 69 dispatches ModuleManagementEvent::UPLOAD. No Hook::exec on this path."
 
   # --- Module Query ---
 
@@ -225,15 +501,19 @@ operations:
     exchange:
       protocol: http
       endpoint:
-        path: /modules
+        path: /modules/{technicalName}
         method: GET
         group: modules
     responses:
       - code: "200"
         type: success
-        description: "The installed modules and their state."
+        description: "The module and its state."
         schema: ModuleResource
         contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No module has that technical name."
+        error: modules.ERR001
     name: "GetModuleInfos"
     description: "Retrieve module information by technical name. Returns moduleId, technicalName, moduleVersion, installedVersion, enabled, installed."
     delivery_priority: must-have
@@ -243,12 +523,34 @@ operations:
         role: implementation
       - path: "src/Core/Domain/Module/QueryResult/ModuleInfos.php"
         role: model
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/Module.php"
+        role: api-spec
+        description: "CQRSGet '/modules/{technicalName}', scope module_read. The collection route '/modules' beside it is a PaginatedList built from the grid data factory prestashop.core.grid.data_factory.module and fronts no Core/Domain query, so no operation here claims it."
 
   # --- Hook Operations ---
 
   updateHookStatus:
     id: modules.CMD009
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /hooks/{hookId}/status
+        method: PUT
+        group: hooks
+    payload:
+      schema: UpdateHookStatusPayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The hook after the status change, read back through GetHook."
+        schema: HookResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No hook has that id."
+        error: modules.ERR005
     name: "UpdateHookStatus"
     description: "Enable or disable a hook by ID. When a hook is disabled, modules registered to it will not execute their callbacks."
     delivery_priority: must-have
@@ -256,23 +558,62 @@ operations:
     produces:
       operations: [modules.EVT007]
       mode: all
+    materializes:
+      - concept: modules.CN002
+        action: update
     code_refs:
       - path: "src/Core/Domain/Hook/Command/UpdateHookStatusCommand.php"
         role: implementation
       - path: "src/Core/Domain/Hook/CommandHandler/UpdateHookStatusCommandHandlerInterface.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Hook.php"
+        role: api-spec
+        description: "CQRSUpdate '/hooks/{hookId}/status', scope hook_write; the body's enabled maps to the command's active."
 
   hookStatusUpdated:
     id: modules.EVT007
     kind: event
     name: "HookStatusUpdated"
-    description: "A hook's active/inactive status has been changed."
+    description: >-
+      A hook has been switched on or off, which decides whether every module registered on it runs
+      at that extension point. Regrounded 2026-09-14: the mechanism is actionObjectHookUpdateAfter,
+      from the ObjectModel dynamic family, because the Hook class extends ObjectModel and the
+      handler calls save() on an existing row. So switching a hook off fires a hook - and any
+      module listening on actionObjectHookUpdateAfter hears it, including through the hook that was
+      just disabled, since the two are different names.
+    tags: [hook:actionObjectHookUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847: Hook::exec('actionObject' . getFullyQualifiedName() . 'UpdateAfter')."
+      - path: "classes/Hook.php"
+        role: implementation
+        description: "HookCore extends ObjectModel, and var/class_stub.php line 146 aliases Hook onto it."
+      - path: "src/Adapter/Hook/CommandHandler/UpdateHookStatusCommandHandler.php"
+        role: implementation
+        description: "Line 37 calls $hook->save() on a loaded row, which is an update."
 
   # --- Hook Queries ---
 
   getHook:
     id: modules.QRY002
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /hooks/{hookId}
+        method: GET
+        group: hooks
+    responses:
+      - code: "200"
+        type: success
+        description: "The hook's id, name, title, description and enabled flag."
+        schema: HookResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No hook has that id."
+        error: modules.ERR005
     name: "GetHook"
     description: "Retrieve full hook details by ID. Returns id, active, name, title, description."
     delivery_priority: must-have
@@ -282,10 +623,29 @@ operations:
         role: implementation
       - path: "src/Core/Domain/Hook/QueryResult/Hook.php"
         role: model
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Hook.php"
+        role: api-spec
+        description: "CQRSGet '/hooks/{hookId}', hookId constrained to digits, scope hook_read, HookNotFoundException mapped to 404. The '/hooks' collection beside it is a PaginatedList from the grid data factory and fronts no Core/Domain query."
 
   getHookStatus:
     id: modules.QRY003
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /hooks/{hookId}/status
+        method: GET
+        group: hooks
+    responses:
+      - code: "200"
+        type: success
+        description: "The hook's id and enabled flag, nothing else."
+        schema: HookStatusResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No hook has that id."
+        error: modules.ERR005
     name: "GetHookStatus"
     description: "Retrieve hook active status by ID. Lightweight query returning only id and isActive."
     delivery_priority: should-have
@@ -295,6 +655,122 @@ operations:
         role: implementation
       - path: "src/Core/Domain/Hook/QueryResult/HookStatus.php"
         role: model
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Hook.php"
+        role: api-spec
+        description: "CQRSGet '/hooks/{hookId}/status', scope hook_read. Same path as the PUT above, different method."
+
+  # --- Hook Registration (which module answers which hook) ---
+  #
+  # UpdateHookStatus above turns a hook on or off for everyone. These three decide WHICH modules a
+  # given hook reaches, which is the half of the mechanism a merchant actually configures: the
+  # back-office "Design > Positions" screen is built from GetPossibleHooksForModule and edited with
+  # HookModule and EditHookedModule. None of the three is fronted by an Admin API route - the Hook
+  # resource in ps_apiresources declares only /hooks, /hooks/{hookId} and /hooks/{hookId}/status -
+  # so all three execute on the command bus with no wire transport of their own.
+
+  hookModule:
+    id: modules.CMD012
+    kind: command
+    dispatch: inprocess
+    name: "HookModule"
+    description: "Register an installed module on one hook, optionally listing the front-office controllers the module must NOT run on (the hook exception list). Rejected when the module is already registered on that hook, or when the module declares itself not hookable on that hook's name. A merchant dispatches it one pair at a time from the positions page; switching a theme rewrites whole hooks at once from the theme's own declaration."
+    delivery_priority: should-have
+    initiated_by: [modules.ACT001]
+    produces:
+      operations: [modules.EVT008]
+      mode: all
+    reacts_to:
+      - operation: content.EVT010
+        policy: "A theme places the modules it declares on the hooks it declares"
+        condition: "The module and hook pair is named in the theme's global_settings.hooks.modules_to_hook list"
+    materializes:
+      - concept: modules.CN002
+        action: update
+    code_refs:
+      - path: "src/Core/Domain/Hook/Command/HookModuleCommand.php"
+        role: implementation
+      - path: "src/Adapter/Hook/CommandHandler/HookModuleCommandHandler.php"
+        role: implementation
+        description: "Loads the module and the hook, rejects a duplicate registration and a non-hookable pair, then calls Module::registerHook."
+      - path: "src/Core/Module/HookRepository.php"
+        role: implementation
+        description: "The theme route reaches the same hook_module rows by a second door: ThemeManager::enable calls doHookModules at line 172, which reaches persistHooksConfiguration at line 142. That method creates the hook if the registry lacks it, clears the hook's existing module list with unHookModulesFromHook, and writes one row per declared module in declared order - so the theme replaces a hook's registrations rather than adding to them, and it bypasses the duplicate and hookable checks the command applies."
+
+  editHookedModule:
+    id: modules.CMD013
+    kind: command
+    dispatch: inprocess
+    name: "EditHookedModule"
+    description: "Move a module's registration from one hook to another and replace its exception list. When the target hook differs from the current one the handler registers the module on the new hook and then unregisters it from the old one, so a failed unregister leaves the module on both."
+    delivery_priority: should-have
+    initiated_by: [modules.ACT001]
+    produces:
+      operations: [modules.EVT009]
+      mode: all
+    materializes:
+      - concept: modules.CN002
+        action: update
+    code_refs:
+      - path: "src/Core/Domain/Hook/Command/EditHookedModuleCommand.php"
+        role: implementation
+      - path: "src/Adapter/Hook/CommandHandler/EditHookedModuleCommandHandler.php"
+        role: implementation
+        description: "registerHook on the new hook, then unregisterHook and unregisterExceptions on the old one, then editExceptions."
+
+  moduleHookedOnHook:
+    id: modules.EVT008
+    kind: event
+    name: "ModuleHookedOnHook"
+    description: >-
+      A module is now registered on a hook and receives it from the next request onward.
+      Regrounded 2026-09-14: the mechanism is actionModuleRegisterHookAfter, fired at
+      classes/Hook.php line 693, with actionModuleRegisterHookBefore beside it. This is the hook
+      that reports hook registration, which is how a module can keep its own view of the extension
+      graph current.
+    tags: [hook:actionModuleRegisterHookAfter]
+    code_refs:
+      - path: "classes/Hook.php"
+        role: implementation
+        description: "Line 693 fires actionModuleRegisterHookAfter from Hook::registerHook."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+
+  hookedModuleMoved:
+    id: modules.EVT009
+    kind: event
+    name: "HookedModuleMoved"
+    description: >-
+      A module's registration moved from one hook to another, or its exception list changed.
+      Regrounded 2026-09-14, and it is two hooks because it is two acts: the handler registers on
+      the new hook first, firing actionModuleRegisterHookAfter at classes/Hook.php line 693, then
+      unregisters from the old one, firing actionModuleUnRegisterHookAfter at line 772. A failure
+      between the two leaves the module on both hooks, and a listener that saw only the first hook
+      cannot tell that case from a completed move.
+    tags: [hook:actionModuleRegisterHookAfter, hook:actionModuleUnRegisterHookAfter]
+    code_refs:
+      - path: "classes/Hook.php"
+        role: implementation
+        description: "Line 693 registerHook, line 772 unregisterHook."
+      - path: "src/Adapter/Hook/CommandHandler/EditHookedModuleCommandHandler.php"
+        role: implementation
+        description: "Register-then-unregister, in that order."
+
+  getPossibleHooksForModule:
+    id: modules.QRY004
+    kind: query
+    dispatch: inprocess
+    name: "GetPossibleHooksForModule"
+    description: "List every hook the given module declares itself hookable on, each with the registry title and whether the module is registered on it already. This is the read model behind the back-office hook-selection list."
+    delivery_priority: should-have
+    initiated_by: [modules.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/Hook/Query/GetPossibleHooksForModule.php"
+        role: implementation
+      - path: "src/Adapter/Hook/QueryHandler/GetPossibleHooksForModuleHandler.php"
+        role: implementation
+      - path: "src/Core/Domain/Hook/QueryResult/HookableInfo.php"
+        role: model
+        description: "id, name, title and registered flag per candidate hook."
 
   # --- Hook Execution ---
   #
@@ -335,6 +811,9 @@ errors:
     category: not-found
     severity: error
     http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Module/Exception/ModuleNotFoundException.php"
+        role: implementation
 
   moduleNotInstalled:
     id: modules.ERR002
@@ -342,8 +821,14 @@ errors:
     description: "Operation requires an installed module but the module is not installed."
     category: validation
     severity: error
-    http_status: 422
+    http_status: 403
     related_rules: [modules.SR001]
+    code_refs:
+      - path: "src/Core/Domain/Module/Exception/ModuleNotInstalledException.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/Module.php"
+        role: api-spec
+        description: "exceptionToStatus maps ModuleNotInstalledException to 403, not 422. Corrected from the route declaration."
 
   alreadyInstalledModule:
     id: modules.ERR003
@@ -351,7 +836,13 @@ errors:
     description: "Cannot install a module that is already installed."
     category: conflict
     severity: error
-    http_status: 409
+    http_status: 403
+    code_refs:
+      - path: "src/Core/Domain/Module/Exception/AlreadyInstalledModuleException.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/Module.php"
+        role: api-spec
+        description: "exceptionToStatus maps AlreadyInstalledModuleException to 403, not 409. Corrected from the route declaration."
 
   moduleAlreadyUpToDate:
     id: modules.ERR004
@@ -360,6 +851,9 @@ errors:
     category: conflict
     severity: error
     http_status: 409
+    code_refs:
+      - path: "src/Core/Domain/Module/Exception/ModuleAlreadyUpToDateException.php"
+        role: implementation
 
   hookNotFound:
     id: modules.ERR005
@@ -368,3 +862,150 @@ errors:
     category: not-found
     severity: error
     http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Hook/Exception/HookNotFoundException.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Hook.php"
+        role: api-spec
+        description: "exceptionToStatus maps HookNotFoundException to 404 on both CQRSGet routes."
+
+  hookConstraint:
+    id: modules.ERR006
+    name: "HookConstraint"
+    description: "A hook id that is not a positive integer was supplied. Thrown by the HookId value object before any handler runs, so it fails the request rather than the hook."
+    category: validation
+    severity: error
+    http_status: 400
+    code_refs:
+      - path: "src/Core/Domain/Hook/Exception/HookConstraintException.php"
+        role: implementation
+        description: "INVALID_ID = 1, the only code it carries."
+      - path: "src/Core/Domain/Hook/ValueObject/HookId.php"
+        role: implementation
+        description: "Line 47 throws it."
+
+  cannotUpdateHook:
+    id: modules.ERR007
+    name: "CannotUpdateHook"
+    description: "A hook registration change failed part-way: the module could not be loaded, or registerHook, unregisterHook, unregisterExceptions or editExceptions returned false. EditHookedModule registers on the new hook before unregistering from the old one, so this error can leave a module registered on both."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Hook/Exception/CannotUpdateHookException.php"
+        role: implementation
+      - path: "src/Adapter/Hook/CommandHandler/EditHookedModuleCommandHandler.php"
+        role: implementation
+
+  moduleAlreadyHooked:
+    id: modules.ERR008
+    name: "ModuleAlreadyHooked"
+    description: "The module is already registered on that hook, so HookModule would create a duplicate registration."
+    category: conflict
+    severity: error
+    http_status: 409
+    code_refs:
+      - path: "src/Core/Domain/Hook/Exception/ModuleAlreadyHookedException.php"
+        role: implementation
+      - path: "src/Adapter/Hook/CommandHandler/HookModuleCommandHandler.php"
+        role: implementation
+        description: "Checked with Hook::getModulesFromHook before registering."
+
+  moduleCannotBeHooked:
+    id: modules.ERR009
+    name: "ModuleCannotBeHooked"
+    description: "The module does not declare itself hookable on that hook's name, so registering it would create a registration the module cannot answer."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Hook/Exception/ModuleCannotBeHookedException.php"
+        role: implementation
+      - path: "src/Adapter/Hook/CommandHandler/HookModuleCommandHandler.php"
+        role: implementation
+        description: "Checked with Module::isHookableOn."
+
+  # Unmapped by design, and why. HookException, ModuleException and CmsPageCategoryException
+  # are abstract bases that carry no meaning of their own; a handler that throws one is saying
+  # "an unexpected PrestaShopException happened here", which is not a domain error. The seventh
+  # Hook exception, HookUpdateHookException, is declared and thrown nowhere in the code: its only
+  # appearance is a translation entry in PositionsController.php line 463. It is not modeled,
+  # because an error nothing throws is not an outcome a reader can reach.
+  # Four of the twelve Module exceptions are likewise unmapped: CannotInstallModuleException,
+  # CannotToggleModuleStatusException, CannotUninstallModuleException, CannotUploadModuleException
+  # and CannotUpgradeModuleException are the "the adapter returned false" wrappers, and
+  # ModuleConstraintException is reached through modules.VR001.
+
+questions:
+
+  - id: modules.QN001
+    name: "Who Listens To A Hook"
+    statement: "Which modules are listening to this hook, and in what order do they run?"
+    category: relationship
+    priority: critical
+    bounded_context_ref: prestashop.BC007
+    answered_by: [modules.QRY002, modules.QRY004, modules.CMD012, modules.CMD013]
+    concepts: [modules.CN001, modules.CN002]
+    resolved: true
+    resolution: >
+      GetHook returns the hook with the modules registered on it and their positions;
+      HookModule adds one and EditHookedModule is what moves a module up or down that
+      order, which decides who gets to act first.
+
+  - id: modules.QN002
+    name: "What State A Module Is In"
+    statement: "Is this module installed, is it enabled, and is a newer version waiting?"
+    category: existence
+    priority: critical
+    bounded_context_ref: prestashop.BC007
+    answered_by: [modules.QRY001, modules.CMD001, modules.CMD003, modules.CMD007]
+    concepts: [modules.CN001]
+    resolved: true
+    resolution: >
+      Installed and enabled are two independent booleans, so a module has four states
+      rather than two; GetModuleInfos carries both plus the installed and available
+      versions that say whether UpgradeModule has anything to do.
+
+  - id: modules.QN003
+    name: "What Happens When A Hook Fires"
+    statement: "What actually runs when this hook fires, and what does the shop get back?"
+    category: behavioral
+    priority: critical
+    bounded_context_ref: prestashop.BC007
+    answered_by: [modules.CMD010, modules.CMD011, modules.QRY003]
+    concepts: [modules.CN002]
+    resolved: true
+    resolution: >
+      ExecuteHook calls every enabled module registered on the hook and collects what each
+      returns; RenderDisplayHook is the display variant whose collected output is
+      concatenated into the page. A disabled hook runs nothing, which GetHookStatus reports.
+
+  # PlatformKernel (prestashop.BC012) has no slice folder, so its competency questions are written
+  # here, beside the hook operations they are about, and bound by `bounded_context_ref`. Band
+  # QN100+ marks them as a separate allocation from modules' own QN001-QN003.
+  - id: modules.QN100
+    name: "How A Hook Reaches A Module"
+    statement: "What does the platform do when a hook is fired, and who decides the order it calls in?"
+    category: behavioral
+    priority: critical
+    bounded_context_ref: prestashop.BC012
+    answered_by: [modules.CMD010, modules.CMD011]
+    concepts: [modules.CN002]
+    resolved: true
+    resolution: >
+      Hook execution is the kernel's, not the Modules context's: Hook::exec lives in core and
+      looks up every module registered for the name, calls each one in position order and
+      collects what it returns. Modules only register and receive.
+
+  - id: modules.QN101
+    name: "How A Command Reaches Its Handler"
+    statement: "How does a Command object reach the one handler registered for it?"
+    summary: >-
+      Deliberately unanswered: the command bus every operation runs through is declared as no
+      operation, and that gap belongs to the API-surface work.
+    category: technical
+    priority: medium
+    bounded_context_ref: prestashop.BC012
+    answered_by: []
+    blocking: false
+    resolved: false

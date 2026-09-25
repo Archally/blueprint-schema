@@ -3,7 +3,7 @@ version: "1.0.0"
 scope: shop
 
 goals:
-  - id: shop.G001
+  - id: shop.GL001
     statement: "Consistent store branding across all customer touchpoints"
     description: >
       Logo and favicon management ensures the store has a unified visual
@@ -11,31 +11,45 @@ goals:
       browser tabs.
     summary: "Store branding consistency"
     priority: medium
+    measure: "Every surface that renders a logo resolves it from the shop's configured logo set"
+    affects:
+      operation_refs: [shop.CMD001, shop.QRY001]
+      concept_refs: [shop.CN001]
+      process_refs: [shop.PRC001]
     discovery_stage: validated
     certainty: confirmed
 
-  - id: shop.G002
+  - id: shop.GL002
     statement: "Improved product discoverability through search aliases"
     description: >
       Search term aliases bridge the gap between customer vocabulary and
       product catalog terminology, improving search hit rates.
     summary: "Search alias discoverability"
     priority: high
+    measure: "At least 80% of the top 100 customer search terms resolve through a configured alias"
+    affects:
+      operation_refs: [shop.CMD010, shop.CMD011, shop.CMD014, shop.QRY007]
+      concept_refs: [shop.CN004, shop.CN005]
+      process_refs: [shop.PRC002]
     discovery_stage: validated
     certainty: confirmed
 
-  - id: shop.G003
+  - id: shop.GL003
     statement: "SEO referrer tracking for marketing analytics"
     description: >
       SearchEngine configuration enables tracking which external search
       engines drive traffic to the store, informing SEO strategy.
     summary: "SEO referrer analytics"
     priority: medium
+    measure: "Every search engine the store wants to attribute has a SearchEngine row naming its host and query-string key"
+    affects:
+      operation_refs: [shop.CMD006, shop.CMD007]
+      concept_refs: [shop.CN003]
     discovery_stage: validated
     certainty: confirmed
 
 risks:
-  - id: shop.R001
+  - id: shop.RSK001
     statement: "Search index staleness after catalog changes"
     description: >
       If the search index is not rebuilt after significant catalog changes
@@ -44,11 +58,17 @@ risks:
     summary: "Stale search index"
     likelihood: medium
     impact: high
+    goal_refs:
+      - shop.GL002
+    affects:
+      operation_refs: [shop.CMD014]
+      concept_refs: [shop.CN005]
+      process_refs: [shop.PRC002]
     mitigation: "SearchIndexation command can be triggered manually or scheduled. Monitor index age."
     discovery_stage: validated
     certainty: confirmed
 
-  - id: shop.R002
+  - id: shop.RSK002
     statement: "Multi-store configuration gaps outside CQRS layer"
     description: >
       Core multi-store operations (shop creation, domain/SSL config,
@@ -58,6 +78,12 @@ risks:
     summary: "Multi-store CQRS gaps"
     likelihood: high
     impact: medium
+    goal_refs:
+      - shop.GL001
+    affects:
+      operation_refs: [shop.CMD001, shop.QRY002]
+      concept_refs: [shop.CN001, shop.CN002]
+      process_refs: [shop.PRC001]
     mitigation: "Document gaps as inquiries. Plan CQRS migration for critical multi-store operations."
     discovery_stage: validated
     certainty: confirmed
@@ -73,18 +99,38 @@ non_goals:
     discovery_stage: committed
     certainty: confirmed
 
+  - id: shop.NG002
+    statement: "The software does not provision or operate the infrastructure it runs on"
+    reason: >
+      PrestaShop Classic is software a merchant installs on hosting they arrange
+      themselves. Nothing in core provisions a server, registers a domain,
+      issues a certificate, schedules a backup or runs the cron the exchange
+      rate refresh and the search reindex both need - which is why several
+      risks in this model end at "the merchant must schedule it". The vendor
+      sells the managed alternative as a separate edition, PrestaShop Hosted
+      (prestashop.com/en, read 2026-09-19; a company statement about its own
+      product line, not a fact measured here), and that separation is the
+      reason the software itself does not need to do any of it.
+    discovery_stage: committed
+    certainty: confirmed
+
 assumptions:
-  - id: shop.A001
+  - id: shop.ASM001
+    domain_scope: shop
     statement: "MySQL/MariaDB is the only supported RDBMS"
     consequence: >
-      If PostgreSQL or SQLite support is required, all ObjectModel raw SQL,
-      Doctrine DBAL queries, and database-specific features (IFNULL, GROUP_CONCAT,
-      INSERT IGNORE) must be abstracted or ported.
+      If PostgreSQL or SQLite support is required, every piece of ObjectModel
+      raw SQL, the Doctrine DBAL queries and the database-specific constructs
+      (IFNULL, GROUP_CONCAT, INSERT IGNORE) have to be abstracted or ported.
+      What makes that expensive rather than merely large is the installed base
+      it would have to migrate: PrestaShop says more than 250,000 merchants are
+      on the platform (prestashop.com/en, read 2026-09-19), a company figure
+      about its own adoption rather than anything measured here.
     discovery_stage: committed
     certainty: confirmed
 
 trade_offs:
-  - id: shop.T001
+  - id: shop.TRO001
     choice: "Multi-store data isolation model"
     selected: "Shared database with shop_id column filtering"
     rejected: "Separate database per shop (simpler isolation but harder shared catalog)"
@@ -102,13 +148,19 @@ inquiries:
     statement: "Should multi-store configuration (maintenance mode, domain, SSL) be migrated to the CQRS domain layer?"
     summary: "Multi-store CQRS gap"
     description: >
-      The Shop aggregate has only UploadLogos in the CQRS layer. Core
-      multi-store operations (maintenance mode toggle, domain configuration,
-      SSL settings, shop creation/deletion) are managed by legacy code.
-      This is a significant domain gap for multi-store governance.
+      Measured 2026-09-19: src/Core/Domain/Shop holds one command,
+      UploadLogos, and two queries, GetLogosPaths and SearchShops. Maintenance
+      mode, the domain and SSL settings, and shop creation and deletion are all
+      legacy code with no command behind them, so a multi-store estate cannot
+      be governed through the domain layer or reached over the Admin API at
+      all. Phase 1 modelled what exists and did not answer this.
     category: technical
+    affects:
+      operation_refs: [shop.CMD001]
+      concept_refs: [shop.CN001]
+      process_refs: [shop.PRC001]
     goal_refs:
-      - shop.G001
+      - shop.GL001
     blocking: false
     status: investigating
     discovery_stage: exploring
@@ -118,11 +170,16 @@ inquiries:
     statement: "Should Store creation and editing be added to the CQRS domain layer?"
     summary: "Store CRUD gap"
     description: >
-      The Store aggregate only exposes delete, toggle status, and bulk
-      operations. Store creation and editing are managed outside the CQRS
-      layer. This prevents domain-level validation of store addresses and
-      geographic coordinates.
+      Measured 2026-09-19: src/Core/Domain/Store/Command holds exactly four
+      classes - DeleteStore, ToggleStoreStatus, BulkDeleteStore and
+      BulkUpdateStoreStatus - so a store can be removed or switched off but
+      never created or edited through the domain layer. Step 09 met the same
+      wall from the other side: the model's CreateStorePayload binds to no
+      operation because there is no create-store command to bind it to.
     category: technical
+    affects:
+      operation_refs: [shop.CMD002, shop.QRY003]
+      concept_refs: [shop.CN002]
     blocking: false
     status: investigating
     discovery_stage: exploring

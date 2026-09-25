@@ -4,12 +4,25 @@ schemaVersion: "2.8.0"
 name: "PrestaShop E-Commerce Platform"
 description: >
   Blueprint model of the PrestaShop v9 open-source e-commerce platform covering
-  10 bounded contexts derived from 62 CQRS domain aggregates and 352+ commands.
-  Based on the real PrestaShop codebase (https://github.com/PrestaShop/PrestaShop).
+  10 bounded contexts derived from the 65 CQRS domain folders under
+  src/Core/Domain, which hold 380 command classes and 139 query classes.
+  Based on the real PrestaShop codebase (https://github.com/PrestaShop/PrestaShop),
+  counted at commit a27e912eef9 on 2026-09-14.
 repository:
   url: "https://github.com/PrestaShop/PrestaShop"
   branch: "develop"
   provider: "github"
+
+# Where the work behind a story or use case is tracked. PrestaShop plans and reviews in the open, so
+# the tracker is the same GitHub repository the code_refs point into; GitHub resolves an issue URL to
+# a pull request of the same number, so one template serves both. Each ref below names a pull request
+# that touched the capability its entity describes, chosen by reading the merge commits rather than
+# by guessing a number.
+trackers:
+  github:
+    url: "https://github.com/PrestaShop/PrestaShop/issues/{key}"
+    label: "PrestaShop on GitHub"
+default_tracker: github
 
 # Declares what was already true on disk: this model is organised as ten slice subfolders, one per
 # bounded context. Without this block the layout was implicitly the legacy single-folder one, so
@@ -47,10 +60,13 @@ domains:
     subdomains:
       - id: SDM001
         name: api
+        description: "The two programmable ways in: the Admin API's OAuth clients and the legacy webservice's key-per-caller. Both are credential management rather than the routes themselves, which live in the arch layer."
       - id: SDM002
         name: config
+        description: "Shop-wide settings and the back-office shell they are edited through: the configuration store, the admin menu tabs, quick-access links, custom SQL reports and the extra-property mechanism."
       - id: SDM003
         name: identity
+        description: "Who may log into the back office and what they may touch: employees, the profiles that group them, and the session handling that authenticates both employees and shoppers."
   - id: DMN002
     name: catalog
     description: "Products, categories, attributes, combinations, stock and pricing rules."
@@ -58,20 +74,28 @@ domains:
     subdomains:
       - id: SDM004
         name: category
+        description: "The tree products are filed in. It is a hierarchy rather than a list, so a category's position governs both storefront navigation and the URL a product is reached at."
       - id: SDM005
         name: characteristics
+        description: "The two ways a product is described in structured terms: attribute groups, whose values a shopper chooses and which generate variants, and features, which the shopper only reads."
       - id: SDM006
         name: combination
+        description: "Product variants. Every command lives under Product/Combination in the code rather than beside Product, because a combination is reached through its product and never on its own."
       - id: SDM007
         name: image-settings
+        description: "The image sizes the shop generates and serves. A setting here regenerates thumbnails across the whole catalog, which is why it is separated from the images themselves."
       - id: SDM008
         name: media
+        description: "Files hung off a product: gallery images and downloadable attachments. Distinct from a virtual product's file, which is the thing being sold rather than material about it."
       - id: SDM009
         name: pricing
+        description: "What a product costs before the cart sees it: base price, wholesale price, tax rules group, and the specific-price rules that override any of them for a group, a period or a quantity."
       - id: SDM010
         name: product
+        description: "The product itself, and the ordering of products within a category. The aggregate everything else in the catalog hangs off."
       - id: SDM011
         name: supply-chain
+        description: "Where the goods come from: suppliers, manufacturers, per-supplier references and prices, and the tags and attachments that travel with them."
   - id: DMN003
     name: checkout
     description: "Cart, address and carrier selection, payment initiation and order placement."
@@ -79,10 +103,13 @@ domains:
     subdomains:
       - id: SDM012
         name: cart
+        description: "The basket before it becomes an order, and the cart rules applied to it. A cart is mutable and unpriced-by-record; the order it converts to is neither."
       - id: SDM013
         name: discount
+        description: "Vouchers and cart-level reductions, in the Discount domain the code introduced beside CartRule. What a shopper claims, as against what the catalog already prices in."
       - id: SDM014
         name: pricing
+        description: "Catalog price rules, which reduce a price for a whole class of products rather than for a cart. They resolve at display time, which is why they sit in checkout beside the cart and not in the catalog."
   - id: DMN004
     name: content
     description: "CMS pages, blocks and static content served alongside the storefront."
@@ -90,10 +117,13 @@ domains:
     subdomains:
       - id: SDM015
         name: cms
+        description: "Static pages served by the shop itself: the pages, the categories they nest in, and the mail templates sent alongside them."
       - id: SDM016
         name: seo
+        description: "How the shop appears to a search engine: the Meta domain's per-page titles, descriptions and URL rewrites, and the routes they are bound to."
       - id: SDM017
         name: theme
+        description: "The front-office theme: which one is active, where its files live, and the mail templates it overrides."
   - id: DMN005
     name: customers
     description: "Customer accounts, addresses, groups, and consent/PII handling."
@@ -101,12 +131,16 @@ domains:
     subdomains:
       - id: SDM018
         name: address
+        description: "Postal addresses, which belong to customers, manufacturers, suppliers and warehouses alike. The country on an address decides the format it prints in and which of its fields are required."
       - id: SDM019
         name: customer
+        description: "The shopper account and the groups it belongs to. The group is what decides which prices and which tax display the shopper sees."
       - id: SDM020
         name: customer-service
+        description: "The message threads between a shopper and the shop, and the employee assignment that turns a thread into someone's work."
       - id: SDM021
         name: title
+        description: "Salutations, each bound to one of the Title value object's three gender types. Small, and its own subdomain because the binding is what picks the salutation in every order email."
   - id: DMN006
     name: international
     description: "Languages, currencies, countries, zones, taxes and translation."
@@ -114,14 +148,19 @@ domains:
     subdomains:
       - id: SDM022
         name: currency
+        description: "Currencies, their conversion rates, and the per-language patterns each is formatted with. An order records the rate that applied, so this domain's edits never restate a past total."
       - id: SDM023
         name: geography
+        description: "Countries, states and zones. Zones are what carriers price against and what tax rules match on, so the geography is a pricing structure and not only a list of places."
       - id: SDM024
         name: language
+        description: "Installed languages and the locale each one resolves to. Adding one makes every localized field in the model grow a key."
       - id: SDM025
         name: localization
+        description: "Importing a localization pack: the country, currency, language, tax and unit settings a shop adopts wholesale for a market."
       - id: SDM026
         name: taxation
+        description: "Tax rates, the groups that bundle them and the rules that pick one. A rate is chosen by the delivery address as well as by the product, which is why the group and not the rate is stored on a product."
   - id: DMN007
     name: modules
     description: "The module/hook extension system: install, configure, upgrade, and hook dispatch."
@@ -133,14 +172,19 @@ domains:
     subdomains:
       - id: SDM027
         name: invoice-payment
+        description: "Invoices and the payments recorded against an order. An order may carry several payments and several invoices, so neither is a field on the order."
       - id: SDM028
         name: order
+        description: "The order itself and the lines it was placed with. Both are snapshots: a later catalog edit does not reach an order already placed."
       - id: SDM029
         name: order-admin
+        description: "The back-office side of an order: the order states and their transitions, the canned messages sent on them, and the return states that mirror them."
       - id: SDM030
         name: refunds
+        description: "Standard and partial refunds, including whether the goods are restocked and whether the money goes back as a credit or as a voucher."
       - id: SDM031
         name: returns
+        description: "Merchandise returns and the credit slips they produce. A return is a request the shop accepts or refuses; a credit slip is the money it owes once it has."
   - id: DMN009
     name: shipping
     description: "Carriers, zones, weight/price ranges and delivery-cost computation."
@@ -148,8 +192,10 @@ domains:
     subdomains:
       - id: SDM032
         name: carrier
+        description: "Carriers and their price tables. PrestaShop versions a carrier by inserting a new row on every edit, so a carrier's identity across versions is its reference id and not its id."
       - id: SDM033
         name: shipment
+        description: "Parcels. An order's lines can be split across several shipments, so a shipment is what actually left the warehouse rather than what was ordered."
   - id: DMN010
     name: shop
     description: "Multistore: shop groups, shops, per-shop configuration and URL routing."

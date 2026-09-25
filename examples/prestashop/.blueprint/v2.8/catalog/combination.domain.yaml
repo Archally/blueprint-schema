@@ -9,83 +9,531 @@ operations:
     id: catalog.CMD011
     kind: command
     name: "GenerateCombinations"
-    description: "Generate all possible attribute combinations for a product based on selected attribute groups and values."
+    description: "Generate the cartesian product of the selected attribute groups and values as combinations of one product. The handler skips pairs that already exist, so the command is a top-up rather than a replace."
     delivery_priority: must-have
+    implementation: as-is
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/{productId}/generate-combinations
+        method: POST
+        group: catalog
+    payload:
+      schema: GenerateCombinationsPayload
+      contentType: application/json
+    materializes:
+      - concept: catalog.CN003
+        action: create
     produces:
       operations: [catalog.EVT004]
       mode: all
+    responses:
+      - code: "404"
+        type: error
+        description: "The product the combinations would belong to does not exist."
+        error: catalog.ERR001
+      - code: "500"
+        type: error
+        description: "Generation started and could not complete."
+        error: catalog.ERR203
     code_refs:
-      - path: "src/Core/Domain/Combination/Command/GenerateProductCombinationsCommand.php"
+      - path: "src/Core/Domain/Product/Combination/Command/GenerateProductCombinationsCommand.php"
         role: implementation
+      - path: "src/Adapter/Product/Combination/Create/CombinationCreator.php"
+        role: implementation
+        description: "Creates the combinations and fires actionAttributeCombinationSave."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/GenerateCombinations.php"
+        role: api-spec
 
   updateCombination:
     id: catalog.CMD012
     kind: command
     name: "UpdateCombination"
-    description: "Update a combination's price impact, stock, reference, EAN, weight."
+    description: "Partially update one combination: reference, price impact, weight impact, barcodes, minimal quantity, availability dates and the default flag. Every field is optional, so the command carries only what the form changed."
     delivery_priority: must-have
+    implementation: as-is
+    dispatch: inprocess
+    payload:
+      schema: UpdateCombinationPayload
+      contentType: application/json
+    materializes:
+      - concept: catalog.CN003
+        action: update
     produces:
       operations: [catalog.EVT005]
       mode: all
+    responses:
+      - code: "CombinationNotFound"
+        type: error
+        description: "No combination with that identifier, or none in the requested shop scope."
+        error: catalog.ERR200
+      - code: "CombinationConstraintViolation"
+        type: failure
+        description: "A submitted value fails the combination's own constraints (barcode format, negative minimal quantity)."
+        error: catalog.ERR201
+      - code: "CannotUpdateCombination"
+        type: error
+        description: "The update reached persistence and failed there."
+        error: catalog.ERR202
     code_refs:
-      - path: "src/Core/Domain/Combination/Command/UpdateCombinationCommand.php"
+      - path: "src/Core/Domain/Product/Combination/Command/UpdateCombinationCommand.php"
+        role: implementation
+
+  updateCombinationStockAvailable:
+    id: catalog.CMD200
+    kind: command
+    name: "UpdateCombinationStockAvailable"
+    description: "Move a combination's available quantity, either by a delta or to a fixed value, and optionally set its warehouse location. Delta and fixed quantity are mutually exclusive, which is why stock is its own command and not a field of UpdateCombination."
+    delivery_priority: must-have
+    implementation: as-is
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN003
+        action: update
+    produces:
+      operations: [catalog.EVT005]
+      mode: all
+    responses:
+      - code: "CombinationNotFound"
+        type: error
+        description: "No combination with that identifier in the requested shop scope."
+        error: catalog.ERR200
+      - code: "CombinationConstraintViolation"
+        type: failure
+        description: "Both a delta and a fixed quantity were supplied, or the resulting quantity is invalid."
+        error: catalog.ERR201
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/Command/UpdateCombinationStockAvailableCommand.php"
         role: implementation
 
   deleteCombination:
     id: catalog.CMD013
     kind: command
     name: "DeleteCombination"
-    description: "Remove a specific combination from a product."
+    description: "Remove one combination from a product within a shop constraint. Its stock rows, image associations and supplier rows go with it."
     delivery_priority: must-have
+    implementation: as-is
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN003
+        action: delete
+    reacts_to:
+      - operation: catalog.EVT003
+        policy: "Delete every combination of a product being deleted, because a combination has no existence apart from its product"
     produces:
-      operations: [catalog.EVT005]
+      operations: [catalog.EVT200]
       mode: all
+    responses:
+      - code: "CombinationNotFound"
+        type: error
+        description: "No combination with that identifier in the requested shop scope."
+        error: catalog.ERR200
+      - code: "CannotDeleteCombination"
+        type: error
+        description: "The deletion reached persistence and failed there."
+        error: catalog.ERR202
+    code_refs:
+      - path: "classes/Product.php"
+        role: implementation
+        description: "Proves the reaction to catalog.EVT003. Product::delete fires actionProductDelete at line 1284 and calls deleteProductAttributes at line 1287, which loops the product's combinations and calls Combination::delete on each. The deletion is reached there directly, not through the command bus."
+      - path: "src/Core/Domain/Product/Combination/Command/DeleteCombinationCommand.php"
+        role: implementation
 
   bulkDeleteCombinations:
     id: catalog.CMD014
     kind: command
     name: "BulkDeleteCombinations"
-    description: "Delete multiple combinations at once."
+    description: "Delete a list of combinations of one product in a single transaction. It is a separate command rather than a loop because a partial failure has to name the combinations that survived."
     delivery_priority: should-have
+    implementation: as-is
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN003
+        action: delete
+    produces:
+      operations: [catalog.EVT200]
+      mode: all
+    responses:
+      - code: "BulkCombinationOperationFailed"
+        type: error
+        description: "One or more combinations in the batch could not be deleted; the error names them."
+        error: catalog.ERR205
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/Command/BulkDeleteCombinationCommand.php"
+        role: implementation
+
+  setCombinationImages:
+    id: catalog.CMD201
+    kind: command
+    name: "SetCombinationImages"
+    description: "Replace the set of product images shown for one combination. Passing an empty set is a separate command, so that clearing the association is never the accidental result of an empty form field."
+    delivery_priority: should-have
+    implementation: as-is
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN003
+        action: update
     produces:
       operations: [catalog.EVT005]
       mode: all
+    responses:
+      - code: "CombinationNotFound"
+        type: error
+        description: "No combination with that identifier."
+        error: catalog.ERR200
+      - code: "CannotUpdateCombination"
+        type: error
+        description: "The image association could not be written."
+        error: catalog.ERR202
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/Command/SetCombinationImagesCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Combination/Command/RemoveAllCombinationImagesCommand.php"
+        role: implementation
+        description: "The clear-all half of the same concern."
 
-  setCombinationDefaultSupplier:
+  updateCombinationSuppliers:
     id: catalog.CMD015
     kind: command
-    name: "SetCombinationDefaultSupplier"
-    description: "Set the default supplier for a specific combination."
+    name: "UpdateCombinationSuppliers"
+    description: "Replace the supplier rows of one combination: which suppliers stock it, at what reference and price. The first row of the list is the combination's default supplier."
     delivery_priority: could-have
+    implementation: as-is
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN003
+        action: update
     produces:
       operations: [catalog.EVT005]
       mode: all
+    responses:
+      - code: "CombinationNotFound"
+        type: error
+        description: "No combination with that identifier."
+        error: catalog.ERR200
+      - code: "CannotUpdateCombination"
+        type: error
+        description: "The supplier rows could not be written."
+        error: catalog.ERR202
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/Command/UpdateCombinationSuppliersCommand.php"
+        role: implementation
 
-  getCombinationsList:
+  setCombinationFeatureValues:
+    id: catalog.CMD202
+    kind: command
+    name: "SetCombinationFeatureValues"
+    description: "Set the feature values a combination overrides from its parent product, or remove all of them. A combination inherits the product's features until this command states otherwise."
+    delivery_priority: could-have
+    implementation: as-is
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN003
+        action: update
+    produces:
+      operations: [catalog.EVT005]
+      mode: all
+    responses:
+      - code: "CombinationNotFound"
+        type: error
+        description: "No combination with that identifier in the requested shop."
+        error: catalog.ERR200
+      - code: "CannotUpdateCombination"
+        type: error
+        description: "The feature values could not be written."
+        error: catalog.ERR202
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/FeatureValue/Command/SetCombinationFeatureValuesCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Combination/FeatureValue/Command/RemoveAllFeatureValuesFromCombinationCommand.php"
+        role: implementation
+        description: "The clear-all half of the same concern."
+
+  getEditableCombinationsList:
     id: catalog.QRY003
     kind: query
-    name: "GetCombinationsList"
-    description: "List all combinations for a product with pagination and filtering."
+    name: "GetEditableCombinationsList"
+    description: "One page of a product's combinations as the back-office list shows them: attribute summary, reference, price impact, stock and cover image, with filters and an order."
     delivery_priority: must-have
+    implementation: as-is
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/{productId}/combinations
+        method: GET
+        group: catalog
+    responses:
+      - code: "200"
+        type: success
+        description: "The requested page of combinations, with the total the filters match."
+        schema: CombinationListItem
+        contentType: application/json
+      - code: "404"
+        type: error
+        description: "The product does not exist."
+        error: catalog.ERR001
     code_refs:
-      - path: "src/Core/Domain/Combination/Query/GetCombinationListQuery.php"
+      - path: "src/Core/Domain/Product/Combination/Query/GetEditableCombinationsList.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/CombinationList.php"
+        role: api-spec
 
   getCombinationForEditing:
     id: catalog.QRY004
     kind: query
     name: "GetCombinationForEditing"
-    description: "Get full combination data for the edit form."
+    description: "One combination in the shape its edit form needs: identifying attributes, prices, stock, barcodes, images and the shop scope the values were read in."
     delivery_priority: must-have
+    implementation: as-is
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/combinations/{combinationId}
+        method: GET
+        group: catalog
+    responses:
+      - code: "200"
+        type: success
+        description: "The combination in full editing detail."
+        schema: CombinationResource
+        contentType: application/json
+      - code: "404"
+        type: error
+        description: "No combination with that identifier."
+        error: catalog.ERR200
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/Query/GetCombinationForEditing.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/Combination.php"
+        role: api-spec
+
+  getCombinationIds:
+    id: catalog.QRY200
+    kind: query
+    name: "GetCombinationIds"
+    description: "The identifiers alone of a product's combinations, filtered and paged like the editable list. It exists so a caller that only needs to iterate does not pay for the list projection."
+    delivery_priority: should-have
+    implementation: as-is
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/{productId}/combination-ids
+        method: GET
+        group: catalog
+    responses:
+      - code: "200"
+        type: success
+        description: "Combination identifiers matching the filters, in the requested order."
+        contentType: application/json
+      - code: "404"
+        type: error
+        description: "The product does not exist."
+        error: catalog.ERR001
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/Query/GetCombinationIds.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/CombinationIdList.php"
+        role: api-spec
+
+  getCombinationSuppliers:
+    id: catalog.QRY201
+    kind: query
+    name: "GetCombinationSuppliers"
+    description: "The supplier rows of one combination, with each supplier's own product reference and price, for the supplier tab of the combination form."
+    delivery_priority: could-have
+    implementation: as-is
+    dispatch: inprocess
+    responses:
+      - code: "CombinationNotFound"
+        type: error
+        description: "No combination with that identifier."
+        error: catalog.ERR200
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/Query/GetCombinationSuppliers.php"
+        role: implementation
+
+  searchProductCombinations:
+    id: catalog.QRY202
+    kind: query
+    name: "SearchProductCombinations"
+    description: "Type-ahead search over one product's own combinations by attribute phrase, used where a form has to pick a variant of a product already chosen."
+    delivery_priority: could-have
+    implementation: as-is
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/Query/SearchProductCombinations.php"
+        role: implementation
+
+  searchCombinationsForAssociation:
+    id: catalog.QRY203
+    kind: query
+    name: "SearchCombinationsForAssociation"
+    description: "Type-ahead search over combinations across products, used where a cart rule, a specific price or a pack has to point at a variant the author has not yet narrowed to a product."
+    delivery_priority: could-have
+    implementation: as-is
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/Query/SearchCombinationsForAssociation.php"
+        role: implementation
+
+  getCombinationFeatureValues:
+    id: catalog.QRY204
+    kind: query
+    name: "GetCombinationFeatureValues"
+    description: "The feature values one combination overrides, in one shop. An empty result means the combination inherits every feature from its product."
+    delivery_priority: could-have
+    implementation: as-is
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/FeatureValue/Query/GetCombinationFeatureValues.php"
+        role: implementation
 
   combinationGenerated:
     id: catalog.EVT004
     kind: event
     name: "CombinationGenerated"
-    description: "Emitted when combinations are generated for a product."
+    description: "Combinations were created for a product. PrestaShop has no domain event bus: the fact reaches modules as the hook actionAttributeCombinationSave, fired once per created combination by CombinationCreator with the new combination id and the attribute ids it was built from."
+    implementation: as-is
+    tags: [hook:actionAttributeCombinationSave]
+    code_refs:
+      - path: "src/Adapter/Product/Combination/Create/CombinationCreator.php"
+        role: implementation
+        description: "Line 271: Hook::exec('actionAttributeCombinationSave')."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Hook registry entry for actionAttributeCombinationSave."
 
   combinationUpdated:
     id: catalog.EVT005
     kind: event
     name: "CombinationUpdated"
-    description: "Emitted when a combination is modified or deleted."
+    description: "A combination's own data, stock, images, suppliers or feature values changed. Modules observe it as actionProductAttributeUpdate, fired by Product::updateAttribute, and as actionObjectCombinationUpdateAfter, fired dynamically by ObjectModel::update for every persisted Combination."
+    implementation: as-is
+    tags: [hook:actionProductAttributeUpdate, hook:actionObjectCombinationUpdateAfter]
+    code_refs:
+      - path: "classes/Product.php"
+        role: implementation
+        description: "Line 2162: Hook::exec('actionProductAttributeUpdate')."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847: the dynamic actionObject<Class>UpdateAfter hook; Combination extends ObjectModel."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Hook registry entry for actionProductAttributeUpdate."
+
+  combinationDeleted:
+    id: catalog.EVT200
+    kind: event
+    name: "CombinationDeleted"
+    description: "A combination was removed from its product, singly or in a batch. Modules observe it as actionAttributeCombinationDelete, fired by Combination::delete with the combination id, and as actionObjectCombinationDeleteAfter, fired dynamically by ObjectModel::delete. Deleting every combination of a product fires actionProductAttributeDelete instead, with deleteAllAttributes set."
+    implementation: as-is
+    tags: [hook:actionAttributeCombinationDelete, hook:actionObjectCombinationDeleteAfter, hook:actionProductAttributeDelete]
+    code_refs:
+      - path: "classes/Combination.php"
+        role: implementation
+        description: "Line 284: Hook::exec('actionAttributeCombinationDelete')."
+      - path: "classes/Product.php"
+        role: implementation
+        description: "Line 2286: Hook::exec('actionProductAttributeDelete') with deleteAllAttributes."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 923: the dynamic actionObject<Class>DeleteAfter hook."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Hook registry entries for actionAttributeCombinationDelete and actionProductAttributeDelete."
+
+errors:
+  combinationNotFound:
+    id: catalog.ERR200
+    name: "CombinationNotFound"
+    description: "No combination carries the requested identifier, or none does inside the shop constraint the caller asked for. The Admin API maps it to 404."
+    category: not-found
+    severity: error
+    http_status: 404
+    retry_eligible: false
+    implementation: as-is
+    tags: [combination]
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/Exception/CombinationNotFoundException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Combination/Exception/CombinationShopAssociationNotFoundException.php"
+        role: implementation
+        description: "The shop-scoped variant: the combination exists but not in that shop."
+
+  combinationConstraintViolation:
+    id: catalog.ERR201
+    name: "CombinationConstraintViolation"
+    description: "A submitted combination value fails the domain's own constraints - a malformed barcode, a negative minimal quantity, or a stock command carrying both a delta and a fixed quantity."
+    category: validation
+    severity: error
+    http_status: 400
+    retry_eligible: false
+    implementation: as-is
+    tags: [combination]
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/Exception/CombinationConstraintException.php"
+        role: implementation
+
+  combinationPersistenceFailed:
+    id: catalog.ERR202
+    name: "CombinationPersistenceFailed"
+    description: "A combination write reached persistence and failed there - the add, update or delete could not be completed. The three exception classes differ only in which write failed."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    implementation: as-is
+    tags: [combination]
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/Exception/CannotAddCombinationException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Combination/Exception/CannotUpdateCombinationException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Combination/Exception/CannotDeleteCombinationException.php"
+        role: implementation
+
+  combinationGenerationFailed:
+    id: catalog.ERR203
+    name: "CombinationGenerationFailed"
+    description: "Generating combinations for a product started and could not complete, so the product is left with whatever combinations had already been written."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    implementation: as-is
+    tags: [combination]
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/Exception/CannotGenerateCombinationException.php"
+        role: implementation
+
+  bulkCombinationOperationFailed:
+    id: catalog.ERR205
+    name: "BulkCombinationOperationFailed"
+    description: "A batch combination operation failed for at least one member. The exception carries the identifiers that failed, so the caller can tell a partial batch from a rejected one."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    implementation: as-is
+    tags: [combination]
+    code_refs:
+      - path: "src/Core/Domain/Product/Combination/Exception/BulkCombinationException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Combination/Exception/CannotBulkDeleteCombinationException.php"
+        role: implementation
+
+questions:
+
+  - id: catalog.QN003
+    name: "Which Variants Can Be Bought"
+    statement: "Which combinations of this product can be bought, and how much of each is in stock?"
+    category: enumeration
+    priority: critical
+    bounded_context_ref: prestashop.BC002
+    answered_by: [catalog.QRY003, catalog.QRY200, catalog.QRY111]
+    concepts: [catalog.CN001, catalog.CN003]
+    resolved: true
+    resolution: >
+      GetEditableCombinationsList returns the generated combinations with their attribute
+      values and quantities; GetCombinationStockMovements says how each quantity got to
+      where it is.

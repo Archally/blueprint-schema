@@ -1,5 +1,13 @@
 ---
 name: "Cart Rule Application"
+description: >-
+  Attaching a discount to a cart and detaching it again, plus the one read that finds a rule to
+  attach. The file is named for the act, not for a code folder: `Core/Domain/CartRule` holds a
+  single class, the query SearchCartRules, and the two commands here live in `Core/Domain/Cart`
+  because attaching a rule is a change to the cart. The write side of a discount itself - create,
+  update, delete, duplicate - is `Core/Domain/Discount`, modelled in discount.domain.yaml. Nothing
+  else belongs here, and a reader who expects CartRule CRUD in this file will not find it because
+  PrestaShop does not have it.
 version: "1.0.0"
 scope: checkout
 tags: [cart, cart-rules, promotions]
@@ -8,10 +16,23 @@ operations:
   applyCartRuleToCart:
     id: checkout.CMD014
     kind: command
+    responses:
+      - code: "CartRuleApplied"
+        type: success
+        description: "The discount is attached and the totals are recomputed."
+      - code: "CartRuleNotValid"
+        type: failure
+        description: "The cart does not qualify: expired, wrong code, below the minimum, restricted, or quota spent."
+        error: checkout.ERR013
+    dispatch: inprocess
     name: "ApplyCartRuleToCart"
     description: "Apply a cart rule (discount/voucher) to the cart. Validates eligibility conditions before application."
     delivery_priority: must-have
     initiated_by: [orders.ACT001]
+    reacts_to:
+      - operation: checkout.EVT004
+        policy: "Attach every automatic cart rule the changed cart now qualifies for, so a shopper who crosses a threshold gets the discount without entering a code"
+        condition: "a rule with no code exists whose conditions the cart now satisfies"
     governed_by:
       - rule: checkout.VR001
       - rule: checkout.VR002
@@ -19,42 +40,117 @@ operations:
     produces:
       operations: [checkout.EVT005]
       mode: all
+    materializes:
+      - concept: checkout.CN003
+        action: create
     code_refs:
+      - path: "classes/Cart.php"
+        role: implementation
+        description: "Proves the reaction to checkout.EVT004. Cart::updateQty fires actionCartUpdateQuantityBefore at line 1725 and calls CartRule::autoAddToCart at line 1843; Cart::deleteProduct repeats the pair at line 2045. The attachment is reached through the static, not through the command bus."
       - path: "src/Core/Domain/Cart/Command/AddCartRuleToCartCommand.php"
         role: implementation
 
   removeCartRuleFromCart:
     id: checkout.CMD015
     kind: command
+    dispatch: inprocess
     name: "RemoveCartRuleFromCart"
     description: "Remove a previously applied cart rule from the cart."
     delivery_priority: must-have
     initiated_by: [orders.ACT001]
+    reacts_to:
+      - operation: checkout.EVT004
+        policy: "Detach every attached cart rule the changed cart no longer qualifies for, so a discount earned by a line the shopper has since removed does not survive"
+        condition: "an attached rule's conditions no longer hold for the cart"
     produces:
       operations: [checkout.EVT006]
       mode: all
+    materializes:
+      - concept: checkout.CN003
+        action: delete
     code_refs:
+      - path: "classes/Cart.php"
+        role: implementation
+        description: "Proves the reaction to checkout.EVT004. Cart::updateQty fires actionCartUpdateQuantityBefore at line 1725 and calls CartRule::autoRemoveFromCart at line 1841; Cart::deleteProduct repeats the pair at line 2044. The detachment is reached through the static, not through the command bus."
       - path: "src/Core/Domain/Cart/Command/RemoveCartRuleFromCartCommand.php"
         role: implementation
 
   searchCartRules:
     id: checkout.QRY004
     kind: query
+    payload:
+      schema: FoundCartRule
+      contentType: application/json
+      description: "What each hit of the search carries. The request sends the phrase as a query parameter, not a body."
+      required: false
+    exchange:
+      protocol: http
+      endpoint:
+        path: /cart-rules/search
+        method: GET
+        group: cart-rule
+    responses:
+      - code: "200"
+        type: success
+        description: "The cart rules whose name or code matches the phrase."
     name: "SearchCartRules"
-    description: "Search available cart rules by keyword. Used to find applicable discounts for a cart session."
+    description: "Find cart rules by a search phrase matched against the rule's name and its voucher code, so a back-office operator assisting a sale can pick the right discount without knowing its id. The Admin API serves it at GET /cart-rules/search with a required `phrase` query parameter, scope cart_rule_read."
     delivery_priority: should-have
     code_refs:
       - path: "src/Core/Domain/CartRule/Query/SearchCartRules.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/CartRule/FoundCartRule.php"
+        role: api-spec
+        description: "CQRSGetCollection on /cart-rules/search names SearchCartRules; the required query parameter `phrase` maps to the query's searchPhrase."
 
   cartRuleApplied:
     id: checkout.EVT005
     kind: event
     name: "CartRuleApplied"
-    description: "Emitted when a cart rule is successfully applied. Triggers cart total recalculation."
+    description: >-
+      A cart rule is now attached to the cart and its reduction counts towards the totals.
+      Restated 2026-09-14 rather than regrounded: no hook is fired for this transition, so modules
+      cannot observe it. Cart::addCartRule inserts the row into cart_cart_rule directly and clears
+      its caches, without going through ObjectModel, so the dynamic family does not reach it
+      either. One hook does sit on the path and is easy to mistake for this one:
+      actionValidateCartRule, fired while eligibility is being decided, lets a module veto or
+      force the rule by reference parameter. It is a decision hook fired BEFORE the attachment,
+      not a notice that the attachment happened, so it is named here and deliberately not tagged.
+    code_refs:
+      - path: "classes/Cart.php"
+        role: implementation
+        description: "addCartRule at line 1443 inserts into cart_cart_rule with a direct Db call. Searched for Hook::exec on the path on 2026-09-19: none."
+      - path: "classes/CartRule.php"
+        role: implementation
+        description: "Line 759 fires actionValidateCartRule during eligibility checking, passing isValidatedByModules by reference so a module can override the verdict."
 
   cartRuleRemoved:
     id: checkout.EVT006
     kind: event
     name: "CartRuleRemoved"
-    description: "Emitted when a cart rule is removed from the cart."
+    description: >-
+      A cart rule is no longer attached to the cart and its reduction has left the totals.
+      Restated 2026-09-14: no hook is fired for this transition, so modules cannot observe it.
+      Cart::removeCartRule deletes the cart_cart_rule row with a direct Db call, so neither a
+      cart-specific hook nor the ObjectModel dynamic family applies. A module that grants its own
+      benefit alongside a voucher has no way to learn the voucher was withdrawn.
+    code_refs:
+      - path: "classes/Cart.php"
+        role: implementation
+        description: "removeCartRule at line 1949 deletes the cart_cart_rule row directly. Searched for Hook::exec on the path on 2026-09-19: none."
+
+questions:
+
+  - id: checkout.QN002
+    name: "Which Discounts This Cart Earns"
+    statement: "Which discounts is this cart eligible for, and which are already on it?"
+    category: enumeration
+    priority: critical
+    bounded_context_ref: prestashop.BC003
+    answered_by: [checkout.QRY004, checkout.CMD014, checkout.CMD015]
+    concepts: [checkout.CN003, checkout.CN004]
+    resolved: true
+    resolution: >
+      SearchCartRules returns the cart rules whose conditions this cart satisfies;
+      ApplyCartRuleToCart and RemoveCartRuleFromCart maintain the applied set, and
+      CartRuleNotValid is the answer when a rule stops qualifying.

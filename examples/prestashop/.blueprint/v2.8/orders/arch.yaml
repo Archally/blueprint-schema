@@ -11,8 +11,11 @@ contexts:
   - id: prestashop.BC008
     name: Orders
     kind: core
+    value_stream_ref: VS001
     complexity: concurrency
+    business_model_role: revenue-generator
     evolution: product
+    model_traits: [controller, executor]
     summary: Order lifecycle - placement, state management, cancellation, refund, invoice, returns, credit slips.
     owned_by:
       team: TM001
@@ -26,32 +29,30 @@ contexts:
       - Payment record tracking
     dependencies:
       - name: Checkout
-        type: events
         relationship: shared-kernel
         direction: downstream
         description: Receives cart-to-order transition. Shared cart calculation kernel.
         language_boundary: false
         bounded_context_ref: prestashop.BC003
       - name: Catalog
-        type: api
+        coupling: http
         relationship: customer-supplier
         direction: downstream
         description: Reads product data for order line items.
         bounded_context_ref: prestashop.BC002
       - name: Customers
-        type: api
+        coupling: http
         relationship: customer-supplier
         direction: downstream
         description: Reads customer and address data for order placement.
         bounded_context_ref: prestashop.BC005
       - name: Shipping
-        type: api
+        coupling: http
         relationship: customer-supplier
         direction: downstream
         description: Reads carrier and shipping cost data for fulfillment.
         bounded_context_ref: prestashop.BC010
       - name: International
-        type: api
         relationship: customer-supplier
         direction: downstream
         description: Reads currency and tax rules for order totals.
@@ -73,19 +74,21 @@ contexts:
             contract_name: exchange-rates
             slice: international
             read:
-              - international:exchangeRateSnapshot
+              - international.DOC001
           openapi:
-            output: orders/orders-api.openapi
+            contract_name: orders-api
+            slice: orders
             expose:
-              - orders:placeOrder
-              - orders:cancelOrder
-              - orders:issueStandardRefund
-              - orders:getOrderForViewing
+              - orders.CMD001
+              - orders.CMD002
+              - orders.CMD003
+              - orders.QRY001
           asyncapi:
-            output: orders/orders-events.asyncapi
+            contract_name: orders-events
+            slice: orders
             send:
-              - orders:orderPlaced
-              - orders:orderCancelled
-              - orders:orderRefunded
-              - orders:orderShipped
+              - orders.EVT001
+              - orders.EVT002
+              - orders.EVT003
+              - orders.EVT004
             brokerId: prestashop-event-bus

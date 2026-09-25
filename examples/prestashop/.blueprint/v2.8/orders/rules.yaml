@@ -30,6 +30,22 @@ structural:
       - path: "src/Core/Domain/Order/Invoice/Exception/InvoiceException.php"
         role: implementation
 
+  - id: orders.SR003
+    name: "Merchandise return must keep at least one product line"
+    description: "A merchandise return cannot be left with zero product lines. Both the single-row and the staged bulk delete refuse when the request would remove the last line, so a return always names something that is being returned."
+    logic:
+      when: "a product line is removed from a merchandise return"
+      then: "orderReturn.productLines.count >= 1"
+    modality: prohibited
+    concepts: [orders.CN007]
+    code_refs:
+      - path: "src/Adapter/OrderReturn/CommandHandler/DeleteProductFromOrderReturnHandler.php"
+        role: implementation
+      - path: "src/Adapter/OrderReturn/CommandHandler/BulkDeleteProductsFromOrderReturnHandler.php"
+        role: implementation
+      - path: "src/Core/Domain/OrderReturn/Exception/CannotDeleteLastProductFromOrderReturnException.php"
+        role: implementation
+
 classification:
   - id: orders.CR001
     name: "Order status transitions"

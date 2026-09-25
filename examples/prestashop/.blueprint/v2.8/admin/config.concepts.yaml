@@ -36,6 +36,7 @@ concepts:
       debugMode:
         id: CAT824
         description: "Whether debug mode is enabled for the store"
+        example: "false"
     code_refs:
       - path: "src/Core/Domain/Configuration/Command/SwitchDebugModeCommand.php"
         role: implementation
@@ -55,6 +56,124 @@ concepts:
       enabled:
         id: CAT826
         description: "Whether the tab is visible in the admin menu"
+        example: "true"
     code_refs:
       - path: "src/Core/Domain/Tab/Command/UpdateTabStatusByClassNameCommand.php"
         role: implementation
+
+  - id: admin.CN010
+    name: "QuickAccess"
+    stereotype: aggregate-root
+    description: "A shortcut in the back-office Quick Access menu: a localized label, the admin URL it points at, and whether it opens in a new window. It is an ObjectModel, which is why every change to one is observable by modules through the actionObjectQuickAccess* hook family. Adopted in step 08 because no slice referenced the code domain."
+    tags: [aggregate-root, back-office, navigation]
+    attributes:
+      localizedNames:
+        id: CAT1700
+        description: "Label per language id. A shortcut with no label in the employee's language shows blank in the menu."
+        example: "{1: \"New order\", 2: \"Nouvelle commande\"}"
+      link:
+        id: CAT1701
+        description: "The back-office URL the shortcut opens, stored as typed rather than resolved, so a link to a renamed controller survives as a dead shortcut."
+        example: "index.php?controller=AdminOrders&addorder"
+      newWindow:
+        id: CAT1702
+        description: "Whether the shortcut opens in a new browser window instead of the current tab."
+        example: "false"
+    code_refs:
+      - path: "src/Core/Domain/QuickAccess/Command/AddQuickAccessCommand.php"
+        role: implementation
+        description: "The three attributes are this command's three constructor arguments"
+      - path: "classes/QuickAccess.php"
+        role: model
+        description: "QuickAccessCore extends ObjectModel"
+      - path: "src/Core/Domain/QuickAccess/ValueObject/QuickAccessId.php"
+        role: model
+
+  - id: admin.CN011
+    name: "ExtraPropertyDefinition"
+    stereotype: aggregate-root
+    description: "The declaration of an additional property on a core entity: which entity carries it, its name, its type, its scope, its storage index, its validation constraints, and where it surfaces in forms, grids and the Admin API. A definition is structural, not data: registering one prepares storage for it, and deleting one can drop that storage with every value in it. Definitions may be owned by a module, in which case only their shop association may change. Adopted in step 08 because no slice referenced the code domain."
+    tags: [aggregate-root, extensibility, back-office]
+    attributes:
+      entityName:
+        id: CAT1703
+        description: "The core entity the property is attached to, in the canonical spelling the definition normalizes to (order rather than orders, sql_request rather than request_sql)."
+        example: "product"
+      propertyName:
+        id: CAT1704
+        description: "The property's own name, which becomes its storage column and its key in every API representation of the entity."
+        example: "warrantyMonths"
+      type:
+        id: CAT1705
+        description: "One of int, bool, string, float, date, html, json, choice. It decides the storage column type, so changing it on a live definition is a destructive change the handler refuses."
+        example: "int"
+      scope:
+        id: CAT1706
+        description: "Whether one value is stored for the entity (common), one per language (lang), or one per shop (shop). Changing scope moves the value between tables, which is why a scope conflict is its own registration failure."
+        example: "common"
+      constraints:
+        id: CAT1707
+        description: "Validation constraints in a one-per-line DSL, parsed at command construction so an unparseable line is refused before anything is stored."
+        example: "NotBlank\nLength(min: 2, max: 64)"
+    code_refs:
+      - path: "src/Core/ExtraProperty/Definition/ExtraPropertyDefinition.php"
+        role: model
+        description: "A final class with the canonical entity-name and table maps, not an ObjectModel"
+      - path: "src/Core/Domain/ExtraProperty/Command/AddExtraPropertyDefinitionCommand.php"
+        role: implementation
+        description: "Every attribute above is one of this command's constructor arguments"
+      - path: "src/Core/ExtraProperty/Definition/ExtraPropertyDefinitionRepository.php"
+        role: implementation
+
+  - id: admin.CN012
+    name: "BusinessEntity"
+    stereotype: aggregate-root
+    description: "A B2B account: a trading company that buys through the shop, with a legal name, an optional external reference to the merchant's own ERP, a customer group, billing and shipping addresses, identifiers, and an approval status. It is a Doctrine entity with soft deletion, not an ObjectModel, so no module hook observes it."
+    tags: [aggregate-root, b2b]
+    attributes:
+      name:
+        id: CAT1708
+        description: "The trading name shown in the back office and on the account."
+        example: "Northwind Supplies"
+      legalName:
+        id: CAT1709
+        description: "The registered company name, kept apart from the trading name because invoices must carry the registered one."
+        example: "Northwind Supplies Ltd"
+      status:
+        id: CAT1710
+        description: "Approval state: pending, active, inactive or rejected. A new entity is normally pending, which is what GetPendingBusinessEntitiesCount counts."
+        example: "pending"
+      deliveryAuthorized:
+        id: CAT1711
+        description: "Whether the entity may receive deliveries. Separate from status so an approved account can still be blocked from shipping."
+        example: "false"
+      externalRef:
+        id: CAT1712
+        description: "The merchant's own reference for this company, carried so an ERP can reconcile its records with the shop's."
+        example: "ERP-CUST-00417"
+    code_refs:
+      - path: "src/PrestaShopBundle/Entity/B2B/BusinessEntity.php"
+        role: model
+      - path: "src/Core/Domain/BusinessEntity/Command/AddBusinessEntityCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/BusinessEntity/ValueObject/BusinessEntityBillingAddress.php"
+        role: model
+      - path: "src/PrestaShopBundle/Entity/Repository/BusinessEntityRepository.php"
+        role: implementation
+
+enumerations:
+  - id: admin.EN002
+    name: "BusinessEntityStatus"
+    description: "The approval state of a B2B account. The enum declares four cases and the code constrains no transition between them, so any status may be set from any other; the model states the values and does not invent a state machine the code does not enforce."
+    values:
+      - name: pending
+        description: "Registered and awaiting an administrator's decision. This is the value GetPendingBusinessEntitiesCount counts."
+      - name: active
+        description: "Approved and able to trade."
+      - name: inactive
+        description: "Approved once and currently suspended."
+      - name: rejected
+        description: "Refused. Kept rather than deleted so the refusal is on record."
+    code_refs:
+      - path: "src/PrestaShopBundle/Entity/Enum/BusinessEntityStatus.php"
+        role: model

@@ -14,27 +14,35 @@ concepts:
       customerId:
         id: CAT300
         description: "Unique customer identifier"
+        example: "42"
       email:
         id: CAT301
         description: "Email address - unique per shop, used for authentication"
+        example: "jean.dupont@example.com"
       firstName:
         id: CAT302
         description: "Customer first name"
+        example: "Jean"
       lastName:
         id: CAT303
         description: "Customer last name"
+        example: "Dupont"
       isGuest:
         id: CAT304
         description: "Whether this is a guest account (no password, checkout-only)"
+        example: "false"
       active:
         id: CAT305
         description: "Whether the account is enabled"
+        example: "true"
       newsletter:
         id: CAT306
         description: "Newsletter subscription opt-in status"
+        example: "true"
       defaultGroupId:
         id: CAT307
         description: "Reference to the customer's default group (determines pricing and display)"
+        example: "3"
     code_refs:
       - path: "src/Core/Domain/Customer/Command/AddCustomerCommand.php"
         role: implementation
@@ -49,18 +57,23 @@ concepts:
       groupId:
         id: CAT308
         description: "Unique group identifier"
+        example: "3"
       name:
         id: CAT309
         description: "Localized group display name"
+        example: "Customer"
       reductionPercent:
         id: CAT310
         description: "Default discount percentage for group members (0-100)"
+        example: "5.00"
       displayPriceTaxExcluded:
         id: CAT311
         description: "Whether prices are shown tax-excluded for this group"
+        example: "false"
       showPrice:
         id: CAT312
         description: "Whether prices are visible to this group"
+        example: "true"
     code_refs:
       - path: "src/Core/Domain/Customer/Group/Command/AddCustomerGroupCommand.php"
         role: implementation
@@ -73,12 +86,15 @@ concepts:
       titleId:
         id: CAT313
         description: "Unique title identifier"
+        example: "1"
       name:
         id: CAT314
         description: "Localized title label"
+        example: "Mr"
       gender:
         id: CAT315
         description: "Associated gender type"
+        example: "0"
     code_refs:
       - path: "src/Core/Domain/Title/Command/AddTitleCommand.php"
         role: implementation
@@ -145,9 +161,9 @@ enumerations:
     description: "Gender types associated with titles."
     values:
       - name: male
-        description: "Male gender."
+        description: "Gender type 0 in the Title value object. A title such as Mr is bound to a gender type, and the binding is what picks the salutation in an order email."
       - name: female
-        description: "Female gender."
+        description: "Gender type 1. Titles such as Mrs and Ms both bind here, so the type is coarser than the title a shopper picked."
       - name: neutral
         description: "Gender-neutral or unspecified."
 
@@ -161,7 +177,7 @@ enumerations:
         description: "Prices shown without tax."
 
 associations:
-  - id: customers.AS001
+  - id: customers.ASC001
     subject: customers.CN001
     predicate: depends-on
     object: customers.CN002

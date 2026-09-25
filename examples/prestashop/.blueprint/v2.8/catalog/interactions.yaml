@@ -1,0 +1,130 @@
+---
+version: "1.0.0"
+scope: catalog
+tags: [storefront, front-office]
+
+design_references:
+  design_system: "PrestaShop Classic theme (prestashop/classic ~3.1, composer.json line 61)"
+  accessibility_standard: WCAG-2.1-AA
+
+# The storefront pages of the catalog. Each one is a front controller under
+# controllers/front/, which is the only authority for what pages PrestaShop has: the Classic
+# theme is a composer package and is not in this clone, so a template name below is the
+# argument the controller passes to setTemplate and not a file this model can point at.
+#
+# Read the action descriptions with one measured fact in hand: NO front controller dispatches
+# the command bus. 0 of 39 front controllers reference a command bus, a query bus or a
+# Core/Domain command, against 58 back-office controllers that do. The storefront writes the
+# legacy ObjectModel classes directly and meets the CQRS handlers inside them. An action below
+# names the domain operation the shopper's request performs, never the adapter it travels.
+
+screens:
+  - id: catalog.SCR001
+    name: "Category page"
+    summary: "The product listing of one category, with its sort order, pagination and the facets a module contributes."
+    description: >
+      What a shopper sees after clicking a category in the menu. CategoryController extends
+      ProductListingFrontController and hands the listing to doProductSearch with the template
+      catalog/listing/category, so the page shares its whole rendering pipeline with search,
+      new products, price drops, best sales, brands and suppliers. The products themselves come
+      from Category::getProducts on the legacy ObjectModel: there is no CQRS query class behind
+      this page, which is why it carries none of the language and shop handling the back-office
+      reads carry. Faceted narrowing is not core either - it arrives from the ps_facetedsearch
+      module through the listing hooks.
+    uses_models: [MDL013, MDL004]
+    processes: [shop.PRC003]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/listing/CategoryController.php"
+        role: implementation
+        description: "The page. init resolves and guards the category (404, 410, forbidden); initContent calls doProductSearch with catalog/listing/category at line 169."
+      - path: "classes/controller/ProductListingFrontController.php"
+        role: model
+        description: "The listing pipeline every catalog listing page shares: doProductSearch at line 684, getListingLabel at line 701."
+      - path: "classes/Category.php"
+        role: implementation
+        description: "getProducts, the read the page actually performs."
+
+  - id: catalog.SCR002
+    name: "Product page"
+    summary: "One product with its images, combinations, features, attachments and its add-to-cart form."
+    description: >
+      The page a shopper decides on. ProductController is the largest front controller in
+      PrestaShop at 1874 lines: it resolves the product, guards it against the same 404, 410 and
+      forbidden cases the category page has, picks the combination from the query string,
+      refreshes the block over ajax when the shopper changes an attribute, and renders
+      catalog/product. Its add-to-cart control is not a form of its own - Link::getAddToCartURL
+      builds a link to the cart page carrying add=1, so the click leaves this page and the cart
+      controller does the work.
+    uses_models: [MDL003, MDL005, MDL006]
+    processes: [shop.PRC003]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/ProductController.php"
+        role: implementation
+        description: "The page. init at line 122, setTemplate('catalog/product') at line 166, postProcess at line 434."
+      - path: "src/Adapter/Presenter/Product/ProductLazyArray.php"
+        role: model
+        description: "Shapes what the template receives, including add_to_cart_url at lines 259 and 824."
+
+actions:
+  - id: catalog.UAC001
+    screen: catalog.SCR001
+    name: "Sort, filter and page through the listing"
+    description: >
+      Changing the sort order, the page size or a facet reloads the category page with new query
+      parameters, and the listing is read again. The read is GetCategoryProducts, which the
+      storefront performs by calling Category::getProducts directly; no command bus is involved
+      and no Admin API route serves it.
+    triggers_operations: [catalog.QRY006]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/listing/CategoryController.php"
+        role: implementation
+        description: "initContent, line 160 onward: getProductSearchQuery and doProductSearch re-run on every parameter change."
+
+  - id: catalog.UAC002
+    screen: catalog.SCR002
+    name: "Add this product to the cart"
+    description: >
+      The add-to-cart control is a link to the cart page carrying add=1, the product id and the
+      chosen combination, built by Link::getAddToCartURL. CartController receives it and calls
+      Cart::updateQty, which is the same method the AddProductToCart handler calls, so the
+      storefront and the back office perform one domain operation through two adapters.
+    triggers_operations: [checkout.CMD009]
+    implementation: as-is
+    code_refs:
+      - path: "classes/Link.php"
+        role: implementation
+        description: "getAddToCartURL, line 366: the link carries add=1 to the cart page."
+      - path: "controllers/front/CartController.php"
+        role: implementation
+        description: "updateCart, line 231: an 'add' parameter routes to processChangeProductInCart."
+
+  - id: catalog.UAC003
+    screen: catalog.SCR002
+    name: "Choose a combination"
+    description: >
+      Picking a size or a colour refreshes the product block over ajax with the combination's own
+      price, stock and images. No modeled operation covers this read: GetCombinationForEditing and
+      GetCombinationIds are back-office queries over the command bus, and the storefront resolves
+      the combination inside the controller and the presenter instead. The action is recorded with
+      no operation because that absence is the fact.
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/ProductController.php"
+        role: implementation
+        description: "The combination is read from the query string in init and the block is re-rendered over ajax."
+
+navigation:
+  - id: catalog.UNV001
+    from: catalog.SCR001
+    to: catalog.SCR002
+    condition: "Shopper clicks a product in the listing"
+    description: "The listing's product tile links to the product page. This is the one edge every catalog listing page shares, whichever listing controller rendered it."
+
+  - id: catalog.UNV002
+    from: catalog.SCR002
+    to: checkout.SCR005
+    condition: "Shopper follows the add-to-cart link"
+    description: "Add-to-cart is a link to the cart page, not an in-page form post, so adding a product is also a navigation. Link::getAddToCartURL line 366."

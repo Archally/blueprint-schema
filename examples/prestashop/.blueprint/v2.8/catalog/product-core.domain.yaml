@@ -11,9 +11,10 @@ operations:
     exchange:
       protocol: http
       endpoint:
-        path: /catalog/products
+        path: /products
         method: POST
-        group: catalog
+        group: product
+        description: "Declared as CQRSCreate in the ps_apiresources module, src/ApiPlatform/Resources/Product/Product.php, scope product_write."
     payload:
       schema: CreateProductPayload
       contentType: application/json
@@ -23,6 +24,14 @@ operations:
         description: "The product was created."
         schema: ProductResource
         contentType: application/json
+      - code: "400"
+        type: failure
+        description: "A value on the request failed the domain check before anything was written."
+        error: catalog.ERR100
+      - code: "500"
+        type: error
+        description: "The product validated but could not be written."
+        error: catalog.ERR101
     name: "AddProduct"
     description: "Create a new product with basic data (name, type, tax rules group). Product starts in draft status."
     delivery_priority: must-have
@@ -35,8 +44,15 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Product/Command/AddProductCommand.php"
         role: implementation
-      - path: "src/Core/Domain/Product/CommandHandler/AddProductHandler.php"
+      - path: "src/Core/Domain/Product/CommandHandler/AddProductHandlerInterface.php"
+        role: interface
+        description: "Handler contract the command bus resolves."
+      - path: "src/Adapter/Product/CommandHandler/AddProductHandler.php"
         role: implementation
+        description: "Concrete handler; creates the product through ProductRepository."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/Product.php"
+        role: api-spec
+        description: "CQRSCreate at POST /products, scope product_write."
 
   updateProduct:
     id: catalog.CMD002
@@ -44,9 +60,10 @@ operations:
     exchange:
       protocol: http
       endpoint:
-        path: /catalog/products/{productId}
-        method: PUT
-        group: catalog
+        path: /products/{productId}
+        method: PATCH
+        group: product
+        description: "Declared as CQRSPartialUpdate in the ps_apiresources module, src/ApiPlatform/Resources/Product/Product.php, scope product_write. The route is a PATCH, not a PUT: the command carries only the fields the caller set."
     payload:
       schema: UpdateProductPayload
       contentType: application/json
@@ -56,6 +73,14 @@ operations:
         description: "The product as stored after the update."
         schema: ProductResource
         contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No product with that id in the requested shop."
+        error: catalog.ERR001
+      - code: "500"
+        type: error
+        description: "The product exists but could not be written."
+        error: catalog.ERR102
     name: "UpdateProduct"
     description: "Update product basic information - name, description, prices, SEO, options."
     delivery_priority: must-have
@@ -65,10 +90,22 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Product/Command/UpdateProductCommand.php"
         role: implementation
+      - path: "src/Adapter/Product/CommandHandler/UpdateProductHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/Product.php"
+        role: api-spec
+        description: "CQRSPartialUpdate at PATCH /products/{productId}, scope product_write."
 
   deleteProduct:
     id: catalog.CMD003
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/{productId}
+        method: DELETE
+        group: product
+        description: "Declared as CQRSDelete in the ps_apiresources module, src/ApiPlatform/Resources/Product/Product.php, scope product_write."
     name: "DeleteProduct"
     description: "Permanently delete a product and all its combinations, images, and specific prices."
     delivery_priority: must-have
@@ -80,10 +117,25 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Product/Command/DeleteProductCommand.php"
         role: implementation
+      - path: "src/Adapter/Product/CommandHandler/DeleteProductHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/Product.php"
+        role: api-spec
+        description: "CQRSDelete at DELETE /products/{productId}, scope product_write."
+    responses:
+      - code: "404"
+        type: failure
+        description: "No product with that id in the requested shop."
+        error: catalog.ERR001
+      - code: "500"
+        type: error
+        description: "The product exists but one of its dependent records refused to go."
+        error: catalog.ERR103
 
   bulkDeleteProducts:
     id: catalog.CMD004
     kind: command
+    dispatch: inprocess
     name: "BulkDeleteProducts"
     description: "Delete multiple products in a single operation."
     delivery_priority: should-have
@@ -93,71 +145,167 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Product/Command/BulkDeleteProductCommand.php"
         role: implementation
+      - path: "src/Adapter/Product/CommandHandler/BulkDeleteProductHandler.php"
+        role: implementation
+    responses:
+      - code: "CannotBulkDeleteProductException"
+        type: error
+        description: "Some of the products were deleted and some were not; the exception carries which."
+        error: catalog.ERR105
 
   duplicateProduct:
     id: catalog.CMD005
     kind: command
+    dispatch: inprocess
     name: "DuplicateProduct"
-    description: "Create a copy of an existing product with all its data, combinations, and images."
+    description: "Copy a product with its relations. The copy is created disabled and unindexed, and its name gets a copy-of prefix, so a merchant has to finish it before shoppers see it."
     delivery_priority: should-have
     produces:
-      operations: [catalog.EVT001]
+      operations: [catalog.EVT001, catalog.EVT101]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Product/Command/DuplicateProductCommand.php"
         role: implementation
+      - path: "src/Adapter/Product/CommandHandler/DuplicateProductHandler.php"
+        role: implementation
+      - path: "src/Adapter/Product/Update/ProductDuplicator.php"
+        role: implementation
+        description: "Copies the record and its relations, then fires actionProductAdd and actionAdminDuplicateAfter."
+    responses:
+      - code: "CannotDuplicateProductException"
+        type: error
+        description: "The copy could not be completed, and PrestaShop runs this without a transaction."
+        error: catalog.ERR104
 
   updateProductStatus:
     id: catalog.CMD006
     kind: command
+    dispatch: inprocess
     name: "UpdateProductStatus"
-    description: "Enable or disable a product (toggle active/inactive)."
+    description: "Enable or disable one product. PrestaShop has no command of its own for this: the back-office toggle and the API both send UpdateProductCommand with only its active flag set, which is why this operation and UpdateProduct share a class."
     delivery_priority: must-have
     governed_by:
       - rule: catalog.CR001
     produces:
       operations: [catalog.EVT002]
       mode: all
+    responses:
+      - code: "CannotUpdateProductException"
+        type: error
+        description: "The active flag could not be written."
+        error: catalog.ERR102
+    code_refs:
+      - path: "src/Core/Domain/Product/Command/UpdateProductCommand.php"
+        role: implementation
+        description: "setActive() is the whole of this operation; there is no UpdateProductStatusCommand."
+      - path: "src/Adapter/Product/CommandHandler/UpdateProductHandler.php"
+        role: implementation
 
   bulkUpdateProductStatus:
     id: catalog.CMD007
     kind: command
+    dispatch: inprocess
     name: "BulkUpdateProductStatus"
-    description: "Enable or disable multiple products at once."
+    description: "Enable or disable several products in one back-office action. Unlike the single-product toggle this has a command of its own, because the handler writes each product with a partial update and reports the failures per product rather than as one verdict."
     delivery_priority: should-have
     produces:
       operations: [catalog.EVT008]
       mode: all
+    responses:
+      - code: "CannotBulkUpdateProductException"
+        type: error
+        description: "Some of the products changed status and some did not."
+        error: catalog.ERR105
+    code_refs:
+      - path: "src/Core/Domain/Product/Command/BulkUpdateProductStatusCommand.php"
+        role: implementation
+      - path: "src/Adapter/Product/CommandHandler/BulkUpdateProductStatusHandler.php"
+        role: implementation
 
   updateProductType:
     id: catalog.CMD008
     kind: command
+    dispatch: inprocess
     name: "UpdateProductType"
-    description: "Change product type (standard, combinations, pack, virtual). Affects available fields and behavior."
+    description: "Change a product between standard, with-combinations, pack and virtual. The type decides which of the product's other records may exist at all, so the handler removes the ones the new type cannot carry."
     delivery_priority: should-have
     produces:
       operations: [catalog.EVT002]
       mode: all
+    responses:
+      - code: "InvalidProductTypeException"
+        type: failure
+        description: "The requested type is not one a product may take, or not one this product may move to."
+        error: catalog.ERR003
+      - code: "CannotUpdateProductException"
+        type: error
+        description: "The type change could not be written."
+        error: catalog.ERR102
+    code_refs:
+      - path: "src/Core/Domain/Product/Command/UpdateProductTypeCommand.php"
+        role: implementation
+      - path: "src/Adapter/Product/CommandHandler/UpdateProductTypeHandler.php"
+        role: implementation
 
   assignProductToCategories:
     id: catalog.CMD009
     kind: command
-    name: "AssignProductToCategories"
-    description: "Set category assignments for a product. One category is designated as default."
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/{productId}/assign-to-categories
+        method: POST
+        group: product
+        description: "Declared as CQRSCreate in the ps_apiresources module, src/ApiPlatform/Resources/Product/ProductCategory.php, scope product_write."
+    payload:
+      schema: AssignProductToCategoryPayload
+      contentType: application/json
+    name: "AssignProductToCategory"
+    description: "File a product under one more category, leaving the categories it already has alone. This ADDS: replacing the whole set is SetProductCategories, and the Admin API keeps the two on different routes for that reason."
     delivery_priority: must-have
     produces:
       operations: [catalog.EVT002]
       mode: all
+    responses:
+      - code: "204"
+        type: success
+        description: "The product was filed under the category. The route returns no body."
+      - code: "500"
+        type: error
+        description: "The association could not be written."
+        error: catalog.ERR107
+    code_refs:
+      - path: "src/Core/Domain/Product/Command/AssignProductToCategoryCommand.php"
+        role: implementation
+      - path: "src/Adapter/Product/CommandHandler/AssignProductToCategoryHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductCategory.php"
+        role: api-spec
+        description: "CQRSCreate at POST /products/{productId}/assign-to-categories, scope product_write."
 
   setProductTags:
     id: catalog.CMD010
     kind: command
+    dispatch: inprocess
     name: "SetProductTags"
-    description: "Set free-form keyword tags on a product for search enhancement."
+    description: "Replace the keyword tags on a product, per language, so the storefront search can find it by words its name does not contain. One operation for the replace and the clear, as elsewhere in this file."
     delivery_priority: could-have
     produces:
       operations: [catalog.EVT002]
       mode: all
+    responses:
+      - code: "ProductNotFoundException"
+        type: failure
+        description: "No product with that id in the requested shop."
+        error: catalog.ERR001
+    code_refs:
+      - path: "src/Core/Domain/Product/Command/SetProductTagsCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Command/RemoveAllProductTagsCommand.php"
+        role: implementation
+        description: "The clearing half of the same association."
+      - path: "src/Adapter/Product/CommandHandler/SetProductTagsHandler.php"
+        role: implementation
 
   searchProducts:
     id: catalog.QRY001
@@ -165,21 +313,31 @@ operations:
     exchange:
       protocol: http
       endpoint:
-        path: /catalog/products
+        path: /products/search
         method: GET
-        group: catalog
+        group: product
+        description: "Declared as CQRSGetCollection in the ps_apiresources module, src/ApiPlatform/Resources/Product/FoundProduct.php, scope product_read. Takes phrase, resultsLimit and isoCode as required query parameters."
     responses:
       - code: "200"
         type: success
         description: "Products matching the search and its facets."
         schema: ProductListItem
         contentType: application/json
+      - code: "400"
+        type: failure
+        description: "The search was asked for with no phrase."
+        error: catalog.ERR109
     name: "SearchProducts"
-    description: "Full-text search with faceted filtering (category, price range, attributes). Backed by Elasticsearch."
+    description: "Find products by a search phrase, for the back office and the Admin API. PrestaShop runs this against its own tables; there is no search engine behind it, and the query refuses an empty phrase rather than scanning the catalog."
     delivery_priority: must-have
     code_refs:
-      - path: "src/Core/Domain/Product/Query/SearchProductsQuery.php"
+      - path: "src/Core/Domain/Product/Query/SearchProducts.php"
         role: implementation
+      - path: "src/Adapter/Product/QueryHandler/SearchProductsHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/FoundProduct.php"
+        role: api-spec
+        description: "CQRSGetCollection at GET /products/search, scope product_read."
 
   getProductDetail:
     id: catalog.QRY002
@@ -187,52 +345,746 @@ operations:
     exchange:
       protocol: http
       endpoint:
-        path: /catalog/products/{productId}
+        path: /products/{productId}
         method: GET
-        group: catalog
+        group: product
+        description: "Declared as CQRSGet in the ps_apiresources module, src/ApiPlatform/Resources/Product/Product.php, scope product_read."
     responses:
       - code: "200"
         type: success
         description: "One product in full detail."
         schema: ProductResource
         contentType: application/json
-    name: "GetProductDetail"
-    description: "Retrieve full product detail including all combinations, images, features, and computed fields."
+      - code: "404"
+        type: failure
+        description: "No product with that id, or none in the shop asked about."
+        error: catalog.ERR001
+    name: "GetProductForEditing"
+    description: "Read one product in the shape the product form and the Admin API need it: basic information, prices, options, details, shipping, SEO, stock and category information, each as its own block. The same query answers the create, update and shop-association routes, which is why they all return the product."
     delivery_priority: must-have
     code_refs:
-      - path: "src/Core/Domain/Product/Query/GetProductForEditingQuery.php"
+      - path: "src/Core/Domain/Product/Query/GetProductForEditing.php"
         role: implementation
+      - path: "src/Adapter/Product/QueryHandler/GetProductForEditingHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/Product.php"
+        role: api-spec
+        description: "CQRSGet at GET /products/{productId}, scope product_read."
 
   getProductsList:
     id: catalog.QRY009
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products
+        method: GET
+        group: product
+        description: "Declared as PaginatedList in the ps_apiresources module, src/ApiPlatform/Resources/Product/ProductList.php, scope product_read."
     name: "GetProductsList"
-    description: "List products with pagination, filters, and sorting for the back-office catalog page."
+    description: "List products with pagination, filtering and sorting, for the back-office catalog grid and for the Admin API collection route. The ONE operation in this file with no Core/Domain query class behind it: the route is served by the grid data factory directly, so there is nothing for the command bus to dispatch."
     delivery_priority: must-have
+    code_refs:
+      - path: "src/Adapter/Product/Grid/Data/Factory/ProductGridDataFactoryDecorator.php"
+        role: implementation
+        description: "Builds the rows; the route names it as its gridDataFactory."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductList.php"
+        role: api-spec
+        description: "PaginatedList at GET /products, scope product_read."
+
+  bulkDuplicateProducts:
+    id: catalog.CMD100
+    kind: command
+    dispatch: inprocess
+    name: "BulkDuplicateProducts"
+    description: "Duplicate several products in one back-office action. The handler loops over DuplicateProductCommand, so each copy is created the same way a single duplication creates one and fires the same hooks; nothing announces the batch."
+    delivery_priority: should-have
+    initiated_by: [catalog.ACT001]
+    produces:
+      operations: [catalog.EVT001, catalog.EVT101]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Product/Command/BulkDuplicateProductCommand.php"
+        role: implementation
+      - path: "src/Adapter/Product/CommandHandler/BulkDuplicateProductHandler.php"
+        role: implementation
+        description: "Loops over the ids and delegates each one to ProductDuplicator."
+    responses:
+      - code: "CannotBulkDuplicateProductException"
+        type: error
+        description: "Some of the copies were made and some were not."
+        error: catalog.ERR105
+
+  setProductCategories:
+    id: catalog.CMD101
+    kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/{productId}/categories
+        method: POST
+        group: product
+        description: "Declared as CQRSCreate in the ps_apiresources module, src/ApiPlatform/Resources/Product/ProductCategory.php, scope product_write."
+    payload:
+      schema: SetProductCategoriesPayload
+      contentType: application/json
+    responses:
+      - code: "204"
+        type: success
+        description: "The associations were replaced. The route returns no body."
+      - code: "404"
+        type: failure
+        description: "No product with that id in the requested shop."
+        error: catalog.ERR001
+    name: "SetProductCategories"
+    description: "Replace the whole set of categories a product belongs to, naming one of them the default. Writes the category_product junction only, so the Product record itself is not saved and no product hook fires."
+    delivery_priority: must-have
+    initiated_by: [catalog.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/Product/Command/SetAssociatedProductCategoriesCommand.php"
+        role: implementation
+      - path: "src/Adapter/Product/CommandHandler/SetAssociatedProductCategoriesHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductCategory.php"
+        role: api-spec
+        description: "CQRSCreate at POST /products/{productId}/categories, scope product_write."
+
+  removeAllProductCategories:
+    id: catalog.CMD102
+    kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/{productId}/categories
+        method: DELETE
+        group: product
+        description: "Declared as CQRSDelete in the ps_apiresources module, src/ApiPlatform/Resources/Product/ProductCategory.php, scope product_write."
+    responses:
+      - code: "204"
+        type: success
+        description: "Every category association was cleared. The route returns no body."
+      - code: "404"
+        type: failure
+        description: "No product with that id in the requested shop."
+        error: catalog.ERR001
+    name: "RemoveAllProductCategories"
+    description: "Clear every category association of a product. The clearing half of the same association concept SetProductCategories replaces, kept apart because the Admin API serves it on its own route and method."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/Product/Command/RemoveAllAssociatedProductCategoriesCommand.php"
+        role: implementation
+      - path: "src/Adapter/Product/CommandHandler/RemoveAllAssociatedProductCategoriesHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductCategory.php"
+        role: api-spec
+        description: "CQRSDelete at DELETE /products/{productId}/categories, scope product_write."
+
+  setProductCarriers:
+    id: catalog.CMD103
+    kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/{productId}/carriers
+        method: PUT
+        group: product
+        description: "Declared as CQRSUpdate in the ps_apiresources module, src/ApiPlatform/Resources/Product/ProductCarrier.php, scope product_write, available from PrestaShop 9.2.0."
+    payload:
+      schema: SetProductCarriersPayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The carriers that can deliver the product after the change."
+        contentType: application/json
+      - code: "400"
+        type: failure
+        description: "A carrier reference id failed the domain check."
+        error: catalog.ERR100
+      - code: "404"
+        type: failure
+        description: "No product with that id in the requested shop."
+        error: catalog.ERR001
+    name: "SetProductCarriers"
+    description: "Restrict a product to a set of carriers, addressed by carrier REFERENCE id rather than by primary key so the restriction survives a carrier being versioned. An empty set means every enabled carrier can deliver the product."
+    delivery_priority: should-have
+    initiated_by: [catalog.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/Product/Command/SetCarriersCommand.php"
+        role: implementation
+      - path: "src/Adapter/Product/CommandHandler/SetCarriersHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductCarrier.php"
+        role: api-spec
+        description: "CQRSUpdate at PUT /products/{productId}/carriers, scope product_write, from PrestaShop 9.2.0."
+
+  setRelatedProducts:
+    id: catalog.CMD104
+    kind: command
+    dispatch: inprocess
+    name: "SetRelatedProducts"
+    description: "Replace the accessory products shown alongside a product. Modelled as one operation because the code expresses the same association as a replace and a clear; RemoveAllRelatedProductsCommand is the clear."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/Product/Command/SetRelatedProductsCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Command/RemoveAllRelatedProductsCommand.php"
+        role: implementation
+        description: "The clearing half of the same association."
+      - path: "src/Adapter/Product/CommandHandler/SetRelatedProductsHandler.php"
+        role: implementation
+    responses:
+      - code: "ProductNotFoundException"
+        type: failure
+        description: "The product, or one of the related products named, does not exist."
+        error: catalog.ERR001
+
+  updateProductsPositions:
+    id: catalog.CMD105
+    kind: command
+    dispatch: inprocess
+    name: "UpdateProductsPositions"
+    description: "Reorder products inside one category by moving rows in the back-office grid. The command carries the old and new position of every moved row, not a single product, because a move shifts its neighbours too."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/Product/Command/UpdateProductsPositionsCommand.php"
+        role: implementation
+      - path: "src/Adapter/Product/CommandHandler/UpdateProductsPositionsHandler.php"
+        role: implementation
+      - path: "src/Core/Domain/Position/ValueObject/RowPosition.php"
+        role: model
+        description: "One row's move, shared with every other positionable grid."
+    responses:
+      - code: "CannotUpdateProductPositionException"
+        type: error
+        description: "The reorder could not be written, leaving the ordering as the merchant did not ask for."
+        error: catalog.ERR108
+
+  setProductShops:
+    id: catalog.CMD106
+    kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/{productId}/shops
+        method: PATCH
+        group: product
+        description: "Declared as CQRSPartialUpdate in the ps_apiresources module, src/ApiPlatform/Resources/Product/ProductShops.php, scope product_write."
+    payload:
+      schema: SetProductShopsPayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The product as stored after the shop associations changed."
+        schema: ProductResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "The product is not associated with the shop asked about, or the shop list is unusable."
+        error: catalog.ERR106
+    name: "SetProductShops"
+    description: "Set which shops of a multistore installation carry a product, copying the values of a nominated source shop into every newly associated one. The command refuses an empty shop list and a source shop outside the list."
+    delivery_priority: should-have
+    initiated_by: [catalog.ACT001]
+    code_refs:
+      - path: "src/Core/Domain/Product/Shop/Command/SetProductShopsCommand.php"
+        role: implementation
+      - path: "src/Adapter/Product/Shop/CommandHandler/SetProductShopsHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductShops.php"
+        role: api-spec
+        description: "CQRSPartialUpdate at PATCH /products/{productId}/shops, scope product_write."
+
+  getProductIsEnabled:
+    id: catalog.QRY100
+    kind: query
+    dispatch: inprocess
+    name: "GetProductIsEnabled"
+    description: "Read just the active flag of a product, without loading the rest of it. Used where a caller only needs to know whether the product may be shown."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/Product/Query/GetProductIsEnabled.php"
+        role: implementation
+
+  getRelatedProducts:
+    id: catalog.QRY101
+    kind: query
+    dispatch: inprocess
+    name: "GetRelatedProducts"
+    description: "List the accessory products attached to a product, in the display language, for the back-office related-products panel."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/Product/Query/GetRelatedProducts.php"
+        role: implementation
+
+  searchProductsForAssociation:
+    id: catalog.QRY102
+    kind: query
+    dispatch: inprocess
+    name: "SearchProductsForAssociation"
+    description: "Type-ahead product search used when a back-office form needs to point at another product. Refuses a phrase shorter than three characters and a non-positive limit, so a stray keystroke cannot scan the catalog."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Product/Query/SearchProductsForAssociation.php"
+        role: implementation
+    responses:
+      - code: "ProductConstraintException"
+        type: failure
+        description: "The phrase is shorter than three characters, or the limit is not positive."
+        error: catalog.ERR100
+
+  searchProductsForFreeGift:
+    id: catalog.QRY103
+    kind: query
+    dispatch: inprocess
+    name: "SearchProductsForFreeGift"
+    description: "The same type-ahead search narrowed to products that may be offered as a cart-rule free gift. Separate from SearchProductsForAssociation because the eligibility filter differs, not the search."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/Product/Query/SearchProductsForFreeGift.php"
+        role: implementation
+    responses:
+      - code: "ProductConstraintException"
+        type: failure
+        description: "The phrase is shorter than three characters, or the limit is not positive."
+        error: catalog.ERR100
+
+  setProductAttachments:
+    id: catalog.CMD107
+    kind: command
+    dispatch: inprocess
+    name: "SetProductAttachments"
+    description: "Replace the whole set of downloadable files attached to a product - a manual, a datasheet, a certificate. One operation for a replace and a clear, because the code expresses one association through both."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    materializes:
+      - concept: catalog.CN011
+        action: update
+    code_refs:
+      - path: "src/Core/Domain/Product/Attachment/Command/SetAssociatedProductAttachmentsCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Attachment/Command/RemoveAllAssociatedProductAttachmentsCommand.php"
+        role: implementation
+        description: "The clearing half of the same association."
+      - path: "src/Adapter/Product/Attachment/CommandHandler/SetAssociatedProductAttachmentsHandler.php"
+        role: implementation
+
+  setProductFeatureValues:
+    id: catalog.CMD108
+    kind: command
+    dispatch: inprocess
+    name: "SetProductFeatureValues"
+    description: "Replace the feature values a product carries - the rows of its specification table. A value is either one the feature already offers or a custom one typed for this product alone, which is why the command rejects a value belonging to a different feature."
+    delivery_priority: should-have
+    initiated_by: [catalog.ACT001]
+    materializes:
+      - concept: catalog.CN007
+        action: update
+    code_refs:
+      - path: "src/Core/Domain/Product/FeatureValue/Command/SetProductFeatureValuesCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/FeatureValue/Command/RemoveAllFeatureValuesFromProductCommand.php"
+        role: implementation
+        description: "The clearing half of the same association."
+      - path: "src/Adapter/Product/FeatureValue/CommandHandler/SetProductFeatureValuesHandler.php"
+        role: implementation
+    responses:
+      - code: "InvalidAssociatedFeatureException"
+        type: failure
+        description: "A value does not belong to the feature it was filed under, repeats one already there, or arrived in an unreadable shape."
+        error: catalog.ERR119
+
+  setProductCustomizationFields:
+    id: catalog.CMD109
+    kind: command
+    dispatch: inprocess
+    name: "SetProductCustomizationFields"
+    description: "Replace the fields a shopper fills in before adding the product to a cart. A field already used by an order cannot simply disappear, so the handler deletes only the fields no customization references."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    materializes:
+      - concept: catalog.CN102
+        action: update
+    # The handler writes CustomizationField records, not the product - but it then refreshes the
+    # product's `customizable`, `text_fields` and `uploadable_files` columns through
+    # ProductRepository::partialUpdate, which is an ObjectModel update and fires the product hooks.
+    produces:
+      operations: [catalog.EVT002]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Product/Customization/Command/SetProductCustomizationFieldsCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Customization/Command/RemoveAllCustomizationFieldsFromProductCommand.php"
+        role: implementation
+        description: "The clearing half of the same association."
+      - path: "src/Adapter/Product/Customization/CommandHandler/SetProductCustomizationFieldsHandler.php"
+        role: implementation
+    responses:
+      - code: "CustomizationFieldNotFoundException"
+        type: failure
+        description: "A field named for update does not belong to this product."
+        error: catalog.ERR117
+      - code: "CannotDeleteCustomizationFieldException"
+        type: error
+        description: "A field could not be written or removed; a field an order already used stays."
+        error: catalog.ERR118
+
+  setPackProducts:
+    id: catalog.CMD110
+    kind: command
+    dispatch: inprocess
+    name: "SetPackProducts"
+    description: "Replace the contents of a pack: which products it holds and how many of each. Changing the contents changes what the pack can be sold in, because a pack's availability is derived from its members rather than stored on it."
+    delivery_priority: should-have
+    initiated_by: [catalog.ACT001]
+    materializes:
+      - concept: catalog.CN101
+        action: update
+    code_refs:
+      - path: "src/Core/Domain/Product/Pack/Command/SetPackProductsCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Pack/Command/RemoveAllProductsFromPackCommand.php"
+        role: implementation
+        description: "The clearing half of the same association."
+      - path: "src/Adapter/Product/Pack/CommandHandler/SetPackProductsHandler.php"
+        role: implementation
+    responses:
+      - code: "ProductPackConstraintException"
+        type: failure
+        description: "The pack contents are not usable - a non-positive quantity, or a pack asked to contain itself."
+        error: catalog.ERR120
+
+  setProductSuppliers:
+    id: catalog.CMD111
+    kind: command
+    dispatch: inprocess
+    name: "SetProductSuppliers"
+    description: "Declare which suppliers can supply a product. This sets the association only - the reference and price each supplier charges are written by UpdateProductSuppliers afterwards. When no default supplier was set, the first supplier given becomes it."
+    delivery_priority: should-have
+    initiated_by: [catalog.ACT001]
+    materializes:
+      - concept: catalog.CN103
+        action: create
+    code_refs:
+      - path: "src/Core/Domain/Product/Supplier/Command/SetSuppliersCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Supplier/Command/RemoveAllAssociatedProductSuppliersCommand.php"
+        role: implementation
+        description: "The clearing half of the same association."
+      - path: "src/Adapter/Product/Supplier/CommandHandler/SetSuppliersHandler.php"
+        role: implementation
+    responses:
+      - code: "CannotAddProductSupplierException"
+        type: error
+        description: "The supplier association could not be written."
+        error: catalog.ERR113
+
+  updateProductSuppliers:
+    id: catalog.CMD112
+    kind: command
+    dispatch: inprocess
+    name: "UpdateProductSuppliers"
+    description: "Write each supplier's own reference for the product and the price they charge, in their currency. Requires the association SetProductSuppliers made; it fills terms in, it does not create the pairing."
+    delivery_priority: should-have
+    initiated_by: [catalog.ACT001]
+    requires: [catalog.CMD111]
+    materializes:
+      - concept: catalog.CN103
+        action: update
+    code_refs:
+      - path: "src/Core/Domain/Product/Supplier/Command/UpdateProductSuppliersCommand.php"
+        role: implementation
+      - path: "src/Adapter/Product/Supplier/CommandHandler/UpdateProductSuppliersHandler.php"
+        role: implementation
+    responses:
+      - code: "ProductSupplierNotFoundException"
+        type: failure
+        description: "The supplier is not associated with this product, so there are no terms to write."
+        error: catalog.ERR112
+      - code: "CannotUpdateProductSupplierException"
+        type: error
+        description: "The terms could not be written."
+        error: catalog.ERR113
+
+  setProductDefaultSupplier:
+    id: catalog.CMD113
+    kind: command
+    dispatch: inprocess
+    name: "SetProductDefaultSupplier"
+    description: "Name which of a product's associated suppliers is the one purchase orders default to. Modelled apart from SetProductSuppliers because it changes a choice among existing associations rather than the associations themselves."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    requires: [catalog.CMD111]
+    materializes:
+      - concept: catalog.CN103
+        action: update
+    code_refs:
+      - path: "src/Core/Domain/Product/Supplier/Command/SetProductDefaultSupplierCommand.php"
+        role: implementation
+      - path: "src/Adapter/Product/Supplier/CommandHandler/SetProductDefaultSupplierHandler.php"
+        role: implementation
+    responses:
+      - code: "ProductSupplierNotAssociatedException"
+        type: failure
+        description: "The supplier named as default does not supply this product."
+        error: catalog.ERR112
+
+  updateProductStockAvailable:
+    id: catalog.CMD114
+    kind: command
+    dispatch: inprocess
+    name: "UpdateProductStockAvailable"
+    description: "Write the stock properties that live on the separate StockAvailable record rather than on the product: the quantity itself, what the shop does when it reaches zero, the low-stock alert, the warehouse location and the availability labels. Held apart from the product because it is per shop and changes on every order."
+    delivery_priority: must-have
+    initiated_by: [catalog.ACT001]
+    reacts_to:
+      - operation: orders.EVT005
+        policy: "Move the available quantity of every ordered product when the order crosses the line between a countable state and a cancelled or errored one, so the shop's stock reflects what the order now is"
+        condition: "the logable flag or the error and cancelled membership differs between the old state and the new one, and the product is not a pack"
+    produces:
+      operations: [catalog.EVT100]
+      mode: all
+    materializes:
+      - concept: catalog.CN104
+        action: update
+    code_refs:
+      - path: "classes/order/OrderHistory.php"
+        role: implementation
+        description: "Proves the reaction to orders.EVT005. changeIdOrderState fires actionOrderStatusUpdate at line 90 and calls StockAvailable::updateQuantity at lines 203, 210, 217 and 223, one branch per direction of the transition. That static reaches StockManager::updateQuantity, which writes the same record ProductStockUpdater writes and fires the same actionUpdateQuantity; the move is not a dispatch of this command."
+      - path: "classes/stock/StockAvailable.php"
+        role: implementation
+        description: "updateQuantity at line 354 delegates to StockManager, the entry the order path uses."
+      - path: "src/Core/Domain/Product/Stock/Command/UpdateProductStockAvailableCommand.php"
+        role: implementation
+      - path: "src/Adapter/Product/Stock/CommandHandler/UpdateProductStockAvailableHandler.php"
+        role: implementation
+      - path: "src/Adapter/Product/Stock/Update/ProductStockUpdater.php"
+        role: implementation
+        description: "Writes the quantity and dispatches actionUpdateQuantity."
+    responses:
+      - code: "StockAvailableNotFoundException"
+        type: failure
+        description: "No stock record exists for this product in this shop."
+        error: catalog.ERR114
+      - code: "MovementReasonConfigurationNotFoundException"
+        type: error
+        description: "The movement cannot be recorded because the shop has no configured employee-edit reason."
+        error: catalog.ERR116
+      - code: "CannotUpdateStockAvailableException"
+        type: error
+        description: "The stock record could not be written."
+        error: catalog.ERR115
+
+  getProductAttributeGroups:
+    id: catalog.QRY104
+    kind: query
+    dispatch: inprocess
+    name: "GetProductAttributeGroups"
+    description: "List a product's attributes arranged by the group they belong to - Size, Colour - which is the shape the combination generator and the product page both need, rather than a flat attribute list."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Product/AttributeGroup/Query/GetProductAttributeGroups.php"
+        role: implementation
+      - path: "src/Adapter/Product/AttributeGroup/QueryHandler/GetProductAttributeGroupsHandler.php"
+        role: implementation
+    responses:
+      - code: "ProductNotFoundException"
+        type: failure
+        description: "No product with that id in the requested shop."
+        error: catalog.ERR001
+
+  getProductCustomizationFields:
+    id: catalog.QRY105
+    kind: query
+    dispatch: inprocess
+    name: "GetProductCustomizationFields"
+    description: "Read the fields a shopper is asked to fill in for a product, for the back-office customization tab."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/Product/Customization/Query/GetProductCustomizationFields.php"
+        role: implementation
+      - path: "src/Adapter/Product/Customization/QueryHandler/GetProductCustomizationFieldsHandler.php"
+        role: implementation
+
+  getProductFeatureValues:
+    id: catalog.QRY106
+    kind: query
+    dispatch: inprocess
+    name: "GetProductFeatureValues"
+    description: "Read the feature values attached to a product, telling a value the feature already offers apart from one typed for this product alone."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/Product/FeatureValue/Query/GetProductFeatureValues.php"
+        role: implementation
+      - path: "src/Adapter/Product/FeatureValue/QueryHandler/GetProductFeatureValuesHandler.php"
+        role: implementation
+
+  getPackedProducts:
+    id: catalog.QRY107
+    kind: query
+    dispatch: inprocess
+    name: "GetPackedProducts"
+    description: "Read what a pack contains and in what quantity, so the back office can show the pack's members and the storefront can decide whether the pack is sellable."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Product/Pack/Query/GetPackedProducts.php"
+        role: implementation
+      - path: "src/Adapter/Product/Pack/QueryHandler/GetPackedProductsHandler.php"
+        role: implementation
+
+  getAssociatedSuppliers:
+    id: catalog.QRY108
+    kind: query
+    dispatch: inprocess
+    name: "GetAssociatedSuppliers"
+    description: "Read the suppliers associated with a product together with which one is the default, for the back-office suppliers tab."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/Product/Supplier/Query/GetAssociatedSuppliers.php"
+        role: implementation
+      - path: "src/Adapter/Product/Supplier/QueryHandler/GetAssociatedSuppliersHandler.php"
+        role: implementation
+
+  getProductSupplierOptions:
+    id: catalog.QRY109
+    kind: query
+    dispatch: inprocess
+    name: "GetProductSupplierOptions"
+    description: "Read the supplier-related options of a product - its default supplier and the terms recorded against each associated supplier - as the product form needs them."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/Product/Supplier/Query/GetProductSupplierOptions.php"
+        role: implementation
+      - path: "src/Adapter/Product/QueryHandler/GetProductSupplierOptionsHandler.php"
+        role: implementation
+
+  getProductStockMovements:
+    id: catalog.QRY110
+    kind: query
+    dispatch: inprocess
+    name: "GetProductStockMovements"
+    description: "Read a product's stock history for one shop. Each row is either an edit a back-office employee made or a rolled-up range of customer orders between two such edits, so the list reads as a history rather than as one row per sale."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Product/Stock/Query/GetProductStockMovements.php"
+        role: implementation
+      - path: "src/Adapter/Product/Stock/QueryHandler/GetProductStockMovementsHandler.php"
+        role: implementation
+    responses:
+      - code: "StockAvailableNotFoundException"
+        type: failure
+        description: "No stock record exists for this product in this shop."
+        error: catalog.ERR114
+
+  getCombinationStockMovements:
+    id: catalog.QRY111
+    kind: query
+    dispatch: inprocess
+    name: "GetCombinationStockMovements"
+    description: "The same stock history read for one combination rather than for the product as a whole. Separate from GetProductStockMovements because a combination carries its own quantity, and the two lists do not sum to each other."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/Product/Stock/Query/GetCombinationStockMovements.php"
+        role: implementation
+      - path: "src/Adapter/Product/Stock/QueryHandler/GetCombinationStockMovementsHandler.php"
+        role: implementation
+    responses:
+      - code: "StockAvailableNotFoundException"
+        type: failure
+        description: "No stock record exists for this combination in this shop."
+        error: catalog.ERR114
 
   productCreated:
     id: catalog.EVT001
     kind: event
     name: "ProductCreated"
-    description: "Emitted when a new product is added. Triggers search index update."
+    description: "A product record now exists. PrestaShop has no domain events: what a module actually receives is the hook actionObjectProductAddAfter, fired by ObjectModel for every persisted class, and actionProductSave, fired by Product::add(). Note which hook is NOT fired here - actionProductAdd is registered and reads as the creation hook, but its only call site in core is the duplicator, so a module listening to it will not hear an ordinary product being created."
+    tags: ["hook:actionObjectProductAddAfter", "hook:actionProductSave"]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 615 fires actionObject<Class>AddAfter; Product extends ObjectModel, so the name resolves to actionObjectProductAddAfter."
+      - path: "classes/Product.php"
+        role: implementation
+        description: "Line 793, at the end of add(), fires actionProductSave."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The hook registry; actionProductSave is registered there, actionObjectProductAddAfter is fired dynamically and only its generic form is."
 
   productUpdated:
     id: catalog.EVT002
     kind: event
     name: "ProductUpdated"
-    description: "Emitted on any product detail change. Triggers search re-indexing and cache invalidation."
+    description: "A product record changed. Three hooks carry it, and a module usually listens to one: actionProductUpdate for the change itself, actionProductSave for any write including the first, and actionObjectProductUpdateAfter for modules that watch every persisted class the same way."
+    tags: ["hook:actionProductUpdate", "hook:actionProductSave", "hook:actionObjectProductUpdateAfter"]
+    code_refs:
+      - path: "classes/Product.php"
+        role: implementation
+        description: "Lines 811-812 in update() fire actionProductSave then actionProductUpdate; line 979 and two later sites fire actionProductUpdate for narrower writes."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847 fires actionObject<Class>UpdateAfter."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry: Product update, displayed after a product has been updated."
 
   productDeleted:
     id: catalog.EVT003
     kind: event
     name: "ProductDeleted"
-    description: "Emitted when a product is permanently deleted. Triggers search index removal."
+    description: "A product record is gone, along with the combinations, images and specific prices that hung off it. Carried by actionProductDelete and by the dynamic actionObjectProductDeleteAfter."
+    tags: ["hook:actionProductDelete", "hook:actionObjectProductDeleteAfter"]
+    code_refs:
+      - path: "classes/Product.php"
+        role: implementation
+        description: "Line 1284 fires actionProductDelete."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 923 fires actionObject<Class>DeleteAfter."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry: Product deletion."
 
   productBulkUpdated:
     id: catalog.EVT008
     kind: event
     name: "ProductBulkUpdated"
-    description: "Emitted after a bulk status or deletion operation completes."
+    description: "A bulk status change or bulk delete finished. NO hook is fired for this transition: PrestaShop registers no bulk hook at all, and a bulk command loops over the products firing the per-product hooks each time. So the batch is a state the back office knows about and a module cannot observe - a subscriber sees fifty products change and never learns they changed together. Kept rather than dropped, because the transition is real and its unobservability is the fact worth knowing."
+
+  productQuantityUpdated:
+    id: catalog.EVT100
+    kind: event
+    name: "ProductQuantityUpdated"
+    description: "The sellable quantity of a product or combination changed in one shop. This is the hook the stock and marketplace modules depend on, and the only one in this file dispatched through the HookDispatcher service rather than the static Hook::exec."
+    tags: ["hook:actionUpdateQuantity"]
+    code_refs:
+      - path: "src/Adapter/Product/Stock/Update/ProductStockUpdater.php"
+        role: implementation
+        description: "Line 298 dispatches actionUpdateQuantity after writing the quantity."
+      - path: "classes/stock/StockAvailable.php"
+        role: implementation
+        description: "Line 435, the legacy write path, fires the same hook."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry: Quantity update. Its wording - quantity is updated only when a customer effectively places their order - describes the storefront path, not this back-office one."
+
+  productDuplicated:
+    id: catalog.EVT101
+    kind: event
+    name: "ProductDuplicated"
+    description: "A product was copied, and the copy is disabled and unindexed until a merchant enables it. Duplication fires its own pair of hooks around the copy, plus actionProductAdd, which despite its name is fired nowhere else in core. It also fires the ordinary creation hooks, because the copy is written through Product::add() like any other product."
+    tags: ["hook:actionProductAdd", "hook:actionAdminDuplicateBefore", "hook:actionAdminDuplicateAfter"]
+    code_refs:
+      - path: "src/Adapter/Product/Update/ProductDuplicator.php"
+        role: implementation
+        description: "Line 91 fires actionAdminDuplicateBefore, line 105 actionProductAdd, line 109 actionAdminDuplicateAfter."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "All three names are registered; actionProductAdd is registered as Product creation."
 
 errors:
   productNotFound:
@@ -268,3 +1120,308 @@ errors:
     severity: error
     http_status: 422
     related_rules: [catalog.VR001]
+
+  productConstraintViolation:
+    id: catalog.ERR100
+    name: "ProductConstraintViolation"
+    description: "A value handed to a product command failed the domain's own check before anything was written - a search phrase shorter than three characters, a non-positive result limit, a malformed identifier. Raised by the command or query object itself, so it never reaches a handler."
+    category: validation
+    severity: error
+    http_status: 400
+    code_refs:
+      - path: "src/Core/Domain/Product/Exception/ProductConstraintException.php"
+        role: implementation
+
+  cannotAddProduct:
+    id: catalog.ERR101
+    name: "CannotAddProduct"
+    description: "The product passed validation but could not be written - the insert failed, or the shop association behind it did."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Product/Exception/CannotAddProductException.php"
+        role: implementation
+
+  cannotUpdateProduct:
+    id: catalog.ERR102
+    name: "CannotUpdateProduct"
+    description: "An existing product could not be written. The exception carries a code saying which part failed, which is how the duplication path reports a half-copied product."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Product/Exception/CannotUpdateProductException.php"
+        role: implementation
+
+  cannotDeleteProduct:
+    id: catalog.ERR103
+    name: "CannotDeleteProduct"
+    description: "The product exists but could not be removed, usually because one of the records that hang off it refused to go."
+    category: internal
+    severity: error
+    http_status: 500
+    related_rules: [catalog.VR002]
+    code_refs:
+      - path: "src/Core/Domain/Product/Exception/CannotDeleteProductException.php"
+        role: implementation
+
+  cannotDuplicateProduct:
+    id: catalog.ERR104
+    name: "CannotDuplicateProduct"
+    description: "A copy could not be completed. PrestaShop duplicates a product without a database transaction, so a failure here can leave the partial copy behind - the code says so in a TODO on ProductDuplicator."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Product/Exception/CannotDuplicateProductException.php"
+        role: implementation
+      - path: "src/Adapter/Product/Update/ProductDuplicator.php"
+        role: implementation
+        description: "Where the partial-copy risk is acknowledged."
+
+  bulkProductOperationFailed:
+    id: catalog.ERR105
+    name: "BulkProductOperationFailed"
+    description: "One or more products in a bulk delete, duplicate or status change failed while others succeeded. The bulk exception carries the per-product failures rather than a single verdict, because a bulk action is not atomic."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Product/Exception/BulkProductException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Exception/CannotBulkDeleteProductException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Exception/CannotBulkDeleteProductFromShopsException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Exception/CannotBulkDuplicateProductException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Exception/CannotBulkUpdateProductException.php"
+        role: implementation
+
+  productShopAssociationNotFound:
+    id: catalog.ERR106
+    name: "ProductShopAssociationNotFound"
+    description: "The product exists but not in the shop the caller asked about, or the shop list given to SetProductShops was empty or did not contain the nominated source shop. In a multistore installation the same product id means nothing without a shop."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Product/Exception/ProductShopAssociationNotFoundException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Exception/InvalidProductShopAssociationException.php"
+        role: implementation
+        description: "Raised by SetProductShopsCommand itself, before a handler runs."
+
+  cannotAssignProductToCategory:
+    id: catalog.ERR107
+    name: "CannotAssignProductToCategory"
+    description: "The product could not be filed under the requested category."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Product/Exception/CannotAssignProductToCategoryException.php"
+        role: implementation
+
+  cannotUpdateProductPosition:
+    id: catalog.ERR108
+    name: "CannotUpdateProductPosition"
+    description: "A grid reorder could not be written. A move shifts its neighbours, so a failure leaves the category's ordering in a state the merchant did not ask for."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Product/Exception/CannotUpdateProductPositionException.php"
+        role: implementation
+      - path: "src/Adapter/Product/CommandHandler/UpdateProductsPositionsHandler.php"
+        role: implementation
+        description: "The one place it is raised."
+
+  productSearchEmptyPhrase:
+    id: catalog.ERR109
+    name: "ProductSearchEmptyPhrase"
+    description: "A product search was asked for with no phrase. Raised by SearchProducts itself, so an empty box never becomes a full catalog scan."
+    category: validation
+    severity: warning
+    http_status: 400
+    code_refs:
+      - path: "src/Core/Domain/Product/Exception/ProductSearchEmptyPhraseException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Query/SearchProducts.php"
+        role: implementation
+        description: "The one place it is raised."
+
+  productOutOfStock:
+    id: catalog.ERR110
+    name: "ProductOutOfStock"
+    description: "A product, or a member of a pack, has fewer units than the caller asked for. Declared here because the exception class belongs to the product domain, but NO catalog operation raises it: every throw site is a cart or order handler, so the operations that carry it belong to the checkout and orders slices."
+    category: conflict
+    severity: error
+    http_status: 409
+    code_refs:
+      - path: "src/Core/Domain/Product/Exception/ProductOutOfStockException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Exception/PackOutOfStockException.php"
+        role: implementation
+        description: "The pack variant: a member of the pack is short, not the pack itself."
+      - path: "src/Adapter/Cart/CommandHandler/UpdateProductQuantityInCartHandler.php"
+        role: implementation
+        description: "One of the four throw sites, all of them in cart or order handlers."
+
+  productCustomizationNotFound:
+    id: catalog.ERR111
+    name: "ProductCustomizationNotFound"
+    description: "A cart line referred to a customization that no longer exists. Declared here because the exception class belongs to the product domain; the one throw site is a cart handler, so the operation that carries it belongs to the checkout slice."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Product/Exception/ProductCustomizationNotFoundException.php"
+        role: implementation
+      - path: "src/Adapter/Cart/CommandHandler/UpdateProductQuantityInCartHandler.php"
+        role: implementation
+        description: "The one throw site."
+
+  productSupplierNotFound:
+    id: catalog.ERR112
+    name: "ProductSupplierNotFound"
+    description: "The supplier is not associated with this product, or the pairing asked for does not exist. Naming a supplier that supplies nothing is a different mistake from naming one that does not exist, and the domain keeps the two apart."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Product/Supplier/Exception/ProductSupplierNotFoundException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Supplier/Exception/ProductSupplierNotAssociatedException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Supplier/Exception/InvalidProductSupplierAssociationException.php"
+        role: implementation
+
+  cannotWriteProductSupplier:
+    id: catalog.ERR113
+    name: "CannotWriteProductSupplier"
+    description: "A supplier association or its terms could not be written, removed, or bulk-removed - including a price or reference that failed the value object's own check."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Product/Supplier/Exception/CannotAddProductSupplierException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Supplier/Exception/CannotUpdateProductSupplierException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Supplier/Exception/CannotDeleteProductSupplierException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Supplier/Exception/CannotBulkDeleteProductSupplierException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Supplier/Exception/ProductSupplierConstraintException.php"
+        role: implementation
+        description: "The value-object check that precedes the write."
+
+  stockAvailableNotFound:
+    id: catalog.ERR114
+    name: "StockAvailableNotFound"
+    description: "No stock record exists for this product in this shop. Stock lives apart from the product and per shop, so a product can be perfectly valid and still have nothing to sell from."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Product/Stock/Exception/StockAvailableNotFoundException.php"
+        role: implementation
+      - path: "src/Adapter/Product/Stock/Repository/StockAvailableRepository.php"
+        role: implementation
+        description: "The one place it is raised."
+
+  cannotWriteStockAvailable:
+    id: catalog.ERR115
+    name: "CannotWriteStockAvailable"
+    description: "A stock record could not be created, updated or deleted - including a quantity or threshold that failed the domain's own check before the write."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Product/Stock/Exception/CannotAddStockAvailableException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Stock/Exception/CannotUpdateStockAvailableException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Stock/Exception/CannotDeleteStockAvailableException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Stock/Exception/ProductStockConstraintException.php"
+        role: implementation
+        description: "The value-object check that precedes the write."
+
+  movementReasonConfigurationNotFound:
+    id: catalog.ERR116
+    name: "MovementReasonConfigurationNotFound"
+    description: "A stock movement was recorded without a reason the shop knows: the configuration naming the default employee-edit reasons is missing. Without it a movement cannot be told apart from a customer order in the history."
+    category: not-found
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Product/Stock/Exception/MovementReasonConfigurationNotFoundException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Stock/Exception/MovementReasonConstraintException.php"
+        role: implementation
+        description: "The value-object check on a movement reason."
+      - path: "src/Adapter/Product/Stock/Repository/MovementReasonRepository.php"
+        role: implementation
+        description: "The one place it is raised."
+
+  customizationFieldNotFound:
+    id: catalog.ERR117
+    name: "CustomizationFieldNotFound"
+    description: "The customization field asked for does not belong to this product, or no longer exists."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Product/Customization/Exception/CustomizationFieldNotFoundException.php"
+        role: implementation
+
+  cannotWriteCustomizationField:
+    id: catalog.ERR118
+    name: "CannotWriteCustomizationField"
+    description: "A customization field could not be created, updated or deleted. A field an order already used cannot be removed, which is why a replace can partly succeed."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Product/Customization/Exception/CannotAddCustomizationFieldException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Customization/Exception/CannotUpdateCustomizationFieldException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Customization/Exception/CannotDeleteCustomizationFieldException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Customization/Exception/CannotBulkDeleteCustomizationFieldException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Customization/Exception/CustomizationFieldConstraintException.php"
+        role: implementation
+        description: "The value-object check that precedes the write."
+      - path: "src/Core/Domain/Product/Customization/Exception/CustomizationConstraintException.php"
+        role: implementation
+
+  invalidProductFeatureValues:
+    id: catalog.ERR119
+    name: "InvalidProductFeatureValues"
+    description: "A feature value handed to the product does not belong to the feature it was filed under, repeats a value already associated, or arrived in a shape the command cannot read. All three are refused before anything is written."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Product/FeatureValue/Exception/InvalidAssociatedFeatureException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/FeatureValue/Exception/DuplicateFeatureValueAssociationException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/FeatureValue/Exception/InvalidProductFeatureValuesFormatException.php"
+        role: implementation
+
+  productPackConstraintViolation:
+    id: catalog.ERR120
+    name: "ProductPackConstraintViolation"
+    description: "The pack contents given are not usable - a member quantity that is not positive, or a pack asked to contain itself."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Product/Pack/Exception/ProductPackConstraintException.php"
+        role: implementation

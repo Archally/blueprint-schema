@@ -12,7 +12,7 @@ screens:
     name: "Customer List"
     summary: "Paginated list of customer accounts with search, filter by group, and bulk enable/disable/delete actions."
     uses_models: ["CustomerList"]
-    motivated_by: [customers.G001]
+    motivated_by: [customers.GL001]
 
   - id: customers.SCR002
     name: "Customer Detail"
@@ -30,7 +30,123 @@ screens:
     name: "Address Edit"
     summary: "Address creation/edit form with country-specific required field indicators."
     uses_models: ["CustomerAddressForEditing"]
-    motivated_by: [customers.G002]
+    motivated_by: [customers.GL002]
+
+  # The storefront account pages. The four screens above are back office; the six below are the
+  # shopper's own account. Every one of them writes through the form and persister classes in
+  # classes/form/, never over the command bus: 0 of 39 front controllers dispatch a command.
+  # Where an action names a domain operation below, the two paths meet inside the ObjectModel
+  # class, and the action says where.
+
+  - id: customers.SCR005
+    name: "Sign in"
+    summary: "The storefront login form, which a signed-in shopper never sees because the controller redirects first."
+    description: >
+      AuthController is 102 lines and holds no credential logic of its own: it builds a
+      CustomerLoginForm, fills it from the request and submits it. Two behaviours are worth a
+      reader's attention. checkAccess redirects an already-signed-in shopper away, to the page
+      they were heading for or to my-account, so the login page cannot be reached twice. And a
+      request carrying create_account is redirected to the registration page rather than handled
+      here, which is why sign-in and account creation are two pages in PrestaShop 9 and not two
+      halves of one form.
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/AuthController.php"
+        role: implementation
+        description: "The page. checkAccess redirects a signed-in shopper at line 22; initContent submits the login form and sets customer/authentication at line 58."
+      - path: "classes/form/CustomerLoginForm.php"
+        role: implementation
+        description: "The credential check itself, and the messages a failed sign-in produces."
+
+  - id: customers.SCR006
+    name: "Create an account"
+    summary: "The storefront registration form, which writes a Customer through the persister rather than through the AddCustomer command."
+    description: >
+      RegistrationController builds a CustomerForm with guest accounts disallowed, so this page
+      always produces a full account; a guest account comes from checkout instead. Two hooks
+      make the page extensible in ways core does not: actionSubmitAccountBefore can veto the
+      submission outright, and displayCustomerAccountFormTop lets a module add content above the
+      form. The write goes through CustomerPersister::save and reaches Customer::save, while the
+      AddCustomer command the Admin API exposes reaches Customer::add. Two adapters, one row,
+      one set of actionObjectCustomerAdd hooks.
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/RegistrationController.php"
+        role: implementation
+        description: "The page. initContent line 38: setGuestAllowed(false), the actionSubmitAccountBefore veto, and setTemplate('customer/registration')."
+      - path: "classes/form/CustomerPersister.php"
+        role: implementation
+        description: "save at line 42; the write itself is Customer::save at line 134."
+
+  - id: customers.SCR007
+    name: "My account"
+    summary: "The hub every other account page hangs off, whose tiles are largely contributed by modules."
+    description: >
+      MyAccountController is 36 lines: it sets the template customer/my-account and adds a
+      breadcrumb. The tiles a shopper sees - orders, credit slips, addresses, personal
+      information, vouchers - are rendered by the theme from links core defines, and modules add
+      more through the customer-account display hook. The page is a hub and holds no state, but
+      it is the one edge that stops the account pages being reachable only from checkout.
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/MyAccountController.php"
+        role: implementation
+        description: "The whole controller: setTemplate('customer/my-account') at line 25."
+
+  - id: customers.SCR008
+    name: "Address book"
+    summary: "The shopper's saved addresses, listed with an add control and per-address edit and delete."
+    description: >
+      AddressesController is 55 lines and reads nothing itself: the addresses come from the
+      customer account variables the front controller already assigns, and the page only sets
+      customer/addresses and adds its breadcrumb. Every change leaves this page for the address
+      form, which is why the list and the form are two screens.
+    uses_models: [MDL304]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/AddressesController.php"
+        role: implementation
+        description: "The whole controller: setTemplate('customer/addresses') at line 40."
+
+  - id: customers.SCR009
+    name: "Address form"
+    summary: "One address, created or edited through a form whose fields depend on the chosen country."
+    description: >
+      AddressController serves creation and editing with the same form and the same submit
+      handler: it loads an address when id_address is present and does not otherwise, then
+      submits regardless, which is why one page covers both. The field set is not fixed - the
+      form asks the country for its own required fields, so a shopper switching country sees the
+      form change. Deletion happens here too, and is refused outright while the address is the
+      delivery or invoice address of the current cart, with a message saying so.
+    uses_models: [MDL304]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/AddressController.php"
+        role: implementation
+        description: "The page. postProcess line 39: load by id, submit, then the delete branch with the in-cart refusal at line 74."
+      - path: "classes/form/CustomerAddressPersister.php"
+        role: implementation
+        description: "save at line 42 writes through Address::save at line 69; delete is the path the page's delete branch takes."
+
+  - id: customers.SCR010
+    name: "Personal information"
+    summary: "Where a shopper edits their own name, email, birthday and consents, and changes their password."
+    description: >
+      IdentityController fills a CustomerForm from the signed-in customer and writes it back
+      through the same persister the registration page uses. It differs from registration in
+      what it asks for: the formatter is told to ask for a new password and, where the shop
+      requires it, for the current one, and the partner-optin field is required or not according
+      to the shop's own configuration. The domain operation is EditCustomer, which the back
+      office reaches over the command bus and this page reaches through Customer::save.
+    uses_models: [MDL302]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/IdentityController.php"
+        role: implementation
+        description: "The page. initContent line 24: the formatter's password and optin settings, then submit."
+      - path: "classes/form/CustomerPersister.php"
+        role: implementation
+        description: "The update path, Customer::save at line 213."
 
 actions:
   - id: customers.UAC001
@@ -57,6 +173,82 @@ actions:
     description: "Enable or disable selected customers in bulk."
     triggers_operations: [customers.CMD004, customers.CMD005]
 
+  - id: customers.UAC005
+    screen: customers.SCR006
+    name: "Create my account"
+    description: >
+      Submitting the registration form performs AddCustomer, the same domain operation the Admin
+      API's POST /customers performs, by a different route: CustomerPersister::save writes
+      through Customer::save while the command's handler writes through Customer::add. Before
+      anything is written, actionSubmitAccountBefore is fired and any module may veto the
+      submission, which is a real extension point and not a formality.
+    triggers_operations: [customers.CMD001]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/RegistrationController.php"
+        role: implementation
+        description: "initContent, line 45 onward: the hook veto, then CustomerForm::submit."
+
+  - id: customers.UAC006
+    screen: customers.SCR010
+    name: "Update my personal information"
+    description: >
+      Saving the identity form performs EditCustomer through CustomerPersister::save. When the
+      shop requires it, the current password must be supplied as well as the new one; the
+      controller sets that on the formatter rather than deciding it itself, so the requirement
+      follows the shop's configuration.
+    triggers_operations: [customers.CMD002]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/IdentityController.php"
+        role: implementation
+        description: "initContent, line 37 onward: fillWith then submit."
+
+  - id: customers.UAC007
+    screen: customers.SCR009
+    name: "Save this address"
+    description: >
+      One control covers both cases. With an id_address in the request the form was loaded from
+      that address and the save performs EditCustomerAddress; without one it performs
+      AddCustomerAddress. The controller does not branch on which - it submits and then reports
+      "updated" or "added" from the same id it loaded with.
+    triggers_operations: [customers.CMD012, customers.CMD013]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/AddressController.php"
+        role: implementation
+        description: "postProcess, lines 41 to 64: load by id, submit, then the message chosen by whether an id was present."
+
+  - id: customers.UAC008
+    screen: customers.SCR009
+    name: "Delete this address"
+    description: >
+      Deletion performs DeleteAddress, and carries one guard the Admin API route does not: an
+      address that is the current cart's delivery or invoice address is refused, because
+      removing it would leave the cart pointing at nothing. The refusal is a message on the
+      page, not an exception.
+    triggers_operations: [customers.CMD014]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/AddressController.php"
+        role: implementation
+        description: "postProcess, line 71 onward: the in-cart refusal, then CustomerAddressPersister::delete."
+
+  - id: customers.UAC009
+    screen: customers.SCR005
+    name: "Sign in"
+    description: >
+      Submitting the login form checks the credentials and opens a session. No modeled operation
+      covers it: authentication is not among the CQRS domains, there is no
+      Core/Domain/Customer command for signing in, and the Admin API authenticates its own
+      clients by OAuth rather than through this form. The action is recorded with no operation
+      because that absence is the fact a reader needs.
+    implementation: as-is
+    code_refs:
+      - path: "classes/form/CustomerLoginForm.php"
+        role: implementation
+        description: "The credential check and the session the storefront opens on success."
+
 navigation:
   - id: customers.UNV001
     from: customers.SCR001
@@ -69,3 +261,33 @@ navigation:
     to: customers.SCR004
     condition: "User clicks 'Add Address' or address row"
     description: "Navigate to address form."
+
+  - id: customers.UNV003
+    from: customers.SCR005
+    to: customers.SCR006
+    condition: "Shopper submits the sign-in page with create_account"
+    description: "AuthController does not handle account creation; it redirects to the registration page, which is why the two are separate screens."
+
+  - id: customers.UNV004
+    from: customers.SCR005
+    to: customers.SCR007
+    condition: "Sign-in succeeds with no page to return to"
+    description: "The default destination after signing in is my-account; a shopper who was sent to sign in from somewhere else returns there instead."
+
+  - id: customers.UNV005
+    from: customers.SCR007
+    to: customers.SCR008
+    condition: "Shopper opens Addresses from the account hub"
+    description: "The account hub is the only page that links to every other account page; without it the address book is reachable only from checkout."
+
+  - id: customers.UNV006
+    from: customers.SCR008
+    to: customers.SCR009
+    condition: "Shopper adds a new address or opens an existing one"
+    description: "Both destinations are the same page: the form loads an address when the link carries an id and starts empty when it does not."
+
+  - id: customers.UNV007
+    from: customers.SCR007
+    to: customers.SCR010
+    condition: "Shopper opens Information from the account hub"
+    description: "The identity form is reached only from the hub; nothing in checkout links to it."

@@ -8,18 +8,7 @@ operations:
   issueStandardRefund:
     id: orders.CMD003
     kind: command
-    exchange:
-      protocol: http
-      endpoint:
-        path: /orders/{orderId}/refunds
-        method: POST
-        group: orders
-    responses:
-      - code: "200"
-        type: success
-        description: "The order as it stands after the refund."
-        schema: OrderResource
-        contentType: application/json
+    dispatch: inprocess
     name: "IssueStandardRefund"
     description: "Process a full refund for an order. Generates a credit slip and optionally re-stocks returned products."
     delivery_priority: must-have
@@ -36,14 +25,17 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Order/Command/IssueStandardRefundCommand.php"
         role: implementation
-      - path: "src/Core/Domain/Order/CommandHandler/IssueStandardRefundHandler.php"
+      - path: "src/Core/Domain/Order/Command/AbstractRefundCommand.php"
+        role: model
+        description: "Shared base of the three refund commands: it carries the order, the per-line refund amounts and the restock, credit-slip and voucher options, and validates them"
+      - path: "src/Adapter/Order/CommandHandler/IssueStandardRefundHandler.php"
         role: implementation
 
   issuePartialRefund:
     id: orders.CMD015
     kind: command
+    dispatch: inprocess
     idempotent: true
-    idempotency_key: "$.body.orderId+$.body.orderDetailId"
     name: "IssuePartialRefund"
     description: "Process a partial refund for specific order lines or a custom amount. Generates a credit slip with the partial amount."
     delivery_priority: must-have
@@ -61,12 +53,16 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Order/Command/IssuePartialRefundCommand.php"
         role: implementation
-      - path: "src/Core/Domain/Order/CommandHandler/IssuePartialRefundHandler.php"
+      - path: "src/Core/Domain/Order/Command/AbstractRefundCommand.php"
+        role: model
+        description: "Shared base of the three refund commands: it carries the order, the per-line refund amounts and the restock, credit-slip and voucher options, and validates them"
+      - path: "src/Adapter/Order/CommandHandler/IssuePartialRefundHandler.php"
         role: implementation
 
   issueReturnProduct:
     id: orders.CMD016
     kind: command
+    dispatch: inprocess
     name: "IssueReturnProduct"
     description: "Process a product return with refund. Combines the return tracking with credit slip generation in a single operation."
     delivery_priority: must-have
@@ -83,7 +79,10 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Order/Command/IssueReturnProductCommand.php"
         role: implementation
-      - path: "src/Core/Domain/Order/CommandHandler/IssueReturnProductHandler.php"
+      - path: "src/Core/Domain/Order/Command/AbstractRefundCommand.php"
+        role: model
+        description: "Shared base of the three refund commands: it carries the order, the per-line refund amounts and the restock, credit-slip and voucher options, and validates them"
+      - path: "src/Adapter/Order/CommandHandler/IssueReturnProductHandler.php"
         role: implementation
 
   # --- Events ---
@@ -92,13 +91,49 @@ operations:
     id: orders.EVT003
     kind: event
     name: "OrderRefunded"
-    description: "Emitted after a refund (standard, partial, or return) is processed by the payment gateway."
+    description: >
+      A refund has been applied to an order. PrestaShop publishes it as the hook
+      actionProductCancel, handed the action that says which of the three refund paths ran -
+      STANDARD_REFUND, PARTIAL_REFUND or RETURN_PRODUCT. The old description said the payment
+      gateway had processed it; it has not. PrestaShop cancels the quantities, restocks them if
+      asked and writes a credit slip, and returning the money to the customer is left to the
+      merchant or to a payment module listening on this hook.
+    tags: [hook:actionProductCancel]
+    code_refs:
+      - path: "src/Adapter/Order/CommandHandler/IssueStandardRefundHandler.php"
+        role: implementation
+        description: "Fires actionProductCancel with CancellationActionType::STANDARD_REFUND"
+      - path: "src/Adapter/Order/CommandHandler/IssuePartialRefundHandler.php"
+        role: implementation
+        description: "Fires actionProductCancel with CancellationActionType::PARTIAL_REFUND"
+      - path: "src/Adapter/Order/CommandHandler/IssueReturnProductHandler.php"
+        role: implementation
+        description: "Fires actionProductCancel with CancellationActionType::RETURN_PRODUCT"
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The hook registry entry for actionProductCancel"
 
   creditSlipGenerated:
     id: orders.EVT006
     kind: event
     name: "CreditSlipGenerated"
-    description: "Emitted when a credit slip document is created as a side effect of a refund operation."
+    description: >
+      A credit slip has been written for a refund. PrestaShop publishes this as the hook
+      actionOrderSlipAdd, fired by OrderSlipCreator once the slip exists, and hands subscribers
+      the order, the refunded product list and the quantities, which is what an accounting or
+      invoicing module needs. The slip row also fires actionObjectOrderSlipAddAfter through
+      ObjectModel, with the row alone.
+    tags: [hook:actionOrderSlipAdd, hook:actionObjectOrderSlipAddAfter]
+    code_refs:
+      - path: "src/Adapter/Order/Refund/OrderSlipCreator.php"
+        role: implementation
+        description: "Line 93 fires actionOrderSlipAdd, scoped to the shop the order belongs to"
+      - path: "classes/order/OrderSlip.php"
+        role: implementation
+        description: "OrderSlipCore extends ObjectModel, which supplies the actionObjectOrderSlipAddAfter name"
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The hook registry entry for actionOrderSlipAdd"
 
 errors:
   refundExceedsTotal:
@@ -108,7 +143,13 @@ errors:
     category: validation
     severity: error
     http_status: 422
-    related_rules: [orders.VR002]
+    related_rules: [orders.VR002, orders.VR004]
+    code_refs:
+      - path: "src/Core/Domain/Order/Exception/InvalidRefundException.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Exception/InvalidAmountException.php"
+        role: implementation
+        description: "Raised by AbstractRefundCommand when a per-line amount is not a usable decimal"
 
   insufficientStock:
     id: orders.ERR001
@@ -117,3 +158,31 @@ errors:
     category: validation
     severity: error
     http_status: 409
+    code_refs:
+      - path: "src/Core/Domain/Order/Exception/InvalidProductQuantityException.php"
+        role: implementation
+
+  cannotCancelProduct:
+    id: orders.ERR016
+    name: "CannotCancelProduct"
+    description: "The quantity being cancelled or returned is not one the line can give back: more than was ordered, more than is still uncancelled, or zero. Every refund path runs the same check, because a refund in PrestaShop is a cancellation of quantity plus a credit slip."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Order/Exception/InvalidCancelProductException.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Exception/CancelProductFromOrderException.php"
+        role: implementation
+
+  returnProductDisabled:
+    id: orders.ERR017
+    name: "ReturnProductDisabled"
+    description: "Merchandise returns are switched off for this shop, so the return-and-refund path is unavailable even though the order would otherwise qualify. A configuration answer, not a fault in the request."
+    category: conflict
+    severity: error
+    http_status: 409
+    related_rules: [orders.VR003]
+    code_refs:
+      - path: "src/Core/Domain/Order/Exception/ReturnProductDisabledException.php"
+        role: implementation

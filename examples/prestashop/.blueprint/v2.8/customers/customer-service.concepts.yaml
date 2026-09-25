@@ -14,15 +14,19 @@ concepts:
       threadId:
         id: CAT325
         description: "Unique thread identifier"
+        example: "501"
       subject:
         id: CAT326
         description: "Thread subject line"
+        example: "Where is my order 1043?"
       status:
         id: CAT327
         description: "Current thread status"
+        example: "pending_employee"
       employeeRef:
         id: CAT328
         description: "Assigned employee handling this thread"
+        example: "7"
     code_refs:
       - path: "src/Core/Domain/CustomerService/Command/ReplyToCustomerThreadCommand.php"
         role: implementation
@@ -42,7 +46,7 @@ enumerations:
         description: "Thread resolved and closed."
 
 associations:
-  - id: customers.AS003
+  - id: customers.ASC003
     subject: customers.CN001
     predicate: uses
     object: customers.CN005

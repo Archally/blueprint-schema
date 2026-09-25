@@ -11,8 +11,11 @@ contexts:
   - id: prestashop.BC002
     name: Catalog
     kind: core
+    value_stream_ref: VS001
     complexity: transformation
+    business_model_role: revenue-generator
     evolution: product
+    model_traits: [information-holder, structurer, executor]
     summary: Product catalog - CRUD, variants, media, categories, attributes, suppliers, search indexing.
     owned_by:
       team: TM002
@@ -27,19 +30,17 @@ contexts:
       - Search index synchronization
     dependencies:
       - name: International
-        type: api
+        coupling: http
         relationship: customer-supplier
         direction: downstream
         description: Consumes currency, tax, and language data for product pricing and localization.
         bounded_context_ref: prestashop.BC006
       - name: Modules
-        type: events
         relationship: open-host-service
         direction: upstream
         description: Exposes hooks for module-driven catalog extensions.
         bounded_context_ref: prestashop.BC007
       - name: Shop
-        type: shared-db
         relationship: conformist
         direction: downstream
         description: >-
@@ -66,24 +67,26 @@ contexts:
             # the open-host-service the context declares above: exposing a hook IS calling
             # `Hook::exec` where the extension belongs.
             consume:
-              - modules:executeHook
+              - modules.CMD010
           shareddata:
             # The dataset belongs to Shop, so the contract document is placed there rather than in
             # the reading slice - both ends name one document.
             contract_name: shop-context
             slice: shop
             read:
-              - shop:shopContextRecord
+              - shop.DOC001
           openapi:
-            output: catalog/catalog-api.openapi
+            contract_name: catalog-api
+            slice: catalog
             expose:
-              - catalog:addProduct
-              - catalog:updateProduct
-              - catalog:searchProducts
-              - catalog:getProductDetail
+              - catalog.CMD001
+              - catalog.CMD002
+              - catalog.QRY001
+              - catalog.QRY002
           asyncapi:
-            output: catalog/catalog-events.asyncapi
+            contract_name: catalog-events
+            slice: catalog
             send:
-              - catalog:productCreated
-              - catalog:productUpdated
+              - catalog.EVT001
+              - catalog.EVT002
             brokerId: prestashop-event-bus

@@ -4,28 +4,44 @@ scope: content
 
 kpis:
   - id: content.KPI001
+    domain_scope: content
     name: "SEO Metadata Coverage"
     target: ">= 95% of page types have meta entries with titles and descriptions configured"
+    description: >
+      Meta rows are per page type and per language. A page type with no row falls
+      back to the shop's default title and description, which is how a search
+      engine ends up indexing several pages under one title. Countable from the
+      meta table against the page list GetPagesForLayoutCustomization returns.
     window: "weekly"
-    goal: content.G002
+    goal: content.GL002
     thresholds:
       warning: "90%"
       critical: "80%"
 
   - id: content.KPI002
+    domain_scope: content
     name: "CMS Content Completeness"
     target: ">= 90% of CMS pages have all required fields populated (title, content, category)"
+    description: >
+      A CMS page with an empty body or no category still publishes and still
+      appears in the storefront menu. This counts the pages carrying all of title,
+      content and category, which is the state a reader of the page expects.
     window: "weekly"
-    goal: content.G001
+    goal: content.GL001
     thresholds:
       warning: "85%"
       critical: "75%"
 
   - id: content.KPI003
+    domain_scope: content
     name: "Theme Activation Success Rate"
     target: ">= 99% of theme enable operations complete without error"
+    description: >
+      EnableTheme swaps the active theme for the shop, and it is the operation
+      RSK002 is about. Failures arrive as the command's own exceptions rather than
+      as a counter, so the rate is read from the back-office log.
     window: "monthly"
-    goal: content.G003
+    goal: content.GL003
 
 slos:
   - id: content.SLO001

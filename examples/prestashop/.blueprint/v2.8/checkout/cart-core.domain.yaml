@@ -1,5 +1,12 @@
 ---
 name: "Cart Core"
+description: >-
+  The cart itself: opening one, changing the context it is priced in (addresses, carrier, currency,
+  language, delivery options), deleting it, and reading it back. One of these eleven operations is
+  served over the wire - SendCartToCustomer, at PUT /carts/{cartId}/emails - because the Cart
+  resource in ps_apiresources declares exactly that one route. Every other operation here executes
+  in the same process, through the Symfony command bus, dispatched by the back-office cart controller or by a
+  storefront controller, and carries `dispatch: inprocess` to say so.
 version: "1.0.0"
 scope: checkout
 tags: [cart, cart-lifecycle]
@@ -8,6 +15,7 @@ operations:
   createCart:
     id: checkout.CMD001
     kind: command
+    dispatch: inprocess
     name: "CreateCart"
     description: "Create an empty cart session for a customer. Used by back-office for assisted sales."
     delivery_priority: must-have
@@ -15,6 +23,9 @@ operations:
     produces:
       operations: [checkout.EVT001]
       mode: all
+    materializes:
+      - concept: checkout.CN001
+        action: create
     code_refs:
       - path: "src/Core/Domain/Cart/Command/CreateEmptyCustomerCartCommand.php"
         role: implementation
@@ -22,12 +33,28 @@ operations:
   updateCartAddresses:
     id: checkout.CMD002
     kind: command
+    responses:
+      - code: "CartUpdated"
+        type: success
+        description: "Both address slots are set."
+      - code: "InvalidAddressType"
+        type: failure
+        description: "An address was offered for a slot that is neither delivery nor invoice."
+        error: checkout.ERR012
+      - code: "CannotUpdateCart"
+        type: failure
+        description: "The cart row could not be written."
+        error: checkout.ERR003
+    dispatch: inprocess
     name: "UpdateCartAddresses"
     description: "Set or change the delivery and invoice addresses on a cart."
     delivery_priority: must-have
     produces:
       operations: [checkout.EVT002]
       mode: all
+    materializes:
+      - concept: checkout.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/Cart/Command/UpdateCartAddressesCommand.php"
         role: implementation
@@ -35,12 +62,16 @@ operations:
   updateCartCarrier:
     id: checkout.CMD003
     kind: command
+    dispatch: inprocess
     name: "UpdateCartCarrier"
     description: "Select or change the shipping carrier for the cart."
     delivery_priority: must-have
     produces:
       operations: [checkout.EVT002]
       mode: all
+    materializes:
+      - concept: checkout.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/Cart/Command/UpdateCartCarrierCommand.php"
         role: implementation
@@ -48,12 +79,16 @@ operations:
   updateCartDeliverySettings:
     id: checkout.CMD004
     kind: command
+    dispatch: inprocess
     name: "UpdateCartDeliverySettings"
     description: "Configure gift wrapping, recycled packaging, and delivery message options."
     delivery_priority: should-have
     produces:
       operations: [checkout.EVT002]
       mode: all
+    materializes:
+      - concept: checkout.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/Cart/Command/UpdateCartDeliverySettingsCommand.php"
         role: implementation
@@ -61,12 +96,16 @@ operations:
   updateCartCurrency:
     id: checkout.CMD005
     kind: command
+    dispatch: inprocess
     name: "UpdateCartCurrency"
     description: "Change the currency used for cart price calculations."
     delivery_priority: should-have
     produces:
       operations: [checkout.EVT002]
       mode: all
+    materializes:
+      - concept: checkout.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/Cart/Command/UpdateCartCurrencyCommand.php"
         role: implementation
@@ -74,12 +113,16 @@ operations:
   updateCartLanguage:
     id: checkout.CMD006
     kind: command
+    dispatch: inprocess
     name: "UpdateCartLanguage"
     description: "Change the language context for cart display and communications."
     delivery_priority: could-have
     produces:
       operations: [checkout.EVT002]
       mode: all
+    materializes:
+      - concept: checkout.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/Cart/Command/UpdateCartLanguageCommand.php"
         role: implementation
@@ -87,6 +130,19 @@ operations:
   deleteCart:
     id: checkout.CMD007
     kind: command
+    responses:
+      - code: "CartDeleted"
+        type: success
+        description: "The cart and its lines are gone."
+      - code: "CannotDeleteOrderedCart"
+        type: failure
+        description: "The cart has become an order, so it is kept as that order's record."
+        error: checkout.ERR002
+      - code: "BulkCartFailure"
+        type: failure
+        description: "At least one cart of a bulk delete could not be removed."
+        error: checkout.ERR011
+    dispatch: inprocess
     name: "DeleteCart"
     description: "Delete a cart session. Carts linked to completed orders cannot be deleted. Supports single and bulk deletion."
     delivery_priority: should-have
@@ -95,6 +151,9 @@ operations:
     produces:
       operations: [checkout.EVT003]
       mode: all
+    materializes:
+      - concept: checkout.CN001
+        action: delete
     code_refs:
       - path: "src/Core/Domain/Cart/Command/DeleteCartCommand.php"
         role: implementation
@@ -104,8 +163,27 @@ operations:
   sendCartToCustomer:
     id: checkout.CMD008
     kind: command
+    payload:
+      schema: CartEmailRequest
+      contentType: application/json
+      description: "The route declares allowEmptyBody, so the cart id in the path is the whole message."
+      required: false
+    exchange:
+      protocol: http
+      endpoint:
+        path: /carts/{cartId}/emails
+        method: PUT
+        group: cart
+    responses:
+      - code: "200"
+        type: success
+        description: "The mail was handed to the shop's mail transport."
+      - code: "404"
+        type: failure
+        description: "No cart with that id."
+        error: checkout.ERR001
     name: "SendCartToCustomer"
-    description: "Email a pre-built cart link to a customer for assisted sales."
+    description: "Email a pre-built cart link to the customer the cart belongs to, so an assisted sale started in the back office can be finished by the shopper. It is the one Cart operation the Admin API serves: ps_apiresources declares PUT /carts/{cartId}/emails and nothing else on the Cart resource."
     delivery_priority: could-have
     initiated_by: [orders.ACT004]
     produces:
@@ -114,50 +192,106 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Cart/Command/SendCartToCustomerCommand.php"
         role: implementation
+      - path: "src/Adapter/Cart/CommandHandler/SendCartToCustomerHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Cart/CartEmail.php"
+        role: api-spec
+        description: "CQRSUpdate on /carts/{cartId}/emails names SendCartToCustomerCommand; scope cart_write, allowEmptyBody true."
 
   cartCreated:
     id: checkout.EVT001
     kind: event
     name: "CartCreated"
-    description: "Emitted when a new cart session is created."
+    description: >-
+      A cart row now exists for a customer, with that customer's first address preselected for
+      delivery and invoicing. PrestaShop has no domain events: what a module actually receives is
+      actionCartSave, fired at the end of Cart::add, and actionObjectCartAddAfter, fired by
+      ObjectModel for every persisted class. The two are not interchangeable here - actionCartSave
+      is the same name the update path fires, so a module listening only to it cannot tell a new
+      cart from a changed one; actionObjectCartAddAfter is the name that distinguishes them.
+    tags: ["hook:actionCartSave", "hook:actionObjectCartAddAfter"]
+    code_refs:
+      - path: "src/Adapter/Cart/CommandHandler/CreateEmptyCustomerCartHandler.php"
+        role: implementation
+        description: "Line 68 calls save() on the cart, which routes to Cart::add for a new row."
+      - path: "classes/Cart.php"
+        role: implementation
+        description: "Line 291, at the end of add(), fires actionCartSave."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 615 fires actionObject<Class>AddAfter; Cart extends ObjectModel, so the name resolves to actionObjectCartAddAfter."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The hook registry; actionCartSave is registered at line 124. Of the dynamic family only the generic actionObjectAddAfter form is registered, never the per-class name."
 
   cartSettingsUpdated:
     id: checkout.EVT002
     kind: event
     name: "CartSettingsUpdated"
-    description: "Emitted when cart configuration changes (addresses, carrier, currency, language, delivery settings)."
+    description: >-
+      A cart's configuration changed: delivery or invoice address, carrier, currency, language or
+      delivery settings. Modules receive actionCartSave, fired at the end of Cart::update, and
+      actionObjectCartUpdateAfter from ObjectModel. Because Cart::add fires the same actionCartSave,
+      a module that needs updates only must listen to actionObjectCartUpdateAfter.
+    tags: ["hook:actionCartSave", "hook:actionObjectCartUpdateAfter"]
+    code_refs:
+      - path: "classes/Cart.php"
+        role: implementation
+        description: "Line 312, at the end of update(), fires actionCartSave."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847 fires actionObject<Class>UpdateAfter, so the name resolves to actionObjectCartUpdateAfter."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The hook registry; actionCartSave is registered at line 124."
 
   cartDeleted:
     id: checkout.EVT003
     kind: event
     name: "CartDeleted"
-    description: "Emitted when a cart session is permanently deleted."
+    description: >-
+      A cart row and its associations have been removed. Only actionObjectCartDeleteAfter carries
+      it: Cart::delete does its own association cleanup and then defers to the parent, firing no
+      hook of its own, so there is no cart-specific delete hook to listen to. A cart that has been
+      ordered cannot be deleted at all.
+    tags: ["hook:actionObjectCartDeleteAfter"]
+    code_refs:
+      - path: "src/Adapter/Cart/Repository/CartRepository.php"
+        role: implementation
+        description: "Line 55 calls deleteObjectModel, which reaches ObjectModel::delete."
+      - path: "classes/Cart.php"
+        role: implementation
+        description: "delete() at line 364 removes the cart's associations and returns parent::delete(); it fires no hook itself."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 923 fires actionObject<Class>DeleteAfter, so the name resolves to actionObjectCartDeleteAfter."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The hook registry; only the generic actionObjectDeleteAfter is registered, not the per-class name."
 
   getCartForViewing:
     id: checkout.QRY001
     kind: query
-    exchange:
-      protocol: http
-      endpoint:
-        path: /checkout/carts/{cartId}
-        method: GET
-        group: checkout
-    responses:
-      - code: "200"
-        type: success
-        description: "The cart and its lines."
-        schema: CartResource
-        contentType: application/json
+    payload:
+      schema: CartResource
+      contentType: application/json
+      description: "What the query returns: CartView, rendered as the cart resource shape."
+      required: false
+    dispatch: inprocess
     name: "GetCartForViewing"
-    description: "Retrieve cart details for back-office viewing including products, totals, applied rules, and customer info."
+    description: "Read a cart in full for the back office: its product lines, computed totals, applied cart rules and the customer it belongs to. The Admin API serves no route for it - the Cart resource in ps_apiresources declares exactly one route, PUT /carts/{cartId}/emails - so the only caller is the back-office cart view, over the command bus."
     delivery_priority: must-have
     code_refs:
       - path: "src/Core/Domain/Cart/Query/GetCartForViewing.php"
         role: implementation
+      - path: "src/Adapter/Cart/QueryHandler/GetCartForViewingHandler.php"
+        role: implementation
+        description: "Returns CartView."
 
   getCartForOrderCreation:
     id: checkout.QRY002
     kind: query
+    dispatch: inprocess
     name: "GetCartForOrderCreation"
     description: "Retrieve cart data structured for order creation - includes computed totals, addresses, and carrier selection."
     delivery_priority: must-have
@@ -165,9 +299,27 @@ operations:
       - path: "src/Core/Domain/Cart/Query/GetCartForOrderCreation.php"
         role: implementation
 
+  getCartTotalForViewing:
+    id: checkout.QRY009
+    kind: query
+    dispatch: inprocess
+    name: "GetCartTotalForViewing"
+    description: "Read a cart's order total and its products-only total, in the customer's currency and with tax included or excluded according to the customer group's display method. It exists separately from GetCartForViewing because the cart grids need one number per row and not the whole cart: CartGridDataFactory and CustomerCartGridDataFactoryDecorator call it once per listed cart."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Cart/Query/GetCartTotalForViewing.php"
+        role: implementation
+      - path: "src/Adapter/Cart/QueryHandler/GetCartTotalForViewingHandler.php"
+        role: implementation
+        description: "Sets the context cart, currency and customer, then returns CartTotalForViewing(total, totalProducts)."
+      - path: "src/Core/Grid/Data/Factory/CartGridDataFactory.php"
+        role: implementation
+        description: "Calls it once per row of the cart grid, line 77."
+
   getLastEmptyCustomerCart:
     id: checkout.QRY003
     kind: query
+    dispatch: inprocess
     name: "GetLastEmptyCustomerCart"
     description: "Find the most recent empty cart for a customer to reuse existing sessions."
     delivery_priority: should-have
@@ -209,3 +361,68 @@ errors:
     code_refs:
       - path: "src/Core/Domain/Cart/Exception/CannotUpdateCartException.php"
         role: implementation
+
+  bulkCartFailure:
+    id: checkout.ERR011
+    name: "BulkCartFailure"
+    description: "At least one cart in a bulk delete could not be removed, usually because it has become an order. The batch is not rolled back, so a caller that asked for ten deletions and got this must re-read which carts are left."
+    category: conflict
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Cart/Exception/BulkCartException.php"
+        role: implementation
+
+  invalidAddressType:
+    id: checkout.ERR012
+    name: "InvalidAddressType"
+    description: "A cart address was given a type that is neither delivery nor invoice. It guards UpdateCartAddresses, which is the one command that writes two address slots at once and could otherwise write the wrong one."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Cart/Exception/InvalidAddressTypeException.php"
+        role: implementation
+
+  cartRuleNotValid:
+    id: checkout.ERR013
+    name: "CartRuleNotValid"
+    description: "A discount was offered to a cart that does not qualify for it: it is expired, its code is wrong, the cart is below its minimum amount, it is restricted to another customer group or carrier or country, or its usage quota is spent. The message shown is the one the discount itself carries, and a module may replace it through the actionValidateCartRule hook - so what a shopper reads here is not always core's wording."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [checkout.VR001, checkout.VR002, checkout.VR003]
+    code_refs:
+      - path: "src/Core/Domain/CartRule/Exception/CartRuleValidityException.php"
+        role: implementation
+      - path: "classes/CartRule.php"
+        role: implementation
+        description: "checkValidity runs the eligibility tests and fires actionValidateCartRule at line 759, letting a module override the verdict and its message."
+
+questions:
+
+  - id: checkout.QN001
+    name: "What This Cart Costs"
+    statement: "What does this cart cost once discounts, delivery and tax are applied?"
+    category: measurement
+    priority: critical
+    bounded_context_ref: prestashop.BC003
+    answered_by: [checkout.QRY009, checkout.QRY001]
+    concepts: [checkout.CN001, checkout.CN002]
+    resolved: true
+    resolution: >
+      GetCartTotalForViewing computes the figure the shopper is shown; GetCartForViewing
+      carries the lines, the chosen carrier and the currency it was computed in.
+
+  - id: checkout.QN003
+    name: "Whether A Cart Can Become An Order"
+    statement: "Is this cart complete enough to become an order?"
+    category: behavioral
+    priority: critical
+    bounded_context_ref: prestashop.BC003
+    answered_by: [checkout.QRY002, checkout.CMD002, checkout.CMD003]
+    concepts: [checkout.CN001]
+    resolved: true
+    resolution: >
+      GetCartForOrderCreation is the readiness read: it requires a delivery address, an
+      invoice address and a carrier, which UpdateCartAddresses and UpdateCartCarrier set.

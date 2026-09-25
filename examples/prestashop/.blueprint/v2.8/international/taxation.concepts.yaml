@@ -21,6 +21,7 @@ concepts:
       enabled:
         id: CAT534
         description: "Whether this tax rate is active"
+        example: "true"
     code_refs:
       - path: "src/Core/Domain/Tax/Command/AddTaxCommand.php"
         role: implementation
@@ -40,6 +41,7 @@ concepts:
       enabled:
         id: CAT536
         description: "Whether this group is active"
+        example: "true"
     code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/Command/AddTaxRulesGroupCommand.php"
         role: implementation
@@ -51,24 +53,37 @@ concepts:
   - id: international.CN009
     name: "TaxRule"
     stereotype: entity
-    description: "A binding record within a TaxRulesGroup that maps a Tax rate to a Zone and optionally a Country/State. Determines which tax rate applies for a given geographic location. Has database identity but no independent CQRS lifecycle - managed through TaxRulesGroup configuration."
+    description: "A binding record within a TaxRulesGroup that maps a Tax rate to a country, optionally narrowed to states and a zip code range, and states how it stacks with the other rules that match the same address. It has its own commands, its own queries and its own Admin API routes, so it is edited directly rather than as a field of its group - but every one of those commands carries the group id, and its exceptions extend the group's, so a rule is only ever reached through the group that owns it."
     tags: [entity, within:international.CN008, taxation]
     attributes:
       taxId:
         id: CAT537
         description: "Reference to the Tax rate applied by this rule"
+        example: "1"
       zoneId:
         id: CAT538
         description: "Reference to the Zone this rule applies to"
+        example: "1"
       countryId:
         id: CAT539
         description: "Reference to the Country (optional - zone-level if omitted)"
+        example: "8"
       stateId:
         id: CAT540
         description: "Reference to the State (optional - country/zone-level if omitted)"
+        example: "0"
       behavior:
         id: CAT541
-        description: "Tax combination behavior when multiple rules match"
+        description: "Tax combination behavior when multiple rules match: this tax only, both combined, or one applied after another"
+        example: "1"
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/TaxRule/Command/AddTaxRuleCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/TaxRulesGroup/TaxRule/ValueObject/TaxRuleId.php"
+        role: model
+      - path: "src/Core/Domain/TaxRule/TaxRuleSettings.php"
+        role: model
+        description: "The three behavior constants: BEHAVIOR_TAX_ONLY 0, BEHAVIOR_COMBINE 1, BEHAVIOR_ONE_AFTER_ANOTHER 2. The only file in the top-level TaxRule folder."
 
 actors:
   - id: international.ACT002
@@ -89,21 +104,21 @@ actors:
           industry: "E-commerce"
 
 associations:
-  - id: international.AS005
+  - id: international.ASC005
     subject: international.CN008
     predicate: depends-on
     object: international.CN009
     cardinality: "0..*"
     description: "A TaxRulesGroup contains zero or more TaxRule bindings."
 
-  - id: international.AS006
+  - id: international.ASC006
     subject: international.CN009
     predicate: depends-on
     object: international.CN007
     cardinality: "1"
     description: "Each TaxRule references exactly one Tax rate."
 
-  - id: international.AS007
+  - id: international.ASC007
     subject: international.CN009
     predicate: depends-on
     object: international.CN006

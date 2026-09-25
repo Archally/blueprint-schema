@@ -3,7 +3,7 @@ version: "1.0.0"
 scope: customers
 
 goals:
-  - id: customers.G001
+  - id: customers.GL001
     statement: "Customer registration conversion rate above 15%"
     description: >
       Of visitors who view the registration page, at least 15% should
@@ -12,10 +12,14 @@ goals:
     summary: "High registration completion rate"
     priority: high
     measure: "Monthly registration page visitors to completed registrations ratio >= 15%"
+    affects:
+      operation_refs: [customers.CMD001, customers.CMD008]
+      concept_refs: [customers.CN001]
+      process_refs: [customers.PRC001]
     discovery_stage: committed
     certainty: probable
 
-  - id: customers.G002
+  - id: customers.GL002
     statement: "Address data quality above 95% validation pass rate"
     description: >
       Addresses entered by customers must pass country-specific validation
@@ -24,10 +28,14 @@ goals:
     summary: "High address data quality"
     priority: high
     measure: "95% of addresses pass validation on first submission"
+    affects:
+      operation_refs: [customers.CMD012, customers.CMD013, customers.CMD015]
+      concept_refs: [customers.CN004]
+      process_refs: [customers.PRC001]
     discovery_stage: validated
     certainty: confirmed
 
-  - id: customers.G003
+  - id: customers.GL003
     statement: "Customer service first response within 4 hours"
     description: >
       Customer service threads should receive a first response within
@@ -36,10 +44,14 @@ goals:
     summary: "Fast customer service response"
     priority: high
     measure: "90% of threads receive first reply within 4 business hours"
+    affects:
+      operation_refs: [customers.CMD016, customers.CMD018]
+      concept_refs: [customers.CN005]
+      process_refs: [customers.PRC002]
     discovery_stage: committed
     certainty: probable
 
-  - id: customers.G004
+  - id: customers.GL004
     statement: "Full GDPR compliance for customer data handling"
     description: >
       Customer personal data must be handled per GDPR requirements:
@@ -48,11 +60,15 @@ goals:
     summary: "GDPR compliance"
     priority: critical
     measure: "100% of GDPR deletion requests processed within 30 days"
+    affects:
+      operation_refs: [customers.CMD003, customers.CMD028]
+      concept_refs: [customers.CN001, customers.CN004]
+      process_refs: [customers.PRC001]
     discovery_stage: committed
     certainty: confirmed
 
 risks:
-  - id: customers.R001
+  - id: customers.RSK001
     statement: "Email spoofing enables duplicate account creation"
     description: >
       Without email verification, attackers can create accounts with
@@ -61,13 +77,17 @@ risks:
     summary: "Email spoofing risk"
     likelihood: medium
     impact: high
+    affects:
+      operation_refs: [customers.CMD001]
+      concept_refs: [customers.CN001]
+      process_refs: [customers.PRC001]
     mitigation: "Require email verification on registration. Rate-limit registration attempts per IP."
     goal_refs:
-      - customers.G001
+      - customers.GL001
     discovery_stage: validated
     certainty: confirmed
 
-  - id: customers.R002
+  - id: customers.RSK002
     statement: "Address validation gaps for international formats"
     description: >
       Country-specific address formats vary widely (Japanese addresses,
@@ -76,13 +96,17 @@ risks:
     summary: "International address validation"
     likelihood: high
     impact: medium
+    affects:
+      operation_refs: [customers.CMD012, customers.CMD013]
+      concept_refs: [customers.CN004]
+      process_refs: [customers.PRC001]
     mitigation: "Use country-specific validation rules. Partner with address verification services for key markets."
     goal_refs:
-      - customers.G002
+      - customers.GL002
     discovery_stage: exploring
     certainty: probable
 
-  - id: customers.R003
+  - id: customers.RSK003
     statement: "PII data breach via customer export or API"
     description: >
       Customer data exports and API endpoints expose PII (email, phone,
@@ -90,9 +114,12 @@ risks:
     summary: "PII data breach risk"
     likelihood: low
     impact: critical
+    affects:
+      operation_refs: [customers.CMD003, customers.QRY002, customers.QRY003]
+      concept_refs: [customers.CN001, customers.CN004]
     mitigation: "Encrypt PII at rest. Audit API endpoints for data exposure. Implement field-level access controls."
     goal_refs:
-      - customers.G004
+      - customers.GL004
     discovery_stage: validated
     certainty: confirmed
 
@@ -107,17 +134,39 @@ non_goals:
     certainty: confirmed
 
 trade_offs:
-  - id: customers.T001
-    choice: "Customer data deletion strategy for GDPR compliance"
-    selected: "Anonymize + soft-delete with audit trail preservation"
-    rejected: "Hard delete (simpler but loses order history integrity)"
+  - id: customers.TRO001
+    choice: "Erasing a customer against keeping them from coming back"
+    selected: "Two delete methods the merchant picks between, neither of them anonymization"
+    rejected: "A single erase that anonymizes and keeps the row"
     rationale: >
-      Hard-deleting customer records would break order history, invoice
-      references, and financial audit trails. GDPR right-to-erasure is
-      satisfied by anonymization (replacing PII with hashed placeholders)
-      while preserving the relational integrity of business records.
-    accepted_risk: "Anonymized records still occupy database space. Audit trail references anonymized IDs."
+      DeleteCustomerHandler branches on CustomerDeleteMethod.
+      allow_registration_after calls Customer::delete, which removes the row and
+      cascades to addresses (when the customer has no orders), group
+      memberships, messages, specific prices, orderless carts and customer
+      service threads. deny_registration_after keeps the row and only sets
+      deleted, so the email address stays on file and can be refused at
+      registration. The choice is therefore between erasing someone and being
+      able to keep them out, and the merchant makes it per request. No path
+      anonymizes: there is no code that replaces personal data with a
+      placeholder.
+    accepted_risk: "deny_registration_after retains personal data indefinitely for the sole purpose of blocking the address, which is a retention the merchant has to be able to justify."
     discovery_stage: committed
+    certainty: confirmed
+
+assumptions:
+  - id: customers.ASM001
+    domain_scope: customers
+    statement: "Address validation for a country is merchant-editable data, not code"
+    consequence: >
+      A country row carries need_zip_code and a zip_code_format regex, and the
+      address format string decides which fields the form asks for at all. Both
+      are rows a merchant can edit, and neither is covered by a test in this
+      repository. So a wrong regex silently rejects every valid address in that
+      market, and an empty one silently accepts anything, and in both cases the
+      only signal is a customer who gives up or a parcel that does not arrive.
+    risk_refs:
+      - customers.RSK002
+    discovery_stage: validated
     certainty: confirmed
 
 inquiries:
@@ -129,8 +178,11 @@ inquiries:
       segmentation based on purchase history, cart value, or engagement
       would enable dynamic pricing and personalized promotions.
     category: technical
+    affects:
+      operation_refs: [customers.CMD009]
+      concept_refs: [customers.CN002]
     goal_refs:
-      - customers.G001
+      - customers.GL001
     blocking: false
     status: investigating
     discovery_stage: exploring
@@ -145,10 +197,14 @@ inquiries:
       with configurable retention periods per data type would ensure
       compliance and reduce operational burden.
     category: technical
+    affects:
+      operation_refs: [customers.CMD003]
+      concept_refs: [customers.CN001]
+      process_refs: [customers.PRC001]
     goal_refs:
-      - customers.G004
+      - customers.GL004
     risk_refs:
-      - customers.R003
+      - customers.RSK003
     blocking: false
     status: investigating
     discovery_stage: exploring

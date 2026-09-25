@@ -1,4 +1,4 @@
-version: 0.1.0
+version: 0.2.0
 schemaVersion: "2.8.0"
 horizon: "next 2 quarters"
 ranking_basis:
@@ -11,115 +11,244 @@ pareto_core:
   - LP001
   - LP002
 
+# Five interventions, ranked. Every one now cites the code that makes it a leverage point rather
+# than a preference, and each says whether a roadmap work item delivers it.
+#
+# On `realized_by`: the LP -> WI linkage is authored HERE and only here. `roadmap.schema.yaml`
+# declares no leverage reference in either direction, so the schema settles the "authored once"
+# question that this step and step 15 were asked to agree - there is no second place to write it.
+# An empty `realized_by` is a legitimate state, not a gap: the schema calls
+# prioritize-before-schedule the normal early case.
+#
+# No `finding_refs` anywhere below. Quality findings (FN###) do not exist in this model yet and
+# the FN bands belong to steps 12, 13 and 20, so a reference here would either dangle or squat on
+# another step's band. The AS-IS anchor each point carries instead is a decision, a slice risk and
+# a code reference.
+#
+# No `fitness_function_refs` either, and this is a judgement rather than an omission. All twelve
+# FF### in `fitness.test-cases.yaml` check the BLUEPRINT's own shape - every command produces
+# events, all actors have personas, capabilities linked to value streams. Not one measures a
+# runtime property of PrestaShop, so none can be the guardrail on any of these interventions. The
+# three that were cited before (FF001 on LP001, FF003 on LP003, FF004 and FF005 on LP005) said
+# nothing true about what they guarded.
+
 leverage_points:
   - id: LP001
-    title: "Isolate async order processing from the interactive checkout path"
-    summary: "Move fulfillment, email, and webhooks off the request thread so checkout stays responsive under load."
-    one_thing: "Keep checkout latency flat under peak load by making order-side effects asynchronous."
+    title: "Move the order side effects off the request that places the order"
+    summary: >
+      Order placement sends mail, renders invoices and fires every listening module inside the
+      request that takes the payment. Messenger is a dependency with no transport configured.
+    one_thing: "Make checkout latency independent of how slow a mail server or a module is."
     rank: 1
     area: platform
     status: accepted
-    decision_refs: [D001]
-    fitness_function_refs: [FF001]
-    realized_by: [WI001]
+    decision_refs: [DC001, DC010]
+    risk_refs: [checkout.RSK001]
+    realized_by: []
+    advances_goals: [orders.GL001, checkout.GL001]
     advances_value_streams: [VS001]
-    capability_refs: [CAP003]
+    capability_refs: [CAP001, CAP003]
     enables: [LP003]
+    code_refs:
+      - path: "classes/PaymentModule.php"
+        role: implementation
+        description: >
+          validateOrder fires actionValidateOrderBefore (line 211), actionValidateOrder (line 608)
+          and actionPaymentModuleProductVarTplAfter (line 533), renders the invoice PDF
+          (actionPDFInvoiceRender, line 667) and calls Mail::Send (lines 767 and 1333), all inside
+          the caller's request. 1410 lines.
+      - path: "app/config/messenger.yml"
+        role: configuration
+        description: >
+          The whole Messenger configuration: one bus, one middleware, no transports. symfony/messenger
+          ~6.4 is required by composer.json line 156, so the substrate for deferring work is present
+          and unused.
     consequences_if_done:
-      - "Checkout p95 stays flat as order volume grows; a slow email provider no longer blocks the buyer."
-      - "Retries and dead-lettering become possible for fulfillment side effects."
+      - "A slow mail server or a slow module stops being a checkout latency problem."
+      - "A failed side effect can be retried or dead-lettered instead of failing the order."
     consequences_if_not_done:
-      - "Peak-season checkout latency spikes track third-party provider latency."
+      - >
+        Every module that subscribes to actionValidateOrder adds its own latency to the request the
+        shopper is waiting on, and the merchant cannot see which one.
     discovery_stage: validated
     certainty: probable
     evidence:
       - kind: codebase-analysis
-        source: "orders/order-processing.domain.yaml"
-        summary: "Fulfillment and notification run inline in the order-placement handler."
+        source: "classes/PaymentModule.php, app/config/messenger.yml"
+        date: "2026-09-19"
+        summary: >
+          Read directly: mail, PDF rendering and all order hooks are synchronous in validateOrder,
+          and Messenger declares no transport, so no handler can run out of band today.
+        confidence_impact: supports
 
   - id: LP002
-    title: "Make module boundaries explicit before adding payment providers"
-    summary: "Draw the payment/shipping module seams as bounded contexts so new providers plug in cleanly."
-    one_thing: "Turn implicit module coupling into an explicit provider seam before the next integration lands."
+    title: "Turn the payment extension point from an inherited god-class into an interface"
+    summary: >
+      A payment module extends PaymentModule, a 1410-line legacy class. The seam exists but it is
+      inheritance, so a provider inherits order creation, invoicing and mail as well as payment.
+    one_thing: "Let a new payment provider implement a contract instead of inheriting a god-class."
     rank: 2
     area: domain-architecture
     status: accepted
-    decision_refs: [D002, D003]
-    realized_by: [WI002]
-    advances_value_streams: [VS002]
-    capability_refs: [CAP004]
-    enables: [LP004]
+    decision_refs: [DC003, DC010]
+    risk_refs: [modules.RSK001]
+    realized_by: []
+    advances_goals: [checkout.GL002]
+    advances_value_streams: [VS001]
+    capability_refs: [CAP003, CAP014]
+    enables: [LP004, LP005]
+    code_refs:
+      - path: "classes/PaymentModule.php"
+        role: implementation
+        description: >
+          The abstract class every payment module extends. It resolves the paymentOptions hook by a
+          direct SQL lookup (line 975) and carries validateOrder (line 194), so a provider that only
+          wants to take money inherits the whole order-creation path.
     consequences_if_done:
-      - "A new payment provider is an additive module, not a cross-cutting edit."
+      - "A new payment provider is an additive module against a stated contract."
+      - "LP001 becomes tractable: the side effects to defer stop being inherited by every provider."
     consequences_if_not_done:
-      - "Each provider integration re-touches shared checkout code, compounding regression risk."
+      - >
+        Each provider integration re-enters shared order-creation code by inheritance, so a change
+        to validateOrder is a change to every payment module at once.
     discovery_stage: validated
     certainty: probable
+    evidence:
+      - kind: codebase-analysis
+        source: "classes/PaymentModule.php:194, :975"
+        date: "2026-09-19"
+        summary: >
+          Measured: 1410 lines, abstract, extended by payment modules; the hook name is looked up
+          from the hook table rather than declared by an interface.
+        confidence_impact: supports
 
   - id: LP003
-    title: "Add a dedicated read model for the order-history view"
-    summary: "Serve buyer/admin order history from a projection instead of joining live transactional tables."
-    one_thing: "Decouple the order-history query from the write model so reporting can't slow order writes."
+    title: "Give the order view a read model of its own"
+    summary: >
+      GetOrderForViewingHandler assembles the back-office order page from the live transactional
+      tables in 948 lines. There is no projection between the read shape and the write shape.
+    one_thing: "Separate what the order page reads from what order placement writes."
     rank: 3
     area: delivery-data
     status: proposed
-    decision_refs: [D004]
-    fitness_function_refs: [FF003]
-    realized_by: [WI003]
-    advances_value_streams: [VS001]
+    decision_refs: [DC005]
+    realized_by: []
+    advances_goals: [orders.GL003]
+    advances_value_streams: [VS001, VS002]
+    capability_refs: [CAP001]
     depends_on: [LP001]
+    code_refs:
+      - path: "src/Adapter/Order/QueryHandler/GetOrderForViewingHandler.php"
+        role: implementation
+        description: >
+          948 lines assembling the order view - products, invoices, payments, shipping, customer,
+          discounts, messages - from live tables on every request. The single largest query handler
+          in the adapter layer.
     consequences_if_done:
-      - "Heavy history/reporting reads no longer contend with order writes."
+      - "The order page's shape can change without touching the write model."
     consequences_if_not_done:
-      - "Reporting queries and checkout writes keep contending on the same tables."
+      - >
+        Every new field the order page shows is another join in a 948-line handler over the tables
+        order placement writes to.
     discovery_stage: hypothesis
     certainty: speculative
+    evidence:
+      - kind: codebase-analysis
+        source: "src/Adapter/Order/QueryHandler/GetOrderForViewingHandler.php"
+        date: "2026-09-19"
+        summary: >
+          The structural claim is measured. The performance claim that reads contend with writes is
+          NOT measured anywhere in this model or in presta-docs, which is why the certainty is
+          speculative rather than probable.
+        confidence_impact: supports
 
   - id: LP004
     title: "Introduce a pluggable shipping-rate provider seam"
-    summary: "Abstract carrier rate lookups behind a provider interface with an anticorruption layer."
-    one_thing: "Let carriers be added/swapped without editing the checkout context."
+    summary: >
+      Core computes shipping cost from carrier range rows. A carrier quoting live rates cannot
+      express itself that way, so every such integration reaches into the checkout instead.
+    one_thing: "Let a carrier be added or swapped without editing the checkout context."
     rank: 4
     area: platform
     status: proposed
-    decision_refs: [D005]
-    advances_value_streams: [VS003]
-    capability_refs: [CAP006]
-    depends_on: [LP002]
+    decision_refs: [DC010]
+    risk_refs: [shipping.RSK002]
     realized_by: [WI011]
+    advances_goals: [shipping.GL001, shipping.GL002]
+    advances_value_streams: [VS001, VS002]
+    capability_refs: [CAP010]
+    depends_on: [LP002]
+    code_refs:
+      - path: "classes/Carrier.php"
+        role: implementation
+        description: >
+          1755 lines. Delivery price comes from getDeliveryPriceByWeight (line 307) and
+          getDeliveryPriceByPrice (line 409), both reading range rows for a zone. There is no rate
+          provider interface a module could implement instead.
     consequences_if_done:
-      - "New carriers ship as configuration + a small adapter."
+      - "A new carrier ships as configuration plus a small adapter."
     consequences_if_not_done:
-      - "Carrier changes remain risky edits inside the checkout flow."
+      - "Live-rate carrier integrations keep bypassing the range tables from inside checkout."
     discovery_stage: hypothesis
     certainty: speculative
+    evidence:
+      - kind: codebase-analysis
+        source: "classes/Carrier.php:307, :409"
+        date: "2026-09-19"
+        summary: >
+          Both rate methods read zone range rows and cache them statically; neither dispatches to a
+          provider. WI011 in roadmap.yaml is the work item that would deliver the seam.
+        confidence_impact: supports
 
   - id: LP005
-    title: "Establish contract tests for the payment-webhook surface"
-    summary: "Guard the inbound payment-webhook contract with provider-state contract tests."
-    one_thing: "Catch payment-webhook contract drift in CI instead of in production reconciliation."
+    title: "Guard the payment-module contract with a fitness function"
+    summary: >
+      Nothing in CI checks that a payment module still satisfies the core's expectations. The
+      contract is a base class plus a hook, so a change to either breaks providers silently.
+    one_thing: "Catch payment-integration drift in CI instead of in production reconciliation."
     rank: 5
     area: governance
     status: proposed
-    decision_refs: [D006]
-    fitness_function_refs: [FF004, FF005]
-    # Guards the payment leg of the checkout flow: CAP003 names payment initiation, and the inbound
-    # webhook is its return leg. No work item realizes it yet - it is `proposed` / `exploring`, so an
-    # empty realization is the true state rather than a gap.
+    decision_refs: [DC003, DC010]
+    risk_refs: [modules.RSK001, modules.RSK002]
+    realized_by: []
+    advances_goals: [checkout.GL002]
     advances_value_streams: [VS001]
-    capability_refs: [CAP003]
+    capability_refs: [CAP003, CAP014]
+    depends_on: [LP002]
+    code_refs:
+      - path: "classes/PaymentModule.php"
+        role: implementation
+        description: >
+          The contract this point would guard. It is a class, not an interface, so "still satisfies
+          the contract" has no machine-readable statement today.
     consequences_if_done:
-      - "A provider changing its webhook shape fails a contract test, not a payment."
+      - "A change to the payment extension point fails a test rather than a provider."
     consequences_if_not_done:
-      - "Silent webhook drift surfaces as missed/duplicated order state."
+      - "Payment-module breakage is discovered by merchants after an upgrade."
     discovery_stage: exploring
     certainty: probable
+    evidence:
+      - kind: codebase-analysis
+        source: "classes/PaymentModule.php, src/Core/Domain (no Webhook folder)"
+        date: "2026-09-19"
+        summary: >
+          PrestaShop core has no webhook surface at all - each payment module ships its own
+          validation controller - so the guard belongs on the payment extension point, which is
+          the contract that does exist.
+        confidence_impact: supports
 
 watchlist:
-  - id: W001
+  - id: WCH001
     title: "Retire compatibility-only legacy admin controllers"
-    note: "Monitored, not yet acted on - promote to a leverage point once a slice depends on removing them."
-    decision_refs: [D007]
-  - id: W002
+    note: >
+      Monitored, not yet acted on. Promote to a leverage point once a slice depends on removing
+      them; today the legacy controllers still serve pages the CQRS layer does not cover, such as
+      store creation and shop domain settings.
+    decision_refs: [DC007]
+  - id: WCH002
     title: "Third-party module coupling growth"
-    note: "Watch for new modules reaching into checkout internals; promote if coupling crosses a threshold."
+    note: >
+      Watch for new modules reaching into checkout internals rather than through a hook. The
+      registry declares 1162 hook names and 231 more are fired from literal call sites, so a module
+      that bypasses them is choosing to.

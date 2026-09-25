@@ -11,21 +11,7 @@ operations:
   addEmployee:
     id: admin.CMD001
     kind: command
-    exchange:
-      protocol: http
-      endpoint:
-        path: /admin/employees
-        method: POST
-        group: admin
-    payload:
-      schema: CreateEmployeePayload
-      contentType: application/json
-    responses:
-      - code: "201"
-        type: success
-        description: "The employee was created."
-        schema: EmployeeResource
-        contentType: application/json
+    dispatch: inprocess
     name: "AddEmployee"
     description: "Create a new back-office employee with profile assignment, password policy, and multi-store shop association."
     delivery_priority: must-have
@@ -36,21 +22,36 @@ operations:
     governed_by:
       - rule: admin.VR001
       - rule: admin.VR002
+    materializes:
+      - concept: admin.CN001
+        action: create
     code_refs:
       - path: "src/Core/Domain/Employee/Command/AddEmployeeCommand.php"
         role: implementation
-      - path: "src/Core/Domain/Employee/CommandHandler/AddEmployeeHandler.php"
+      - path: "src/Adapter/Profile/Employee/CommandHandler/AddEmployeeHandler.php"
         role: implementation
+        description: "The concrete handler. Core/Domain holds only AddEmployeeHandlerInterface; the implementation lives under Adapter/Profile/Employee, which is where the ref used to point at nothing."
 
   employeeAdded:
     id: admin.EVT001
     kind: event
     name: "EmployeeAdded"
-    description: "Employee account created with profile and shop association."
-
+    description: "Fact: an employee account exists, with its profile, language and shop association. AddEmployeeHandler builds the legacy Employee ObjectModel and calls add(), so the dynamic hook actionObjectEmployeeAddAfter fires and modules can provision whatever a new back-office user needs."
+    tags: [hook:actionObjectEmployeeAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 615 fires actionObject<Class>AddAfter for every persisted ObjectModel"
+      - path: "classes/Employee.php"
+        role: model
+        description: "EmployeeCore extends ObjectModel, which is what makes the dynamic hook name resolve"
+      - path: "src/Adapter/Profile/Employee/CommandHandler/AddEmployeeHandler.php"
+        role: implementation
+        description: "Line 92 instantiates the legacy Employee, line 106 calls add()"
   editEmployee:
     id: admin.CMD002
     kind: command
+    dispatch: inprocess
     name: "EditEmployee"
     description: "Update an existing employee's details including profile reassignment, language, default page, and shop association."
     delivery_priority: must-have
@@ -60,6 +61,9 @@ operations:
       mode: all
     governed_by:
       - rule: admin.VR001
+    materializes:
+      - concept: admin.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/Employee/Command/EditEmployeeCommand.php"
         role: implementation
@@ -68,11 +72,19 @@ operations:
     id: admin.EVT002
     kind: event
     name: "EmployeeEdited"
-    description: "Employee details updated."
-
+    description: "Fact: an employee's details changed, which may include a profile reassignment and therefore a change in what that person can reach. The handler calls update() on the legacy Employee, so actionObjectEmployeeUpdateAfter fires."
+    tags: [hook:actionObjectEmployeeUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847 fires actionObject<Class>UpdateAfter for every persisted ObjectModel"
+      - path: "classes/Employee.php"
+        role: model
+        description: "EmployeeCore extends ObjectModel, which is what makes the dynamic hook name resolve"
   deleteEmployee:
     id: admin.CMD003
     kind: command
+    dispatch: inprocess
     name: "DeleteEmployee"
     description: "Remove an employee from the system."
     delivery_priority: must-have
@@ -80,6 +92,9 @@ operations:
     produces:
       operations: [admin.EVT003]
       mode: all
+    materializes:
+      - concept: admin.CN001
+        action: delete
     code_refs:
       - path: "src/Core/Domain/Employee/Command/DeleteEmployeeCommand.php"
         role: implementation
@@ -88,11 +103,19 @@ operations:
     id: admin.EVT003
     kind: event
     name: "EmployeeDeleted"
-    description: "Employee account removed."
-
+    description: "Fact: an employee account no longer exists, singly or as one of a bulk selection. delete() on the legacy Employee fires actionObjectEmployeeDeleteAfter once per employee, so a bulk delete of three is three hook calls."
+    tags: [hook:actionObjectEmployeeDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 923 fires actionObject<Class>DeleteAfter for every persisted ObjectModel"
+      - path: "classes/Employee.php"
+        role: model
+        description: "EmployeeCore extends ObjectModel, which is what makes the dynamic hook name resolve"
   toggleEmployeeStatus:
     id: admin.CMD004
     kind: command
+    dispatch: inprocess
     name: "ToggleEmployeeStatus"
     description: "Toggle an employee's active/inactive status."
     delivery_priority: must-have
@@ -100,6 +123,9 @@ operations:
     produces:
       operations: [admin.EVT004]
       mode: all
+    materializes:
+      - concept: admin.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/Employee/Command/ToggleEmployeeStatusCommand.php"
         role: implementation
@@ -108,11 +134,18 @@ operations:
     id: admin.EVT004
     kind: event
     name: "EmployeeStatusToggled"
-    description: "Employee active status changed."
-
+    description: "Fact: an employee was enabled or disabled. It is the same hook as an edit, because ObjectModel::toggleStatus() flips the active field and calls update(), and modules cannot tell the two apart from the hook alone."
+    tags: [hook:actionObjectEmployeeUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "toggleStatus() at line 978 sets active and calls update(), which fires actionObjectEmployeeUpdateAfter at line 847"
+      - path: "src/Adapter/Profile/Employee/CommandHandler/ToggleEmployeeStatusHandler.php"
+        role: implementation
   bulkUpdateEmployeeStatus:
     id: admin.CMD005
     kind: command
+    dispatch: inprocess
     name: "BulkUpdateEmployeeStatus"
     description: "Enable or disable multiple employees at once."
     delivery_priority: should-have
@@ -120,6 +153,9 @@ operations:
     produces:
       operations: [admin.EVT004]
       mode: all
+    materializes:
+      - concept: admin.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/Employee/Command/BulkUpdateEmployeeStatusCommand.php"
         role: implementation
@@ -127,6 +163,7 @@ operations:
   bulkDeleteEmployee:
     id: admin.CMD006
     kind: command
+    dispatch: inprocess
     name: "BulkDeleteEmployee"
     description: "Delete multiple employees at once."
     delivery_priority: should-have
@@ -134,6 +171,9 @@ operations:
     produces:
       operations: [admin.EVT003]
       mode: all
+    materializes:
+      - concept: admin.CN001
+        action: delete
     code_refs:
       - path: "src/Core/Domain/Employee/Command/BulkDeleteEmployeeCommand.php"
         role: implementation
@@ -141,6 +181,23 @@ operations:
   sendPasswordResetEmail:
     id: admin.CMD007
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /employees/send-password-reset-email
+        method: POST
+        group: admin-api
+    payload:
+      schema: SendEmployeePasswordResetEmailPayload
+      contentType: application/json
+    responses:
+      - code: "201"
+        type: success
+        description: "A reset email was dispatched to the address given."
+      - code: "404"
+        type: failure
+        description: "No employee holds that email address."
+        error: admin.ERR001
     name: "SendPasswordResetEmail"
     description: "Send a password reset email to an employee."
     delivery_priority: must-have
@@ -156,11 +213,15 @@ operations:
     id: admin.EVT005
     kind: event
     name: "PasswordResetEmailSent"
-    description: "Password reset email dispatched to employee."
-
+    description: "Fact: a reset email left the shop, carrying a token valid for a limited time. No hook is fired for this transition: EmployeePasswordResetter works on the Doctrine PrestaShopBundle\\Entity\\Employee and flushes the entity manager, so the legacy actionObject* family never runs, and no registry entry announces the send. A module cannot observe a password reset being requested."
+    code_refs:
+      - path: "src/PrestaShopBundle/Security/Admin/EmployeePasswordResetter.php"
+        role: implementation
+        description: "sendResetEmail() at line 42 uses the Doctrine employee repository, not the legacy ObjectModel"
   resetEmployeePassword:
     id: admin.CMD008
     kind: command
+    dispatch: inprocess
     name: "ResetEmployeePassword"
     description: "Reset an employee's password using a reset token."
     delivery_priority: must-have
@@ -170,6 +231,9 @@ operations:
       mode: all
     governed_by:
       - rule: admin.VR002
+    materializes:
+      - concept: admin.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/Employee/Command/ResetEmployeePasswordCommand.php"
         role: implementation
@@ -178,23 +242,15 @@ operations:
     id: admin.EVT006
     kind: event
     name: "EmployeePasswordReset"
-    description: "Employee password changed via reset flow."
-
+    description: "Fact: an employee's password was replaced and the reset token cleared, so the token cannot be reused. No hook is fired for this transition, for the same reason as the reset email: the resetter writes through Doctrine and flushes, and no registry entry announces it."
+    code_refs:
+      - path: "src/PrestaShopBundle/Security/Admin/EmployeePasswordResetter.php"
+        role: implementation
+        description: "resetPassword() at line 79 clears the token and flushes through the entity manager"
   getEmployeeForEditing:
     id: admin.QRY001
     kind: query
-    exchange:
-      protocol: http
-      endpoint:
-        path: /admin/employees/{employeeId}
-        method: GET
-        group: admin
-    responses:
-      - code: "200"
-        type: success
-        description: "The employee, in the shape the edit form needs."
-        schema: EmployeeResource
-        contentType: application/json
+    dispatch: inprocess
     name: "GetEmployeeForEditing"
     description: "Retrieve employee details for the edit form."
     delivery_priority: must-have
@@ -205,6 +261,7 @@ operations:
   getEmployeeEmailById:
     id: admin.QRY002
     kind: query
+    dispatch: inprocess
     name: "GetEmployeeEmailById"
     description: "Retrieve an employee's email address by ID."
     delivery_priority: should-have
@@ -217,6 +274,21 @@ operations:
   addProfile:
     id: admin.CMD009
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /profiles
+        method: POST
+        group: admin-api
+    payload:
+      schema: CreateProfilePayload
+      contentType: application/json
+    responses:
+      - code: "201"
+        type: success
+        description: "The profile as stored, with the id the shop assigned it."
+        schema: ProfileResource
+        contentType: application/json
     name: "AddProfile"
     description: "Create a new access control profile with localized name."
     delivery_priority: must-have
@@ -224,6 +296,9 @@ operations:
     produces:
       operations: [admin.EVT007]
       mode: all
+    materializes:
+      - concept: admin.CN002
+        action: create
     code_refs:
       - path: "src/Core/Domain/Profile/Command/AddProfileCommand.php"
         role: implementation
@@ -232,26 +307,19 @@ operations:
     id: admin.EVT007
     kind: event
     name: "ProfileAdded"
-    description: "New access control profile created."
-
+    description: "Fact: an access control profile exists and can now be assigned to employees. AddProfileHandler calls add() on the legacy Profile ObjectModel, so actionObjectProfileAddAfter fires."
+    tags: [hook:actionObjectProfileAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 615 fires actionObject<Class>AddAfter for every persisted ObjectModel"
+      - path: "classes/Profile.php"
+        role: model
+        description: "ProfileCore extends ObjectModel, which is what makes the dynamic hook name resolve"
   editProfile:
     id: admin.CMD010
     kind: command
-    exchange:
-      protocol: http
-      endpoint:
-        path: /admin/profiles/{profileId}
-        method: PUT
-        group: admin
-    payload:
-      schema: CreateProfilePayload
-      contentType: application/json
-    responses:
-      - code: "200"
-        type: success
-        description: "The profile as stored after the edit."
-        schema: ProfileResource
-        contentType: application/json
+    dispatch: inprocess
     name: "EditProfile"
     description: "Update a profile's localized name."
     delivery_priority: must-have
@@ -259,6 +327,9 @@ operations:
     produces:
       operations: [admin.EVT008]
       mode: all
+    materializes:
+      - concept: admin.CN002
+        action: update
     code_refs:
       - path: "src/Core/Domain/Profile/Command/EditProfileCommand.php"
         role: implementation
@@ -267,11 +338,36 @@ operations:
     id: admin.EVT008
     kind: event
     name: "ProfileEdited"
-    description: "Profile name updated."
-
+    description: "Fact: a profile's localized name changed. The permission matrix is not touched here: that is TabPermissionsUpdated and ModulePermissionsUpdated, which fire no hook at all."
+    tags: [hook:actionObjectProfileUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847 fires actionObject<Class>UpdateAfter for every persisted ObjectModel"
+      - path: "classes/Profile.php"
+        role: model
+        description: "ProfileCore extends ObjectModel, which is what makes the dynamic hook name resolve"
   deleteProfile:
     id: admin.CMD011
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /profiles/{profileId}
+        method: DELETE
+        group: admin-api
+    responses:
+      - code: "204"
+        type: success
+        description: "The profile was removed."
+      - code: "404"
+        type: failure
+        description: "No profile carries that id."
+        error: admin.ERR002
+      - code: "409"
+        type: failure
+        description: "Employees are still assigned to the profile."
+        error: admin.ERR003
     name: "DeleteProfile"
     description: "Remove an access control profile. Employees assigned to this profile must be reassigned first."
     delivery_priority: must-have
@@ -281,6 +377,9 @@ operations:
       mode: all
     governed_by:
       - rule: admin.VR003
+    materializes:
+      - concept: admin.CN002
+        action: delete
     code_refs:
       - path: "src/Core/Domain/Profile/Command/DeleteProfileCommand.php"
         role: implementation
@@ -289,11 +388,19 @@ operations:
     id: admin.EVT009
     kind: event
     name: "ProfileDeleted"
-    description: "Access control profile removed."
-
+    description: "Fact: a profile no longer exists. The command is gated on no employee still holding it, so this event never leaves an employee without a profile."
+    tags: [hook:actionObjectProfileDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 923 fires actionObject<Class>DeleteAfter for every persisted ObjectModel"
+      - path: "classes/Profile.php"
+        role: model
+        description: "ProfileCore extends ObjectModel, which is what makes the dynamic hook name resolve"
   bulkDeleteProfile:
     id: admin.CMD012
     kind: command
+    dispatch: inprocess
     name: "BulkDeleteProfile"
     description: "Delete multiple profiles at once."
     delivery_priority: should-have
@@ -303,6 +410,9 @@ operations:
       mode: all
     governed_by:
       - rule: admin.VR003
+    materializes:
+      - concept: admin.CN002
+        action: delete
     code_refs:
       - path: "src/Core/Domain/Profile/Command/BulkDeleteProfileCommand.php"
         role: implementation
@@ -310,6 +420,22 @@ operations:
   getProfileForEditing:
     id: admin.QRY003
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /profiles/{profileId}
+        method: GET
+        group: admin-api
+    responses:
+      - code: "200"
+        type: success
+        description: "The profile, with its name in every language the shop has."
+        schema: ProfileResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No profile carries that id."
+        error: admin.ERR002
     name: "GetProfileForEditing"
     description: "Retrieve profile details for the edit form."
     delivery_priority: must-have
@@ -322,6 +448,7 @@ operations:
   updateTabPermissions:
     id: admin.CMD013
     kind: command
+    dispatch: inprocess
     name: "UpdateTabPermissions"
     description: "Update the tab-level permission matrix (view/add/edit/delete) for a profile."
     delivery_priority: must-have
@@ -331,6 +458,9 @@ operations:
       mode: all
     governed_by:
       - rule: admin.VR004
+    materializes:
+      - concept: admin.CN003
+        action: update
     code_refs:
       - path: "src/Core/Domain/Profile/Permission/Command/UpdateTabPermissionsCommand.php"
         role: implementation
@@ -339,11 +469,15 @@ operations:
     id: admin.EVT010
     kind: event
     name: "TabPermissionsUpdated"
-    description: "Tab-level permissions changed for a profile."
-
+    description: "Fact: a profile's tab-level permissions changed, so the set of back-office pages its employees can view, add to, edit or delete is different. No hook is fired for this transition: UpdateTabPermissionsHandler calls Access::updateLgcAccess(), which writes the permission rows directly and resets a static cache. A module cannot observe a permission change, which is worth knowing for anything that mirrors access rights."
+    code_refs:
+      - path: "src/Adapter/Profile/Permission/CommandHandler/UpdateTabPermissionsHandler.php"
+        role: implementation
+        description: "Access::updateLgcAccess() writes the rows; no ObjectModel is saved and no hook is dispatched"
   updateModulePermissions:
     id: admin.CMD014
     kind: command
+    dispatch: inprocess
     name: "UpdateModulePermissions"
     description: "Update the module-level permission matrix for a profile."
     delivery_priority: must-have
@@ -353,6 +487,9 @@ operations:
       mode: all
     governed_by:
       - rule: admin.VR004
+    materializes:
+      - concept: admin.CN003
+        action: update
     code_refs:
       - path: "src/Core/Domain/Profile/Permission/Command/UpdateModulePermissionsCommand.php"
         role: implementation
@@ -361,11 +498,14 @@ operations:
     id: admin.EVT011
     kind: event
     name: "ModulePermissionsUpdated"
-    description: "Module-level permissions changed for a profile."
-
+    description: "Fact: a profile's module-level permissions changed. No hook is fired for this transition, for the same reason as the tab permissions: the handler writes access rows directly."
+    code_refs:
+      - path: "src/Adapter/Profile/Permission/CommandHandler/UpdateModulePermissionsHandler.php"
+        role: implementation
   getPermissionsForConfiguration:
     id: admin.QRY004
     kind: query
+    dispatch: inprocess
     name: "GetPermissionsForConfiguration"
     description: "Retrieve the full permissions matrix for a profile to populate the configuration screen."
     delivery_priority: must-have
@@ -378,6 +518,7 @@ operations:
   deleteEmployeeSession:
     id: admin.CMD015
     kind: command
+    dispatch: inprocess
     name: "DeleteEmployeeSession"
     description: "Terminate a specific employee session."
     delivery_priority: must-have
@@ -385,6 +526,9 @@ operations:
     produces:
       operations: [admin.EVT012]
       mode: all
+    materializes:
+      - concept: admin.CN004
+        action: delete
     code_refs:
       - path: "src/Core/Domain/Security/Command/DeleteEmployeeSessionCommand.php"
         role: implementation
@@ -393,11 +537,15 @@ operations:
     id: admin.EVT012
     kind: event
     name: "EmployeeSessionDeleted"
-    description: "Employee session terminated."
-
+    description: "Fact: an employee session was terminated, singly, in bulk, or by the scheduled clear-out of expired ones, so that browser is signed out. No hook is fired for this transition: the handlers delete through EmployeeSessionRepository, a Doctrine repository with no ObjectModel behind it."
+    code_refs:
+      - path: "src/Adapter/Security/CommandHandler/DeleteEmployeeSessionHandler.php"
+        role: implementation
+        description: "Deletes through the Doctrine EmployeeSessionRepository"
   deleteCustomerSession:
     id: admin.CMD016
     kind: command
+    dispatch: inprocess
     name: "DeleteCustomerSession"
     description: "Terminate a specific customer session. Managed in admin context because session security policies change together with employee sessions (change-together heuristic)."
     delivery_priority: must-have
@@ -405,6 +553,9 @@ operations:
     produces:
       operations: [admin.EVT013]
       mode: all
+    materializes:
+      - concept: admin.CN004
+        action: delete
     code_refs:
       - path: "src/Core/Domain/Security/Command/DeleteCustomerSessionCommand.php"
         role: implementation
@@ -413,25 +564,44 @@ operations:
     id: admin.EVT013
     kind: event
     name: "CustomerSessionDeleted"
-    description: "Customer session terminated."
-
+    description: "Fact: a customer session was terminated. Managed from the back office because session policy changes for customers and employees together, and observable by nobody: no hook is fired, as with employee sessions."
+    code_refs:
+      - path: "src/Adapter/Security/CommandHandler/DeleteCustomerSessionHandler.php"
+        role: implementation
   bulkDeleteEmployeeSessions:
     id: admin.CMD017
     kind: command
+    dispatch: inprocess
     name: "BulkDeleteEmployeeSessions"
-    description: "Terminate multiple employee sessions at once."
+    description: "Terminate multiple employee sessions at once. The back office dispatches it from the session list; the security layer reaches the same effect on its own whenever an employee's credentials or profile change underneath a live session."
     delivery_priority: should-have
     initiated_by: [admin.ACT001]
     produces:
       operations: [admin.EVT012]
       mode: all
+    reacts_to:
+      - operation: admin.EVT006
+        policy: "An employee whose password changed is signed out on every device"
+      - operation: admin.EVT002
+        policy: "An employee whose email or profile changed is signed out on every device"
+        condition: "The edit changed the email or the profile; a change to any other field leaves the sessions alone"
+    materializes:
+      - concept: admin.CN004
+        action: delete
     code_refs:
       - path: "src/Core/Domain/Security/Command/BulkDeleteEmployeeSessionsCommand.php"
         role: implementation
+      - path: "src/PrestaShopBundle/Entity/Employee/Employee.php"
+        role: implementation
+        description: "isEqualTo at line 229 compares the identifier, the password hash and the profile id, and __serialize at line 658 puts exactly those three in the session, so a change to any of them makes the session copy differ from the row and Symfony deauthenticates the token."
+      - path: "src/PrestaShopBundle/EventListener/Admin/EmployeeSessionSubscriber.php"
+        role: implementation
+        description: "cleanEmployeeSessions at line 161 subscribes to TokenDeauthenticatedEvent and calls removeAllSessions at line 169, so every persisted session of that employee goes, not only the one making the request. This is a core subscriber on a Symfony security event, not a hook: no module can observe it."
 
   bulkDeleteCustomerSessions:
     id: admin.CMD018
     kind: command
+    dispatch: inprocess
     name: "BulkDeleteCustomerSessions"
     description: "Terminate multiple customer sessions at once."
     delivery_priority: should-have
@@ -439,6 +609,9 @@ operations:
     produces:
       operations: [admin.EVT013]
       mode: all
+    materializes:
+      - concept: admin.CN004
+        action: delete
     code_refs:
       - path: "src/Core/Domain/Security/Command/BulkDeleteCustomerSessionsCommand.php"
         role: implementation
@@ -446,6 +619,7 @@ operations:
   clearOutdatedEmployeeSessions:
     id: admin.CMD019
     kind: command
+    dispatch: inprocess
     name: "ClearOutdatedEmployeeSessions"
     description: "Automatically clear expired employee sessions."
     delivery_priority: must-have
@@ -453,6 +627,9 @@ operations:
     produces:
       operations: [admin.EVT012]
       mode: all
+    materializes:
+      - concept: admin.CN004
+        action: delete
     code_refs:
       - path: "src/Core/Domain/Security/Command/ClearOutdatedEmployeeSessionCommand.php"
         role: implementation
@@ -460,6 +637,7 @@ operations:
   clearOutdatedCustomerSessions:
     id: admin.CMD020
     kind: command
+    dispatch: inprocess
     name: "ClearOutdatedCustomerSessions"
     description: "Automatically clear expired customer sessions."
     delivery_priority: must-have
@@ -467,6 +645,9 @@ operations:
     produces:
       operations: [admin.EVT013]
       mode: all
+    materializes:
+      - concept: admin.CN004
+        action: delete
     code_refs:
       - path: "src/Core/Domain/Security/Command/ClearOutdatedCustomerSessionCommand.php"
         role: implementation
@@ -514,3 +695,33 @@ errors:
     severity: error
     http_status: 422
     related_rules: [admin.VR002]
+
+questions:
+
+  - id: admin.QN001
+    name: "Who May Do What"
+    statement: "Which parts of the back office may this employee use, and who granted that?"
+    category: compliance
+    priority: critical
+    bounded_context_ref: prestashop.BC001
+    answered_by: [admin.QRY004, admin.QRY003, admin.CMD013, admin.CMD014]
+    concepts: [admin.CN001, admin.CN002, admin.CN003]
+    resolved: true
+    resolution: >
+      An employee holds a profile; the profile carries one permission per back-office tab
+      and one per module. GetPermissionsForConfiguration is the read, and
+      UpdateTabPermissions and UpdateModulePermissions are the only two writes.
+
+  - id: admin.QN002
+    name: "Who Is Signed In"
+    statement: "Which back-office sessions are open right now, and how is one ended?"
+    category: temporal
+    priority: high
+    bounded_context_ref: prestashop.BC001
+    answered_by: [admin.CMD015, admin.CMD019]
+    concepts: [admin.CN001, admin.CN004]
+    resolved: true
+    resolution: >
+      A session ends either when an administrator deletes it with DeleteEmployeeSession or
+      when ClearOutdatedEmployeeSessions sweeps the ones that have passed the configured
+      lifetime.

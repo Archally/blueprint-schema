@@ -33,12 +33,15 @@ concepts:
       indexedForSearch:
         id: CAT605
         description: "Whether page appears in internal search results"
+        example: "true"
       displayed:
         id: CAT606
         description: "Whether page is visible on the front office"
+        example: "true"
       categoryRef:
         id: CAT607
         description: "Reference to the CMS page category this page belongs to"
+        example: "1"
     code_refs:
       - path: "src/Core/Domain/CmsPage/Command/AddCmsPageCommand.php"
         role: implementation
@@ -67,18 +70,23 @@ concepts:
       isDisplayed:
         id: CAT611
         description: "Whether category is visible on the front office"
+        example: "true"
       localizedDescription:
         id: CAT612
         description: "Category description per language"
+        example: "{1: <p>Everything the shop is obliged to publish.</p>}"
       localizedMetaTitle:
         id: CAT613
         description: "SEO meta title per language"
+        example: "{1: Legal information}"
       localizedMetaDescription:
         id: CAT614
         description: "SEO meta description per language"
+        example: "{1: Terms, privacy and delivery information for this shop.}"
       shopAssociation:
         id: CAT615
         description: "List of shop IDs this category is associated with (multi-store)"
+        example: "[1]"
     code_refs:
       - path: "src/Core/Domain/CmsPageCategory/Command/AddCmsPageCategoryCommand.php"
         role: implementation
@@ -115,14 +123,14 @@ enumerations:
         description: "Page exists but is not shown on the front office"
 
 associations:
-  - id: content.AS001
+  - id: content.ASC001
     subject: content.CN001
     predicate: depends-on
     object: content.CN002
     cardinality: "1"
     description: "Each CMS page belongs to exactly one CMS page category."
 
-  - id: content.AS002
+  - id: content.ASC002
     subject: content.CN002
     predicate: depends-on
     object: content.CN002

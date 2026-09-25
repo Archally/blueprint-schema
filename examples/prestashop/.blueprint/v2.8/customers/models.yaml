@@ -97,7 +97,7 @@ components:
       properties:
         customerId:
           type: integer
-          description: "Customer to update."
+          description: "Which existing customer the edit targets. It comes from the route path rather than the body, so it is never what the edit changes."
           example: 42
         firstName:
           type: string
@@ -192,7 +192,7 @@ components:
         birthday:
           type: string
           format: date
-          description: "Date of birth."
+          description: "Date of birth, validated by isBirthDate so a future date is refused. Optional: a shop that does not ask for it stores the zero date, which reads back as absent."
           example: "1990-05-15"
         genderId:
           type: integer
@@ -298,7 +298,7 @@ components:
           example: "Bât. A, 3ème étage"
         city:
           type: string
-          description: "City name."
+          description: "City or town, at most 64 characters and validated by isCityName, which rejects digits. Required on every address; where it prints on the label is decided by the country's address format, not by this field."
           example: "Paris"
         postCode:
           type: string
@@ -306,7 +306,7 @@ components:
           example: "75001"
         countryId:
           type: integer
-          description: "Country identifier."
+          description: "Country the address is in. It is the field the rest of the address hangs off: it fixes the address format, whether a state and a DNI are required, and the tax zone the order is charged in."
           example: 8
         stateId:
           type: integer
@@ -322,8 +322,8 @@ components:
           example: "+33 6 12 34 56 78"
         dni:
           type: string
-          description: "National identification number (required in some countries)."
-          example: ""
+          description: "National identification number, at most 16 characters. Address::validateField makes it required when the country carries need_identification_number, and ignores it otherwise, so an empty value is only an error for some countries."
+          example: "12345678Z"
         other:
           type: string
           description: "Additional address information."
@@ -375,7 +375,7 @@ components:
           example: "Dupont"
         company:
           type: string
-          description: "Company name."
+          description: "Business name on the address, up to 255 characters. Optional, and empty on a consumer address; a filled one is what makes an invoice read as B2B."
           example: "Acme SAS"
         vatNumber:
           type: string
@@ -391,7 +391,7 @@ components:
           example: "Bât. A, 3ème étage"
         city:
           type: string
-          description: "City name."
+          description: "City or town, at most 64 characters and validated by isCityName, which rejects digits. Required on every address; where it prints on the label is decided by the country's address format, not by this field."
           example: "Paris"
         postcode:
           type: string
@@ -399,7 +399,7 @@ components:
           example: "75001"
         countryId:
           type: integer
-          description: "Country identifier."
+          description: "Country the address is in. It is the field the rest of the address hangs off: it fixes the address format, whether a state and a DNI are required, and the tax zone the order is charged in."
           example: 8
         countryName:
           type: string
@@ -419,8 +419,8 @@ components:
           example: "+33 6 12 34 56 78"
         dni:
           type: string
-          description: "National identification number."
-          example: ""
+          description: "National identification number as stored, at most 16 characters. Empty unless the country asks for one."
+          example: "12345678Z"
         other:
           type: string
           description: "Additional address information."
@@ -449,7 +449,7 @@ components:
       properties:
         customerId:
           type: integer
-          description: "Customer identifier."
+          description: "Account this row stands for, which the list uses to build the link to the customer's detail page."
           example: 42
         firstName:
           type: string
@@ -504,8 +504,8 @@ components:
           example: "France"
         companyName:
           type: string
-          description: "Company name (B2B)."
-          example: ""
+          description: "Business name taken from the customer's default address, which is how a B2B list is told apart from a consumer one at a glance. Empty for a consumer account."
+          example: "Acme SAS"
       code_refs:
         - path: "src/Core/Domain/Customer/Query/SearchCustomers.php"
           role: schema
@@ -624,31 +624,46 @@ components:
           example: 0
         messages:
           type: array
-          description: "Thread message history."
+          example:
+            - messageId: 101
+              message: "Hello, I have a question about the shipping delay for my order."
+              employeeId: 0
+              customerName: "Jean Dupont"
+              employeeName: ""
+              dateAdd: "2026-03-17T10:30:00+01:00"
+              isEmployee: false
+          description: "Every message on the thread, customer and employee alike, oldest first. The conversation is the thread, so a reader who drops this field is left with a subject line and a status."
           items:
             type: object
             properties:
               messageId:
                 type: integer
+                description: "Unique message identifier, which is what an attachment or a moderation action refers to."
                 example: 101
               message:
                 type: string
+                description: "The message body as it was written. It is stored unformatted, so a display surface has to decide how to render line breaks."
                 example: "Hello, I have a question about the shipping delay for my order."
               employeeId:
                 type: integer
+                description: "The employee who wrote the message, or 0 when the customer did. It is the field that tells the two sides of the conversation apart."
                 example: 0
               customerName:
                 type: string
+                description: "Display name of the customer on the thread, denormalised so the history stays readable after the account is deleted."
                 example: "Jean Dupont"
               employeeName:
                 type: string
-                example: ""
+                description: "Display name of the employee who wrote the message, empty on a customer message."
+                example: "Marie Martin"
               dateAdd:
                 type: string
                 format: date-time
+                description: "When the message was recorded, which is what the response-time measure is taken from."
                 example: "2026-03-17T10:30:00+01:00"
               isEmployee:
                 type: boolean
+                description: "True when the message came from the shop. Redundant with employeeId by design, because the display side needs the answer without a lookup."
                 example: false
         createdAt:
           type: string
@@ -663,3 +678,531 @@ components:
       code_refs:
         - path: "src/Core/Domain/CustomerService/Query/GetCustomerThreadForViewing.php"
           role: schema
+
+    ManufacturerAddressResource:
+      x-model-id: MDL1400
+      purpose: read-model
+      description: "A manufacturer's address, in the single shape the Admin API serves for GET, POST and PATCH on /addresses/manufacturers. It carries manufacturerId where the customer variant carries customerId, and no alias, because a manufacturer has one address rather than a labelled list."
+      represents:
+        - concept: customers.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              addressId: CAT316
+              address: CAT318
+              address2: CAT319
+              city: CAT320
+              postCode: CAT321
+              countryId: CAT322
+              homePhone: CAT323
+      type: object
+      required: [lastName, firstName, address, city, countryId]
+      properties:
+        addressId:
+          type: integer
+          description: "Unique address identifier, and the path parameter on the GET and PATCH routes."
+          example: 31
+        manufacturerId:
+          type: integer
+          description: "The manufacturer this address belongs to. Null on a form that has not been attached yet."
+          example: 4
+        lastName:
+          type: string
+          description: "Contact last name at the manufacturer."
+          example: "Dupont"
+        firstName:
+          type: string
+          description: "Contact first name at the manufacturer."
+          example: "Jean"
+        address:
+          type: string
+          description: "Primary address line. Named address here and address1 on the customer resource, which is a spelling difference the API preserves."
+          example: "15 Rue de la Paix"
+        address2:
+          type: string
+          description: "Secondary address line such as a building or floor."
+          example: "Bat. A, 3eme etage"
+        city:
+          type: string
+          description: "City or town, at most 64 characters and validated by isCityName, which rejects digits. Required on every address; where it prints on the label is decided by the country's address format, not by this field."
+          example: "Paris"
+        postCode:
+          type: string
+          description: "Postal code. Whether it is required, and the format it must match, comes from the country."
+          example: "75001"
+        countryId:
+          type: integer
+          description: "Country identifier, resolved against the international slice. It decides which of the other fields are required."
+          example: 8
+        stateId:
+          type: integer
+          description: "State identifier. Reset to 0 when the country has no states."
+          example: 0
+        homePhone:
+          type: string
+          description: "Landline contact number."
+          example: "+33 1 42 60 00 00"
+        mobilePhone:
+          type: string
+          description: "Mobile contact number."
+          example: "+33 6 12 34 56 78"
+        other:
+          type: string
+          description: "Free-text delivery note kept with the address."
+          example: "Loading bay at the rear"
+        dni:
+          type: string
+          description: "National identification number. Required only for countries whose need_identification_number flag is set."
+          example: "12345678Z"
+      code_refs:
+        - path: "src/Core/Domain/Address/Query/GetManufacturerAddressForEditing.php"
+          role: schema
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Address/ManufacturerAddress.php"
+          role: api-spec
+
+    CartAddressPayload:
+      x-model-id: MDL1401
+      purpose: command-payload
+      description: "Request body for repointing a cart at an edited delivery or invoice address. The address fields are the same set the customer address carries; cartId and addressType are what make this a cart operation rather than an address one."
+      represents:
+        - concept: customers.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              addressId: CAT316
+              addressAlias: CAT317
+              address: CAT318
+              address2: CAT319
+              city: CAT320
+              postCode: CAT321
+              countryId: CAT322
+              homePhone: CAT323
+              customerId: CAT324
+      type: object
+      required: [cartId, addressType]
+      properties:
+        cartId:
+          type: integer
+          description: "The cart whose address is being changed. Path parameter on the route."
+          example: 77
+        addressId:
+          type: integer
+          description: "The address being edited. The response carries a different value when the address was already used and had to be copied."
+          example: 12
+        customerId:
+          type: integer
+          description: "The customer the address belongs to."
+          example: 42
+        addressType:
+          type: string
+          description: "Which of the cart's two addresses this call changes."
+          example: "delivery"
+        addressAlias:
+          type: string
+          description: "Short label for the address."
+          example: "Home"
+        firstName:
+          type: string
+          description: "Recipient first name."
+          example: "Jean"
+        lastName:
+          type: string
+          description: "Recipient last name."
+          example: "Dupont"
+        address:
+          type: string
+          description: "Primary address line."
+          example: "15 Rue de la Paix"
+        address2:
+          type: string
+          description: "Secondary address line."
+          example: "Bat. A, 3eme etage"
+        city:
+          type: string
+          description: "City or town, at most 64 characters and validated by isCityName, which rejects digits. Required on every address; where it prints on the label is decided by the country's address format, not by this field."
+          example: "Paris"
+        postCode:
+          type: string
+          description: "Postal code, validated against the country's format."
+          example: "75001"
+        countryId:
+          type: integer
+          description: "Country identifier. It decides which of the other fields are required."
+          example: 8
+        stateId:
+          type: integer
+          description: "State identifier. Reset to 0 when the country has no states."
+          example: 0
+        homePhone:
+          type: string
+          description: "Landline contact number."
+          example: "+33 1 42 60 00 00"
+        mobilePhone:
+          type: string
+          description: "Mobile contact number."
+          example: "+33 6 12 34 56 78"
+        company:
+          type: string
+          description: "Company name for a business delivery."
+          example: "Acme SAS"
+        vatNumber:
+          type: string
+          description: "VAT identification number."
+          example: "FR12345678901"
+        other:
+          type: string
+          description: "Free-text delivery note."
+          example: "Digicode 4521A"
+        dni:
+          type: string
+          description: "National identification number, required only for countries that ask for one."
+          example: "12345678Z"
+      code_refs:
+        - path: "src/Core/Domain/Address/Command/EditCartAddressCommand.php"
+          role: schema
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Address/CartAddress.php"
+          role: api-spec
+
+    OrderAddressPayload:
+      x-model-id: MDL1402
+      purpose: command-payload
+      description: "Request body for repointing a placed order at an edited delivery or invoice address. Identical in its address fields to the cart variant, and kept separate because the route, the identifier and the follow-on command in the orders slice all differ."
+      represents:
+        - concept: customers.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              addressId: CAT316
+              addressAlias: CAT317
+              address: CAT318
+              address2: CAT319
+              city: CAT320
+              postCode: CAT321
+              countryId: CAT322
+              homePhone: CAT323
+              customerId: CAT324
+      type: object
+      required: [orderId, addressType]
+      properties:
+        orderId:
+          type: integer
+          description: "The order whose address is being changed. Path parameter on the route."
+          example: 1043
+        addressId:
+          type: integer
+          description: "The address being edited. Because an order uses it, the response always carries a new identifier."
+          example: 12
+        customerId:
+          type: integer
+          description: "The customer the address belongs to."
+          example: 42
+        addressType:
+          type: string
+          description: "Which of the order's two addresses this call changes."
+          example: "invoice"
+        addressAlias:
+          type: string
+          description: "Short label for the address."
+          example: "Home"
+        firstName:
+          type: string
+          description: "Recipient first name."
+          example: "Jean"
+        lastName:
+          type: string
+          description: "Recipient last name."
+          example: "Dupont"
+        address:
+          type: string
+          description: "Primary address line."
+          example: "15 Rue de la Paix"
+        address2:
+          type: string
+          description: "Secondary address line."
+          example: "Bat. A, 3eme etage"
+        city:
+          type: string
+          description: "City or town, at most 64 characters and validated by isCityName, which rejects digits. Required on every address; where it prints on the label is decided by the country's address format, not by this field."
+          example: "Paris"
+        postCode:
+          type: string
+          description: "Postal code, validated against the country's format."
+          example: "75001"
+        countryId:
+          type: integer
+          description: "Country identifier. It decides which of the other fields are required."
+          example: 8
+        stateId:
+          type: integer
+          description: "State identifier. Reset to 0 when the country has no states."
+          example: 0
+        homePhone:
+          type: string
+          description: "Landline contact number."
+          example: "+33 1 42 60 00 00"
+        mobilePhone:
+          type: string
+          description: "Mobile contact number."
+          example: "+33 6 12 34 56 78"
+        company:
+          type: string
+          description: "Company name for a business delivery."
+          example: "Acme SAS"
+        vatNumber:
+          type: string
+          description: "VAT identification number, which drives whether the invoice is taxed."
+          example: "FR12345678901"
+        other:
+          type: string
+          description: "Free-text delivery note."
+          example: "Digicode 4521A"
+        dni:
+          type: string
+          description: "National identification number, required only for countries that ask for one."
+          example: "12345678Z"
+      code_refs:
+        - path: "src/Core/Domain/Address/Command/EditOrderAddressCommand.php"
+          role: schema
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Address/OrderAddress.php"
+          role: api-spec
+
+    BulkAddressIds:
+      x-model-id: MDL1403
+      purpose: command-payload
+      description: "Request body for the bulk address delete. The batch is not transactional, so a caller that gets a failure must re-read to learn which addresses survived."
+      represents:
+        - concept: customers.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              addressIds: CAT316
+      type: object
+      required: [addressIds]
+      properties:
+        addressIds:
+          type: array
+          description: "Identifiers of the addresses to delete, in the order the handler will process them."
+          example: [1, 3]
+          items:
+            type: integer
+      code_refs:
+        - path: "src/Core/Domain/Address/Command/BulkDeleteAddressCommand.php"
+          role: schema
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Address/BulkAddresses.php"
+          role: api-spec
+
+    BulkCustomerIds:
+      x-model-id: MDL1404
+      purpose: command-payload
+      description: "Request body for the bulk enable and bulk disable routes. Each account is updated one at a time, so a failure part-way leaves the earlier accounts already switched."
+      represents:
+        - concept: customers.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              customerIds: CAT300
+      type: object
+      required: [customerIds]
+      properties:
+        customerIds:
+          type: array
+          description: "Identifiers of the accounts to enable or disable, in the order the handler will process them."
+          example: [1, 2, 3]
+          items:
+            type: integer
+      code_refs:
+        - path: "src/Core/Domain/Customer/Command/BulkEnableCustomerCommand.php"
+          role: schema
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/BulkCustomers.php"
+          role: api-spec
+
+    BulkDeleteCustomersPayload:
+      x-model-id: MDL1405
+      purpose: command-payload
+      description: "Request body for the bulk customer delete. It carries the delete method as well as the identifiers, because whether the deleted emails may register again is a decision the caller makes per batch."
+      represents:
+        - concept: customers.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              customerIds: CAT300
+      type: object
+      required: [customerIds, deleteMethod]
+      properties:
+        customerIds:
+          type: array
+          description: "Identifiers of the accounts to delete."
+          example: [1, 2, 3]
+          items:
+            type: integer
+        deleteMethod:
+          type: string
+          description: "Whether the deleted emails stay free for a new registration or are blocked from registering again."
+          example: "allow_customer_registration"
+      code_refs:
+        - path: "src/Core/Domain/Customer/Command/BulkDeleteCustomerCommand.php"
+          role: schema
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/BulkDeleteCustomers.php"
+          role: api-spec
+
+    CustomerRequiredFields:
+      x-model-id: MDL1406
+      purpose: command-payload
+      description: "The shop-wide set of customer profile fields a registration or an edit must supply. One model serves both directions of /customers/required-fields, because the GET returns exactly what the PUT accepts."
+      represents:
+        - concept: customers.CN001
+          kind: api
+      type: object
+      required: [requiredFields]
+      properties:
+        requiredFields:
+          type: array
+          description: "Names of the customer fields that are mandatory on top of the ones the code always demands. An empty list means only the built-in minimum applies."
+          example: ["optin", "newsletter"]
+          items:
+            type: string
+      code_refs:
+        - path: "src/Core/Domain/Customer/Command/SetRequiredFieldsForCustomerCommand.php"
+          role: schema
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/CustomerRequiredFields.php"
+          role: api-spec
+
+    FoundCustomer:
+      x-model-id: MDL1407
+      purpose: read-model
+      description: "A customer as the search route returns them: enough to recognise and pick the right person, and nothing more. Distinct from CustomerListItem, which is the back-office grid's own shape."
+      represents:
+        - concept: customers.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              idCustomer: CAT300
+              firstname: CAT302
+              lastname: CAT303
+              email: CAT301
+      type: object
+      properties:
+        idCustomer:
+          type: integer
+          description: "Unique customer identifier, which the caller passes on to whatever it opens next."
+          example: 1
+        firstname:
+          type: string
+          description: "Given name, spelled here in the database's own casing rather than the API's camelCase."
+          example: "Jean"
+        lastname:
+          type: string
+          description: "Family name, spelled in the database's own casing rather than the API's camelCase because this shape is read straight off the search query."
+          example: "Dupont"
+        email:
+          type: string
+          description: "Account email, which is what most searches actually match on."
+          example: "jean.dupont@example.com"
+        fullnameAndEmail:
+          type: string
+          description: "Name and email joined into the single line a picker displays, so the caller does not have to compose it."
+          example: "Jean Dupont (jean.dupont@example.com)"
+        active:
+          type: integer
+          description: "1 when the account can log in, 0 when it has been disabled. An inactive customer is still selectable for a back-office order."
+          example: 1
+        company:
+          type: string
+          description: "Company name, which is how a B2B shop tells two people of the same name apart."
+          example: "Acme SAS"
+        idDefaultGroup:
+          type: integer
+          description: "The group whose discount and price display apply to this customer."
+          example: 3
+        groups:
+          type: array
+          description: "Every group the customer belongs to, the default one included."
+          example: [1, 3]
+          items:
+            type: integer
+      code_refs:
+        - path: "src/Core/Domain/Customer/Query/SearchCustomers.php"
+          role: schema
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/FoundCustomer.php"
+          role: api-spec
+
+    TitleResource:
+      x-model-id: MDL1408
+      purpose: read-model
+      description: "A customer title (salutation) in the single shape the Admin API serves for GET, POST and PATCH on /titles. The write direction is multipart, because the image travels with the rest of the payload."
+      represents:
+        - concept: customers.CN003
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              titleId: CAT313
+              names: CAT314
+              gender: CAT315
+      type: object
+      required: [names, gender]
+      properties:
+        titleId:
+          type: integer
+          description: "Unique title identifier, and the path parameter on the GET, PATCH and DELETE routes."
+          example: 1
+        names:
+          type: array
+          description: "The salutation per language, which is why a title cannot be a plain string: Mr in English is M. in French."
+          example: ["Mr", "M."]
+          items:
+            type: string
+        gender:
+          type: integer
+          description: "The gender the title implies, which drives gendered wording in mail templates."
+          example: 0
+        imgFile:
+          type: string
+          description: "Image uploaded with the title, sent as multipart form data. Absent on a title that has no picture."
+          example: "mr.jpg"
+        width:
+          type: integer
+          description: "Stored width of the title image in pixels. Read-only, filled from the file after upload."
+          example: 16
+        height:
+          type: integer
+          description: "Stored height of the title image in pixels. Read-only, filled from the file after upload."
+          example: 16
+      code_refs:
+        - path: "src/Core/Domain/Title/Query/GetTitleForEditing.php"
+          role: schema
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Title/Title.php"
+          role: api-spec
+
+    BulkTitleIds:
+      x-model-id: MDL1409
+      purpose: command-payload
+      description: "Request body for the bulk title delete. Customers that carried a deleted title keep a null salutation rather than being blocked."
+      represents:
+        - concept: customers.CN003
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              titleIds: CAT313
+      type: object
+      required: [titleIds]
+      properties:
+        titleIds:
+          type: array
+          description: "Identifiers of the titles to delete, in the order the handler will process them."
+          example: [1, 3]
+          items:
+            type: integer
+      code_refs:
+        - path: "src/Core/Domain/Title/Command/BulkDeleteTitleCommand.php"
+          role: schema
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Title/BulkDeleteTitles.php"
+          role: api-spec

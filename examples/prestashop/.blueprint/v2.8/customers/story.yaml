@@ -5,6 +5,7 @@ scope: customers
 
 processes:
   - id: customers.PRC001
+    tracker_ref: "40873"
     title: "Customer account lifecycle"
     description: "Customer registers, manages profile, and eventually exercises GDPR rights."
     initiated_by: [customers.ACT001]
@@ -88,6 +89,7 @@ user_stories:
     use_case: customers.UC001
 
   - id: customers.US002
+    tracker_ref: "41550"
     actor: customers.ACT001
     goal: "add and manage my delivery addresses"
     benefit: "I can ship to multiple locations without re-entering data"
@@ -145,6 +147,7 @@ user_stories:
     operations: [customers.CMD009, customers.EVT005]
 
   - id: customers.US006
+    tracker_ref: "40873"
     actor: customers.ACT001
     goal: "request deletion of my personal data"
     benefit: "I exercise my GDPR right to be forgotten"
@@ -156,6 +159,82 @@ user_stories:
       - "Order records retained with anonymized reference"
       - "Confirmation email sent"
     operations: [customers.CMD003, customers.EVT003]
+
+  - id: customers.US007
+    actor: customers.ACT001
+    goal: "create an account on the storefront so the shop remembers me"
+    benefit: "My addresses and my order history are there the next time, and I do not retype them."
+    summary: "Shopper registers on the storefront."
+    description: >
+      The same domain operation the Admin API's POST /customers performs, reached by a
+      different route: the registration page writes through CustomerPersister and
+      Customer::save, while the command's handler writes through Customer::add. One row, one
+      set of actionObjectCustomerAdd hooks, two adapters. The page also carries a veto hook -
+      actionSubmitAccountBefore - that lets a module refuse a registration outright, which is
+      how anti-spam and B2B-approval modules work.
+    acceptance_criteria:
+      - "The registration page always produces a full account; guest accounts come only from checkout."
+      - "A module subscribed to actionSubmitAccountBefore can refuse the submission and nothing is written."
+      - "A shopper who is already signed in is redirected away rather than shown the form."
+      - "After registering, the shopper returns to the page they came from where the shop recognises it, and otherwise to the home page."
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    operations: [customers.CMD001, customers.EVT001]
+    code_refs:
+      - path: "controllers/front/RegistrationController.php"
+        role: implementation
+        description: "initContent at line 38: guest disallowed, the veto hook, then the three-way redirect."
+
+  - id: customers.US008
+    actor: orders.ACT001
+    goal: "keep the account the shop created for me when I checked out as a guest"
+    benefit: "I get an order history and a saved address without filling the same form a second time."
+    summary: "Guest converts to a registered customer from the order confirmation page."
+    description: >
+      PrestaShop's answer to the oldest tension in checkout. A guest is not asked to register
+      before buying; the account already exists as a guest row, and the confirmation page asks
+      only for a password. The conversion resets the customer's group to the shop's default,
+      stamps a password-reset token and sends either a set-your-password link or a welcome
+      mail. It is the same domain operation the back office can perform, reached through
+      Customer::transformToCustomer rather than over the command bus.
+    acceptance_criteria:
+      - "The offer appears on the confirmation page only for a shopper who checked out as a guest."
+      - "The password is checked against the shop's configured minimum length and minimum strength score before anything is written."
+      - "A guest already converted in another window or by the back office is told so and asked to sign in, rather than converted twice."
+      - "After conversion the customer's group is the shop's configured default, not the guest group."
+    delivery_priority: should-have
+    status: ready
+    release_target: "v1.0"
+    operations: [customers.CMD008, customers.EVT004]
+    code_refs:
+      - path: "controllers/front/OrderConfirmationController.php"
+        role: implementation
+        description: "postProcess from line 109: the password policy checks, the already-converted refusal, then Customer::transformToCustomer at line 186."
+
+  - id: customers.US009
+    actor: customers.ACT001
+    goal: "keep my delivery and invoice addresses up to date from my account"
+    benefit: "Checkout offers the address I actually want without my retyping it each order."
+    summary: "Shopper manages their own address book."
+    description: >
+      Two pages and one form: the address book lists, and the form creates and edits with the
+      same controls. The field set is not fixed, because the form asks the chosen country for
+      its required fields. One guard exists here that the Admin API route has no reason to
+      carry: an address currently used by the shopper's cart cannot be deleted.
+    acceptance_criteria:
+      - "The form creates when the link carries no address id and edits when it carries one, with the same submit control."
+      - "Changing the country changes which fields the form requires."
+      - "Deleting an address that is the current cart's delivery or invoice address is refused with a message saying why."
+      - "A saved address is offered at the checkout's Addresses step."
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    operations: [customers.CMD012, customers.CMD013, customers.CMD014, customers.EVT007, customers.EVT008, customers.EVT009]
+    code_refs:
+      - path: "controllers/front/AddressController.php"
+        role: implementation
+        description: "postProcess at line 39; the in-cart delete refusal at line 71."
 
 use_cases:
   - id: customers.UC001
@@ -191,6 +270,7 @@ use_cases:
     delivery_priority: must-have
 
   - id: customers.UC002
+    tracker_ref: "github:42043"
     name: "Manage Customer Addresses"
     summary: "Customer adds, edits, or deletes delivery and invoice addresses."
     primary_actor: customers.ACT001

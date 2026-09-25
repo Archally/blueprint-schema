@@ -26,6 +26,68 @@ screens:
     description: "Lists pending and processed returns. Shows return details, associated order, requested products, and status transition controls. Links to credit slip generation."
     processes: [orders.PRC005]
 
+  # The shopper's side of an order. The three screens above are back office; the three below are
+  # the account pages where a customer follows an order they already placed. No front controller
+  # dispatches the command bus, so an action below names a domain operation only where the two
+  # paths reach the same method, and says so where they do not.
+
+  - id: orders.SCR004
+    name: "Order history"
+    summary: "The shopper's own orders, newest first, each with its status and its invoice link."
+    description: >
+      HistoryController reads the orders with Order::getCustomerOrders and presents each through
+      OrderPresenter. Two behaviours are worth naming. In catalog mode the page redirects to the
+      home page, because a shop that does not sell has no order history to show. And a shopper
+      who arrives here straight after paying is warned that validation can take a few minutes
+      and that a missing order may simply not be written yet, which is PrestaShop admitting in
+      the interface that order placement is not synchronous with the redirect.
+    uses_models: [MDL104]
+    processes: [orders.PRC006]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/HistoryController.php"
+        role: implementation
+        description: "The page. initContent line 26: the catalog-mode redirect, the slow-validation warning, and setTemplate('customer/history') at line 45."
+
+  - id: orders.SCR005
+    name: "Order detail (storefront)"
+    summary: "One order as its customer sees it, with its documents, its message box and the form that starts a return."
+    description: >
+      OrderDetailController shows the lines, the totals, the carrier and the status history, and
+      it carries two controls that write. A message about the order opens or reopens a customer
+      service thread and appends a CustomerMessage. And the merchandise-return form lives here,
+      not on the returns page: the shopper ticks lines and quantities here and the submission is
+      handled by the order-follow controller, which redirects back to this page with a specific
+      flag for each refusal.
+    uses_models: [MDL103, MDL105]
+    processes: [orders.PRC006]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/OrderDetailController.php"
+        role: implementation
+        description: "The page. postProcess line 70 handles submitMessage; setTemplate('customer/order-detail') at line 189."
+
+  - id: orders.SCR006
+    name: "Merchandise returns"
+    summary: "The shopper's return requests, and the controller that creates one from the order detail page."
+    description: >
+      OrderFollowController is two things. As a page it lists the customer's returns through
+      OrderReturn::getOrdersReturn and an OrderReturnPresenter. As a handler it accepts the
+      return form submitted from the order detail page, and it is strict about it: six separate
+      refusals, each redirecting back to the order with its own flag, for a missing order, no
+      lines ticked, no quantities, an order that is not returnable, an order belonging to
+      someone else, an empty reason, and a quantity larger than what was bought. Only then does
+      it write the return at state 1 and fire actionOrderReturn.
+    processes: [orders.PRC006]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/OrderFollowController.php"
+        role: implementation
+        description: "Both halves. postProcess line 24: the refusals, then OrderReturn::add and Hook::exec('actionOrderReturn') at lines 107 to 109. initContent line 121 renders customer/order-follow."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "actionOrderReturn is registered at line 349; no event in this model is grounded on it yet."
+
 actions:
   - id: orders.UAC001
     screen: orders.SCR001
@@ -63,6 +125,54 @@ actions:
     description: "Transition a return request to a new state."
     triggers_operations: [orders.CMD023]
 
+  - id: orders.UAC007
+    screen: orders.SCR005
+    name: "Send a message about this order"
+    description: >
+      The shopper's message opens a CustomerThread if none exists for that email and order, or
+      reopens the existing one, and appends a CustomerMessage. It names no operation on purpose.
+      AddOrderCustomerMessage exists in this model, but the only place that dispatches its
+      command is the back-office order controller; the storefront constructs the two objects
+      itself. Modeling this click as that command would claim a path the code does not take.
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/OrderDetailController.php"
+        role: implementation
+        description: "postProcess, lines 85 to 114: the thread lookup, then CustomerThread::add or update and CustomerMessage::add."
+
+  - id: orders.UAC008
+    screen: orders.SCR005
+    name: "Request a return for these lines"
+    description: >
+      The form the shopper fills to return part of an order. It names no operation because none
+      exists: src/Core/Domain/OrderReturn/Command holds five classes and every one of them
+      deletes or transitions a return that is already there. The creation the shopper performs
+      is OrderReturn::add in the order-follow controller, and it fires actionOrderReturn, a
+      registered hook no event in this model is grounded on. This is the largest storefront gap
+      the survey found, and it is a gap in the domain layer rather than here.
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/OrderFollowController.php"
+        role: implementation
+        description: "postProcess, lines 78 to 109: the return is built, checked against the order's remaining quantities, written and announced."
+      - path: "classes/order/OrderReturn.php"
+        role: implementation
+        description: "checkEnoughProduct and addReturnDetail, the two methods that decide what may be returned."
+
+  - id: orders.UAC009
+    screen: orders.SCR004
+    name: "Open an order from the history"
+    description: >
+      Reading the history performs no modeled read. GetCustomerOrders exists and is a
+      back-office query on the customer detail view; this page calls Order::getCustomerOrders on
+      the legacy class instead, then presents each order in full, which is why a long history is
+      a row of object loads rather than one query.
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/HistoryController.php"
+        role: implementation
+        description: "getTemplateVarOrders, line 48: Order::getCustomerOrders, then one Order load and one presenter call per row."
+
 navigation:
   - id: orders.UNV001
     from: orders.SCR001
@@ -75,3 +185,27 @@ navigation:
     to: orders.SCR003
     condition: "User clicks 'View Return' link on an order with an active return."
     description: "Navigate from order detail to return management."
+
+  - id: orders.UNV003
+    from: customers.SCR007
+    to: orders.SCR004
+    condition: "Shopper opens Order history from the account hub"
+    description: "The history is an account page served by the orders slice; the hub that links to it belongs to customers, which is why this edge crosses a slice boundary."
+
+  - id: orders.UNV004
+    from: orders.SCR004
+    to: orders.SCR005
+    condition: "Shopper clicks an order in the history"
+    description: "The storefront order detail, not the back-office one: a different controller, a different template and a different set of controls."
+
+  - id: orders.UNV005
+    from: orders.SCR005
+    to: orders.SCR006
+    condition: "Shopper submits the merchandise-return form and every check passes"
+    description: "The form is on the order detail page and the handler is the returns controller, so a successful request looks to the shopper like a move between two pages."
+
+  - id: orders.UNV006
+    from: orders.SCR006
+    to: orders.SCR005
+    condition: "A return request is refused"
+    description: "Every one of the six refusals redirects back to the order detail page carrying its own flag, so the shopper is returned to the form with the reason rather than shown an error page."

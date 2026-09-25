@@ -1,68 +1,276 @@
 ---
-version: "1.0.0"
+version: "1.1.0"
 tags: [sell-and-fulfill]
+
+# The capabilities a merchant works through to have something to sell and to get it delivered.
+# Shorter than shop-and-buy by design: a merchant-side ability tends to be one broad thing the
+# back office does, where a shopper-side ability splits into the distinct moments of a purchase.
+# Where a capability here does decompose it carries children; where it does not, the flat entry
+# is the whole truth rather than an unfinished one.
+#
+# `operations` lists a REPRESENTATIVE SPINE, not an inventory (step-00 D9).
+
 capabilities:
-  # ── Level 1: Catalog ──────────────────────────────────────────────────
+  # Level 1: having something to sell
   - id: CAP005
     name: "Catalog Management"
     level: 1
     description: >
-      Ability to define, organize, and publish products with attributes,
-      combinations, categories, and search indexing.
+      Ability to define what the shop sells and how it is arranged: products and their type,
+      the category tree they hang from, the images and attachments that describe them, and the
+      duplication and bulk editing a merchant needs to keep a large catalogue current.
     goal_refs:
-      - catalog.G001
-      - catalog.G002
+      - catalog.GL001
+      - catalog.GL002
     operations:
       - catalog.CMD001
       - catalog.CMD002
+      - catalog.CMD003
+      - catalog.CMD005
+      - catalog.CMD008
+      - catalog.CMD025
+      - catalog.CMD026
+      - catalog.CMD101
+      - catalog.CMD016
+      - catalog.CMD420
+      - catalog.CMD421
       - catalog.QRY001
       - catalog.QRY002
+    owned_by:
+      team: TM002
     maturity: optimized
     strategic_importance: critical
     delivery_priority: must-have
     discovery_stage: committed
     certainty: confirmed
-    value_stream_refs: [VS001, VS002]
+    evidence:
+      - kind: codebase-analysis
+        source: "src/Core/Domain/Product, src/Core/Domain/Category, catalog/product-core.domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          The Product folder and its sub-folders hold 79 command and query classes and 83
+          exception classes, the densest domain in the codebase. Every one is modelled in the
+          catalog slice with a resolving code reference after phase 1.
+        confidence_impact: supports
+    children:
+      - id: CAP102
+        name: "Product Variants & Options"
+        level: 2
+        description: >
+          Ability to sell one product in several forms: attribute groups and their attributes,
+          the combinations generated from them, the features that describe a product without
+          varying it, and the customization fields a shopper fills in at purchase time.
+        operations:
+          - catalog.CMD011
+          - catalog.CMD012
+          - catalog.CMD013
+          - catalog.CMD032
+          - catalog.CMD309
+          - catalog.CMD030
+          - catalog.CMD031
+          - catalog.CMD108
+          - catalog.CMD109
+          - catalog.QRY003
+          - catalog.QRY104
+        owned_by:
+          team: TM002
+        maturity: established
+        strategic_importance: high
+        delivery_priority: must-have
+        discovery_stage: validated
+        certainty: probable
+        evidence:
+          - kind: codebase-analysis
+            source: "src/Core/Domain/Product/Combination, src/Core/Domain/AttributeGroup, src/Core/Domain/Feature"
+            date: "2026-09-19"
+            summary: >
+              Combinations, attribute groups and features are three separate code domains whose
+              commands only make sense together: a combination is the cross-product of attribute
+              values, and a feature is the descriptor that deliberately does not generate one.
+            confidence_impact: supports
 
-  # ── Level 1: Shipping & Delivery ──────────────────────────────────────
+      - id: CAP101
+        name: "Supply Chain & Sourcing"
+        level: 2
+        description: >
+          Ability to say where goods come from and what is on hand: the suppliers a product can
+          be bought from with their per-supplier reference and price, the brand it is sold
+          under, the packs assembled from other products, and the stock movements that record
+          every change in quantity.
+        operations:
+          - catalog.CMD037
+          - catalog.CMD038
+          - catalog.CMD034
+          - catalog.CMD111
+          - catalog.CMD113
+          - catalog.CMD110
+          - catalog.QRY108
+          - catalog.QRY109
+          - catalog.QRY011
+          - catalog.QRY010
+        owned_by:
+          team: TM002
+        maturity: developing
+        strategic_importance: medium
+        delivery_priority: should-have
+        discovery_stage: validated
+        certainty: probable
+        evidence:
+          - kind: codebase-analysis
+            source: "src/Core/Domain/Supplier, src/Core/Domain/Manufacturer, src/Core/Domain/Product/Pack, catalog/supply-chain.domain.yaml"
+            date: "2026-09-19"
+            summary: >
+              Supplier, Manufacturer and Pack are separate code domains modelled in one catalog
+              shard. Core carries no purchase order and no warehouse receipt, which is why the
+              maturity is developing rather than established: sourcing is recorded, not managed.
+            confidence_impact: supports
+
+  # Level 1: selling it for less, on purpose
+  - id: CAP100
+    name: "Promotion & Discount Management"
+    level: 1
+    description: >
+      Ability to sell below list price deliberately and in a controlled way: cart rules a
+      shopper applies with a voucher code, catalog price rules that cut a whole segment's price,
+      and specific prices set on one product for one shop, currency, country or customer group.
+      Three code domains serve this ability.
+    operations:
+      - checkout.CMD016
+      - checkout.CMD017
+      - checkout.CMD018
+      - checkout.CMD019
+      - checkout.CMD020
+      - checkout.CMD021
+      - checkout.CMD022
+      - checkout.CMD014
+      - checkout.QRY004
+      - catalog.CMD021
+      - catalog.CMD022
+      - catalog.CMD203
+      - orders.CMD010
+    owned_by:
+      team: TM003
+    maturity: established
+    strategic_importance: high
+    delivery_priority: must-have
+    discovery_stage: validated
+    certainty: probable
+    evidence:
+      - kind: codebase-analysis
+        source: "src/Core/Domain/Discount, src/Core/Domain/CartRule, src/Core/Domain/Product/SpecificPrice, checkout/discount.domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          Discounts, catalog price rules and specific prices are authored in three slices
+          (checkout, catalog, orders) and all three reduce what a shopper pays. Nothing in the
+          capability map named the ability before, so the operations existed with no strategic
+          statement above them.
+        confidence_impact: supports
+
+  # Level 1: getting it there
   - id: CAP010
     name: "Shipping & Delivery"
     level: 1
     description: >
-      Ability to configure carriers, calculate shipping costs by weight/price/zone,
-      and track shipments through delivery.
+      Ability to offer a delivery method and act on the one a shopper chooses: carriers with
+      their weight or price ranges per zone and their tax treatment, and the shipments an order
+      is split into, merged from, switched between carriers, and finally fulfilled.
+    operations:
+      - shipping.CMD001
+      - shipping.CMD008
+      - shipping.CMD009
+      - shipping.CMD010
+      - shipping.CMD011
+      - shipping.CMD015
+      - shipping.CMD017
+      - shipping.CMD018
+      - shipping.QRY003
+      - shipping.QRY004
+      - shipping.QRY005
+    owned_by:
+      team: TM005
     maturity: established
     strategic_importance: high
     delivery_priority: must-have
     discovery_stage: committed
     certainty: confirmed
-    value_stream_refs: [VS002]
+    evidence:
+      - kind: codebase-analysis
+        source: "src/Core/Domain/Carrier, src/Core/Domain/Shipment, shipping/carrier.domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          Carrier configuration and the Shipment aggregate are separate code domains in one
+          slice; Shipment's split, merge and switch-carrier commands are what make fulfilment a
+          capability rather than a status field on the order.
+        confidence_impact: supports
 
-  # ── Level 1: International ────────────────────────────────────────────
+  # Level 1: selling across borders
   - id: CAP011
     name: "Multi-Currency & Tax"
     level: 1
     description: >
-      Ability to operate in multiple currencies with exchange rates, and apply
-      zone-based tax rules for global compliance.
+      Ability to charge the right amount in the right money: currencies with their exchange
+      rates and a shop default, taxes, and the tax rules grouped per country and state that
+      decide which tax a delivery address attracts.
     goal_refs:
-      - orders.G002
+      - orders.GL002
+    operations:
+      - international.CMD001
+      - international.CMD005
+      - international.CMD006
+      - international.CMD023
+      - international.CMD027
+      - international.CMD034
+      - international.QRY002
+      - international.QRY003
+      - international.QRY010
+      - international.QRY012
+    owned_by:
+      team: TM006
     maturity: established
     strategic_importance: critical
     delivery_priority: must-have
     discovery_stage: committed
     certainty: confirmed
-    value_stream_refs: [VS001, VS002]
+    evidence:
+      - kind: codebase-analysis
+        source: "src/Core/Domain/Currency, src/Core/Domain/Tax, src/Core/Domain/TaxRulesGroup, international/taxation.domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          Currency, Tax and TaxRulesGroup are three code domains; the TaxRulesGroup folder alone
+          holds 13 command and query classes because a tax rule is scoped by country, state and
+          postcode range rather than by a single rate.
+        confidence_impact: supports
     children:
       - id: CAP012
         name: "Localization"
         level: 2
         description: >
-          Multi-language support with translation management, locale-specific
-          formatting (dates, numbers, addresses), and country/zone hierarchies.
+          Ability to present the shop in the buyer's language and geography: languages with
+          their locale and right-to-left handling, countries with their per-country required
+          address fields, states, and the zones that group countries for shipping and tax.
+        operations:
+          - international.CMD007
+          - international.CMD008
+          - international.CMD010
+          - international.CMD011
+          - international.CMD014
+          - international.CMD019
+          - international.QRY006
+          - international.QRY004
+          - content.CMD017
+        owned_by:
+          team: TM006
         maturity: established
         strategic_importance: high
         delivery_priority: must-have
         discovery_stage: committed
         certainty: confirmed
-        value_stream_refs: [VS002]
+        evidence:
+          - kind: codebase-analysis
+            source: "src/Core/Domain/Language, src/Core/Domain/Country, src/Core/Domain/Zone, international/geography.domain.yaml"
+            date: "2026-09-19"
+            summary: >
+              Country carries a required-fields query of its own, which is the evidence that
+              localization is an ability rather than a lookup table: what an address must
+              contain is a per-country business rule.
+            confidence_impact: supports

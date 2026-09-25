@@ -52,6 +52,124 @@ processes:
         entry_operation: shop.CMD010
         path_type: happy
 
+  - id: shop.PRC003
+    title: "Shop the storefront"
+    description: >
+      The shopper's journey from arriving at the shop to holding a placed order, crossing four
+      slices. It runs entirely in what PrestaShop calls the front office - the 39 controllers
+      under controllers/front/ - and touches the back office at no point, which is why none of
+      its activities runs over the command bus. It is filed here because no single slice owns
+      it and because the shop is what a shopper arrives at. Two of its six activities name no
+      entry operation, and that is the
+      finding rather than an omission: PrestaShop's storefront search has no CQRS query class,
+      and its order placement has no CQRS command of its own - the only command, taken by the
+      back office, is AddOrderFromBackOffice. What the two paths share is
+      PaymentModule::validateOrder, which is what the OrderPlaced event is grounded on, so the
+      journey ends on a fact the model does carry.
+    initiated_by: [orders.ACT001]
+    trigger:
+      type: manual
+      description: "A shopper opens the shop, from a search engine, a campaign link or the home page."
+    end_states:
+      - name: "Order placed"
+        type: complete
+        description: "PaymentModule::validateOrder has written the order, its first state and its confirmation mail, and fired actionValidateOrder."
+      - name: "Cart abandoned"
+        type: cancel
+        description: "The shopper leaves with products in the cart. PrestaShop keeps the cart row, which is why the back office can see and mail abandoned carts."
+    lanes:
+      - actor: orders.ACT001
+        operations: [checkout.CMD009, checkout.CMD011, checkout.CMD014, checkout.CMD004]
+    activities:
+      - id: shop.PA003
+        name: "Find something to buy"
+        description: >
+          The shopper reaches a listing, by following a category or by searching. Both routes
+          render through ProductListingFrontController, so they differ in how the product set is
+          chosen and not in what the shopper sees.
+        triggered_by: [orders.ACT001]
+        entry_operation: catalog.QRY006
+        steps:
+          - operation_ref: catalog.QRY006
+            note: "The category read, performed by calling Category::getProducts directly rather than over the command bus."
+        path_type: happy
+        next:
+          - to: shop.PA004
+            condition: "the shopper decides to buy one of the products in the listing"
+
+      - id: shop.PA004
+        name: "Fill the cart"
+        description: >
+          Adding, re-quantifying and discounting happen on the cart page, and each one is a full
+          page load: PrestaShop applies the change in postProcess and then draws the page.
+        entry_operation: checkout.CMD009
+        steps:
+          - operation_ref: checkout.CMD009
+            note: "Reached from the product page as a link carrying add=1, not as a form post."
+          - operation_ref: checkout.EVT004
+            note: "The cart's lines changed; modules observing the cart hear it here."
+        path_type: happy
+        next:
+          - to: shop.PA005
+            condition: "the shopper applies a voucher before checking out"
+          - to: shop.PA006
+            condition: "the shopper goes straight to checkout"
+        gateway: xor
+
+      - id: shop.PA005
+        name: "Apply a voucher"
+        description: >
+          An optional detour. The code is checked for existence and validity before it is
+          applied, and a voucher the shop adds automatically returns even after the shopper
+          removes it.
+        entry_operation: checkout.CMD014
+        steps:
+          - operation_ref: checkout.CMD014
+            note: "Cart::addCartRule, the same method the back office reaches over the command bus."
+          - operation_ref: checkout.EVT005
+            note: "The discount is on the cart and the totals have moved."
+        path_type: happy
+        next:
+          - to: shop.PA006
+
+      - id: shop.PA006
+        name: "Work through checkout"
+        description: >
+          One page, four steps, the third skipped for a virtual cart. The delivery step is the
+          one that writes to the cart, carrying the carrier choice together with the gift and
+          recyclable-packaging options.
+        entry_operation: checkout.CMD004
+        join:
+          mode: xor
+        steps:
+          - operation_ref: checkout.CMD004
+            note: "The delivery step's write; a virtual cart never reaches it."
+          - operation_ref: checkout.EVT002
+            note: "The cart's settings changed, which is what the totals and the payment step read."
+        path_type: happy
+        next:
+          - to: shop.PA007
+
+      - id: shop.PA007
+        name: "Pay and receive the order"
+        description: >
+          No entry operation, and the absence is the point. The control belongs to the chosen
+          payment module, and every route converges on PaymentModule::validateOrder, which
+          writes the order and fires actionValidateOrder. The only command PrestaShop models for
+          order creation is the back office's, so naming it here would claim a path the
+          storefront does not take.
+        steps:
+          - operation_ref: orders.EVT001
+            note: "actionValidateOrder, fired at the end of validateOrder once the order, its state, its invoice and its mail are done."
+        path_type: happy
+    code_refs:
+      - path: "controllers/front/OrderController.php"
+        role: implementation
+        description: "The checkout activity: bindCheckoutProcess at line 407 composes the four steps."
+      - path: "classes/PaymentModule.php"
+        role: implementation
+        description: "validateOrder at line 194, where every order-placing path meets; actionValidateOrder at line 608."
+
 user_stories:
   - id: shop.US001
     actor: shop.ACT001

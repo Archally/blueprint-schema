@@ -3,7 +3,7 @@ version: "1.0.0"
 scope: orders
 
 goals:
-  - id: orders.G001
+  - id: orders.GL001
     statement: "Achieve sub-second cart-to-checkout transition"
     description: >
       Shoppers abandon carts when checkout is slow. PrestaShop must render the
@@ -12,11 +12,15 @@ goals:
     summary: "Sub-second checkout transition"
     priority: critical
     measure: "p95 cart-to-checkout render < 1 000 ms"
+    affects:
+      operation_refs: [orders.CMD001, orders.QRY002]
+      concept_refs: [orders.CN002]
+      process_refs: [orders.PRC001]
     discovery_stage: validated
     certainty: confirmed
     tags: [performance, checkout]
 
-  - id: orders.G002
+  - id: orders.GL002
     statement: "Support multi-currency ordering for EU market expansion"
     description: >
       PrestaShop must allow customers to view prices and complete orders in their
@@ -24,11 +28,15 @@ goals:
     summary: "Multi-currency order support"
     priority: high
     measure: "Orders completed in >= 5 currencies per month"
+    affects:
+      operation_refs: [orders.CMD007]
+      concept_refs: [orders.CN002]
+      process_refs: [orders.PRC001]
     discovery_stage: committed
     certainty: probable
     tags: [i18n, payments]
 
-  - id: orders.G003
+  - id: orders.GL003
     statement: "Reduce order processing error rate below 0.1%"
     description: >
       Current error rate in order state transitions (payment capture, stock
@@ -37,11 +45,15 @@ goals:
     summary: "Order error rate < 0.1%"
     priority: high
     measure: "Monthly order error rate < 0.1%"
+    affects:
+      operation_refs: [orders.CMD001, orders.CMD004]
+      concept_refs: [orders.CN002, orders.CN010]
+      process_refs: [orders.PRC001]
     discovery_stage: exploring
     certainty: speculative
     tags: [reliability, operations]
 
-  - id: orders.G004
+  - id: orders.GL004
     statement: "Ensure invoice compliance with EU VAT regulations"
     description: >
       Every paid order must produce a fiscally compliant invoice with sequential
@@ -50,6 +62,10 @@ goals:
     summary: "EU VAT invoice compliance"
     priority: high
     measure: "100% of paid orders have compliant invoices within 24h"
+    affects:
+      operation_refs: [orders.CMD017, orders.CMD019]
+      concept_refs: [orders.CN006]
+      process_refs: [orders.PRC004]
     discovery_stage: committed
     certainty: confirmed
     tags: [compliance, invoicing]
@@ -74,7 +90,7 @@ non_goals:
     certainty: probable
 
 risks:
-  - id: orders.R001
+  - id: orders.RSK001
     statement: "Cart calculation divergence between front-office and back-office"
     description: >
       PrestaShop's dual calculation paths (Smarty templates in FO vs PHP in BO)
@@ -83,19 +99,23 @@ risks:
     summary: "FO/BO cart total mismatch"
     likelihood: high
     impact: high
+    affects:
+      operation_refs: [orders.CMD001]
+      concept_refs: [orders.CN002]
+      process_refs: [orders.PRC001]
     mitigation: "Unify calculation through a single CartCalculator service invoked by both FO and BO."
     contingency: "Add reconciliation check at checkout that flags mismatches before payment capture."
     owner: orders.ACT002
     status: identified
     review_date: "2026-06-01"
     goal_refs:
-      - orders.G001
-      - orders.G003
+      - orders.GL001
+      - orders.GL003
     discovery_stage: validated
     certainty: confirmed
     tags: [technical-debt, critical-path]
 
-  - id: orders.R002
+  - id: orders.RSK002
     statement: "Exchange rate staleness causes pricing disputes"
     description: >
       If exchange rates are cached too long, customers may see a price at browse
@@ -104,14 +124,18 @@ risks:
     summary: "Stale exchange rates"
     likelihood: medium
     impact: high
+    affects:
+      operation_refs: [orders.CMD007]
+      concept_refs: [orders.CN002]
+      process_refs: [orders.PRC001]
     mitigation: "Refresh exchange rates every 15 minutes via ECB feed; lock rate at cart creation."
     goal_refs:
-      - orders.G002
+      - orders.GL002
     discovery_stage: exploring
     certainty: probable
     tags: [legal, i18n]
 
-  - id: orders.R003
+  - id: orders.RSK003
     statement: "Stock over-sell during flash sales"
     description: >
       Under high concurrency, PrestaShop's stock decrement (UPDATE SET quantity =
@@ -120,18 +144,20 @@ risks:
     summary: "Concurrent stock over-sell"
     likelihood: medium
     impact: critical
+    affects:
+      operation_refs: [orders.CMD001]
+      concept_refs: [orders.CN002]
+      process_refs: [orders.PRC001]
     mitigation: "Use database-level pessimistic locking (SELECT FOR UPDATE) on stock decrement path."
     contingency: "Automated back-order workflow with customer notification within 1 hour."
     status: open
     goal_refs:
-      - orders.G003
+      - orders.GL003
     discovery_stage: validated
     certainty: confirmed
     tags: [concurrency, reliability]
 
-  - id: orders.R004
-    affects:
-      operation_refs: [orders.CMD024]
+  - id: orders.RSK004
     statement: "State machine inconsistency from custom order states"
     description: >
       Merchants can add custom order states via the admin CRUD. If a custom state
@@ -141,40 +167,47 @@ risks:
     summary: "Custom order state dead-end risk"
     likelihood: medium
     impact: high
+    affects:
+      operation_refs: [orders.CMD004, orders.CMD024]
+      concept_refs: [orders.CN010]
+      process_refs: [orders.PRC001]
     mitigation: "Add transition validation in AddOrderState that warns when a new state has no outgoing transitions."
     contingency: "Admin tool to force-transition orders stuck in dead-end states."
     owner: orders.ACT002
     status: identified
     goal_refs:
-      - orders.G003
+      - orders.GL003
     discovery_stage: exploring
     certainty: probable
     tags: [state-machine, admin]
 
 assumptions:
-  - id: orders.A001
+  - id: orders.ASM001
+    domain_scope: platformkernel
     statement: "PrestaShop will continue to support shared hosting (no container-only requirement)"
     consequence: >
       If PrestaShop drops shared-hosting support, the multi-currency cron-based
       rate refresh and file-based caching strategies become unnecessary - we could
       use Redis pub/sub and container sidecars instead.
     risk_refs:
-      - orders.R002
+      - orders.RSK002
     discovery_stage: committed
     certainty: probable
 
-  - id: orders.A002
+  - id: orders.ASM002
+    domain_scope: orders
     statement: "Stripe and PayPal modules will adopt the new Cart Price API within 6 months"
     consequence: >
       If payment modules don't adopt the new API, the dual calculation path
-      (R001) cannot be fully eliminated - the old path must remain for backward
+      (RSK001) cannot be fully eliminated - the old path must remain for backward
       compatibility, defeating the mitigation.
     risk_refs:
-      - orders.R001
+      - orders.RSK001
     discovery_stage: exploring
     certainty: speculative
 
-  - id: orders.A003
+  - id: orders.ASM003
+    domain_scope: orders
     statement: "EU VAT rates will not change more than twice per year"
     consequence: >
       More frequent changes would require a dynamic tax-rule engine rather than
@@ -184,7 +217,7 @@ assumptions:
     certainty: probable
 
 trade_offs:
-  - id: orders.T001
+  - id: orders.TRO001
     choice: "Cart calculation unification vs backward compatibility with existing modules"
     selected: "New CartCalculator service with adapter layer for legacy modules"
     rejected: "Big-bang rewrite of all calculation paths"
@@ -192,11 +225,11 @@ trade_offs:
       A big-bang rewrite would break hundreds of third-party modules that hook
       into the current calculation pipeline. The adapter approach preserves
       compatibility while funneling all paths through a single source of truth.
-    accepted_risk: "Adapter overhead adds ~5ms per cart recalculation (acceptable given G001 budget)."
+    accepted_risk: "Adapter overhead adds ~5ms per cart recalculation (acceptable given GL001 budget)."
     discovery_stage: committed
     certainty: confirmed
 
-  - id: orders.T002
+  - id: orders.TRO002
     choice: "Pessimistic locking vs optimistic locking for stock reservation"
     selected: "Pessimistic locking (SELECT FOR UPDATE) on critical stock path"
     rejected: "Optimistic locking with retry loop"
@@ -218,11 +251,15 @@ inquiries:
       Drools-style DSL or a PHP equivalent) could improve maintainability but
       adds operational complexity.
     category: technical
+    affects:
+      operation_refs: [orders.CMD010]
+      concept_refs: [orders.CN002]
+      process_refs: [orders.PRC001]
     goal_refs:
-      - orders.G001
-      - orders.G003
+      - orders.GL001
+      - orders.GL003
     risk_refs:
-      - orders.R001
+      - orders.RSK001
     stakeholders:
       - orders.ACT001
       - orders.ACT002
@@ -237,14 +274,22 @@ inquiries:
     statement: "What is the legal requirement for exchange rate display accuracy in each target EU market?"
     summary: "EU exchange rate display regulation"
     description: >
-      Different EU member states may have different interpretations of the
-      Consumer Rights Directive regarding displayed vs charged price tolerance.
-      Need legal review per jurisdiction before committing to a refresh interval.
+      Different EU member states may interpret the Consumer Rights Directive
+      differently on the tolerance between a displayed and a charged price, and
+      the refresh interval a shop should commit to follows from that reading
+      rather than from anything technical. Still open and still blocking on
+      2026-09-19, five months past the due date recorded below: nothing in
+      phase 1 could answer it, because the answer is a legal opinion and not a
+      fact about the code.
     category: legal
+    affects:
+      operation_refs: [orders.CMD007]
+      concept_refs: [orders.CN002]
+      process_refs: [orders.PRC001]
     goal_refs:
-      - orders.G002
+      - orders.GL002
     risk_refs:
-      - orders.R002
+      - orders.RSK002
     stakeholders:
       - orders.ACT001
     blocking: true
@@ -258,20 +303,25 @@ inquiries:
     statement: "Can we achieve sub-second checkout with the current Smarty template engine, or must we migrate to Twig?"
     summary: "Smarty vs Twig performance for checkout"
     description: >
-      PrestaShop's migration from Smarty to Twig is partial. The checkout flow
-      still uses Smarty in many themes. If Smarty is the bottleneck for G001,
-      the migration scope expands significantly.
+      PrestaShop's migration from Smarty to Twig is partial: the back office is
+      Twig and the storefront is theme-supplied Smarty, and content.TRO001
+      records why both are kept. If the template engine is what makes checkout
+      slow, the migration's scope grows from the back office to every theme.
+      Reopened 2026-09-19. This inquiry was carried as resolved on the strength
+      of a benchmark - 180ms for Smarty against 140ms for Twig on PrestaShop
+      8.x - for which this model holds no source, no method and no artifact,
+      and which nobody can rerun. The number is recorded here as the claim it
+      is rather than removed, but it cannot close a question, so the status
+      goes back to investigating until someone measures it and says how.
     category: feasibility
+    affects:
+      operation_refs: [orders.CMD001]
+      process_refs: [orders.PRC001]
     goal_refs:
-      - orders.G001
+      - orders.GL001
     owner: orders.ACT002
     blocking: false
-    resolved: true
-    resolution: >
-      Benchmark on PrestaShop 8.x shows Smarty checkout renders in 180ms vs
-      Twig at 140ms. The 40ms difference is not the bottleneck - database
-      queries and cart recalculation dominate. No Twig migration needed for G001.
-    status: resolved
-    discovery_stage: validated
-    certainty: confirmed
+    status: investigating
+    discovery_stage: hypothesis
+    certainty: speculative
     tags: [performance, frontend]

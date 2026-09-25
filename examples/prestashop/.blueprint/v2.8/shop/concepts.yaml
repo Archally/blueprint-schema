@@ -14,20 +14,24 @@ concepts:
     attributes:
       name:
         id: CAT900
-        description: "Shop name"
+        description: "Name the shop is known by in the back office and, for a multi-store installation, the name that distinguishes it from its siblings in the shop selector. It is not the storefront title a visitor sees."
         example: "My Store"
       headerLogo:
         id: CAT901
-        description: "Path to the shop header logo image file"
+        description: "File name of the shop header logo, held as a configuration value rather than on the shop row. The uploader rewrites the name on every upload, appending the image-update timestamp and the shop id so browsers cannot serve a cached previous logo."
+        example: "logo-17263104001.jpg"
       invoiceLogo:
         id: CAT902
         description: "Path to the invoice logo image file"
+        example: "logo_invoice-17263104001.jpg"
       mailLogo:
         id: CAT903
         description: "Path to the email template logo image file"
+        example: "logo_mail-17263104001.jpg"
       favicon:
         id: CAT904
-        description: "Path to the favicon (.ico file)"
+        description: "File name of the favicon. The default shop also gets a plain favicon.ico written at the web root, because a browser requests that path directly; every other shop gets only the per-shop name."
+        example: "favicon-1.ico"
     code_refs:
       - path: "src/Core/Domain/Shop/Command/UploadLogosCommand.php"
         role: implementation
@@ -49,6 +53,7 @@ concepts:
       active:
         id: CAT906
         description: "Whether the store is currently active and visible"
+        example: "true"
     code_refs:
       - path: "src/Core/Domain/Store/Command/DeleteStoreCommand.php"
         role: implementation
@@ -89,11 +94,12 @@ concepts:
         example: "tshirt"
       aliases:
         id: CAT910
-        description: "Comma-separated alias terms to map to"
-        example: "t-shirt,tee"
+        description: "The terms the catalog should also search for when a shopper types the search term. A list of alias entries, each with its own enabled flag, not a single delimited string."
+        example: "t-shirt, tee (two entries, each independently enabled)"
       active:
         id: CAT911
-        description: "Whether this alias mapping is currently active"
+        description: "Whether one alias entry is in use. Held per alias, not per search term, so a term can carry a mix of enabled and disabled aliases. The Admin API spells the same field enabled."
+        example: "true"
     code_refs:
       - path: "src/Core/Domain/Alias/Command/AddSearchTermAliasesCommand.php"
         role: implementation
@@ -128,6 +134,7 @@ concepts:
       description:
         id: CAT914
         description: "Localized description of the contact department"
+        example: "For questions about an order you have already placed."
     code_refs:
       - path: "src/Core/Domain/Contact/Command/AddContactCommand.php"
         role: implementation
@@ -160,7 +167,8 @@ concepts:
         example: "ps_metrics"
       isClosed:
         id: CAT916
-        description: "Whether the card has been dismissed by the employee"
+        description: "Whether this employee has dismissed the card. Held per employee as a configuration key, not on any entity, so one employee dismissing a card leaves it visible to the others."
+        example: "true"
     code_refs:
       - path: "src/Core/Domain/ShowcaseCard/Command/CloseShowcaseCardCommand.php"
         role: implementation
@@ -201,7 +209,7 @@ actors:
           industry: "E-commerce"
 
 associations:
-  - id: shop.AS001
+  - id: shop.ASC001
     subject: shop.CN001
     predicate: depends-on
     object: shop.CN002

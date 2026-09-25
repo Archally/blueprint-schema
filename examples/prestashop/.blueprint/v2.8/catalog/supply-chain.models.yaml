@@ -32,18 +32,21 @@ components:
             "1": "Chinese multinational technology company."
         localizedShortDescriptions:
           type: object
+          description: "Short description per language id, used where the full one does not fit, such as a brand tile."
           additionalProperties:
             type: string
           example:
             "1": "PC manufacturer"
         localizedMetaTitles:
           type: object
+          description: "Page title per language id for the storefront brand page. Empty means the shop falls back to the brand name."
           additionalProperties:
             type: string
           example:
             "1": "Lenovo Products"
         localizedMetaDescriptions:
           type: object
+          description: "Meta description per language id for the storefront brand page, used by search engines."
           additionalProperties:
             type: string
           example:
@@ -54,6 +57,7 @@ components:
           example: true
         associatedShopIds:
           type: array
+          description: "Shops this manufacturer is visible in. A multistore installation can hide a brand from one shop without deleting it."
           items:
             type: integer
           example: [1]
@@ -81,18 +85,21 @@ components:
           example: "TechParts Distribution"
         localizedDescriptions:
           type: object
+          description: "Supplier description per language id, shown on the storefront supplier page."
           additionalProperties:
             type: string
           example:
             "1": "Wholesale distributor of laptop components."
         localizedMetaTitles:
           type: object
+          description: "Page title per language id for the storefront supplier page."
           additionalProperties:
             type: string
           example:
             "1": "TechParts - Supplier"
         localizedMetaDescriptions:
           type: object
+          description: "Meta description per language id for the storefront supplier page."
           additionalProperties:
             type: string
           example:
@@ -111,15 +118,15 @@ components:
           example: "Bâtiment A"
         postCode:
           type: string
-          description: "Postal code."
+          description: "Postal code of the supplier address, validated against the country format."
           example: "75001"
         city:
           type: string
-          description: "City."
+          description: "City of the supplier address."
           example: "Paris"
         countryId:
           type: integer
-          description: "Country identifier."
+          description: "The country the supplier ships from, which decides the address format and the tax treatment of its purchase orders."
           example: 8
         stateId:
           type: integer
@@ -131,6 +138,7 @@ components:
           example: true
         associatedShopIds:
           type: array
+          description: "Shops this supplier is visible in. A multistore installation can hide a supplier from one shop without deleting it."
           items:
             type: integer
           example: [1]

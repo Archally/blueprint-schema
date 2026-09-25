@@ -12,7 +12,7 @@ screens:
     name: "Logos & Favicons"
     summary: "Logo upload form for header, invoice, mail, and favicon images."
     uses_models: ["ShopLogos"]
-    motivated_by: [shop.G001]
+    motivated_by: [shop.GL001]
 
   - id: shop.SCR002
     name: "Store Locations"
@@ -23,18 +23,84 @@ screens:
     name: "Search Engine Referrers"
     summary: "List of SEO referrer search engines with CRUD controls."
     uses_models: ["SearchEngineList"]
-    motivated_by: [shop.G003]
+    motivated_by: [shop.GL003]
 
   - id: shop.SCR004
     name: "Search Aliases"
     summary: "Search term alias management with add, edit, and bulk delete."
     uses_models: ["AliasList"]
-    motivated_by: [shop.G002]
+    motivated_by: [shop.GL002]
 
   - id: shop.SCR005
     name: "Contact Departments"
     summary: "Contact Us form department list with add and edit controls."
     uses_models: ["ContactList"]
+
+  # The shop-wide storefront pages. The five screens above are back office; the three below are
+  # what a shopper meets. Each names the front controller that serves it, which is the only
+  # authority for what pages PrestaShop has.
+
+  - id: shop.SCR006
+    name: "Home page"
+    summary: "The shop's landing page, whose entire body is contributed by modules through one display hook."
+    description: >
+      The most instructive page in the storefront, because of how little of it exists.
+      IndexController is 32 lines: it assigns HOOK_HOME from Hook::exec('displayHome') and sets
+      the template index. There is no product selection, no banner, no newsletter block in core.
+      Every one of those arrives from a module subscribed to displayHome - ps_banner,
+      ps_featuredproducts, ps_imageslider, ps_newproducts and the rest, all composer
+      dependencies. A merchant who changes the home page is installing, ordering and configuring
+      modules, not editing a page, and that is the hook mechanism the modules slice describes
+      seen from the shopper's side.
+    processes: [shop.PRC003]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/IndexController.php"
+        role: implementation
+        description: "The whole page: Hook::exec('displayHome') at line 19, setTemplate('index') at line 22."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "displayHome is a registered display hook; this registry is the authority for hook names."
+
+  - id: shop.SCR007
+    name: "Search results"
+    summary: "Products matching a shopper's search terms, rendered through the same listing pipeline as a category."
+    description: >
+      Where a shopper who knows what they want arrives. SearchController extends
+      ProductListingFrontController and calls doProductSearch with catalog/listing/search, so
+      the results look and behave like a category listing. The matching itself is the shop's
+      own full-text index over ps_search_word and ps_search_index, consulted through
+      classes/Search.php and widened by the aliases the back office maintains. It is not the
+      back-office SearchProducts query, which serves the product grid over the command bus and
+      has no part in this page. Faceted narrowing comes from ps_facetedsearch, a module.
+    processes: [shop.PRC003]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/listing/SearchController.php"
+        role: implementation
+        description: "The page. init at line 25 validates the query string; initContent calls doProductSearch with catalog/listing/search at line 80."
+      - path: "classes/Search.php"
+        role: implementation
+        description: "The full-text matching the page performs, over the index RebuildSearchIndex maintains."
+
+  - id: shop.SCR008
+    name: "Contact us"
+    summary: "The shopper's route to customer service, whose form is supplied by a module rather than by core."
+    description: >
+      ContactController is 44 lines and contains no form: initContent sets the template contact
+      and getBreadcrumbLinks adds the crumb. The form, its department selector, its file upload
+      and its thread creation all come from the contactform module, a composer dependency. The
+      departments the selector offers are the Contact rows the back office maintains, which is
+      the one part of this page core does own.
+    uses_models: [MDL907]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/ContactController.php"
+        role: implementation
+        description: "The whole controller: setTemplate('contact') at line 22, and nothing else."
+      - path: "composer.json"
+        role: documentation
+        description: "Line 62 requires prestashop/contactform, which supplies the form this page displays."
 
 actions:
   - id: shop.UAC001
@@ -55,9 +121,46 @@ actions:
     description: "Create a new search term alias mapping."
     triggers_operations: [shop.CMD010]
 
+  - id: shop.UAC004
+    screen: shop.SCR007
+    name: "Search the catalogue"
+    description: >
+      Submitting the header search box loads the search page with the terms in the query string.
+      The match runs against the shop's own full-text index, so what a shopper finds depends on
+      when RebuildSearchIndex last ran and on the aliases the back office has defined. No modeled
+      query covers the storefront search: SearchProducts is the back-office product grid and
+      SearchForSearchTerm reports on what shoppers typed. The read itself is unmodelled, and that
+      is the fact this action records.
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/listing/SearchController.php"
+        role: implementation
+        description: "init, line 25: the search terms are read and validated before the listing runs."
+      - path: "classes/Search.php"
+        role: implementation
+        description: "The full-text query the page performs."
+
 navigation:
   - id: shop.UNV001
     from: shop.SCR003
     to: shop.SCR004
     condition: "User navigates between Search settings sub-pages"
     description: "Navigate from SEO referrers to search aliases."
+
+  - id: shop.UNV002
+    from: shop.SCR006
+    to: catalog.SCR001
+    condition: "Shopper follows a category in the main menu or a home-page block"
+    description: "The menu that carries this edge is the ps_mainmenu module, not core; the home page's own body is empty until modules fill it."
+
+  - id: shop.UNV003
+    from: shop.SCR006
+    to: shop.SCR007
+    condition: "Shopper submits the header search box"
+    description: "The search box is part of the theme header and reaches the search controller on every page, not only the home page."
+
+  - id: shop.UNV004
+    from: shop.SCR007
+    to: catalog.SCR002
+    condition: "Shopper clicks a result"
+    description: "A search result tile links to the product page, exactly as a category tile does: both listings render through the same pipeline."

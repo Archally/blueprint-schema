@@ -1,62 +1,263 @@
 ---
 version: "1.0.0"
+# Ownership default for this log. Engineering owns a decision unless the decision itself names
+# another owner; the three that do cross a department boundary, which is what makes the override
+# say something.
+owned_by:
+  department: DPT001
 decisions:
-  - id: D001
+  - id: DC001
     title: "Event-driven order lifecycle"
-    summary: "Use domain events to coordinate order state changes across services."
+    summary: "Coordinate order state changes through published domain events instead of the hook chain that runs in the request. Nothing of it is built."
+    description: >-
+      This entry was recorded as accepted with a code reference to
+      src/Core/Domain/Order/Event/, and both claims are false. Restated 2026-09-19 rather than
+      deleted: a decision whose premise the codebase does not support is the thing a decision log
+      exists to hold, and deleting it would destroy the only record that the claim was ever made.
+      What changed is the status and the epistemics, not the aspiration. What it wants is a real
+      and defensible want; what it asserted about the system was not true on the day it was
+      written and is not true now.
     date: "2026-01"
-    status: accepted
+    status: proposed
+    decision_scope: orders
+    owned_by:
+      team: TM001
+    discovery_stage: hypothesis
+    certainty: speculative
     rationale:
-      problem: "Order state changes require coordination across inventory, payments, and notifications. Synchronous calls create tight coupling and cascading failures."
+      problem: >-
+        An order moving to a new state has to reach stock, invoicing, email and every module that
+        subscribed. PrestaShop does all of it inside the request that changed the state:
+        OrderHistory::changeIdOrderState fires actionOrderStatusUpdate, applies the change, then
+        fires actionOrderStatusPostUpdate, and each subscriber runs in line. Three things follow.
+        The merchant waits for the slowest subscriber. A subscriber that throws takes the state
+        change with it. And a side effect that did not happen is simply lost, because nothing
+        recorded that it was owed.
       options:
-        - "Synchronous REST calls between services"
-        - "Shared database with distributed transactions"
-        - "Domain events via message broker (AsyncAPI)"
-      chosen: "Domain events via message broker"
+        - name: "Keep the synchronous hook chain"
+          description: >-
+            What runs today. The handler writes the state and Hook::exec calls each registered
+            module in turn, before and after the write.
+          pros:
+            - "No infrastructure beyond PHP and MySQL, which is what most PrestaShop installations have"
+            - "A before-hook still sees the order in its old state, so a module can amend or refuse the transition"
+            - "Ordering is the call order, so nobody has to reason about delivery or replay"
+          cons:
+            - "Order status change latency is the sum of every subscriber, and a merchant cannot see which module is the slow one"
+            - "A throwing subscriber fails the state change, so one bad module breaks order processing rather than its own feature"
+            - "No retry and no dead-letter: a failed email or stock release is not recorded anywhere as owed"
+        - name: "Published domain events on a message bus transport"
+          description: >-
+            The handler writes the state and publishes a fact. Subscribers consume out of the
+            request. PrestaShop already depends on symfony/messenger and already routes its CQRS
+            commands through it, so the bus exists; what is missing is a transport and a set of
+            published facts.
+          pros:
+            - "The merchant's request ends when the order state is written, and the side effects follow on their own time"
+            - "A failed side effect can be retried or dead-lettered instead of being lost"
+            - "The bus is already a dependency and already wired, so this is a transport and a message set rather than a new framework"
+          cons:
+            - "A consumer must tolerate at-least-once delivery and out-of-order arrival, and none of the existing module subscribers were written for either"
+            - "A published fact cannot be refused, so every before-hook that vetoes or amends a transition has to stay synchronous and the mechanism splits in two"
+            - "The extension contract the ecosystem knows is the hook signature, so this adds a second extension surface rather than replacing the first"
+            - "An operator now has a worker and a queue to run and monitor, on hosting that often offers neither"
+          open_questions:
+            - "What happens to actionOrderStatusUpdate, which fires before the write precisely so a module can still stop it?"
+            - "Who owns the message schema when a module wants a field the core fact does not carry?"
+        - name: "A transactional outbox drained into the existing hooks"
+          description: >-
+            Write the state change and an outbox row in one transaction; a worker reads the
+            outbox and fires the same after-hooks the modules already implement.
+          pros:
+            - "Modules change nothing: the hook they registered for still fires, just not in the shopper's request"
+            - "Retry comes for free, because the outbox row survives until a subscriber succeeds"
+            - "The outbox is a table, so there is no broker for the merchant to operate"
+          cons:
+            - "Only the after-side moves; the before-hooks stay in the request and so does part of the latency"
+            - "A worker is still a process someone has to run, and a shop without one silently stops firing after-hooks"
+            - "Ordering across two orders is not guaranteed without sequencing work the outbox does not give you"
+      chosen: >-
+        Published domain events, for the retry and for the latency. Recorded as chosen and never
+        built: there is no Event directory anywhere under src/Core, no handler publishes a fact,
+        and the messenger bus PrestaShop does run is configured with no transport at all. The
+        system still runs the first option.
     motivation_refs:
-      goals: [orders.G003]
-      risks: [orders.R001]
+      goals: [orders.GL003]
+      risks: [orders.RSK001]
     capability_refs: [CAP001]
     consequences:
       positive:
-        - "Services remain independently deployable"
-        - "Failures are isolated - stock reservation failure does not block order creation"
+        - "Anticipated, not observed: the shopper's request ends at the state write rather than at the end of the subscriber chain"
+        - "Anticipated, not observed: a stock release or a confirmation email that fails is retried instead of lost"
       negative:
-        - "Eventual consistency requires compensating transactions for rollback"
-        - "Debugging distributed flows is harder than single-process"
+        - "Anticipated: eventual consistency, so a module reading the order immediately after the fact may see work still in flight"
+        - "Anticipated: a distributed flow is harder to follow than a stack trace through one request"
+        - "Observed: the gap between this entry and the code is itself a cost. A reader who trusted the log would design against a publish-subscribe order lifecycle that does not exist, and eight months of this model described one"
+    links:
+      related: [DC010]
+    declared_impact:
+      direct:
+        concepts: [orders.CN002, modules.CN002]
+        operations: [orders.CMD004, orders.EVT005]
+      transitive_hints:
+        - "The 201 event operations in this model are hook publications, not messages. If this decision were carried out, every one of them would need a verdict on whether it becomes a published fact, stays a hook, or becomes both."
+        - "LP001 is the leverage point that would carry this decision out and WI001 is the work item under it, which is why this entry stays proposed rather than being marked deprecated: it is unbuilt, not abandoned."
+    evidence:
+      - kind: codebase-analysis
+        source: "presta-code a27e912eef9, src/Core and the repository history"
+        date: "2026-09-19"
+        summary: >-
+          find src/Core -type d -name Event returns nothing, so there is no domain-event
+          directory anywhere in the core. The directory this entry originally cited,
+          src/Core/Domain/Order/Event/, was never added in the 105197 commits of the full
+          history, so the reference was wrong on the day it was written.
+        confidence_impact: invalidates
+      - kind: codebase-analysis
+        source: "presta-code a27e912eef9, app/config/messenger.yml and src/PrestaShopBundle/CommandBus/MessengerCommandBus.php"
+        date: "2026-09-19"
+        summary: >-
+          symfony/messenger is a dependency and is the CQRS command bus, but the configuration
+          declares one bus with one middleware and no transports, and MessengerCommandBus handles
+          and returns in the caller's request. The bus this decision needs is present and carries
+          nothing asynchronously.
+        confidence_impact: weakens
+      - kind: codebase-analysis
+        source: "presta-code a27e912eef9, classes/order/OrderHistory.php"
+        date: "2026-09-19"
+        summary: >-
+          changeIdOrderState fires actionOrderStatusUpdate before the write and
+          actionOrderStatusPostUpdate after it, both through Hook::exec in the caller's request.
+          This is what coordinates an order state change today.
+        confidence_impact: weakens
     code_refs:
-      - path: "src/Core/Domain/Order/Event/"
+      - path: "classes/order/OrderHistory.php"
         role: implementation
-        description: "Order domain events directory"
+        description: >-
+          What actually coordinates an order state change. changeIdOrderState fires
+          actionOrderStatusUpdate before the write and actionOrderStatusPostUpdate after it, both
+          synchronously and in the caller's request.
+      - path: "app/config/messenger.yml"
+        role: implementation
+        description: >-
+          The whole messenger configuration: one bus, one middleware, no transports. It is the
+          measure of the distance between this decision and the code.
 
-  - id: D002
-    title: "Elasticsearch for product search"
-    summary: "Use Elasticsearch as read-optimized search index instead of MySQL LIKE queries."
+  - id: DC002
+    title: "A dedicated search service for large catalogs"
+    summary: "Serve product search from a search engine rather than the shop's own keyword index. Documented as advice to an operator; core has not adopted it."
+    description: >-
+      Restated 2026-09-19. This entry was recorded as landed, titled for Elasticsearch, and said
+      the baseline it replaced was MySQL LIKE queries. Three things were wrong and the code says
+      so: there is no engine in PrestaShop 9.3.0, the baseline is a purpose-built inverted index
+      rather than LIKE, and the string FULLTEXT does not occur anywhere in the PHP or the SQL.
+      What is true is smaller and more useful: PrestaShop documents a search engine under Scale
+      as one of four systems a merchant may add to a shop that has outgrown the built-in index.
+      Recorded here in that form.
     date: "2026-01"
-    status: landed
+    status: proposed
+    decision_scope: catalog
+    owned_by:
+      team: TM002
+    discovery_stage: exploring
+    certainty: speculative
     rationale:
-      problem: "PrestaShop's MySQL-based product search degrades with large catalogs (>50k products). Full-text search, faceted filtering, and fuzzy matching are not feasible with SQL LIKE."
+      problem: >-
+        Storefront search is served by the shop's own inverted index: Search::indexation fills
+        ps_search_word with every distinct word and ps_search_index with a weight per word and
+        product, and Search::find reads them back with a weight-sum subquery. Two ceilings are
+        written into that code. Relevance is scaled by a word-length coefficient that is forced
+        to 1 once ps_search_word passes 100000 rows, so a large or multilingual catalog loses the
+        ranking signal it depends on. And the index is rebuilt by walking products 50 at a time,
+        so the cost of a rebuild tracks the catalog rather than the change that triggered it.
       options:
-        - "MySQL FULLTEXT indexes"
-        - "Elasticsearch dedicated search service"
-        - "Algolia hosted search (SaaS)"
-      chosen: "Elasticsearch dedicated search service"
+        - name: "Keep the built-in keyword index"
+          description: >-
+            Two tables, a weight per field configured in Shop Parameters, and a cron or a
+            back-office button to reindex.
+          pros:
+            - "Search works on a shared host with no service to buy, run or secure, which is where most PrestaShop installations live"
+            - "The index is in the same database as the catalog, so it can never be stale relative to a write the indexer saw"
+            - "Field weights are merchant-editable in the back office, which is a tuning surface a search engine would move into a mapping file"
+          cons:
+            - "The relevance coefficient flattens above 100000 indexed words, so ranking quietly degrades rather than failing visibly"
+            - "No fuzzy matching and no typo tolerance: a shopper who misspells a brand finds nothing"
+            - "Faceting is a separate module rather than a property of the index"
+            - "A full rebuild is the slowest routine operation in the back office, and nothing signals a module when it happens"
+        - name: "A dedicated search service such as Elasticsearch"
+          description: >-
+            What PrestaShop's own Scale chapter recommends, beside Varnish, Redis and a CDN, for
+            a shop that has outgrown the built-in index. It is advice to an operator and not a
+            component of the product.
+          pros:
+            - "Relevance, typo tolerance and faceting become engine configuration instead of PHP the shop maintains"
+            - "Search load leaves the database that is also serving carts and orders, so a heavy search hour stops competing with checkout"
+          cons:
+            - "A second datastore to run, secure, back up and keep in sync, which shared hosting does not offer"
+            - "The index is eventually consistent with the catalog, so a price or a stock change reaches search on the next sync rather than on the write"
+            - "Core cannot depend on it without splitting the product into a tier that has an engine and a tier that does not, which is a business decision before it is a technical one"
+          open_questions:
+            - "Who owns the mapping when a module adds a searchable field? The built-in index has a weight table a merchant edits; an engine has a schema someone has to migrate."
+        - name: "A hosted search SaaS"
+          description: "The same engine, operated by a vendor and reached over the network."
+          pros:
+            - "No infrastructure for the merchant, and typo tolerance and search analytics arrive already configured"
+          cons:
+            - "The catalog leaves the shop, which is a data-protection decision in the EU before it is an architecture one"
+            - "Per-request pricing turns search into a variable cost that grows with traffic, including bot traffic"
+            - "Search is down when the vendor is, and the built-in index is no longer there to fall back to"
+      chosen: >-
+        A dedicated search service, for catalogs that have outgrown the built-in index. Recorded
+        as a recommendation and not as an implementation: PrestaShop 9.3.0 ships no engine, no
+        client and no configuration for one, and the recommendation lives in the documentation
+        chapter addressed to whoever operates the shop.
     motivation_refs:
-      goals: [catalog.G001]
+      goals: [catalog.GL001]
     capability_refs: [CAP005, CAP018]
     consequences:
       positive:
-        - "Sub-100ms search response for catalogs up to 500k products"
-        - "Faceted navigation and typo tolerance out of the box"
+        - "Anticipated: relevance, typo tolerance and faceting become engine configuration instead of PHP the shop maintains"
+        - "Anticipated: search load leaves the database that is also serving carts and orders"
       negative:
-        - "Additional infrastructure to maintain (ES cluster)"
-        - "Index rebuild required after bulk product updates"
+        - "Anticipated: a second datastore to run, secure and back up, which most shared hosting does not offer"
+        - "Anticipated: the index is eventually consistent with the catalog, so a price or stock change reaches search later than the product page"
+        - "Observed: neither the PrestaShop source tree nor its documentation publishes a search-latency benchmark, so the size of the speed gain is not quantified by any source this model cites"
+    links:
+      docs:
+        - "https://devdocs.prestashop-project.org/9/scale/"
+        - "https://devdocs.prestashop-project.org/9/development/products-lifecycle/search-index/"
+    declared_impact:
+      direct:
+        concepts: [shop.CN005]
+        operations: [catalog.QRY001, shop.CMD014, shop.EVT010]
+      transitive_hints:
+        - "If a shop adopts an engine, the operation that changes is the indexer and not the search query: SearchProducts is already behind a CQRS boundary and its callers would not notice. That is the cheapest thing this model can tell a reader considering the move."
+    evidence:
+      - kind: documentation
+        source: "https://devdocs.prestashop-project.org/9/scale/"
+        date: "2026-09-19"
+        summary: >-
+          PrestaShop lists Elasticsearch, or a solution built on it, as one of four systems a
+          merchant may add beside the LAMP stack, with Varnish, Redis and a CDN. It is written to
+          whoever runs the shop, and it is the only place the product mentions an engine.
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: "presta-code a27e912eef9, classes/Search.php and install-dev/data/db_structure.sql"
+        date: "2026-09-19"
+        summary: >-
+          Search is served by ps_search_index and ps_search_word, filled by Search::indexation
+          and read by Search::find with a weight-sum subquery. PS_SEARCH_MAX_WORDS_IN_TABLE at
+          line 105 is 100000, above which the length coefficient is forced to 1. There is no
+          search-engine client anywhere, and a case-insensitive grep for fulltext across the PHP
+          and the SQL returns nothing, so neither the recorded chosen option nor the recorded
+          baseline was in the code.
+        confidence_impact: weakens
 
-  - id: D003
+  - id: DC003
     title: "PCI-compliant payment via gateway modules"
     summary: "Delegate all payment card handling to certified gateway modules (Stripe, PayPal, Mollie)."
     date: "2025-11"
     status: landed
+    decision_scope: checkout
     rationale:
       problem: "Handling card data directly requires PCI DSS Level 1 compliance - annual audits costing $50k+ and specialized infrastructure."
       options:
@@ -65,8 +266,8 @@ decisions:
         - "Redirect to hosted payment pages only"
       chosen: "Tokenized gateway modules - card data never touches PrestaShop servers"
     motivation_refs:
-      goals: [checkout.G002]
-      risks: [checkout.R002]
+      goals: [checkout.GL002]
+      risks: [checkout.RSK002]
     capability_refs: [CAP003]
     consequences:
       positive:
@@ -79,7 +280,7 @@ decisions:
         role: implementation
         description: "Payment domain classes"
 
-  - id: D004
+  - id: DC004
     title: "Server-side cart with session persistence"
     summary: "Store cart state server-side (database) rather than client-side (cookies/localStorage)."
     date: "2025-12"
@@ -92,8 +293,8 @@ decisions:
         - "Hybrid (local for speed, server for persistence)"
       chosen: "Server-side cart - single source of truth, tamper-proof"
     motivation_refs:
-      goals: [orders.G001, checkout.G001]
-      risks: [orders.R003]
+      goals: [orders.GL001, checkout.GL001]
+      risks: [orders.RSK003]
     capability_refs: [CAP001, CAP003]
     consequences:
       positive:
@@ -107,7 +308,7 @@ decisions:
         role: implementation
         description: "Cart domain aggregate"
 
-  - id: D005
+  - id: DC005
     title: "CQRS pattern for domain commands"
     summary: "Adopt Command-Query Responsibility Segregation across all domain aggregates for clear write/read separation."
     date: "2024-06"
@@ -120,7 +321,7 @@ decisions:
         - "Event sourcing with command/event store"
       chosen: "CQRS with separate command/query handlers - pragmatic write/read split without event sourcing complexity"
     motivation_refs:
-      goals: [orders.G003]
+      goals: [orders.GL003]
     capability_refs: [CAP001, CAP005]
     consequences:
       positive:
@@ -138,7 +339,7 @@ decisions:
         role: documentation
         description: "CQRS architecture documentation"
 
-  - id: D006
+  - id: DC006
     title: "Symfony framework migration"
     summary: "Migrate back-office from legacy controllers to Symfony framework with Twig templates."
     date: "2023-01"
@@ -167,11 +368,13 @@ decisions:
         role: documentation
         description: "Symfony migration guide"
 
-  - id: D007
+  - id: DC007
     title: "New Admin API with OAuth2"
     summary: "Introduce a modern REST API for back-office operations with OAuth2 authentication, replacing legacy webservice."
     date: "2024-01"
     status: accepted
+    owned_by:
+      team: TM009
     rationale:
       problem: "Legacy webservice API uses custom authentication, lacks proper authorization scopes, and exposes internal data structures directly."
       options:
@@ -180,6 +383,11 @@ decisions:
         - "GraphQL API"
       chosen: "New Admin API - resource-oriented REST with OAuth2 scopes and proper versioning"
     capability_refs: [CAP016]
+    # Added by step 27. Keeping the legacy webservice alive beside the Admin API is not a
+    # design preference, it rests on admin.ASM100: integrators do not migrate on a date the
+    # shop sets.
+    motivation_refs:
+      assumptions: [admin.ASM100]
     consequences:
       positive:
         - "Standard OAuth2 flow (RFC 6749) for third-party integrations"
@@ -188,15 +396,44 @@ decisions:
       negative:
         - "Two API systems coexist (legacy webservice + new Admin API)"
         - "Module developers must adapt to new authentication"
+        - >-
+          A module can no longer observe who holds credentials. WebserviceKey is an ObjectModel, so
+          creating one fires actionObjectWebserviceKeyAddAfter; ApiClient is a Doctrine entity and
+          fires only the seven back-office form hooks, none of which reach a client created through
+          the API itself.
+    links:
+      supersedes: [DC009]
+      docs:
+        - "https://devdocs.prestashop-project.org/9/admin-api/"
+        - "https://devdocs.prestashop-project.org/9/admin-api/contribute-to-core-api/"
+    acceptance:
+      must_pass_tests:
+        - "The ApiPlatform integration suite under tests/Integration/ApiPlatform, run against the ps_apiresources module that declares the endpoints"
+      new_tests_to_add:
+        - "One parity case per legacy webservice resource the Admin API now serves, asserting the same data is reachable without a webservice key - the 64 legacy resources are the checklist"
+      docs_to_update:
+        - "The generated Swagger document under presta-docs/admin-api/swagger-doc, whenever a resource folder is added or a scope is renamed"
+      reviews_required:
+        - "A scope review before each new resource ships. Every route declares an OAuth scope, and a route that both reads and writes under one scope is the failure this review exists to catch"
+    declared_impact:
+      direct:
+        concepts: [admin.CN005]
+        operations: [admin.CMD021, admin.CMD022, admin.CMD023, admin.CMD024, admin.QRY005]
+        models: [CreateApiClientPayload]
+      transitive_hints:
+        - "152 routes front 200 of the 519 CQRS Command and Query classes, so 61 percent of the domain is still reachable only in process. Every operation in this model carrying dispatch inprocess rather than an exchange is a consequence of that coverage, not of a design choice about that operation."
     code_refs:
       - path: "src/Core/Domain/ApiClient/"
         role: implementation
         description: "API client domain aggregate"
-      - path: "https://github.com/PrestaShop/docs/blob/9.x/development/webservice/_index.md"
+      - path: "https://github.com/PrestaShop/docs/blob/9.x/admin-api/_index.md"
         role: documentation
-        description: "API documentation"
+        description: >-
+          The Admin API chapter, which states the reason in its own words - CQRS-based
+          endpoints are domain-oriented where the webservice was connected to ObjectModel. The
+          legacy webservice surface this decision replaces is the one DC009 records.
 
-  - id: D008
+  - id: DC008
     title: "Headless architecture support"
     summary: "Support headless commerce by exposing all storefront operations through APIs, enabling decoupled frontends."
     date: "2025-06"
@@ -209,7 +446,7 @@ decisions:
         - "Full headless-only (drop server-rendered frontend)"
       chosen: "Add REST API layer - support headless while maintaining traditional frontend for backwards compatibility"
     motivation_refs:
-      goals: [catalog.G001]
+      goals: [catalog.GL001]
     capability_refs: [CAP016, CAP005]
     consequences:
       positive:
@@ -219,3 +456,369 @@ decisions:
       negative:
         - "Two frontend paradigms to maintain (server-rendered + headless)"
         - "SEO requires server-side rendering or pre-rendering for headless"
+
+  - id: DC009
+    title: "Legacy webservice with per-key CRUD permissions"
+    summary: "Expose shop data to third parties through one entry point, authenticated by a 32-character shop key carrying a per-resource CRUD matrix."
+    description: >-
+      Recorded at the date below, which is when this log adopted the decision and not when
+      PrestaShop took it. The webservice is older than every other entry here and 9.3.0 still
+      ships it, serving 64 resources. It is written down because DC007 replaces it, and a log
+      that does not hold the thing being replaced cannot show the replacement.
+    date: "2022-06"
+    status: deprecated
+    decision_scope: admin
+    owned_by:
+      team: TM009
+    discovery_stage: obsolete
+    certainty: confirmed
+    rationale:
+      problem: >-
+        A merchant's ERP, marketplace connector or stock system has to read and write shop data
+        without holding a back-office employee session. The shop had no notion of a machine
+        identity and no authorization vocabulary below the employee profile, so granting one
+        meant inventing both at the same time.
+      options:
+        - "No programmatic access - an integrator drives the back office through a browser"
+        - "A shop-issued key sent as HTTP Basic credentials, checked against a CRUD matrix per resource"
+        - "Reuse the employee login and its profile permissions for machine callers"
+      chosen: >-
+        A shop-issued 32-character key, sent as the HTTP Basic login with no password and checked
+        against a per-resource CRUD matrix. A resource is an ObjectModel class serialized whole,
+        so adding one costs an entry in a list rather than an endpoint design.
+    capability_refs: [CAP016]
+    consequences:
+      positive:
+        - "An integrator needs one credential and no session, and the same key reaches every resource it was granted"
+        - "The resource list is the table list, so coverage grew with the data model at no API design cost - 64 resources in 9.3.0"
+      negative:
+        - "The key is a bearer password with no expiry, no rotation and no refresh; revoking it means deleting it"
+        - "Permission is CRUD per resource, so there is no way to grant read of one field, or of one shop's rows"
+        - "The wire shape is the table shape, so a column rename is a breaking API change the API layer cannot absorb"
+    links:
+      superseded_by: [DC007]
+      docs:
+        - "https://devdocs.prestashop-project.org/9/webservice/"
+    declared_impact:
+      direct:
+        concepts: [admin.CN006]
+        operations: [admin.CMD025, admin.CMD026, admin.CMD027, admin.CMD028, admin.QRY006, admin.EVT018]
+        models: [CreateWebserviceKeyPayload, UpdateWebserviceKeyPayload, WebserviceKeyResource]
+      transitive_hints:
+        - "Each of the 64 webservice resources names an ObjectModel class, which is why the legacy wire format tracks the database schema rather than the domain model. Anything generated from the legacy surface inherits that shape."
+    evidence:
+      - kind: codebase-analysis
+        source: "presta-code a27e912eef9, classes/webservice/WebserviceRequest.php lines 785-820"
+        date: "2026-09-19"
+        summary: >-
+          authenticate() rejects a key that is not exactly 32 characters, resolves it with
+          WebserviceKey::isKeyActive and loads an array with getPermissionForAccount. On failure
+          it answers 401 with a Basic realm challenge. There is no token, no expiry and no scope
+          anywhere in the path.
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: "presta-code a27e912eef9, classes/webservice/WebserviceRequest.php getResources() line 254"
+        date: "2026-09-19"
+        summary: "64 resource entries, each mapping a URL segment to an ObjectModel class name and a description."
+        confidence_impact: supports
+    code_refs:
+      - path: "classes/webservice/WebserviceRequest.php"
+        role: implementation
+        description: "The single entry point. getResources() at line 254 declares the 64 resources; authenticate() at line 785 is the whole authorization model."
+      - path: "classes/webservice/WebserviceKey.php"
+        role: model
+        description: "WebserviceKeyCore extends ObjectModel, which is why a key's lifecycle is observable through the actionObject family while its successor's is not."
+    tags: [legacy, api, superseded]
+
+  - id: DC010
+    title: "Hooks are the extension point, and they run in the caller's request"
+    summary: "Let modules change behaviour and presentation at named dispatch points that execute synchronously inside the request that fired them."
+    description: >-
+      Recorded at the date below, which is when this log adopted the decision and not when
+      PrestaShop took it. Hooks are older than every other entry here and are the mechanism the
+      module ecosystem stands on. It is written down because the rest of this log, and the 201
+      event operations in the domain layer, only mean what they say against it: an event in this
+      model is a hook publication, not a message on a bus.
+    date: "2022-01"
+    status: landed
+    decision_scope: modules
+    owned_by:
+      team: TM008
+    discovery_stage: validated
+    certainty: confirmed
+    rationale:
+      problem: >-
+        Third-party code has to alter what the shop does and what it shows without forking core
+        or patching files, and a merchant has to be able to add and remove that code while the
+        shop is running. The platform therefore needs a published set of points where foreign
+        code may execute, and a rule saying when it executes.
+      options:
+        - "Class overrides - a module replaces a core class at autoload time"
+        - "Named dispatch points a module subscribes to, executed synchronously in the caller's request"
+        - "Published domain events consumed out of process by subscribers"
+      chosen: >-
+        Named dispatch points. A hook has a name, a registry entry with a description, and one
+        array of context; a module registers for it at install and implements a method named
+        after it. Class overrides remain available beside hooks as the escape hatch, not as the
+        interface.
+    capability_refs: [CAP016]
+    consequences:
+      positive:
+        - "A module is additive: install, register, remove, with no core file edited and no deployment of core"
+        - "The registry is the contract - 1162 named hooks, each with PrestaShop's own description, is an extension surface a developer can read before writing anything"
+        - "A subscriber runs inside the caller's transaction and context, so a before-hook can still amend or refuse what has not been written yet"
+      negative:
+        - "Every subscriber runs inside the request that fired the hook, so one slow module slows that operation for the shopper"
+        - "There is no delivery guarantee and no retry: a subscriber that throws or times out takes the whole request with it"
+        - "The commonest hook names are generated rather than declared. actionObjectProductAddAfter and its family come from ObjectModel at runtime, appear in no source file as text, and are absent from the registry, so reading either source alone understates the surface"
+    links:
+      docs:
+        - "https://devdocs.prestashop-project.org/9/modules/concepts/hooks/"
+        - "https://devdocs.prestashop-project.org/9/modules/concepts/hooks/list-of-hooks/"
+      related: [DC001]
+    declared_impact:
+      direct:
+        concepts: [modules.CN001, modules.CN002]
+        operations: [modules.CMD009, modules.CMD010, modules.CMD011, modules.QRY002, modules.QRY004]
+      transitive_hints:
+        - "Every event operation in this model that carries a hook: tag is a consequence of this decision, and every event described as firing no hook is a place this decision does not reach. Both are facts about module reach, not about the domain."
+        - "DC001 proposes moving order coordination off this mechanism. It is recorded as related rather than superseding, because hooks predate it by the whole life of the platform and a 2026 proposal cannot replace what the module ecosystem is built on."
+    evidence:
+      - kind: codebase-analysis
+        source: "presta-code a27e912eef9, install-dev/data/xml/hook.xml"
+        date: "2026-09-19"
+        summary: >-
+          1162 distinct hook ids in the registry, each with a title and a description. 980 begin
+          with action and 155 with display; the remaining 27 use neither prefix.
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: "presta-code a27e912eef9, src classes controllers"
+        date: "2026-09-19"
+        summary: >-
+          231 distinct hook names appear at a literal call site, across the four shapes that take
+          a name: Hook::exec, Hook::getHookModuleExecList, dispatchWithParameters and
+          dispatchRenderingWithParameters. Twelve of the 231 are not in the registry, so neither
+          source alone is the oracle for what is real.
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: "presta-code a27e912eef9, classes/ObjectModel.php lines 525-717"
+        date: "2026-09-19"
+        summary: >-
+          add, update, delete and duplicate each fire actionObject<Class><Verb><Before|After>,
+          with the class name interpolated at runtime, for the 97 files under classes and src
+          that extend ObjectModel. This is the largest of the three sources and the only one that
+          cannot be listed by reading text.
+        confidence_impact: supports
+      - kind: documentation
+        source: "https://devdocs.prestashop-project.org/9/modules/concepts/hooks/"
+        date: "2026-09-19"
+        summary: >-
+          PrestaShop documents hooks as the way to associate module code with shop events,
+          registered during module install with Module::registerHook and received as one array of
+          contextual information.
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: "presta-code a27e912eef9, classes/Hook.php exec() line 886"
+        date: "2026-09-19"
+        summary: >-
+          exec resolves the registered module list and calls each subscriber in turn in the
+          caller's request. There is no queue, no worker and no asynchronous path, which is the
+          cost this decision accepts and the reason DC001 exists.
+        confidence_impact: weakens
+    code_refs:
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "PrestaShop's own hook registry: 1162 ids, each with a title and a description."
+      - path: "classes/Hook.php"
+        role: implementation
+        description: "exec() at line 886 resolves the subscriber list and calls each module method in the caller's request."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 525 to 717 fire the actionObject<Class><Verb><Before|After> family for every persisted ObjectModel, which is where most real hook names come from."
+      - path: "src/Adapter/Hook/HookDispatcher.php"
+        role: implementation
+        description: "The Symfony-side dispatcher the modern back-office pages use, alongside the legacy static entry point. dispatchWithParameters is the second of the four call shapes that take a literal hook name."
+    tags: [extension-point, modules, architecture]
+
+# Bounded Context Canvas business decisions (BD###), added by step 27 for the context cards.
+#
+# A business decision is NOT an ADR. DC### above records WHY a choice was made and what was
+# rejected; a BD### states the policy that choice left in force, in the words a reader of the
+# context card needs. Each entry names the DC### or the rule it derives from, so nothing here is
+# a claim you have to take on trust: the model already holds its evidence.
+#
+# `domain_scope` is a scope slug matched against the bounded context's name, and it is the one
+# field that puts the decision on a card. `linked_contexts` names the other contexts the policy
+# reaches, so a cross-context policy is stated once and read in both places.
+business_decisions:
+  - id: BD001
+    name: "An order state change completes inside the request that made it"
+    description: >-
+      When an order moves to a new state, stock, invoicing, email and every subscribed module are
+      reached synchronously in the request that changed it: OrderHistory::changeIdOrderState fires
+      actionOrderStatusUpdate, applies the change, then fires actionOrderStatusPostUpdate. The
+      published-event lifecycle recorded in DC001 is proposed and not built - there is no Event
+      directory under src/Core and the messenger bus is configured with no transport - so the
+      policy in force is the synchronous one. A subscriber that fails or is slow takes the state
+      change down with it, and nothing retries.
+    domain_scope: orders
+    linked_contexts: [platformkernel]
+    tags: [order-lifecycle, synchronous]
+
+  - id: BD002
+    name: "Storefront search runs on the shop's own index until a merchant replaces it"
+    description: >-
+      Product search is served by the built-in inverted index: Search::indexation fills
+      ps_search_word and ps_search_index, and Search::find reads them back with a weight-sum
+      subquery. Core ships no search engine, no client and no configuration for one; the dedicated
+      search service in DC002 is advice addressed to whoever operates a large catalog, not an
+      implementation. A shop will therefore never be required to run external search
+      infrastructure, and a catalog that outgrows the index is the merchant's decision to act on.
+    domain_scope: catalog
+    linked_contexts: [shop]
+    tags: [search, no-external-dependency]
+
+  - id: BD003
+    name: "Card data never touches PrestaShop servers"
+    description: >-
+      Every payment is delegated to a certified gateway module (Stripe, PayPal, Mollie) that
+      returns a token; no primary account number is stored, logged or forwarded by the platform.
+      This is what keeps a shop out of PCI DSS Level 1 scope, and it is why the payment step is an
+      extension point rather than a feature. Recorded as DC003, landed. checkout.ASM001 is the
+      assumption it rests on: that module authors implement the PaymentModule interface contract.
+    domain_scope: checkout
+    tags: [payment, pci, delegation]
+
+  - id: BD004
+    name: "The cart lives on the server, and a price the browser sends is not a price"
+    description: >-
+      Cart state is persisted server-side so it survives a device switch, a cleared browser and a
+      returning shopper, and so that a line's price is recomputed rather than accepted. Recorded as
+      DC004, accepted: the rejected option was a client-side cart, which loses data and can be
+      tampered with. The cost is that an anonymous visitor's cart is a row the shop has to create
+      and eventually expire.
+    domain_scope: checkout
+    tags: [cart, tamper-resistance]
+
+  - id: BD005
+    name: "Hooks are the extension point, and they run in the caller's request"
+    description: >-
+      Foreign code changes what the shop does and shows at named dispatch points that execute
+      synchronously inside the request that fired them. A hook has a name, a registry entry with a
+      description and one array of context; a module registers for it at install and implements a
+      method named after it. Class overrides remain available beside hooks as the escape hatch, not
+      as the interface. Recorded as DC010, landed, and the reason DC001 exists: a module's failure
+      or latency is the caller's.
+    domain_scope: platformkernel
+    linked_contexts: [modules]
+    tags: [extension-point, hooks, synchronous]
+
+  - id: BD006
+    name: "Every domain write goes through a command handler"
+    description: >-
+      Domain aggregates are reached through CQRS command and query handlers rather than through
+      ObjectModel directly, so validation has one place to live and a read can be optimized without
+      touching the write. Event sourcing was deliberately not adopted along with it - the split is
+      write-versus-read, not state-versus-log. Recorded as DC005, landed. The legacy ObjectModel
+      path still exists beside it, which is why a write can reach the database by two routes.
+    domain_scope: platformkernel
+    tags: [cqrs, architecture]
+
+  - id: BD007
+    name: "New back-office integration happens over the Admin API with OAuth2 scopes"
+    description: >-
+      Back-office operations are exposed as a resource-oriented REST API authenticated by OAuth2
+      with scopes and a version in the path, so an integrator gets an authorization vocabulary
+      below the employee profile. The legacy webservice is not switched off when the Admin API
+      arrives; both surfaces stay reachable, which is the trade-off admin.TRO001 selected. Recorded
+      as DC007, accepted.
+    domain_scope: admin
+    linked_contexts: [externalapiconsumers]
+    tags: [api, oauth2, authorization]
+
+  - id: BD008
+    name: "New back-office pages are Symfony, and legacy pages migrate one at a time"
+    description: >-
+      The back office moves to Symfony with Twig incrementally: a new page is written in Symfony, a
+      legacy Smarty controller is rewritten when it is touched, and there is no cutover date. Both
+      stacks therefore run side by side for the life of the migration, and a reader of the admin
+      code should expect to meet either. Recorded as DC006, landed.
+    domain_scope: admin
+    tags: [symfony, migration, incremental]
+
+  - id: BD009
+    name: "A third-party integration authenticates as the shop, never as an employee"
+    description: >-
+      An ERP, marketplace connector or stock system reaches shop data through a machine identity the
+      shop issues, not by holding a back-office employee session. Two such identities exist and both
+      stay reachable: the legacy webservice key, a 32-character shop key carrying a per-resource
+      CRUD matrix (DC009, deprecated), and OAuth2 scoped tokens on the Admin API (DC007, accepted).
+      The integrator chooses; the shop does not migrate them.
+    domain_scope: externalapiconsumers
+    linked_contexts: [admin]
+    tags: [api, machine-identity, backward-compatibility]
+
+  - id: BD010
+    name: "A module is installed, upgraded and reset while the shop is running"
+    description: >-
+      Module lifecycle is a state machine the merchant drives from the back office
+      (modules.TR001), with reset as the recovery path when an upgrade leaves configuration behind
+      (modules.VR002, modules.VR003). There is no deployment step and no staging gate, which is
+      exactly why an install that reports success can still break the storefront afterwards - the
+      risk modules.KPI001 is written to watch.
+    domain_scope: modules
+    tags: [module-lifecycle, runtime-change]
+
+  - id: BD011
+    name: "The storefront is server-rendered, and API access is added beside it"
+    description: >-
+      The shop's front end is its active theme rendered by the server. Headless support is recorded
+      as DC008, proposed: the intent is to add a REST layer while keeping the traditional
+      storefront, not to replace it. Until that is built, the policy in force is that the theme is
+      the storefront, and a decoupled front end is an integration rather than a supported mode.
+    domain_scope: shop
+    tags: [storefront, headless, proposed]
+
+  - id: BD012
+    name: "Storefront content is trusted at authorship, not sanitised at render"
+    description: >-
+      A CMS page's body is stored and rendered as HTML written by someone the shop trusts
+      (content.ASM001); the control is who may edit, not what the editor may write. Meta fields are
+      the exception and are constrained (content.VR002). One theme is active at a time: enabling
+      another deactivates the current one (content.TR001, content.VR004) and the active theme
+      cannot be deleted (content.VR005), so the storefront always has exactly one renderer.
+    domain_scope: content
+    tags: [content, trust-boundary, theming]
+
+  - id: BD013
+    name: "Address shape is merchant data, not code"
+    description: >-
+      A country's required address fields and its display format are configuration the merchant
+      edits (customers.VR005, customers.ASM001), so supporting a new country is a data change
+      rather than a release. The consequence is the one customers.KPI002 measures: a format the
+      merchant gets wrong is accepted by the platform, because the platform has no independent idea
+      of what that country's addresses look like.
+    domain_scope: customers
+    tags: [address, configuration-over-code]
+
+  - id: BD014
+    name: "Tax comes from the rule bound to the product and the address, never from a shop-wide rate"
+    description: >-
+      A line's tax is resolved from the tax rules group attached to the product and the zone the
+      customer's address falls in; there is no single shop rate to fall back on. A binding is unique
+      per group and country (international.VR008) and a rate cannot be negative
+      (international.VR006). The cost is coverage: a zone and country combination nobody bound has
+      no tax rule, which is what international.KPI002 counts.
+    domain_scope: international
+    tags: [tax, per-zone, coverage]
+
+  - id: BD015
+    name: "A destination the merchant's range table does not cover is not shippable"
+    description: >-
+      Shipping cost is read from the carrier's own range table, by weight or by price, and the
+      merchant maintains it: shipping.ASM001 assumes that table is what the carrier actually
+      charges. Ranges must not overlap within a zone (shipping.VR004) and a carrier must serve at
+      least one zone (shipping.SR001), so an address outside every range yields no carrier at
+      checkout rather than a default rate. That is the gap shipping.GL002 exists to close.
+    domain_scope: shipping
+    tags: [shipping, ranges, no-default-rate]

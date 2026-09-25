@@ -1,72 +1,237 @@
 ---
-version: "1.0.0"
+version: "1.1.0"
 tags: [configure-and-scale]
+
+# The capabilities that keep the platform itself running and extensible. Flat by design: these
+# are broad platform abilities that do not decompose into distinct business abilities at this
+# granularity, so the file has no level-2 children and its length is the length of the truth
+# rather than the point at which authoring stopped. The one thing the file was genuinely missing
+# is CAP103, the back-office administration surface, which 17 admin-slice operations serve and
+# no capability named.
+#
+# `operations` lists a REPRESENTATIVE SPINE, not an inventory (step-00 D9).
+
 capabilities:
-  # ── Level 1: Content & Design ──────────────────────────────────────────
+  # Level 1: what the shop says
   - id: CAP013
     name: "Content Management"
     level: 1
     description: >
-      Ability to create and manage CMS pages, page categories, themes,
-      email templates, and SEO metadata.
+      Ability to publish text and presentation the catalogue does not carry: CMS pages and the
+      categories they sit in, the theme that renders every page, the email templates the theme
+      supplies, and the per-page SEO metadata that decides how a page is indexed.
+    operations:
+      - content.CMD001
+      - content.CMD002
+      - content.CMD007
+      - content.CMD013
+      - content.CMD014
+      - content.CMD016
+      - content.CMD019
+      - content.CMD021
+      - content.QRY001
+      - content.QRY008
+    owned_by:
+      team: TM007
     maturity: established
     strategic_importance: medium
     delivery_priority: should-have
     discovery_stage: committed
     certainty: confirmed
-    value_stream_refs: [VS003]
+    evidence:
+      - kind: codebase-analysis
+        source: "src/Core/Domain/CmsPage, src/Core/Domain/CmsPageCategory, src/Core/Domain/MailTemplate, content/cms.domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          CMS pages, their categories, themes, metadata and mail templates are five code
+          concerns modelled in one slice; the theme commands reach the mail templates, which is
+          why template editing sits here and notification sending sits in CAP006.
+        confidence_impact: supports
 
-  # ── Level 1: Extension & Integration ───────────────────────────────────
+  # Level 1: how the platform grows
   - id: CAP014
     name: "Module Ecosystem"
     level: 1
     description: >
-      Ability to extend platform functionality through installable modules
-      with a hook-based extension system and marketplace integration.
+      Ability to change what the platform does without changing the platform: install, upgrade,
+      reset and uninstall a module, attach it to the hooks it listens on, and have the core
+      fire those hooks so every listener runs. This is PrestaShop's central extension
+      mechanism - a command handler fires a hook and modules subscribe - and it is what the
+      module and theme marketplace is built on.
+    operations:
+      - modules.CMD001
+      - modules.CMD002
+      - modules.CMD003
+      - modules.CMD006
+      - modules.CMD007
+      - modules.CMD008
+      - modules.CMD012
+      - modules.CMD009
+      - modules.CMD010
+      - modules.CMD011
+      - modules.QRY002
+      - modules.QRY004
+    owned_by:
+      team: TM008
     maturity: optimized
     strategic_importance: critical
     delivery_priority: must-have
     discovery_stage: committed
     certainty: confirmed
-    value_stream_refs: [VS003]
+    evidence:
+      - kind: codebase-analysis
+        source: "install-dev/data/xml/hook.xml, classes/ObjectModel.php, src/Core/Domain/Hook, modules/domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          The hook registry declares 1162 hook names; 231 more are fired from literal call
+          sites and the actionObject<Class> family is fired dynamically for every persisted
+          class. 158 of the model's 201 events carry the hook they correspond to, measured by
+          step 11.
+        confidence_impact: supports
+      - kind: documentation
+        source: "https://www.prestashop.com/en/partners"
+        date: "2026-09-19"
+        summary: >
+          PrestaShop invites module authors to reach "over 300,000 merchants worldwide" through
+          the marketplace, which is the commercial reason the extension point is a critical
+          capability and not merely a technical one.
+        confidence_impact: supports
 
-  # ── Level 1: Administration ────────────────────────────────────────────
+  # Level 1: who may touch it
   - id: CAP015
     name: "Employee & Access Management"
     level: 1
     description: >
-      Ability to manage back-office employees, role-based access control
-      profiles, API clients, and security audit trails.
+      Ability to decide who may do what in the back office: employee accounts, the profiles
+      that carry permissions, the per-tab and per-module permission matrix, and the sessions
+      that can be revoked when an account is compromised or a laptop is lost.
+    operations:
+      - admin.CMD001
+      - admin.CMD009
+      - admin.CMD013
+      - admin.CMD014
+      - admin.CMD015
+      - admin.CMD019
+      - admin.QRY001
+      - admin.QRY004
+    owned_by:
+      team: TM009
     maturity: established
     strategic_importance: high
     delivery_priority: must-have
     discovery_stage: committed
     certainty: confirmed
-    value_stream_refs: [VS003]
+    evidence:
+      - kind: codebase-analysis
+        source: "src/Core/Domain/Employee, src/Core/Domain/Profile, admin/identity.domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          Employee, Profile and the session-revocation commands are one coherent access story:
+          the permission matrix is per profile per tab, and both employee and customer sessions
+          can be cleared individually or in bulk.
+        confidence_impact: supports
 
   - id: CAP016
     name: "API & Integration Platform"
     level: 1
     description: >
-      Ability to expose platform data and operations through REST APIs,
-      webservice keys, and OAuth2 API clients for third-party integrations.
+      Ability to let another system read and change shop data: OAuth2 API clients with scoped
+      access to the modern Admin API, and webservice keys with per-resource permissions on the
+      legacy webservice. Two surfaces, deliberately kept side by side because both are live.
+    operations:
+      - admin.CMD021
+      - admin.CMD022
+      - admin.CMD024
+      - admin.CMD025
+      - admin.CMD026
+      - admin.CMD027
+      - admin.QRY005
+      - admin.QRY006
+    owned_by:
+      team: TM009
     maturity: developing
     strategic_importance: critical
     delivery_priority: must-have
     discovery_stage: committed
     certainty: confirmed
-    value_stream_refs: [VS003]
+    evidence:
+      - kind: codebase-analysis
+        source: "ps_apiresources/src/ApiPlatform/Resources, classes/webservice/WebserviceRequest.php, admin/api.domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          The Admin API is defined in the ps_apiresources module: 124 resource classes over 150
+          routes, plus 2 in core. The legacy webservice lists 64 resources. 200 of the
+          codebase's 519 command and query classes are fronted by a route, which is why the
+          maturity is developing and not established.
+        confidence_impact: supports
 
-  # ── Level 1: Store Operations ──────────────────────────────────────────
+  - id: CAP103
+    name: "Back-office Administration"
+    level: 1
+    description: >
+      Ability for a shop operator to work on the installation itself rather than on its
+      commerce data: saved SQL queries run against the live database and exported, the debug
+      switch, back-office menu tabs turned on and off, per-employee quick-access shortcuts,
+      extra property definitions attached to entities, and the pending business entities queue.
+      Seventeen admin-slice operations that no capability named before.
+    operations:
+      - admin.CMD029
+      - admin.CMD033
+      - admin.CMD034
+      - admin.CMD035
+      - admin.CMD036
+      - admin.CMD041
+      - admin.CMD045
+      - admin.QRY008
+      - admin.QRY012
+      - admin.QRY013
+      - admin.QRY014
+    owned_by:
+      team: TM009
+    maturity: established
+    strategic_importance: medium
+    delivery_priority: should-have
+    discovery_stage: validated
+    certainty: probable
+    evidence:
+      - kind: codebase-analysis
+        source: "src/Core/Domain/SqlManagement, src/Core/Domain/QuickAccess, src/Core/Domain/ExtraProperty, src/Core/Domain/BusinessEntity, admin/config.domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          Four code domains with no commerce meaning between them, each serving the operator
+          rather than the merchant or the shopper. They were the largest group of operations in
+          the model with no capability above them.
+        confidence_impact: supports
+
+  # Level 1: running more than one shop
   - id: CAP017
     name: "Multi-Store Management"
     level: 1
     description: >
-      Ability to operate multiple shops from a single back-office with
-      shared or independent catalogs, customers, and configurations.
+      Ability to run several storefronts from one installation and one back office, with each
+      product, image and configuration value either shared across shops or set per shop. The
+      per-shop association is a property of nearly every catalogue write, which is why the
+      capability reaches catalog operations rather than only shop ones.
+    operations:
+      - shop.QRY002
+      - shop.CMD001
+      - shop.QRY001
+      - catalog.CMD106
+      - catalog.CMD204
+      - catalog.QRY209
+    owned_by:
+      team: TM010
     maturity: established
     strategic_importance: high
     delivery_priority: should-have
     discovery_stage: committed
     certainty: confirmed
-    value_stream_refs: [VS003]
+    evidence:
+      - kind: codebase-analysis
+        source: "src/Core/Domain/Shop, shop/concepts.yaml, catalog/product-core.domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          The Shop aggregate's only CQRS command is logo upload; multi-store shows up instead
+          as a shop dimension on catalogue commands such as SetProductShops and
+          SetProductImagesForAllShop. Domain, SSL and maintenance settings are still legacy.
+        confidence_impact: supports

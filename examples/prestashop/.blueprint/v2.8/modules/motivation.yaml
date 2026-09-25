@@ -3,7 +3,7 @@ version: "1.0.0"
 scope: modules
 
 goals:
-  - id: modules.G001
+  - id: modules.GL001
     statement: "Reliable module lifecycle management for store extensibility"
     description: >
       Provide a predictable, safe module lifecycle (install, enable, disable,
@@ -12,10 +12,14 @@ goals:
     summary: "Module lifecycle reliability"
     priority: high
     measure: ">= 99% of module install/upgrade operations complete successfully"
+    affects:
+      operation_refs: [modules.CMD001, modules.CMD002, modules.CMD008]
+      concept_refs: [modules.CN001]
+      process_refs: [modules.PRC001]
     discovery_stage: validated
     certainty: confirmed
 
-  - id: modules.G002
+  - id: modules.GL002
     statement: "Safe module upgrade path with version compatibility"
     description: >
       Enable modules to be upgraded to newer versions without breaking existing
@@ -23,10 +27,14 @@ goals:
     summary: "Safe module upgrades"
     priority: high
     measure: ">= 95% of module upgrades preserve configuration and functionality"
+    affects:
+      operation_refs: [modules.CMD006, modules.CMD007]
+      concept_refs: [modules.CN001]
+      process_refs: [modules.PRC001]
     discovery_stage: validated
     certainty: confirmed
 
-  - id: modules.G003
+  - id: modules.GL003
     statement: "Hook system provides controllable extension points"
     description: >
       Hooks serve as the primary extension mechanism. The ability to enable/disable
@@ -35,13 +43,15 @@ goals:
     summary: "Controllable hooks"
     priority: medium
     measure: "100% of hooks can be independently enabled/disabled"
+    affects:
+      operation_refs: [modules.CMD009, modules.CMD012, modules.QRY003]
+      concept_refs: [modules.CN002]
+      process_refs: [modules.PRC002]
     discovery_stage: validated
     certainty: confirmed
 
 risks:
-  - id: modules.R001
-    affects:
-      operation_refs: [modules.CMD003]
+  - id: modules.RSK001
     statement: "Incompatible module breaks storefront after installation or upgrade"
     description: >
       Third-party modules may be incompatible with the current PrestaShop version
@@ -50,13 +60,17 @@ risks:
     summary: "Module incompatibility risk"
     likelihood: high
     impact: high
+    affects:
+      operation_refs: [modules.CMD001, modules.CMD003, modules.CMD007]
+      concept_refs: [modules.CN001]
+      process_refs: [modules.PRC001]
     mitigation: "Quick disable via UpdateModuleStatus. Reset to clean state. Uninstall with deleteFiles option."
     goal_refs:
-      - modules.G001
+      - modules.GL001
     discovery_stage: validated
     certainty: confirmed
 
-  - id: modules.R002
+  - id: modules.RSK002
     statement: "Security vulnerabilities in third-party modules"
     description: >
       Modules uploaded from external sources may contain security vulnerabilities
@@ -64,9 +78,13 @@ risks:
     summary: "Module security risk"
     likelihood: medium
     impact: high
+    affects:
+      operation_refs: [modules.CMD002, modules.CMD008]
+      concept_refs: [modules.CN001]
+      process_refs: [modules.PRC002]
     mitigation: "Upload validation, module marketplace review process, ability to quickly uninstall compromised modules."
     goal_refs:
-      - modules.G001
+      - modules.GL001
     discovery_stage: validated
     certainty: confirmed
 
@@ -82,17 +100,23 @@ non_goals:
     certainty: confirmed
 
 assumptions:
-  - id: modules.A001
+  - id: modules.ASM001
+    domain_scope: modules
     statement: "Third-party modules may hook into any public class or method"
     consequence: >
-      If the module API is locked down to a defined hook contract only,
-      the entire hook-based extensibility model changes fundamentally.
-      Thousands of existing modules that access internal classes would break.
+      If the module API is locked down to a defined hook contract only, the
+      whole hook-based extensibility model changes, and every existing module
+      that reaches into an internal class breaks with it. The scale of that is
+      the point: PrestaShop's own site describes the marketplace as offering
+      thousands of modules and themes (prestashop.com/en, read 2026-09-19).
+      That is a company figure about its own marketplace, not a count taken
+      from this repository, and it is cited for the order of magnitude the
+      assumption is about rather than as a measurement.
     discovery_stage: committed
     certainty: confirmed
 
 trade_offs:
-  - id: modules.T001
+  - id: modules.TRO001
     choice: "Extension mechanism for module system"
     selected: "Global hook registry with string-based hook names"
     rejected: "Typed event dispatcher with interface contracts"
@@ -110,13 +134,23 @@ inquiries:
     statement: "Should module-hook position management be modeled as a CQRS operation?"
     summary: "Hook position management gap"
     description: >
-      The codebase has no CQRS command for managing module execution order within
-      hooks (UpdateModulePositionInHookCommand does not exist in the domain layer).
-      Position management may be handled in legacy/adapter code. This is a domain
-      gap worth investigating for future domain-driven migration.
+      Measured 2026-09-19, after phase 1 modelled the hook domain in full:
+      src/Core/Domain/Hook holds three commands and three queries and not one of
+      them carries a position. EditHookedModule moves a module from one hook to
+      another and sets its exceptions; it does not order it. The position lives
+      in the hook_module row and is written by
+      CommonController::updatePositionAction, a generic grid endpoint that
+      serves every sortable list in the back office. So the gap is confirmed
+      rather than closed, and the question is now sharper: is module order
+      within a hook a domain decision, or is it presentation, as its shared
+      endpoint currently implies.
     category: technical
+    affects:
+      operation_refs: [modules.CMD013]
+      concept_refs: [modules.CN002]
+      process_refs: [modules.PRC002]
     goal_refs:
-      - modules.G003
+      - modules.GL003
     blocking: false
     status: investigating
     discovery_stage: exploring
@@ -131,8 +165,12 @@ inquiries:
       or queries. Formalizing this could improve install failure diagnostics and
       enable dependency-aware bulk operations.
     category: technical
+    affects:
+      operation_refs: [modules.CMD001]
+      concept_refs: [modules.CN001]
+      process_refs: [modules.PRC001]
     goal_refs:
-      - modules.G001
+      - modules.GL001
     blocking: false
     status: investigating
     discovery_stage: exploring

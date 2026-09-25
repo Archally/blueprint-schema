@@ -23,6 +23,7 @@ concepts:
       description:
         id: CAT003
         description: "Detailed product description (multi-language, HTML)"
+        example: "<p>High-performance laptop with 16GB RAM and a 512GB SSD.</p>"
       price:
         id: CAT004
         description: "Base price excluding tax"
@@ -49,24 +50,35 @@ concepts:
 
   - id: catalog.CN003
     name: "Combination"
-    description: "A product variant defined by specific attribute values (e.g. Size:M + Color:Red). Has own identity (CombinationId), own stock, price offset, and EAN. Dual presence: top-level aggregate at src/Core/Domain/Combination/ plus junction commands under Product/Combination/."
+    description: >-
+      A product variant defined by specific attribute values (e.g. Size:M + Color:Red). Has own
+      identity (CombinationId), own stock, price offset, and EAN. Corrected 2026-09-19: there is no
+      top-level Combination aggregate. src/Core/Domain/Combination/ holds one file,
+      CombinationSettings.php, which is a constants holder for label lengths; every command, query,
+      exception and value object lives under src/Core/Domain/Product/Combination/, so a combination
+      is reached through its product and not beside it.
     stereotype: aggregate-root
     attributes:
       combinationId:
         id: CAT018
         description: "Unique combination identifier"
+        example: "7"
       reference:
         id: CAT019
         description: "SKU reference for this variant"
+        example: "LAPTOP-15-BLK-M"
       priceImpact:
         id: CAT020
         description: "Price offset from base product price"
+        example: "50.000000"
       quantity:
         id: CAT021
         description: "Available stock for this variant"
+        example: "25"
       ean13:
         id: CAT022
-        description: "EAN-13 barcode"
+        description: "Retail barcode for this variant, distinct from the product's own. A scanner reads a size or a colour as a separate item, so each combination carries its own code."
+        example: "5901234123464"
     relationships:
       - predicate: part-of
         object: catalog.CN001
@@ -86,12 +98,15 @@ concepts:
       imageId:
         id: CAT027
         description: "Unique image identifier"
+        example: "14"
       position:
         id: CAT028
         description: "Display order within product gallery"
+        example: "0"
       isCover:
         id: CAT029
         description: "Whether this is the main product image"
+        example: "true"
     relationships:
       - predicate: part-of
         object: catalog.CN001
@@ -109,15 +124,19 @@ concepts:
       specificPriceId:
         id: CAT030
         description: "Unique specific price identifier"
+        example: "88"
       reduction:
         id: CAT031
         description: "Discount amount or percentage"
+        example: "10.000000"
       reductionType:
         id: CAT032
         description: "Type of reduction: amount or percentage"
+        example: "percentage"
       fromQuantity:
         id: CAT033
         description: "Minimum quantity for this price to apply"
+        example: "3"
     code_refs:
       - path: "src/Core/Domain/Product/SpecificPrice/"
         role: model
@@ -146,6 +165,155 @@ concepts:
       - path: "src/Core/Domain/Attachment/"
         role: model
     tags: [value-object]
+
+  - id: catalog.CN100
+    name: "Position"
+    description: "A product's rank inside one category, held as the pair of positions a grid move produces rather than as a single number: moving one row shifts its neighbours, so the move is the fact and the rank is its result. Shared with every other positionable grid in the back office, which is why the value object sits outside the Product folder."
+    stereotype: value-object
+    attributes:
+      rowId:
+        id: CAT1000
+        description: "The product being moved."
+        example: "42"
+      oldPosition:
+        id: CAT1001
+        description: "Where the row sat before the move."
+        example: "3"
+      newPosition:
+        id: CAT1002
+        description: "Where the row sits after it."
+        example: "1"
+    code_refs:
+      - path: "src/Core/Domain/Position/ValueObject/RowPosition.php"
+        role: model
+      - path: "src/Core/Domain/Product/Command/UpdateProductsPositionsCommand.php"
+        role: implementation
+        description: "The command that carries a list of these."
+    tags: [value-object]
+
+  - id: catalog.CN101
+    name: "ProductPack"
+    description: "A product of type pack, whose sellable content is a list of other products in given quantities. A pack has no stock of its own by default: whether it can be sold is derived from its members, which is what the pack stock type on the product decides."
+    stereotype: entity
+    attributes:
+      packId:
+        id: CAT1003
+        description: "The product whose type is pack. A pack is not a container beside the catalog; it is a product row with members, which is why this id is a product id."
+        example: "19"
+      packedProducts:
+        id: CAT1004
+        description: "The member products and the quantity of each one the pack contains."
+        example: "[{productId: 1, quantity: 2}]"
+    code_refs:
+      - path: "src/Core/Domain/Product/Pack/"
+        role: model
+    tags: [entity, "within:catalog.CN001"]
+
+  - id: catalog.CN102
+    name: "CustomizationField"
+    description: "A field a shopper fills in on the product page before adding it to the cart - an engraving line, an uploaded image. The field is defined on the product; the value a shopper enters belongs to the cart, not here."
+    stereotype: entity
+    attributes:
+      customizationFieldId:
+        id: CAT1005
+        description: "Unique field identifier."
+        example: "7"
+      type:
+        id: CAT1006
+        description: "Whether the shopper types text or uploads a file."
+        example: "text"
+      required:
+        id: CAT1007
+        description: "Whether the product can be added to a cart with the field left empty."
+        example: "true"
+    code_refs:
+      - path: "src/Core/Domain/Product/Customization/CustomizationField.php"
+        role: model
+      - path: "src/Core/Domain/Product/Customization/"
+        role: model
+    tags: [entity, "within:catalog.CN001"]
+
+  - id: catalog.CN103
+    name: "ProductSupplier"
+    description: "One supplier's terms for one product or combination - their reference for it and the price they charge, in their currency. Distinct from Supplier, which is the company: the same supplier carries different terms for every product it supplies."
+    stereotype: entity
+    attributes:
+      productSupplierId:
+        id: CAT1008
+        description: "Unique identifier of this product-supplier pairing."
+        example: "12"
+      supplierReference:
+        id: CAT1009
+        description: "The supplier's own reference for the product, used on purchase orders."
+        example: "ACME-LAP-15"
+      priceTaxExcluded:
+        id: CAT1010
+        description: "What the supplier charges, excluding tax."
+        example: "620.00"
+      currencyId:
+        id: CAT1011
+        description: "The currency the supplier price is quoted in."
+        example: "1"
+    code_refs:
+      - path: "src/Core/Domain/Product/Supplier/"
+        role: model
+      - path: "classes/ProductSupplier.php"
+        role: model
+        description: "The persisted entity; extends ObjectModel, so its writes fire the actionObjectProductSupplier... hooks."
+    tags: [entity, "within:catalog.CN001"]
+
+  - id: catalog.CN104
+    name: "StockAvailable"
+    description: "How many units of a product or combination a shop can sell, together with what happens when that reaches zero. Held apart from the product because it is per shop and changes on every order, while the product record does not."
+    stereotype: entity
+    attributes:
+      quantity:
+        id: CAT1012
+        description: "Units available for sale in this shop."
+        example: "37"
+      outOfStockType:
+        id: CAT1013
+        description: "What the shop does when the quantity reaches zero: refuse the order, allow it, or follow the shop default."
+        example: "deny"
+      location:
+        id: CAT1014
+        description: "Free-text warehouse location the merchant uses to find the stock."
+        example: "A-12-3"
+      lowStockThreshold:
+        id: CAT1015
+        description: "Quantity below which the merchant is alerted, when the alert is enabled."
+        example: "5"
+    code_refs:
+      - path: "src/Core/Domain/Product/Stock/"
+        role: model
+      - path: "classes/stock/StockAvailable.php"
+        role: model
+        description: "The persisted entity; its writes dispatch the actionUpdateQuantity hook."
+    tags: [entity, "within:catalog.CN001"]
+
+  - id: catalog.CN105
+    name: "StockMovement"
+    description: "One recorded change of a product's available quantity, with the reason for it. Two kinds share the table: an edit a back-office employee made, and a rolled-up range of customer orders between two such edits, which is why the movement list reads as a history rather than as an audit log of single sales."
+    stereotype: entity
+    attributes:
+      deltaQuantity:
+        id: CAT1016
+        description: "How much the quantity changed, negative when stock left."
+        example: "-3"
+      reason:
+        id: CAT1017
+        description: "Why it changed - an employee edit, or customer orders."
+        example: "Customer order"
+      date:
+        id: CAT1018
+        description: "When the movement was recorded."
+        example: "2026-09-14"
+    code_refs:
+      - path: "src/Core/Domain/Product/Stock/Query/GetProductStockMovements.php"
+        role: implementation
+      - path: "classes/stock/StockMvt.php"
+        role: model
+    tags: [entity, "within:catalog.CN001"]
 
 actors:
   - id: catalog.ACT001
@@ -217,21 +385,21 @@ enumerations:
         description: "Percentage discount."
 
 associations:
-  - id: catalog.AS001
+  - id: catalog.ASC001
     predicate: maps-to
     subject: catalog.CN001
     object: catalog.CN002
     cardinality: "*:*"
     description: "Products are assigned to multiple categories. One is the default."
 
-  - id: catalog.AS002
+  - id: catalog.ASC002
     predicate: depends-on
     subject: catalog.CN001
     object: catalog.CN008
     cardinality: "*:1"
     description: "A product is manufactured by one manufacturer (brand)."
 
-  - id: catalog.AS003
+  - id: catalog.ASC003
     predicate: uses
     subject: catalog.CN001
     object: catalog.CN009

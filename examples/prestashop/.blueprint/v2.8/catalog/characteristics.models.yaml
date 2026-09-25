@@ -38,7 +38,7 @@ components:
             "2": "Taille"
         groupType:
           type: string
-          description: "Display type for this attribute group."
+          description: "How the shopper picks a value on the product page: a dropdown, a radio list, or colour swatches. Choosing color is what makes the per-attribute colour field meaningful."
           enum: [select, radio, color]
           example: "select"
         associatedShopIds:
@@ -72,12 +72,14 @@ components:
           example: 1
         localizedNames:
           type: object
+          description: "The group's back-office name per language id, such as Size. This is the name an employee picks from when building a combination, and it need not be the one a shopper sees."
           additionalProperties:
             type: string
           example:
             "1": "Size"
         localizedPublicNames:
           type: object
+          description: "The storefront label per language id, at most 64 characters and required. Kept apart from the admin name so a group called 'Size EU' internally can print as 'Size' on the product page."
           additionalProperties:
             type: string
           example:
@@ -85,28 +87,37 @@ components:
         groupType:
           type: string
           enum: [select, radio, color]
+          description: "How the shopper picks a value: a dropdown, a radio list, or swatches. AttributeGroup derives is_color_group from this, and only the color type reads the per-attribute colour below."
           example: "select"
         attributes:
           type: array
           description: "Attribute values belonging to this group."
+          example:
+            - attributeId: 1
+              localizedNames: { "1": "S" }
+              color: ""
+              position: 0
           items:
             type: object
             properties:
               attributeId:
                 type: integer
+                description: "One selectable value in the group, such as the S in Size. A combination references this id, so deleting the value breaks every variant built on it."
                 example: 1
               localizedNames:
                 type: object
+                description: "The value's label per language id, which is what the swatch or dropdown entry reads."
                 additionalProperties:
                   type: string
                 example:
                   "1": "S"
               color:
                 type: string
-                description: "Color hex code (only for color-type groups)."
-                example: ""
+                description: "Hex colour for the swatch, read only when the group's type is color. Empty on every other group type, where the label alone is shown."
+                example: "#000000"
               position:
                 type: integer
+                description: "Where the value sits in the group's ordering, zero first. It is set by drag and drop rather than derived from the name, so sizes list S, M, L rather than alphabetically."
                 example: 0
 
     CreateFeaturePayload:
@@ -133,6 +144,7 @@ components:
             "2": "Poids"
         associatedShopIds:
           type: array
+          description: "Which shops of a multistore installation the feature is offered in. A feature absent from a shop is not selectable on that shop's products at all."
           items:
             type: integer
           example: [1]
@@ -160,21 +172,28 @@ components:
           example: 3
         localizedNames:
           type: object
+          description: "The feature's name per language id, such as Weight. A feature is a specification the shopper reads and filters on, not something they choose, which is what separates it from an attribute group."
           additionalProperties:
             type: string
           example:
             "1": "Weight"
         values:
           type: array
-          description: "Feature values."
+          description: "The predefined values this feature offers, which the product form presents as a list. A product may instead type a custom value, and that one is stored against the product rather than appearing here."
+          example:
+            - featureValueId: 12
+              localizedValues: { "1": "2.1 kg" }
+              isCustom: false
           items:
             type: object
             properties:
               featureValueId:
                 type: integer
+                description: "The value record. Shared across products, so renaming it renames it everywhere it is used."
                 example: 12
               localizedValues:
                 type: object
+                description: "The value's text per language id. It is free text rather than a number with a unit, so '2.1 kg' is stored whole and cannot be sorted numerically."
                 additionalProperties:
                   type: string
                 example:

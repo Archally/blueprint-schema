@@ -3,7 +3,7 @@ version: "1.0.0"
 scope: admin
 
 goals:
-  - id: admin.G001
+  - id: admin.GL001
     statement: "Secure role-based access control for all back-office users"
     description: >
       Ensure every back-office user has precisely the permissions required for
@@ -11,30 +11,45 @@ goals:
       permission matrices.
     summary: "Secure RBAC"
     priority: high
+    measure: "Every back-office tab carries an explicit permission entry for every profile"
+    affects:
+      operation_refs: [admin.CMD009, admin.CMD013, admin.CMD014]
+      concept_refs: [admin.CN002, admin.CN003, admin.CN009]
+      process_refs: [admin.PRC001]
     discovery_stage: validated
     certainty: confirmed
 
-  - id: admin.G002
+  - id: admin.GL002
     statement: "API-first integration enablement through scoped OAuth2 clients"
     description: >
       Enable third-party systems to integrate securely through scoped OAuth2
       API clients with rotatable secrets and configurable token lifetimes.
     summary: "API-first integration"
     priority: high
+    measure: "Every OAuth2 scope the Admin API routes declare can be granted to an API client"
+    affects:
+      operation_refs: [admin.CMD021, admin.CMD022, admin.CMD024]
+      concept_refs: [admin.CN005]
+      process_refs: [admin.PRC002]
     discovery_stage: validated
     certainty: confirmed
 
-  - id: admin.G003
+  - id: admin.GL003
     statement: "Session security and incident response capability"
     description: >
       Enable administrators to terminate compromised sessions immediately
       and automatically clear outdated sessions for both employees and customers.
     summary: "Session security"
     priority: high
+    measure: "No employee or customer session older than the configured lifetime survives the scheduled clear"
+    affects:
+      operation_refs: [admin.CMD015, admin.CMD017, admin.CMD019, admin.CMD020]
+      concept_refs: [admin.CN004]
+      process_refs: [admin.PRC003]
     discovery_stage: validated
     certainty: confirmed
 
-  - id: admin.G004
+  - id: admin.GL004
     statement: "Self-service reporting via saved SQL queries"
     description: >
       Allow administrators to create and execute custom SQL queries for data
@@ -42,11 +57,15 @@ goals:
       preventing write operations.
     summary: "SQL self-service"
     priority: medium
+    measure: "Every stored SQL request parses as SELECT ... FROM over prefixed tables before it can be saved"
+    affects:
+      operation_refs: [admin.CMD029, admin.CMD030, admin.QRY008]
+      concept_refs: [admin.CN007]
     discovery_stage: validated
     certainty: confirmed
 
 risks:
-  - id: admin.R001
+  - id: admin.RSK001
     statement: "Privilege escalation via profile misconfiguration"
     description: >
       Incorrect permission matrix configuration could grant employees access
@@ -54,23 +73,39 @@ risks:
     summary: "Privilege escalation risk"
     likelihood: medium
     impact: high
+    goal_refs:
+      - admin.GL001
+    affects:
+      operation_refs: [admin.CMD009, admin.CMD010, admin.CMD013, admin.CMD014]
+      concept_refs: [admin.CN002, admin.CN003]
+      process_refs: [admin.PRC001]
     mitigation: "Permission matrix validation rule (VR004) ensures consistency. UI should preview effective permissions before saving."
     discovery_stage: validated
     certainty: confirmed
 
-  - id: admin.R002
-    statement: "SQL injection via SqlManagement feature"
+  - id: admin.RSK002
+    statement: "The SQL manager guards the query when it is saved, not when it is run"
     description: >
-      Malicious SQL queries could modify or destroy database data if the
-      safety guard is bypassed.
-    summary: "SQL injection risk"
+      SqlQueryValidator parses a request when it is stored and rejects anything
+      that is not a SELECT over prefixed tables: RequestSql requires SELECT and
+      FROM, and checkedFrom restricts the tables. Execution then runs the stored
+      text through the ordinary database connection, which holds write
+      privileges. So the parser is the whole of the protection, and a request
+      that reached the table by any route that skipped it - a migration, a
+      direct insert, a bug in the parser - runs with the rights to change data.
+    summary: "The SQL guard runs at save time, the query runs with write rights"
     likelihood: low
     impact: high
-    mitigation: "SQL safety guard rule (VR006) blocks write operations and schema modifications. Query execution uses read-only connection."
+    goal_refs:
+      - admin.GL004
+    affects:
+      operation_refs: [admin.CMD029, admin.CMD030, admin.QRY008]
+      concept_refs: [admin.CN007]
+    mitigation: "SqlQueryValidator (src/Adapter/SqlManager/SqlQueryValidator.php) rejects a non-SELECT and a table outside the shop prefix when the request is saved, which is rule VR006. Execution does not use a read-only connection, so nothing catches a request that got into the table another way."
     discovery_stage: validated
     certainty: confirmed
 
-  - id: admin.R003
+  - id: admin.RSK003
     statement: "API client secret leakage allowing unauthorized access"
     description: >
       Exposed API client secrets could allow unauthorized access to the Admin
@@ -78,6 +113,12 @@ risks:
     summary: "Secret leakage risk"
     likelihood: medium
     impact: high
+    goal_refs:
+      - admin.GL002
+    affects:
+      operation_refs: [admin.CMD021, admin.CMD024]
+      concept_refs: [admin.CN005]
+      process_refs: [admin.PRC002]
     mitigation: "Secret rotation command (CMD024) enables immediate rotation. Secrets should never be displayed after initial generation."
     discovery_stage: validated
     certainty: confirmed
@@ -92,8 +133,21 @@ non_goals:
     discovery_stage: committed
     certainty: confirmed
 
+  - id: admin.NG002
+    statement: "No second authentication factor for employee sign-in"
+    reason: >
+      An employee signs in with an email address and a password and nothing
+      else: there is no TOTP, no WebAuthn and no recovery-code handling anywhere
+      in src, classes or controllers. A shop that needs a second factor puts it
+      in front of the back office, at the reverse proxy or through a module.
+      This is why GL003's session commands matter as much as they do - being
+      able to end a session is the response core does offer.
+    discovery_stage: committed
+    certainty: confirmed
+
 assumptions:
-  - id: admin.A001
+  - id: admin.ASM001
+    domain_scope: admin
     statement: "PHP 8.1+ is the minimum supported runtime"
     consequence: >
       If PHP 7.4 support is reintroduced, typed properties, enums, fibers,
@@ -102,8 +156,23 @@ assumptions:
     discovery_stage: committed
     certainty: confirmed
 
+  # Authored by step 27. Nothing already in the model was about the third-party side of the API,
+  # so ExternalApiConsumers had no assumption to place. Its id is namespaced to the admin file
+  # because that is where it is written; `domain_scope` is what says which context it is about.
+  - id: admin.ASM100
+    domain_scope: externalapiconsumers
+    statement: "An integrator will keep a working webservice key rather than migrate to OAuth2 on any announced date"
+    consequence: >
+      If integrators did migrate on a schedule, the legacy webservice could be removed and the shop
+      would have one machine identity instead of two. They do not, so both authentication surfaces
+      have to keep working: DC009 is deprecated and still ships in v9, and admin.TRO001 selected
+      exactly this pair for that reason. The shop cannot reach the owners of the keys it issued, so
+      a removal date is a guess rather than a plan.
+    discovery_stage: committed
+    certainty: probable
+
 trade_offs:
-  - id: admin.T001
+  - id: admin.TRO001
     choice: "Admin API authentication model"
     selected: "OAuth2 for new Admin API + legacy webservice keys for backward compatibility"
     rejected: "OAuth2-only (would break all existing API integrations)"
@@ -126,8 +195,12 @@ inquiries:
       API gateway) but is not modeled in the domain. Worth investigating for
       domain-level enforcement.
     category: technical
+    affects:
+      operation_refs: [admin.CMD021]
+      concept_refs: [admin.CN005]
+      process_refs: [admin.PRC002]
     goal_refs:
-      - admin.G002
+      - admin.GL002
     blocking: false
     status: investigating
     discovery_stage: exploring
@@ -137,11 +210,19 @@ inquiries:
     statement: "Should legacy Configuration management be migrated to the CQRS domain layer?"
     summary: "Legacy configuration CQRS gap"
     description: >
-      Only SwitchDebugMode exists in the CQRS layer. The vast majority of store
-      configuration is managed by the legacy Configuration class (PS_SHOP_NAME,
-      PS_CURRENCY_DEFAULT, etc.) outside the domain architecture. This represents
-      a significant domain gap for configuration management.
+      Measured 2026-09-19 against presta-code a27e912eef9:
+      src/Core/Domain/Configuration/Command holds exactly one class,
+      SwitchDebugModeCommand. Everything else a merchant configures -
+      PS_SHOP_NAME, PS_CURRENCY_DEFAULT, the PS_SEARCH_WEIGHT_* values, the
+      shipping method default - is a row the legacy Configuration class reads
+      and writes with no command, no validation rule and no audit. Phase 1 did
+      not close this: it modelled the one command that exists. The open part is
+      whether a configuration key is worth a command at all, or whether the
+      real unit is a settings group.
     category: technical
+    affects:
+      operation_refs: [admin.CMD034]
+      concept_refs: [admin.CN008]
     blocking: false
     status: investigating
     discovery_stage: exploring

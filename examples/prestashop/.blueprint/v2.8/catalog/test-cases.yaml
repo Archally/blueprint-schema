@@ -1,5 +1,5 @@
 ---
-version: "1.0.0"
+version: "1.1.0"
 scope: catalog
 
 happy_path:
@@ -11,16 +11,33 @@ happy_path:
       rules: [catalog.SR001]
     contract:
       kind: openapi
-      file: catalog/catalog-api.openapi
+      file: catalog-api
     given:
       description: "Product with name, description, price=999.99, type=standard."
     expected_result:
       status: success
       code: 201
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Product/add_product.feature"
+        role: test
+        description: "Scenario 'I add a product with basic information' (line 15) and its multishop twin (line 28)."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Product/add_product.feature"
+          date: "2026-09-19"
+          summary: >-
+            Scenario 'I add a product with basic information' adds a standard product with a name
+            and asserts it exists with that name and type. It exercises AddProductCommand through
+            the command bus, which is catalog.CMD001. The scenario asserts the creation; the
+            status code 201 in this test case is the Admin API's, not the Behat suite's.
+          confidence_impact: supports
 
   - id: catalog.TC002
     name: "Search products - keyword match"
-    summary: "Search by product name returns matching results within SLO."
+    summary: "Search by product name returns the matching products."
     validates:
       operations: [catalog.QRY001]
     given:
@@ -30,6 +47,33 @@ happy_path:
         query: "laptop"
     expected_result:
       status: success
+    note: >-
+      No test in the suite measures search latency and the model declares no SLO for this
+      query, so this case asserts the result and not a timing.
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Context/Domain/ProductFeatureContext.php"
+        role: test
+        description: "getProductIdByName (line 107) dispatches SearchProducts; the product Behat suite resolves references through it."
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Context/Domain/ProductFeatureContext.php line 107"
+          date: "2026-09-19"
+          summary: >-
+            SearchProducts is dispatched on every product scenario that names a product by name,
+            so the happy path runs constantly. It is exercised rather than asserted: no scenario
+            states what the search should return for a phrase.
+          confidence_impact: supports
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            No test asserts search semantics for catalog.QRY001. The nearest named suite,
+            Product/search_products_for_association.feature, exercises the DIFFERENT query
+            SearchProductsForAssociation and is deliberately not cited here.
+          confidence_impact: weakens
 
   - id: catalog.TC003
     name: "Generate combinations - happy path"
@@ -45,18 +89,60 @@ happy_path:
         valuesPerGroup: [3, 2]
     expected_result:
       status: success
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Product/Combination/generate_combinations.feature"
+        role: test
+        description: "Scenario 'Generate product combinations' (line 26)."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Product/Combination/generate_combinations.feature"
+          date: "2026-09-19"
+          summary: >-
+            Scenario 'Generate product combinations' generates the cartesian product of Size and
+            Color and asserts every named combination exists with its attribute pair, which is
+            the assertion this test case makes.
+          confidence_impact: supports
 
   - id: catalog.TC004
     name: "Add category - happy path"
-    summary: "Creating a category within valid depth succeeds."
+    summary: "Creating a category under a parent succeeds and its depth is computed from that parent."
     validates:
       operations: [catalog.CMD025, catalog.EVT009]
       rules: [catalog.SR002]
     given:
-      description: "Parent category at depth 3, max depth 10."
+      description: "A parent category whose level_depth is 3."
     expected_result:
       status: success
       code: 201
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Category/category_management.feature"
+        role: test
+        description: "Scenario 'Add new category' (line 26) creates a category under a parent and asserts its stored details."
+      - path: "classes/Category.php"
+        role: implementation
+        description: "calcLevelDepth and the recompute in add/update - the source of the depth half of this assertion."
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Category/category_management.feature line 26"
+          date: "2026-09-19"
+          summary: >-
+            The scenario asserts the creation under a named parent and every stored field it was
+            given. It does NOT assert level_depth, so the test covers the first half of this case.
+          confidence_impact: supports
+        - kind: codebase-analysis
+          source: "classes/Category.php"
+          date: "2026-09-19"
+          summary: >-
+            The depth half comes from the code, not from a test: Category::add calls
+            calcLevelDepth when level_depth is unset, Category::update recomputes it when the
+            stored value disagrees, and the field definition carries 'setter' => false.
+          confidence_impact: supports
 
   - id: catalog.TC005
     name: "Add specific price - percentage discount"
@@ -68,75 +154,250 @@ happy_path:
       description: "Product exists, reduction=20, reductionType=percentage."
     expected_result:
       status: success
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Product/SpecificPrice/add_specific_price.feature"
+        role: test
+        description: "Scenario 'I add a specific price with percent reduction to product' (line 40)."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Product/SpecificPrice/add_specific_price.feature"
+          date: "2026-09-19"
+          summary: >-
+            Scenario 'I add a specific price with percent reduction to product' adds a percentage
+            specific price and asserts the stored reduction type and value - the same assertion
+            this test case makes.
+          confidence_impact: supports
 
 edge_cases:
   - id: catalog.EC001
-    name: "Create product - duplicate SKU"
-    summary: "Attempting to create a combination with existing attribute values."
+    name: "Regenerating combinations creates no duplicates"
+    summary: "Generating combinations again over the same attribute values adds nothing and loses nothing."
     validates:
       operations: [catalog.CMD011]
       rules: [catalog.VR004]
     given:
-      description: "Product already has combination with Size:M, Color:Red."
-      state:
-        existingCombination: "Size:M-Color:Red"
+      description: >-
+        A product whose combinations were already generated for Size [S,M] and Color
+        [White,Black,Blue]. A duplicate attribute set does not fail: CombinationCreator looks
+        the pair up with findMatchingCombinationId and reuses the existing combination, so
+        regeneration is idempotent and any reference already set on a combination survives it.
     expected_result:
-      status: failure
-      code: 409
+      status: success
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Product/Combination/generate_combinations.feature"
+        role: test
+        description: "Scenario 'Generate product combinations does not create duplicates' (line 64)."
+      - path: "src/Adapter/Product/Combination/Create/CombinationCreator.php"
+        role: implementation
+        description: "findMatchingCombinationId (line 245) is the duplicate avoidance; nothing raises a conflict."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Product/Combination/generate_combinations.feature line 64"
+          date: "2026-09-19"
+          summary: >-
+            The scenario regenerates over the same attribute values, asserts the same six
+            combinations and no more, then updates two references and asserts they persist. It
+            asserts success, not a conflict.
+          confidence_impact: supports
+        - kind: codebase-analysis
+          source: "src/Adapter/Product/Combination/Create/CombinationCreator.php"
+          date: "2026-09-19"
+          summary: >-
+            The class raises InvalidProductTypeException and CannotGenerateCombinationException
+            only. There is no duplicate-combination conflict to raise, which is why the 409 this
+            case used to assert could not have been observed.
+          confidence_impact: invalidates
 
   - id: catalog.EC002
-    name: "Category tree depth limit"
-    summary: "Creating a category that exceeds maximum nesting depth."
+    name: "Deep nesting is accepted and the depth follows the parent"
+    summary: "Creating a category under an already deep parent succeeds and its depth follows that parent."
     validates:
       operations: [catalog.CMD025]
       rules: [catalog.SR002]
     given:
-      description: "Parent category at depth 10, max depth 10."
+      description: >-
+        A parent category whose level_depth is 10. PrestaShop enforces no maximum nesting
+        depth, so what this boundary shows is the derivation - the new category's level_depth is
+        its parent's plus one, whatever that number is.
     expected_result:
-      status: failure
-      code: 422
+      status: success
+      code: 201
+    code_refs:
+      - path: "classes/Category.php"
+        role: implementation
+        description: "calcLevelDepth, and the absence of any maximum-depth guard."
+      - path: "src/Core/Domain/Category/CategorySettings.php"
+        role: implementation
+        description: "The constants a category is really constrained by: title, link-rewrite and description lengths. No depth constant."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "classes/Category.php, src/Core/Domain/Category/CategorySettings.php"
+          date: "2026-09-19"
+          summary: >-
+            Step 11 read both files and found no maximum depth; the only maxDepth in the category
+            code is a rendering argument on a tree-building helper. The derivation is in
+            calcLevelDepth.
+          confidence_impact: supports
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. No test in tests/ creates a category at depth 10 or asserts
+            level_depth at any depth, so nothing automated confirms the boundary behaviour.
+          confidence_impact: weakens
 
   - id: catalog.EC003
-    name: "Combination explosion guard"
-    summary: "Attempting to generate too many combinations triggers a warning or rejection."
+    name: "Generating combinations on a non-combinations product is refused"
+    summary: "A standard, pack or virtual product rejects combination generation and keeps its type."
     validates:
       operations: [catalog.CMD011]
     given:
-      description: "Product with 5 attribute groups of 10 values each (100,000 combinations)."
-      state:
-        expectedCombinations: 100000
+      description: >-
+        A product of type standard, asked to generate combinations for Size [S,M] and Color
+        [White,Black,Blue]. No guard caps the number of combinations a generation produces -
+        neither GenerateProductCombinationsHandler nor CombinationCreator counts the
+        permutations. The boundary the code enforces on this command is the product type, so
+        that is what this case asserts.
     expected_result:
       status: failure
-      code: 422
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Product/Combination/forbidden_actions.feature"
+        role: test
+        description: "Scenario 'Combination commands can only be done on product with type combinations' (line 22)."
+      - path: "src/Adapter/Product/Combination/Create/CombinationCreator.php"
+        role: implementation
+        description: "createCombinations throws InvalidProductTypeException (line 124) before generating anything."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Product/Combination/forbidden_actions.feature line 22"
+          date: "2026-09-19"
+          summary: >-
+            The scenario generates combinations on a standard product, asserts the
+            combinations-only error, and asserts the product keeps its type and gains no
+            attribute groups.
+          confidence_impact: supports
+        - kind: codebase-analysis
+          source: "src/Adapter/Product/Combination/Create/CombinationCreator.php"
+          date: "2026-09-19"
+          summary: >-
+            Read for the retired assertion: the class has no count, limit or maximum of any kind,
+            so the combination explosion guard this case used to describe does not exist.
+          confidence_impact: invalidates
 
 error_cases:
   - id: catalog.ER001
-    name: "Upload undersized image"
-    summary: "Attempting to upload a product image smaller than minimum dimensions."
+    name: "Upload an image the validator refuses"
+    summary: "An upload over the configured size limit or of an unsupported type is rejected."
     validates:
       operations: [catalog.CMD016]
-      rules: [catalog.VR001]
     given:
-      description: "Image 400x300 pixels, minimum required 800x800."
+      description: >-
+        A file larger than the max_size_product_image configuration, or one whose detected mime
+        type is outside the allowed list. PrestaShop enforces no minimum dimension on an
+        upload - ImageValidator checks file size and mime type only. 800x800 is the
+        large_default image TYPE, which PrestaShop GENERATES from whatever is uploaded, not a
+        constraint on the file.
     expected_result:
       status: failure
-      code: 422
+      code: 400
+    code_refs:
+      - path: "src/Adapter/Image/ImageValidator.php"
+        role: validation
+        description: "assertFileUploadLimits (line 42) and assertIsValidImageType (line 62) - the two constraints that exist."
+      - path: "src/Adapter/Image/ProductImageFileValidator.php"
+        role: validation
+        description: "The product-specific size limit, read from max_size_product_image."
+      - path: "tests/Integration/Behaviour/Features/Scenario/Product/Image/add_image.feature"
+        role: test
+        description: "Scenario 'Add new product image' (line 13) - the happy path, and the source of the 800x800 large_default image type."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "src/Adapter/Image/ImageValidator.php, src/Adapter/Image/ProductImageFileValidator.php"
+          date: "2026-09-19"
+          summary: >-
+            UploadedImageConstraintException is raised with EXCEEDED_SIZE or UNRECOGNIZED_FORMAT.
+            ProductImageConstraintException declares INVALID_ID, INVALID_COVER, INVALID_LEGENDS
+            and INVALID_POSITION - no dimension constant anywhere.
+          confidence_impact: supports
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. add_image.feature covers only the happy path; no test
+            uploads an oversized or wrong-typed file, so the refusal is read from the validator
+            rather than observed.
+          confidence_impact: weakens
+        - kind: codebase-analysis
+          source: "src/Core/Domain/Product/Image/Exception/ProductImageConstraintException.php"
+          date: "2026-09-19"
+          summary: >-
+            Read for the retired assertion. There is no minimum-dimension constraint in the image
+            domain, so the 400x300-against-800x800 rejection this case used to assert never happens.
+          confidence_impact: invalidates
 
   - id: catalog.ER002
-    name: "Delete product with pending orders"
-    summary: "Attempting to delete a product that has pending orders."
+    name: "Delete a product that does not exist"
+    summary: "Deleting an unknown product id is refused; deleting one that has orders is not."
     validates:
       operations: [catalog.CMD003]
-      rules: [catalog.VR002]
     given:
-      description: "Product has 3 pending orders."
+      description: >-
+        A product id that no product carries in the requested shop. A product with pending
+        orders can still be deleted - ProductDeleter never looks at orders, and
+        CannotDeleteProductException is raised only when the delete itself fails. An order keeps
+        its own snapshot of the product in order_detail (product_name is a required column), so
+        deleting a sold product loses no order history.
     expected_result:
       status: failure
-      code: 422
+      code: 404
+    code_refs:
+      - path: "src/Adapter/Product/ProductDeleter.php"
+        role: implementation
+        description: "The whole delete path. It contains no reference to an order."
+      - path: "classes/order/OrderDetail.php"
+        role: implementation
+        description: "product_name, a required column - the order's own snapshot of what was sold."
+      - path: "tests/Integration/Behaviour/Features/Scenario/Product/delete_product.feature"
+        role: test
+        description: "Scenarios 'I delete product' (line 9) and 'I bulk delete products' (line 17) - the happy paths, with no order guard in sight."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "src/Adapter/Product/ProductDeleter.php, src/Adapter/Product/Repository/ProductRepository.php"
+          date: "2026-09-19"
+          summary: >-
+            ProductRepository::delete raises CannotDeleteProductException through
+            deleteObjectModelFromShops, which fires when the row cannot be removed, and
+            ProductNotFoundException when the id resolves to nothing. Neither path consults an order.
+          confidence_impact: invalidates
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. No test deletes a product by an unknown id, so the 404 is
+            read from the repository's not-found path rather than observed.
+          confidence_impact: weakens
 
   - id: catalog.ER003
     name: "Invalid specific price percentage"
-    summary: "Attempting to create a specific price with 150% reduction."
+    summary: "A percentage reduction outside 0 to 100 is refused."
     validates:
       operations: [catalog.CMD021]
       rules: [catalog.VR003]
@@ -144,4 +405,62 @@ error_cases:
       description: "Reduction=150, reductionType=percentage."
     expected_result:
       status: failure
-      code: 422
+      code: 400
+    code_refs:
+      - path: "src/Core/Domain/ValueObject/Reduction.php"
+        role: validation
+        description: "MAX_ALLOWED_PERCENTAGE = 100 and assertIsValidValue, which rejects both ends of the range with INVALID_REDUCTION_PERCENTAGE."
+      - path: "tests/Integration/Behaviour/Features/Scenario/Product/SpecificPrice/add_specific_price.feature"
+        role: test
+        description: "Scenario 'I add a specific price with invalid fields I get errors' (line 66)."
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Product/SpecificPrice/add_specific_price.feature line 66"
+          date: "2026-09-19"
+          summary: >-
+            The scenario asserts 'specific price reduction_percentage is invalid' for -12.56. It
+            tests the LOWER bound, not 150.
+          confidence_impact: supports
+        - kind: codebase-analysis
+          source: "src/Core/Domain/ValueObject/Reduction.php"
+          date: "2026-09-19"
+          summary: >-
+            Both bounds are one branch: assertIsValidValue raises the same
+            INVALID_REDUCTION_PERCENTAGE when the value is below zero or above
+            MAX_ALLOWED_PERCENTAGE. So 150 takes the path the test already covers, but no test
+            passes 150.
+          confidence_impact: supports
+
+  - id: catalog.ER004
+    name: "Search with an empty phrase is refused"
+    summary: "SearchProducts refuses an empty phrase rather than scanning the catalog."
+    validates:
+      operations: [catalog.QRY001]
+    given:
+      description: "A product search submitted with an empty phrase."
+    expected_result:
+      status: failure
+      code: 400
+    code_refs:
+      - path: "tests/Unit/Core/Domain/Product/Query/SearchProductsTest.php"
+        role: test
+        description: "testEmptyPhrase - the whole test class, one assertion."
+      - path: "src/Core/Domain/Product/Query/SearchProducts.php"
+        role: implementation
+        description: "The query constructor raises ProductSearchEmptyPhraseException before any handler runs."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Unit/Core/Domain/Product/Query/SearchProductsTest.php"
+          date: "2026-09-19"
+          summary: >-
+            testEmptyPhrase constructs SearchProducts('', 1, 'fr') and expects
+            ProductSearchEmptyPhraseException with the message 'Product search phrase must be a
+            not empty string'. It is the only unit test PrestaShop has for this query, and it
+            asserts exactly what catalog.ERR109 says.
+          confidence_impact: supports

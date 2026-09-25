@@ -11,21 +11,14 @@ operations:
   addCmsPage:
     id: content.CMD001
     kind: command
-    exchange:
-      protocol: http
-      endpoint:
-        path: /content/cms-pages
-        method: POST
-        group: content
+    dispatch: inprocess
     payload:
       schema: CreateCmsPagePayload
-      contentType: application/json
+      description: "The fields AddCmsPageCommand carries. There is no content type, because there is no wire: the command object is built in the back-office controller and handed to the command bus inside the same request."
     responses:
-      - code: "201"
+      - code: "ok"
         type: success
-        description: "The CMS page was created."
-        schema: CmsPageResource
-        contentType: application/json
+        description: "The handler returns the new CmsPageId. No HTTP status exists for this command: ps_apiresources declares no CmsPage resource, so the only caller is the back-office controller."
     name: "AddCmsPage"
     description: "Create a new CMS page with localized title, content, SEO metadata, friendly URL, and category assignment. All localized fields accept per-language values."
     delivery_priority: must-have
@@ -36,30 +29,26 @@ operations:
     governed_by:
       - rule: content.VR001
       - rule: content.VR002
+    materializes:
+      - concept: content.CN001
+        action: create
     code_refs:
       - path: "src/Core/Domain/CmsPage/Command/AddCmsPageCommand.php"
         role: implementation
-      - path: "src/Core/Domain/CmsPage/CommandHandler/AddCmsPageHandler.php"
+      - path: "src/Adapter/CMS/Page/CommandHandler/AddCmsPageHandler.php"
         role: implementation
 
   editCmsPage:
     id: content.CMD002
     kind: command
-    exchange:
-      protocol: http
-      endpoint:
-        path: /content/cms-pages/{cmsPageId}
-        method: PUT
-        group: content
+    dispatch: inprocess
     payload:
       schema: CreateCmsPagePayload
-      contentType: application/json
+      description: "EditCmsPageCommand carries the same fields, each optional via a setter, so only what changed is supplied."
     responses:
-      - code: "200"
+      - code: "ok"
         type: success
-        description: "The CMS page as stored after the edit."
-        schema: CmsPageResource
-        contentType: application/json
+        description: "The handler returns nothing on success. There is no HTTP status, for the same reason as AddCmsPage."
     name: "EditCmsPage"
     description: "Update an existing CMS page. All fields are optional via fluent setters - only changed fields need to be provided."
     delivery_priority: must-have
@@ -69,31 +58,53 @@ operations:
       mode: all
     governed_by:
       - rule: content.VR002
+    materializes:
+      - concept: content.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/CmsPage/Command/EditCmsPageCommand.php"
         role: implementation
-      - path: "src/Core/Domain/CmsPage/CommandHandler/EditCmsPageHandler.php"
+      - path: "src/Adapter/CMS/Page/CommandHandler/EditCmsPageHandler.php"
         role: implementation
 
   deleteCmsPage:
     id: content.CMD003
     kind: command
+    dispatch: inprocess
+    responses:
+      - code: "ok"
+        type: success
+        description: "The page row and its category link were removed."
+      - code: "404"
+        type: failure
+        description: "No CMS page has that id."
+        error: content.ERR001
     name: "DeleteCmsPage"
-    description: "Delete a single CMS page."
+    description: "Delete a single CMS page. A merchant dispatches it from the page list, and deleting a page category reaches it for every page the category and its descendants hold."
     delivery_priority: must-have
     initiated_by: [content.ACT001]
     produces:
       operations: [content.EVT003]
       mode: all
+    reacts_to:
+      - operation: content.EVT007
+        policy: "A deleted CMS category takes its pages with it"
+    materializes:
+      - concept: content.CN001
+        action: delete
     code_refs:
       - path: "src/Core/Domain/CmsPage/Command/DeleteCmsPageCommand.php"
         role: implementation
-      - path: "src/Core/Domain/CmsPage/CommandHandler/DeleteCmsPageHandler.php"
+      - path: "src/Adapter/CMS/Page/CommandHandler/DeleteCmsPageHandler.php"
         role: implementation
+      - path: "classes/CMSCategory.php"
+        role: implementation
+        description: "delete() walks the category and every descendant and calls deleteCMS() on each at line 259; deleteCMS at lines 272-282 loads every CMS row in that category and calls delete() on it, which is the same CMS::delete the command's handler reaches. Each page goes before its own category's actionObjectCMSCategoryDeleteAfter fires, so a module watching both sees the page deletions arrive first."
 
   bulkDeleteCmsPage:
     id: content.CMD004
     kind: command
+    dispatch: inprocess
     name: "BulkDeleteCmsPage"
     description: "Delete multiple CMS pages in a single batch operation."
     delivery_priority: could-have
@@ -101,6 +112,9 @@ operations:
     produces:
       operations: [content.EVT003]
       mode: all
+    materializes:
+      - concept: content.CN001
+        action: delete
     code_refs:
       - path: "src/Core/Domain/CmsPage/Command/BulkDeleteCmsPageCommand.php"
         role: implementation
@@ -108,6 +122,15 @@ operations:
   toggleCmsPageStatus:
     id: content.CMD005
     kind: command
+    dispatch: inprocess
+    responses:
+      - code: "ok"
+        type: success
+        description: "The page's displayed flag is inverted, through ObjectModel::toggleStatus, which is an update."
+      - code: "404"
+        type: failure
+        description: "No CMS page has that id."
+        error: content.ERR001
     name: "ToggleCmsPageStatus"
     description: "Toggle a single CMS page's displayed/hidden status."
     delivery_priority: must-have
@@ -115,6 +138,9 @@ operations:
     produces:
       operations: [content.EVT004]
       mode: all
+    materializes:
+      - concept: content.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/CmsPage/Command/ToggleCmsPageStatusCommand.php"
         role: implementation
@@ -122,6 +148,7 @@ operations:
   bulkSetCmsPageStatus:
     id: content.CMD006
     kind: command
+    dispatch: inprocess
     name: "BulkSetCmsPageStatus"
     description: "Enable or disable multiple CMS pages. Virtual command combining BulkEnableCmsPage and BulkDisableCmsPage - in code these are separate commands but share the same semantic: set status on a collection."
     delivery_priority: could-have
@@ -129,6 +156,9 @@ operations:
     produces:
       operations: [content.EVT004]
       mode: all
+    materializes:
+      - concept: content.CN001
+        action: update
     code_refs:
       - path: "src/Core/Domain/CmsPage/Command/BulkEnableCmsPageCommand.php"
         role: implementation
@@ -141,33 +171,98 @@ operations:
     id: content.EVT001
     kind: event
     name: "CmsPageCreated"
-    description: "A new CMS page has been created and assigned to a category."
+    description: >-
+      A new CMS page has been created and assigned to a category. Regrounded 2026-09-14: the
+      mechanism is the hook actionObjectCMSAddAfter, fired by ObjectModel::add at line 615 because
+      the CMS class extends ObjectModel. A module observes the page by registering on that name.
+      The generic twin actionObjectAddAfter fires beside it for every persisted class.
+    tags: [hook:actionObjectCMSAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 615: Hook::exec('actionObject' . getFullyQualifiedName() . 'AddAfter')."
+      - path: "classes/CMS.php"
+        role: implementation
+        description: "CMS extends ObjectModel, so the dynamic hook carries its class name."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registers the ten generic actionObject* twins only; the per-class name is not registered and is still fired."
 
   cmsPageUpdated:
     id: content.EVT002
     kind: event
     name: "CmsPageUpdated"
-    description: "An existing CMS page has been modified."
+    description: >-
+      An existing CMS page has been modified. Regrounded 2026-09-14: the mechanism is the hook
+      actionObjectCMSUpdateAfter, fired by ObjectModel::update at line 847. The before twin
+      actionObjectCMSUpdateBefore fires at line 717, which is where a module that needs the old
+      values reads them.
+    tags: [hook:actionObjectCMSUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847 for the after hook, line 717 for the before hook."
+      - path: "classes/CMS.php"
+        role: implementation
+        description: "CMS extends ObjectModel, so the dynamic hook carries its class name."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registers the ten generic actionObject* twins only; the per-class name is not registered and is still fired."
 
   cmsPageDeleted:
     id: content.EVT003
     kind: event
     name: "CmsPageDeleted"
-    description: "A CMS page has been deleted."
+    description: >-
+      A CMS page has been deleted. Regrounded 2026-09-14: the mechanism is the hook
+      actionObjectCMSDeleteAfter, fired by ObjectModel::delete at line 923. The before twin at
+      line 863 is the last point at which the row still exists.
+    tags: [hook:actionObjectCMSDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 923 for the after hook, line 863 for the before hook."
+      - path: "classes/CMS.php"
+        role: implementation
+        description: "CMS extends ObjectModel, so the dynamic hook carries its class name."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registers the ten generic actionObject* twins only; the per-class name is not registered and is still fired."
 
   cmsPageStatusToggled:
     id: content.EVT004
     kind: event
     name: "CmsPageStatusToggled"
-    description: "A CMS page's displayed/hidden status has been changed."
+    description: >-
+      A CMS page's displayed or hidden status has been changed. Regrounded 2026-09-14: this fires
+      the same hook as an edit, actionObjectCMSUpdateAfter, because ObjectModel::toggleStatus
+      inverts the active field and then calls update. A module cannot tell a toggle from an edit
+      by the hook name alone; it has to compare the object.
+    tags: [hook:actionObjectCMSUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "toggleStatus at line 978 sets only the active field and returns update(false), which fires the update hooks at line 847."
+      - path: "classes/CMS.php"
+        role: implementation
+        description: "CMS extends ObjectModel, so the dynamic hook carries its class name."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registers the ten generic actionObject* twins only; the per-class name is not registered and is still fired."
 
   # --- CmsPage Queries ---
 
   getCmsPageForEditing:
     id: content.QRY001
     kind: query
+    dispatch: inprocess
     name: "GetCmsPageForEditing"
     description: "Retrieve a single CMS page with all editable fields for the edit form."
+    responses:
+      - code: "ok"
+        type: success
+        description: "The page's localized fields, SEO metadata, category and display status, as EditableCmsPage. This is the read model CmsPageResource describes; it is reached only through the command bus, since no route serves a CMS page."
+        schema: CmsPageResource
     delivery_priority: must-have
     initiated_by: [content.ACT001]
     code_refs:
@@ -179,6 +274,7 @@ operations:
   getCmsCategoryIdForRedirection:
     id: content.QRY002
     kind: query
+    dispatch: inprocess
     name: "GetCmsCategoryIdForRedirection"
     description: "Get the category ID for redirect after a CMS page action (e.g., after delete, redirect to the page's category listing)."
     delivery_priority: should-have
@@ -192,6 +288,19 @@ operations:
   addCmsPageCategory:
     id: content.CMD007
     kind: command
+    dispatch: inprocess
+    responses:
+      - code: "ok"
+        type: success
+        description: "The handler returns the new CmsPageCategoryId."
+      - code: "422"
+        type: failure
+        description: "A name, friendly URL or parent failed validation."
+        error: content.ERR012
+      - code: "500"
+        type: failure
+        description: "CMSCategory::add returned false."
+        error: content.ERR009
     name: "AddCmsPageCategory"
     description: "Create a new CMS page category with localized name, description, SEO metadata, friendly URL, parent assignment, and shop association. Parent ID is required - root-level categories reference the system root."
     delivery_priority: must-have
@@ -202,15 +311,35 @@ operations:
     governed_by:
       - rule: content.SR001
       - rule: content.VR002
+    materializes:
+      - concept: content.CN002
+        action: create
     code_refs:
       - path: "src/Core/Domain/CmsPageCategory/Command/AddCmsPageCategoryCommand.php"
         role: implementation
-      - path: "src/Core/Domain/CmsPageCategory/CommandHandler/AddCmsPageCategoryHandler.php"
+      - path: "src/Adapter/CMS/PageCategory/CommandHandler/AddCmsPageCategoryHandler.php"
         role: implementation
 
   editCmsPageCategory:
     id: content.CMD008
     kind: command
+    dispatch: inprocess
+    responses:
+      - code: "ok"
+        type: success
+        description: "The handler returns nothing on success."
+      - code: "404"
+        type: failure
+        description: "No category has that id."
+        error: content.ERR002
+      - code: "422"
+        type: failure
+        description: "A field failed validation, or the move would put the category under its own descendant (CANNOT_MOVE_CATEGORY_TO_PARENT)."
+        error: content.ERR012
+      - code: "500"
+        type: failure
+        description: "CMSCategory::update returned false."
+        error: content.ERR010
     name: "EditCmsPageCategory"
     description: "Update an existing CMS page category. Includes parent reassignment (hierarchy changes) - setting a new parentId moves the category in the tree. All fields optional via setters."
     delivery_priority: must-have
@@ -221,15 +350,31 @@ operations:
     governed_by:
       - rule: content.SR001
       - rule: content.VR002
+    materializes:
+      - concept: content.CN002
+        action: update
     code_refs:
       - path: "src/Core/Domain/CmsPageCategory/Command/EditCmsPageCategoryCommand.php"
         role: implementation
-      - path: "src/Core/Domain/CmsPageCategory/CommandHandler/EditCmsPageCategoryHandler.php"
+      - path: "src/Adapter/CMS/PageCategory/CommandHandler/EditCmsPageCategoryHandler.php"
         role: implementation
 
   deleteCmsPageCategory:
     id: content.CMD009
     kind: command
+    dispatch: inprocess
+    responses:
+      - code: "ok"
+        type: success
+        description: "The category, every descendant and every CMS page under them were deleted."
+      - code: "404"
+        type: failure
+        description: "No category has that id."
+        error: content.ERR002
+      - code: "409"
+        type: failure
+        description: "CMSCategory::delete returned false, which it does for the root category id 1."
+        error: content.ERR003
     name: "DeleteCmsPageCategory"
     description: "Delete a single CMS page category."
     delivery_priority: must-have
@@ -239,15 +384,27 @@ operations:
       mode: all
     governed_by:
       - rule: content.VR003
+    materializes:
+      - concept: content.CN002
+        action: delete
     code_refs:
       - path: "src/Core/Domain/CmsPageCategory/Command/DeleteCmsPageCategoryCommand.php"
         role: implementation
-      - path: "src/Core/Domain/CmsPageCategory/CommandHandler/DeleteCmsPageCategoryHandler.php"
+      - path: "src/Adapter/CMS/PageCategory/CommandHandler/DeleteCmsPageCategoryHandler.php"
         role: implementation
 
   bulkDeleteCmsPageCategory:
     id: content.CMD010
     kind: command
+    dispatch: inprocess
+    responses:
+      - code: "ok"
+        type: success
+        description: "Every named category and its subtree were deleted."
+      - code: "409"
+        type: failure
+        description: "One of the deletes returned false (FAILED_BULK_DELETE)."
+        error: content.ERR003
     name: "BulkDeleteCmsPageCategory"
     description: "Delete multiple CMS page categories in a single batch operation."
     delivery_priority: could-have
@@ -257,13 +414,32 @@ operations:
       mode: all
     governed_by:
       - rule: content.VR003
+    materializes:
+      - concept: content.CN002
+        action: delete
     code_refs:
       - path: "src/Core/Domain/CmsPageCategory/Command/BulkDeleteCmsPageCategoryCommand.php"
         role: implementation
+      - path: "src/Core/Domain/CmsPageCategory/Command/AbstractBulkCmsPageCategoryCommand.php"
+        role: implementation
+        description: "Shared base of the three bulk category commands: it holds the category id list and validates each entry. Not an operation of its own - it is never dispatched."
 
   toggleCmsPageCategoryStatus:
     id: content.CMD011
     kind: command
+    dispatch: inprocess
+    responses:
+      - code: "ok"
+        type: success
+        description: "The category's displayed flag is inverted."
+      - code: "404"
+        type: failure
+        description: "No category has that id."
+        error: content.ERR002
+      - code: "500"
+        type: failure
+        description: "toggleStatus returned false."
+        error: content.ERR011
     name: "ToggleCmsPageCategoryStatus"
     description: "Toggle a single CMS page category's displayed/hidden status."
     delivery_priority: must-have
@@ -271,6 +447,9 @@ operations:
     produces:
       operations: [content.EVT008]
       mode: all
+    materializes:
+      - concept: content.CN002
+        action: update
     code_refs:
       - path: "src/Core/Domain/CmsPageCategory/Command/ToggleCmsPageCategoryStatusCommand.php"
         role: implementation
@@ -278,6 +457,19 @@ operations:
   bulkSetCmsPageCategoryStatus:
     id: content.CMD012
     kind: command
+    dispatch: inprocess
+    responses:
+      - code: "ok"
+        type: success
+        description: "Every named category reached the requested status."
+      - code: "422"
+        type: failure
+        description: "The id list failed validation (INVALID_BULK_DATA)."
+        error: content.ERR012
+      - code: "500"
+        type: failure
+        description: "One of the categories could not be enabled or disabled."
+        error: content.ERR011
     name: "BulkSetCmsPageCategoryStatus"
     description: "Enable or disable multiple CMS page categories. Virtual command combining BulkEnableCmsPageCategory and BulkDisableCmsPageCategory."
     delivery_priority: could-have
@@ -285,11 +477,17 @@ operations:
     produces:
       operations: [content.EVT008]
       mode: all
+    materializes:
+      - concept: content.CN002
+        action: update
     code_refs:
       - path: "src/Core/Domain/CmsPageCategory/Command/BulkEnableCmsPageCategoryCommand.php"
         role: implementation
       - path: "src/Core/Domain/CmsPageCategory/Command/BulkDisableCmsPageCategoryCommand.php"
         role: implementation
+      - path: "src/Core/Domain/CmsPageCategory/Command/AbstractBulkCmsPageCategoryCommand.php"
+        role: implementation
+        description: "Shared base of BulkEnable and BulkDisable, carrying the validated category id list."
 
   # --- CmsPageCategory Events ---
 
@@ -297,31 +495,94 @@ operations:
     id: content.EVT005
     kind: event
     name: "CmsPageCategoryCreated"
-    description: "A new CMS page category has been created in the hierarchy."
+    description: >-
+      A new CMS page category has been created in the hierarchy. Regrounded 2026-09-14: the
+      mechanism is the hook actionObjectCMSCategoryAddAfter, fired by ObjectModel::add at line 615
+      because CMSCategory extends ObjectModel.
+    tags: [hook:actionObjectCMSCategoryAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 615."
+      - path: "classes/CMSCategory.php"
+        role: implementation
+        description: "CMSCategory extends ObjectModel, so the dynamic hook carries its class name."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registers the ten generic actionObject* twins only; the per-class name is not registered and is still fired."
 
   cmsPageCategoryUpdated:
     id: content.EVT006
     kind: event
     name: "CmsPageCategoryUpdated"
-    description: "An existing CMS page category has been modified (including possible parent reassignment)."
+    description: >-
+      An existing CMS page category has been modified, including a possible parent reassignment.
+      Regrounded 2026-09-14: the mechanism is the hook actionObjectCMSCategoryUpdateAfter, fired by
+      ObjectModel::update at line 847. A move is an update like any other, so a module that cares
+      about the tree must compare id_parent itself.
+    tags: [hook:actionObjectCMSCategoryUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847."
+      - path: "classes/CMSCategory.php"
+        role: implementation
+        description: "CMSCategory extends ObjectModel, so the dynamic hook carries its class name."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registers the ten generic actionObject* twins only; the per-class name is not registered and is still fired."
 
   cmsPageCategoryDeleted:
     id: content.EVT007
     kind: event
     name: "CmsPageCategoryDeleted"
-    description: "A CMS page category has been deleted."
+    description: >-
+      A CMS page category has been deleted, and with it every descendant category and every CMS page
+      under them. Regrounded 2026-09-14: CMSCategory::delete loops over getAllChildren and calls
+      delete on each, so one request fires actionObjectCMSCategoryDeleteAfter once per category
+      and actionObjectCMSDeleteAfter once per page. A module sees the cascade as a burst, not as
+      one event.
+    tags: [hook:actionObjectCMSCategoryDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 923."
+      - path: "classes/CMSCategory.php"
+        role: implementation
+        description: "CMSCategory extends ObjectModel, so the dynamic hook carries its class name."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registers the ten generic actionObject* twins only; the per-class name is not registered and is still fired."
+      - path: "classes/CMSCategory.php"
+        role: implementation
+        description: "delete(), lines 247-265: the cascade that turns one command into many hooks."
 
   cmsPageCategoryStatusToggled:
     id: content.EVT008
     kind: event
     name: "CmsPageCategoryStatusToggled"
-    description: "A CMS page category's displayed/hidden status has been changed."
+    description: >-
+      A CMS page category's displayed or hidden status has been changed. Regrounded 2026-09-14: like
+      the page toggle, this is an update, so the hook is actionObjectCMSCategoryUpdateAfter and
+      not a toggle-specific name.
+    tags: [hook:actionObjectCMSCategoryUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "toggleStatus at line 978 returns update(false)."
+      - path: "classes/CMSCategory.php"
+        role: implementation
+        description: "CMSCategory extends ObjectModel, so the dynamic hook carries its class name."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registers the ten generic actionObject* twins only; the per-class name is not registered and is still fired."
 
   # --- CmsPageCategory Queries ---
 
   getCmsPageCategoryForEditing:
     id: content.QRY003
     kind: query
+    dispatch: inprocess
     name: "GetCmsPageCategoryForEditing"
     description: "Retrieve a single CMS page category with all editable fields for the edit form."
     delivery_priority: must-have
@@ -335,6 +596,7 @@ operations:
   getCmsPageCategoriesForBreadcrumb:
     id: content.QRY004
     kind: query
+    dispatch: inprocess
     name: "GetCmsPageCategoriesForBreadcrumb"
     description: "Retrieve the category ancestry chain for rendering breadcrumb navigation. Returns ordered list of parent categories from root to current."
     delivery_priority: should-have
@@ -350,6 +612,7 @@ operations:
   getCmsPageCategoryNameForListing:
     id: content.QRY005
     kind: query
+    dispatch: inprocess
     name: "GetCmsPageCategoryNameForListing"
     description: "Get category name for grid listing display. Lightweight query optimized for list views."
     delivery_priority: should-have
@@ -361,6 +624,7 @@ operations:
   getCmsPageParentCategoryIdForRedirection:
     id: content.QRY006
     kind: query
+    dispatch: inprocess
     name: "GetCmsPageParentCategoryIdForRedirection"
     description: "Get parent category ID for redirect after a category action (e.g., after delete, redirect to the parent category listing)."
     delivery_priority: should-have
@@ -370,6 +634,91 @@ operations:
         role: implementation
 
 errors:
+  cannotAddCmsPageCategory:
+    id: content.ERR009
+    name: "CannotAddCmsPageCategory"
+    description: "The category row could not be written. Raised when CMSCategory::add returns false, which the handler cannot distinguish further."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/CmsPageCategory/Exception/CannotAddCmsPageCategoryException.php"
+        role: implementation
+
+  cannotUpdateCmsPageCategory:
+    id: content.ERR010
+    name: "CannotUpdateCmsPageCategory"
+    description: "The category edit could not be written, including the parent reassignment a move performs."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/CmsPageCategory/Exception/CannotUpdateCmsPageCategoryException.php"
+        role: implementation
+
+  cannotToggleCmsPageCategoryStatus:
+    id: content.ERR011
+    name: "CannotToggleCmsPageCategoryStatus"
+    description: >-
+      A displayed/hidden change on a category failed. The code splits this into three classes by
+      direction - CannotToggleCmsPageCategoryStatusException for the single toggle,
+      CannotEnableCmsPageCategoryException and CannotDisableCmsPageCategoryException for the bulk
+      commands. One error is modeled for all three, per step-00 D9: the cause and the caller's
+      recourse are identical and the direction is already stated by the operation.
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/CmsPageCategory/Exception/CannotToggleCmsPageCategoryStatusException.php"
+        role: implementation
+      - path: "src/Core/Domain/CmsPageCategory/Exception/CannotEnableCmsPageCategoryException.php"
+        role: implementation
+      - path: "src/Core/Domain/CmsPageCategory/Exception/CannotDisableCmsPageCategoryException.php"
+        role: implementation
+
+  cmsPageCategoryConstraint:
+    id: content.ERR012
+    name: "CmsPageCategoryConstraint"
+    description: >-
+      A category field failed validation before anything was written. The exception carries five
+      codes and they are the slice's real input rules: INVALID_BULK_DATA, MISSING_DEFAULT_LANGUAGE_FOR_NAME,
+      MISSING_DEFAULT_LANGUAGE_FOR_FRIENDLY_URL, INVALID_CATEGORY_NAME, and
+      CANNOT_MOVE_CATEGORY_TO_PARENT, which is the one real hierarchy guard - a category cannot be
+      moved under its own descendant.
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [content.VR002, content.SR001]
+    code_refs:
+      - path: "src/Core/Domain/CmsPageCategory/Exception/CmsPageCategoryConstraintException.php"
+        role: implementation
+
+  emailTemplateNotFound:
+    id: content.ERR013
+    name: "EmailTemplateNotFound"
+    description: "No email template with that name exists for the requested locale and source, so there is nothing to open or overwrite."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/MailTemplate/Exception/EmailTemplateNotFoundException.php"
+        role: implementation
+
+  emailTemplateConstraint:
+    id: content.ERR014
+    name: "EmailTemplateConstraint"
+    description: "An email template name or source failed validation. Raised by the EmailTemplateName and EmailTemplateSource value objects before the handler runs. The class declares no error codes, so the message is the only detail a caller gets."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/MailTemplate/Exception/EmailTemplateConstraintException.php"
+        role: implementation
+
+  # Unmapped by design: CmsPageCategoryException, CmsPageException, ThemeException, MetaException
+  # and EmailTemplateException are abstract bases a handler throws to wrap an unexpected
+  # PrestaShopException. They carry no domain meaning, so they are not outcomes a reader can act on.
+
   cmsPageNotFound:
     id: content.ERR001
     name: "CmsPageNotFound"
@@ -386,11 +735,38 @@ errors:
     severity: error
     http_status: 404
 
-  cannotDeleteCategoryWithChildren:
+  cannotDeleteCmsPageCategory:
     id: content.ERR003
-    name: "CannotDeleteCategoryWithChildren"
-    description: "Cannot delete a CMS page category that has child categories or assigned pages without handling descendants first."
+    name: "CannotDeleteCmsPageCategory"
+    description: >-
+      The category could not be deleted. A category with children or assigned pages is not
+      rejected: CMSCategory::delete walks getAllChildren, deletes each child's CMS pages and then
+      the child, and cascades. It returns false for exactly one input, the root category id 1. So
+      the two codes the exception carries are FAILED_DELETE and FAILED_BULK_DELETE, and the only
+      guaranteed rejection is the root.
     category: conflict
     severity: error
     http_status: 409
     related_rules: [content.VR003]
+    code_refs:
+      - path: "src/Core/Domain/CmsPageCategory/Exception/CannotDeleteCmsPageCategoryException.php"
+        role: implementation
+        description: "FAILED_DELETE = 10, FAILED_BULK_DELETE = 20."
+      - path: "classes/CMSCategory.php"
+        role: implementation
+        description: "delete(), lines 247-265: returns false only for id 1, otherwise cascades through deleteCMS and deleteLite."
+
+questions:
+
+  - id: content.QN001
+    name: "What A Shopper Can Read"
+    statement: "Which CMS pages does the storefront publish, and where do they sit?"
+    category: enumeration
+    priority: high
+    bounded_context_ref: prestashop.BC004
+    answered_by: [content.QRY001, content.QRY003, content.QRY004]
+    concepts: [content.CN001, content.CN002]
+    resolved: true
+    resolution: >
+      A CMS page is published when it is enabled and belongs to a category;
+      GetCmsPageCategoriesForBreadcrumb returns the path a shopper walks to reach it.

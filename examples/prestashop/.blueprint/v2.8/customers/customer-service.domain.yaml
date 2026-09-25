@@ -8,6 +8,7 @@ operations:
   replyToCustomerThread:
     id: customers.CMD016
     kind: command
+    dispatch: inprocess
     name: "ReplyToCustomerThread"
     description: "Add a reply to an existing customer service thread."
     delivery_priority: must-have
@@ -22,6 +23,7 @@ operations:
   forwardCustomerThread:
     id: customers.CMD017
     kind: command
+    dispatch: inprocess
     name: "ForwardCustomerThread"
     description: "Forward a service thread to another employee or department for specialized handling."
     delivery_priority: should-have
@@ -36,8 +38,9 @@ operations:
   updateCustomerThreadStatus:
     id: customers.CMD018
     kind: command
+    dispatch: inprocess
     name: "UpdateCustomerThreadStatus"
-    description: "Change the status of a customer service thread (open, pending, closed)."
+    description: "Change the status of a customer service thread (open, pending, closed). An agent dispatches it from the thread view, and the reply flow reaches the same state change on its own once an answer has gone out."
     delivery_priority: must-have
     initiated_by: [customers.ACT002]
     governed_by:
@@ -45,19 +48,27 @@ operations:
     produces:
       operations: [customers.EVT012]
       mode: all
+    reacts_to:
+      - operation: customers.EVT010
+        policy: "A thread the shop has answered is closed"
+        condition: "The reply email was accepted by the mailer; a send that fails leaves the thread open so the agent can try again"
     code_refs:
       - path: "src/Core/Domain/CustomerService/Command/UpdateCustomerThreadStatusCommand.php"
         role: implementation
+      - path: "src/Core/Domain/CustomerService/CommandHandler/ReplyToCustomerThreadHandler.php"
+        role: implementation
+        description: "handle() adds the CustomerMessage, which fires actionObjectCustomerMessageAddAfter, and then at lines 68-71 sets the thread to CLOSED and calls update() when sendReplyEmail returned true. The status change is made inline rather than by dispatching UpdateCustomerThreadStatusCommand, so the two routes write the same column differently: this one through the CustomerThread ObjectModel, the command's own handler through raw SQL."
 
   deleteCustomerThread:
     id: customers.CMD019
     kind: command
+    dispatch: inprocess
     name: "DeleteCustomerThread"
     description: "Delete one or more customer service threads. Supports single and bulk deletion."
     delivery_priority: should-have
     initiated_by: [customers.ACT002]
     produces:
-      operations: [customers.EVT012]
+      operations: [customers.EVT019]
       mode: all
     code_refs:
       - path: "src/Core/Domain/CustomerService/Command/DeleteCustomerThreadCommand.php"
@@ -68,6 +79,10 @@ operations:
   getCustomerThreadForViewing:
     id: customers.QRY011
     kind: query
+    dispatch: inprocess
+    payload:
+      schema: CustomerServiceThread
+      contentType: application/json
     name: "GetCustomerThreadForViewing"
     description: "Retrieve a customer service thread with full message history for back-office viewing."
     delivery_priority: must-have
@@ -78,6 +93,7 @@ operations:
   getCustomerServiceSignature:
     id: customers.QRY012
     kind: query
+    dispatch: inprocess
     name: "GetCustomerServiceSignature"
     description: "Retrieve the configured signature appended to service replies."
     delivery_priority: could-have
@@ -89,19 +105,68 @@ operations:
     id: customers.EVT010
     kind: event
     name: "CustomerThreadReplied"
-    description: "Emitted when a reply is added to a service thread."
+    description: >-
+      An employee answered a customer service thread. Two rows change, so two hooks fire: the
+      message insert fires actionObjectCustomerMessageAddAfter and the thread's own update fires
+      actionObjectCustomerThreadUpdateAfter, both through ObjectModel. The mail to the customer is
+      sent by the handler and is not itself a hook.
+    tags: ["hook:actionObjectCustomerMessageAddAfter", "hook:actionObjectCustomerThreadUpdateAfter"]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/CustomerMessage.php"
+        role: implementation
+      - path: "classes/CustomerThread.php"
+        role: implementation
 
   customerThreadForwarded:
     id: customers.EVT011
     kind: event
     name: "CustomerThreadForwarded"
-    description: "Emitted when a service thread is forwarded to another employee."
+    description: >-
+      A thread was handed to another employee or to an outside address. The handler records the
+      handover as a customer message, so the only hook a module sees is
+      actionObjectCustomerMessageAddAfter; nothing distinguishes a forward from an ordinary reply
+      at the hook level, and a listener that needs the difference must read the message body.
+    tags: ["hook:actionObjectCustomerMessageAddAfter"]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/CustomerMessage.php"
+        role: implementation
+      - path: "src/Core/Domain/CustomerService/CommandHandler/ForwardCustomerThreadHandler.php"
+        role: implementation
 
   customerThreadStatusUpdated:
     id: customers.EVT012
     kind: event
     name: "CustomerThreadStatusUpdated"
-    description: "Emitted when a service thread status or lifecycle changes."
+    description: >-
+      A thread moved between open, pending and closed. No hook is fired for this transition: the
+      handler writes the customer_thread row with a prepared SQL statement rather than through the
+      CustomerThread ObjectModel, so modules cannot observe a status change at all. That is a gap
+      in the hook surface rather than in the model.
+    code_refs:
+      - path: "src/Core/Domain/CustomerService/CommandHandler/UpdateCustomerThreadStatusHandler.php"
+        role: implementation
+
+  customerThreadDeleted:
+    id: customers.EVT019
+    kind: event
+    name: "CustomerThreadDeleted"
+    description: >-
+      A service thread and its messages were removed, singly or as part of a batch. Fired as the
+      hook actionObjectCustomerThreadDeleteAfter by ObjectModel::delete, reached through
+      CustomerThreadRepository. It is a distinct event from CustomerThreadStatusUpdated, and
+      unlike that one it is observable.
+    tags: ["hook:actionObjectCustomerThreadDeleteAfter"]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/CustomerThread.php"
+        role: implementation
+      - path: "src/Core/Domain/CustomerService/Repository/CustomerThreadRepository.php"
+        role: implementation
 
 errors:
   customerThreadNotFound:
@@ -111,3 +176,46 @@ errors:
     category: not-found
     severity: error
     http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/CustomerService/Exception/CustomerThreadNotFoundException.php"
+        role: implementation
+
+  cannotDeleteCustomerThread:
+    id: customers.ERR021
+    name: "CannotDeleteCustomerThread"
+    description: "The thread exists but could not be removed, so its messages are still readable in the back office."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/CustomerService/Exception/CannotDeleteCustomerThreadException.php"
+        role: implementation
+
+  customerServiceFailed:
+    id: customers.ERR022
+    name: "CustomerServiceFailed"
+    description: "A customer service action failed for a reason the domain does not classify further, most often a failed status write or a mail that could not be sent."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/CustomerService/Exception/CustomerServiceException.php"
+        role: implementation
+
+questions:
+
+  - id: customers.QN004
+    name: "Where An Enquiry Stands"
+    statement: "What was this customer last told, and who is handling their enquiry now?"
+    category: temporal
+    priority: high
+    bounded_context_ref: prestashop.BC005
+    answered_by: [customers.QRY011, customers.CMD016, customers.CMD017]
+    concepts: [customers.CN005]
+    resolved: true
+    resolution: >
+      GetCustomerThreadForViewing returns the thread with its messages and status;
+      ReplyToCustomerThread appends the answer and ForwardCustomerThread is how the thread
+      changes hands.

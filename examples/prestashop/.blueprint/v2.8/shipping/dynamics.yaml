@@ -10,6 +10,7 @@ execution:
 race_conditions:
   - id: shipping.RC001
     name: "Concurrent shipment product assignment"
+    description: "The invariant at risk is that the quantities shipped across an order's shipments sum to no more than the quantities ordered. Each assignment is valid on its own, and only the sum is wrong."
     scenario: "Two operators assign the same order product to different shipments simultaneously."
     impact: "Product assigned to two shipments, over-shipment."
     likelihood: very-low

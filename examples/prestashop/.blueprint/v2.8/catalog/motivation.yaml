@@ -3,31 +3,50 @@ version: "1.0.0"
 scope: catalog
 
 goals:
-  - id: catalog.G001
-    statement: "Sub-100ms product search for catalogs up to 500k products"
+  - id: catalog.GL001
+    statement: "Product search answers from the shop's own inverted index, not from a scan of the product tables"
     description: >
-      PrestaShop must deliver fast search results regardless of catalog size.
-      Current MySQL LIKE queries degrade at 50k+ products. Elasticsearch
-      provides the required performance headroom.
-    summary: "Fast product search at scale"
+      PrestaShop builds its own inverted index: Search::indexation fills
+      ps_search_word and ps_search_index with the words of a product's name,
+      reference, descriptions, category, manufacturer, tags, attributes and
+      features, each weighted by a PS_SEARCH_WEIGHT_* setting, with an optional
+      fuzzy pass. Saving a product reindexes it through ProductIndexationUpdater
+      before the request returns. Core ships no external search engine and
+      composer.json declares no search-engine client, so an engine such as
+      Elasticsearch is a module concern reached through the
+      productSearchProvider hook. The goal is that the index is the answer:
+      a search that falls back to scanning is a search that will not scale.
+    summary: "Search answered from the inverted index"
     priority: high
-    measure: "p95 search latency < 100ms for 500k product catalog"
+    measure: "Every searchable product has rows in ps_search_index, and a product save reindexes it in the same request"
+    affects:
+      operation_refs: [catalog.QRY001, catalog.QRY009]
+      concept_refs: [catalog.CN001]
     discovery_stage: committed
     certainty: confirmed
 
-  - id: catalog.G002
-    statement: "Support 20+ filterable product attributes for faceted navigation"
+  - id: catalog.GL002
+    statement: "Faceted navigation is an extension point the core defines and a module fills"
     description: >
-      Shoppers expect to filter by size, color, price range, brand, rating,
-      and custom attributes. PrestaShop must support arbitrary attribute
-      facets in search results.
-    summary: "Rich faceted product filtering"
+      Core owns the vocabulary of faceted navigation - Facet, Filter and
+      FacetCollection in src/Core/Product/Search - and every product listing
+      controller dispatches the productSearchProvider hook so a module can
+      return a result set with facets attached. No core class calls
+      setFacetCollection, so a shop with no faceted-search module installed
+      shows no facets at all. The goal is therefore about the contract, not
+      about a facet count: core must keep the extension point wide enough that
+      a module can facet on attributes, features, price and manufacturer
+      without patching core.
+    summary: "Facets are a core contract filled by a module"
     priority: high
-    measure: "Faceted search supports >= 20 attribute dimensions"
+    measure: "Every product listing route dispatches productSearchProvider, and a facet a module returns reaches the page unaltered"
+    affects:
+      operation_refs: [catalog.QRY006, catalog.QRY001]
+      concept_refs: [catalog.CN005, catalog.CN006, catalog.CN300]
     discovery_stage: validated
     certainty: probable
 
-  - id: catalog.G003
+  - id: catalog.GL003
     statement: "Product CRUD operations complete in under 500ms for back-office responsiveness"
     description: >
       CategoryManagers perform high-volume catalog operations. Every product
@@ -35,69 +54,99 @@ goals:
     summary: "Responsive catalog back-office"
     priority: medium
     measure: "p95 product save < 500ms including image processing"
+    affects:
+      operation_refs: [catalog.CMD001, catalog.CMD002, catalog.QRY002]
+      concept_refs: [catalog.CN001]
+      process_refs: [catalog.PRC001]
     discovery_stage: validated
     certainty: confirmed
 
-  - id: catalog.G004
-    statement: "Support 100% of PrestaShop v9 CQRS catalog operations through Admin API"
+  - id: catalog.GL004
+    statement: "Every catalog command and query the back office can run is reachable over the Admin API"
     description: >
-      All 112 catalog CQRS commands must be accessible via the Admin API
-      for headless integrations and third-party tools.
-    summary: "Full catalog API coverage"
+      The Admin API is defined in the ps_apiresources module, not in core: each
+      resource class declares a uriTemplate and names the CQRS class behind it
+      in CQRSCommand or CQRSQuery. An integration can therefore do exactly what
+      a route exists for and nothing else, and a command with no route can only
+      be reached by a person in the back office. Coverage of the catalog is
+      partial and this goal is a target, not a description of today: two of the
+      nine catalog code domains, ImageSettings and Tag, have no route at all.
+    summary: "Every catalog operation reachable over the Admin API"
     priority: high
-    measure: "112/112 catalog commands exposed via Admin API"
+    measure: "Every Command and Query class in the catalog code domains is named by an Admin API route"
+    affects:
+      operation_refs: [catalog.CMD001, catalog.CMD002, catalog.QRY001]
+      concept_refs: [catalog.CN001]
     discovery_stage: committed
     certainty: confirmed
 
-  - id: catalog.G005
-    statement: "Bulk CSV import handles 10,000 products in under 10 minutes"
+  - id: catalog.GL005
+    statement: "A large product CSV imports in one run, without the operator restarting it"
     description: >
-      Enterprise merchants need to import large catalogs from ERP systems.
-      The import pipeline must handle 10k rows with validation and
-      error reporting without timing out.
-    summary: "Enterprise-scale bulk import"
+      Bulk import is controllers/admin/AdminImportController.php, a 4237-line
+      legacy controller that sets max_execution_time to 0 and drives the import
+      in browser-driven chunks. It has no class under src/Core/Domain, so no
+      command, no handler and no error catalog: this model can name the goal
+      but has no operation to hang it on, which is the gap INQ002 asks about.
+      The goal is completion in one run, because the failure this import really
+      has is an operator who cannot tell a finished import from a stalled one.
+    summary: "A large catalog imports in one run"
     priority: medium
-    measure: "10k row CSV import completes in < 10 minutes with full validation"
+    measure: "A 10,000-row product CSV completes in one import run with a per-row outcome the operator can read"
+    affects:
+      concept_refs: [catalog.CN001]
     discovery_stage: validated
     certainty: probable
 
 risks:
-  - id: catalog.R001
-    affects:
-      operation_refs: [catalog.EVT002]
-    statement: "Elasticsearch index drift after bulk product updates"
+  - id: catalog.RSK001
+    statement: "A change that does not go through a product save leaves the search index behind"
     description: >
-      Bulk CSV imports update MySQL directly. If the ES re-indexing job
-      fails or lags, search results become stale - customers see products
-      that are out of stock or prices that are wrong.
-    summary: "Search index staleness after bulk ops"
+      Saving a product reindexes it in the same request, through
+      ProductIndexationUpdater. Nothing else does. A CSV import driven by
+      AdminImportController, a bulk status switch, a tag edit or a direct
+      database change all alter what a product should match without touching
+      ps_search_index, so the storefront keeps answering from the old index and
+      says nothing about it. The shopper sees a product that is no longer
+      sellable, or misses one that now is.
+    summary: "The index drifts behind any change that bypasses a product save"
     likelihood: high
     impact: high
-    mitigation: "Event-driven re-indexing: every product mutation emits ProductUpdated, triggering incremental index update."
-    contingency: "Scheduled full re-index every 6 hours as safety net."
+    affects:
+      operation_refs: [catalog.CMD002, catalog.CMD007, catalog.EVT002]
+      concept_refs: [catalog.CN001]
+      process_refs: [catalog.PRC001]
+    mitigation: "The product save path reindexes synchronously through ProductIndexationUpdater, so a change made as a product save cannot drift."
+    contingency: "RebuildSearchIndex (shop.CMD014) rebuilds the whole index. Core schedules nothing, so the merchant must run it on a cron after any bulk change."
     status: open
     owner: orders.ACT002
     goal_refs:
-      - catalog.G001
+      - catalog.GL001
     discovery_stage: validated
     certainty: confirmed
 
-  - id: catalog.R002
+  - id: catalog.RSK002
     statement: "Product image storage costs scale linearly with catalog growth"
     description: >
-      Each product has 3-8 images at multiple resolutions (thumbnail, medium,
-      large, zoom). At 500k products this is 5-20 million image files.
-    summary: "Image storage cost at scale"
+      Every image is resized once per ImageType at upload and kept on disk, so
+      the file count is products times images per product times image types.
+      Image types are merchant-defined rows, and each one added multiplies the
+      whole catalog's footprint retroactively the next time thumbnails are
+      regenerated.
+    summary: "Every image type multiplies the whole catalog's footprint"
     likelihood: medium
     impact: medium
-    mitigation: "Use CDN with on-demand image resizing (Cloudflare/imgproxy) instead of pre-generating all sizes."
-    status: open
     goal_refs:
-      - catalog.G001
+      - catalog.GL003
+    affects:
+      operation_refs: [catalog.CMD016, catalog.CMD018]
+      concept_refs: [catalog.CN004, catalog.CN014, catalog.CN400]
+    mitigation: "The levers core has are the ImageType rows themselves: delete a type with DeleteImagesFromType to reclaim its files, scope a type to the entities that need it, and choose a compact format - ImageManager writes webp and avif as well as jpeg and png. On-demand resizing behind a CDN is not something core does."
+    status: open
     discovery_stage: exploring
     certainty: probable
 
-  - id: catalog.R003
+  - id: catalog.RSK003
     statement: "Product data inconsistency across multi-store configurations"
     description: >
       In multi-store mode, products can have store-specific names, prices,
@@ -106,12 +155,18 @@ risks:
     summary: "Multi-store product data drift"
     likelihood: medium
     impact: high
+    goal_refs:
+      - catalog.GL003
+    affects:
+      operation_refs: [catalog.CMD002, catalog.CMD006]
+      concept_refs: [catalog.CN001]
+      process_refs: [catalog.PRC001]
     mitigation: "Store-aware validation on all product write operations."
     status: identified
     discovery_stage: exploring
     certainty: speculative
 
-  - id: catalog.R004
+  - id: catalog.RSK004
     statement: "Combination explosion for products with many attribute groups"
     description: >
       A product with 5 attribute groups of 10 values each generates 100,000
@@ -120,31 +175,45 @@ risks:
     summary: "Combinatorial explosion"
     likelihood: medium
     impact: high
+    goal_refs:
+      - catalog.GL003
+    affects:
+      operation_refs: [catalog.CMD011]
+      concept_refs: [catalog.CN003]
+      process_refs: [catalog.PRC002]
     mitigation: "Generation guard: warn when expected combination count exceeds 500; hard limit at 10,000."
     status: open
     discovery_stage: validated
     certainty: confirmed
 
 assumptions:
-  - id: catalog.A001
-    statement: "Elasticsearch cluster can be managed as a shared service across PrestaShop instances"
+  - id: catalog.ASM001
+    domain_scope: catalog
+    statement: "A shop can run on the built-in index until its merchant chooses to install a search module"
     consequence: >
-      If each store needs a dedicated ES instance, hosting costs increase
-      10x and shared-hosting deployment becomes impractical.
+      Core ships no search engine and composer.json declares no engine client,
+      so the built-in inverted index is what every new shop gets. If merchants
+      routinely have to install an engine module before the catalog is large,
+      then search is not a core feature with an optional upgrade but an
+      extension point with a mandatory filler, and the productSearchProvider
+      contract - not the index - is the thing core has to keep good.
     risk_refs:
-      - catalog.R001
+      - catalog.RSK001
     discovery_stage: exploring
     certainty: speculative
 
-  - id: catalog.A002
-    statement: "Elasticsearch is available for stores with >10,000 products"
+  - id: catalog.ASM002
+    domain_scope: catalog
+    statement: "The built-in inverted index keeps ranking usefully as the vocabulary grows"
     consequence: >
-      Without Elasticsearch, product search falls back to MySQL FULLTEXT
-      or LIKE queries - acceptable for small catalogs but causes severe
-      performance degradation for large catalogs (>10k products, <1s
-      search response target).
+      Search::indexation scores a match by word length against the corpus, and
+      the constant PS_SEARCH_MAX_WORDS_IN_TABLE caps that at 100,000 distinct
+      words: above it every length coefficient is 1 and the length signal is
+      gone. If a real catalog crosses that line routinely, ranking quality
+      degrades silently with catalog growth, and nothing in the storefront or
+      the back office says it has happened.
     risk_refs:
-      - catalog.R001
+      - catalog.RSK001
     discovery_stage: validated
     certainty: probable
 
@@ -168,7 +237,7 @@ non_goals:
     certainty: confirmed
 
 trade_offs:
-  - id: catalog.T001
+  - id: catalog.TRO001
     choice: "CQRS migration scope for product domain"
     selected: "Gradual migration with ObjectModel coexistence"
     rejected: "Big-bang rewrite of all legacy product models"
@@ -190,8 +259,11 @@ inquiries:
       Adding a GraphQL layer would enable headless storefronts but
       increases API surface and maintenance burden.
     category: strategic
+    affects:
+      operation_refs: [catalog.QRY001, catalog.QRY002]
+      concept_refs: [catalog.CN001]
     goal_refs:
-      - catalog.G004
+      - catalog.GL004
     stakeholders:
       - orders.ACT003
     blocking: false
@@ -204,12 +276,19 @@ inquiries:
     statement: "Should product import support asynchronous processing with progress tracking?"
     summary: "Async bulk import with progress"
     description: >
-      Current CSV import is synchronous - the HTTP request blocks until
-      completion. For 10k+ row imports, this times out. Async processing
-      with a progress endpoint would solve this.
+      Measured 2026-09-19: the import does not time out.
+      controllers/admin/AdminImportController.php opens by setting
+      max_execution_time to 0 and drives the work in browser-posted chunks, so
+      a long import does not fail - it simply continues, with no state an
+      operator or another system can query. That changes the question. It is
+      not "how do we stop it timing out" but "what would let anyone tell a
+      running import from a stalled one", which is a progress record the
+      controller does not keep and a command it does not have.
     category: technical
+    affects:
+      concept_refs: [catalog.CN001]
     goal_refs:
-      - catalog.G005
+      - catalog.GL005
     blocking: true
     status: investigating
     discovery_stage: validated

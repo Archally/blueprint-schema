@@ -10,6 +10,7 @@ execution:
 race_conditions:
   - id: orders.RC001
     name: "Double-submit order"
+    description: "The invariant at risk is that one cart becomes at most one order. The cart is the only thing that identifies the shopper's intent, so without a key derived from it two identical requests are indistinguishable from one shopper ordering twice."
     scenario: "Two concurrent placeOrder requests from same cart create duplicate orders."
     impact: "Duplicate orders, double payment capture."
     likelihood: medium
@@ -18,6 +19,7 @@ race_conditions:
 
   - id: orders.RC002
     name: "Concurrent order status update"
+    description: "The invariant at risk is that the state history is the complete record of an order's transitions. A lost write does not show as a gap: the history reads as consistent and is simply missing a step someone took."
     scenario: "Two administrators update the same order status simultaneously, one transition overwrites the other."
     impact: "Lost state transition, order stuck in wrong state."
     likelihood: low
@@ -26,6 +28,7 @@ race_conditions:
 
   - id: orders.RC003
     name: "Refund during cancellation"
+    description: "The invariant at risk is that the shop never returns more than it took. Refund and cancellation each reverse money on their own terms, and neither reads the other's work, so their sum can exceed the order."
     scenario: "Partial refund issued while another admin cancels the same order, causing double financial reversal."
     impact: "Customer refunded twice, financial loss."
     likelihood: very-low
@@ -41,6 +44,7 @@ ordering:
 parallelism:
   - id: orders.PAR001
     name: "Parallel event dispatch"
+    description: "Email, stock and search-index handlers read the order and write elsewhere, so they do not contend with each other. The ordering they do require is against the order being placed first, which the event itself guarantees."
     operations: [orders.EVT001, orders.EVT005]
     relationship: independent
     benefit: "Event handlers for email, stock, and search index run concurrently."

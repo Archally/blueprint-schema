@@ -2,24 +2,124 @@
 version: "1.0.0"
 scope: catalog
 
+metrics:
+  - id: catalog.MT100
+    name: "Search Index Coverage"
+    summary: "Share of searchable products that have rows in the inverted index"
+    type: business
+    unit: "%"
+    description: >
+      A product that is visible in search but absent from ps_search_index
+      cannot be found by any search term, and nothing in the storefront says
+      so. This counts the products that are indexed against the products that
+      should be.
+    measures:
+      operations: [catalog.QRY001, catalog.CMD002]
+      concepts: [catalog.CN001]
+    collection:
+      method: manual
+      source: "Back-office Shop Parameters > Search > Indexed products count"
+      frequency: weekly
+
+  - id: catalog.MT101
+    name: "Product CSV Import Throughput"
+    summary: "Rows of a product CSV the legacy import controller completes per minute"
+    type: throughput
+    unit: "rows/minute"
+    description: >
+      Import runs in AdminImportController rather than through a command, so
+      the rate is what the operator observes in the import screen. There is no
+      Domain operation to attach this to, which is itself the finding GL005
+      and INQ002 record.
+    measures:
+      concepts: [catalog.CN001]
+
 kpis:
   - id: catalog.KPI001
+    domain_scope: catalog
     name: "Search Result Relevance"
     target: "Top-5 results contain the intended product in >= 90% of queries"
+    description: >
+      Relevance in core is a weighting, not a ranking model: PS_SEARCH_WEIGHT_PNAME,
+      _REF, _SHORTDESC, _DESC, _CNAME, _MNAME, _TAG and _ATTRIBUTE decide how much
+      each matched field contributes, and PS_SEARCH_FUZZY decides whether a
+      near-miss spelling matches at all. The target is a judgement a human makes
+      over a sample of real queries; core produces no relevance score to read.
     window: "weekly"
-    goal: catalog.G001
+    goal: catalog.GL001
 
   - id: catalog.KPI002
+    domain_scope: catalog
     name: "Catalog Completeness"
     target: ">= 95% of active products have at least one image and complete description"
+    description: >
+      Counts products that are active but thin: no image, or an empty description.
+      A thin product is nearly invisible to the weighted index, because name and
+      description carry most of the weight, and unconvincing on the page. A
+      catalog-health number rather than a system one.
     window: "daily"
-    goal: catalog.G003
+    goal: catalog.GL003
 
   - id: catalog.KPI003
-    name: "API Coverage"
-    target: "100% of CQRS catalog commands accessible via Admin API"
+    domain_scope: catalog
+    name: "Admin API Coverage of the Catalog"
+    target: "100% of catalog commands and queries are reachable over the Admin API"
+    description: >
+      A target, and a live one, so the present state belongs beside it.
+      Measured 2026-09-19 against presta-code a27e912eef9 and
+      presta-apiresources dcf05ff: 66 of the 159 Command and Query classes in
+      the catalog's nine code domains are named by a route, 42%, and
+      ImageSettings and Tag are named by none. Read from this model instead of
+      from the code the figure is 70 of 153 catalog commands and queries
+      carrying an exchange block, 46%, because the model groups some
+      near-identical class families into one operation:
+      grep -c '^    exchange:' catalog/*.domain.yaml over
+      grep -hcE '^    kind: (command|query)' catalog/*.domain.yaml.
+      The two count different things and neither is wrong. Step 18 builds the
+      contracts over whatever the slices already bound and adds no route of its
+      own, so this number moves when ps_apiresources gains a route, not when
+      the model is edited.
     window: "per-release"
-    goal: catalog.G004
+    goal: catalog.GL004
+
+  - id: catalog.KPI100
+    domain_scope: catalog
+    name: "Search Index Coverage"
+    metric: catalog.MT100
+    target: "100% of products visible in search have rows in the inverted index"
+    window: "weekly"
+    goal: catalog.GL001
+    description: >
+      The measurable form of GL001. A gap here means a product exists, is
+      active, and cannot be found.
+    thresholds:
+      warning: "99%"
+      critical: "95%"
+
+  - id: catalog.KPI101
+    domain_scope: catalog
+    name: "Facet Extension Point Coverage"
+    target: "Every product listing route dispatches the productSearchProvider hook"
+    window: "per release"
+    goal: catalog.GL002
+    description: >
+      Core supplies no facets of its own, so the only thing that can be
+      measured about GL002 is whether the extension point is reachable from
+      every listing. A route that bypasses the hook is a page on which no
+      faceted-search module can work.
+
+  - id: catalog.KPI102
+    domain_scope: catalog
+    name: "Bulk Import Completion"
+    metric: catalog.MT101
+    target: "A 10,000-row product CSV completes in one run with a per-row outcome the operator can read"
+    window: "per release"
+    goal: catalog.GL005
+    description: >
+      Stated as completion rather than as a duration, because the import has
+      no execution-time limit to exceed - it sets max_execution_time to 0 - so
+      the failure mode is a run that never visibly ends, not one that times
+      out.
 
 slos:
   - id: catalog.SLO001
@@ -38,6 +138,7 @@ slos:
 
   - id: catalog.SLO003
     name: "Bulk Import Throughput"
+    metric: catalog.MT101
     target: "10,000 rows in under 10 minutes"
     window: "per-import"
     error_budget: "5% of rows may fail validation"

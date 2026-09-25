@@ -1,257 +1,439 @@
-version: "1.0.0"
-name: "PrestaShop Runtime Infrastructure (Kubernetes/Helm)"
+version: "1.1.0"
+name: "PrestaShop Runtime Infrastructure"
 description: >
-  Cross-cutting infrastructure layer for the PrestaShop monolith deployed on Kubernetes via Helm.
-  PrestaShop is one PHP application backed by a single shared MySQL/MariaDB database, an in-cluster
-  Redis cache, and an S3-compatible object store for product images and attachments. Infra is
-  root-level (not per bounded context) because the monolith and its data stores are shared across
-  every slice. Substrate-neutral authoring: needs (type-level intent) → bindings (type × env → Helm
-  module) → resources (concrete IR### instances). Public de-branded pilot for the v2.7.7 infra CR;
-  no real endpoints or secrets.
-tags: [infrastructure, kubernetes, helm, monolith, prestashop]
+  Cross-cutting infrastructure layer for the PrestaShop 9 monolith, read from what the sources
+  describe and nothing else. PrestaShop is one PHP application served by a web server, backed by a
+  single MySQL or MariaDB database, writing media to the filesystem, optionally fronted by a shared
+  cache, and sending mail over SMTP. Infra is root-level (not per bounded context) because the
+  monolith and its data stores are shared across every slice.
+  Two deployment shapes are documented and both are modelled here as environments, because the
+  resources are the same and only their realization differs (substrate-neutral authoring:
+  service needs -> bindings per environment -> concrete resources):
+  the Docker Compose stack this repository ships for development (docker-compose.yml,
+  docker-compose.mariadb.yml, .docker/Dockerfile, Makefile), and a self-hosted server that meets
+  the published requirements (INSTALL.txt, presta-docs/basics/installation/system-requirements.md).
+  PrestaShop ships no deployment definition for the second: the requirements ARE the specification.
+  PrestaShop also sells a managed edition, Hosted, alongside the self-hosted Classic edition
+  (vendor statement, https://www.prestashop.com/). Its platform composition is not published, so no
+  environment is declared for it; declaring one would state a shape no source describes.
+  Public de-branded example: no real endpoints, hosts or secrets, in any environment.
+tags: [infrastructure, self-hosted, lamp, docker-compose, monolith, prestashop]
 owned_by:
   team: TM010
 
 # ---------------------------------------------------------------------------
-# Environments - the binding dimension (production / staging), not forked files.
+# Environments - the binding dimension, not forked files.
+#
+# production / staging / development are the three deployment targets PrestaShop's own
+# per-target parameter file names (app/config/parameters.yml.dist line 2, "parameters ... that may
+# be different on each deployment target of the app, e.g. development, staging, production"), and
+# the same three appear in presta-docs/admin-api/authorization_server/internal_authorization.md.
+#
+# development is the one the repository actually SHIPS a definition for (docker-compose.yml +
+# .docker/Dockerfile + Makefile). production and staging are requirement sets, not provisioned
+# stacks, and nothing in PrestaShop distinguishes staging from production: that is stated here
+# rather than papered over with an invented size tier.
+#
+# substrate is on-prem for all three, in this schema's sense of the word: PrestaShop Classic is
+# self-hosted, which is the substrate the on-prem profile means (hardware the operator runs), as
+# opposed to a provider's managed capacity. target_scope is omitted on every environment because
+# PrestaShop prescribes no deployment partition - see the deployment-scope note below.
 # ---------------------------------------------------------------------------
 environments:
   - id: prestashop.ENV001
     name: production
     env_class: production
-    substrate: cloud
-    provider: k8s
-    target_scope: { kind: namespace, name: prestashop-prod }
-    credential_scope: prestashop-prod-identity
-    tags: [production]
+    substrate: on-prem
+    provider: self-hosted
+    tags: [production, requirements-only]
   - id: prestashop.ENV002
     name: staging
     env_class: staging
-    substrate: cloud
-    provider: k8s
-    target_scope: { kind: namespace, name: prestashop-staging }
-    credential_scope: prestashop-staging-identity
-    tags: [staging]
+    substrate: on-prem
+    provider: self-hosted
+    tags: [staging, requirements-only]
+  - id: prestashop.ENV100
+    name: development
+    env_class: development
+    substrate: on-prem
+    provider: docker-compose
+    tags: [development, shipped-stack]
 
 # ---------------------------------------------------------------------------
-# Deployment scopes (DSC###, v2.7.7) - the Kubernetes management partition: the
-# cluster is the root, namespaces are its children (the k8s analogue of an Azure
-# subscription → resource-groups). Env-agnostic: the prod/staging split lives in
-# `environments` (each env realizes these namespaces as prestashop-prod /
-# prestashop-staging), exactly as an env names a concrete subscription while the
-# scope names the logical partition. All 4 workloads are `hosted_on` the one
-# cluster (IR005) yet `scope_ref` different namespaces - placement ≠ management.
+# No deployment scopes (DSC###), deliberately.
+#
+# A deployment scope is a management, lifecycle, ownership or billing partition. PrestaShop owns
+# none: it is an application a merchant installs into whatever partition the merchant already has,
+# and the sources name no subscription, account, cluster or namespace of its own. The grouping a
+# reader does want - which resources serve the front office and which hold state - is a VIEW, and
+# it is declared below as topology tiers, which is what the schema has tiers for.
+#
+# Absent scope_ref, tooling groups by the id scope-prefix, which for a monolith is one group. That
+# is the honest picture: one application, one datastore set, one host.
 # ---------------------------------------------------------------------------
-deployment_scopes:
-  - id: prestashop.DSC001
-    name: "PrestaShop Cluster"
-    kind: cluster
-    substrate: cloud
-    provider: k8s
-    description: "The managed Kubernetes cluster - root of the namespace tree (mirrors the IR005 cluster resource)."
-  - id: prestashop.DSC002
-    name: "prestashop-app"
-    kind: namespace
-    parent: prestashop.DSC001
-    description: "Application-tier namespace: the stateless PrestaShop PHP workload (web + admin + API)."
-  - id: prestashop.DSC003
-    name: "prestashop-data"
-    kind: namespace
-    parent: prestashop.DSC001
-    description: "Data-tier namespace: the stateful MySQL, Redis, and object-store workloads, isolated from the app tier."
 
 # ---------------------------------------------------------------------------
-# Resources - concrete IR### instances, all scope-prefixed. Container-hosted
-# in-cluster; the app connects_to its shared data stores (TOSCA relations).
+# Resources - the concrete things PrestaShop runs on, each realized per environment by a binding.
+# Placement (TOSCA hosted_on / attaches_to) is stated where it holds in BOTH shapes; where the
+# sources leave placement to the operator, no edge is invented.
 # ---------------------------------------------------------------------------
 resources:
-  - id: prestashop.IR001
-    kind: database
-    name: "PrestaShop MySQL"
-    scope_ref: prestashop.DSC003
-    summary: "Single shared MySQL/MariaDB relational database for the whole monolith."
+  - id: prestashop.IR005
+    kind: host
+    name: "PrestaShop Web Host"
+    platform: { name: on-prem, type: web-server }
+    summary: "The machine PrestaShop runs on: a web server in a merchant install, the container engine in the shipped development stack."
     description: >
-      The one shared relational database PrestaShop uses for all bounded contexts (catalog, orders,
-      checkout, customers, shop, …). Run in-cluster as a StatefulSet via the Bitnami MySQL Helm chart.
-      A shared database is a deliberate monolith trait - surfaced here as a single IR001 rather than
-      duplicated per service (the shared need id `prestashop-db` reads it as one instance).
-    hosting_model: container
-    type_ref: RT001
-    exposure: internal
-    owner: { vendor: "MySQL", team: "Core Platform", email: "platform@prestashop.example" }
-    relations:
-      - { type: hosted_on, target: prestashop.IR005 }
+      The placement root. In a merchant install this is the web server INSTALL.txt tells you to
+      upload to, running Apache 2.4 or later (Nginx 1.0 or later also works) with PHP 8.1 or later
+      and at least 512M of memory_limit per script. In the development stack it is the machine the
+      Docker Compose project runs on, which hosts the application, database and mail containers on
+      one bridge network. No hosting_model is declared because PrestaShop prescribes none: bare
+      metal, a virtual machine and a developer laptop all satisfy the requirements, and choosing
+      one here would state a fact the sources leave to the operator.
+    exposure: public
+    exposure_detail: "reachable over HTTP and HTTPS; the shipped development stack publishes ports 8001 and 8002 on the loopback interface only"
+    owner: { vendor: "PrestaShop", team: "Core Platform", email: "platform@prestashop.example" }
+    implementation: as-is
     iac_refs:
-      - { system: helm, locator: "deploy/helm/mysql/values-prod.yaml", role: configures }
-      - { system: helm, locator: "deploy/helm/mysql/values-staging.yaml", role: configures }
-    lifecycle: { protected: true, create_before_destroy: true }
-    tags: [data-tier, stateful]
-
-  - id: prestashop.IR002
-    kind: cache
-    name: "PrestaShop Redis"
-    scope_ref: prestashop.DSC003
-    summary: "In-memory cache for sessions, page cache, and query results."
-    description: >
-      Redis cache backing PrestaShop's session storage, page/template cache, and expensive query
-      result caching. Run in-cluster via the Bitnami Redis Helm chart. Shared across the front-office
-      and catalog surfaces (shared need id `prestashop-cache`).
-    hosting_model: container
-    type_ref: RT004
-    exposure: internal
-    owner: { vendor: "Redis", team: "Core Platform", email: "platform@prestashop.example" }
-    relations:
-      - { type: hosted_on, target: prestashop.IR005 }
-    iac_refs:
-      - { system: helm, locator: "deploy/helm/redis/values-prod.yaml", role: configures }
-      - { system: helm, locator: "deploy/helm/redis/values-staging.yaml", role: configures }
-    tags: [data-tier, ephemeral]
-
-  - id: prestashop.IR003
-    kind: storage
-    name: "PrestaShop Object Store"
-    scope_ref: prestashop.DSC003
-    summary: "S3-compatible object store for product images, attachments, and virtual files."
-    description: >
-      MinIO S3-compatible object store holding product images, downloadable/virtual product files,
-      and CMS media attachments. Run in-cluster via the MinIO Helm chart. Shared by the catalog and
-      content surfaces (shared need id `prestashop-assets`).
-    hosting_model: container
-    type_ref: RT002
-    exposure: internal
-    owner: { vendor: "MinIO", team: "Core Platform", email: "platform@prestashop.example" }
-    relations:
-      - { type: hosted_on, target: prestashop.IR005 }
-    iac_refs:
-      - { system: helm, locator: "deploy/helm/minio/values-prod.yaml", role: configures }
-      - { system: helm, locator: "deploy/helm/minio/values-staging.yaml", role: configures }
-    tags: [data-tier, media]
+      - { system: other, locator: "docker-compose.yml#networks.prestashop-network", role: defines }
+      - { system: other, locator: "Makefile#docker-up", role: deploys }
+    code_refs:
+      - path: "INSTALL.txt"
+        role: documentation
+        description: "States the server PrestaShop needs: a web server running PHP 8.1+ and MySQL 5.6+."
+      - path: "https://github.com/PrestaShop/docs/blob/9.x/basics/installation/system-requirements.md"
+        role: documentation
+        description: "The published requirement table: web server, PHP, SQL and memory_limit."
+    tags: [platform, compute]
 
   - id: prestashop.IR004
     kind: service
     name: "PrestaShop Application"
-    scope_ref: prestashop.DSC002
-    summary: "The PrestaShop PHP monolith workload (web + admin + API)."
+    platform: { name: on-prem, type: php-application }
+    summary: "The PrestaShop PHP monolith: front office, back office and both API surfaces in one process tree."
     description: >
-      The PrestaShop monolith itself - front office, back office, and web-service API served from one
-      PHP-FPM + web deployment. Publicly exposed via an ingress; connects to the shared MySQL database,
-      the Redis cache, and the object store. Deployed via an umbrella PrestaShop Helm chart.
+      One PHP application serving the storefront, the back office, the Admin API and the legacy
+      webservice. It holds no state of its own: every bounded context in this model executes inside
+      it and reaches the same database, the same media directory and the same optional cache. The
+      shipped development stack builds it from .docker/Dockerfile on top of the prestashop/base
+      image (Apache and PHP in one container) and bind-mounts the working tree at /var/www/html, so
+      an edit is live without a rebuild. A merchant install is the same code as a PHP application
+      under Apache or Nginx rather than in a container; hosting_model records the realization the
+      repository ships, and the binding for each environment says which applies there.
     hosting_model: container
     exposure: public
-    exposure_detail: "kubernetes-ingress"
+    exposure_detail: "served over HTTP and HTTPS by the web host; no reverse proxy is prescribed"
     owner: { vendor: "PrestaShop", team: "Core Platform", email: "platform@prestashop.example" }
+    implementation: as-is
     relations:
       - { type: hosted_on, target: prestashop.IR005 }
-      - { type: connects_to, target: prestashop.IR001, outputs: [host, port], description: "Shared relational database" }
-      - { type: connects_to, target: prestashop.IR002, outputs: [host, port], description: "Session and page cache" }
-      - { type: connects_to, target: prestashop.IR003, outputs: [endpoint, bucket], description: "Product image and attachment store" }
+      - type: connects_to
+        target: prestashop.IR001
+        outputs: [host, port, name, username, password]
+        description: "The single shared relational database; the connection parameters are database_host, database_port, database_name, database_user and database_password."
+      - type: connects_to
+        target: prestashop.IR002
+        outputs: [host, port]
+        description: "The optional shared cache, off unless ps_cache_enable is turned on."
+      - type: connects_to
+        target: prestashop.IR100
+        outputs: [host, port]
+        description: "Transactional mail (order confirmations, password resets) over SMTP."
+      - type: attaches_to
+        target: prestashop.IR003
+        outputs: [path]
+        description: "Product images, downloadable files and uploads are read and written as files, not through a storage API."
     iac_refs:
-      - { system: helm, locator: "deploy/helm/prestashop/values-prod.yaml", role: deploys }
-      - { system: helm, locator: "deploy/helm/prestashop/values-staging.yaml", role: deploys }
+      - { system: other, locator: "docker-compose.yml#services.prestashop-git", role: deploys }
+      - { system: other, locator: ".docker/Dockerfile", role: defines }
+      - { system: other, locator: "Makefile#install-prestashop", role: configures }
+    code_refs:
+      - path: ".docker/Dockerfile"
+        role: implementation
+        description: "Builds the application image from prestashop/base (Apache plus PHP), with optional Xdebug and the Node toolchain that builds the assets."
+      - path: ".docker/install/database.sh"
+        role: implementation
+        description: "Installs a fresh PrestaShop database into the running stack; the Makefile target install-prestashop calls it."
     tags: [app-tier, workload]
 
-  - id: prestashop.IR005
-    kind: cluster
-    name: "PrestaShop Kubernetes Cluster"
-    scope_ref: prestashop.DSC001
-    summary: "The Kubernetes cluster hosting all PrestaShop workloads."
+  - id: prestashop.IR001
+    kind: database
+    name: "PrestaShop Database"
+    platform: { name: on-prem, type: mysql-or-mariadb }
+    summary: "The one shared MySQL or MariaDB database every bounded context reads and writes."
     description: >
-      Managed Kubernetes cluster that hosts the PrestaShop application and its in-cluster data stores.
-      The canonical placement root (`hosted_on` target) - a substrate-neutral compute host, not a
-      provider resource in the model.
-    hosting_model: managed-service
-    exposure: private
-    owner: { vendor: "Kubernetes", team: "Core Platform", email: "platform@prestashop.example" }
+      PrestaShop stores everything in a single relational database with a configurable table prefix
+      (ps_ by default). One database shared by catalog, orders, checkout, customers and the rest is
+      a deliberate monolith trait, and it is why this layer is root-level rather than per context.
+      The published minimum is MySQL 5.7 or MariaDB 10.2, with a recent version recommended; the
+      shipped development stack pins mysql:8.4, and docker-compose.mariadb.yml offers mariadb:11.4
+      as the alternative. Core supports read replicas through config/db_slave_server.inc.php, which
+      ships as an empty list with a commented example, so no replica is declared here: the
+      mechanism exists and no replica is configured.
+    hosting_model: container
+    type_ref: RT001
+    exposure: internal
+    owner: { vendor: "MySQL or MariaDB", team: "Core Platform", email: "platform@prestashop.example" }
+    implementation: as-is
+    relations:
+      - type: hosted_on
+        target: prestashop.IR005
+        description: "Co-located with the application by default (database_host defaults to the loopback address) and commonly moved to its own server as a shop grows."
     iac_refs:
-      - { system: terraform, locator: "deploy/terraform/cluster", role: defines }
-    tags: [platform, compute]
+      - { system: other, locator: "docker-compose.yml#services.mysql", role: defines }
+      - { system: other, locator: "docker-compose.mariadb.yml#services.mariadb", role: defines }
+    code_refs:
+      - path: "app/config/parameters.yml.dist"
+        role: configuration
+        description: "The connection parameters an operator sets per deployment target: host, port, name, user, password, prefix and engine."
+      - path: "config/db_slave_server.inc.php"
+        role: configuration
+        description: "The read-replica list core reads; it ships empty with a commented two-server example."
+    lifecycle: { protected: true, create_before_destroy: true }
+    tags: [data-tier, stateful]
+
+  - id: prestashop.IR003
+    kind: storage
+    name: "PrestaShop Media Store"
+    platform: { name: on-prem, type: filesystem }
+    summary: "The filesystem tree holding product images, downloadable files and uploads."
+    description: >
+      PrestaShop writes media to directories on the web host, not to an object store: img/ for
+      product, category and CMS images and their generated thumbnails, download/ for virtual
+      product files and upload/ for customer-supplied files. This is the resource the catalog
+      service's assets need resolves to, and its shape matters for scaling: the scale guide says
+      horizontal scaling requires these files to be shared or at least synchronized across every
+      front server, and recommends putting a CDN in front of the static ones. In the development
+      stack the same tree is the bind-mounted working copy, so an image written by the application
+      appears in the repository.
+    type_ref: RT002
+    exposure: public
+    exposure_detail: "image and attachment URLs are served directly by the web host; a CDN in front is recommended but not shipped"
+    owner: { vendor: "PrestaShop", team: "Core Platform", email: "platform@prestashop.example" }
+    implementation: as-is
+    relations:
+      - type: attaches_to
+        target: prestashop.IR005
+        description: "A directory tree on the web host's filesystem, not a networked store."
+    iac_refs:
+      - { system: other, locator: "docker-compose.yml#services.prestashop-git.volumes", role: configures }
+    code_refs:
+      - path: "img"
+        role: implementation
+        description: "Product, category, manufacturer, supplier and CMS images plus their generated thumbnails."
+      - path: "download"
+        role: implementation
+        description: "Virtual product files served to customers after purchase."
+      - path: "upload"
+        role: implementation
+        description: "Files customers attach to customizable products."
+    tags: [data-tier, media]
+
+  - id: prestashop.IR002
+    kind: cache
+    name: "PrestaShop Cache"
+    platform: { name: on-prem, type: shared-cache }
+    summary: "The optional shared cache backend, disabled by default."
+    description: >
+      PrestaShop can put a shared cache in front of its own queries and objects, and ships four
+      backends to choose from: APC, Memcache, Memcached and Xcache. It is OFF by default
+      (ps_cache_enable is false in the parameter template) and the selected backend defaults to
+      Memcache, so a stock install and the shipped development stack both run without one; the
+      template cache Smarty keeps on the filesystem is separate and always present. The
+      optimization guide is specific about placement once it IS enabled: one front server should
+      use APC, and several front servers should share a single central Memcached host rather than
+      each caching locally. That is why this resource declares no placement edge of its own: the
+      documented answer depends on how many front servers there are, and the model does not pick
+      one for the operator. Note also that the cache backends core ships are not Redis; the scale
+      guide mentions Redis for PHP SESSIONS, which is a web-server concern and not one of these.
+    type_ref: RT004
+    exposure: private
+    owner: { vendor: "PrestaShop", team: "Core Platform", email: "platform@prestashop.example" }
+    implementation: unclear
+    code_refs:
+      - path: "classes/cache/CacheMemcached.php"
+        role: implementation
+        description: "The Memcached backend; CacheMemcache.php, CacheApc.php and CacheXcache.php are the other three."
+      - path: "app/config/parameters.yml.dist"
+        role: configuration
+        description: "ps_caching selects the backend and ps_cache_enable turns it on; both ship with the cache off."
+    tags: [data-tier, optional, ephemeral]
+
+  - id: prestashop.IR100
+    kind: service
+    name: "Mail Transport"
+    platform: { name: on-prem, type: smtp }
+    summary: "The SMTP transport PrestaShop sends transactional mail through."
+    description: >
+      Order confirmations, password resets and every other transactional message leave PrestaShop
+      over SMTP; the parameter template sets mailer_transport to smtp and points mailer_host at the
+      loopback address, so a stock install expects a local relay and a merchant usually repoints it
+      at an external one. The shipped development stack replaces the relay with a maildev container
+      that accepts everything and shows it in a browser instead of delivering it, which is why
+      PS_USE_DOCKER_MAILDEV defaults to on. No credentials appear in this model: mailer_user and
+      mailer_password are operator-supplied.
+    hosting_model: container
+    exposure: private
+    owner: { vendor: "PrestaShop", team: "Core Platform", email: "platform@prestashop.example" }
+    implementation: as-is
+    relations:
+      - type: hosted_on
+        target: prestashop.IR005
+        description: "Beside the application in both shipped shapes: the maildev container in development, the loopback relay a stock install expects."
+    iac_refs:
+      - { system: other, locator: "docker-compose.yml#services.maildev", role: defines }
+    code_refs:
+      - path: "app/config/parameters.yml.dist"
+        role: configuration
+        description: "mailer_transport, mailer_host, mailer_user and mailer_password: the transport an operator sets per deployment target."
+    tags: [app-tier, messaging, optional]
 
 # ---------------------------------------------------------------------------
-# Bindings - (resource-type × environment) → concrete Helm module. NOTE: RT001
-# binds to bitnami/mysql (MySQL), NOT the k8s profile's default cloudnative-pg
-# (Postgres) - PrestaShop is a MySQL app, so the module is chosen HERE.
+# Topology - a grouping VIEW, and the one grouping the sources do describe. The scale guide
+# separates the front servers that can be multiplied from the state that cannot, and that split is
+# the question a reader of this layer actually asks.
+# ---------------------------------------------------------------------------
+topology:
+  tiers:
+    - name: web-tier
+      description: "The stateless front: the PHP application and the host serving it. This is the tier the scale guide multiplies when a shop grows."
+      resource_refs: [prestashop.IR004, prestashop.IR005]
+    - name: data-tier
+      description: "The state: the shared relational database, the media tree and the optional shared cache. Adding a front server does not add one of these."
+      resource_refs: [prestashop.IR001, prestashop.IR003, prestashop.IR002]
+  constraints:
+    - "Adding a second front server requires the media tree to be shared or synchronized across every instance; the scale guide states this as the hard part of scaling PrestaShop horizontally."
+    - "With several front servers the shared cache must be one central host rather than one per server; the optimization guide says so explicitly."
+    - "Read traffic can be split onto MySQL replicas through config/db_slave_server.inc.php; writes stay on the single primary."
+
+# ---------------------------------------------------------------------------
+# Bindings - (resource type x environment) -> the concrete realization.
+#
+# Three needs are declared by the catalog service in catalog/arch.yaml (RT001 prestashop-db,
+# RT004 prestashop-cache, RT002 prestashop-assets) and each is bound in all three environments.
+# A binding names a module only where PrestaShop actually ships one: the development column names
+# the images and mounts in docker-compose.yml, and the production and staging columns name none,
+# because PrestaShop ships no production deployment definition and inventing a chart or a role
+# here would be the fiction this layer was rewritten to remove.
 # ---------------------------------------------------------------------------
 bindings:
-  # --- RT001 relational-database → Bitnami MySQL (MySQL, not Postgres) ---
+  # --- RT001 relational database ---
+  - id: prestashop.BND100
+    type_ref: RT001
+    environment_ref: prestashop.ENV100
+    resource_ref: prestashop.IR001
+    module: { ref: "mysql:8.4", version_pin: "8.4", system: "docker compose" }
+    params: { engine: mysql, version: "8.4", table_prefix: ps_ }
+    outputs:
+      - { name: host, type: hostname, description: "The compose service name the application connects to; DB_SERVER carries it." }
+      - { name: port, type: int, description: "3306, published on the loopback interface by the shipped stack." }
+      - { name: name, description: "Database name; DB_NAME sets it." }
+      - { name: username }
+      - { name: password, secret: true, description: "Generated by the operator; the shipped stack has a well-known default because the port is local-only." }
+    description: >
+      The development database is a container the repository defines: mysql:8.4 with a named volume
+      so data survives a restart. docker-compose.mariadb.yml swaps it for mariadb:11.4 with a health
+      check, which is the same binding with a different engine and the reason the type is neutral.
   - id: prestashop.BND001
     type_ref: RT001
     environment_ref: prestashop.ENV001
     resource_ref: prestashop.IR001
-    profile: k8s
-    module: { ref: "bitnami/mysql", version_pin: "11.1.0", system: helm }
-    params: { engine: mysql, version: "8.0", size: medium }
+    params: { engine: "mysql-or-mariadb", minimum_mysql: "5.7", minimum_mariadb: "10.2" }
     outputs:
-      - { name: host }
+      - { name: host, type: hostname }
       - { name: port, type: int }
-      - { name: name, description: "database name" }
+      - { name: name }
       - { name: username }
       - { name: password, secret: true }
-    description: "Production MySQL via the Bitnami MySQL chart (in-cluster StatefulSet)."
+    description: >
+      Production names no module because PrestaShop ships no production deployment definition. What
+      it ships is a requirement: MySQL 5.7 or MariaDB 10.2 as the floor, a recent version
+      recommended, and the connection set in app/config/parameters.yml.dist. The operator chooses
+      the server and provisions it by whatever means they already use.
   - id: prestashop.BND002
     type_ref: RT001
     environment_ref: prestashop.ENV002
     resource_ref: prestashop.IR001
-    profile: k8s
-    module: { ref: "bitnami/mysql", version_pin: "11.1.0", system: helm }
-    params: { engine: mysql, version: "8.0", size: small }
+    params: { engine: "mysql-or-mariadb", minimum_mysql: "5.7", minimum_mariadb: "10.2" }
     outputs:
-      - { name: host }
+      - { name: host, type: hostname }
       - { name: port, type: int }
-      - { name: name, description: "database name" }
+      - { name: name }
       - { name: username }
       - { name: password, secret: true }
-    description: "Staging MySQL - same chart, smaller size tier."
+    description: >
+      Staging is identical to production in everything PrestaShop states, and saying so is the
+      point of declaring it: the only difference the sources support is the values in the
+      per-target parameter file. No size tier is invented here to make the column look different.
 
-  # --- RT004 cache → Bitnami Redis ---
+  # --- RT004 shared cache ---
+  - id: prestashop.BND101
+    type_ref: RT004
+    environment_ref: prestashop.ENV100
+    resource_ref: prestashop.IR002
+    params: { enabled: false }
+    description: >
+      The shipped development stack runs no cache service at all: there is no cache container in
+      docker-compose.yml, ps_cache_enable is false, and PrestaShop falls back to the Smarty template
+      cache on the filesystem. The binding exists to say that plainly rather than to leave the need
+      looking unresolved.
   - id: prestashop.BND003
     type_ref: RT004
     environment_ref: prestashop.ENV001
     resource_ref: prestashop.IR002
-    profile: k8s
-    module: { ref: "bitnami/redis", version_pin: "20.1.0", system: helm }
-    params: { size: medium }
+    params: { backend: CacheMemcached, enabled_by_default: false, central_host_required_above_one_front: true }
     outputs:
-      - { name: host }
+      - { name: host, type: hostname }
       - { name: port, type: int }
-      - { name: password, secret: true }
-    description: "Production Redis via the Bitnami Redis chart."
+      - { name: password, secret: true, description: "Only where the chosen backend authenticates; Memcached commonly does not." }
+    description: >
+      Production may enable one of the four backends core ships. The optimization guide's rule
+      decides which: a single front server should use APC, and several front servers must share one
+      central Memcached host, never one per server. PrestaShop provisions none of them, so no module
+      is named.
   - id: prestashop.BND004
     type_ref: RT004
     environment_ref: prestashop.ENV002
     resource_ref: prestashop.IR002
-    profile: k8s
-    module: { ref: "bitnami/redis", version_pin: "20.1.0", system: helm }
-    params: { size: small }
-    outputs:
-      - { name: host }
-      - { name: port, type: int }
-      - { name: password, secret: true }
-    description: "Staging Redis - same chart, smaller size tier."
+    params: { backend: CacheMemcached, enabled_by_default: false }
+    description: >
+      Staging inherits the production choice; nothing in PrestaShop distinguishes the two here
+      either.
 
-  # --- RT002 object-store → MinIO ---
+  # --- RT002 media and upload store ---
+  - id: prestashop.BND102
+    type_ref: RT002
+    environment_ref: prestashop.ENV100
+    resource_ref: prestashop.IR003
+    module: { ref: "./:/var/www/html", system: "docker compose" }
+    params: { realization: bind-mount }
+    outputs:
+      - { name: path, description: "img/, download/ and upload/ inside the mounted working tree." }
+    description: >
+      In development the media store is the bind-mounted working copy, so an image the application
+      writes lands in the repository and a developer can see it. That is a deliberate development
+      convenience and not how a merchant install is laid out.
   - id: prestashop.BND005
     type_ref: RT002
     environment_ref: prestashop.ENV001
     resource_ref: prestashop.IR003
-    profile: k8s
-    module: { ref: "minio/minio", version_pin: "5.2.0", system: helm }
-    params: { redundancy: distributed }
+    params: { realization: filesystem, cdn_recommended: true, shared_across_front_servers_required: true }
     outputs:
-      - { name: endpoint, type: uri }
-      - { name: bucket }
-      - { name: access_key, secret: true }
-      - { name: secret_key, secret: true }
-    description: "Production MinIO S3-compatible object store (distributed mode)."
+      - { name: path, description: "img/, download/ and upload/ under the PrestaShop installation root." }
+    description: >
+      Production realizes the assets need as directories on the web host, NOT as an object store:
+      PrestaShop has no object-store integration in core, so the neutral object-store type this need
+      declares is an approximation and the binding is where that is said. Two documented
+      qualifications travel with it: a CDN in front of the static files is recommended, and every
+      front server must see the same tree.
   - id: prestashop.BND006
     type_ref: RT002
     environment_ref: prestashop.ENV002
     resource_ref: prestashop.IR003
-    profile: k8s
-    module: { ref: "minio/minio", version_pin: "5.2.0", system: helm }
-    params: { redundancy: standalone }
+    params: { realization: filesystem }
     outputs:
-      - { name: endpoint, type: uri }
-      - { name: bucket }
-      - { name: access_key, secret: true }
-      - { name: secret_key, secret: true }
-    description: "Staging MinIO - standalone (single-node) mode."
+      - { name: path, description: "img/, download/ and upload/ under the PrestaShop installation root." }
+    description: >
+      Staging realizes the media store the same way production does; the CDN in front of it is the
+      one thing an operator typically leaves out, and PrestaShop states nothing either way.

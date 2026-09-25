@@ -73,11 +73,17 @@ processes:
         entry_operation: orders.CMD003
         steps:
           - operation_ref: orders.CMD003
-            note: "Initiate full refund via payment gateway."
+            note: "IssueStandardRefund, dispatched from the back-office order view; the refund itself is the payment module's."
           - operation_ref: orders.EVT003
-            note: "OrderRefunded event emitted."
+            note: "The refund is recorded on the order. One of the two facts CMD003 produces with mode: all."
           - operation_ref: orders.EVT006
-            note: "CreditSlipGenerated event emitted."
+            note: >
+              The credit slip exists. Sibling of the previous step rather than its consequence:
+              both are produced by CMD003 in one mode: all fan-out, so no causal edge joins them
+              and none should be added. This is the pair activity-steps-without-causal-edge
+              counts here, and it is neither a person nor a read but a third case the rule's
+              wording does not name - two facts of one transaction, listed in the order a reader
+              meets them.
     code_refs:
       - path: "src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php"
         role: implementation
@@ -112,6 +118,7 @@ processes:
             note: "OrderProductModified event emitted, totals recalculated."
 
   - id: orders.PRC004
+    tracker_ref: "42374"
     title: "Generate invoice and record payment"
     description: "Merchant generates an invoice for a paid order and records a manual payment."
     initiated_by: [orders.ACT003]
@@ -148,6 +155,7 @@ processes:
             note: "PaymentAdded event emitted."
 
   - id: orders.PRC005
+    tracker_ref: "41527"
     title: "Process return and credit slip"
     description: "Administrator processes a customer return, updates the return state, and issues a credit slip."
     initiated_by: [orders.ACT004]
@@ -179,11 +187,16 @@ processes:
         entry_operation: orders.CMD016
         steps:
           - operation_ref: orders.CMD016
-            note: "Issue return product refund."
+            note: "IssueReturnProduct, the refund shaped by what came back rather than by the whole order."
           - operation_ref: orders.EVT003
-            note: "OrderRefunded event emitted."
+            note: "The refund is recorded on the order. One of the two facts CMD016 produces with mode: all."
           - operation_ref: orders.EVT006
-            note: "CreditSlipGenerated event emitted."
+            note: >
+              The credit slip exists. Sibling of the previous step rather than its consequence,
+              exactly as in orders.PRC002: CMD016 produces both with mode: all, so the pair
+              carries no causal edge and inventing one would say the refund causes the slip
+              when in truth one command causes both. The second and last of this model's two
+              activity-steps-without-causal-edge findings.
     code_refs:
       - path: "src/PrestaShopBundle/Controller/Admin/Sell/Order/CreditSlipController.php"
         role: implementation
@@ -191,6 +204,79 @@ processes:
       - path: "controllers/front/OrderReturnController.php"
         role: implementation
         description: "Front-office return request controller."
+
+  - id: orders.PRC006
+    title: "Request a merchandise return from the storefront"
+    description: >
+      The shopper's half of a return, and the reason it is a process of its own: PRC005 begins
+      where this one ends, at the merchant's desk. Two of its three activities name no entry
+      operation, and the absence is the finding. src/Core/Domain/OrderReturn/Command holds five
+      classes and every one of them deletes or transitions a return that already exists, so the
+      creation a shopper performs - OrderReturn::add in OrderFollowController, announced as the
+      registered hook actionOrderReturn - has no modelled command and no modelled event. That
+      is the largest single storefront gap the step-17 survey found, and it belongs to the
+      domain layer rather than to this narrative.
+    initiated_by: [orders.ACT001]
+    trigger:
+      type: manual
+      description: "A shopper opens a delivered order and decides to send part of it back."
+    end_states:
+      - name: "Return accepted for processing"
+        type: complete
+        description: "The return exists at state 1 and actionOrderReturn has fired; the merchant's own process, PRC005, takes it from there."
+      - name: "Request refused"
+        type: error
+        description: "One of six checks failed and the shopper is returned to the order with the reason: no order, no lines ticked, no quantities, the order is not returnable, the order belongs to someone else, or more was asked for than was bought."
+    lanes:
+      - actor: orders.ACT001
+      - actor: orders.ACT004
+        operations: [orders.CMD023]
+    activities:
+      - id: orders.PA009
+        name: "Choose what to send back"
+        description: >
+          The shopper ticks lines and quantities on the storefront order detail page. The read
+          behind that page performs no modelled operation: HistoryController and
+          OrderDetailController use Order::getCustomerOrders and the OrderPresenter rather than
+          the GetOrderForViewing query, which serves the back office.
+        triggered_by: [orders.ACT001]
+        path_type: happy
+        next:
+          - to: orders.PA010
+
+      - id: orders.PA010
+        name: "Submit the request"
+        description: >
+          OrderFollowController checks six things and refuses on any of them, each refusal
+          redirecting back to the order with its own flag. Only then is the return written at
+          state 1, its lines attached, and actionOrderReturn fired. No operation is named
+          because none exists; see the process description.
+        path_type: happy
+        next:
+          - to: orders.PA011
+            condition: "the merchant picks the request up from the returns list"
+
+      - id: orders.PA011
+        name: "Wait for the merchant to respond"
+        description: >
+          The handover. The shopper's part is over and the merchant's begins, at the same
+          operation PRC005 opens with; that process carries the credit slip and the refund.
+        entry_operation: orders.CMD023
+        triggered_by: [orders.ACT004]
+        calls_subprocess: orders.PRC005
+        steps:
+          - operation_ref: orders.CMD023
+            note: "The merchant moves the return to package-received or to another state."
+          - operation_ref: orders.EVT010
+            note: "actionObjectOrderReturnUpdateAfter; nothing in core notifies the shopper, so a module is what makes that happen."
+        path_type: happy
+    code_refs:
+      - path: "controllers/front/OrderFollowController.php"
+        role: implementation
+        description: "postProcess at line 24: the six refusals, then OrderReturn::add and Hook::exec('actionOrderReturn') at lines 107 to 109."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "actionOrderReturn is registered at line 349; no event in this model is grounded on it."
 
 user_stories:
   - id: orders.US001
@@ -260,6 +346,7 @@ user_stories:
     operations: [orders.QRY001]
 
   - id: orders.US005
+    tracker_ref: "42374"
     actor: orders.ACT003
     goal: "Generate an invoice for a paid order"
     benefit: "I have a compliant fiscal document for tax reporting and customer records."
@@ -290,6 +377,63 @@ user_stories:
       - "Payment appears in the order's payment history"
     operations: [orders.CMD019, orders.EVT008]
     test_cases: [orders.TC004]
+
+  - id: orders.US007
+    actor: orders.ACT001
+    goal: "see the orders I have placed, where each one has got to, and download its invoice"
+    benefit: "I can answer my own questions about an order without writing to the shop."
+    summary: "Shopper follows their own orders from the account."
+    description: >
+      Recorded with no operations, and the reason is worth a reader's attention.
+      GetCustomerOrders and GetOrderForViewing both exist, and both serve the back office;
+      HistoryController calls Order::getCustomerOrders on the legacy class and then loads and
+      presents each order in full, one object at a time. The page also warns a shopper who has
+      just paid that their order may take a few minutes to appear, which is PrestaShop
+      admitting in the interface that order writing is not synchronous with the redirect.
+    acceptance_criteria:
+      - "The history lists the signed-in customer's own orders with their current state."
+      - "An invoice is downloadable only for an order whose state carries one."
+      - "A shopper arriving straight from payment is warned that a missing order may simply not be written yet."
+      - "In catalog mode the history page redirects to the home page rather than rendering empty."
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    operations: []
+    code_refs:
+      - path: "controllers/front/HistoryController.php"
+        role: implementation
+        description: "initContent at line 26: the catalog-mode redirect and the slow-validation warning; getTemplateVarOrders at line 48."
+
+  - id: orders.US008
+    actor: orders.ACT001
+    goal: "ask to send part of a delivered order back, and follow what happens to the request"
+    benefit: "I recover the money for what I am returning without telephoning the shop."
+    summary: "Shopper requests a merchandise return and follows it."
+    description: >
+      The storefront behaviour with the least domain support in the model. The shopper's
+      request is OrderReturn::add in OrderFollowController, announced as the registered hook
+      actionOrderReturn, and no command or event in this model names either. The operations
+      list therefore holds only the merchant's side, which is where the modelled part begins.
+      The six refusals are worth keeping because each is a distinct acceptance criterion and
+      each is checked in the code.
+    acceptance_criteria:
+      - "The return form is on the order detail page and is submitted to the returns controller."
+      - "A request naming no order, no lines, or no quantities is refused and the shopper is returned to the order with the reason."
+      - "A request against an order that is not returnable, or that belongs to another customer, is refused."
+      - "A request for more of a line than was bought is refused before anything is written."
+      - "An accepted request exists at state 1 and fires actionOrderReturn, so modules can act on it."
+      - "The shopper sees the request on the returns page with its current state."
+    delivery_priority: should-have
+    status: ready
+    release_target: "v1.0"
+    operations: [orders.CMD023, orders.EVT010]
+    code_refs:
+      - path: "controllers/front/OrderFollowController.php"
+        role: implementation
+        description: "postProcess at line 24 holds all six refusals; OrderReturn::add at line 107."
+      - path: "classes/order/OrderReturn.php"
+        role: implementation
+        description: "checkEnoughProduct and addReturnDetail decide what may be returned and record it."
 
 use_cases:
   - id: orders.UC001
@@ -396,6 +540,7 @@ use_cases:
     delivery_priority: should-have
 
   - id: orders.UC004
+    tracker_ref: "41527"
     name: "Process Return and Credit Slip"
     summary: "Administrator processes a merchandise return and generates a credit slip."
     primary_actor: orders.ACT004
@@ -436,3 +581,84 @@ use_cases:
     processes: [orders.PRC005]
     delivery_priority: must-have
     status: refined
+
+  - id: orders.UC005
+    name: "Request a merchandise return"
+    summary: "A shopper sends part of a delivered order back, and the request crosses from the storefront to the merchant's desk."
+    description: >
+      The after-sales half of the storefront, and the clearest example in this model of a
+      real behaviour the domain layer has not named. Every step up to the handover performs no
+      modelled operation: the reads are legacy object loads and the write is OrderReturn::add.
+      What the model does carry starts at step 6, where the merchant transitions the return
+      and PRC005 takes over. The six refusals are alternative flows rather than one, because
+      the code checks them separately and tells the shopper which one it was.
+    primary_actor: orders.ACT001
+    secondary_actors: [orders.ACT004]
+    goal: "Get the shop to accept a return and refund what was sent back."
+    preconditions:
+      - "The order has been delivered and Order::isReturnable answers true for it, which depends on the shop's return window and its return setting."
+      - "The order belongs to the signed-in customer."
+    postconditions:
+      - "A return exists at state 1 with the chosen lines and quantities attached."
+      - "actionOrderReturn has fired, so a module can notify, log or integrate."
+    main_scenario:
+      - step: 1
+        action: "The shopper opens their order history and picks the order to return from."
+        screen: orders.SCR004
+        actor: orders.ACT001
+        emotion: neutral
+      - step: 2
+        action: "The shopper opens the order and finds the return form below the lines."
+        screen: orders.SCR005
+        actor: orders.ACT001
+        emotion: confused
+        pain_point: "The form is on the order page while the list of requests is on another, so a shopper looking for returns first has to work backwards to an order."
+      - step: 3
+        action: "The shopper ticks the lines, sets quantities and writes a reason."
+        screen: orders.SCR005
+        actor: orders.ACT001
+        emotion: neutral
+      - step: 4
+        action: "The returns controller checks the order, the lines, the quantities, the return window, the ownership and the reason."
+        screen: orders.SCR006
+        actor: orders.ACT001
+        emotion: neutral
+      - step: 5
+        action: "The return is written at state 1 and actionOrderReturn is fired; the shopper lands on the returns page."
+        screen: orders.SCR006
+        actor: orders.ACT001
+        emotion: satisfied
+      - step: 6
+        action: "The merchant receives the package and moves the return to its next state."
+        operation: orders.CMD023
+        emotion: satisfied
+      - step: 7
+        action: "The return's state change is published for modules to observe."
+        operation: orders.EVT010
+        emotion: neutral
+        pain_point: "Nothing in core notifies the shopper of the transition, so a shop without a module for it leaves the customer checking the page."
+    alternative_flows:
+      - step: 4
+        condition: "No order id reaches the controller."
+        action: "The shopper is redirected to the order history rather than shown an error."
+        actor: orders.ACT001
+      - step: 4
+        condition: "No lines were ticked, or no quantities were given, or the reason is empty."
+        action: "The shopper is redirected back to the order with errorDetail1, errorDetail2 or errorMsg, and the quantities are carried back for the reason case."
+        actor: orders.ACT001
+      - step: 4
+        condition: "Order::isReturnable answers false, or the order belongs to another customer."
+        action: "Both are answered with the same errorNotReturnable flag, so the shopper is not told which of the two it was."
+        actor: orders.ACT001
+      - step: 4
+        condition: "More of a line is asked for than the order contains."
+        action: "OrderReturn::checkEnoughProduct refuses and the shopper is returned with errorQuantity."
+        actor: orders.ACT001
+      - step: 6
+        condition: "The merchant refunds the returned products as well as accepting them."
+        action: "PRC005 continues with the refund and the credit slip, which is where IssueReturnProduct and CreditSlipGenerated live."
+        operation: orders.CMD016
+    user_stories: [orders.US008]
+    processes: [orders.PRC006, orders.PRC005]
+    delivery_priority: should-have
+    release_target: "v1.0"

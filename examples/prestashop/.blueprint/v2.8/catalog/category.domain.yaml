@@ -9,84 +9,485 @@ operations:
     id: catalog.CMD025
     kind: command
     name: "AddCategory"
-    description: "Create a new category within the category tree."
+    description: "Create a category under an existing parent. The handler writes the Category ObjectModel, which fires actionCategoryAdd, so every listening module sees the new branch of the tree."
     delivery_priority: must-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /categories
+        method: POST
+        group: category
+    payload:
+      schema: CreateCategoryPayload
+      contentType: application/json
+    responses:
+      - code: "201"
+        type: success
+        description: "The category as stored, read back through GetCategoryForEditing."
+        schema: CategoryResource
+        contentType: application/json
+      - code: "422"
+        type: failure
+        description: "A field failed a CategorySettings constraint."
+        error: catalog.ERR005
     governed_by:
       - rule: catalog.SR002
+    materializes:
+      - concept: catalog.CN002
+        action: create
     produces:
       operations: [catalog.EVT009]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Category/Command/AddCategoryCommand.php"
         role: implementation
+      - path: "src/Adapter/Category/CommandHandler/AddCategoryHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/Category.php"
+        role: api-spec
+        description: "CQRSCreate on /categories names AddCategoryCommand."
+
+  addRootCategory:
+    id: catalog.CMD300
+    kind: command
+    name: "AddRootCategory"
+    description: "Create a category with no parent, the root of a shop's tree. Distinct from AddCategory because a root has no parent to validate against and is what a multishop install attaches a new shop to. No Admin API route serves it; the back-office category controller dispatches it."
+    delivery_priority: should-have
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN002
+        action: create
+    produces:
+      operations: [catalog.EVT009]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Category/Command/AddRootCategoryCommand.php"
+        role: implementation
+      - path: "src/Adapter/Category/CommandHandler/AddRootCategoryHandler.php"
+        role: implementation
 
   editCategory:
     id: catalog.CMD026
     kind: command
     name: "EditCategory"
-    description: "Update category name, description, image, SEO metadata."
+    description: "Update a category's localized names, description, cover and thumbnail images, SEO metadata and shop association. Fires actionCategoryUpdate on save."
     delivery_priority: must-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /categories/{categoryId}
+        method: PATCH
+        group: category
+    payload:
+      schema: EditCategoryPayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The category as stored after the update."
+        schema: CategoryResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No category with that id."
+        error: catalog.ERR004
+    materializes:
+      - concept: catalog.CN002
+        action: update
     produces:
       operations: [catalog.EVT010]
       mode: all
+    code_refs:
+      - path: "src/Core/Domain/Category/Command/EditCategoryCommand.php"
+        role: implementation
+      - path: "src/Adapter/Category/CommandHandler/EditCategoryHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/Category.php"
+        role: api-spec
+        description: "CQRSPartialUpdate on /categories/{categoryId} names EditCategoryCommand."
+
+  editRootCategory:
+    id: catalog.CMD301
+    kind: command
+    name: "EditRootCategory"
+    description: "Update a root category. Separate from EditCategory because a root carries no parent and the handler refuses the fields that only make sense inside a tree. No Admin API route serves it."
+    delivery_priority: could-have
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN002
+        action: update
+    produces:
+      operations: [catalog.EVT010]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Category/Command/EditRootCategoryCommand.php"
+        role: implementation
+      - path: "src/Adapter/Category/CommandHandler/EditRootCategoryHandler.php"
+        role: implementation
+      - path: "src/Core/Domain/Category/Exception/CannotEditRootCategoryException.php"
+        role: implementation
 
   deleteCategory:
     id: catalog.CMD027
     kind: command
     name: "DeleteCategory"
-    description: "Delete a category. Children can be moved to parent or deleted."
+    description: "Delete one category. The {mode} path segment chooses what happens to its children: they move to the parent, or they are deleted with it. A shop's root category cannot be deleted, which is where CannotDeleteRootCategoryForShopException comes from."
     delivery_priority: must-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /categories/{categoryId}/{mode}
+        method: DELETE
+        group: category
+    responses:
+      - code: "204"
+        type: success
+        description: "The category and its chosen child handling are done."
+      - code: "404"
+        type: failure
+        description: "No category with that id."
+        error: catalog.ERR004
+      - code: "422"
+        type: failure
+        description: "The category is a shop root."
+        error: catalog.ERR303
     governed_by:
       - rule: catalog.SR003
+    materializes:
+      - concept: catalog.CN002
+        action: delete
+    produces:
+      operations: [catalog.EVT300]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Category/Command/DeleteCategoryCommand.php"
+        role: implementation
+      - path: "src/Adapter/Category/CommandHandler/DeleteCategoryHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/CategoryDelete.php"
+        role: api-spec
+        description: "CQRSDelete on /categories/{categoryId}/{mode} names DeleteCategoryCommand."
+
+  bulkDeleteCategories:
+    id: catalog.CMD302
+    kind: command
+    name: "BulkDeleteCategories"
+    description: "Delete a list of categories in one call, with one child-handling mode for all of them. Separate from DeleteCategory because the handler reports per-category failure rather than aborting the batch."
+    delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /categories/bulk-delete/{deleteMode}
+        method: DELETE
+        group: category
+    responses:
+      - code: "204"
+        type: success
+        description: "Every listed category was deleted."
+      - code: "422"
+        type: failure
+        description: "At least one listed category could not be deleted."
+        error: catalog.ERR304
+    governed_by:
+      - rule: catalog.SR003
+    materializes:
+      - concept: catalog.CN002
+        action: delete
+    produces:
+      operations: [catalog.EVT300]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Category/Command/BulkDeleteCategoriesCommand.php"
+        role: implementation
+      - path: "src/Adapter/Category/CommandHandler/BulkDeleteCategoriesHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/BulkDeleteCategories.php"
+        role: api-spec
+        description: "CQRSDelete on /categories/bulk-delete/{deleteMode} names BulkDeleteCategoriesCommand."
+
+  setCategoryIsEnabled:
+    id: catalog.CMD029
+    kind: command
+    name: "SetCategoryIsEnabled"
+    description: "Enable or disable one category. A disabled category and everything under it stops being reachable from the storefront, so this is a visibility switch for a whole branch, not a field edit."
+    delivery_priority: must-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /categories/{categoryId}/status
+        method: PATCH
+        group: category
+    responses:
+      - code: "200"
+        type: success
+        description: "The category as stored after the status change."
+        schema: CategoryResource
+        contentType: application/json
+      - code: "422"
+        type: failure
+        description: "The status could not be written."
+        error: catalog.ERR305
+    materializes:
+      - concept: catalog.CN002
+        action: update
     produces:
       operations: [catalog.EVT010]
       mode: all
+    code_refs:
+      - path: "src/Core/Domain/Category/Command/SetCategoryIsEnabledCommand.php"
+        role: implementation
+      - path: "src/Adapter/Category/CommandHandler/SetCategoryIsEnabledHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/Category.php"
+        role: api-spec
+        description: "CQRSPartialUpdate on /categories/{categoryId}/status names SetCategoryIsEnabledCommand."
+
+  bulkUpdateCategoriesStatus:
+    id: catalog.CMD303
+    kind: command
+    name: "BulkUpdateCategoriesStatus"
+    description: "Enable or disable a list of categories in one call. BulkEnableCategoriesCommand and BulkDisableCategoriesCommand are subclasses that pre-fill the new status, so the three are one operation with one handler; the legacy back-office controller dispatches the subclasses and the Admin API route dispatches the base command."
+    delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /categories/bulk-update-status
+        method: PUT
+        group: category
+    responses:
+      - code: "204"
+        type: success
+        description: "Every listed category carries the new status."
+      - code: "422"
+        type: failure
+        description: "At least one status could not be written."
+        error: catalog.ERR305
+    materializes:
+      - concept: catalog.CN002
+        action: update
+    produces:
+      operations: [catalog.EVT010]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Category/Command/BulkUpdateCategoriesStatusCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Category/Command/BulkEnableCategoriesCommand.php"
+        role: implementation
+        description: "Subclass that pre-fills the enabled status; dispatched by the legacy controller."
+      - path: "src/Core/Domain/Category/Command/BulkDisableCategoriesCommand.php"
+        role: implementation
+        description: "Subclass that pre-fills the disabled status; dispatched by the legacy controller."
+      - path: "src/Adapter/Category/CommandHandler/BulkUpdateCategoriesStatusHandler.php"
+        role: implementation
+      - path: "src/PrestaShopBundle/Controller/Admin/Sell/Catalog/CategoryController.php"
+        role: implementation
+        description: "Dispatches the two subclasses from the grid's bulk actions."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/BulkUpdateStatusCategories.php"
+        role: api-spec
+        description: "CQRSUpdate on /categories/bulk-update-status names BulkUpdateCategoriesStatusCommand."
 
   updateCategoryPosition:
     id: catalog.CMD028
     kind: command
     name: "UpdateCategoryPosition"
-    description: "Move a category within the tree (change parent or sibling order)."
+    description: "Move a category to a new parent and a new place among its siblings. The handler rewrites the nested-set bounds of every affected node, which is why a move fires actionCategoryUpdate for the moved category as well as writing its neighbours. No Admin API route serves it; the back-office tree drag-and-drop dispatches it."
     delivery_priority: should-have
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN002
+        action: update
     produces:
       operations: [catalog.EVT010]
       mode: all
+    code_refs:
+      - path: "src/Core/Domain/Category/Command/UpdateCategoryPositionCommand.php"
+        role: implementation
+      - path: "src/Adapter/Category/CommandHandler/UpdateCategoryPositionHandler.php"
+        role: implementation
+      - path: "classes/Category.php"
+        role: implementation
+        description: "cleanPositions and the nested-set bounds the move rewrites; line 1868 fires actionCategoryUpdate for the moved node."
 
-  toggleCategoryStatus:
-    id: catalog.CMD029
+  deleteCategoryCoverImage:
+    id: catalog.CMD304
     kind: command
-    name: "ToggleCategoryStatus"
-    description: "Enable or disable a category (affects visibility of all products in it)."
-    delivery_priority: must-have
+    name: "DeleteCategoryCoverImage"
+    description: "Remove the large image shown at the top of a category page. A separate command from EditCategory because the file is deleted from disk, which can fail on its own."
+    delivery_priority: could-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /categories/{categoryId}/cover
+        method: DELETE
+        group: category
+    responses:
+      - code: "204"
+        type: success
+        description: "The cover image file and its reference are gone."
+      - code: "422"
+        type: failure
+        description: "The image file could not be removed."
+        error: catalog.ERR306
+    materializes:
+      - concept: catalog.CN002
+        action: update
     produces:
       operations: [catalog.EVT010]
       mode: all
+    code_refs:
+      - path: "src/Core/Domain/Category/Command/DeleteCategoryCoverImageCommand.php"
+        role: implementation
+      - path: "src/Adapter/Category/CommandHandler/DeleteCategoryCoverImageHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/Category.php"
+        role: api-spec
+        description: "CQRSDelete on /categories/{categoryId}/cover names DeleteCategoryCoverImageCommand."
 
-  getCategoryTree:
+  deleteCategoryThumbnailImage:
+    id: catalog.CMD305
+    kind: command
+    name: "DeleteCategoryThumbnailImage"
+    description: "Remove the small image a parent category shows for this subcategory. Separate from the cover for the same reason: a different file on disk with its own failure."
+    delivery_priority: could-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /categories/{categoryId}/thumbnail
+        method: DELETE
+        group: category
+    responses:
+      - code: "204"
+        type: success
+        description: "The thumbnail file and its reference are gone."
+      - code: "422"
+        type: failure
+        description: "The image file could not be removed."
+        error: catalog.ERR306
+    materializes:
+      - concept: catalog.CN002
+        action: update
+    produces:
+      operations: [catalog.EVT010]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Category/Command/DeleteCategoryThumbnailImageCommand.php"
+        role: implementation
+      - path: "src/Adapter/Category/CommandHandler/DeleteCategoryThumbnailImageHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/Category.php"
+        role: api-spec
+        description: "CQRSDelete on /categories/{categoryId}/thumbnail names DeleteCategoryThumbnailImageCommand."
+
+  getCategoryForEditing:
+    id: catalog.QRY300
+    kind: query
+    name: "GetCategoryForEditing"
+    description: "Read one category in the shape the edit form and the Admin API both need: localized fields for every language, shop associations, image references and the parent. This is the read-back of every write route on /categories."
+    delivery_priority: must-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /categories/{categoryId}
+        method: GET
+        group: category
+    responses:
+      - code: "200"
+        type: success
+        description: "The editable state of the category."
+        schema: CategoryResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No category with that id."
+        error: catalog.ERR004
+    code_refs:
+      - path: "src/Core/Domain/Category/Query/GetCategoryForEditing.php"
+        role: implementation
+      - path: "src/Adapter/Category/QueryHandler/GetCategoryForEditingHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/Category.php"
+        role: api-spec
+        description: "CQRSGet on /categories/{categoryId} names GetCategoryForEditing."
+
+  getCategoriesTree:
     id: catalog.QRY005
     kind: query
-    name: "GetCategoryTree"
-    description: "Retrieve the full category hierarchy as a tree structure."
+    name: "GetCategoriesTree"
+    description: "Read the category hierarchy as nested nodes for one language, which is what the back-office tree selector renders. No Admin API route serves it; the grid and the form widgets call it in process."
     delivery_priority: must-have
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/Category/Query/GetCategoriesTree.php"
+        role: implementation
+      - path: "src/Adapter/Category/QueryHandler/GetCategoriesTreeHandler.php"
+        role: implementation
+
+  getCategoryIsEnabled:
+    id: catalog.QRY301
+    kind: query
+    name: "GetCategoryIsEnabled"
+    description: "Read whether one category is enabled, without loading the rest of it. It exists so a caller that only needs the visibility flag does not pay for the full editing read."
+    delivery_priority: could-have
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/Category/Query/GetCategoryIsEnabled.php"
+        role: implementation
+      - path: "src/Adapter/Category/QueryHandler/GetCategoryIsEnabledHandler.php"
+        role: implementation
 
   getCategoryProducts:
     id: catalog.QRY006
     kind: query
     name: "GetCategoryProducts"
-    description: "List products assigned to a specific category with pagination."
+    description: "List the products a storefront category page shows, with its sort order, price range and pagination. There is no CQRS query class for it: the storefront calls Category::getProducts on the legacy ObjectModel directly, which is why this read has none of the language and shop handling the CQRS queries carry."
     delivery_priority: must-have
+    dispatch: inprocess
+    code_refs:
+      - path: "classes/Category.php"
+        role: implementation
+        description: "getProducts, line 966; the storefront category controller calls it."
 
   categoryCreated:
     id: catalog.EVT009
     kind: event
     name: "CategoryCreated"
-    description: "Emitted when a new category is added to the tree."
+    description: "A category was written for the first time. PrestaShop publishes this as the hook actionCategoryAdd, fired by Category::add with the new Category object, so any module can index, mirror or enrich the new branch."
+    tags: [hook:actionCategoryAdd]
+    code_refs:
+      - path: "classes/Category.php"
+        role: implementation
+        description: "Hook::exec('actionCategoryAdd', ['category' => $this]) at line 218."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry actionCategoryAdd."
 
   categoryUpdated:
     id: catalog.EVT010
     kind: event
     name: "CategoryUpdated"
-    description: "Emitted when a category is modified, moved, toggled, or deleted."
+    description: "A category's stored state changed: a field edit, a status change, or a move that rewrote its position. PrestaShop publishes this as the hook actionCategoryUpdate, fired by Category::update and again by the tree move."
+    tags: [hook:actionCategoryUpdate]
+    code_refs:
+      - path: "classes/Category.php"
+        role: implementation
+        description: "Hook::exec('actionCategoryUpdate') at lines 278 and 1868."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry actionCategoryUpdate."
+
+  categoryDeleted:
+    id: catalog.EVT300
+    kind: event
+    name: "CategoryDeleted"
+    description: "A category was removed. PrestaShop publishes this as the hook actionCategoryDelete, and it carries the children deleted with it, so a module can tell a branch removal from a single-node one. It is a separate fact from CategoryUpdated because the code fires a separate hook for it."
+    tags: [hook:actionCategoryDelete]
+    code_refs:
+      - path: "classes/Category.php"
+        role: implementation
+        description: "Hook::exec('actionCategoryDelete', ['category' => $this, 'deleted_children' => $deletedChildren]) at line 415."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry actionCategoryDelete."
 
 errors:
   categoryNotFound:
@@ -96,12 +497,114 @@ errors:
     category: not-found
     severity: warning
     http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Category/Exception/CategoryNotFoundException.php"
+        role: implementation
 
-  categoryTreeDepthExceeded:
+  categoryConstraintViolated:
     id: catalog.ERR005
-    name: "CategoryTreeDepthExceeded"
-    description: "Cannot nest category deeper than the maximum allowed depth."
+    name: "CategoryConstraintViolated"
+    description: "A category field failed a domain constraint: a name longer than CategorySettings::MAX_TITLE_LENGTH, a link rewrite that is not a valid slug, or an id that is not a positive integer. CategorySettings defines length and format limits only; the code has no maximum tree depth, so depth is not among the constraints this raises."
     category: validation
     severity: error
     http_status: 422
     related_rules: [catalog.SR002]
+    code_refs:
+      - path: "src/Core/Domain/Category/Exception/CategoryConstraintException.php"
+        role: implementation
+      - path: "src/Core/Domain/Category/CategorySettings.php"
+        role: implementation
+
+  cannotAddCategory:
+    id: catalog.ERR300
+    name: "CannotAddCategory"
+    description: "The category row passed its constraints but could not be written, so nothing was created."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Category/Exception/CannotAddCategoryException.php"
+        role: implementation
+
+  cannotEditCategory:
+    id: catalog.ERR301
+    name: "CannotEditCategory"
+    description: "The category exists and the new values are valid, but the update could not be written."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Category/Exception/CannotEditCategoryException.php"
+        role: implementation
+
+  cannotEditRootCategory:
+    id: catalog.ERR302
+    name: "CannotEditRootCategory"
+    description: "An edit was attempted on a root category through a path that only handles categories with a parent, or with fields a root does not have."
+    category: conflict
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Category/Exception/CannotEditRootCategoryException.php"
+        role: implementation
+
+  cannotDeleteRootCategoryForShop:
+    id: catalog.ERR303
+    name: "CannotDeleteRootCategoryForShop"
+    description: "The category is a shop's root. Deleting it would leave that shop with no tree, so the handler refuses."
+    category: conflict
+    severity: error
+    http_status: 422
+    related_rules: [catalog.SR003]
+    code_refs:
+      - path: "src/Core/Domain/Category/Exception/CannotDeleteRootCategoryForShopException.php"
+        role: implementation
+
+  failedToDeleteCategory:
+    id: catalog.ERR304
+    name: "FailedToDeleteCategory"
+    description: "The delete was permitted but did not complete. In a bulk delete this names the categories that survived, so the caller can tell a partial batch from a rejected one."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Category/Exception/FailedToDeleteCategoryException.php"
+        role: implementation
+
+  cannotUpdateCategoryStatus:
+    id: catalog.ERR305
+    name: "CannotUpdateCategoryStatus"
+    description: "The enabled flag could not be written, so the category's storefront visibility is unchanged."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Category/Exception/CannotUpdateCategoryStatusException.php"
+        role: implementation
+
+  cannotDeleteCategoryImage:
+    id: catalog.ERR306
+    name: "CannotDeleteCategoryImage"
+    description: "A category cover or thumbnail file could not be removed from disk, so the category still points at an image the shop cannot serve."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Category/Exception/CannotDeleteImageException.php"
+        role: implementation
+
+questions:
+
+  - id: catalog.QN001
+    name: "Where A Product Sits"
+    statement: "Which categories does this product belong to, and where do they sit in the tree?"
+    category: relationship
+    priority: critical
+    bounded_context_ref: prestashop.BC002
+    answered_by: [catalog.QRY005, catalog.QRY006, catalog.QRY002]
+    concepts: [catalog.CN001, catalog.CN002]
+    resolved: true
+    resolution: >
+      GetCategoriesTree returns the nested category structure, GetCategoryProducts the
+      membership from the category side, and GetProductForEditing the same membership from
+      the product side including which category is its default.

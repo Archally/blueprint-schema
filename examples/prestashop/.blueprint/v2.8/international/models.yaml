@@ -117,6 +117,9 @@ components:
           description: "Display transformation patterns per language (formatting rules)."
           additionalProperties:
             type: string
+          example:
+            "1": "#,##0.00 \u00a4"
+            "2": "#,##0.00 \u00a4"
         isEnabled:
           type: boolean
           description: "Whether this currency is active."
@@ -202,6 +205,12 @@ components:
         taxRules:
           type: array
           description: "Tax rule bindings within this group."
+          example:
+            - taxId: 1
+              zoneId: 1
+              countryId: 8
+              stateId: 0
+              behavior: "this_tax_only"
           items:
             type: object
             properties:

@@ -12,7 +12,7 @@ screens:
     name: "Module Manager"
     summary: "Grid of modules with status indicators, bulk actions, and lifecycle controls (install, enable, disable, upgrade)."
     uses_models: ["ModuleList"]
-    motivated_by: [modules.G001]
+    motivated_by: [modules.GL001]
 
   - id: modules.SCR002
     name: "Module Upload"
@@ -24,7 +24,7 @@ screens:
     name: "Hook Configuration"
     summary: "Hook list with active status toggles. Shows registered modules per hook."
     uses_models: ["HookList"]
-    motivated_by: [modules.G003]
+    motivated_by: [modules.GL003]
 
 actions:
   - id: modules.UAC001

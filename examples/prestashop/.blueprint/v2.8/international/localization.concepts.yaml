@@ -37,6 +37,7 @@ concepts:
       localizedTransformations:
         id: CAT506
         description: "Display transformation patterns per language (formatting rules)"
+        example: "{1: #,##0.00 EUR}"
     code_refs:
       - path: "src/Core/Domain/Currency/Command/AbstractAddCurrencyCommand.php"
         role: implementation
@@ -127,7 +128,7 @@ enumerations:
         description: "Custom currency with user-defined ISO code and properties"
 
 associations:
-  - id: international.AS001
+  - id: international.ASC001
     subject: international.CN001
     predicate: depends-on
     object: international.CN003

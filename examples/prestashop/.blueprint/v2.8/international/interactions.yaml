@@ -12,7 +12,7 @@ screens:
     name: "Currency List"
     summary: "Paginated list of currencies with ISO code, exchange rate, status, and bulk actions."
     uses_models: ["CurrencyList"]
-    motivated_by: [international.G001]
+    motivated_by: [international.GL001]
 
   - id: international.SCR002
     name: "Currency Configuration"
@@ -24,7 +24,7 @@ screens:
     name: "Language List"
     summary: "Paginated list of languages with ISO code, locale, RTL flag, and status."
     uses_models: ["LanguageList"]
-    motivated_by: [international.G003]
+    motivated_by: [international.GL003]
 
   - id: international.SCR004
     name: "Zone List"

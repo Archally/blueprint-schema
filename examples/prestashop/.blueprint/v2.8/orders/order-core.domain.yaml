@@ -8,26 +8,8 @@ operations:
   placeOrder:
     id: orders.CMD001
     kind: command
-    exchange:
-      protocol: http
-      endpoint:
-        path: /orders
-        method: POST
-        group: orders
-    payload:
-      schema: PlaceOrderPayload
-      contentType: application/json
-    responses:
-      - code: "201"
-        type: success
-        description: "The order was placed."
-        schema: OrderResource
-        contentType: application/json
+    dispatch: inprocess
     idempotent: true
-    idempotency_key: "$.body.cartId"
-    correlation_id:
-      location: "$.body.orderId"
-      description: "Order identifier for end-to-end tracing across payment, shipping, and fulfillment."
     name: "PlaceOrder"
     description: "Create a new order from a validated cart. Validates stock, calculates totals, snapshots addresses, and initiates payment capture."
     delivery_priority: must-have
@@ -42,15 +24,13 @@ operations:
       - path: "src/Core/Domain/Order/Command/AddOrderFromBackOfficeCommand.php"
         role: implementation
         description: "Back-office order creation command"
-      - path: "src/Core/Domain/Order/CommandHandler/AddOrderFromBackOfficeHandler.php"
+      - path: "src/Adapter/Order/CommandHandler/AddOrderFromBackOfficeHandler.php"
         role: implementation
 
   updateOrderStatus:
     id: orders.CMD004
     kind: command
-    correlation_id:
-      location: "$.body.orderId"
-      description: "Order identifier linking status transitions to the originating order."
+    dispatch: inprocess
     name: "UpdateOrderStatus"
     description: "Transition an order to a new state. Validates the transition against the state machine and triggers side effects (email, stock release, invoice generation)."
     delivery_priority: must-have
@@ -58,6 +38,7 @@ operations:
     reacts_to:
       - operation: orders.EVT001
         policy: "Set the order's initial state to the one the payment module reports at validation, such as Awaiting payment or Payment accepted"
+        condition: "the validating payment module named an order state"
     governed_by:
       - rule: orders.CR001
       - rule: orders.TR001
@@ -65,26 +46,18 @@ operations:
       operations: [orders.EVT005]
       mode: all
     code_refs:
+      - path: "classes/PaymentModule.php"
+        role: implementation
+        description: "Proves the reaction to orders.EVT001. Line 608 fires actionValidateOrder; line 627 then constructs an OrderHistory and line 629 calls changeIdOrderState, which is the same call UpdateOrderStatusHandler makes. The transition is reached here directly, not through the command bus."
       - path: "src/Core/Domain/Order/Command/UpdateOrderStatusCommand.php"
         role: implementation
-      - path: "src/Core/Domain/Order/CommandHandler/UpdateOrderStatusHandler.php"
+      - path: "src/Adapter/Order/CommandHandler/UpdateOrderStatusHandler.php"
         role: implementation
 
   cancelOrder:
     id: orders.CMD002
     kind: command
-    exchange:
-      protocol: http
-      endpoint:
-        path: /orders/{orderId}/cancel
-        method: POST
-        group: orders
-    responses:
-      - code: "200"
-        type: success
-        description: "The order as it stands after cancellation."
-        schema: OrderResource
-        contentType: application/json
+    dispatch: inprocess
     name: "CancelOrder"
     description: "Cancel an order before shipment. Releases reserved stock and initiates payment reversal if payment was captured."
     delivery_priority: must-have
@@ -101,6 +74,7 @@ operations:
   bulkChangeOrderStatus:
     id: orders.CMD005
     kind: command
+    dispatch: inprocess
     name: "BulkChangeOrderStatus"
     description: "Change the status of multiple orders in a single batch operation. Used by merchants during daily order processing."
     delivery_priority: should-have
@@ -117,6 +91,7 @@ operations:
   duplicateOrderCart:
     id: orders.CMD006
     kind: command
+    dispatch: inprocess
     name: "DuplicateOrderCart"
     description: "Create a new cart pre-populated with the contents of an existing order. Used when a customer wants to reorder or when a merchant creates a similar order."
     delivery_priority: could-have
@@ -128,6 +103,7 @@ operations:
   changeOrderCurrency:
     id: orders.CMD007
     kind: command
+    dispatch: inprocess
     name: "ChangeOrderCurrency"
     description: "Change the currency of an existing order. Recalculates all amounts using the current exchange rate."
     delivery_priority: should-have
@@ -139,6 +115,7 @@ operations:
   changeDeliveryAddress:
     id: orders.CMD008
     kind: command
+    dispatch: inprocess
     name: "ChangeDeliveryAddress"
     description: "Update the delivery address on an order before shipment. Recalculates shipping cost and tax if the country or zone changes."
     delivery_priority: must-have
@@ -150,6 +127,7 @@ operations:
   changeInvoiceAddress:
     id: orders.CMD009
     kind: command
+    dispatch: inprocess
     name: "ChangeInvoiceAddress"
     description: "Update the invoice/billing address on an order. May trigger invoice regeneration."
     delivery_priority: must-have
@@ -161,6 +139,7 @@ operations:
   addCartRule:
     id: orders.CMD010
     kind: command
+    dispatch: inprocess
     name: "AddCartRule"
     description: "Apply a discount cart rule to an existing order. Recalculates order totals."
     delivery_priority: should-have
@@ -172,6 +151,7 @@ operations:
   removeCartRule:
     id: orders.CMD011
     kind: command
+    dispatch: inprocess
     name: "RemoveCartRule"
     description: "Remove a previously applied cart rule from an order. Recalculates order totals."
     delivery_priority: should-have
@@ -183,6 +163,7 @@ operations:
   setInternalNote:
     id: orders.CMD012
     kind: command
+    dispatch: inprocess
     name: "SetInternalNote"
     description: "Add or update an internal note on an order visible only to back-office users. Not sent to the customer."
     delivery_priority: should-have
@@ -194,6 +175,7 @@ operations:
   resendOrderEmail:
     id: orders.CMD013
     kind: command
+    dispatch: inprocess
     name: "ResendOrderEmail"
     description: "Re-send the order confirmation or status update email to the customer."
     delivery_priority: could-have
@@ -207,6 +189,7 @@ operations:
   updateShippingDetails:
     id: orders.CMD014
     kind: command
+    dispatch: inprocess
     name: "UpdateShippingDetails"
     description: "Update shipping details - tracking number, carrier, and shipping cost - on an order."
     delivery_priority: must-have
@@ -224,55 +207,103 @@ operations:
     id: orders.EVT001
     kind: event
     name: "OrderPlaced"
-    description: "Emitted after successful order creation. Triggers stock reservation, payment capture, and confirmation notification."
+    description: >
+      An order has been validated and written, with its first state, its invoice if one was due,
+      and its confirmation email. PrestaShop publishes this as the hook actionValidateOrder, fired
+      by PaymentModule::validateOrder at the end of the whole sequence, and every payment module
+      and every order-notification module in the ecosystem listens to it. The persisted order also
+      fires actionObjectOrderAddAfter through ObjectModel, earlier and with no context beyond the
+      row. A module that needs the cart, the customer and the totals wants the first.
+    tags: [hook:actionValidateOrder, hook:actionObjectOrderAddAfter]
+    code_refs:
+      - path: "classes/PaymentModule.php"
+        role: implementation
+        description: "Line 608 fires actionValidateOrder; line 211 fires actionValidateOrderBefore ahead of it"
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The hook registry entry for actionValidateOrder, with PrestaShop's own description"
+      - path: "src/Adapter/Order/CommandHandler/AddOrderFromBackOfficeHandler.php"
+        role: implementation
+        description: "The back-office path into validateOrder, so a back-office order fires the same hook as a front-office one"
 
   orderCancelled:
     id: orders.EVT002
     kind: event
     name: "OrderCancelled"
-    description: "Emitted when an order is cancelled. Triggers stock release and payment reversal."
+    description: >
+      Quantities have been cancelled on an order, releasing the stock they held. PrestaShop
+      publishes this as the hook actionProductCancel with action CANCEL_PRODUCT, which is the
+      same hook the three refund paths fire with their own action, so a module distinguishes a
+      cancellation from a refund by the action it is handed. The name is worth reading carefully:
+      PrestaShop cancels line quantities, and an order is fully cancelled only when every line is.
+    tags: [hook:actionProductCancel]
+    code_refs:
+      - path: "src/Adapter/Order/CommandHandler/CancelOrderProductHandler.php"
+        role: implementation
+        description: "Line 187 fires actionProductCancel with CancellationActionType::CANCEL_PRODUCT"
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The hook registry entry for actionProductCancel"
 
   orderShipped:
     id: orders.EVT004
     kind: event
     name: "OrderShipped"
-    description: "Emitted when shipping details are confirmed. Includes tracking number and carrier information."
+    description: >
+      An order's shipping details have been confirmed: its carrier and its tracking number.
+      PrestaShop publishes this as the hook actionAdminOrdersTrackingNumberUpdate, fired by the
+      handler that writes them, and the hook's name is the more accurate of the two - what the
+      code observes is the tracking number being set, not the parcel leaving. A module that wants
+      to tell the customer their order has shipped listens here, because this is the nearest
+      moment the platform publishes.
+    tags: [hook:actionAdminOrdersTrackingNumberUpdate]
+    code_refs:
+      - path: "src/Adapter/Order/CommandHandler/UpdateOrderShippingDetailsHandler.php"
+        role: implementation
+        description: "Fires actionAdminOrdersTrackingNumberUpdate after the carrier and tracking number are written"
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The hook registry entry for actionAdminOrdersTrackingNumberUpdate"
 
   orderStatusChanged:
     id: orders.EVT005
     kind: event
     name: "OrderStatusChanged"
-    description: "Emitted on any order state transition. Carries previous and new state. Triggers email notifications per OrderState configuration."
+    description: >
+      An order has moved to a new state. PrestaShop publishes this twice from OrderHistory, and
+      the pair is the point: actionOrderStatusUpdate fires BEFORE the change is applied, so a
+      module can still see where the order was, and actionOrderStatusPostUpdate fires after, when
+      the stock, the invoice and the emails that the new state implies have all happened. The
+      history row itself fires actionOrderHistoryAddAfter. This is the busiest publication in the
+      orders slice and the one most modules subscribe to.
+    tags: [hook:actionOrderStatusUpdate, hook:actionOrderStatusPostUpdate, hook:actionOrderHistoryAddAfter]
+    code_refs:
+      - path: "classes/order/OrderHistory.php"
+        role: implementation
+        description: "changeIdOrderState fires actionOrderStatusUpdate before and actionOrderStatusPostUpdate after; addWithemail fires actionOrderHistoryAddAfter"
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The registry entries for all three, each with PrestaShop's own description"
 
   # --- Queries ---
 
   getOrderForViewing:
     id: orders.QRY001
     kind: query
-    exchange:
-      protocol: http
-      endpoint:
-        path: /orders/{orderId}
-        method: GET
-        group: orders
-    responses:
-      - code: "200"
-        type: success
-        description: "The order, its lines and its totals."
-        schema: OrderResource
-        contentType: application/json
+    dispatch: inprocess
     name: "GetOrderForViewing"
     description: "Retrieve comprehensive order data for back-office viewing - line items, payments, invoices, status history, messages, and shipping details."
     delivery_priority: must-have
     code_refs:
       - path: "src/Core/Domain/Order/Query/GetOrderForViewing.php"
         role: implementation
-      - path: "src/Core/Domain/Order/QueryHandler/GetOrderForViewingHandler.php"
+      - path: "src/Adapter/Order/QueryHandler/GetOrderForViewingHandler.php"
         role: implementation
 
   getOrderPreview:
     id: orders.QRY002
     kind: query
+    dispatch: inprocess
     name: "GetOrderPreview"
     description: "Retrieve lightweight order preview for list views - summary data without full detail."
     delivery_priority: should-have
@@ -283,6 +314,7 @@ operations:
   getOrderProducts:
     id: orders.QRY003
     kind: query
+    dispatch: inprocess
     name: "GetOrderProducts"
     description: "Retrieve the product list for a specific order with pricing, quantities, and customization details."
     delivery_priority: must-have
@@ -298,6 +330,9 @@ errors:
     category: not-found
     severity: warning
     http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Order/Exception/OrderNotFoundException.php"
+        role: implementation
 
   invalidStateTransition:
     id: orders.ERR004
@@ -307,3 +342,95 @@ errors:
     severity: error
     http_status: 422
     related_rules: [orders.CR001]
+    code_refs:
+      - path: "src/Core/Domain/Order/Exception/ChangeOrderStatusException.php"
+        role: implementation
+        description: "Raised when the requested status cannot be applied; carries the failed and the already-in-status order ids"
+      - path: "src/Core/Domain/Order/Exception/InvalidOrderStateException.php"
+        role: implementation
+        description: "Raised when the target state itself is unusable, for example a delivery state on an order with nothing to deliver"
+
+  orderConstraintViolation:
+    id: orders.ERR008
+    name: "OrderConstraintViolation"
+    description: "An order field failed its own validation before anything was written: an id that is not a positive integer, a field the order does not have, or a value outside its allowed range. This is the order aggregate's catch-all constraint error and carries a code naming which constraint failed."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Order/Exception/OrderConstraintException.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Exception/OrderException.php"
+        role: implementation
+        description: "The base every Order exception extends"
+
+  cannotUpdateOrder:
+    id: orders.ERR009
+    name: "CannotUpdateOrder"
+    description: "The order was found and the request was valid, but persisting the change failed. Distinct from a constraint violation: the merchant is not being told no, the write did not land, so the operation is safe to retry."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/Order/Exception/CannotUpdateOrderException.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Exception/DuplicateOrderCartException.php"
+        role: implementation
+        description: "Raised when duplicating an order's cart fails to produce a new cart"
+
+  orderEmailSendFailed:
+    id: orders.ERR010
+    name: "OrderEmailSendFailed"
+    description: "The order changed but the customer was not told: the confirmation, status-update or transit email could not be sent. The state change is already committed, so this reports a missed notification rather than a failed operation."
+    category: external
+    severity: warning
+    http_status: 502
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/Order/Exception/OrderEmailSendException.php"
+        role: implementation
+      - path: "src/Core/Domain/Order/Exception/TransistEmailSendingException.php"
+        role: implementation
+        description: "The in-transit notification variant; the class name's spelling is the code's own"
+
+  invalidAddressType:
+    id: orders.ERR011
+    name: "InvalidAddressType"
+    description: "An address was supplied for a slot it cannot fill - a delivery address where the invoice address was asked for, or the reverse. PrestaShop keeps the two as separate snapshots on the order, so the distinction is not cosmetic."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Order/Exception/InvalidAddressTypeException.php"
+        role: implementation
+
+questions:
+
+  - id: orders.QN001
+    name: "Order State And Its Next Moves"
+    statement: "What state is this order in, and which states may it move to next?"
+    category: temporal
+    priority: critical
+    bounded_context_ref: prestashop.BC008
+    answered_by: [orders.QRY001, orders.CMD004, orders.EVT005, orders.QRY005]
+    concepts: [orders.CN002, orders.CN010]
+    resolved: true
+    resolution: >
+      GetOrderForViewing reports the current state; the OrderState records the merchant
+      configured say which transitions exist, and UpdateOrderStatus rejects the rest with
+      InvalidStateTransition.
+
+  - id: orders.QN004
+    name: "What Is Still Editable After Placement"
+    statement: "Which parts of this order can still be changed once the customer has placed it?"
+    category: behavioral
+    priority: high
+    bounded_context_ref: prestashop.BC008
+    answered_by: [orders.CMD008, orders.CMD009, orders.CMD007, orders.CMD020, orders.CMD022]
+    concepts: [orders.CN002, orders.CN003]
+    resolved: true
+    resolution: >
+      Addresses and currency stay editable while the order is unpaid; order lines may be
+      added or changed until the product is delivered, at which point
+      CannotEditDeliveredOrderProduct answers instead.

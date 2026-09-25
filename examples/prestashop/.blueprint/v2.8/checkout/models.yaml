@@ -40,7 +40,11 @@ components:
           example: 15
         customizations:
           type: array
-          description: "Product customization fields (text or file uploads)."
+          description: "Product customization fields (text or file uploads). A product with no customization fields sends none, and a product that requires one is rejected without it."
+          example:
+            - fieldId: 1
+              value: "Happy Birthday, John!"
+              type: "text"
           items:
             type: object
             properties:
@@ -133,12 +137,19 @@ components:
           example: 1
         products:
           type: array
-          description: "Cart line items."
+          description: "The cart's lines. One line per product, combination and customization triple, which is why the same product can appear twice with different engraving."
+          example:
+            - productId: 42
+              quantity: 2
           items:
             $ref: "#/components/schemas/CartItem"
         totals:
           type: object
-          description: "Computed cart totals."
+          description: "What the cart costs, computed rather than stored: PrestaShop recalculates every figure from the lines, the applied discounts and the selected carrier each time the cart is read."
+          example:
+            totalProducts: "1999.980000"
+            totalShipping: "7.500000"
+            totalOrderAmount: "2358.980000"
           properties:
             totalProducts:
               type: string
@@ -170,7 +181,10 @@ components:
               example: "2358.980000"
         carrierInfo:
           type: object
-          description: "Selected shipping carrier details."
+          description: "The carrier the cart is currently priced for. Changing it changes the shipping total and can change whether a free-shipping discount applies."
+          example:
+            carrierId: 2
+            carrierName: "My carrier"
           properties:
             carrierId:
               type: integer
@@ -186,7 +200,10 @@ components:
               example: "2,"
         deliveryAddress:
           type: object
-          description: "Delivery address summary."
+          description: "Where the cart would ship. It sets the tax rules and the shipping cost, so a cart with no delivery address has no final total."
+          example:
+            addressId: 5
+            alias: "My home"
           properties:
             addressId:
               type: integer
@@ -194,11 +211,14 @@ components:
               example: 5
             alias:
               type: string
-              description: "Address alias."
+              description: "The label the customer gave this address, which is how a back-office operator tells two of a customer's addresses apart."
               example: "My home"
         invoiceAddress:
           type: object
-          description: "Invoice address summary."
+          description: "Where the invoice is addressed. Usually the same record as the delivery address; when it differs, it is the one that decides the billing country on the invoice."
+          example:
+            addressId: 5
+            alias: "My home"
           properties:
             addressId:
               type: integer
@@ -206,17 +226,20 @@ components:
               example: 5
             alias:
               type: string
-              description: "Address alias."
+              description: "The label the customer gave this address. Often the same record as the delivery address, which is the common case rather than the interesting one."
               example: "My home"
         appliedCartRules:
           type: array
-          description: "Cart rules currently applied to this cart."
+          description: "The discounts attached to this cart, in the order they were applied. Order matters when two are mutually exclusive or when one is a percentage of a total another has already reduced."
+          example:
+            - cartRuleId: 12
+              name: "Spring sale 10%"
           items:
             type: object
             properties:
               cartRuleId:
                 type: integer
-                description: "Cart rule identifier."
+                description: "The discount attached to this cart, by the id the Discount routes address it with."
                 example: 12
               name:
                 type: string
@@ -227,9 +250,9 @@ components:
                 description: "Computed reduction amount."
                 example: "50.000000"
       code_refs:
-        - path: "src/Core/Domain/Cart/QueryResult/CartForViewing.php"
+        - path: "src/Core/Domain/Cart/QueryResult/CartView.php"
           role: schema
-          description: "CartForViewing QueryResult - the master cart read model"
+          description: "CartView is what GetCartForViewingHandler returns - the master cart read model. The class is CartView, not CartForViewing: only the query carries that name."
 
     CartItem:
       x-model-id: MDL203
@@ -289,7 +312,11 @@ components:
           example: "/img/p/42/42-cart_default.jpg"
         customizations:
           type: array
-          description: "Applied customization fields."
+          description: "What the shopper filled in for this line. Two lines of the same product with different customizations are separate lines and are priced separately."
+          example:
+            - fieldId: 1
+              fieldName: "Engraving text"
+              value: "Happy Birthday, John!"
           items:
             type: object
             properties:
@@ -370,7 +397,7 @@ components:
           example: "50.000000"
         minimumAmountCurrency:
           type: integer
-          description: "Currency for the minimum amount threshold."
+          description: "The currency the minimum amount is expressed in. It matters because a cart priced in another currency is converted before the threshold is tested."
           example: 1
         minimumAmountTax:
           type: boolean
@@ -408,7 +435,10 @@ components:
           example: true
         conditions:
           type: object
-          description: "Eligibility conditions for the discount."
+          description: "Everything that has to be true of a cart before this discount may be attached to it. Omitting it creates a discount any cart qualifies for."
+          example:
+            customerGroupIds: [1, 2]
+            countryIds: [8, 13]
           properties:
             customerGroupIds:
               type: array
@@ -424,7 +454,10 @@ components:
               example: [8, 13]
             productRuleGroups:
               type: array
-              description: "Product selection conditions defining qualifying products."
+              description: "Groups of product conditions the cart must satisfy. Groups are combined with AND; within a group the listed products are alternatives."
+              example:
+                - quantity: 1
+                  productIds: [42, 43, 44]
               items:
                 type: object
                 properties:
@@ -511,7 +544,7 @@ components:
           example: "50.000000"
         minimumAmountCurrency:
           type: integer
-          description: "Currency for minimum amount."
+          description: "The currency the minimum amount is expressed in; a cart in another currency is converted before the threshold is tested."
           example: 1
         minimumAmountTax:
           type: boolean
@@ -553,28 +586,42 @@ components:
           example: true
         conditions:
           type: object
-          description: "Eligibility conditions."
+          description: "Everything that has to be true of a cart before this discount may be attached to it. An empty conditions object means the discount applies to any cart, which is what a shop-wide voucher looks like."
+          example:
+            customerGroupIds: [1, 2]
+            countryIds: [8, 13]
+            productRuleGroups:
+              - quantity: 1
+                productIds: [42, 43, 44]
           properties:
             customerGroupIds:
               type: array
+              description: "Restrict the discount to shoppers in these customer groups. Empty means every group."
               items:
                 type: integer
               example: [1, 2]
             countryIds:
               type: array
+              description: "Restrict the discount to delivery addresses in these countries. Empty means every country."
               items:
                 type: integer
               example: [8, 13]
             productRuleGroups:
               type: array
+              description: "Groups of product conditions the cart must satisfy. Groups are combined with AND, so a cart must satisfy every group; within a group the listed products are alternatives."
+              example:
+                - quantity: 1
+                  productIds: [42, 43, 44]
               items:
                 type: object
                 properties:
                   quantity:
                     type: integer
+                    description: "How many units of the qualifying products the cart must hold for this group to be satisfied."
                     example: 1
                   productIds:
                     type: array
+                    description: "The products that satisfy this group. Any of them counts towards the quantity."
                     items:
                       type: integer
                     example: [42, 43, 44]
@@ -608,7 +655,7 @@ components:
           example: "B2B Wholesale Discount - Laptops"
         shopId:
           type: integer
-          description: "Target shop (0 for all shops)."
+          description: "Which shop of a multi-store installation the rule applies to. Zero means every shop, which is the default a single-shop install always carries."
           example: 1
         currencyId:
           type: integer
@@ -651,7 +698,10 @@ components:
           example: "2026-12-31T23:59:59"
         conditionGroups:
           type: array
-          description: "Product condition groups defining which products qualify."
+          description: "Which products the rule prices, expressed as groups of conditions. A rule with no groups prices the whole catalog."
+          example:
+            - conditionType: "category"
+              values: [5, 12]
           items:
             type: object
             properties:
@@ -700,7 +750,7 @@ components:
           example: "B2B Wholesale Discount - Laptops"
         shopId:
           type: integer
-          description: "Target shop."
+          description: "Which shop of a multi-store installation the rule applies to. Zero means every shop."
           example: 1
         currencyId:
           type: integer
@@ -743,16 +793,21 @@ components:
           example: "2026-12-31T23:59:59"
         conditionGroups:
           type: array
-          description: "Product condition groups."
+          description: "Which products the rule prices, expressed as groups of conditions. A rule with no groups prices the whole catalog."
+          example:
+            - conditionType: "category"
+              values: [5, 12]
           items:
             type: object
             properties:
               conditionType:
                 type: string
                 enum: [product, attribute, category, manufacturer, supplier, feature]
+                description: "What the values are ids of, and therefore how the rule selects products: by product, by attribute, by category, by manufacturer, by supplier or by feature."
                 example: "category"
               values:
                 type: array
+                description: "The ids of the chosen kind that this group matches."
                 items:
                   type: integer
                 example: [5, 12]
@@ -760,3 +815,154 @@ components:
         - path: "src/Core/Domain/CatalogPriceRule/Query/GetCatalogPriceRuleForEditing.php"
           role: schema
           description: "GetCatalogPriceRuleForEditing QueryResult - master catalog price rule read model"
+
+    CartEmailRequest:
+      x-model-id: MDL1800
+      purpose: command-payload
+      description: "What PUT /carts/{cartId}/emails carries. The route declares allowEmptyBody, so the cart id in the path is the whole message; this model exists to say that, and to give the generated contract a resource shape rather than a bare path."
+      represents:
+        - concept: checkout.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              cartId: CAT200
+      type: object
+      required: [cartId]
+      properties:
+        cartId:
+          type: integer
+          description: "The cart whose link is mailed to the customer it belongs to. Taken from the path, not the body."
+          example: 71
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Cart/CartEmail.php"
+          role: schema
+          description: "The CartEmail resource declares exactly this one identifier property."
+
+    FoundCartRule:
+      x-model-id: MDL1801
+      purpose: read-model
+      description: "One hit from GET /cart-rules/search: just enough to recognise a discount and pick it. Deliberately not the full discount - an operator assisting a sale needs the name and the code, and the full record is one more call away at GET /discounts/{discountId}."
+      represents:
+        - concept: checkout.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              cartRuleId: CAT213
+              name: CAT214
+              code: CAT215
+      type: object
+      properties:
+        cartRuleId:
+          type: integer
+          description: "The discount's identifier, the key to fetch it in full or to attach it to a cart."
+          example: 12
+        name:
+          type: string
+          description: "The discount's display name in the operator's language."
+          example: "Spring sale 10%"
+        code:
+          type: string
+          description: "The voucher code a shopper would type. Empty for an automatic discount, which is how the two kinds are told apart in the result list."
+          example: "SPRING10"
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/CartRule/FoundCartRule.php"
+          role: schema
+          description: "Declares cartRuleId, name and code, and nothing else."
+
+    DeleteDiscountsPayload:
+      x-model-id: MDL1802
+      purpose: command-payload
+      description: "The body DELETE /discounts/bulk-delete carries. The by-id route DELETE /discounts/{discountId} takes no body at all, which is why the payload is optional on the operation that serves both."
+      represents:
+        - concept: checkout.CN004
+          kind: api
+      type: object
+      required: [discountIds]
+      properties:
+        discountIds:
+          type: array
+          description: "The discounts to delete. The handler reports failure per discount rather than aborting the batch, so a partial result is normal and the caller must read the response."
+          items:
+            type: integer
+          example: [1, 3]
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/BulkDeleteDiscounts.php"
+          role: schema
+          description: "Declares discountIds, NotBlank, and spells the request body out in openapiContext."
+
+    BulkUpdateDiscountStatusPayload:
+      x-model-id: MDL1803
+      purpose: command-payload
+      description: "The body PATCH /discounts/bulk-update-status carries: which discounts to switch, and which way. It is how a shop turns a whole campaign on at a date and off again after it."
+      represents:
+        - concept: checkout.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              enabled: CAT225
+      type: object
+      required: [discountIds, enabled]
+      properties:
+        discountIds:
+          type: array
+          description: "The discounts to switch."
+          items:
+            type: integer
+          example: [1, 3]
+        enabled:
+          type: boolean
+          description: "True to make the listed discounts usable, false to suspend them. The resource maps this to the command's newStatus."
+          example: true
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/BulkUpdateStatusDiscounts.php"
+          role: schema
+          description: "Declares discountIds and enabled; CQRSCommandMapping renames enabled to newStatus."
+
+    DiscountTypeListItem:
+      x-model-id: MDL1804
+      purpose: read-model
+      description: "One entry of GET /discounts/types. The list is why a module can contribute a discount type at all: `core` tells a reader whether PrestaShop ships the type or a module added it, and `enabled` whether a shop may currently pick it."
+      represents:
+        - concept: checkout.CN004
+          kind: api
+      type: object
+      properties:
+        discountTypeId:
+          type: integer
+          description: "The type's identifier, stored on every discount of that type."
+          example: 2
+        type:
+          type: string
+          description: "The type's machine name, which is what the discount record carries."
+          example: "free_shipping"
+        names:
+          type: object
+          description: "The type's display name per language id, as shown in the type selector on the discount form."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Free shipping"
+            "2": "Livraison offerte"
+        descriptions:
+          type: object
+          description: "A sentence per language id explaining what the type does, shown under the selector."
+          additionalProperties:
+            type: string
+          example:
+            "1": "The shopper pays no delivery charge."
+            "2": "Le client ne paie pas de frais de livraison."
+        core:
+          type: boolean
+          description: "True when PrestaShop ships the type, false when a module contributed it. A shop that uninstalls the module keeps the discounts and loses the type."
+          example: true
+        enabled:
+          type: boolean
+          description: "Whether a new discount may currently be given this type."
+          example: true
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/DiscountTypeList.php"
+          role: schema
+          description: "Declares discountTypeId, type, names, descriptions, core and enabled."

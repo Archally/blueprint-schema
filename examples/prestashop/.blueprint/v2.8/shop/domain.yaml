@@ -1,5 +1,15 @@
 ---
 name: "Shop & Settings"
+description: >-
+  Eight small back-office domains that configure the platform rather than sell anything: the shop's
+  branding and its multi-store records, the physical store locations a shopper sees on the locator,
+  the referrer search engines analytics reads, the search-term aliases that make storefront search
+  forgiving, the product search index itself, the 'Contact Us' departments, the employee
+  notification markers and the dismissable dashboard cards. The Admin API reaches 19 of the 28
+  operations here, across five resource folders in ps_apiresources - Store, SearchEngine,
+  SearchAlias, Contact and ShowcaseCard. The other nine, which are the ones about the shop itself,
+  its logos, its search index and its notifications, have no route and execute over the Symfony
+  command bus; they carry `dispatch: inprocess` to say so.
 version: "1.0.0"
 scope: shop
 tags: [platform-config]
@@ -11,10 +21,18 @@ operations:
   uploadLogos:
     id: shop.CMD001
     kind: command
+    payload:
+      schema: UploadLogosPayload
+      contentType: application/json
+      description: "The four image files, carried over the command bus from the logo form."
+    dispatch: inprocess
     name: "UploadLogos"
-    description: "Upload store branding images: header logo, invoice logo, mail logo, and favicon. Each file type has its own extension validation (logo: jpg/gif/png, favicon: ico only)."
+    description: "Replace the shop's branding images: the header logo, the invoice logo, the mail logo and the favicon. Each accepts its own extensions - jpg, gif or png for the three logos, ico only for the favicon - and the handler stamps PS_IMG_UPDATE_TIME so every cached rendering of them expires. No Admin API route serves it; the back-office Design > Theme logo form dispatches the command."
     delivery_priority: should-have
     initiated_by: [shop.ACT001]
+    materializes:
+      - concept: shop.CN001
+        action: update
     produces:
       operations: [shop.EVT001]
       mode: all
@@ -28,13 +46,35 @@ operations:
     id: shop.EVT001
     kind: event
     name: "LogosUploaded"
-    description: "Store branding images updated."
+    description: >-
+      One or more of the shop's four branding images (header, mail, invoice, favicon) have been
+      replaced on disk and their configuration keys repointed. The hook a module receives is
+      actionShopLogoSave, and it does not come from the CQRS handler at all: the handler writes
+      the files and fires nothing. The hook is fired by the generic settings-form handler, which
+      builds the name from the form's configured hookName, so what a module is really listening
+      to is "the shop logos form was submitted", not "the logo files changed". A logo replaced by
+      any other path is silent.
+    tags: ["hook:actionShopLogoSave"]
+    code_refs:
+      - path: "src/Core/Form/Handler.php"
+        role: implementation
+        description: "Line 107 dispatches action{hookName}Save through the hook dispatcher after the form data is saved."
+      - path: "src/PrestaShopBundle/Resources/config/services/bundle/form/form_handler.yml"
+        role: implementation
+        description: "Lines 514-515 give the ShopLogosType form handler the hookName ShopLogo, so the dispatched name resolves to actionShopLogoSave."
+      - path: "src/Adapter/Shop/CommandHandler/UploadLogosHandler.php"
+        role: implementation
+        description: "The CQRS handler writes the image files. Searched for Hook::exec and dispatchWithParameters on 2026-09-19: none."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The hook registry; actionShopLogoSave is registered at line 1749."
 
   getLogosPaths:
     id: shop.QRY001
     kind: query
+    dispatch: inprocess
     name: "GetLogosPaths"
-    description: "Retrieve current logo file paths for the shop."
+    description: "Read the file paths of the shop's four branding images so the logo form can show what is currently in use. No Admin API route serves it."
     delivery_priority: should-have
     code_refs:
       - path: "src/Core/Domain/Shop/Query/GetLogosPaths.php"
@@ -43,8 +83,14 @@ operations:
   searchShops:
     id: shop.QRY002
     kind: query
+    payload:
+      schema: ShopResource
+      contentType: application/json
+      description: "What the query returns: one entry per matching shop."
+      required: false
+    dispatch: inprocess
     name: "SearchShops"
-    description: "Search for shops in a multi-store installation."
+    description: "Find shops in a multi-store installation by name, which is what populates the shop selector a back-office user switches context with. No Admin API route serves it; the two core Admin API resources are Language and ApiClient."
     delivery_priority: should-have
     code_refs:
       - path: "src/Core/Domain/Shop/Query/SearchShops.php"
@@ -55,188 +101,519 @@ operations:
   deleteStore:
     id: shop.CMD002
     kind: command
+    responses:
+      - code: "204"
+        type: success
+        description: "The store location is gone."
+      - code: "404"
+        type: failure
+        description: "No store with that id."
+        error: shop.ERR004
+      - code: "422"
+        type: failure
+        description: "The store row could not be removed."
+        error: shop.ERR005
+    payload:
+      schema: StoreResource
+      contentType: application/json
+      description: "What the route addresses. The request carries no body; the store id is a path parameter."
+      required: false
+    exchange:
+      protocol: http
+      endpoint:
+        path: /stores/{storeId}
+        method: DELETE
+        group: store
     name: "DeleteStore"
-    description: "Remove a physical store location."
+    description: "Remove one physical store location, the kind a shopper sees on the store locator page. Served at DELETE /stores/{storeId}, scope store_write."
     delivery_priority: should-have
     initiated_by: [shop.ACT001]
+    materializes:
+      - concept: shop.CN002
+        action: delete
     produces:
       operations: [shop.EVT002]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Store/Command/DeleteStoreCommand.php"
         role: implementation
+      - path: "src/Adapter/Store/CommandHandler/DeleteStoreHandler.php"
+        role: implementation
+        description: "Delegates to StoreRepository::delete, which calls deleteObjectModel on the Store."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Store/Store.php"
+        role: api-spec
+        description: "CQRSDelete on /stores/{storeId} names DeleteStoreCommand; scope store_write."
 
   storeDeleted:
     id: shop.EVT002
     kind: event
     name: "StoreDeleted"
-    description: "Physical store location removed."
+    description: >-
+      A physical store location no longer exists, so it drops out of the store locator and out of
+      any click-and-collect choice that pointed at it. Modules receive
+      actionObjectStoreDeleteAfter from ObjectModel; Store fires no delete hook of its own, and a
+      bulk delete loops over the same path, so a module receives one hook per store.
+    tags: ["hook:actionObjectStoreDeleteAfter"]
+    code_refs:
+      - path: "src/Core/Domain/Store/Repository/StoreRepository.php"
+        role: implementation
+        description: "Line 86 calls deleteObjectModel, which reaches ObjectModel::delete."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 923 fires actionObject<Class>DeleteAfter; Store extends ObjectModel, so the name resolves to actionObjectStoreDeleteAfter."
 
   toggleStoreStatus:
     id: shop.CMD003
     kind: command
+    responses:
+      - code: "200"
+        type: success
+        description: "The store carries the opposite visibility."
+      - code: "404"
+        type: failure
+        description: "No store with that id."
+        error: shop.ERR004
+      - code: "422"
+        type: failure
+        description: "The visibility flag could not be written."
+        error: shop.ERR006
+    payload:
+      schema: StoreResource
+      contentType: application/json
+      description: "What the route addresses. The handler flips `active` itself, so the request carries no body."
+      required: false
+    exchange:
+      protocol: http
+      endpoint:
+        path: /stores/{storeId}/toggle-status
+        method: PUT
+        group: store
     name: "ToggleStoreStatus"
-    description: "Toggle a store's active/inactive visibility status."
+    description: "Flip one store between shown and hidden on the storefront locator. The handler reads the store, inverts active and writes back that single property, so nothing else on the record can change by accident. Served at PUT /stores/{storeId}/toggle-status; the request's `enabled` is mapped to the domain's `active`."
     delivery_priority: should-have
     initiated_by: [shop.ACT001]
+    materializes:
+      - concept: shop.CN002
+        action: update
     produces:
       operations: [shop.EVT003]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Store/Command/ToggleStoreStatusCommand.php"
         role: implementation
+      - path: "src/Adapter/Store/CommandHandler/ToggleStoreStatusHandler.php"
+        role: implementation
+        description: "Reads the store, flips active, and partially updates that one property."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Store/Store.php"
+        role: api-spec
+        description: "CQRSUpdate on /stores/{storeId}/toggle-status names ToggleStoreStatusCommand; COMMAND_MAPPING renames enabled to active."
 
   storeStatusToggled:
     id: shop.EVT003
     kind: event
     name: "StoreStatusToggled"
-    description: "Store visibility status changed."
+    description: >-
+      A store location has been shown or hidden in the storefront locator without any other field
+      changing. Modules receive actionObjectStoreUpdateAfter - the same hook a full store edit
+      fires. The toggle goes through a partial update, which sets the fields to write and then
+      calls the ordinary ObjectModel::update, so a module cannot tell a visibility flip from a
+      change of address by the hook alone; it has to compare state itself.
+    tags: ["hook:actionObjectStoreUpdateAfter"]
+    code_refs:
+      - path: "src/Adapter/Store/CommandHandler/ToggleStoreStatusHandler.php"
+        role: implementation
+        description: "Line 40 calls partialUpdate on the store repository with the active field only."
+      - path: "src/Core/Repository/AbstractObjectModelRepository.php"
+        role: implementation
+        description: "Line 141 partiallyUpdateObjectModel defers to updateObjectModel at line 104, which calls ObjectModel::update."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847 fires actionObject<Class>UpdateAfter, resolving to actionObjectStoreUpdateAfter."
 
   bulkDeleteStore:
     id: shop.CMD004
     kind: command
+    responses:
+      - code: "204"
+        type: success
+        description: "Every listed store is gone."
+      - code: "422"
+        type: failure
+        description: "At least one listed store could not be removed."
+        error: shop.ERR005
+    payload:
+      schema: BulkDeleteStoresPayload
+      contentType: application/json
+      description: "Which store locations to remove."
+    exchange:
+      protocol: http
+      endpoint:
+        path: /stores/bulk-delete
+        method: DELETE
+        group: store
     name: "BulkDeleteStore"
-    description: "Delete multiple physical store locations at once."
+    description: "Delete a named list of physical store locations in one call. Served at DELETE /stores/bulk-delete with a non-empty storeIds body, which is why it is a separate resource class from the by-id delete."
     delivery_priority: could-have
     initiated_by: [shop.ACT001]
+    materializes:
+      - concept: shop.CN002
+        action: delete
     produces:
       operations: [shop.EVT002]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Store/Command/BulkDeleteStoreCommand.php"
         role: implementation
+      - path: "src/Adapter/Store/CommandHandler/BulkDeleteStoreHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Store/BulkDeleteStores.php"
+        role: api-spec
+        description: "CQRSDelete on /stores/bulk-delete names BulkDeleteStoreCommand; the body carries storeIds and may not be empty."
 
   bulkUpdateStoreStatus:
     id: shop.CMD005
     kind: command
+    responses:
+      - code: "200"
+        type: success
+        description: "Every listed store carries the requested visibility."
+      - code: "422"
+        type: failure
+        description: "At least one listed store could not be switched."
+        error: shop.ERR006
+    payload:
+      schema: BulkUpdateStoreStatusPayload
+      contentType: application/json
+      description: "Which store locations to switch, and which way."
+    exchange:
+      protocol: http
+      endpoint:
+        path: /stores/bulk-update-status
+        method: PUT
+        group: store
     name: "BulkUpdateStoreStatus"
-    description: "Enable or disable multiple store locations at once."
+    description: "Show or hide a named list of store locations in one call, the batch form of ToggleStoreStatus. Served at PUT /stores/bulk-update-status with storeIds and enabled in the body."
     delivery_priority: could-have
     initiated_by: [shop.ACT001]
+    materializes:
+      - concept: shop.CN002
+        action: update
     produces:
       operations: [shop.EVT003]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Store/Command/BulkUpdateStoreStatusCommand.php"
         role: implementation
+      - path: "src/Adapter/Store/CommandHandler/BulkUpdateStoreStatusHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Store/BulkUpdateStatusStores.php"
+        role: api-spec
+        description: "CQRSUpdate on /stores/bulk-update-status names BulkUpdateStoreStatusCommand; the body carries storeIds and enabled."
 
   getStoreForEditing:
     id: shop.QRY003
     kind: query
+    payload:
+      schema: StoreResource
+      contentType: application/json
+      description: "What the query returns: the store in full."
+      required: false
     exchange:
       protocol: http
       endpoint:
-        path: /shop/stores/{storeId}
+        path: /stores/{storeId}
         method: GET
-        group: shop
+        group: store
     responses:
       - code: "200"
         type: success
         description: "The store, in the shape the edit form needs."
         schema: StoreResource
         contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No store with that id."
+        error: shop.ERR004
     name: "GetStoreForEditing"
-    description: "Retrieve store details for the edit form."
+    description: "Read one physical store location in full - its localized names, address, coordinates, phone, weekly opening hours and whether it is shown on the storefront. Served at GET /stores/{storeId}, scope store_read. The path was /shop/stores/{storeId} in this model; PrestaShop serves no such route."
     delivery_priority: should-have
     code_refs:
       - path: "src/Core/Domain/Store/Query/GetStoreForEditing.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Store/Store.php"
+        role: api-spec
+        description: "CQRSGet on /stores/{storeId} names GetStoreForEditing; QUERY_MAPPING renames active to enabled."
 
   # ── SearchEngine (4 CMD + 1 QRY) ──
 
   addSearchEngine:
     id: shop.CMD006
     kind: command
+    responses:
+      - code: "201"
+        type: success
+        description: "The referrer search engine is registered."
+    payload:
+      schema: CreateSearchEnginePayload
+      contentType: application/json
+      description: "The hostname and query parameter of the referrer to register."
+    exchange:
+      protocol: http
+      endpoint:
+        path: /search-engines
+        method: POST
+        group: search-engine
     name: "AddSearchEngine"
-    description: "Register a new SEO referrer search engine for analytics tracking."
+    description: "Register a referrer search engine - a hostname and the URL parameter it carries search terms in - so PrestaShop can tell which keyword brought a visitor in. Served at POST /search-engines, scope search_engine_write."
     delivery_priority: should-have
     initiated_by: [shop.ACT002]
+    materializes:
+      - concept: shop.CN003
+        action: create
     produces:
       operations: [shop.EVT004]
       mode: all
     code_refs:
       - path: "src/Core/Domain/SearchEngine/Command/AddSearchEngineCommand.php"
         role: implementation
+      - path: "src/Adapter/SearchEngine/CommandHandler/AddSearchEngineHandler.php"
+        role: implementation
+        description: "Constructs a SearchEngine ObjectModel and calls add."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchEngine/SearchEngine.php"
+        role: api-spec
+        description: "CQRSCreate on /search-engines names AddSearchEngineCommand; scope search_engine_write."
 
   searchEngineAdded:
     id: shop.EVT004
     kind: event
     name: "SearchEngineAdded"
-    description: "New SEO referrer search engine registered."
+    description: >-
+      A referrer search engine is now registered, so traffic arriving with its query-string
+      pattern is attributed to it in the referrer statistics. Modules receive
+      actionObjectSearchEngineAddAfter; the handler constructs the legacy SearchEngine object and
+      adds it, and neither the handler nor the class fires a hook of its own.
+    tags: ["hook:actionObjectSearchEngineAddAfter"]
+    code_refs:
+      - path: "src/Adapter/SearchEngine/CommandHandler/AddSearchEngineHandler.php"
+        role: implementation
+        description: "Line 33 constructs a SearchEngine and line 43 calls add() on it."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 615 fires actionObject<Class>AddAfter; SearchEngine extends ObjectModel, so the name resolves to actionObjectSearchEngineAddAfter."
 
   editSearchEngine:
     id: shop.CMD007
     kind: command
+    responses:
+      - code: "200"
+        type: success
+        description: "The referrer carries the sent fields."
+      - code: "404"
+        type: failure
+        description: "No search engine with that id."
+        error: shop.ERR002
+    payload:
+      schema: CreateSearchEnginePayload
+      contentType: application/json
+      description: "The same shape as the create, sent partially: a PATCH carries only the field being changed."
+    exchange:
+      protocol: http
+      endpoint:
+        path: /search-engines/{searchEngineId}
+        method: PATCH
+        group: search-engine
     name: "EditSearchEngine"
-    description: "Update an SEO referrer search engine's server and query key."
+    description: "Change a registered search engine's hostname or its query parameter. Served as PATCH /search-engines/{searchEngineId}, so a caller may send only the one it is changing."
     delivery_priority: should-have
     initiated_by: [shop.ACT002]
+    materializes:
+      - concept: shop.CN003
+        action: update
     produces:
       operations: [shop.EVT005]
       mode: all
     code_refs:
       - path: "src/Core/Domain/SearchEngine/Command/EditSearchEngineCommand.php"
         role: implementation
+      - path: "src/Adapter/SearchEngine/CommandHandler/EditSearchEngineHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchEngine/SearchEngine.php"
+        role: api-spec
+        description: "CQRSPartialUpdate on /search-engines/{searchEngineId} names EditSearchEngineCommand."
 
   searchEngineEdited:
     id: shop.EVT005
     kind: event
     name: "SearchEngineEdited"
-    description: "SEO referrer search engine updated."
+    description: >-
+      A referrer search engine's server pattern or query-string key changed, so referrer
+      attribution changes for traffic arriving from it. Modules receive
+      actionObjectSearchEngineUpdateAfter.
+    tags: ["hook:actionObjectSearchEngineUpdateAfter"]
+    code_refs:
+      - path: "src/Adapter/SearchEngine/CommandHandler/EditSearchEngineHandler.php"
+        role: implementation
+        description: "Line 46 calls update() on the loaded SearchEngine."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847 fires actionObject<Class>UpdateAfter, resolving to actionObjectSearchEngineUpdateAfter."
 
   deleteSearchEngine:
     id: shop.CMD008
     kind: command
+    responses:
+      - code: "204"
+        type: success
+        description: "The referrer search engine is gone."
+      - code: "404"
+        type: failure
+        description: "No search engine with that id."
+        error: shop.ERR002
+    payload:
+      schema: SearchEngineResource
+      contentType: application/json
+      description: "What the route addresses. The request carries no body; the id is a path parameter."
+      required: false
+    exchange:
+      protocol: http
+      endpoint:
+        path: /search-engines/{searchEngineId}
+        method: DELETE
+        group: search-engine
     name: "DeleteSearchEngine"
-    description: "Remove an SEO referrer search engine."
+    description: "Remove one registered referrer search engine. It has its own resource class in the Admin API, separate from the one serving get and create, and is served at DELETE /search-engines/{searchEngineId}."
     delivery_priority: should-have
     initiated_by: [shop.ACT002]
+    materializes:
+      - concept: shop.CN003
+        action: delete
     produces:
       operations: [shop.EVT006]
       mode: all
     code_refs:
       - path: "src/Core/Domain/SearchEngine/Command/DeleteSearchEngineCommand.php"
         role: implementation
+      - path: "src/Adapter/SearchEngine/CommandHandler/DeleteSearchEngineHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchEngine/DeleteSearchEngine.php"
+        role: api-spec
+        description: "CQRSDelete on /search-engines/{searchEngineId} names DeleteSearchEngineCommand. A resource of its own, separate from SearchEngine.php."
 
   searchEngineDeleted:
     id: shop.EVT006
     kind: event
     name: "SearchEngineDeleted"
-    description: "SEO referrer search engine removed."
+    description: >-
+      A referrer search engine is no longer registered, so traffic matching its pattern falls back
+      to being counted as an ordinary referrer. Modules receive
+      actionObjectSearchEngineDeleteAfter, once per engine under a bulk delete.
+    tags: ["hook:actionObjectSearchEngineDeleteAfter"]
+    code_refs:
+      - path: "src/Adapter/SearchEngine/CommandHandler/DeleteSearchEngineHandler.php"
+        role: implementation
+        description: "Line 35 calls delete() on the loaded SearchEngine; BulkDeleteSearchEngineHandler loops over the same path."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 923 fires actionObject<Class>DeleteAfter, resolving to actionObjectSearchEngineDeleteAfter."
 
   bulkDeleteSearchEngine:
     id: shop.CMD009
     kind: command
+    responses:
+      - code: "204"
+        type: success
+        description: "Every listed referrer is gone."
+    payload:
+      schema: BulkDeleteSearchEnginesPayload
+      contentType: application/json
+      description: "Which referrer search engines to remove."
+    exchange:
+      protocol: http
+      endpoint:
+        path: /search-engines/bulk-delete
+        method: DELETE
+        group: search-engine
     name: "BulkDeleteSearchEngine"
-    description: "Delete multiple SEO referrer search engines at once."
+    description: "Delete a named list of referrer search engines in one call. Served at DELETE /search-engines/bulk-delete with a non-empty searchEngineIds body."
     delivery_priority: could-have
     initiated_by: [shop.ACT002]
+    materializes:
+      - concept: shop.CN003
+        action: delete
     produces:
       operations: [shop.EVT006]
       mode: all
     code_refs:
       - path: "src/Core/Domain/SearchEngine/Command/BulkDeleteSearchEngineCommand.php"
         role: implementation
+      - path: "src/Adapter/SearchEngine/CommandHandler/BulkDeleteSearchEngineHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchEngine/BulkDeleteSearchEngines.php"
+        role: api-spec
+        description: "CQRSDelete on /search-engines/bulk-delete names BulkDeleteSearchEngineCommand; the body carries searchEngineIds, at least one."
 
   getSearchEngineForEditing:
     id: shop.QRY004
     kind: query
+    responses:
+      - code: "200"
+        type: success
+        description: "The referrer's hostname and query parameter."
+      - code: "404"
+        type: failure
+        description: "No search engine with that id."
+        error: shop.ERR002
+    payload:
+      schema: SearchEngineResource
+      contentType: application/json
+      description: "What the query returns."
+      required: false
+    exchange:
+      protocol: http
+      endpoint:
+        path: /search-engines/{searchEngineId}
+        method: GET
+        group: search-engine
     name: "GetSearchEngineForEditing"
-    description: "Retrieve search engine details for the edit form."
+    description: "Read one referrer search engine's hostname and query parameter, in the shape the edit form and the Admin API both use. Served at GET /search-engines/{searchEngineId}, scope search_engine_read."
     delivery_priority: should-have
     code_refs:
       - path: "src/Core/Domain/SearchEngine/Query/GetSearchEngineForEditing.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchEngine/SearchEngine.php"
+        role: api-spec
+        description: "CQRSGet on /search-engines/{searchEngineId} names GetSearchEngineForEditing; scope search_engine_read."
 
   # ── Alias (4 CMD + 3 QRY) ──
 
   addSearchTermAliases:
     id: shop.CMD010
     kind: command
+    responses:
+      - code: "201"
+        type: success
+        description: "The search term carries its alias list."
+      - code: "422"
+        type: failure
+        description: "The term or one of its aliases failed a constraint."
+        error: shop.ERR009
+    payload:
+      schema: SearchAliasWritePayload
+      contentType: application/json
+      description: "The search term and the alias list to store against it."
+    exchange:
+      protocol: http
+      endpoint:
+        path: /search-aliases
+        method: POST
+        group: search-alias
     name: "AddSearchTermAliases"
-    description: "Create a new search term alias mapping (e.g., 'tshirt' → 't-shirt')."
+    description: "Map a search term a shopper might type to the terms the catalog actually indexes, so a search for 'tshirt' finds products named 't-shirt'. One call carries a search term and a list of aliases, each with its own enabled flag. Served at POST /search-aliases, scope search_alias_write."
     delivery_priority: should-have
     initiated_by: [shop.ACT002]
+    materializes:
+      - concept: shop.CN004
+        action: create
     produces:
       operations: [shop.EVT007]
       mode: all
@@ -245,20 +622,65 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Alias/Command/AddSearchTermAliasesCommand.php"
         role: implementation
+      - path: "src/Adapter/Alias/Repository/AliasRepository.php"
+        role: implementation
+        description: "addAliases builds one Alias ObjectModel per alias and adds each through addObjectModel."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchAlias/SearchAlias.php"
+        role: api-spec
+        description: "CQRSCreate on /search-aliases names AddSearchTermAliasesCommand; the body carries searchTerm and a non-empty aliases list of {alias, enabled}."
 
   searchTermAliasesAdded:
     id: shop.EVT007
     kind: event
     name: "SearchTermAliasesAdded"
-    description: "New search term alias mapping created."
+    description: >-
+      One or more aliases now point at a search term, so a shopper who types the alias gets the
+      term's results. Two hooks can carry it, which is a property of the code and not a hedge: the
+      repository checks each alias against the search term first, adds a genuinely new one - firing
+      actionObjectAliasAddAfter - and, for an alias that already exists on that term, only flips
+      its active flag through a partial update, firing actionObjectAliasUpdateAfter. One command
+      can therefore emit both, once per alias in the list.
+    tags: ["hook:actionObjectAliasAddAfter", "hook:actionObjectAliasUpdateAfter"]
+    code_refs:
+      - path: "src/Adapter/Alias/Repository/AliasRepository.php"
+        role: implementation
+        description: "addAliases at line 68 loops the list: line 77 partial-updates an alias that already exists on the term, line 87 adds a new one."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 615 and 847 fire actionObject<Class>AddAfter and UpdateAfter; Alias extends ObjectModel, so the names resolve to actionObjectAliasAddAfter and actionObjectAliasUpdateAfter."
 
   updateSearchTermAliases:
     id: shop.CMD011
     kind: command
+    responses:
+      - code: "200"
+        type: success
+        description: "The term carries the new alias list, under its new name if one was sent."
+      - code: "404"
+        type: failure
+        description: "No aliases exist for that search term."
+        error: shop.ERR003
+      - code: "422"
+        type: failure
+        description: "The term or one of its aliases failed a constraint."
+        error: shop.ERR009
+    payload:
+      schema: SearchAliasWritePayload
+      contentType: application/json
+      description: "The replacement alias list, and optionally the term to rename to. Sending it replaces the stored list entirely."
+    exchange:
+      protocol: http
+      endpoint:
+        path: /search-aliases/{searchTerm}
+        method: PUT
+        group: search-alias
     name: "UpdateSearchTermAliases"
-    description: "Update an existing search term alias mapping."
+    description: "Replace the alias list of a search term, and optionally rename the term itself. It is a replace rather than an edit because the handler deletes every alias of the old term and adds the new list: PrestaShop stores no alias identity to update in place. Served at PUT /search-aliases/{searchTerm}."
     delivery_priority: should-have
     initiated_by: [shop.ACT002]
+    materializes:
+      - concept: shop.CN004
+        action: update
     produces:
       operations: [shop.EVT008]
       mode: all
@@ -267,20 +689,46 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Alias/Command/UpdateSearchTermAliasesCommand.php"
         role: implementation
+      - path: "src/Adapter/Alias/CommandHandler/UpdateSearchTermAliasesHandler.php"
+        role: implementation
+        description: "Deletes every alias of the old search term, then adds the new list. There is no in-place update."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchAlias/SearchAlias.php"
+        role: api-spec
+        description: "CQRSUpdate on /search-aliases/{searchTerm} names UpdateSearchTermAliasesCommand; UPDATE_COMMAND_MAPPING renames searchTerm to oldSearchTerm."
 
   searchTermAliasesUpdated:
     id: shop.EVT008
     kind: event
     name: "SearchTermAliasesUpdated"
-    description: "Search term alias mapping updated."
+    description: >-
+      A search term's alias list has been replaced. No update hook carries it, and that is the
+      fact worth knowing: the handler deletes every alias of the old term and then adds the new
+      list, so a module observing this sees a run of actionObjectAliasDeleteAfter followed by a
+      run of actionObjectAliasAddAfter and never an update. A module keeping its own alias index
+      must treat the delete run as provisional, because the rows usually come straight back.
+    tags: ["hook:actionObjectAliasDeleteAfter", "hook:actionObjectAliasAddAfter"]
+    code_refs:
+      - path: "src/Adapter/Alias/CommandHandler/UpdateSearchTermAliasesHandler.php"
+        role: implementation
+        description: "Lines 26-27: deleteAliasesBySearchTerm on the old term, then addAliases on the new one."
+      - path: "src/Adapter/Alias/Repository/AliasRepository.php"
+        role: implementation
+        description: "deleteAliasesBySearchTerm loops the term's alias ids and calls deleteObjectModel on each; addAliases adds the new list."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 923 and 615 fire actionObject<Class>DeleteAfter and AddAfter, resolving to actionObjectAliasDeleteAfter and actionObjectAliasAddAfter."
 
   deleteSearchTermAliases:
     id: shop.CMD012
     kind: command
+    dispatch: inprocess
     name: "DeleteSearchTermAliases"
-    description: "Remove a search term alias mapping."
+    description: "Remove every alias mapped to one search term. No Admin API route serves it - the module declares a bulk delete over a list of search terms and nothing for a single one - so it runs over the command bus from the back-office search grid."
     delivery_priority: should-have
     initiated_by: [shop.ACT002]
+    materializes:
+      - concept: shop.CN004
+        action: delete
     produces:
       operations: [shop.EVT009]
       mode: all
@@ -292,27 +740,61 @@ operations:
     id: shop.EVT009
     kind: event
     name: "SearchTermAliasesDeleted"
-    description: "Search term alias mapping removed."
+    description: >-
+      Every alias of a search term has been removed, so the term is reachable only by its own
+      spelling. Modules receive actionObjectAliasDeleteAfter once per alias row, never once for
+      the term.
+    tags: ["hook:actionObjectAliasDeleteAfter"]
+    code_refs:
+      - path: "src/Adapter/Alias/Repository/AliasRepository.php"
+        role: implementation
+        description: "deleteAliasesBySearchTerm selects the term's alias ids and calls deleteObjectModel on each, at line 202."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 923 fires actionObject<Class>DeleteAfter, resolving to actionObjectAliasDeleteAfter."
 
   bulkDeleteSearchTermAliases:
     id: shop.CMD013
     kind: command
+    responses:
+      - code: "204"
+        type: success
+        description: "Every listed search term has lost its aliases."
+    payload:
+      schema: BulkDeleteSearchAliasesPayload
+      contentType: application/json
+      description: "Which search terms to clear, by the word rather than by an id."
+    exchange:
+      protocol: http
+      endpoint:
+        path: /search-aliases/bulk-delete
+        method: DELETE
+        group: search-alias
     name: "BulkDeleteSearchTermAliases"
-    description: "Delete multiple search term alias mappings at once."
+    description: "Remove the aliases of a named list of search terms in one call. Served at DELETE /search-aliases/bulk-delete with a non-empty searchTerms body, a list of strings rather than of ids, because a search term is its own key."
     delivery_priority: could-have
     initiated_by: [shop.ACT002]
+    materializes:
+      - concept: shop.CN004
+        action: delete
     produces:
       operations: [shop.EVT009]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Alias/Command/BulkDeleteSearchTermsAliasesCommand.php"
         role: implementation
+      - path: "src/Adapter/Alias/CommandHandler/BulkDeleteSearchTermsAliasesHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchAlias/BulkDeleteSearchAliases.php"
+        role: api-spec
+        description: "CQRSDelete on /search-aliases/bulk-delete names BulkDeleteSearchTermsAliasesCommand; the body carries searchTerms, at least one."
 
   getAliasForEditing:
     id: shop.QRY005
     kind: query
+    dispatch: inprocess
     name: "GetAliasForEditing"
-    description: "Retrieve alias details for the edit form."
+    description: "Read one alias row by its id for the edit form. No Admin API route serves it: the API addresses aliases by search term, not by alias id, so this query has no wire equivalent."
     delivery_priority: should-have
     code_refs:
       - path: "src/Core/Domain/Alias/Query/GetAliasForEditing.php"
@@ -321,18 +803,41 @@ operations:
   getAliasesBySearchTerm:
     id: shop.QRY006
     kind: query
+    responses:
+      - code: "200"
+        type: success
+        description: "The term and every alias mapped to it."
+      - code: "404"
+        type: failure
+        description: "No aliases exist for that search term."
+        error: shop.ERR003
+    payload:
+      schema: SearchAliasResource
+      contentType: application/json
+      description: "What the query returns: the term and every alias mapped to it."
+      required: false
+    exchange:
+      protocol: http
+      endpoint:
+        path: /search-aliases/{searchTerm}
+        method: GET
+        group: search-alias
     name: "GetAliasesBySearchTerm"
-    description: "Retrieve all aliases configured for a specific search term."
+    description: "Read every alias configured for one search term, which is the unit the Admin API and the edit form both work in. Served at GET /search-aliases/{searchTerm}, scope search_alias_read."
     delivery_priority: should-have
     code_refs:
       - path: "src/Core/Domain/Alias/Query/GetAliasesBySearchTermForEditing.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchAlias/SearchAlias.php"
+        role: api-spec
+        description: "CQRSGet on /search-aliases/{searchTerm} names GetAliasesBySearchTermForEditing; scope search_alias_read."
 
   searchForSearchTerm:
     id: shop.QRY007
     kind: query
+    dispatch: inprocess
     name: "SearchForSearchTerm"
-    description: "Search across alias terms to find matching configurations."
+    description: "Find search terms matching a phrase, so the back-office alias grid can be filtered. No Admin API route serves it."
     delivery_priority: could-have
     code_refs:
       - path: "src/Core/Domain/Alias/Query/SearchForSearchTerm.php"
@@ -343,55 +848,127 @@ operations:
   rebuildSearchIndex:
     id: shop.CMD014
     kind: command
+    dispatch: inprocess
     name: "RebuildSearchIndex"
-    description: "Trigger a full rebuild of the product search index."
+    description: "Rebuild the product search index, either in full or for one product. It is the operation that makes a catalog change searchable, and a shop that never runs it serves stale search results. No Admin API route serves it; the back-office search settings page and the cron task dispatch it."
     delivery_priority: must-have
     task_type: automated
     initiated_by: [shop.ACT001]
+    materializes:
+      - concept: shop.CN005
+        action: update
     produces:
       operations: [shop.EVT010]
       mode: all
+    reacts_to:
+      - operation: catalog.EVT001
+        policy: "A new product is made searchable as soon as it exists"
+        condition: "PS_SEARCH_INDEXATION is on"
+      - operation: catalog.EVT002
+        policy: "A changed product is reindexed so search stops returning its old words"
+        condition: "PS_SEARCH_INDEXATION is on, and on the CQRS route only when a field the index reads actually changed"
     code_refs:
       - path: "src/Core/Domain/Search/Command/SearchIndexationCommand.php"
         role: implementation
+      - path: "classes/Product.php"
+        role: implementation
+        description: "addWs() calls Search::indexation for the product at line 7589 and updateWs() at line 7612, both after the ObjectModel hook has fired and both guarded by PS_SEARCH_INDEXATION. Neither dispatches SearchIndexationCommand; they call the same Search::indexation the command's handler calls."
+      - path: "src/Adapter/Product/Update/ProductIndexationUpdater.php"
+        role: implementation
+        description: "The CQRS route reindexes at line 142, inside the product update rather than after it, and only when one of the fields the index reads has changed - the reason UpdateProductHandler gives at line 107 is that reindexing is costly."
 
   searchIndexRebuilt:
     id: shop.EVT010
     kind: event
     name: "SearchIndexRebuilt"
-    description: "Product search index rebuild completed."
+    description: >-
+      The product search index has been rebuilt, so storefront search results reflect the current
+      catalog. Restated 2026-09-14 rather than regrounded: no hook is fired for this transition,
+      so modules cannot observe it. The index is a table the indexer writes directly, not an
+      ObjectModel row, so the dynamic family does not reach it either. This one matters more than
+      most silences - a full reindex is the slowest routine operation in the back office, and a
+      module that maintains its own search data has no signal to rebuild alongside it.
+    code_refs:
+      - path: "src/Adapter/Search/CommandHandler/SearchIndexationHandler.php"
+        role: implementation
+        description: "Delegates to the legacy Search indexation routine. Searched for Hook::exec and dispatchWithParameters on 2026-09-19: none."
+      - path: "classes/Search.php"
+        role: implementation
+        description: "Holds the indexation routine and contains no Hook::exec at all (measured 2026-09-19: zero occurrences)."
 
   # ── Contact (2 CMD + 1 QRY) ──
 
   addContact:
     id: shop.CMD015
     kind: command
+    responses:
+      - code: "201"
+        type: success
+        description: "The contact department exists and is offered on the 'Contact Us' form."
+      - code: "422"
+        type: failure
+        description: "A name, description or email failed its constraint."
+        error: shop.ERR008
+    payload:
+      schema: CreateContactPayload
+      contentType: application/json
+      description: "The department as it is created."
+    exchange:
+      protocol: http
+      endpoint:
+        path: /contacts
+        method: POST
+        group: contact
     name: "AddContact"
-    description: "Create a new 'Contact Us' form department with localized name, email, and description."
+    description: "Create a 'Contact Us' department - a localized name and description, an email address, whether messages to it are kept in customer service, and which shops offer it. Served at POST /contacts, scope contact_write."
     delivery_priority: should-have
     initiated_by: [shop.ACT001]
+    materializes:
+      - concept: shop.CN006
+        action: create
     produces:
       operations: [shop.EVT011]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Contact/Command/AddContactCommand.php"
         role: implementation
+      - path: "src/Adapter/Contact/CommandHandler/AddContactHandler.php"
+        role: implementation
+        description: "Constructs a Contact ObjectModel and calls add."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Contact/Contact.php"
+        role: api-spec
+        description: "CQRSCreate on /contacts names AddContactCommand; CREATE_COMMAND_MAPPING renames names to localisedTitles."
 
   contactAdded:
     id: shop.EVT011
     kind: event
     name: "ContactAdded"
-    description: "New contact department created."
+    description: >-
+      A contact department now exists, so the storefront contact form offers it as a recipient and
+      mail sent to it reaches its address. Modules receive actionObjectContactAddAfter; the
+      handler constructs the legacy Contact object and adds it, firing no hook of its own.
+    tags: ["hook:actionObjectContactAddAfter"]
+    code_refs:
+      - path: "src/Adapter/Contact/CommandHandler/AddContactHandler.php"
+        role: implementation
+        description: "Line 55 constructs a Contact and line 68 calls add() on it."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 615 fires actionObject<Class>AddAfter; Contact extends ObjectModel, so the name resolves to actionObjectContactAddAfter."
 
   editContact:
     id: shop.CMD016
     kind: command
+    payload:
+      schema: CreateContactPayload
+      contentType: application/json
+      description: "The same shape as the create, sent partially: a PATCH carries only the fields being changed."
     exchange:
       protocol: http
       endpoint:
-        path: /shop/contacts/{contactId}
-        method: PUT
-        group: shop
+        path: /contacts/{contactId}
+        method: PATCH
+        group: contact
     responses:
       - code: "200"
         type: success
@@ -399,41 +976,87 @@ operations:
         schema: ContactResource
         contentType: application/json
     name: "EditContact"
-    description: "Update a 'Contact Us' department's name, email, or description."
+    description: "Change a 'Contact Us' department: its localized names, its email address, its localized descriptions, whether messages to it are kept in customer service, and which shops it belongs to. Served as a PATCH, so a caller sends only what it changes. The path and method were /shop/contacts/{contactId} and PUT in this model; the route is PATCH /contacts/{contactId} and the resource declares CQRSPartialUpdate."
     delivery_priority: should-have
     initiated_by: [shop.ACT001]
+    materializes:
+      - concept: shop.CN006
+        action: update
     produces:
       operations: [shop.EVT012]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Contact/Command/EditContactCommand.php"
         role: implementation
+      - path: "src/Adapter/Contact/CommandHandler/EditContactHandler.php"
+        role: implementation
+        description: "Loads the Contact ObjectModel and calls update."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Contact/Contact.php"
+        role: api-spec
+        description: "CQRSPartialUpdate on /contacts/{contactId} names EditContactCommand; scope contact_write."
 
   contactEdited:
     id: shop.EVT012
     kind: event
     name: "ContactEdited"
-    description: "Contact department updated."
+    description: >-
+      A contact department's name, address or storefront visibility changed. Modules receive
+      actionObjectContactUpdateAfter. Because the email address is part of the same record, a
+      change of recipient is indistinguishable from a rename at the hook.
+    tags: ["hook:actionObjectContactUpdateAfter"]
+    code_refs:
+      - path: "src/Adapter/Contact/CommandHandler/EditContactHandler.php"
+        role: implementation
+        description: "Line 73 calls update() on the loaded Contact."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847 fires actionObject<Class>UpdateAfter, resolving to actionObjectContactUpdateAfter."
 
   getContactForEditing:
     id: shop.QRY008
     kind: query
+    responses:
+      - code: "200"
+        type: success
+        description: "The contact department in full."
+      - code: "404"
+        type: failure
+        description: "No contact department with that id."
+        error: shop.ERR007
+    payload:
+      schema: ContactResource
+      contentType: application/json
+      description: "What the query returns: the department in full."
+      required: false
+    exchange:
+      protocol: http
+      endpoint:
+        path: /contacts/{contactId}
+        method: GET
+        group: contact
     name: "GetContactForEditing"
-    description: "Retrieve contact department details for the edit form."
+    description: "Read one contact department in full, in the shape the edit form and the Admin API both use. Served at GET /contacts/{contactId}, scope contact_read."
     delivery_priority: should-have
     code_refs:
       - path: "src/Core/Domain/Contact/Query/GetContactForEditing.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Contact/Contact.php"
+        role: api-spec
+        description: "CQRSGet on /contacts/{contactId} names GetContactForEditing; scope contact_read."
 
   # ── Notification (1 CMD + 1 QRY) ──
 
   updateNotificationLastElement:
     id: shop.CMD017
     kind: command
+    dispatch: inprocess
     name: "UpdateNotificationLastElement"
-    description: "Update the last-seen notification element for an employee, resetting unread counts for orders, customers, or messages."
+    description: "Move an employee's last-seen marker for a notification type - orders, customers or messages - which is what resets the unread badge in the back-office header. It writes the marker row directly rather than through an entity, so no hook is fired. No Admin API route serves it."
     delivery_priority: could-have
     task_type: automated
+    materializes:
+      - concept: shop.CN007
+        action: update
     produces:
       operations: [shop.EVT013]
       mode: all
@@ -445,13 +1068,24 @@ operations:
     id: shop.EVT013
     kind: event
     name: "NotificationLastElementUpdated"
-    description: "Employee notification last-seen marker updated."
+    description: >-
+      An employee's last-seen marker for one notification type (orders, customers, messages) has
+      been advanced, so the back-office badge for that type clears for that employee. Restated
+      2026-09-14: no hook is fired for this transition, so modules cannot observe it. The marker
+      is a column on the employee row updated by a direct SQL statement, not by an ObjectModel
+      write, so the dynamic family does not apply. A module that adds its own notification type
+      cannot hang its badge-clearing off this act.
+    code_refs:
+      - path: "classes/Notification.php"
+        role: implementation
+        description: "updateEmployeeLastElement at line 201 advances the id_last_<type> column with a direct Db execute. Searched for Hook::exec on the path on 2026-09-19: none."
 
   getNotificationLastElements:
     id: shop.QRY009
     kind: query
+    dispatch: inprocess
     name: "GetNotificationLastElements"
-    description: "Retrieve last-seen notification elements for unread count calculation."
+    description: "Read an employee's last-seen markers so the header can count what has arrived since. No Admin API route serves it."
     delivery_priority: could-have
     code_refs:
       - path: "src/Core/Domain/Notification/Query/GetNotificationLastElements.php"
@@ -462,31 +1096,82 @@ operations:
   closeShowcaseCard:
     id: shop.CMD018
     kind: command
+    responses:
+      - code: "200"
+        type: success
+        description: "The card is dismissed for that employee."
+    payload:
+      schema: ShowcaseCardResource
+      contentType: application/json
+      description: "What the route addresses. Card and employee are path parameters, so the request carries no body."
+      required: false
+    exchange:
+      protocol: http
+      endpoint:
+        path: /showcase-cards/{showcaseCardName}/{employeeId}/close
+        method: PUT
+        group: showcase-card
     name: "CloseShowcaseCard"
-    description: "Dismiss a promotional/informational card on the admin dashboard."
+    description: "Dismiss one of the informational cards PrestaShop shows at the top of a back-office page, for one employee. It writes a Configuration key rather than an entity, which is why nothing observes it. Served at PUT /showcase-cards/{showcaseCardName}/{employeeId}/close, scope showcase_card_write."
     delivery_priority: could-have
+    materializes:
+      - concept: shop.CN008
+        action: update
     produces:
       operations: [shop.EVT014]
       mode: all
     code_refs:
       - path: "src/Core/Domain/ShowcaseCard/Command/CloseShowcaseCardCommand.php"
         role: implementation
+      - path: "src/Core/Domain/ShowcaseCard/CommandHandler/CloseShowcaseCardHandler.php"
+        role: implementation
+        description: "Writes a Configuration key per card and employee. No entity is stored and no hook is fired."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/ShowcaseCard/ShowcaseCard.php"
+        role: api-spec
+        description: "CQRSUpdate on /showcase-cards/{showcaseCardName}/{employeeId}/close names CloseShowcaseCardCommand; scope showcase_card_write."
 
   showcaseCardClosed:
     id: shop.EVT014
     kind: event
     name: "ShowcaseCardClosed"
-    description: "Dashboard showcase card dismissed."
+    description: >-
+      An employee has dismissed one of the back office's promotional showcase cards, so it stops
+      appearing for that employee. Restated 2026-09-14: no hook is fired for this transition, so
+      modules cannot observe it. There is no entity behind the act at all - the handler writes a
+      configuration key derived from the card name and the employee id, so neither a dedicated
+      hook nor the ObjectModel dynamic family applies.
+    code_refs:
+      - path: "src/Core/Domain/ShowcaseCard/CommandHandler/CloseShowcaseCardHandler.php"
+        role: implementation
+        description: "handle() at line 45 writes the card's configuration key for the employee. Searched for Hook::exec and dispatchWithParameters on 2026-09-19: none."
 
   getShowcaseCardIsClosed:
     id: shop.QRY010
     kind: query
+    responses:
+      - code: "200"
+        type: success
+        description: "Whether that employee has dismissed that card."
+    payload:
+      schema: ShowcaseCardResource
+      contentType: application/json
+      description: "What the query returns: whether that employee has dismissed that card."
+      required: false
+    exchange:
+      protocol: http
+      endpoint:
+        path: /showcase-cards/{showcaseCardName}/{employeeId}
+        method: GET
+        group: showcase-card
     name: "GetShowcaseCardIsClosed"
-    description: "Check whether a showcase card has been closed by the employee."
+    description: "Check whether a named employee has already dismissed a named showcase card, so the page knows whether to draw it. Served at GET /showcase-cards/{showcaseCardName}/{employeeId}, scope showcase_card_read."
     delivery_priority: could-have
     code_refs:
       - path: "src/Core/Domain/ShowcaseCard/Query/GetShowcaseCardIsClosed.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/ShowcaseCard/ShowcaseCard.php"
+        role: api-spec
+        description: "CQRSGet on /showcase-cards/{showcaseCardName}/{employeeId} names GetShowcaseCardIsClosed; scope showcase_card_read."
 
   # ── Shared multi-store context (1 DOC) ──
   #
@@ -531,3 +1216,112 @@ errors:
     category: not-found
     severity: error
     http_status: 404
+
+  storeNotFound:
+    id: shop.ERR004
+    name: "StoreNotFound"
+    description: "No physical store location exists with the given id. Raised by the store repository's getObjectModel guard, and mapped to 404 by every Store route in the Admin API."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Store/Exception/StoreNotFoundException.php"
+        role: implementation
+
+  cannotDeleteStore:
+    id: shop.ERR005
+    name: "CannotDeleteStore"
+    description: "The store row could not be removed. The store exists, so this is a persistence failure rather than a missing record, and the bulk delete reports it per store rather than aborting the batch."
+    category: internal
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Store/Exception/CannotDeleteStoreException.php"
+        role: implementation
+
+  cannotToggleStoreStatus:
+    id: shop.ERR006
+    name: "CannotToggleStoreStatus"
+    description: "The store's visibility flag could not be written. Its error code says whether one store or a batch was being switched, which is how the back-office grid tells the operator which rows are still in their old state."
+    category: internal
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Store/Exception/CannotToggleStoreStatusException.php"
+        role: implementation
+
+  contactNotFound:
+    id: shop.ERR007
+    name: "ContactNotFound"
+    description: "No 'Contact Us' department exists with the given id. Mapped to 404 by the Contact routes in the Admin API."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Contact/Exception/ContactNotFoundException.php"
+        role: implementation
+
+  contactConstraintViolation:
+    id: shop.ERR008
+    name: "ContactConstraintViolation"
+    description: "A contact department field failed its constraint: a name outside the catalog-name pattern, a missing name in the shop's default language, or an address the strict email check rejects."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Contact/Exception/ContactConstraintException.php"
+        role: implementation
+
+  aliasConstraintViolation:
+    id: shop.ERR009
+    name: "AliasConstraintViolation"
+    description: "A search term or one of its aliases failed its constraint: an empty string, an alias list with no entries, or a term longer than the column holds."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Alias/Exception/AliasConstraintException.php"
+        role: implementation
+
+questions:
+
+  - id: shop.QN001
+    name: "What A Search Returns"
+    statement: "Which products does this search term return, and which term was it rewritten from?"
+    category: behavioral
+    priority: critical
+    bounded_context_ref: prestashop.BC011
+    answered_by: [shop.QRY007, shop.QRY006, shop.CMD014]
+    concepts: [shop.CN004, shop.CN005]
+    resolved: true
+    resolution: >
+      SearchForSearchTerm reads the search index, whose freshness depends on
+      RebuildSearchIndex having run since the catalog last changed; GetAliasesBySearchTerm
+      says which alias a misspelled term was resolved through.
+
+  - id: shop.QN002
+    name: "Which Shop Serves This Request"
+    statement: "Which shop in this installation is serving this request, and what does it look like?"
+    category: existence
+    priority: high
+    bounded_context_ref: prestashop.BC011
+    answered_by: [shop.QRY002, shop.QRY001]
+    concepts: [shop.CN001]
+    resolved: true
+    resolution: >
+      One installation can carry several shops in a group; SearchShops resolves which one a
+      URL belongs to, and GetLogosPaths returns the branding that shop is served with.
+
+  - id: shop.QN003
+    name: "Where A Shopper Can Walk In"
+    statement: "Which physical stores can a shopper visit, and how do they reach us?"
+    category: enumeration
+    priority: medium
+    bounded_context_ref: prestashop.BC011
+    answered_by: [shop.QRY003, shop.QRY008]
+    concepts: [shop.CN002, shop.CN006]
+    resolved: true
+    resolution: >
+      A Store carries its address, opening hours and coordinates for the store locator; a
+      Contact is the department a message form is routed to, which is the other half of how
+      a shopper reaches the merchant.

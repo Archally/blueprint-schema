@@ -296,8 +296,8 @@ components:
           example: ["product_read", "order_read", "order_write"]
         externalIssuer:
           type: string
-          description: "External OAuth issuer URL (null for internal clients)."
-          example: null
+          description: "External OAuth2 issuer URL, set when tokens for this client are minted by a federated identity provider instead of by the shop. Null for an ordinary client."
+          example: "https://login.example.com/realms/prestashop"
       code_refs:
         - path: "src/Core/Domain/ApiClient/Query/GetApiClientForEditing.php"
           role: schema
@@ -396,3 +396,426 @@ components:
         - path: "src/Core/Domain/Webservice/Query/GetWebserviceKeyForEditing.php"
           role: schema
           description: "GetWebserviceKeyForEditing query result - populates the webservice key edit form"
+
+    UpdateApiClientPayload:
+      x-model-id: MDL1700
+      purpose: command-payload
+      description: "Request body for PATCH /api-clients/{apiClientId}. Every field is optional because the route is a partial update: what is absent is left as stored, which is how an operator changes one scope without resending the whole client."
+      represents:
+        - concept: admin.CN005
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              clientName: CAT813
+              clientId: CAT814
+              enabled: CAT815
+              description: CAT816
+              lifetime: CAT817
+              scopes: CAT818
+      type: object
+      properties:
+        clientId:
+          type: string
+          description: "OAuth2 client identifier. Changing it invalidates every credential an integration already holds, so it is normally left alone after creation."
+          example: "erp-sync-client"
+        clientName:
+          type: string
+          description: "Human-readable name, shown in the API clients grid."
+          example: "ERP Integration"
+        description:
+          type: string
+          description: "What this client is for, so an operator auditing the list can tell which integration to revoke."
+          example: "ERP system synchronization"
+        enabled:
+          type: boolean
+          description: "Whether the client may still obtain tokens. Disabling is the reversible half of deleting."
+          example: true
+        lifetime:
+          type: integer
+          description: "Token lifetime in seconds. A short lifetime limits the damage of a leaked token at the cost of more token requests."
+          example: 3600
+        scopes:
+          type: array
+          description: "OAuth2 scopes granted to this client. The set is replaced, not merged, so omitting a scope that was granted removes it."
+          items:
+            type: string
+          example: ["product_read", "order_read"]
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/ApiClient/ApiClient.php"
+          role: api-spec
+          description: "CQRSPartialUpdate, uriTemplate /api-clients/{apiClientId}"
+        - path: "src/Core/Domain/ApiClient/Command/EditApiClientCommand.php"
+          role: schema
+
+    CreateExtraPropertyDefinitionPayload:
+      x-model-id: MDL1701
+      purpose: command-payload
+      description: "Request body for POST /extra-property-definitions. It declares a new property on a core entity, so the fields that decide storage - entityName, propertyName, type, scope, sqlIndex - are the ones that cannot be changed later without a destructive migration."
+      represents:
+        - concept: admin.CN011
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              entityName: CAT1703
+              propertyName: CAT1704
+              type: CAT1705
+              scope: CAT1706
+              constraints: CAT1707
+      type: object
+      required: [entityName, propertyName]
+      properties:
+        entityName:
+          type: string
+          description: "The core entity that will carry the property, in its canonical spelling."
+          example: "product"
+        propertyName:
+          type: string
+          description: "The property's name, which becomes its storage column and its key in the entity's API representation."
+          example: "warrantyMonths"
+        type:
+          type: string
+          enum: [int, bool, string, float, date, html, json, choice]
+          description: "Value type, which decides the storage column type. Defaults to string."
+          example: "int"
+        scope:
+          type: string
+          enum: [common, lang, shop]
+          description: "Whether one value is stored per entity, per language, or per shop. Defaults to common."
+          example: "common"
+        sqlIndex:
+          type: string
+          enum: [none, key, unique]
+          description: "Storage index. unique makes the property a uniqueness constraint on the entity, which is the only way to enforce one from a definition."
+          example: "none"
+        displayFront:
+          type: boolean
+          description: "Whether the property is exposed on the storefront as well as the back office."
+          example: false
+        required:
+          type: boolean
+          description: "Whether a value must be supplied when the entity is saved."
+          example: false
+        nullable:
+          type: boolean
+          description: "Whether the storage column accepts null. Defaults to true."
+          example: true
+        size:
+          type: integer
+          description: "Column size for the types that take one, such as a string length."
+          example: 64
+        defaultValue:
+          type: string
+          description: "Value stored for entities that supply none. Refused if the column type cannot hold it."
+          example: "12"
+        enumValues:
+          type: array
+          description: "The permitted values, for a choice property."
+          items:
+            type: string
+          example: ["small", "medium", "large"]
+        constraints:
+          type: string
+          description: "Validation constraints, one per line, in the definition DSL. Parsed when the command is built, so an unparseable line is refused before storage is touched."
+          example: "NotBlank\nLength(min: 2, max: 64)"
+        associatedForms:
+          type: array
+          description: "Back-office forms the property is rendered into, optionally with a position."
+          items:
+            type: string
+          example: ["product", "category:seo:after"]
+        associatedGrids:
+          type: array
+          description: "Back-office grids the property is rendered into."
+          items:
+            type: string
+          example: ["product:reference:after"]
+        associatedApis:
+          type: array
+          description: "Admin API routes the property is exposed on, optionally narrowed to methods."
+          items:
+            type: string
+          example: ["/products", "/products/{productId}:GET,PATCH"]
+        shopIds:
+          type: array
+          description: "Shops the definition applies to. Empty means every shop."
+          items:
+            type: integer
+          example: [1, 2]
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/ExtraPropertyDefinition/ExtraPropertyDefinition.php"
+          role: api-spec
+          description: "CQRSCreate, uriTemplate /extra-property-definitions; CREATE_DEFAULT_VALUES carries the defaults stated above"
+        - path: "src/Core/Domain/ExtraProperty/Command/AddExtraPropertyDefinitionCommand.php"
+          role: schema
+
+    UpdateExtraPropertyDefinitionPayload:
+      x-model-id: MDL1702
+      purpose: command-payload
+      description: "Request body for PATCH /extra-property-definitions/{extraPropertyDefinitionId}. Partial, and narrower than it looks: a change that would destroy stored values is refused, and a module-owned definition accepts nothing but a shop association change."
+      represents:
+        - concept: admin.CN011
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              type: CAT1705
+              constraints: CAT1707
+      type: object
+      properties:
+        displayFront:
+          type: boolean
+          description: "Whether the property is exposed on the storefront."
+          example: true
+        required:
+          type: boolean
+          description: "Whether a value must be supplied. Turning it on for a property with existing empty values is refused as a destructive change."
+          example: false
+        size:
+          type: integer
+          description: "Column size. Shrinking it below a stored value's length is a destructive change."
+          example: 128
+        defaultValue:
+          type: string
+          description: "Value stored for entities that supply none."
+          example: "24"
+        enumValues:
+          type: array
+          description: "Permitted values for a choice property. Removing a value still in use is a destructive change."
+          items:
+            type: string
+          example: ["small", "medium", "large", "xl"]
+        constraints:
+          type: string
+          description: "Replacement constraint DSL, parsed before anything is stored."
+          example: "NotBlank\nPositive"
+        labelWording:
+          type: string
+          description: "Translation key for the field label shown in forms and grids."
+          example: "Warranty (months)"
+        associatedForms:
+          type: array
+          description: "Back-office forms the property is rendered into."
+          items:
+            type: string
+          example: ["product"]
+        shopIds:
+          type: array
+          description: "Shops the definition applies to. This is the one field a module-owned definition will accept."
+          items:
+            type: integer
+          example: [1]
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/ExtraPropertyDefinition/ExtraPropertyDefinition.php"
+          role: api-spec
+          description: "CQRSPartialUpdate, uriTemplate /extra-property-definitions/{extraPropertyDefinitionId}"
+        - path: "src/Core/Domain/ExtraProperty/Command/UpdateExtraPropertyDefinitionCommand.php"
+          role: schema
+
+    UpdateWebserviceKeyPayload:
+      x-model-id: MDL1703
+      purpose: command-payload
+      description: "Request body for PATCH /webservice-keys/{webserviceKeyId}. Partial update of a legacy webservice key's description, status and per-resource permissions."
+      represents:
+        - concept: admin.CN006
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              description: CAT820
+              permissions: CAT821
+      type: object
+      properties:
+        description:
+          type: string
+          description: "What this key is for, so an operator auditing the legacy API can tell which integration still depends on it."
+          example: "Legacy ERP integration"
+        enabled:
+          type: boolean
+          description: "Whether the key still grants access. Disabling is how legacy access is retired without breaking the audit trail."
+          example: true
+        permissions:
+          type: object
+          description: "Per-resource permission matrix: for each webservice resource, the verbs this key may use. Replaced wholesale, so a resource left out loses its permissions."
+          additionalProperties: true
+          example: {"products": ["GET"], "orders": ["GET", "PUT"]}
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/WebserviceKey/WebserviceKey.php"
+          role: api-spec
+          description: "CQRSPartialUpdate, uriTemplate /webservice-keys/{webserviceKeyId}"
+        - path: "src/Core/Domain/Webservice/Command/EditWebserviceKeyCommand.php"
+          role: schema
+
+    UpdateTabStatusPayload:
+      x-model-id: MDL1704
+      purpose: command-payload
+      description: "Request body for PUT /tabs/{className}. The tab is addressed by the PHP controller class name in the path, so the body carries only the new visibility."
+      represents:
+        - concept: admin.CN009
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              className: CAT825
+              enabled: CAT826
+      type: object
+      required: [className, enabled]
+      properties:
+        className:
+          type: string
+          description: "The controller class name identifying the tab, repeated from the path so the payload is self-describing."
+          example: "AdminProducts"
+        enabled:
+          type: boolean
+          description: "Whether the tab appears in the admin menu. The resource maps this to the command's status argument."
+          example: true
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Tab/Tab.php"
+          role: api-spec
+          description: "CQRSUpdate, uriTemplate /tabs/{className}, CQRSCommandMapping [enabled] to [status]"
+        - path: "src/Core/Domain/Tab/Command/UpdateTabStatusByClassNameCommand.php"
+          role: schema
+
+    ExtraPropertyDefinitionResource:
+      x-model-id: MDL1705
+      purpose: read-model
+      description: "An extra property definition as the Admin API returns it, from the GET route and as the body of a successful create or update. It carries the definition's identity, its storage decisions and its presentation bindings together, because a reader deciding whether a property is safe to change needs all three."
+      represents:
+        - concept: admin.CN011
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              entityName: CAT1703
+              propertyName: CAT1704
+              type: CAT1705
+              scope: CAT1706
+              constraints: CAT1707
+      type: object
+      properties:
+        extraPropertyDefinitionId:
+          type: integer
+          description: "The definition's identifier, and the id every other route addresses it by."
+          example: 7
+        entityName:
+          type: string
+          description: "The core entity carrying the property."
+          example: "product"
+        moduleName:
+          type: string
+          description: "The module that owns this definition, or null for one an operator created. A module-owned definition accepts nothing but a shop association change."
+          example: "ps_warranty"
+        propertyName:
+          type: string
+          description: "The property's name, as stored and as returned in the entity's representation."
+          example: "warrantyMonths"
+        type:
+          type: string
+          enum: [int, bool, string, float, date, html, json, choice]
+          description: "Value type, which decides the storage column type. It is the field a reader checks first, because changing it on a live definition is the destructive change the registry refuses."
+          example: "int"
+        scope:
+          type: string
+          enum: [common, lang, shop]
+          description: "Whether the value is stored once, per language, or per shop."
+          example: "common"
+        sqlIndex:
+          type: string
+          enum: [none, key, unique]
+          description: "Storage index on the property's column."
+          example: "none"
+        displayFront:
+          type: boolean
+          description: "Whether the property is exposed on the storefront."
+          example: false
+        required:
+          type: boolean
+          description: "Whether a value must be supplied when the entity is saved."
+          example: false
+        nullable:
+          type: boolean
+          description: "Whether the storage column accepts null."
+          example: true
+        size:
+          type: integer
+          description: "Column size for the types that take one."
+          example: 64
+        constraints:
+          type: string
+          description: "The validation constraints in force, in the definition DSL."
+          example: "NotBlank\nLength(min: 2, max: 64)"
+        associatedApis:
+          type: array
+          description: "Admin API routes this property is exposed on, which is how a consumer learns that an entity's representation has grown a field."
+          items:
+            type: string
+          example: ["/products", "/products/{productId}:GET,PATCH"]
+        shopIds:
+          type: array
+          description: "Shops the definition applies to."
+          items:
+            type: integer
+          example: [1, 2]
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/ExtraPropertyDefinition/ExtraPropertyDefinition.php"
+          role: api-spec
+        - path: "src/Core/Domain/ExtraProperty/QueryResult/EditableExtraPropertyDefinition.php"
+          role: schema
+
+    BulkDeleteExtraPropertyDefinitionsPayload:
+      x-model-id: MDL1706
+      purpose: command-payload
+      description: "Request body for DELETE /extra-property-definitions/bulk-delete. The one bulk route the admin slice exposes, and the only place where dropping stored values is a deliberate flag rather than a consequence."
+      represents:
+        - concept: admin.CN011
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              propertyName: CAT1704
+      type: object
+      required: [extraPropertyDefinitionIds]
+      properties:
+        extraPropertyDefinitionIds:
+          type: array
+          description: "The definitions to remove. The resource maps this to the command's ids argument."
+          items:
+            type: integer
+          example: [1, 3]
+        dropColumn:
+          type: boolean
+          description: "Also drop the storage columns and every stored value of these properties. Defaults to false, which retires the definitions and leaves the data recoverable."
+          example: false
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/ExtraPropertyDefinition/BulkDeleteExtraPropertyDefinitions.php"
+          role: api-spec
+          description: "CQRSDelete, uriTemplate /extra-property-definitions/bulk-delete, with the request body declared inline in openapiContext"
+        - path: "src/Core/Domain/ExtraProperty/Command/BulkDeleteExtraPropertyDefinitionCommand.php"
+          role: schema
+
+    SendEmployeePasswordResetEmailPayload:
+      x-model-id: MDL1707
+      purpose: command-payload
+      description: "Request body for POST /employees/send-password-reset-email. The only Employee route the Admin API serves, and it identifies the employee by email rather than by id, because the caller is recovering access rather than administering an account."
+      represents:
+        - concept: admin.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              email: CAT802
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          description: "The employee's email address. An address with no employee behind it answers 404, so the route does not conceal whether an account exists."
+          example: "john.smith@store.com"
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Employee/EmployeePasswordReset.php"
+          role: api-spec
+          description: "CQRSCreate, uriTemplate /employees/send-password-reset-email, EmployeeNotFoundException mapped to 404"
+        - path: "src/Core/Domain/Employee/Command/SendEmployeePasswordResetEmailCommand.php"
+          role: schema

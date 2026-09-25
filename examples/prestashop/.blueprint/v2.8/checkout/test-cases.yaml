@@ -1,5 +1,5 @@
 ---
-version: "1.0.0"
+version: "1.1.0"
 scope: checkout
 
 happy_path:
@@ -11,7 +11,7 @@ happy_path:
       rules: [checkout.SR001]
     contract:
       kind: openapi
-      file: checkout/checkout-api.openapi
+      file: checkout-api
     given:
       description: "Product SKU-001 in stock (qty: 10). Cart is empty."
       state:
@@ -21,6 +21,23 @@ happy_path:
     expected_result:
       status: success
       code: 200
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Cart/Product/add_standard_product.feature"
+        role: test
+        description: "Scenario 'Add product(s) in cart' (line 9)."
+      - path: "src/Adapter/Cart/CommandHandler/AddProductToCartHandler.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Cart/Product/add_standard_product.feature line 9"
+          date: "2026-09-19"
+          summary: >-
+            The scenario adds units of an in-stock product to an empty cart and asserts the cart
+            line and the remaining stock. Same assertion, same shape as this case's given.
+          confidence_impact: supports
 
   - id: checkout.TC002
     name: "Apply valid voucher code - happy path"
@@ -39,6 +56,29 @@ happy_path:
     expected_result:
       status: success
       code: 200
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_validity_date_range.feature"
+        role: test
+        description: "Scenario 'Discount with validTo in the future' (line 19) - the validity half."
+      - path: "tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_condition_minimum_amount.feature"
+        role: test
+        description: "Scenario 'Create a complete discount with free shipping using new CQRS' (line 14) - the minimum-amount half."
+      - path: "src/Adapter/Cart/CommandHandler/AddCartRuleToCartHandler.php"
+        role: implementation
+        description: "The handler that raises CartRuleValidityException when any condition fails."
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Discount/FO/"
+          date: "2026-09-19"
+          summary: >-
+            Each of the three rules this case names is covered by its own scenario in the
+            front-office discount suite: validity dates, minimum amount, usage limit. No single
+            scenario combines all three the way this case's given does, so it is assembled from
+            three tests rather than matched to one.
+          confidence_impact: supports
 
   - id: checkout.TC003
     name: "Create discount campaign - happy path"
@@ -56,6 +96,25 @@ happy_path:
         totalQuantity: 500
     expected_result:
       status: success
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Discount/BO/add_discount_with_code.feature"
+        role: test
+        description: "Scenario 'Create a discount with code that isn't used already' (line 18). One of 34 back-office discount scenarios that create through AddDiscountCommand."
+      - path: "src/Adapter/Discount/CommandHandler/AddDiscountHandler.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Discount/BO/"
+          date: "2026-09-19"
+          summary: >-
+            The back-office discount suite is 34 scenarios and creates a discount in nearly all
+            of them, so the creation path is heavily exercised. The cited scenario creates with
+            a code; none creates with exactly this case's combination of a percentage, a date
+            range and a total quantity.
+          confidence_impact: supports
 
   - id: checkout.TC004
     name: "Create catalog price rule - happy path"
@@ -71,6 +130,32 @@ happy_path:
         fromQuantity: 100
     expected_result:
       status: success
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/CatalogPriceRule/catalog_price_rules_listing.feature"
+        role: test
+        description: "Scenario 'I can see a list of catalog price rules' (line 26). The only CatalogPriceRule feature file, and it lists rather than applies."
+      - path: "classes/SpecificPrice.php"
+        role: implementation
+        description: "The from_quantity comparison in the price selector, which is what makes a quantity threshold take effect."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/CatalogPriceRule/catalog_price_rules_listing.feature"
+          date: "2026-09-19"
+          summary: >-
+            The scenario creates a rule with from quantity 1 and asserts it appears in the
+            listing. It does not apply the rule to a cart and does not use a bulk threshold, so
+            it covers creation only.
+          confidence_impact: supports
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived for the threshold half. Nothing asserts that a 100-unit threshold
+            takes effect at 100 units and not below.
+          confidence_impact: weakens
 
 edge_cases:
   - id: checkout.EC001
@@ -87,6 +172,23 @@ edge_cases:
     expected_result:
       status: failure
       code: 422
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_validity_date_range.feature"
+        role: test
+        description: "Scenario 'Discount with validTo in the past' (line 38)."
+      - path: "src/Core/Domain/CartRule/Exception/CartRuleValidityException.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_validity_date_range.feature line 38"
+          date: "2026-09-19"
+          summary: >-
+            The scenario applies a voucher whose validTo is in the past and asserts the cart
+            rule validation error. Same assertion.
+          confidence_impact: supports
 
   - id: checkout.EC002
     name: "Exceed discount per-customer usage limit"
@@ -102,6 +204,23 @@ edge_cases:
     expected_result:
       status: failure
       code: 422
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_usage_limits.feature"
+        role: test
+        description: "Scenario 'Discount that is available only one time per user' (line 133)."
+      - path: "src/Core/Domain/CartRule/Exception/CartRuleConstraintException.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_usage_limits.feature line 133"
+          date: "2026-09-19"
+          summary: >-
+            The scenario sets quantity_per_user to 1, uses the discount once, and asserts the
+            second attempt is refused. Same assertion, same numbers.
+          confidence_impact: supports
 
 error_cases:
   - id: checkout.ER001
@@ -117,6 +236,23 @@ error_cases:
     expected_result:
       status: failure
       code: 409
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Cart/CartRule/BackOffice/delete_cart_from_bo.feature"
+        role: test
+        description: "Scenario 'Block delete cart already ordered' (line 23)."
+      - path: "src/Core/Domain/Cart/Exception/CannotDeleteOrderedCartException.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Cart/CartRule/BackOffice/delete_cart_from_bo.feature line 23"
+          date: "2026-09-19"
+          summary: >-
+            The scenario places an order from a cart and asserts the cart can no longer be
+            deleted. Same assertion, same exception.
+          confidence_impact: supports
 
   - id: checkout.ER002
     name: "Create discount with invalid configuration"
@@ -132,6 +268,25 @@ error_cases:
     expected_result:
       status: failure
       code: 422
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Discount/BO/update_discount_validity_dates.feature"
+        role: test
+        description: "Scenario 'Create discount with invalid date range' (line 57)."
+      - path: "src/Adapter/Discount/Validate/DiscountValidator.php"
+        role: validation
+        description: "DATE_FROM_GREATER_THAN_DATE_TO, raised here and again in the AddDiscountCommand constructor."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Discount/BO/update_discount_validity_dates.feature line 57"
+          date: "2026-09-19"
+          summary: >-
+            The scenario creates a discount whose date range runs backwards and asserts the
+            refusal. The refusal is doubly enforced, in the command constructor and in the
+            validator, and both raise DATE_FROM_GREATER_THAN_DATE_TO.
+          confidence_impact: supports
 
   - id: checkout.ER003
     name: "Apply voucher below minimum order amount"
@@ -147,3 +302,22 @@ error_cases:
     expected_result:
       status: failure
       code: 422
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_condition_minimum_amount.feature"
+        role: test
+        description: "Scenario 'Create a complete discount with free shipping using new CQRS' (line 14), which applies the voucher below and then above the threshold."
+      - path: "src/Core/Domain/Discount/ValueObject/MinimumAmount.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_condition_minimum_amount.feature line 14"
+          date: "2026-09-19"
+          summary: >-
+            The scenario asserts the cart rule validation error below the minimum and the
+            discount applying once the cart is raised above it. Same assertion in both
+            directions. The scenario's discount is free-shipping rather than percentage; the
+            minimum-amount condition it exercises is the same one.
+          confidence_impact: supports

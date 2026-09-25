@@ -44,12 +44,15 @@ concepts:
       orderDetailId:
         id: CAT424
         description: "Reference to order detail (line item) this shipment product represents"
+        example: "89"
       productId:
         id: CAT425
         description: "Reference to the catalog product"
+        example: "42"
       combinationId:
         id: CAT426
         description: "Reference to product combination/variant (optional)"
+        example: "7"
       quantity:
         id: CAT427
         description: "Number of units of this product in the shipment"
@@ -61,14 +64,14 @@ concepts:
         role: model
 
 associations:
-  - id: shipping.AS002
+  - id: shipping.ASC002
     subject: shipping.CN004
     predicate: depends-on
     object: shipping.CN005
     cardinality: "1..*"
     description: "A shipment contains one or more product lines with quantities."
 
-  - id: shipping.AS003
+  - id: shipping.ASC003
     subject: shipping.CN004
     predicate: depends-on
     object: shipping.CN001

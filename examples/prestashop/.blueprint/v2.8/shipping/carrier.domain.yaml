@@ -11,10 +11,19 @@ operations:
   addCarrier:
     id: shipping.CMD001
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /carriers
+        method: POST
+        group: shipping
     name: "AddCarrier"
     description: "Create a new carrier with name, delay, shipping method, zones, ranges, dimensional constraints, and shop associations. Zones are required - at least one zone must be assigned."
     delivery_priority: must-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN001
+        action: create
     produces:
       operations: [shipping.EVT001]
       mode: all
@@ -25,16 +34,28 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Carrier/Command/AddCarrierCommand.php"
         role: implementation
-      - path: "src/Core/Domain/Carrier/CommandHandler/AddCarrierHandler.php"
+      - path: "src/Adapter/Carrier/CommandHandler/AddCarrierHandler.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Carrier/Carrier.php"
+        role: api-spec
+        description: "Declares POST /carriers and names the CQRS class it fronts"
 
   editCarrier:
     id: shipping.CMD002
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /carriers/{carrierId}
+        method: POST
+        group: shipping
     name: "EditCarrier"
     description: "Update an existing carrier's configuration. In PrestaShop, carrier edits create a new version (new CarrierId) while preserving the CarrierReferenceId for historical tracking."
     delivery_priority: must-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN001
+        action: update
     produces:
       operations: [shipping.EVT002]
       mode: all
@@ -44,32 +65,47 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Carrier/Command/EditCarrierCommand.php"
         role: implementation
-      - path: "src/Core/Domain/Carrier/CommandHandler/EditCarrierHandler.php"
+      - path: "src/Adapter/Carrier/CommandHandler/EditCarrierHandler.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Carrier/Carrier.php"
+        role: api-spec
+        description: "Declares POST /carriers/{carrierId} and names the CQRS class it fronts"
 
   deleteCarrier:
     id: shipping.CMD003
     kind: command
+    dispatch: inprocess
     name: "DeleteCarrier"
-    description: "Soft-delete a carrier. The carrier becomes inactive and unavailable for new orders but historical order references remain intact."
+    description: >
+      Remove a carrier. Carrier::delete branches on whether the carrier is used: one that orders
+      reference is soft-deleted, so historical orders keep resolving it, and one that nothing
+      references is deleted outright along with its cart-rule, module and tax-rule-group links.
+      The two branches publish different hooks, which shipping.EVT003 records.
     delivery_priority: must-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN001
+        action: delete
     produces:
       operations: [shipping.EVT003]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Carrier/Command/DeleteCarrierCommand.php"
         role: implementation
-      - path: "src/Core/Domain/Carrier/CommandHandler/DeleteCarrierHandler.php"
+      - path: "src/Adapter/Carrier/CommandHandler/DeleteCarrierHandler.php"
         role: implementation
 
   bulkDeleteCarrier:
     id: shipping.CMD004
     kind: command
+    dispatch: inprocess
     name: "BulkDeleteCarrier"
     description: "Delete multiple carriers in a single batch operation."
     delivery_priority: could-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN001
+        action: delete
     produces:
       operations: [shipping.EVT003]
       mode: all
@@ -82,10 +118,14 @@ operations:
   toggleCarrierStatus:
     id: shipping.CMD005
     kind: command
+    dispatch: inprocess
     name: "ToggleCarrierStatus"
     description: "Enable or disable a carrier. Disabled carriers are not available for selection during checkout."
     delivery_priority: must-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN001
+        action: update
     produces:
       operations: [shipping.EVT004]
       mode: all
@@ -96,10 +136,14 @@ operations:
   bulkToggleCarrierStatus:
     id: shipping.CMD006
     kind: command
+    dispatch: inprocess
     name: "BulkToggleCarrierStatus"
     description: "Enable or disable multiple carriers in a single batch operation."
     delivery_priority: could-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN001
+        action: update
     produces:
       operations: [shipping.EVT004]
       mode: all
@@ -110,10 +154,14 @@ operations:
   toggleCarrierIsFree:
     id: shipping.CMD007
     kind: command
+    dispatch: inprocess
     name: "ToggleCarrierIsFree"
     description: "Toggle whether a carrier provides free shipping regardless of range configuration. When enabled, range-based pricing is bypassed."
     delivery_priority: should-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN001
+        action: update
     produces:
       operations: [shipping.EVT005]
       mode: all
@@ -128,10 +176,19 @@ operations:
   setCarrierRanges:
     id: shipping.CMD008
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /carriers/{carrierId}/ranges
+        method: PATCH
+        group: shipping
     name: "SetCarrierRanges"
     description: "Replace all shipping cost ranges for a carrier atomically. Each range defines a price for a zone+weight/price bracket combination. Ranges must not overlap within the same zone."
     delivery_priority: must-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN002
+        action: update
     produces:
       operations: [shipping.EVT006]
       mode: all
@@ -141,14 +198,21 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Carrier/Command/SetCarrierRangesCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Carrier/CarrierRanges.php"
+        role: api-spec
+        description: "Declares PATCH /carriers/{carrierId}/ranges and names the CQRS class it fronts"
 
   setCarrierZones:
     id: shipping.CMD009
     kind: command
+    dispatch: inprocess
     name: "SetCarrierZones"
     description: "Assign delivery zones to a carrier. Modeled as a distinct blueprint operation for DDD expressiveness - in the codebase, zone assignment is embedded within AddCarrier/EditCarrier commands."
     delivery_priority: must-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN001
+        action: update
     produces:
       operations: [shipping.EVT007]
       mode: all
@@ -167,16 +231,28 @@ operations:
   setCarrierTaxRuleGroup:
     id: shipping.CMD010
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /carriers/{carrierId}/set-tax-rule-group
+        method: PATCH
+        group: shipping
     name: "SetCarrierTaxRuleGroup"
     description: "Assign a tax rule group to a carrier for shipping cost tax calculation. Links to the International context's tax system."
     delivery_priority: should-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN003
+        action: update
     produces:
       operations: [shipping.EVT008]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Carrier/Command/SetCarrierTaxRuleGroupCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Carrier/Carrier.php"
+        role: api-spec
+        description: "Declares PATCH /carriers/{carrierId}/set-tax-rule-group and names the CQRS class it fronts"
 
   # --- Carrier Events ---
 
@@ -184,71 +260,183 @@ operations:
     id: shipping.EVT001
     kind: event
     name: "CarrierCreated"
-    description: "A new carrier has been created with initial zone and range configuration."
+    description: >
+      A carrier row has been written. PrestaShop publishes this as the hook
+      actionObjectCarrierAddAfter, fired by ObjectModel when CarrierRepository::add persists it;
+      there is no carrier-specific creation hook. The zones and ranges the description mentions
+      are written afterwards by separate repository calls that publish nothing, so a subscriber
+      sees the carrier before it can quote a price.
+    tags: [hook:actionObjectCarrierAddAfter]
+    code_refs:
+      - path: "src/Adapter/Carrier/Repository/CarrierRepository.php"
+        role: implementation
+        description: "add() calls addObjectModelToShops, which calls Carrier::add"
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 614-615 fire actionObjectAddAfter and actionObject<Class>AddAfter"
+      - path: "classes/Carrier.php"
+        role: implementation
+        description: "CarrierCore extends ObjectModel, which supplies the <Class> in the hook name"
 
   carrierUpdated:
     id: shipping.EVT002
     kind: event
     name: "CarrierUpdated"
-    description: "A carrier's configuration has been modified. A new carrier version may have been created internally."
+    description: >
+      A carrier's configuration has been changed. PrestaShop publishes this as the hook
+      actionCarrierUpdate, dispatched by EditCarrierHandler with the old carrier id and the new
+      carrier object - two values, because editing a carrier that is already used by orders
+      creates a NEW carrier row and retires the old one, so a module holding a carrier id needs
+      to be told both. That new row separately fires actionObjectCarrierAddAfter.
+    tags: [hook:actionCarrierUpdate, hook:actionObjectCarrierAddAfter]
+    code_refs:
+      - path: "src/Adapter/Carrier/CommandHandler/EditCarrierHandler.php"
+        role: implementation
+        description: "Line 156 dispatches actionCarrierUpdate with id_carrier and the new carrier"
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The hook registry entry for actionCarrierUpdate"
 
   carrierDeleted:
     id: shipping.EVT003
     kind: event
     name: "CarrierDeleted"
-    description: "One or more carriers have been soft-deleted."
+    description: >
+      A carrier has been removed. Which hook a subscriber receives depends on whether the carrier
+      was ever used: Carrier::delete soft-deletes a carrier that orders reference, which is an
+      update and fires actionObjectCarrierUpdateAfter, and hard-deletes an unused one, which
+      fires actionObjectCarrierDeleteAfter. A module that only listens for the delete hook will
+      miss the commoner case, and that is a fact about PrestaShop rather than about this model.
+    tags: [hook:actionObjectCarrierDeleteAfter, hook:actionObjectCarrierUpdateAfter]
+    code_refs:
+      - path: "classes/Carrier.php"
+        role: implementation
+        description: "delete() at line 272 branches on isUsed(): parent::softDelete for a used carrier, parent::delete otherwise"
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 922-923 fire the delete hooks; softDelete at line 955 calls update(), reaching lines 846-847 instead"
 
   carrierStatusToggled:
     id: shipping.EVT004
     kind: event
     name: "CarrierStatusToggled"
-    description: "A carrier's active/inactive status has changed."
+    description: >
+      A carrier has been enabled or disabled, so it appears in or disappears from checkout.
+      PrestaShop publishes this as the hook actionObjectCarrierUpdateAfter: ObjectModel's
+      toggleStatus flips the active field and calls update, and there is no hook that says the
+      status in particular changed, so a subscriber has to compare the object it is handed.
+    tags: [hook:actionObjectCarrierUpdateAfter]
+    code_refs:
+      - path: "src/Adapter/Carrier/CommandHandler/ToggleCarrierStatusHandler.php"
+        role: implementation
+        description: "Calls Carrier::toggleStatus"
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "toggleStatus at line 978 sets active and calls update, which fires the hook at lines 846-847"
 
   carrierIsFreeToggled:
     id: shipping.EVT005
     kind: event
     name: "CarrierIsFreeToggled"
-    description: "A carrier's free shipping flag has been toggled."
+    description: >
+      A carrier's free-shipping flag has been flipped, so its range pricing is bypassed or
+      restored. PrestaShop publishes this as the hook actionObjectCarrierUpdateAfter, because
+      the handler writes the flag with a plain Carrier::update; as with the status toggle, the
+      hook says the carrier changed and not what changed.
+    tags: [hook:actionObjectCarrierUpdateAfter]
+    code_refs:
+      - path: "src/Adapter/Carrier/CommandHandler/ToggleCarrierIsFreeHandler.php"
+        role: implementation
+        description: "Line 38 calls Carrier::update after flipping is_free"
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObjectUpdateAfter and actionObject<Class>UpdateAfter"
 
   carrierRangesUpdated:
     id: shipping.EVT006
     kind: event
     name: "CarrierRangesUpdated"
-    description: "A carrier's shipping cost ranges have been replaced."
+    description: >
+      A carrier's shipping cost ranges have been replaced, which changes what every shopper in
+      the affected zones is quoted. No hook is fired for this change; modules cannot observe it.
+      CarrierRangeRepository writes the delivery, range_price and range_weight rows through the
+      DBAL query builder rather than through ObjectModel, so neither a range-specific hook nor
+      the generic actionObject family fires. The registry's actionDeliveryPriceByPrice and
+      actionDeliveryPriceByWeight are a different thing: they let a module override a price at
+      the moment it is quoted, not learn that the table behind it moved.
+    code_refs:
+      - path: "src/Adapter/Carrier/Repository/CarrierRangeRepository.php"
+        role: implementation
+        description: "set() writes the range rows with createQueryBuilder, so no ObjectModel hook is reached"
 
   carrierZonesUpdated:
     id: shipping.EVT007
     kind: event
     name: "CarrierZonesUpdated"
-    description: "A carrier's zone assignments have changed."
+    description: >
+      A carrier's zone assignments have been replaced, which decides where it can deliver at all.
+      No hook is fired for this change; modules cannot observe it. CarrierRepository
+      updateAssociatedZones deletes and re-inserts the carrier_zone rows inside one transaction
+      using the raw connection, so nothing in the ObjectModel hook family is reached.
+    code_refs:
+      - path: "src/Adapter/Carrier/Repository/CarrierRepository.php"
+        role: implementation
+        description: "updateAssociatedZones at line 227 deletes and re-inserts carrier_zone rows directly"
 
   carrierTaxRuleGroupUpdated:
     id: shipping.EVT008
     kind: event
     name: "CarrierTaxRuleGroupUpdated"
-    description: "A carrier's tax rule group binding has been updated."
+    description: >
+      The tax rule group applied to a carrier's shipping cost has been changed, per shop. No hook
+      is fired for this change; modules cannot observe it. CarrierRepository setTaxRulesGroup
+      writes the carrier_tax_rules_group_shop rows with the query builder. The carrier row itself
+      may be re-versioned by getEditableOrNewVersion beforehand, which does fire
+      actionObjectCarrierAddAfter, but that announces a new carrier and says nothing about tax.
+    code_refs:
+      - path: "src/Adapter/Carrier/Repository/CarrierRepository.php"
+        role: implementation
+        description: "setTaxRulesGroup at line 273 writes the shop rows directly; deleteTaxRulesGroup at line 304 removes them"
 
   # --- Carrier Queries ---
 
   getCarrierForEditing:
     id: shipping.QRY001
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /carriers/{carrierId}
+        method: GET
+        group: shipping
     name: "GetCarrierForEditing"
     description: "Retrieve full carrier configuration for the edit form including ranges, zones, and dimensional constraints."
     delivery_priority: must-have
     code_refs:
       - path: "src/Core/Domain/Carrier/Query/GetCarrierForEditing.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Carrier/Carrier.php"
+        role: api-spec
+        description: "Declares GET /carriers/{carrierId} and names the CQRS class it fronts"
 
   getCarrierRanges:
     id: shipping.QRY002
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /carriers/{carrierId}/ranges
+        method: GET
+        group: shipping
     name: "GetCarrierRanges"
     description: "Retrieve all shipping cost ranges for a carrier, organized by zone and bracket."
     delivery_priority: must-have
     code_refs:
       - path: "src/Core/Domain/Carrier/Query/GetCarrierRanges.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Carrier/CarrierRanges.php"
+        role: api-spec
+        description: "Declares GET /carriers/{carrierId}/ranges and names the CQRS class it fronts"
 
   getAvailableCarriers:
     id: shipping.QRY003
@@ -256,7 +444,7 @@ operations:
     exchange:
       protocol: http
       endpoint:
-        path: /shipping/carriers
+        path: /carriers/search-compatible-carriers
         method: GET
         group: shipping
     responses:
@@ -271,16 +459,29 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Carrier/Query/GetAvailableCarriers.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Carrier/CompatibleCarriers.php"
+        role: api-spec
+        description: "Declares GET /carriers/search-compatible-carriers and names the CQRS class it fronts"
 
   getCarriersForProduct:
     id: shipping.QRY004
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/{productId}/carriers
+        method: GET
+        group: product
+        description: "Declared as CQRSGet in the ps_apiresources module, src/ApiPlatform/Resources/Product/ProductCarrier.php, scope product_read, available from PrestaShop 9.2.0. The same route answers PUT through SetCarriersCommand, which this model carries as catalog.CMD103."
     name: "GetCarriersForProduct"
-    description: "Retrieve carriers that can ship a specific product based on dimensional and weight constraints."
+    description: "Retrieve carriers that can ship a specific product based on dimensional and weight constraints. A product that restricts its carriers returns those of them that are enabled; a product with no restriction returns every enabled carrier of the shop, since all of them can deliver it."
     delivery_priority: should-have
     code_refs:
       - path: "src/Core/Domain/Carrier/Query/GetCarriersForProduct.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductCarrier.php"
+        role: api-spec
+        description: "Declares GET /products/{productId}/carriers and names the CQRS class it fronts"
 
 errors:
   carrierNotFound:
@@ -324,3 +525,19 @@ errors:
         role: implementation
       - path: "src/Core/Domain/Carrier/Exception/CannotToggleCarrierIsFreeStatusException.php"
         role: implementation
+
+questions:
+
+  - id: shipping.QN001
+    name: "Carriers For An Address"
+    statement: "Which carriers can deliver to this address, and what does each one charge?"
+    category: enumeration
+    priority: critical
+    bounded_context_ref: prestashop.BC010
+    answered_by: [shipping.QRY003, shipping.QRY004, shipping.QRY002]
+    concepts: [shipping.CN001, shipping.CN002]
+    resolved: true
+    resolution: >
+      GetAvailableCarriers returns the carriers whose zones cover the address and whose
+      ranges accept the cart; GetCarriersForProduct narrows that by the per-product carrier
+      restriction; GetCarrierRanges supplies the price bands the charge is read from.

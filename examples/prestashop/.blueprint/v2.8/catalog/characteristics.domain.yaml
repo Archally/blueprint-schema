@@ -4,63 +4,1191 @@ version: "1.0.0"
 scope: catalog
 tags: [characteristics]
 
+# Two aggregates that a reader keeps confusing, so the file states the difference once.
+# An AttributeGroup (Size, Color) holds Attributes and its values GENERATE combinations:
+# picking one attribute per group is what identifies a variant a shopper can buy.
+# A Feature (Weight, Material) holds FeatureValues and generates nothing: it is
+# informational text on the product page and in faceted search.
+
 operations:
-  addFeature:
-    id: catalog.CMD030
-    kind: command
-    name: "AddFeature"
-    description: "Create a new product feature (e.g. Weight, Material, Battery Life)."
-    delivery_priority: should-have
-    produces:
-      operations: [catalog.EVT002]
-      mode: all
-    code_refs:
-      - path: "src/Core/Domain/Feature/Command/AddFeatureCommand.php"
-        role: implementation
-
-  addFeatureValue:
-    id: catalog.CMD031
-    kind: command
-    name: "AddFeatureValue"
-    description: "Add a value to an existing feature (e.g. Feature 'Color' -> Value 'Blue')."
-    delivery_priority: should-have
-    produces:
-      operations: [catalog.EVT002]
-      mode: all
-
+  # --- AttributeGroup, the variant axis ---
   addAttributeGroup:
     id: catalog.CMD032
     kind: command
     name: "AddAttributeGroup"
-    description: "Create a new attribute group for product combinations (e.g. Size, Color)."
+    description: "Create an attribute group, one axis along which a product can vary. Its display type decides how the storefront renders the choice: a dropdown, radio buttons, or colour swatches."
     delivery_priority: must-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /attributes/groups
+        method: POST
+        group: attribute
+    payload:
+      schema: CreateAttributeGroupPayload
+      contentType: application/json
+    responses:
+      - code: "201"
+        type: success
+        description: "The attribute group as stored, read back through GetAttributeGroupForEditing."
+        schema: AttributeGroupResource
+        contentType: application/json
+      - code: "422"
+        type: failure
+        description: "The display type is not one of the supported values."
+        error: catalog.ERR309
+    materializes:
+      - concept: catalog.CN005
+        action: create
     produces:
-      operations: [catalog.EVT002]
+      operations: [catalog.EVT301]
       mode: all
     code_refs:
       - path: "src/Core/Domain/AttributeGroup/Command/AddAttributeGroupCommand.php"
         role: implementation
+      - path: "src/Adapter/AttributeGroup/CommandHandler/AddAttributeGroupHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/AttributeGroup.php"
+        role: api-spec
+        description: "CQRSCreate on /attributes/groups names AddAttributeGroupCommand."
+
+  editAttributeGroup:
+    id: catalog.CMD306
+    kind: command
+    name: "EditAttributeGroup"
+    description: "Update an attribute group's localized names, public name and display type. Changing the display type changes how every product using this axis is rendered, which is why it is a domain command and not a presentation setting."
+    delivery_priority: must-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /attributes/groups/{attributeGroupId}
+        method: PATCH
+        group: attribute
+    responses:
+      - code: "200"
+        type: success
+        description: "The attribute group as stored after the update."
+        schema: AttributeGroupResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No attribute group with that id."
+        error: catalog.ERR307
+    materializes:
+      - concept: catalog.CN005
+        action: update
+    produces:
+      operations: [catalog.EVT301]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Command/EditAttributeGroupCommand.php"
+        role: implementation
+      - path: "src/Adapter/AttributeGroup/CommandHandler/EditAttributeGroupHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/AttributeGroup.php"
+        role: api-spec
+        description: "CQRSPartialUpdate on /attributes/groups/{attributeGroupId} names EditAttributeGroupCommand."
 
   deleteAttributeGroup:
     id: catalog.CMD033
     kind: command
     name: "DeleteAttributeGroup"
-    description: "Remove an attribute group and all its values. Products using it must be updated."
+    description: "Delete an attribute group with every attribute under it. Any product combination built on this axis loses the attribute that identified it, so this is the destructive end of the variant model."
     delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /attributes/groups/{attributeGroupId}
+        method: DELETE
+        group: attribute
+    responses:
+      - code: "204"
+        type: success
+        description: "The group and its attributes are gone."
+      - code: "404"
+        type: failure
+        description: "No attribute group with that id."
+        error: catalog.ERR307
+      - code: "422"
+        type: failure
+        description: "The group could not be deleted."
+        error: catalog.ERR312
+    materializes:
+      - concept: catalog.CN005
+        action: delete
     produces:
-      operations: [catalog.EVT002]
+      operations: [catalog.EVT302]
       mode: all
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Command/DeleteAttributeGroupCommand.php"
+        role: implementation
+      - path: "src/Adapter/AttributeGroup/CommandHandler/DeleteAttributeGroupHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/AttributeGroup.php"
+        role: api-spec
+        description: "CQRSDelete on /attributes/groups/{attributeGroupId} names DeleteAttributeGroupCommand."
 
-  getAttributeGroups:
+  bulkDeleteAttributeGroup:
+    id: catalog.CMD307
+    kind: command
+    name: "BulkDeleteAttributeGroup"
+    description: "Delete a list of attribute groups in one call. Separate from DeleteAttributeGroup because the handler walks the list and reports which groups survived rather than aborting on the first failure."
+    delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /attributes/groups/bulk-delete
+        method: DELETE
+        group: attribute
+    responses:
+      - code: "204"
+        type: success
+        description: "Every listed group was deleted."
+      - code: "422"
+        type: failure
+        description: "At least one listed group could not be deleted."
+        error: catalog.ERR312
+    materializes:
+      - concept: catalog.CN005
+        action: delete
+    produces:
+      operations: [catalog.EVT302]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Command/BulkDeleteAttributeGroupCommand.php"
+        role: implementation
+      - path: "src/Adapter/AttributeGroup/CommandHandler/BulkDeleteAttributeGroupHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/BulkAttributeGroups.php"
+        role: api-spec
+        description: "CQRSDelete on /attributes/groups/bulk-delete names BulkDeleteAttributeGroupCommand."
+
+  getAttributeGroupForEditing:
+    id: catalog.QRY302
+    kind: query
+    name: "GetAttributeGroupForEditing"
+    description: "Read one attribute group in the shape its edit form needs: localized names per language, public name, display type and shop associations. It is the read-back of every write route on /attributes/groups."
+    delivery_priority: must-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /attributes/groups/{attributeGroupId}
+        method: GET
+        group: attribute
+    responses:
+      - code: "200"
+        type: success
+        description: "The editable state of the attribute group."
+        schema: AttributeGroupResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No attribute group with that id."
+        error: catalog.ERR307
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Query/GetAttributeGroupForEditing.php"
+        role: implementation
+      - path: "src/Adapter/AttributeGroup/QueryHandler/GetAttributeGroupForEditingHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/AttributeGroup.php"
+        role: api-spec
+        description: "CQRSGet on /attributes/groups/{attributeGroupId} names GetAttributeGroupForEditing."
+
+  getAttributeGroupList:
     id: catalog.QRY007
     kind: query
-    name: "GetAttributeGroups"
-    description: "List all attribute groups with their values."
+    name: "GetAttributeGroupList"
+    description: "Read every attribute group with the attributes under it, in one pass. This is the shape the product combination generator works from: it needs the whole matrix of axes and values before it can propose variants."
     delivery_priority: must-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /attributes/groups-with-attributes
+        method: GET
+        group: attribute
+    responses:
+      - code: "200"
+        type: success
+        description: "Every attribute group with its attributes."
+        contentType: application/json
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Query/GetAttributeGroupList.php"
+        role: implementation
+      - path: "src/Adapter/AttributeGroup/QueryHandler/GetAttributeGroupListHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/AttributeGroupWithAttributes.php"
+        role: api-spec
+        description: "CQRSGetCollection on /attributes/groups-with-attributes names GetAttributeGroupList."
 
-  getFeatures:
+  # --- Attribute, the value on a variant axis ---
+  addAttribute:
+    id: catalog.CMD309
+    kind: command
+    name: "AddAttribute"
+    description: "Add one value to an attribute group, for example Red under Color. A colour attribute carries a hex value or an uploaded texture image, which is what the storefront swatch renders. This is a value-level command, not a variant of AddAttributeGroup."
+    delivery_priority: must-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /attributes/attributes
+        method: POST
+        group: attribute
+    responses:
+      - code: "201"
+        type: success
+        description: "The attribute as stored, read back through GetAttributeForEditing."
+        contentType: application/json
+      - code: "422"
+        type: failure
+        description: "The attribute failed a domain constraint, or its texture image could not be stored."
+        error: catalog.ERR314
+    materializes:
+      - concept: catalog.CN300
+        action: create
+    produces:
+      operations: [catalog.EVT303]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Attribute/Command/AddAttributeCommand.php"
+        role: implementation
+      - path: "src/Adapter/Attribute/CommandHandler/AddAttributeHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/Attribute.php"
+        role: api-spec
+        description: "CQRSCreate on /attributes/attributes names AddAttributeCommand."
+
+  editAttribute:
+    id: catalog.CMD310
+    kind: command
+    name: "EditAttribute"
+    description: "Update one attribute's localized names, colour value or texture image, and the group it belongs to. Moving an attribute between groups changes which axis every combination using it sits on."
+    delivery_priority: must-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /attributes/attributes/{attributeId}
+        method: PATCH
+        group: attribute
+    responses:
+      - code: "200"
+        type: success
+        description: "The attribute as stored after the update."
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No attribute with that id."
+        error: catalog.ERR313
+    materializes:
+      - concept: catalog.CN300
+        action: update
+    produces:
+      operations: [catalog.EVT303]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Attribute/Command/EditAttributeCommand.php"
+        role: implementation
+      - path: "src/Adapter/Attribute/CommandHandler/EditAttributeHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/Attribute.php"
+        role: api-spec
+        description: "CQRSPartialUpdate on /attributes/attributes/{attributeId} names EditAttributeCommand."
+
+  deleteAttribute:
+    id: catalog.CMD311
+    kind: command
+    name: "DeleteAttribute"
+    description: "Delete one attribute from its group. Every product combination identified by this value loses part of its identity, so the delete reaches further than the attribute row itself."
+    delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /attributes/attributes/{attributeId}
+        method: DELETE
+        group: attribute
+    responses:
+      - code: "204"
+        type: success
+        description: "The attribute is gone."
+      - code: "404"
+        type: failure
+        description: "No attribute with that id."
+        error: catalog.ERR313
+      - code: "422"
+        type: failure
+        description: "The attribute could not be deleted."
+        error: catalog.ERR317
+    materializes:
+      - concept: catalog.CN300
+        action: delete
+    produces:
+      operations: [catalog.EVT304]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Attribute/Command/DeleteAttributeCommand.php"
+        role: implementation
+      - path: "src/Adapter/Attribute/CommandHandler/DeleteAttributeHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/Attribute.php"
+        role: api-spec
+        description: "CQRSDelete on /attributes/attributes/{attributeId} names DeleteAttributeCommand."
+
+  bulkDeleteAttribute:
+    id: catalog.CMD312
+    kind: command
+    name: "BulkDeleteAttribute"
+    description: "Delete a list of attributes in one call, reporting which survived rather than aborting the batch."
+    delivery_priority: could-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /attributes/attributes/bulk-delete
+        method: DELETE
+        group: attribute
+    responses:
+      - code: "204"
+        type: success
+        description: "Every listed attribute was deleted."
+      - code: "422"
+        type: failure
+        description: "At least one listed attribute could not be deleted."
+        error: catalog.ERR317
+    materializes:
+      - concept: catalog.CN300
+        action: delete
+    produces:
+      operations: [catalog.EVT304]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Attribute/Command/BulkDeleteAttributeCommand.php"
+        role: implementation
+      - path: "src/Adapter/Attribute/CommandHandler/BulkDeleteAttributeHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/BulkAttribute.php"
+        role: api-spec
+        description: "CQRSDelete on /attributes/attributes/bulk-delete names BulkDeleteAttributeCommand."
+
+  deleteAttributeTextureImage:
+    id: catalog.CMD308
+    kind: command
+    name: "DeleteAttributeTextureImage"
+    description: "Remove the texture image a colour attribute uses as its storefront swatch, leaving the attribute itself in place. Its command class sits under AttributeGroup and its handler under Attribute, which is the one place the code's two folders disagree. No Admin API route serves it; the back-office attribute form dispatches it."
+    delivery_priority: could-have
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN300
+        action: update
+    produces:
+      operations: [catalog.EVT303]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Command/DeleteAttributeTextureImageCommand.php"
+        role: implementation
+      - path: "src/Adapter/Attribute/CommandHandler/DeleteAttributeTextureImageHandler.php"
+        role: implementation
+
+  getAttributeForEditing:
+    id: catalog.QRY303
+    kind: query
+    name: "GetAttributeForEditing"
+    description: "Read one attribute in the shape its edit form needs: localized names, colour value, texture image reference, its group and its shop associations."
+    delivery_priority: must-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /attributes/attributes/{attributeId}
+        method: GET
+        group: attribute
+    responses:
+      - code: "200"
+        type: success
+        description: "The editable state of the attribute."
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No attribute with that id."
+        error: catalog.ERR313
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Attribute/Query/GetAttributeForEditing.php"
+        role: implementation
+      - path: "src/Adapter/Attribute/QueryHandler/GetAttributeForEditingHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/Attribute.php"
+        role: api-spec
+        description: "CQRSGet on /attributes/attributes/{attributeId} names GetAttributeForEditing."
+
+  # --- Feature, the informational characteristic ---
+  addFeature:
+    id: catalog.CMD030
+    kind: command
+    name: "AddFeature"
+    description: "Create a product feature such as Weight or Material. A feature is informational: it appears on the product page and can drive faceted search, and unlike an attribute group it generates no purchasable variant."
+    delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /features
+        method: POST
+        group: feature
+    payload:
+      schema: CreateFeaturePayload
+      contentType: application/json
+    responses:
+      - code: "201"
+        type: success
+        description: "The feature as stored, read back through GetFeatureForEditing."
+        schema: FeatureResource
+        contentType: application/json
+      - code: "422"
+        type: failure
+        description: "A feature field failed a domain constraint."
+        error: catalog.ERR320
+    materializes:
+      - concept: catalog.CN006
+        action: create
+    produces:
+      operations: [catalog.EVT305]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Feature/Command/AddFeatureCommand.php"
+        role: implementation
+      - path: "src/Adapter/Feature/CommandHandler/AddFeatureHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/Feature.php"
+        role: api-spec
+        description: "CQRSCreate on /features names AddFeatureCommand."
+
+  editFeature:
+    id: catalog.CMD313
+    kind: command
+    name: "EditFeature"
+    description: "Update a feature's localized names and its shop associations. The values under it are edited separately."
+    delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /features/{featureId}
+        method: PATCH
+        group: feature
+    responses:
+      - code: "200"
+        type: success
+        description: "The feature as stored after the update."
+        schema: FeatureResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No feature with that id."
+        error: catalog.ERR319
+    materializes:
+      - concept: catalog.CN006
+        action: update
+    produces:
+      operations: [catalog.EVT305]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Feature/Command/EditFeatureCommand.php"
+        role: implementation
+      - path: "src/Adapter/Feature/CommandHandler/EditFeatureHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/Feature.php"
+        role: api-spec
+        description: "CQRSPartialUpdate on /features/{featureId} names EditFeatureCommand."
+
+  deleteFeature:
+    id: catalog.CMD314
+    kind: command
+    name: "DeleteFeature"
+    description: "Delete a feature with every value under it, and with it the characteristic row on every product that carried one of those values."
+    delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /features/{featureId}
+        method: DELETE
+        group: feature
+    responses:
+      - code: "204"
+        type: success
+        description: "The feature and its values are gone."
+      - code: "404"
+        type: failure
+        description: "No feature with that id."
+        error: catalog.ERR319
+      - code: "422"
+        type: failure
+        description: "The feature could not be deleted."
+        error: catalog.ERR323
+    materializes:
+      - concept: catalog.CN006
+        action: delete
+    produces:
+      operations: [catalog.EVT306]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Feature/Command/DeleteFeatureCommand.php"
+        role: implementation
+      - path: "src/Adapter/Feature/CommandHandler/DeleteFeatureHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/Feature.php"
+        role: api-spec
+        description: "CQRSDelete on /features/{featureId} names DeleteFeatureCommand."
+
+  bulkDeleteFeature:
+    id: catalog.CMD315
+    kind: command
+    name: "BulkDeleteFeature"
+    description: "Delete a list of features in one call. The handler collects per-feature failures into one bulk error rather than stopping at the first, which is why BulkFeatureException exists."
+    delivery_priority: could-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /features/bulk-delete
+        method: DELETE
+        group: feature
+    responses:
+      - code: "204"
+        type: success
+        description: "Every listed feature was deleted."
+      - code: "422"
+        type: failure
+        description: "At least one listed feature could not be deleted."
+        error: catalog.ERR324
+    materializes:
+      - concept: catalog.CN006
+        action: delete
+    produces:
+      operations: [catalog.EVT306]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Feature/Command/BulkDeleteFeatureCommand.php"
+        role: implementation
+      - path: "src/Adapter/Feature/CommandHandler/BulkDeleteFeatureHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/BulkFeatures.php"
+        role: api-spec
+        description: "CQRSDelete on /features/bulk-delete names BulkDeleteFeatureCommand."
+
+  getFeatureForEditing:
+    id: catalog.QRY304
+    kind: query
+    name: "GetFeatureForEditing"
+    description: "Read one feature in the shape its edit form needs: localized names per language and shop associations."
+    delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /features/{featureId}
+        method: GET
+        group: feature
+    responses:
+      - code: "200"
+        type: success
+        description: "The editable state of the feature."
+        schema: FeatureResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No feature with that id."
+        error: catalog.ERR319
+    code_refs:
+      - path: "src/Core/Domain/Feature/Query/GetFeatureForEditing.php"
+        role: implementation
+      - path: "src/Adapter/Feature/QueryHandler/GetFeatureForEditingHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/Feature.php"
+        role: api-spec
+        description: "CQRSGet on /features/{featureId} names GetFeatureForEditing."
+
+  listFeatures:
     id: catalog.QRY008
     kind: query
-    name: "GetFeatures"
-    description: "List all features with their values for product form display."
+    name: "ListFeatures"
+    description: "List features for the back-office grid and the Admin API, paginated and filterable. There is no Core/Domain query class behind it: the route is a PaginatedList served by the feature grid data factory, which is why it returns grid rows rather than the editable shape GetFeatureForEditing returns."
     delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /features
+        method: GET
+        group: feature
+    responses:
+      - code: "200"
+        type: success
+        description: "A page of feature rows."
+        contentType: application/json
+    code_refs:
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/FeatureList.php"
+        role: api-spec
+        description: "PaginatedList on /features, gridDataFactory prestashop.core.grid.data.factory.feature; it names no CQRS query."
+
+  # --- FeatureValue, the value on a feature ---
+  addFeatureValue:
+    id: catalog.CMD031
+    kind: command
+    name: "AddFeatureValue"
+    description: "Add one value to a feature, for example 2.5kg under Weight. A value-level command: it creates a FeatureValue, not a Feature."
+    delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /features/values
+        method: POST
+        group: feature
+    responses:
+      - code: "201"
+        type: success
+        description: "The feature value as stored, read back through GetFeatureValueForEditing."
+        contentType: application/json
+      - code: "422"
+        type: failure
+        description: "The value failed a domain constraint."
+        error: catalog.ERR326
+    materializes:
+      - concept: catalog.CN007
+        action: create
+    produces:
+      operations: [catalog.EVT307]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Feature/Command/AddFeatureValueCommand.php"
+        role: implementation
+      - path: "src/Adapter/Feature/CommandHandler/AddFeatureValueHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/FeatureValue.php"
+        role: api-spec
+        description: "CQRSCreate on /features/values names AddFeatureValueCommand."
+
+  editFeatureValue:
+    id: catalog.CMD316
+    kind: command
+    name: "EditFeatureValue"
+    description: "Update one feature value's localized text, and which feature it belongs to. Every product carrying this value shows the new text, so a single edit changes many product pages."
+    delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /features/values/{featureValueId}
+        method: PATCH
+        group: feature
+    responses:
+      - code: "200"
+        type: success
+        description: "The feature value as stored after the update."
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No feature value with that id."
+        error: catalog.ERR325
+    materializes:
+      - concept: catalog.CN007
+        action: update
+    produces:
+      operations: [catalog.EVT307]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Feature/Command/EditFeatureValueCommand.php"
+        role: implementation
+      - path: "src/Adapter/Feature/CommandHandler/EditFeatureValueHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/FeatureValue.php"
+        role: api-spec
+        description: "CQRSPartialUpdate on /features/values/{featureValueId} names EditFeatureValueCommand."
+
+  deleteFeatureValue:
+    id: catalog.CMD317
+    kind: command
+    name: "DeleteFeatureValue"
+    description: "Delete one feature value and the characteristic row on every product that carried it."
+    delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /features/values/{featureValueId}
+        method: DELETE
+        group: feature
+    responses:
+      - code: "204"
+        type: success
+        description: "The feature value is gone."
+      - code: "404"
+        type: failure
+        description: "No feature value with that id."
+        error: catalog.ERR325
+      - code: "422"
+        type: failure
+        description: "The feature value could not be deleted."
+        error: catalog.ERR330
+    materializes:
+      - concept: catalog.CN007
+        action: delete
+    produces:
+      operations: [catalog.EVT308]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Feature/Command/DeleteFeatureValueCommand.php"
+        role: implementation
+      - path: "src/Adapter/Feature/CommandHandler/DeleteFeatureValueHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/FeatureValue.php"
+        role: api-spec
+        description: "CQRSDelete on /features/values/{featureValueId} names DeleteFeatureValueCommand."
+
+  bulkDeleteFeatureValue:
+    id: catalog.CMD318
+    kind: command
+    name: "BulkDeleteFeatureValue"
+    description: "Delete a list of feature values in one call, collecting per-value failures into one bulk error rather than stopping at the first."
+    delivery_priority: could-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /features/values/bulk-delete
+        method: DELETE
+        group: feature
+    responses:
+      - code: "204"
+        type: success
+        description: "Every listed feature value was deleted."
+      - code: "422"
+        type: failure
+        description: "At least one listed value could not be deleted."
+        error: catalog.ERR331
+    materializes:
+      - concept: catalog.CN007
+        action: delete
+    produces:
+      operations: [catalog.EVT308]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Feature/Command/BulkDeleteFeatureValueCommand.php"
+        role: implementation
+      - path: "src/Adapter/Feature/CommandHandler/BulkDeleteFeatureValueHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/BulkFeatureValues.php"
+        role: api-spec
+        description: "CQRSDelete on /features/values/bulk-delete names BulkDeleteFeatureValueCommand."
+
+  getFeatureValueForEditing:
+    id: catalog.QRY305
+    kind: query
+    name: "GetFeatureValueForEditing"
+    description: "Read one feature value in the shape its edit form needs: localized text per language and the feature it belongs to."
+    delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /features/values/{featureValueId}
+        method: GET
+        group: feature
+    responses:
+      - code: "200"
+        type: success
+        description: "The editable state of the feature value."
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No feature value with that id."
+        error: catalog.ERR325
+    code_refs:
+      - path: "src/Core/Domain/Feature/Query/GetFeatureValueForEditing.php"
+        role: implementation
+      - path: "src/Adapter/Feature/QueryHandler/GetFeatureValueForEditingHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/FeatureValue.php"
+        role: api-spec
+        description: "CQRSGet on /features/values/{featureValueId} names GetFeatureValueForEditing."
+
+  # --- Events. PrestaShop has no domain event classes; every fact below is a hook
+  #     the ObjectModel subclass fires, and modules are the subscribers.
+  attributeGroupSaved:
+    id: catalog.EVT301
+    kind: event
+    name: "AttributeGroupSaved"
+    description: "An attribute group was written, on create or on update. PrestaShop publishes this as the hook actionAttributeGroupSave, fired by AttributeGroup::add and AttributeGroup::update with the group id. The code fires one hook for both writes, so the model states one fact rather than inventing a created and an updated variant."
+    tags: [hook:actionAttributeGroupSave]
+    code_refs:
+      - path: "classes/AttributeGroup.php"
+        role: implementation
+        description: "Hook::exec('actionAttributeGroupSave', ['id_attribute_group' => $this->id]) at lines 76 and 96."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry actionAttributeGroupSave."
+
+  attributeGroupDeleted:
+    id: catalog.EVT302
+    kind: event
+    name: "AttributeGroupDeleted"
+    description: "An attribute group was deleted. PrestaShop publishes this as the hook actionAttributeGroupDelete, fired by AttributeGroup::delete once the group and its attributes are gone."
+    tags: [hook:actionAttributeGroupDelete]
+    code_refs:
+      - path: "classes/AttributeGroup.php"
+        role: implementation
+        description: "Hook::exec('actionAttributeGroupDelete', ['id_attribute_group' => $this->id]) at line 183."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry actionAttributeGroupDelete."
+
+  attributeSaved:
+    id: catalog.EVT303
+    kind: event
+    name: "AttributeSaved"
+    description: "An attribute was written, on create or on update. PrestaShop publishes this as the hook actionAttributeSave, fired by ProductAttribute::add and ProductAttribute::update with the attribute id. The class is named ProductAttribute in the legacy layer and Attribute in the domain layer; they are the same row."
+    tags: [hook:actionAttributeSave]
+    code_refs:
+      - path: "classes/ProductAttribute.php"
+        role: implementation
+        description: "Hook::exec('actionAttributeSave', ['id_attribute' => $this->id]) at lines 118 and 144."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry actionAttributeSave."
+
+  attributeDeleted:
+    id: catalog.EVT304
+    kind: event
+    name: "AttributeDeleted"
+    description: "An attribute was deleted. PrestaShop publishes this as the hook actionAttributeDelete, fired by ProductAttribute::delete before the row goes, so a listener can still read what is about to be removed."
+    tags: [hook:actionAttributeDelete]
+    code_refs:
+      - path: "classes/ProductAttribute.php"
+        role: implementation
+        description: "Hook::exec('actionAttributeDelete', ['id_attribute' => $this->id]) at line 104."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry actionAttributeDelete."
+
+  featureSaved:
+    id: catalog.EVT305
+    kind: event
+    name: "FeatureSaved"
+    description: "A feature was written, on create or on update. PrestaShop publishes this as the hook actionFeatureSave, fired by Feature::add and Feature::update with the feature id."
+    tags: [hook:actionFeatureSave]
+    code_refs:
+      - path: "classes/Feature.php"
+        role: implementation
+        description: "Hook::exec('actionFeatureSave', ['id_feature' => $this->id]) at lines 114 and 159."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry actionFeatureSave."
+
+  featureDeleted:
+    id: catalog.EVT306
+    kind: event
+    name: "FeatureDeleted"
+    description: "A feature was deleted, taking its values with it. PrestaShop publishes this as the hook actionFeatureDelete, fired by Feature::delete."
+    tags: [hook:actionFeatureDelete]
+    code_refs:
+      - path: "classes/Feature.php"
+        role: implementation
+        description: "Hook::exec('actionFeatureDelete', ['id_feature' => $this->id]) at line 200."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry actionFeatureDelete."
+
+  featureValueSaved:
+    id: catalog.EVT307
+    kind: event
+    name: "FeatureValueSaved"
+    description: "A feature value was written, on create or on update. PrestaShop publishes this as the hook actionFeatureValueSave, fired by FeatureValue::add and FeatureValue::update with the value id."
+    tags: [hook:actionFeatureValueSave]
+    code_refs:
+      - path: "classes/FeatureValue.php"
+        role: implementation
+        description: "Hook::exec('actionFeatureValueSave', ['id_feature_value' => $this->id]) at lines 202 and 222."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry actionFeatureValueSave."
+
+  featureValueDeleted:
+    id: catalog.EVT308
+    kind: event
+    name: "FeatureValueDeleted"
+    description: "A feature value was deleted. PrestaShop publishes this as the hook actionFeatureValueDelete, fired by FeatureValue::delete."
+    tags: [hook:actionFeatureValueDelete]
+    code_refs:
+      - path: "classes/FeatureValue.php"
+        role: implementation
+        description: "Hook::exec('actionFeatureValueDelete', ['id_feature_value' => $this->id]) at line 250."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry actionFeatureValueDelete."
+
+errors:
+  # --- AttributeGroup ---
+  attributeGroupNotFound:
+    id: catalog.ERR307
+    name: "AttributeGroupNotFound"
+    description: "No attribute group exists with the given id, so there is no variant axis to read or write."
+    category: not-found
+    severity: warning
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Exception/AttributeGroupNotFoundException.php"
+        role: implementation
+
+  attributeGroupConstraintViolated:
+    id: catalog.ERR308
+    name: "AttributeGroupConstraintViolated"
+    description: "An attribute group field failed a domain constraint: a missing localized name, or an id that is not a positive integer."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Exception/AttributeGroupConstraintException.php"
+        role: implementation
+
+  invalidAttributeGroupType:
+    id: catalog.ERR309
+    name: "InvalidAttributeGroupType"
+    description: "The display type is not one PrestaShop renders. A group's type decides whether the storefront shows a dropdown, radio buttons or colour swatches, so an unknown value would leave the variant choice unrenderable."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Exception/InvalidAttributeGroupTypeException.php"
+        role: implementation
+        description: "Extends AttributeGroupConstraintException."
+
+  cannotAddAttributeGroup:
+    id: catalog.ERR310
+    name: "CannotAddAttributeGroup"
+    description: "The attribute group passed its constraints but could not be written, so no new variant axis exists."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Exception/CannotAddAttributeGroupException.php"
+        role: implementation
+
+  cannotUpdateAttributeGroup:
+    id: catalog.ERR311
+    name: "CannotUpdateAttributeGroup"
+    description: "The attribute group exists and the new values are valid, but the update could not be written."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Exception/CannotUpdateAttributeGroupException.php"
+        role: implementation
+
+  deleteAttributeGroupFailed:
+    id: catalog.ERR312
+    name: "DeleteAttributeGroupFailed"
+    description: "An attribute group could not be deleted. In a bulk delete this names the groups that survived, so the caller can tell a partial batch from a rejected one."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Exception/DeleteAttributeGroupException.php"
+        role: implementation
+
+  # --- Attribute ---
+  attributeNotFound:
+    id: catalog.ERR313
+    name: "AttributeNotFound"
+    description: "No attribute exists with the given id, so there is no value on a variant axis to read or write."
+    category: not-found
+    severity: warning
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Attribute/Exception/AttributeNotFoundException.php"
+        role: implementation
+
+  attributeConstraintViolated:
+    id: catalog.ERR314
+    name: "AttributeConstraintViolated"
+    description: "An attribute field failed a domain constraint: a missing localized name, a colour that is not a valid hex value, or an id that is not a positive integer."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Attribute/Exception/AttributeConstraintException.php"
+        role: implementation
+
+  cannotAddAttribute:
+    id: catalog.ERR315
+    name: "CannotAddAttribute"
+    description: "The attribute passed its constraints but could not be written, so the group gained no value."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Attribute/Exception/CannotAddAttributeException.php"
+        role: implementation
+
+  cannotUpdateAttribute:
+    id: catalog.ERR316
+    name: "CannotUpdateAttribute"
+    description: "The attribute exists and the new values are valid, but the update could not be written."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Attribute/Exception/CannotUpdateAttributeException.php"
+        role: implementation
+
+  deleteAttributeFailed:
+    id: catalog.ERR317
+    name: "DeleteAttributeFailed"
+    description: "An attribute could not be deleted. In a bulk delete this names the attributes that survived."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Attribute/Exception/DeleteAttributeException.php"
+        role: implementation
+
+  attributeUploadFailed:
+    id: catalog.ERR318
+    name: "AttributeUploadFailed"
+    description: "A colour attribute's texture image could not be stored. The attribute itself may be written, so the swatch falls back to the hex colour."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Attribute/Exception/AttributeUploadFailedException.php"
+        role: implementation
+
+  # --- Feature ---
+  featureNotFound:
+    id: catalog.ERR319
+    name: "FeatureNotFound"
+    description: "No feature exists with the given id."
+    category: not-found
+    severity: warning
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Feature/Exception/FeatureNotFoundException.php"
+        role: implementation
+
+  featureConstraintViolated:
+    id: catalog.ERR320
+    name: "FeatureConstraintViolated"
+    description: "A feature field failed a domain constraint: a missing localized name, or an id that is not a positive integer."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Feature/Exception/FeatureConstraintException.php"
+        role: implementation
+
+  cannotAddFeature:
+    id: catalog.ERR321
+    name: "CannotAddFeature"
+    description: "The feature passed its constraints but could not be written."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Feature/Exception/CannotAddFeatureException.php"
+        role: implementation
+
+  cannotEditFeature:
+    id: catalog.ERR322
+    name: "CannotEditFeature"
+    description: "The feature exists and the new values are valid, but the update could not be written."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Feature/Exception/CannotEditFeatureException.php"
+        role: implementation
+
+  cannotDeleteFeature:
+    id: catalog.ERR323
+    name: "CannotDeleteFeature"
+    description: "A feature could not be deleted, so it and its values remain on every product carrying them."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Feature/Exception/CannotDeleteFeatureException.php"
+        role: implementation
+
+  bulkFeatureFailure:
+    id: catalog.ERR324
+    name: "BulkFeatureFailure"
+    description: "A bulk feature operation finished with failures. It implements BulkCommandExceptionInterface, which is how the handler reports which ids failed instead of aborting on the first one."
+    category: conflict
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Feature/Exception/BulkFeatureException.php"
+        role: implementation
+
+  # --- FeatureValue ---
+  featureValueNotFound:
+    id: catalog.ERR325
+    name: "FeatureValueNotFound"
+    description: "No feature value exists with the given id."
+    category: not-found
+    severity: warning
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Feature/Exception/FeatureValueNotFoundException.php"
+        role: implementation
+
+  featureValueConstraintViolated:
+    id: catalog.ERR326
+    name: "FeatureValueConstraintViolated"
+    description: "A feature value field failed a domain constraint, most often a missing localized value for a required language."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Feature/Exception/FeatureValueConstraintException.php"
+        role: implementation
+
+  invalidFeatureValueId:
+    id: catalog.ERR327
+    name: "InvalidFeatureValueId"
+    description: "A feature value id was supplied that is not a positive integer, so no lookup was attempted."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Feature/Exception/InvalidFeatureValueIdException.php"
+        role: implementation
+
+  cannotAddFeatureValue:
+    id: catalog.ERR328
+    name: "CannotAddFeatureValue"
+    description: "The feature value passed its constraints but could not be written, so the feature gained no value."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Feature/Exception/CannotAddFeatureValueException.php"
+        role: implementation
+
+  cannotUpdateFeatureValue:
+    id: catalog.ERR329
+    name: "CannotUpdateFeatureValue"
+    description: "The feature value exists and the new text is valid, but the update could not be written."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Feature/Exception/CannotUpdateFeatureValueException.php"
+        role: implementation
+
+  cannotDeleteFeatureValue:
+    id: catalog.ERR330
+    name: "CannotDeleteFeatureValue"
+    description: "A feature value could not be deleted, so it remains on every product carrying it."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Feature/Exception/CannotDeleteFeatureValueException.php"
+        role: implementation
+
+  bulkFeatureValueFailure:
+    id: catalog.ERR331
+    name: "BulkFeatureValueFailure"
+    description: "A bulk feature value operation finished with failures. Like BulkFeatureException it implements BulkCommandExceptionInterface and names the ids that failed."
+    category: conflict
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Feature/Exception/BulkFeatureValueException.php"
+        role: implementation

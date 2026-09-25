@@ -27,7 +27,7 @@ components:
             properties:
               attributeGroupId:
                 type: integer
-                description: "Attribute group identifier."
+                description: "One axis of the variant matrix, such as Size or Color. The generator makes the cartesian product of the groups listed here, so adding a third group multiplies the combinations rather than adding to them."
                 example: 1
               attributeIds:
                 type: array
@@ -41,7 +41,7 @@ components:
             - attributeGroupId: 2
               attributeIds: [4, 5]
       code_refs:
-        - path: "src/Core/Domain/Combination/Command/GenerateProductCombinationsCommand.php"
+        - path: "src/Core/Domain/Product/Combination/Command/GenerateProductCombinationsCommand.php"
           role: schema
 
     UpdateCombinationPayload:
@@ -63,7 +63,7 @@ components:
       properties:
         combinationId:
           type: integer
-          description: "Combination to update."
+          description: "Which variant the edit targets. Its attribute values are fixed at generation and are not editable here; this call changes the variant's own stock, prices and codes."
           example: 7
         reference:
           type: string
@@ -91,12 +91,12 @@ components:
           example: "5901234123464"
         isbn:
           type: string
-          description: "ISBN."
-          example: ""
+          description: "Book number for this variant, at most 32 characters and checked by isIsbn. Empty for anything that is not a book, which is most of a general catalog."
+          example: "9783161484100"
         upc:
           type: string
-          description: "UPC barcode."
-          example: ""
+          description: "Twelve-digit North American barcode, checked by isUpc. Empty on a shop that only uses EAN-13, and the two are stored separately rather than converted."
+          example: "012345678905"
         mpn:
           type: string
           description: "Manufacturer Part Number."
@@ -119,7 +119,7 @@ components:
           description: "Expected availability date."
           example: "2026-04-01"
       code_refs:
-        - path: "src/Core/Domain/Combination/Command/UpdateCombinationCommand.php"
+        - path: "src/Core/Domain/Product/Combination/Command/UpdateCombinationCommand.php"
           role: schema
 
     CombinationResource:
@@ -149,15 +149,15 @@ components:
           example: 42
         reference:
           type: string
-          description: "SKU reference."
+          description: "The variant's own SKU, up to 64 characters and free text rather than a checked code. It overrides the product's reference on picking lists and invoices, which is why a variant usually has one even when the product does too."
           example: "LAPTOP-15-BLK-M"
         impactOnPrice:
           type: string
-          description: "Price offset from base."
+          description: "What this variant adds to or takes off the product's base price, as a signed decimal. It is an offset, not a price: changing the product's price moves every variant with it."
           example: "50.000000"
         impactOnWeight:
           type: string
-          description: "Weight offset."
+          description: "What this variant adds to the product's weight, in the shop's weight unit. The carrier's weight ranges are matched against the sum, so a heavy variant can land in a different shipping band from its siblings."
           example: "0.100000"
         quantity:
           type: integer
@@ -169,15 +169,19 @@ components:
           example: 1
         ean13:
           type: string
+          description: "Thirteen-digit European barcode for this variant, checked by isEan13. Distinct per variant because a size or colour is a different retail item to a scanner."
           example: "5901234123464"
         isbn:
           type: string
-          example: ""
+          description: "Book number for this variant, at most 32 characters. Empty for anything that is not a book."
+          example: "9783161484100"
         upc:
           type: string
-          example: ""
+          description: "Twelve-digit North American barcode. Stored beside ean13 rather than derived from it, so a shop selling in both markets carries both."
+          example: "012345678905"
         mpn:
           type: string
+          description: "The manufacturer's own part number, up to 40 characters. It is what a supplier order or a marketplace feed is matched on, and unlike the reference it is not the shop's to choose."
           example: "MPN-LAP-2026-M"
         isDefault:
           type: boolean
@@ -185,31 +189,43 @@ components:
           example: true
         lowStockThreshold:
           type: integer
+          description: "Quantity at or below which this variant counts as running out. Nullable in the database: no value means the shop's global threshold applies instead of none."
           example: 5
         lowStockAlertEnabled:
           type: boolean
+          description: "Whether crossing the threshold above sends the shop an email. Separate from the threshold so a value can be set and watched silently."
           example: true
         availableDate:
           type: string
           format: date
+          description: "When an out-of-stock variant is expected back. It is shown to the shopper on a backorder-enabled product, so a wrong date here is a promise the shop has made."
           example: "2026-04-01"
         attributes:
           type: array
-          description: "Attribute values forming this combination."
+          description: "The one value per group that defines this variant, which is what distinguishes it from its siblings. Fixed when the combination is generated: a different pair of values is a different combination, not an edit to this one."
+          example:
+            - attributeGroupId: 1
+              attributeGroupName: "Size"
+              attributeId: 2
+              attributeName: "M"
           items:
             type: object
             properties:
               attributeGroupId:
                 type: integer
+                description: "The axis this value belongs to, such as Size."
                 example: 1
               attributeGroupName:
                 type: string
+                description: "The group's name in the employee's language, carried here so the back office can label the variant without a second lookup."
                 example: "Size"
               attributeId:
                 type: integer
+                description: "The value chosen on that axis."
                 example: 2
               attributeName:
                 type: string
+                description: "The value's name in the employee's language, which is what the attribute summary line is built from."
                 example: "M"
         imageIds:
           type: array
@@ -218,7 +234,7 @@ components:
             type: integer
           example: [14, 15]
       code_refs:
-        - path: "src/Core/Domain/Combination/QueryResult/CombinationForEditing.php"
+        - path: "src/Core/Domain/Product/Combination/QueryResult/CombinationForEditing.php"
           role: schema
 
     CombinationListItem:
@@ -237,7 +253,7 @@ components:
       properties:
         combinationId:
           type: integer
-          description: "Combination identifier."
+          description: "The variant this row stands for, used to link to its edit form. A product's list is keyed on this rather than on the attribute summary, which is not unique across languages."
           example: 7
         attributeSummary:
           type: string
@@ -245,11 +261,11 @@ components:
           example: "Size: M, Color: Black"
         reference:
           type: string
-          description: "SKU reference."
+          description: "The variant's own SKU, shown in the list because it is what a warehouse search is run on."
           example: "LAPTOP-15-BLK-M"
         impactOnPrice:
           type: string
-          description: "Price offset."
+          description: "The signed offset this variant applies to the base price. Shown beside the computed final price below so an employee can see which of the two was edited."
           example: "50.000000"
         finalPrice:
           type: string

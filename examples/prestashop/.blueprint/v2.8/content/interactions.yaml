@@ -12,7 +12,7 @@ screens:
     name: "CMS Page List"
     summary: "Paginated grid of CMS pages with title, category, status, and bulk action controls."
     uses_models: ["CmsPageList"]
-    motivated_by: [content.G001]
+    motivated_by: [content.GL001]
 
   - id: content.SCR002
     name: "CMS Page Editor"
@@ -24,7 +24,7 @@ screens:
     name: "CMS Category List"
     summary: "Tree view of CMS page categories with breadcrumb navigation, status, and bulk actions."
     uses_models: ["CmsPageCategoryList"]
-    motivated_by: [content.G001]
+    motivated_by: [content.GL001]
 
   - id: content.SCR004
     name: "CMS Category Editor"
@@ -35,13 +35,35 @@ screens:
     name: "Theme Management"
     summary: "Theme list with active indicator, import controls, and theme action buttons (enable, delete, reset, RTL)."
     uses_models: ["ThemeList"]
-    motivated_by: [content.G003]
+    motivated_by: [content.GL003]
 
   - id: content.SCR006
     name: "SEO & URL Configuration"
     summary: "Meta entry list with page name, URL rewrite, and localized title/description management."
     uses_models: ["MetaList", "EditableMeta"]
-    motivated_by: [content.G002]
+    motivated_by: [content.GL002]
+
+  # The storefront side of content. The six screens above are back office; the one below is the
+  # page a shopper reads.
+
+  - id: content.SCR007
+    name: "CMS page (storefront)"
+    summary: "A shop's own editorial page - terms, delivery, about us - served read-only from the CMS the back office maintains."
+    description: >
+      CmsController serves two different pages from one controller and says which by the
+      template it picks: cms/page for a single CMS page and cms/category for a listing of the
+      pages in one category. The page is read-only; nothing a shopper does here writes. One
+      detail is easy to miss and matters to anyone extending the shop: the category listing
+      passes its content through filterCmsCategoryContent as a chained hook, so each subscribing
+      module receives the previous module's output rather than the original. A shopper reaching
+      a page whose indexation flag is off also gets a nobots marker, which is how an unlisted
+      page stays out of search results without being unpublished.
+    uses_models: [MDL601, MDL603]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/CmsController.php"
+        role: implementation
+        description: "The page. setTemplate('cms/page') at line 116 and setTemplate('cms/category') at line 139; the chained filterCmsCategoryContent hook at line 124."
 
 actions:
   - id: content.UAC001
@@ -92,3 +114,9 @@ navigation:
     to: content.SCR004
     condition: "User clicks category row or 'Add Category' button"
     description: "Navigate to CMS category editor."
+
+  - id: content.UNV003
+    from: shop.SCR006
+    to: content.SCR007
+    condition: "Shopper follows a CMS link in the footer"
+    description: "The footer block that carries these links is the ps_linklist module, not core, so a shop with that module removed has CMS pages nothing links to."

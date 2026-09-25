@@ -1,5 +1,11 @@
 ---
 name: "Catalog Pricing"
+description: >-
+  Catalog price rules: standing reductions applied to a selection of products for a customer group,
+  a quantity threshold or a date range, distinct from a discount because nobody enters a code for
+  one. They are stored as SpecificPriceRule ObjectModels. No Admin API route serves any of them -
+  ps_apiresources declares no catalog-price-rule resource - so all five execute in the same process, dispatched from the
+  back-office Catalog Price Rules controller.
 version: "1.0.0"
 scope: checkout
 tags: [pricing, catalog-price-rule, b2b]
@@ -8,6 +14,11 @@ operations:
   createCatalogPriceRule:
     id: checkout.CMD021
     kind: command
+    payload:
+      schema: CreateCatalogPriceRulePayload
+      contentType: application/json
+      description: "The command's own argument shape, carried over the command bus."
+    dispatch: inprocess
     name: "CreateCatalogPriceRule"
     description: "Create a bulk price reduction rule for product selections based on quantity thresholds, customer groups, or date ranges."
     delivery_priority: should-have
@@ -17,6 +28,9 @@ operations:
     produces:
       operations: [checkout.EVT010]
       mode: all
+    materializes:
+      - concept: checkout.CN006
+        action: create
     code_refs:
       - path: "src/Core/Domain/CatalogPriceRule/Command/AddCatalogPriceRuleCommand.php"
         role: implementation
@@ -24,6 +38,7 @@ operations:
   editCatalogPriceRule:
     id: checkout.CMD022
     kind: command
+    dispatch: inprocess
     name: "EditCatalogPriceRule"
     description: "Modify an existing catalog price rule's conditions, reduction, or validity period."
     delivery_priority: should-have
@@ -33,6 +48,9 @@ operations:
     produces:
       operations: [checkout.EVT011]
       mode: all
+    materializes:
+      - concept: checkout.CN006
+        action: update
     code_refs:
       - path: "src/Core/Domain/CatalogPriceRule/Command/EditCatalogPriceRuleCommand.php"
         role: implementation
@@ -40,6 +58,7 @@ operations:
   deleteCatalogPriceRule:
     id: checkout.CMD023
     kind: command
+    dispatch: inprocess
     name: "DeleteCatalogPriceRule"
     description: "Delete one or more catalog price rules. Supports single and bulk deletion."
     delivery_priority: should-have
@@ -47,6 +66,9 @@ operations:
     produces:
       operations: [checkout.EVT012]
       mode: all
+    materializes:
+      - concept: checkout.CN006
+        action: delete
     code_refs:
       - path: "src/Core/Domain/CatalogPriceRule/Command/DeleteCatalogPriceRuleCommand.php"
         role: implementation
@@ -56,6 +78,12 @@ operations:
   getCatalogPriceRuleForEditing:
     id: checkout.QRY007
     kind: query
+    payload:
+      schema: CatalogPriceRuleResource
+      contentType: application/json
+      description: "What the query returns."
+      required: false
+    dispatch: inprocess
     name: "GetCatalogPriceRuleForEditing"
     description: "Retrieve full catalog price rule configuration for the edit form."
     delivery_priority: should-have
@@ -66,6 +94,7 @@ operations:
   getCatalogPriceRuleListForProduct:
     id: checkout.QRY008
     kind: query
+    dispatch: inprocess
     name: "GetCatalogPriceRuleListForProduct"
     description: "List all catalog price rules applicable to a specific product."
     delivery_priority: should-have
@@ -77,19 +106,57 @@ operations:
     id: checkout.EVT010
     kind: event
     name: "CatalogPriceRuleCreated"
-    description: "Emitted when a new catalog price rule is created."
+    description: >-
+      A catalog price rule now exists, so the prices it governs are recomputed for every matching
+      product. Modules receive actionObjectSpecificPriceRuleAddAfter: the rule is persisted as a
+      SpecificPriceRule ObjectModel, and that legacy class name is the one the dynamic hook
+      carries. No catalog-price-rule hook of its own is registered.
+    tags: ["hook:actionObjectSpecificPriceRuleAddAfter"]
+    code_refs:
+      - path: "src/Adapter/CatalogPriceRule/CommandHandler/AddCatalogPriceRuleHandler.php"
+        role: implementation
+        description: "Constructs a SpecificPriceRule and calls add() on it."
+      - path: "classes/SpecificPriceRule.php"
+        role: implementation
+        description: "SpecificPriceRuleCore extends ObjectModel and fires no hook of its own."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 615 fires actionObject<Class>AddAfter, resolving to actionObjectSpecificPriceRuleAddAfter."
 
   catalogPriceRuleUpdated:
     id: checkout.EVT011
     kind: event
     name: "CatalogPriceRuleUpdated"
-    description: "Emitted when a catalog price rule is modified."
+    description: >-
+      A catalog price rule's conditions or reduction changed, so the set of products it prices and
+      the prices themselves both move. Modules receive actionObjectSpecificPriceRuleUpdateAfter,
+      under the legacy persisted class name, with no indication of which products are affected -
+      a module that caches computed prices has to invalidate broadly.
+    tags: ["hook:actionObjectSpecificPriceRuleUpdateAfter"]
+    code_refs:
+      - path: "src/Adapter/CatalogPriceRule/CommandHandler/EditCatalogPriceRuleHandler.php"
+        role: implementation
+        description: "Loads the SpecificPriceRule and calls update() on it."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847 fires actionObject<Class>UpdateAfter, resolving to actionObjectSpecificPriceRuleUpdateAfter."
 
   catalogPriceRuleDeleted:
     id: checkout.EVT012
     kind: event
     name: "CatalogPriceRuleDeleted"
-    description: "Emitted when one or more catalog price rules are deleted."
+    description: >-
+      One or more catalog price rules no longer exist, so the prices they governed revert to the
+      next applicable rule or to the base price. Modules receive
+      actionObjectSpecificPriceRuleDeleteAfter, once per rule even under a bulk delete.
+    tags: ["hook:actionObjectSpecificPriceRuleDeleteAfter"]
+    code_refs:
+      - path: "src/Adapter/CatalogPriceRule/CommandHandler/DeleteCatalogPriceRuleHandler.php"
+        role: implementation
+        description: "Loads the SpecificPriceRule and calls delete() on it; BulkDeleteCatalogPriceRuleHandler loops over the same path."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 923 fires actionObject<Class>DeleteAfter, resolving to actionObjectSpecificPriceRuleDeleteAfter."
 
 errors:
   catalogPriceRuleNotFound:

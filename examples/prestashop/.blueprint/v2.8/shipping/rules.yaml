@@ -81,6 +81,20 @@ validation:
     modality: obligatory
     concepts: [shipping.CN004]
 
+  - id: shipping.VR009
+    name: "Tracking number must not be blank"
+    description: "A shipment is fulfilled by recording the carrier's tracking number, and a string of whitespace is not one. The TrackingNumber value object trims the input and refuses an empty result, so a shipment can never be marked packed with nothing to track it by."
+    logic:
+      when: "a shipment is fulfilled"
+      then: "trim(trackingNumber) != ''"
+    modality: obligatory
+    concepts: [shipping.CN004]
+    code_refs:
+      - path: "src/Core/Domain/Shipment/ValueObject/TrackingNumber.php"
+        role: model
+      - path: "src/Core/Domain/Shipment/Exception/InvalidShipmentTrackingNumberException.php"
+        role: implementation
+
 transition:
   - id: shipping.TR001
     name: "Shipped shipment becomes immutable"

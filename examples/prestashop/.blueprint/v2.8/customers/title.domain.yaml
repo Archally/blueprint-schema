@@ -8,68 +8,239 @@ operations:
   addTitle:
     id: customers.CMD020
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /titles
+        method: POST
+        group: customers
+    payload:
+      schema: TitleResource
+      contentType: multipart/form-data
+    responses:
+      - code: "201"
+        type: success
+        description: "The title was created and can now be picked on a customer profile."
+        schema: TitleResource
+        contentType: application/json
+      - code: "422"
+        type: failure
+        description: "A localized name is missing, or the gender is not one of the accepted values."
+        error: customers.ERR019
+      - code: "500"
+        type: error
+        description: "The title was accepted but its image could not be stored."
+        error: customers.ERR020
     name: "AddTitle"
-    description: "Create a new customer title (salutation) with localized name and gender association."
+    description: >-
+      Create a new customer title (salutation) with a localized name per language, a gender and an
+      optional image. The route takes multipart form data because the image is uploaded with the
+      rest of the payload rather than separately.
     delivery_priority: could-have
     initiated_by: [orders.ACT004]
+    materializes:
+      - concept: customers.CN003
+        action: create
     produces:
       operations: [customers.EVT013]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Title/Command/AddTitleCommand.php"
         role: implementation
+      - path: "src/Adapter/Title/CommandHandler/AddTitleHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Title/Title.php"
+        role: api-spec
 
   editTitle:
     id: customers.CMD021
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /titles/{titleId}
+        method: PATCH
+        group: customers
+    payload:
+      schema: TitleResource
+      contentType: multipart/form-data
+    responses:
+      - code: "200"
+        type: success
+        description: "The title as stored after the edit."
+        schema: TitleResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No title with this identifier exists."
+        error: customers.ERR008
+      - code: "422"
+        type: failure
+        description: "The gender is not one of the accepted values."
+        error: customers.ERR019
     name: "EditTitle"
-    description: "Update an existing title's name or gender."
+    description: "Update an existing title's localized names, gender or image. Served as a partial update, so an omitted field keeps its stored value."
     delivery_priority: could-have
     initiated_by: [orders.ACT004]
+    materializes:
+      - concept: customers.CN003
+        action: update
     produces:
       operations: [customers.EVT014]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Title/Command/EditTitleCommand.php"
         role: implementation
+      - path: "src/Adapter/Title/CommandHandler/EditTitleHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Title/Title.php"
+        role: api-spec
 
   deleteTitle:
     id: customers.CMD022
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /titles/{titleId}
+        method: DELETE
+        group: customers
+    responses:
+      - code: "204"
+        type: success
+        description: "The title was removed. Customers that carried it keep a null salutation."
+      - code: "404"
+        type: failure
+        description: "No title with this identifier exists."
+        error: customers.ERR008
     name: "DeleteTitle"
-    description: "Delete one or more titles. Supports single and bulk deletion."
+    description: "Delete one title."
     delivery_priority: could-have
     initiated_by: [orders.ACT004]
+    materializes:
+      - concept: customers.CN003
+        action: delete
     produces:
-      operations: [customers.EVT013]
+      operations: [customers.EVT018]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Title/Command/DeleteTitleCommand.php"
         role: implementation
+      - path: "src/Adapter/Title/CommandHandler/DeleteTitleHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Title/Title.php"
+        role: api-spec
+
+  bulkDeleteTitle:
+    id: customers.CMD029
+    kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /titles/bulk-delete
+        method: DELETE
+        group: customers
+    payload:
+      schema: BulkTitleIds
+      contentType: application/json
+    responses:
+      - code: "204"
+        type: success
+        description: "Every listed title was removed."
+      - code: "404"
+        type: failure
+        description: "One of the listed identifiers names no title, and the batch stops there."
+        error: customers.ERR008
+    name: "BulkDeleteTitle"
+    description: "Delete a list of titles in one call. Split from DeleteTitle because the Admin API serves it on its own route with a body the single delete does not take."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT004]
+    materializes:
+      - concept: customers.CN003
+        action: delete
+    produces:
+      operations: [customers.EVT018]
+      mode: all
+    code_refs:
       - path: "src/Core/Domain/Title/Command/BulkDeleteTitleCommand.php"
         role: implementation
+      - path: "src/Adapter/Title/CommandHandler/BulkDeleteTitleHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Title/BulkDeleteTitles.php"
+        role: api-spec
 
   getTitleForEditing:
     id: customers.QRY013
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /titles/{titleId}
+        method: GET
+        group: customers
+    payload:
+      schema: TitleResource
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The title, in the shape the create and update routes also take."
+        schema: TitleResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No title with this identifier exists."
+        error: customers.ERR008
     name: "GetTitleForEditing"
-    description: "Retrieve a title for the edit form."
+    description: "Retrieve a title for the edit form, including the width and height of its stored image."
     delivery_priority: could-have
     code_refs:
       - path: "src/Core/Domain/Title/Query/GetTitleForEditing.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Title/Title.php"
+        role: api-spec
 
   titleCreated:
     id: customers.EVT013
     kind: event
     name: "TitleCreated"
-    description: "Emitted when a title is created or deleted."
+    description: >-
+      A title row was inserted. Fired as the hook actionObjectGenderAddAfter by ObjectModel::add,
+      reached through TitleRepository. The persisted class is Gender, not Title, so the hook a
+      module must listen on carries the older name the database still uses.
+    tags: ["hook:actionObjectGenderAddAfter"]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/Gender.php"
+        role: implementation
 
   titleUpdated:
     id: customers.EVT014
     kind: event
     name: "TitleUpdated"
-    description: "Emitted when a title is modified."
+    description: "A title's localized names, gender or image changed. Fired as the hook actionObjectGenderUpdateAfter by ObjectModel::update, reached through TitleRepository."
+    tags: ["hook:actionObjectGenderUpdateAfter"]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/Gender.php"
+        role: implementation
+
+  titleDeleted:
+    id: customers.EVT018
+    kind: event
+    name: "TitleDeleted"
+    description: >-
+      A title was removed, singly or as part of a batch. Fired as the hook
+      actionObjectGenderDeleteAfter by ObjectModel::delete. It is a distinct event from
+      TitleCreated, because a customer that carried the title now has none.
+    tags: ["hook:actionObjectGenderDeleteAfter"]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/Gender.php"
+        role: implementation
 
 errors:
   titleNotFound:
@@ -79,3 +250,29 @@ errors:
     category: not-found
     severity: error
     http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Title/Exception/TitleNotFoundException.php"
+        role: implementation
+
+  invalidTitleData:
+    id: customers.ERR019
+    name: "InvalidTitleData"
+    description: "Title data fails validation, most often a missing localized name or a gender outside the accepted values."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Title/Exception/TitleConstraintException.php"
+        role: implementation
+
+  titleImageUploadFailed:
+    id: customers.ERR020
+    name: "TitleImageUploadFailed"
+    description: "The title was accepted but its image could not be stored or resized, so the title exists without the picture that was sent with it."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/Title/Exception/TitleImageUploadingException.php"
+        role: implementation

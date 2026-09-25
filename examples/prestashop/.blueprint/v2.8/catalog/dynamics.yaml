@@ -10,6 +10,7 @@ execution:
 race_conditions:
   - id: catalog.RC001
     name: "Concurrent product edit"
+    description: "The invariant at risk is that a saved product reflects one editor's intent. Last-write-wins does not corrupt the row, which is why the loss is silent: the product stays valid and simply is not what the losing editor left."
     scenario: "Two administrators edit the same product simultaneously, last write wins."
     impact: "One editor's changes silently lost."
     likelihood: low
@@ -25,6 +26,7 @@ ordering:
 parallelism:
   - id: catalog.PAR001
     name: "Bulk product import"
+    description: "Import rows are independent of each other, so the work divides without coordination. What is not independent is what each row touches: two rows naming the same reference are a write conflict the parallelism would expose rather than create."
     operations: [catalog.CMD001]
     relationship: embarrassingly-parallel
     benefit: "CSV rows processed concurrently, 3-5x import speedup."

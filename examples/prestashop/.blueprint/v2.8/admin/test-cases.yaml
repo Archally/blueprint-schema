@@ -1,5 +1,5 @@
 ---
-version: "1.0.0"
+version: "1.1.0"
 scope: admin
 
 happy_path:
@@ -19,7 +19,24 @@ happy_path:
       concepts: [admin.CN001]
     contract:
       kind: openapi
-      file: admin/admin-api.openapi
+      file: admin-api
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Employee/employee_management.feature"
+        role: test
+        description: "Scenario 'I can create an employee' (line 14), which creates with a permission profile and shop association and asserts every stored field."
+      - path: "src/Adapter/Profile/Employee/CommandHandler/AddEmployeeHandler.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Employee/employee_management.feature line 14"
+          date: "2026-09-19"
+          summary: >-
+            The scenario creates an employee with a named permission profile and asserts the
+            profile among the stored fields, which is this case's assertion.
+          confidence_impact: supports
 
   - id: admin.TC002
     name: "Update tab permissions for profile"
@@ -34,6 +51,23 @@ happy_path:
       rules: [admin.VR004]
       operations: [admin.CMD013, admin.EVT010]
       concepts: [admin.CN003]
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Profile/profile_permissions.feature"
+        role: test
+        description: "Scenario 'I can edit tab permission for a profile' (line 44), which enables and disables view, add, edit and delete on a real tab."
+      - path: "src/Adapter/Profile/Permission/CommandHandler/UpdateTabPermissionsHandler.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Profile/profile_permissions.feature line 44"
+          date: "2026-09-19"
+          summary: >-
+            The scenario toggles each of the four permissions on a tab and asserts the matrix
+            afterwards. It also covers the SuperAdmin case, whose permissions are fixed.
+          confidence_impact: supports
 
   - id: admin.TC003
     name: "Create API client with scopes"
@@ -48,6 +82,23 @@ happy_path:
       rules: [admin.VR005]
       operations: [admin.CMD021, admin.EVT014]
       concepts: [admin.CN005]
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/ApiClient/api_client_management.feature"
+        role: test
+        description: "Scenario 'Create a simple api client with scopes and edit its scopes' (line 147)."
+      - path: "src/Core/Domain/ApiClient/Command/AddApiClientCommand.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/ApiClient/api_client_management.feature line 147"
+          date: "2026-09-19"
+          summary: >-
+            The scenario creates an API client with product_read and hook_read scopes and
+            asserts the stored values, then edits the scopes. Same assertion.
+          confidence_impact: supports
 
   - id: admin.TC004
     name: "Clear outdated employee sessions"
@@ -61,6 +112,23 @@ happy_path:
     validates:
       operations: [admin.CMD019, admin.EVT012]
       concepts: [admin.CN004]
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Security/security_configuration.feature"
+        role: test
+        description: "Scenario 'Clear outdated employee sessions' (line 31), which seeds four sessions at different ages and asserts exactly two survive."
+      - path: "src/Adapter/Security/CommandHandler/DeleteEmployeeSessionHandler.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Security/security_configuration.feature line 31"
+          date: "2026-09-19"
+          summary: >-
+            The scenario asserts the count after clearing, so it proves both halves: the
+            expired ones go and the live ones stay.
+          confidence_impact: supports
 
   - id: admin.TC005
     name: "Execute saved SQL query"
@@ -76,6 +144,26 @@ happy_path:
       rules: [admin.VR006]
       operations: [admin.QRY008]
       concepts: [admin.CN007]
+    code_refs:
+      - path: "tests/Integration/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandlerTest.php"
+        role: test
+        description: "testSensitiveDataAreHidden (line 58) dispatches GetSqlRequestExecutionResult and reads the returned rows."
+      - path: "src/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandler.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandlerTest.php"
+          date: "2026-09-19"
+          summary: >-
+            The PHPUnit test is the one that actually EXECUTES a saved query and asserts a real
+            result set. The Behat scenario 'Create a SELECT request'
+            (Database/sql_manager.feature line 11) only asserts the query is accepted for
+            saving and never dispatches the execution query, so it is deliberately not the
+            citation here.
+          confidence_impact: supports
 
 edge_cases:
   - id: admin.EC001
@@ -91,19 +179,75 @@ edge_cases:
     validates:
       operations: [admin.CMD006]
       concepts: [admin.CN001]
+    code_refs:
+      - path: "src/Adapter/Profile/Employee/CommandHandler/AbstractEmployeeHandler.php"
+        role: implementation
+        description: "assertEmployeeIsNotTheOnlyAdminInShop, raising AdminEmployeeException::CANNOT_CHANGE_LAST_ADMIN. Both the bulk and single delete handlers call it."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "src/Adapter/Profile/Employee/CommandHandler/AbstractEmployeeHandler.php"
+          date: "2026-09-19"
+          summary: >-
+            The guard is real and shared by both delete handlers: Employee::isLastAdmin decides
+            it and AdminEmployeeException carries the reason.
+          confidence_impact: supports
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. The one bulk-delete scenario in employee_management.feature
+            deletes two ordinary employees and never puts a super-admin in the batch; nothing
+            in tests/ references AdminEmployeeException or isLastAdmin. This is a real guard
+            with no automated coverage anywhere.
+          confidence_impact: weakens
 
   - id: admin.EC002
-    name: "Rotate API client secret while tokens are active"
-    summary: "Secret rotation should not immediately invalidate active tokens."
+    name: "Rotating an API client secret invalidates the old secret"
+    summary: "After rotation the previous secret no longer authenticates and the new one does."
     given:
-      description: "An API client has active tokens issued with the current secret."
+      description: >-
+        An API client whose secret is rotated. Corrected 2026-09-19: this case asserted that
+        rotation does not immediately invalidate ACTIVE TOKENS. Nothing supports that in either
+        direction - GenerateApiClientSecretHandler rewrites the stored hashed secret and no
+        code on the token issuance or validation path was found that either revokes or
+        preserves tokens already issued, and no test issues a token, rotates, then reuses it.
+        Asserting an unevidenced property is worse than asserting the smaller one the suite
+        really proves, so the case now asserts the credential.
       state:
-        activeTokensExist: true
+        secretRotated: true
     expected_result:
       status: success
     validates:
       operations: [admin.CMD024, admin.EVT017]
       concepts: [admin.CN005]
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/ApiClient/api_client_management.feature"
+        role: test
+        description: "Scenario 'Check secret validity, generate new secret and force new secret' (line 244)."
+      - path: "src/Adapter/ApiClient/CommandHandler/GenerateApiClientSecretHandler.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/ApiClient/api_client_management.feature line 244"
+          date: "2026-09-19"
+          summary: >-
+            The scenario checks the secret's validity, rotates it, and checks validity again -
+            the old one fails and the new one passes. That is the corrected assertion.
+          confidence_impact: supports
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Read for the retired assertion. The handler touches the stored secret only; what
+            happens to tokens already minted is not stated by any code the modeler found and
+            not exercised by any test. It is an open question, not a modelled fact.
+          confidence_impact: weakens
 
 error_cases:
   - id: admin.ER001
@@ -118,6 +262,30 @@ error_cases:
     validates:
       rules: [admin.VR001]
       operations: [admin.CMD001]
+    code_refs:
+      - path: "src/Adapter/Profile/Employee/CommandHandler/AddEmployeeHandler.php"
+        role: implementation
+        description: "assertEmailIsNotAlreadyUsed, raising EmailAlreadyUsedException."
+      - path: "tests/Unit/PrestaShopBundle/Command/EmployeeCreateCommandTest.php"
+        role: test
+        description: "testFailsWhenCommandBusThrows (line 84) mocks the bus and asserts the CLI's message; it never runs the duplicate detection."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "src/Adapter/Profile/Employee/CommandHandler/AddEmployeeHandler.php"
+          date: "2026-09-19"
+          summary: "The guard is real and raises EmailAlreadyUsedException before the employee is written."
+          confidence_impact: supports
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. The only test that names the exception mocks the command
+            bus into throwing it, so it proves the CLI's error handling and nothing about
+            Employee::employeeExists. No Behat scenario creates a duplicate email.
+          confidence_impact: weakens
 
   - id: admin.ER002
     name: "Delete profile with assigned employees"
@@ -131,12 +299,35 @@ error_cases:
     validates:
       rules: [admin.VR003]
       operations: [admin.CMD011]
+    code_refs:
+      - path: "src/Adapter/Profile/CommandHandler/AbstractProfileHandler.php"
+        role: implementation
+        description: "assertProfileIsNotAssignedToEmployee, raising FailedToDeleteProfileException::PROFILE_IS_ASSIGNED_TO_EMPLOYEE."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "src/Adapter/Profile/CommandHandler/AbstractProfileHandler.php"
+          date: "2026-09-19"
+          summary: >-
+            The guard is real: Employee::getEmployeesByProfile is consulted and a non-empty
+            result stops the delete with a named reason code.
+          confidence_impact: supports
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. The single scenario in profile_management.feature
+            deletes a freshly created, unassigned profile, and nothing in tests/ names
+            PROFILE_IS_ASSIGNED_TO_EMPLOYEE. A second real guard with no coverage.
+          confidence_impact: weakens
 
   - id: admin.ER003
     name: "Execute SQL query with forbidden statements"
     summary: "Executing a SQL query containing write operations is rejected."
     given:
-      description: "A saved SQL request contains 'DROP TABLE ps_product'."
+      description: "A saved SQL request contains a DROP statement."
       state:
         queryContainsForbiddenStatements: true
     expected_result:
@@ -144,3 +335,22 @@ error_cases:
     validates:
       rules: [admin.VR006]
       operations: [admin.QRY008]
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Database/sql_manager.feature"
+        role: test
+        description: "Scenario 'Create an DROP request' (line 57), beside UPDATE (33), DELETE (39), INSERT (45) and ALTER (51)."
+      - path: "src/Adapter/SqlManager/SqlQueryValidator.php"
+        role: validation
+        description: "validate(), which parses the statement and accepts only a SELECT."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Database/sql_manager.feature line 57"
+          date: "2026-09-19"
+          summary: >-
+            The scenario submits a DROP and asserts the refusal, with the same message the
+            validator produces, and four sibling scenarios cover the other write statements.
+            The table it names differs from this case's; the mechanism is identical.
+          confidence_impact: supports

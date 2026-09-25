@@ -12,40 +12,66 @@ concepts:
       addressId:
         id: CAT316
         description: "Unique address identifier"
+        example: "12"
       alias:
         id: CAT317
         description: "Short label for the address (e.g., 'Home', 'Office')"
+        example: "Home"
       address1:
         id: CAT318
         description: "Primary address line (street, number)"
+        example: "15 Rue de la Paix"
       address2:
         id: CAT319
         description: "Secondary address line (apartment, suite)"
+        example: "Bat. A, 3eme etage"
       city:
         id: CAT320
-        description: "City name"
+        description: "City or town, required and capped at 64 characters. Where it prints on the label is decided by the country's address format, not by this field."
+        example: "Paris"
       postcode:
         id: CAT321
         description: "Postal/ZIP code"
+        example: "75001"
       countryRef:
         id: CAT322
         description: "Reference to the country (international context)"
+        example: "8"
       phone:
         id: CAT323
         description: "Contact phone number"
+        example: "+33 1 42 60 00 00"
       customerId:
         id: CAT324
         description: "Reference to the owning customer"
+        example: "42"
     code_refs:
       - path: "src/Core/Domain/Address/Command/AddCustomerAddressCommand.php"
         role: implementation
       - path: "src/Core/Domain/Address/AddressSettings.php"
         role: configuration
+      - path: "classes/Address.php"
+        role: model
+      - path: "src/Core/Domain/Address/Configuration/AddressConstraint.php"
+        role: configuration
 
 associations:
-  - id: customers.AS002
+  - id: customers.ASC002
     subject: customers.CN001
     predicate: depends-on
     object: customers.CN004
     cardinality: "1..*"
     description: "A customer has one or more addresses for delivery and invoicing."
+
+  - id: customers.ASC004
+    subject: customers.CN004
+    predicate: depends-on
+    object: international.CN004
+    cardinality: "1"
+    description: >-
+      An address is validated against its country, not against one shop-wide rule. The country row
+      carries need_identification_number, need_zip_code, zip_code_format and contains_states, and
+      each of those changes what the address must supply: Address::dniRequired reads the first,
+      Country::checkZipCode the third, and EditCustomerAddressHandler resets the state to 0 when
+      the new country has none. Editing the international slice's country data therefore changes
+      whether an existing address would still validate.

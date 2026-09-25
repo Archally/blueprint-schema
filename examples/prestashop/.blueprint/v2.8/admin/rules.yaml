@@ -70,6 +70,24 @@ validation:
     on_violation:
       action: reject
 
+  - id: admin.VR007
+    name: "Business entity addresses must be consistent"
+    description: "A business entity must carry exactly one default billing address, and exactly one default shipping address unless it reuses the billing address for shipping. AddBusinessEntityCommand asserts this in its own constructor, so an inconsistent entity never reaches a handler."
+    concepts: [admin.CN012]
+    modality: obligatory
+    logic:
+      when: "A business entity is registered with billing and shipping addresses"
+      then: "Exactly one billing address is default, and exactly one shipping address is default unless the billing address is reused for shipping"
+    on_violation:
+      action: reject
+    code_refs:
+      - path: "src/Core/Domain/BusinessEntity/Command/AddBusinessEntityCommand.php"
+        role: implementation
+        description: "assertBusinessEntityAddressAreConsistent(), called from the constructor"
+      - path: "src/Core/Domain/BusinessEntity/Exception/BusinessEntityBillingAddressConstraintException.php"
+        role: implementation
+        description: "Six codes: missing or multiple default billing and shipping addresses"
+
 structural:
   - id: admin.SR001
     name: "Employee requires profile assignment"

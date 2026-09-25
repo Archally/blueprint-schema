@@ -36,12 +36,15 @@ concepts:
       creditSlipId:
         id: CAT130
         description: "Unique credit slip identifier."
+        example: "31"
       amount:
         id: CAT131
         description: "Total credited amount including tax."
+        example: "129.990000"
       dateAdd:
         id: CAT132
         description: "Timestamp when the credit slip was generated."
+        example: "2026-03-25T09:10:00+01:00"
     relationships:
       - predicate: derived-from
         object: orders.CN002
@@ -49,3 +52,10 @@ concepts:
     code_refs:
       - path: "classes/order/OrderSlip.php"
         role: implementation
+        description: "OrderSlipCore extends ObjectModel; creating one fires actionObjectOrderSlipAddAfter"
+      - path: "src/Core/Domain/CreditSlip/"
+        role: model
+        description: "The whole CQRS surface of the credit slip: one query class and no command, because a credit slip is only ever produced by a refund"
+      - path: "src/Adapter/Order/Refund/OrderSlipCreator.php"
+        role: implementation
+        description: "Creates the slip during a refund and fires actionOrderSlipAdd"

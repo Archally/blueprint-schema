@@ -25,9 +25,11 @@ concepts:
       enabled:
         id: CAT703
         description: "Whether the module is currently active (only meaningful when installed)"
+        example: "true"
       installed:
         id: CAT704
         description: "Whether the module is installed in the system"
+        example: "true"
     states:
       - name: not_installed
         description: "Module package exists but is not installed"
@@ -49,25 +51,117 @@ concepts:
   - id: modules.CN002
     name: "Hook"
     stereotype: aggregate-root
-    description: "An extension point in the PrestaShop system where modules can register callbacks. Hooks have a name, title, description, and active status. Hook-module position management is not in the CQRS domain layer - only hook activation/deactivation is modeled."
+    description: >-
+      A named extension point. Core code reaches a point where a module may contribute, names a
+      hook, and every installed module registered on that name runs inside the same PHP request;
+      the mechanism is stated once as prestashop.SVC012 HookDispatcher in prestashop.BC012
+      PlatformKernel. A hook is also a row a merchant administers: it has a title and a
+      description, it can be switched off (UpdateHookStatus), and which modules answer it is
+      edited through HookModule, EditHookedModule and GetPossibleHooksForModule.
+      Scale, measured at presta-code a27e912eef9 on 2026-09-14. The registry
+      install-dev/data/xml/hook.xml declares 1162 names: 980 action, 155 display, 27 neither,
+      each with a title and usually a description. 274 names are reached from a literal call site
+      in this clone (240 in PHP, 36 in a Twig or Smarty template). The model carries a
+      representative two dozen in examples below and does not attempt the rest - it is a sample,
+      and the numbers here are how large the real set is.
+      A hook comes to be fired three ways, and the third is why a name can be real and appear in
+      neither the registry nor a grep. (a) The registry entry, which is what a merchant sees and
+      what a module registers against. (b) A literal call site - Hook::exec, HookManager::exec,
+      HookDispatcher::dispatchWithParameters, or renderhook in a template. (c) The ObjectModel
+      dynamic family: ObjectModel fires actionObject<Class>AddBefore/AddAfter,
+      UpdateBefore/UpdateAfter, DeleteBefore/DeleteAfter and DuplicateAfter for every persisted
+      class, where <Class> is the final class name. So actionObjectCMSUpdateAfter is fired for
+      every CMS page save and is registered nowhere; only the ten generic actionObject* twins are.
+      The call-site count is a lower bound, not a census: a name passed as a class constant
+      (ThemeCatalogInterface::LIST_MAIL_THEMES_HOOK) is invisible to a grep for a quoted string,
+      and a display hook that only the front-office theme fires is invisible to this clone at all,
+      because presta-code ships no theme and its modules/ folder holds one index.php.
     tags: [aggregate-root, extension-system]
     attributes:
       name:
         id: CAT705
-        description: "Hook identifier name"
-        example: "displayHeader"
+        description: "Hook identifier, and the whole contract between core and a module. The prefix is the kind: action for a notification, display for a markup slot."
+        example: "actionValidateOrder"
       title:
         id: CAT706
-        description: "Human-readable hook title"
-        example: "Display Header"
+        description: "Short human-readable label from the registry, shown in the back office. Blank for many internal hooks."
+        example: "New orders"
       description:
         id: CAT707
-        description: "Hook purpose description"
-        example: "Allows modules to add content to the page header"
+        description: "What the registry says the hook is for. This is the only documentation most hooks have, which is why the registry file is a code_ref on this concept."
+        example: "This hook launches modules when the status of an order changes"
       active:
         id: CAT708
-        description: "Whether this hook is currently active"
+        description: "Whether the hook executes. A hook switched off through UpdateHookStatus runs no module callback, so it is the kill switch for one extension point."
+        example: "true"
+    examples:
+      - name: "actionValidateOrder"
+        description: "Registry and call site. Fired when an order is validated - the hook most payment and fulfilment modules exist for."
+      - name: "actionOrderStatusUpdate"
+        description: "Registry and call site. 'This hook launches modules when the status of an order changes'. The orders slice's status events reground on it."
+      - name: "actionCartSave"
+        description: "Registry and call site. Fired when a product enters the cart or the cart's content changes."
+      - name: "actionCustomerAccountAdd"
+        description: "Registry and call site. Fired after a customer account is created successfully."
+      - name: "actionProductSave"
+        description: "Registry and call site. Fired while saving a product, alongside the ObjectModel dynamic pair."
+      - name: "actionObjectAddAfter"
+        description: "Registry and call site, classes/ObjectModel.php line 614. The generic twin: fired for EVERY persisted class, with the object in the parameters."
+      - name: "actionObjectCMSAddAfter"
+        description: "ObjectModel dynamic family. Fired when a CMS page is created, because CMS extends ObjectModel. Registered nowhere - only the generic twin is."
+      - name: "actionObjectCMSUpdateAfter"
+        description: "ObjectModel dynamic family. Fired on every CMS page edit, and on a status toggle, because toggleStatus calls update."
+      - name: "actionObjectCMSCategoryDeleteAfter"
+        description: "ObjectModel dynamic family, for CMSCategory. The content slice's category-deleted event regrounds on it."
+      - name: "actionObjectMetaAddAfter"
+        description: "ObjectModel dynamic family, for Meta. Fired when an SEO metadata row is created."
+      - name: "actionObjectHookUpdateAfter"
+        description: "ObjectModel dynamic family, for Hook itself. UpdateHookStatus saves a Hook row, so switching a hook off fires a hook."
+      - name: "actionModuleInstallAfter"
+        description: "Registry and call site, classes/module/Module.php. Fired after a module is installed, with the module instance."
+      - name: "actionModuleUninstallAfter"
+        description: "Registry and call site, classes/module/Module.php. Fired after a module is uninstalled."
+      - name: "actionModuleEnable"
+        description: "Registry and call site. Fired when a module is enabled; actionModuleDisable is its counterpart."
+      - name: "actionModuleDisable"
+        description: "Registry and call site. Fired when a module is disabled."
+      - name: "actionModuleUpgradeAfter"
+        description: "Registry and call site. Fired after a module upgrade completes."
+      - name: "actionModuleRegisterHookAfter"
+        description: "Registry and call site, classes/Hook.php line 693. Fired when a module is registered on a hook - the hook that reports hook registration."
+      - name: "actionModuleUnRegisterHookAfter"
+        description: "Registry and call site, classes/Hook.php line 772. The counterpart of the above."
+      - name: "actionBeforeInstallModule"
+        description: "Registry and call site, src/Core/Module/ModuleManager.php line 95, through HookManager::exec rather than Hook::exec. 'This hook is called just before a module is installed'."
+      - name: "actionListMailThemes"
+        description: "Registry only in a grep, because FolderThemeCatalog dispatches it as ThemeCatalogInterface::LIST_MAIL_THEMES_HOOK, a class constant. A module uses it to add or remove a mail theme."
+      - name: "displayHeader"
+        description: "Display kind, registry and call site. Adds markup to the head section of every front-office page."
+      - name: "displayBackOfficeHeader"
+        description: "Display kind, registry and call site. The same slot in the administration panel."
+      - name: "displayShoppingCart"
+        description: "Display kind, registry only in this clone. The cart page's extra-button slot is rendered by the front-office theme, and presta-code ships no theme."
+      - name: "displayCMSPrintButton"
+        description: "Display kind, registry only in this clone. The content slice's own display hook: a print button on a CMS page."
+      - name: "filterCmsContent"
+        description: "Neither action nor display - one of the 27 legacy names. Fired at controllers/front/CmsController.php lines 95 and 226, just before a content page is fetched, so a module can rewrite it."
+      - name: "moduleRoutes"
+        description: "Legacy name, registry and call site. A module returns its own front-office routes through it. This is how a module adds a URL."
+      - name: "termsAndConditions"
+        description: "Legacy name, registry and call site. The checkout's terms block is contributed by whichever module answers it."
     code_refs:
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "PrestaShop's hook registry: 1162 entries, each with name, title and description. This file is what a merchant's hook list and a module's registration are built from."
+      - path: "classes/Hook.php"
+        role: implementation
+        description: "Hook::exec, and registerHook and unregisterHook, which fire actionModuleRegisterHookAfter (line 693) and actionModuleUnRegisterHookAfter (line 772)."
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "The dynamic family, lines 524-525, 614-615, 697-698, 716-717, 846-847, 862-863 and 922-923: actionObject<Class><Verb><Before|After> for every persisted class."
+      - path: "src/Adapter/HookManager.php"
+        role: implementation
+        description: "The service wrapper the Symfony side calls, and the seam prestashop.SVC012 HookDispatcher names."
       - path: "src/Core/Domain/Hook/Command/UpdateHookStatusCommand.php"
         role: implementation
       - path: "src/Core/Domain/Hook/ValueObject/HookId.php"
@@ -75,6 +169,9 @@ concepts:
       - path: "src/Core/Domain/Hook/QueryResult/Hook.php"
         role: model
         description: "Query result exposing id, active, name, title, description"
+      - path: "src/Core/Domain/Hook/QueryResult/HookableInfo.php"
+        role: model
+        description: "One candidate hook for a module: id, name, title and whether the module is registered on it."
 
 actors:
   - id: modules.ACT001
@@ -112,6 +209,20 @@ actors:
           industry: "E-commerce / Software"
 
 enumerations:
+  - id: modules.EN002
+    name: "HookKind"
+    description: >-
+      What a hook's name prefix tells a module developer, and the only classification PrestaShop
+      has - there is no kind column. Counted over the 1162 entries of install-dev/data/xml/hook.xml
+      at presta-code a27e912eef9 on 2026-09-14: 980 action, 155 display, 27 neither.
+    values:
+      - name: action
+        description: "980 of 1162. A notification: core has done something and passes the subject in the parameters. The return value is ignored, so a module reacts rather than contributes. actionValidateOrder, actionObjectProductUpdateAfter."
+      - name: display
+        description: "155 of 1162. A markup slot: core asks for HTML at a point in a template and concatenates what every registered module returns. displayHeader, displayShoppingCart."
+      - name: legacy-named
+        description: "27 of 1162, named before the convention existed. Several are neither notification nor slot but a filter or a contribution whose return value core uses: filterCmsContent rewrites a page, moduleRoutes adds URLs, productSearchProvider replaces search."
+
   - id: modules.EN001
     name: "ModuleLifecycleState"
     description: "Composite state derived from installed (bool) + enabled (bool) fields. The code uses two booleans but they form a 3-state machine with defined transitions."
@@ -127,7 +238,7 @@ enumerations:
         transitions_to: [installed_enabled, not_installed]
 
 associations:
-  - id: modules.AS001
+  - id: modules.ASC001
     subject: modules.CN001
     predicate: depends-on
     object: modules.CN002

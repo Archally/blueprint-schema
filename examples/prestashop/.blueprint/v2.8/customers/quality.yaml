@@ -2,34 +2,98 @@
 version: "1.0.0"
 scope: customers
 
+metrics:
+  - id: customers.MT100
+    name: "Customer Service First Response Time"
+    summary: "Hours between a customer thread opening and its first employee reply"
+    type: latency
+    unit: "hours"
+    description: >
+      Measured from the thread's creation to the first message an employee
+      sends on it. ReplyToCustomerThread is the operation that stops the
+      clock; the status change that follows it is not a reply and does not.
+    measures:
+      operations: [customers.CMD016]
+      concepts: [customers.CN005]
+    collection:
+      method: manual
+      source: "Back-office Customer Service thread list, sorted by last message"
+      frequency: weekly
+
 kpis:
   - id: customers.KPI001
+    domain_scope: customers
     name: "Registration Success Rate"
     target: ">= 15% of registration page visitors complete account creation"
+    description: >
+      A merchant outcome. Core records the customer that was created and never the
+      visitor who abandoned the form, so the denominator comes from the shop's
+      analytics rather than from this system.
     window: "monthly"
-    goal: customers.G001
+    goal: customers.GL001
     thresholds:
       warning: "10%"
       critical: "5%"
 
   - id: customers.KPI002
+    domain_scope: customers
     name: "Address Validation Pass Rate"
     target: ">= 95% of addresses pass validation on first submission"
+    description: >
+      Validation is per country: Country.zip_code_format holds a regex,
+      need_zip_code says whether a postcode is required at all, and the address
+      format decides which fields the form asks for. All three are
+      merchant-editable data, so this rate measures the quality of that
+      configuration as much as the customer's typing.
     window: "weekly"
-    goal: customers.G002
+    goal: customers.GL002
     thresholds:
       warning: "90%"
       critical: "85%"
 
   - id: customers.KPI003
+    domain_scope: customers
     name: "Guest-to-Customer Conversion Rate"
     target: ">= 20% of guest orders result in account registration"
+    description: >
+      TransformGuestToCustomer is the operation behind it, and the ratio is
+      countable from the customer table: guest records that later carry a password,
+      against guest records created.
     window: "monthly"
-    goal: customers.G001
+    goal: customers.GL001
+
+  - id: customers.KPI100
+    domain_scope: customers
+    name: "First Response Time"
+    metric: customers.MT100
+    target: ">= 90% of customer threads receive their first employee reply within 4 business hours"
+    window: "weekly"
+    goal: customers.GL003
+    description: >
+      GL003's measure. It shares metric MT100 with SLO001, which is what joins
+      the goal to the objective: the KPI states the business target and the SLO
+      states what the team commits to.
+
+  - id: customers.KPI101
+    domain_scope: customers
+    name: "Erasure Request Closure"
+    target: "100% of erasure requests end in a delete method that matches what was promised to the customer"
+    window: "monthly"
+    goal: customers.GL004
+    description: >
+      Core offers exactly two delete methods and they differ in what survives.
+      allow_registration_after hard-deletes the customer row and cascades to
+      addresses, groups, messages, specific prices, orderless carts, threads
+      and cart rules; deny_registration_after keeps the row, and its personal
+      data with it, and only sets deleted = true so the address cannot register
+      again. Neither anonymizes. The measurable thing is therefore not "data
+      erased" but "the method chosen matches the answer the customer was
+      given", which is what an audit will ask.
 
 slos:
   - id: customers.SLO001
     name: "Customer Service First Response Time"
+    metric: customers.MT100
     target: "90% of threads receive first reply within 4 business hours"
     window: "weekly"
     operations: [customers.CMD016]

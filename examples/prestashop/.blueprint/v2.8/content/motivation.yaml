@@ -3,7 +3,7 @@ version: "1.0.0"
 scope: content
 
 goals:
-  - id: content.G001
+  - id: content.GL001
     statement: "Efficient content management for storefront pages"
     description: >
       Enable content managers to create, organize, and publish CMS pages
@@ -12,10 +12,14 @@ goals:
     summary: "CMS content management efficiency"
     priority: high
     measure: ">= 90% of CMS pages have all required fields populated (title, content, category, meta)"
+    affects:
+      operation_refs: [content.CMD001, content.CMD002, content.CMD007]
+      concept_refs: [content.CN001, content.CN002]
+      process_refs: [content.PRC001]
     discovery_stage: validated
     certainty: confirmed
 
-  - id: content.G002
+  - id: content.GL002
     statement: "SEO-optimized storefront pages with proper metadata"
     description: >
       Ensure all storefront page types have configured SEO metadata (titles,
@@ -24,10 +28,14 @@ goals:
     summary: "SEO metadata coverage"
     priority: high
     measure: ">= 95% of page types have meta entries with titles and descriptions configured"
+    affects:
+      operation_refs: [content.CMD019, content.CMD020, content.QRY007]
+      concept_refs: [content.CN005]
+      process_refs: [content.PRC001]
     discovery_stage: validated
     certainty: confirmed
 
-  - id: content.G003
+  - id: content.GL003
     statement: "Consistent brand presentation through theme management"
     description: >
       Provide reliable theme import, activation, and management so the
@@ -36,11 +44,15 @@ goals:
     summary: "Brand consistency via themes"
     priority: medium
     measure: "Theme activation completes without error in >= 99% of operations"
+    affects:
+      operation_refs: [content.CMD013, content.CMD014, content.CMD016]
+      concept_refs: [content.CN003]
+      process_refs: [content.PRC002]
     discovery_stage: validated
     certainty: confirmed
 
 risks:
-  - id: content.R001
+  - id: content.RSK001
     statement: "Broken URLs after meta page name or URL rewrite changes"
     description: >
       Modifying meta entries can break existing bookmarks, external links,
@@ -49,15 +61,17 @@ risks:
     summary: "SEO URL breakage risk"
     likelihood: medium
     impact: high
+    affects:
+      operation_refs: [content.CMD019, content.CMD020]
+      concept_refs: [content.CN005]
+      process_refs: [content.PRC001]
     mitigation: "URL rewrite changes should trigger redirect rules. Meta page name uniqueness enforced by VR006."
     goal_refs:
-      - content.G002
+      - content.GL002
     discovery_stage: validated
     certainty: confirmed
 
-  - id: content.R002
-    affects:
-      operation_refs: [content.CMD016]
+  - id: content.RSK002
     statement: "Theme incompatibility after PrestaShop upgrade"
     description: >
       Theme updates may lag behind core PrestaShop upgrades, causing visual
@@ -65,13 +79,17 @@ risks:
     summary: "Theme upgrade incompatibility"
     likelihood: medium
     impact: high
+    affects:
+      operation_refs: [content.CMD014, content.CMD016]
+      concept_refs: [content.CN003]
+      process_refs: [content.PRC002]
     mitigation: "Test themes in staging before production. ResetThemeLayouts available as recovery option."
     goal_refs:
-      - content.G003
+      - content.GL003
     discovery_stage: exploring
     certainty: probable
 
-  - id: content.R003
+  - id: content.RSK003
     statement: "CMS category hierarchy corruption from parallel edits"
     description: >
       Concurrent category parent reassignments could theoretically create
@@ -79,9 +97,13 @@ risks:
     summary: "Category tree corruption"
     likelihood: low
     impact: high
+    affects:
+      operation_refs: [content.CMD008, content.CMD009]
+      concept_refs: [content.CN002]
+      process_refs: [content.PRC001]
     mitigation: "Structural rule SR001 prevents cycles. Database-level constraints enforce tree integrity."
     goal_refs:
-      - content.G001
+      - content.GL001
     discovery_stage: validated
     certainty: confirmed
 
@@ -96,8 +118,19 @@ non_goals:
     discovery_stage: committed
     certainty: confirmed
 
+  - id: content.NG002
+    statement: "No scheduled publication and no revision history for CMS pages"
+    reason: >
+      A CMS page carries one flag, active, and nothing else about time: no
+      publish-from or publish-until date, no draft, no version table. A page is
+      live or it is not, and editing it overwrites what was there. Scheduling
+      and revisions are a content-management feature set core has never claimed,
+      and a shop that needs them installs a module.
+    discovery_stage: committed
+    certainty: confirmed
+
 trade_offs:
-  - id: content.T001
+  - id: content.TRO001
     choice: "Template engine during Smarty-to-Twig migration"
     selected: "Smarty + Twig dual support during migration period"
     rejected: "Twig-only (would break all existing themes)"
@@ -110,17 +143,39 @@ trade_offs:
     discovery_stage: committed
     certainty: confirmed
 
+assumptions:
+  - id: content.ASM001
+    domain_scope: content
+    statement: "A CMS page's body is trusted HTML, written by someone the shop trusts"
+    consequence: >
+      CMS.content is declared TYPE_HTML with isCleanHtml, stored at full
+      mediumtext length and rendered into the storefront as it was written.
+      That is what lets a content manager embed markup a form could not express,
+      and it means the only thing standing between a back-office account and a
+      script on every visitor's page is the trust placed in the person holding
+      it. If untrusted authors ever need CMS access, the field needs an output
+      filter that does not exist today.
+    discovery_stage: validated
+    certainty: confirmed
+
 inquiries:
   - id: content.INQ001
     statement: "Should a headless CMS API be exposed for decoupled frontend architectures?"
     summary: "Headless CMS API"
     description: >
-      Modern storefronts increasingly use decoupled/headless architectures.
-      Exposing CMS content via a dedicated API (beyond the existing admin API)
-      could support PWA, mobile apps, and multi-channel content delivery.
+      Measured 2026-09-19 against presta-apiresources dcf05ff: there is no
+      existing admin API for CMS content to extend. None of the 152 Admin API
+      routes fronts a Domain\CmsPage or Domain\CmsPageCategory class, so a
+      headless content API would be the first one rather than an addition, and
+      the question includes what the read model should be - the stored HTML
+      body, or something a client can lay out.
     category: technical
+    affects:
+      operation_refs: [content.QRY001]
+      concept_refs: [content.CN001]
+      process_refs: [content.PRC001]
     goal_refs:
-      - content.G001
+      - content.GL001
     blocking: false
     status: investigating
     discovery_stage: exploring

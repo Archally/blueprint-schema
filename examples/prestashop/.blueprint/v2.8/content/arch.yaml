@@ -11,8 +11,11 @@ contexts:
   - id: prestashop.BC004
     name: Content
     kind: support
+    value_stream_ref: VS003
     complexity: crud
+    business_model_role: engagement-creator
     evolution: commodity
+    model_traits: [information-holder, executor]
     summary: CMS pages, page categories, themes, email templates, SEO meta.
     owned_by:
       team: TM007
@@ -23,7 +26,7 @@ contexts:
       - SEO meta (URL rewriting, page titles, descriptions)
     dependencies:
       - name: International
-        type: api
+        coupling: http
         relationship: customer-supplier
         direction: downstream
         description: Reads language data for multilingual CMS content.
@@ -37,7 +40,8 @@ contexts:
           - { type_ref: RT002, class: self-hosted, id: prestashop-assets }
         contracts:
           openapi:
-            output: content/content-api.openapi
+            contract_name: content-api
+            slice: content
             expose:
-              - content:addCmsPage
-              - content:editCmsPage
+              - content.CMD001
+              - content.CMD002

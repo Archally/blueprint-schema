@@ -1,7 +1,7 @@
 version: 1.0.0
 name: PrestaShop Platform
 description: |
-  Architecture of the PrestaShop v9 open-source e-commerce platform. 10 bounded contexts derived from 62 CQRS domain aggregates across the PrestaShop/PrestaShop develop branch.
+  Architecture of the PrestaShop v9 open-source e-commerce platform. 10 bounded contexts derived from the 65 CQRS domain folders under src/Core/Domain on the PrestaShop/PrestaShop develop branch, plus two contexts that realize no domain folder: ExternalApiConsumers, which is the third-party side of the Admin API, and PlatformKernel, which is the command bus and hook dispatcher every other context runs on.
 tags:
   - prestashop
   - e-commerce
@@ -29,8 +29,15 @@ contexts:
   - id: prestashop.BC009
     name: ExternalApiConsumers
     kind: generic
+    value_stream_ref: VS003
     complexity: integration
+    business_model_role: engagement-creator
     evolution: commodity
+    # This context declares no operation of its own, so the trait is read from what it IS rather
+    # than from what it does: a party outside the monolith whose one service only `call`s five
+    # operations other contexts own. A context that exists solely to sit on the far side of a
+    # system boundary and translate is an interfacer, and nothing else it does is visible here.
+    model_traits: [interfacer]
     summary: External systems consuming PrestaShop Admin API via OAuth2.
     services:
       - id: prestashop.SVC009
@@ -41,16 +48,107 @@ contexts:
           httpClient:
             # Declared at the model ROOT: an external consumer of the Admin API, belonging to
             # no single slice. `_global/` says that outright rather than leaving it inferred.
-            output: _global/admin-api-client.http
+            contract_name: admin-api-client
+            cross_cutting: true
             call:
-              - admin:addApiClient
-              - admin:getEmployeeForEditing
-              - catalog:searchProducts
-              - catalog:getProductDetail
-              - orders:getOrderForViewing
+              - admin.CMD021
+              - admin.QRY001
+              - catalog.QRY001
+              - catalog.QRY002
+              - orders.QRY001
           security_schemes:
             admin_oauth2:
               type: oauth2
               scopes:
                 admin:read: Read access to admin API
                 admin:write: Write access to admin API
+
+  # The mechanism every slice's events rest on, stated once here rather than re-explained in ten
+  # slice files. PrestaShop has no domain-event infrastructure: `find src/Core -type d -name Event`
+  # returns nothing. What it has is hooks, and they are fired by the kernel, not by the Modules
+  # context - `Hook::exec` lives in `classes/Hook.php` and `classes/ObjectModel.php`, both core.
+  # Modules REGISTER for hooks and receive them, which is why module lifecycle stays in
+  # prestashop.BC007 while execution is declared here.
+  - id: prestashop.BC012
+    name: PlatformKernel
+    kind: generic
+    complexity: integration
+    # Engagement rather than revenue: the kernel is on no money path, but it is the mechanism the
+    # module ecosystem runs on. Hook dispatch is the only publish-subscribe surface PrestaShop has,
+    # so without it there are no third-party modules, and the module ecosystem is what keeps
+    # merchants and developers on the platform. This is the weakest of the twelve role claims and
+    # is recorded as such in step 27's notes.
+    business_model_role: engagement-creator
+    evolution: commodity
+    # Like BC009 this context declares no operation, so the traits come from its three declared
+    # responsibilities and the HookDispatcher service description below: it dispatches a Command to
+    # the one handler registered for it and calls every module registered for a hook name, which is
+    # delegation to others (coordinator), and it does that on request for all ten domain contexts
+    # rather than for itself (service-provider).
+    model_traits: [coordinator, service-provider]
+    summary: >-
+      The command bus and hook dispatcher every bounded context executes through. Generic rather
+      than core: it is plumbing shared by all ten domain contexts and carries no domain rule of
+      its own.
+    responsibilities:
+      - Dispatching a Command or Query object to its registered handler, in-process
+      - Executing a hook by name and calling every module registered for it
+      - Firing the per-entity actionObject hooks on every persisted ObjectModel write
+    services:
+      - id: prestashop.SVC012
+        name: HookDispatcher
+        kind: service
+        system_ref: PRT002
+        implementation: as-is
+        summary: >-
+          Executes hooks synchronously, in-process, and is the only publish-subscribe surface
+          PrestaShop has.
+        description: >-
+          The chain a reader should follow for any event in this model: a controller or service
+          dispatches a Command or Query object through the command bus, the bus resolves the one
+          handler registered for that class and calls it in-process, the handler performs the write,
+          and the write fires a hook by name. `Hook::exec($name, $params)` looks up every module
+          registered for that name and calls its matching method, so the modules are the
+          subscribers and the hook name is the contract between them and the core.
+
+          Two families of hook name reach a module. A hook fired at a literal call site, such as
+          `actionOrderStatusUpdate`, is written into the code once and can be found by grepping for
+          it. A hook fired dynamically by `ObjectModel` is not: `add`, `update`, `delete` and
+          `duplicate` each fire `actionObject<Class><Verb>Before` and `actionObject<Class><Verb>After`
+          for whatever class is being persisted, so `actionObjectProductAddAfter` is real and fired
+          on every product create while appearing in no grep and in no registry entry of its own.
+          An event in this model names its hook in `tags` as `hook:<name>`; a name is only written
+          there when the registry, a literal call site or the ObjectModel pattern accounts for it.
+
+          Execution is synchronous and in-process. A hook is not a broker topic, nothing is queued,
+          and a module that throws inside a hook throws inside the request that fired it. That is
+          why the operations in this model carry `dispatch: inprocess` or an Admin API route rather
+          than a messaging exchange.
+        code_refs:
+          - path: "src/Core/CommandBus/CommandBusInterface.php"
+            role: interface
+            description: >-
+              The bus contract a Command or Query object is handed to. Its handle() is the
+              in-process dispatch that every CQRS operation in this model executes through.
+          - path: "classes/Hook.php"
+            role: implementation
+            description: >-
+              Hook::exec (line 886) resolves every module registered for a hook name and calls it.
+              This is the publish half of PrestaShop's publish-subscribe, and it is synchronous.
+          - path: "src/Adapter/HookManager.php"
+            role: implementation
+            description: >-
+              The injectable wrapper (exec, line 34) that Symfony-era services call instead of the
+              static Hook class, so a handler can fire a hook without reaching into legacy statics.
+          - path: "classes/ObjectModel.php"
+            role: implementation
+            description: >-
+              Fires actionObject<Class><Verb>Before and After on every persisted write: add at
+              lines 524-525 and 614-615, update at 716-717, delete at 862-863 and 922-923,
+              duplicate at 697-698. These names are in no registry and in no grep.
+          - path: "install-dev/data/xml/hook.xml"
+            role: documentation
+            description: >-
+              PrestaShop's hook registry: 1162 hook ids, each with a title and a description,
+              980 of them action hooks and 153 display hooks. The first place to check whether a
+              hook name an event claims is real.

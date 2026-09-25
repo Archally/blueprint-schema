@@ -29,12 +29,25 @@ validation:
       action: reject
 
   - id: content.VR003
-    name: "Category Deletion Requires Empty Subtree"
-    description: "A CMS page category cannot be deleted if it has child categories or assigned CMS pages. Descendants must be reassigned or deleted first."
-    modality: obligatory
+    name: "Only the Root CMS Category Cannot Be Deleted"
+    description: >-
+      Deleting a CMS page category deletes its whole subtree: CMSCategory::delete walks
+      getAllChildren, deletes each child's CMS pages and then the child itself, and returns true.
+      The one input it refuses is the root, id 1. Corrected on 2026-09-14: this rule used to say
+      "a category cannot be deleted if it has child categories or assigned CMS pages", which is
+      the opposite of what the code does, and content.ER001 in test-cases.yaml still asserts that
+      rejection. The cascade is the constraint a reader needs to know about, because it is the one
+      that loses data silently.
+    modality: necessary
     concepts: [content.CN002]
     on_violation:
       action: reject
+    code_refs:
+      - path: "classes/CMSCategory.php"
+        role: implementation
+        description: "delete(), lines 247-265. Line 249 returns false for id 1; lines 256-262 cascade."
+      - path: "src/Adapter/CMS/PageCategory/CommandHandler/DeleteCmsPageCategoryHandler.php"
+        role: implementation
 
   - id: content.VR004
     name: "Theme Activation Exclusivity"

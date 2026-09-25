@@ -1,5 +1,5 @@
 ---
-version: "1.0.0"
+version: "1.1.0"
 scope: modules
 
 happy_path:
@@ -12,7 +12,7 @@ happy_path:
       concepts: [modules.CN001]
     contract:
       kind: openapi
-      file: modules/modules-api.openapi
+      file: modules-api
     given:
       description: "Module 'ps_emailsubscription' exists but is not installed."
       state:
@@ -20,6 +20,25 @@ happy_path:
         installed: false
     expected_result:
       status: success
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Module/install_module.feature"
+        role: test
+        description: "Scenario 'Upload module with zip file on disk (not present initially)' (line 12), which installs and then asserts installed true and enabled true."
+      - path: "classes/module/Module.php"
+        role: implementation
+        description: "The install path, which fires actionModuleInstallAfter."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Module/install_module.feature line 12"
+          date: "2026-09-19"
+          summary: >-
+            The scenario installs a module and asserts installed and enabled are both true,
+            which is the installed_enabled state this case names. It uses a fixture module
+            rather than ps_emailsubscription; the transition is the same.
+          confidence_impact: supports
 
   - id: modules.TC002
     name: "Disable and re-enable module - happy path"
@@ -36,6 +55,24 @@ happy_path:
         enabled: true
     expected_result:
       status: success
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Module/module.feature"
+        role: test
+        description: "Scenario 'Update module status' (line 55)."
+      - path: "classes/module/Module.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Module/module.feature line 55"
+          date: "2026-09-19"
+          summary: >-
+            The scenario disables and re-enables a module and asserts the flags each way. It
+            asserts the status transition; it does not assert that configuration survives,
+            which is the second half of this case's summary.
+          confidence_impact: supports
 
   - id: modules.TC003
     name: "Upgrade module - happy path"
@@ -45,13 +82,31 @@ happy_path:
       rules: [modules.VR003]
       concepts: [modules.CN001]
     given:
-      description: "Module is installed at version 2.7.0, version 2.8.1 is available."
+      description: "Module is installed at an older version and a newer one is available."
       state:
         technicalName: "ps_emailsubscription"
         installedVersion: "2.7.0"
         availableVersion: "2.8.1"
     expected_result:
       status: success
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Module/upgrade_module.feature"
+        role: test
+        description: "Scenario 'Upgrade module with zip file from remote (not present initially)' (line 12)."
+      - path: "classes/module/Module.php"
+        role: implementation
+        description: "The upgrade path, which fires actionModuleUpgradeAfter."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Module/upgrade_module.feature line 12"
+          date: "2026-09-19"
+          summary: >-
+            The scenario upgrades a module and asserts the installed version moves to the new
+            one. Different version numbers, same assertion.
+          confidence_impact: supports
 
   - id: modules.TC004
     name: "Toggle hook status - happy path"
@@ -66,6 +121,22 @@ happy_path:
         active: true
     expected_result:
       status: success
+    code_refs:
+      - path: "src/Adapter/Hook/CommandHandler/UpdateHookStatusCommandHandler.php"
+        role: implementation
+    provenance:
+      discovery_stage: exploring
+      certainty: speculative
+      evidence:
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. Nothing under tests/ references UpdateHookStatusCommand.
+            Hook/hook_module.feature looks like coverage and is not: it exercises HookModule and
+            EditHookedModule, which register a module ON a hook, a different subject from
+            enabling or disabling the hook itself.
+          confidence_impact: weakens
 
 edge_cases:
   - id: modules.EC001
@@ -76,13 +147,35 @@ edge_cases:
       rules: [modules.VR002]
       concepts: [modules.CN001]
     given:
-      description: "Module is installed with custom configuration. keepData=true."
+      description: "Module is installed with custom configuration. keepData=true, which is the command's default."
       state:
         technicalName: "ps_emailsubscription"
         installed: true
         keepData: true
     expected_result:
       status: success
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Module/module.feature"
+        role: test
+        description: "Scenario 'Reset module status' (line 65), which resets an installed module and asserts its flags."
+      - path: "src/Core/Domain/Module/Command/ResetModuleCommand.php"
+        role: implementation
+        description: "keepData defaults to true."
+      - path: "src/Core/Module/ModuleManager.php"
+        role: implementation
+        description: "reset(), which branches on keepData."
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Module/module.feature line 65"
+          date: "2026-09-19"
+          summary: >-
+            The scenario asserts the module is still installed and enabled after a reset. It
+            does not assert that custom configuration survives, which is this case's actual
+            subject, so the preservation half is read from ModuleManager::reset.
+          confidence_impact: supports
 
   - id: modules.EC002
     name: "Upgrade already up-to-date module is rejected"
@@ -92,7 +185,7 @@ edge_cases:
       rules: [modules.VR003]
       concepts: [modules.CN001]
     given:
-      description: "Module is installed at version 2.8.1, no newer version available."
+      description: "Module is installed at its latest version and no newer one is available."
       state:
         technicalName: "ps_emailsubscription"
         installedVersion: "2.8.1"
@@ -100,6 +193,24 @@ edge_cases:
     expected_result:
       status: failure
       code: 409
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Module/upgrade_module.feature"
+        role: test
+        description: "The second half of 'Upgrade module with zip file from remote', line 46, which upgrades again and asserts the already-up-to-date exception."
+      - path: "src/Core/Domain/Module/Exception/ModuleAlreadyUpToDateException.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Module/upgrade_module.feature line 46"
+          date: "2026-09-19"
+          summary: >-
+            The scenario upgrades a module that is already current and asserts the exception,
+            then asserts the version did not move. Same assertion, and the 409 matches
+            modules.ERR004's declared status.
+          confidence_impact: supports
 
 error_cases:
   - id: modules.ER001
@@ -115,11 +226,32 @@ error_cases:
         installed: true
     expected_result:
       status: failure
-      code: 409
+      code: 403
+    note: >-
+      Corrected 2026-09-19: the expected code was 409. modules.ERR003 AlreadyInstalledModule
+      declares 403, which step 10 set from Module.php's exceptionToStatus map. A test case and
+      the error it exercises must agree, and the error is the one that read the code.
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Module/install_module.feature"
+        role: test
+        description: "The second half of 'Upload module with zip file on disk', line 34, which installs again and asserts the already-installed exception."
+      - path: "src/Core/Domain/Module/Exception/AlreadyInstalledModuleException.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Module/install_module.feature line 34"
+          date: "2026-09-19"
+          summary: >-
+            The scenario installs the same module twice and asserts the second attempt raises
+            the already-installed exception. Same assertion.
+          confidence_impact: supports
 
   - id: modules.ER002
     name: "Status change on non-installed module is rejected"
-    summary: "Verify that enabling/disabling a non-installed module raises ModuleNotInstalled."
+    summary: "Verify that enabling or disabling a non-installed module raises ModuleNotInstalled."
     validates:
       operations: [modules.CMD003]
       rules: [modules.SR001]
@@ -129,7 +261,27 @@ error_cases:
       state:
         technicalName: "ps_emailsubscription"
         installed: false
-        enabled: true
     expected_result:
       status: failure
-      code: 422
+      code: 403
+    note: >-
+      Corrected 2026-09-19: the expected code was 422. modules.ERR002 ModuleNotInstalled
+      declares 403, from Module.php's exceptionToStatus map, and step 10 corrected the error
+      entry without this file being in scope.
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Module/uninstall_module.feature"
+        role: test
+        description: "Scenario 'Update module status when uninstalled is not allowed' (line 113), which tries both disable and enable."
+      - path: "src/Core/Domain/Module/Exception/ModuleNotInstalledException.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Module/uninstall_module.feature line 113"
+          date: "2026-09-19"
+          summary: >-
+            The scenario asserts the not-installed exception for both directions of the status
+            change and then asserts the module's flags did not move. Same assertion, both ways.
+          confidence_impact: supports

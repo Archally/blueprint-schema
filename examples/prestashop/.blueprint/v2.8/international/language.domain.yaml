@@ -13,6 +13,10 @@ operations:
     description: "Create a new store language with ISO code, locale, name, RTL flag, and flag image."
     delivery_priority: must-have
     initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN002
+        action: create
     produces:
       operations: [international.EVT007]
       mode: all
@@ -29,6 +33,10 @@ operations:
     description: "Update a language's name, locale, RTL flag, or status."
     delivery_priority: must-have
     initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN002
+        action: update
     produces:
       operations: [international.EVT008]
       mode: all
@@ -43,6 +51,10 @@ operations:
     description: "Delete a language. The default language cannot be deleted."
     delivery_priority: must-have
     initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN002
+        action: delete
     produces:
       operations: [international.EVT009]
       mode: all
@@ -61,6 +73,10 @@ operations:
     description: "Enable or disable a language. Disabled languages are not available in the storefront language selector."
     delivery_priority: must-have
     initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN002
+        action: update
     produces:
       operations: [international.EVT010]
       mode: all
@@ -76,37 +92,60 @@ operations:
     id: international.EVT007
     kind: event
     name: "LanguageCreated"
-    description: "A new language has been added."
+    description: "A new language has been added. Modules observe it as the hook actionObjectLanguageAddAfter, composed at runtime by ObjectModel when the Language row is inserted."
+    tags: [hook:actionObjectLanguageAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 614-615 fire actionObject<Class>AddAfter for every persisted class."
+      - path: "classes/Language.php"
+        role: model
 
   languageUpdated:
     id: international.EVT008
     kind: event
     name: "LanguageUpdated"
-    description: "A language's configuration has been modified."
+    description: "A language's configuration has been modified. Modules observe it as the hook actionObjectLanguageUpdateAfter, composed at runtime by ObjectModel when the Language row is updated."
+    tags: [hook:actionObjectLanguageUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/Language.php"
+        role: model
 
   languageDeleted:
     id: international.EVT009
     kind: event
     name: "LanguageDeleted"
-    description: "One or more languages have been deleted."
+    description: "One or more languages have been deleted. Modules observe it as the hook actionObjectLanguageDeleteAfter, composed at runtime by ObjectModel when the Language row is deleted."
+    tags: [hook:actionObjectLanguageDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 922-923 fire actionObject<Class>DeleteAfter for every persisted class."
+      - path: "classes/Language.php"
+        role: model
 
   languageStatusToggled:
     id: international.EVT010
     kind: event
     name: "LanguageStatusToggled"
-    description: "A language's enabled/disabled status has changed."
+    description: "A language's enabled/disabled status has changed. Modules observe it as the hook actionObjectLanguageUpdateAfter, composed at runtime by ObjectModel when the Language row is updated. A toggle is an update, so it is the same hook a field edit fires."
+    tags: [hook:actionObjectLanguageUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/Language.php"
+        role: model
 
   # --- Queries ---
 
   getLanguageForEditing:
     id: international.QRY004
     kind: query
-    exchange:
-      protocol: http
-      endpoint:
-        path: /international/languages/{languageId}
-        method: GET
-        group: international
+    dispatch: inprocess
     responses:
       - code: "200"
         type: success

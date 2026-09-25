@@ -1,5 +1,5 @@
 ---
-version: "1.0.0"
+version: "1.1.0"
 scope: customers
 
 happy_path:
@@ -11,7 +11,7 @@ happy_path:
       rules: [customers.VR001, customers.VR002]
     contract:
       kind: openapi
-      file: customers/customers-api.openapi
+      file: customers-api
     given:
       description: "Email john@example.com not yet registered. Password meets policy."
       state:
@@ -22,6 +22,21 @@ happy_path:
     expected_result:
       status: success
       code: 200
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Customer/customer_management.feature"
+        role: test
+        description: "Scenario 'Create a simple customer and edit it' (line 14), which dispatches AddCustomerCommand."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Customer/customer_management.feature line 14"
+          date: "2026-09-19"
+          summary: >-
+            The scenario creates a customer through AddCustomerCommand and asserts the stored
+            fields, which is the assertion this test case makes.
+          confidence_impact: supports
 
   - id: customers.TC002
     name: "Add customer address - happy path"
@@ -40,6 +55,22 @@ happy_path:
     expected_result:
       status: success
       code: 200
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Address/customer_address.feature"
+        role: test
+        description: "Scenario 'add customer address' (line 10), which dispatches AddCustomerAddressCommand."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Address/customer_address.feature line 10"
+          date: "2026-09-19"
+          summary: >-
+            The scenario adds an address with its full required-field set and asserts it
+            persists. It uses a US address with a state rather than the French one in this
+            case's given; the shape of the assertion is the same.
+          confidence_impact: supports
 
   - id: customers.TC003
     name: "Transform guest to customer - happy path"
@@ -54,6 +85,33 @@ happy_path:
         email: "guest@example.com"
     expected_result:
       status: success
+    code_refs:
+      - path: "classes/Customer.php"
+        role: implementation
+        description: "transformToCustomer, the conversion itself."
+      - path: "tests/UI/campaigns/functional/BO/04_customers/01_customers/11_transformGuestToCustomer.ts"
+        role: test
+        description: "A Playwright back-office test. The only automated coverage this command has, and it drives the UI rather than the command bus."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Context/CustomerManagerFeatureContext.php lines 193-202"
+          date: "2026-09-19"
+          summary: >-
+            A Behat step 'I transform guest :ref into a customer' exists and dispatches
+            TransformGuestToCustomerCommand, but no .feature file calls it. The step is written
+            and unused, so the command has no Behat or PHPUnit coverage.
+          confidence_impact: weakens
+        - kind: codebase-analysis
+          source: "tests/UI/campaigns/functional/BO/04_customers/01_customers/11_transformGuestToCustomer.ts"
+          date: "2026-09-19"
+          summary: >-
+            A Playwright UI test covers the journey end to end through the back office. It
+            exercises the behaviour, not the operation, so it supports the case more weakly than
+            a command-bus test would.
+          confidence_impact: supports
 
   - id: customers.TC004
     name: "Reply to customer service thread - happy path"
@@ -67,6 +125,21 @@ happy_path:
         replyMessage: "Thank you for contacting us. We are looking into your issue."
     expected_result:
       status: success
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/CustomerService/customer_service.feature"
+        role: test
+        description: "Scenario 'Response to thread' (line 11), which dispatches ReplyToCustomerThreadCommand."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/CustomerService/customer_service.feature line 11"
+          date: "2026-09-19"
+          summary: >-
+            The scenario replies to an existing thread through ReplyToCustomerThreadCommand and
+            asserts the reply lands, which is what this case asserts.
+          confidence_impact: supports
 
 edge_cases:
   - id: customers.EC001
@@ -82,6 +155,23 @@ edge_cases:
     expected_result:
       status: failure
       code: 409
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Customer/customer_management.feature"
+        role: test
+        description: "Scenario 'Fail to create a duplicate registered customer, if registered customer with that email exists' (line 30)."
+      - path: "src/Core/Domain/Customer/Exception/DuplicateCustomerEmailException.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Customer/customer_management.feature line 30"
+          date: "2026-09-19"
+          summary: >-
+            The scenario registers an email twice and asserts the second attempt is refused with
+            the duplicate-email error. Same assertion, same exception.
+          confidence_impact: supports
 
   - id: customers.EC002
     name: "Address missing country-required fields"
@@ -99,21 +189,78 @@ edge_cases:
     expected_result:
       status: failure
       code: 422
+    code_refs:
+      - path: "src/Core/Domain/Address/Configuration/AddressConstraint.php"
+        role: validation
+      - path: "classes/Country.php"
+        role: validation
+        description: "checkZipCode, which is what makes a postcode required for a country that declares a format."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "src/Core/Domain/Address/Exception/AddressConstraintException.php, classes/Country.php"
+          date: "2026-09-19"
+          summary: >-
+            The refusal path exists: a country declares a zip-code format and Country::checkZipCode
+            enforces it, raising AddressConstraintException.
+          confidence_impact: supports
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. No Behat scenario and no PHPUnit test submits an address
+            missing a country-required field; the only coverage of required address fields is in
+            the Playwright UI campaigns, which drive the configuration screen rather than the
+            command.
+          confidence_impact: weakens
 
 error_cases:
   - id: customers.ER001
-    name: "Register with weak password"
-    summary: "Attempt to register with a password shorter than minimum."
+    name: "Register with a password below the minimum length"
+    summary: "A password shorter than the Password value object's minimum is refused."
     validates:
       operations: [customers.CMD001]
       rules: [customers.VR002]
     given:
-      description: "Password '123' is 3 characters, minimum is 8."
+      description: >-
+        Password '123' is 3 characters. On the path AddCustomerCommand takes, the minimum is
+        5 - the Password value object hardcodes MIN_LENGTH = 5 (and MAX_LENGTH = 72). The
+        configurable default of 8 lives in PasswordPolicyConfiguration and is wired into the
+        employee and storefront login forms, not into this command. Three characters is below
+        the value object's minimum, so the command refuses it.
       state:
         password: "123"
     expected_result:
       status: failure
       code: 422
+    code_refs:
+      - path: "src/Core/Domain/Customer/ValueObject/Password.php"
+        role: validation
+        description: "MIN_LENGTH = 5, MAX_LENGTH = 72, and the CustomerConstraintException::INVALID_PASSWORD raised between them."
+      - path: "tests/Unit/Core/Domain/Customer/ValueObject/PasswordTest.php"
+        role: test
+        description: "testItThrowsExceptionWhenCreatingTooShortOrTooLongPassword, over the getTooShortOrTooLongPasswords data provider."
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Unit/Core/Domain/Customer/ValueObject/PasswordTest.php"
+          date: "2026-09-19"
+          summary: >-
+            The unit test asserts the refusal on the value object in isolation, not through
+            AddCustomerCommand, so it covers the constraint rather than the registration path.
+          confidence_impact: supports
+        - kind: codebase-analysis
+          source: "src/Core/Domain/Customer/ValueObject/Password.php line 19, src/Core/Security/PasswordPolicyConfiguration.php line 26"
+          date: "2026-09-19"
+          summary: >-
+            Read for the retired claim. MIN_LENGTH = 5 is a constant on the value object;
+            PasswordPolicyConfiguration::DEFAULT_MINIMUM_LENGTH = 8 is a different mechanism
+            that AddCustomerCommand never consults.
+          confidence_impact: invalidates
 
   - id: customers.ER002
     name: "Guest conversion with duplicate email"
@@ -129,6 +276,29 @@ error_cases:
     expected_result:
       status: failure
       code: 409
+    code_refs:
+      - path: "classes/Customer.php"
+        role: implementation
+        description: "transformToCustomer, which refuses when the email is already a registered customer's."
+      - path: "src/Core/Domain/Customer/Exception/CustomerTransformationException.php"
+        role: implementation
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "classes/Customer.php, src/Core/Domain/Customer/Exception/CustomerTransformationException.php"
+          date: "2026-09-19"
+          summary: "The refusal exists in the conversion itself and raises CustomerTransformationException."
+          confidence_impact: supports
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. Like the happy path this case mirrors, the conversion
+            command has no Behat or PHPUnit coverage: the Behat step exists and no feature
+            file calls it.
+          confidence_impact: weakens
 
   - id: customers.ER003
     name: "Delete non-existent customer"
@@ -142,3 +312,29 @@ error_cases:
     expected_result:
       status: failure
       code: 404
+    code_refs:
+      - path: "src/Adapter/Customer/CommandHandler/AbstractCustomerHandler.php"
+        role: implementation
+        description: "assertCustomerWasFound, which every customer handler including delete calls before acting."
+      - path: "tests/Integration/Adapter/Customer/Repository/CustomerRepositoryTest.php"
+        role: test
+        description: "testGetThrowsException asserts CustomerNotFoundException for id 9999 on the repository, one layer below the delete handler."
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Adapter/Customer/Repository/CustomerRepositoryTest.php"
+          date: "2026-09-19"
+          summary: >-
+            The test asserts CustomerNotFoundException for an unknown id, but on
+            CustomerRepository::get rather than on DeleteCustomerCommand. It covers the same
+            exception through a different door.
+          confidence_impact: supports
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            No test deletes an unknown customer id. The 404 is read from
+            AbstractCustomerHandler::assertCustomerWasFound, which DeleteCustomerHandler calls.
+          confidence_impact: weakens

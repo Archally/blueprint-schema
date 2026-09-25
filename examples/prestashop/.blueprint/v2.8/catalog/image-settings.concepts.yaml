@@ -12,3 +12,32 @@ concepts:
       - path: "src/Core/Domain/ImageSettings/"
         role: model
     tags: [entity, configuration]
+
+  - id: catalog.CN400
+    name: "ImageType"
+    description: "One named image format the shop generates: a width, a height, a fitment mode, and the set of entities it applies to. Every uploaded image is cut to every type that claims its entity, so adding a type multiplies the files on disk and changing one leaves the existing files stale until they are regenerated."
+    stereotype: entity
+    attributes:
+      name:
+        id: catalog.CAT400
+        description: "The type's identifier in template code and on disk, e.g. cart_default."
+        example: "cart_default"
+      width:
+        id: catalog.CAT401
+        description: "Target width in pixels."
+        example: "125"
+      height:
+        id: catalog.CAT402
+        description: "Target height in pixels."
+        example: "125"
+      imageFitment:
+        id: catalog.CAT403
+        description: "How the source image is fitted to the target box: fit, crop or one of the other ImageFitment values."
+        example: "fit"
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Command/AddImageTypeCommand.php"
+        role: model
+        description: "The constructor is the type's full field list."
+      - path: "classes/ImageType.php"
+        role: model
+    tags: [entity]

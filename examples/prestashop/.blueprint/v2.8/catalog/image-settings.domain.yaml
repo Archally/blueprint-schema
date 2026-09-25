@@ -4,26 +4,330 @@ version: "1.0.0"
 scope: catalog
 tags: [image-settings]
 
+# src/Core/Domain/ImageSettings - 7 commands, 2 queries, zero Admin API routes,
+# so every operation here dispatches inprocess.
+#
+# One fact shapes the whole shard. Unlike Supplier, Manufacturer, Tag and
+# Attachment, the image-type commands do NOT persist through ObjectModel: every
+# handler goes through the Doctrine PrestaShopBundle\Entity\Repository\ImageTypeRepository.
+# classes/ImageType.php still extends ObjectModel and the legacy path still fires
+# actionObjectImageTypeAddAfter, but nothing on the CQRS path does. So no image-type
+# lifecycle event is modeled here: a module cannot observe an image type created
+# through a command, and the honest way to say that is to author no event for it.
+# The one hook this shard does fire is on the pixels, not on the row.
+
 operations:
   addImageType:
     id: catalog.CMD040
+    responses:
+      - code: "201"
+        type: success
+        description: "The image type was defined."
+      - code: "422"
+        type: failure
+        description: "The fitment mode is not one the shop supports."
+        error: catalog.ERR429
     kind: command
     name: "AddImageType"
-    description: "Define a new image type with dimensions (e.g. cart_default 125x125)."
+    description: "Define a new image type: a name, a width and a height, the fitment mode, and which entities it applies to - products, categories, manufacturers, suppliers, stores. Every uploaded image is later resized to every type that claims its entity."
     delivery_priority: could-have
-    produces:
-      operations: [catalog.EVT002]
-      mode: all
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN400
+        action: create
     code_refs:
       - path: "src/Core/Domain/ImageSettings/Command/AddImageTypeCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/ImageSettings/CommandHandler/AddImageTypeHandler.php"
+        role: implementation
+        description: "Persists through ImageTypeRepository::save(), not through ObjectModel, so no actionObject hook fires."
+
+  editImageType:
+    id: catalog.CMD417
+    responses:
+      - code: "200"
+        type: success
+        description: "The image type was updated; existing files on disk are unchanged."
+      - code: "404"
+        type: failure
+        description: "No image type exists with that id."
+        error: catalog.ERR428
+      - code: "422"
+        type: failure
+        description: "The fitment mode is not one the shop supports."
+        error: catalog.ERR429
+    kind: command
+    name: "EditImageType"
+    description: "Change an image type's dimensions, fitment or entity coverage. Changing a dimension does not re-cut the images already on disk; that is what RegenerateThumbnails is for."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN400
+        action: update
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Command/EditImageTypeCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/ImageSettings/CommandHandler/EditImageTypeHandler.php"
         role: implementation
 
   deleteImageType:
     id: catalog.CMD041
+    responses:
+      - code: "204"
+        type: success
+        description: "The image type definition was removed; its files stay on disk."
+      - code: "404"
+        type: failure
+        description: "No image type exists with that id."
+        error: catalog.ERR428
     kind: command
     name: "DeleteImageType"
-    description: "Remove an image type definition."
+    description: "Remove an image type definition. The generated files of that type stay on disk until DeleteImagesFromType is run, which is why the two are separate commands."
     delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN400
+        action: delete
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Command/DeleteImageTypeCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/ImageSettings/CommandHandler/DeleteImageTypeHandler.php"
+        role: implementation
+
+  bulkDeleteImageTypes:
+    id: catalog.CMD418
+    responses:
+      - code: "204"
+        type: success
+        description: "Every selected image type definition was removed."
+      - code: "500"
+        type: error
+        description: "At least one image type could not be removed."
+        error: catalog.ERR430
+    kind: command
+    name: "BulkDeleteImageType"
+    description: "Remove several image type definitions in one request from the grid selection. Its own exception type exists because a partial failure has to name which types survived."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN400
+        action: delete
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Command/BulkDeleteImageTypeCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/ImageSettings/CommandHandler/BulkDeleteImageTypeHandler.php"
+        role: implementation
+
+  deleteImagesFromType:
+    id: catalog.CMD419
+    responses:
+      - code: "204"
+        type: success
+        description: "The generated files of that type were removed from disk."
+      - code: "404"
+        type: failure
+        description: "No image type exists with that id."
+        error: catalog.ERR428
+      - code: "500"
+        type: error
+        description: "At least one file could not be deleted."
+        error: catalog.ERR431
+    kind: command
+    name: "DeleteImagesFromType"
+    description: "Delete the generated image files of one type from disk, leaving the type definition in place. Modeled apart from DeleteImageType because the two are genuinely independent: a merchant reclaims disk space without giving up the format."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Command/DeleteImagesFromTypeCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/ImageSettings/CommandHandler/DeleteImagesFromTypeHandler.php"
+        role: implementation
+
+  editImageSettings:
+    id: catalog.CMD420
+    responses:
+      - code: "204"
+        type: success
+        description: "The shop-wide image configuration was written."
+    kind: command
+    name: "EditImageSettings"
+    description: "Set the shop-wide image configuration rather than any one type: which formats are generated (avif, webp, jpeg, png), which of them is the base format, the per-format quality, the generation method, and the maximum upload size and dimensions. It writes configuration, so it materializes no catalog entity."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Command/EditImageSettingsCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/ImageSettings/CommandHandler/EditImageSettingsHandler.php"
+        role: implementation
+        description: "Writes through Adapter\\Admin\\ImageConfiguration::updateConfiguration()."
+
+  regenerateThumbnails:
+    id: catalog.CMD421
+    responses:
+      - code: "204"
+        type: success
+        description: "Every image of the selected domain was re-cut."
+      - code: "500"
+        type: error
+        description: "The regeneration run failed."
+        error: catalog.ERR432
+      - code: "504"
+        type: error
+        description: "The run did not finish inside the request; the merchant restarts it and the erase flag decides whether work is repeated."
+        error: catalog.ERR433
+      - code: "500"
+        type: error
+        description: "A generated file could not be written, usually a permissions or disk-space fault."
+        error: catalog.ERR434
+    kind: command
+    name: "RegenerateThumbnails"
+    description: "Re-cut every stored image of one image domain (products, categories, manufacturers, suppliers, stores) to one image type or to all of them, optionally erasing the previous files first. This is the long-running operation of the shard: it walks the image directories, and the handler has a dedicated timeout failure because a shop with a large catalog will not finish inside one request. It is also the only operation here a module can observe."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    traits:
+      expensive: true
     produces:
-      operations: [catalog.EVT002]
-      mode: all
+      operations: [catalog.EVT412]
+      mode: any
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Command/RegenerateThumbnailsCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/ImageSettings/CommandHandler/RegenerateThumbnailsHandler.php"
+        role: implementation
+        description: "Loops the image domains, regenerates thumbnails and watermarks, and reports timeout as a distinct outcome."
+
+  getImageSettingsForEditing:
+    id: catalog.QRY409
+    responses:
+      - code: "200"
+        type: success
+        description: "The shop-wide image configuration."
+    kind: query
+    name: "GetImageSettingsForEditing"
+    description: "Read the shop-wide image configuration for the settings form."
+    delivery_priority: could-have
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Query/GetImageSettingsForEditing.php"
+        role: implementation
+
+  getImageTypeForEditing:
+    id: catalog.QRY410
+    responses:
+      - code: "200"
+        type: success
+        description: "The image type's name, dimensions, fitment and coverage."
+      - code: "404"
+        type: failure
+        description: "No image type exists with that id."
+        error: catalog.ERR428
+    kind: query
+    name: "GetImageTypeForEditing"
+    description: "Read one image type's name, dimensions, fitment and entity coverage for the edit form."
+    delivery_priority: could-have
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Query/GetImageTypeForEditing.php"
+        role: implementation
+
+  imageThumbnailResized:
+    id: catalog.EVT412
+    kind: event
+    name: "ImageThumbnailResized"
+    description: "One image file was resized to one image type and written to disk. Fired as actionOnImageResizeAfter from ImageManager::resize(), with the destination file and its type; the sibling actionOnImageCutAfter fires the same way when an image is cropped rather than scaled. Both are registered hooks with a literal call site, which makes this the one event in this shard that a module can subscribe to - and it fires per file, so a regeneration run emits it thousands of times."
+    tags: [hook:actionOnImageResizeAfter]
+    code_refs:
+      - path: "classes/ImageManager.php"
+        role: implementation
+        description: "Line 334 fires actionOnImageResizeAfter; line 592 fires actionOnImageCutAfter."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entries actionOnImageResizeAfter and actionOnImageCutAfter."
+
+# Errors. 7 of the 8 exception classes in src/Core/Domain/ImageSettings/Exception.
+# ImageTypeException, the catch-all parent, is not mapped.
+errors:
+  imageTypeNotFound:
+    id: catalog.ERR428
+    name: "ImageTypeNotFound"
+    description: "No image type exists with the given id."
+    category: not-found
+    severity: warning
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Exception/ImageTypeNotFoundException.php"
+        role: implementation
+
+  invalidImageFitment:
+    id: catalog.ERR429
+    name: "InvalidImageFitment"
+    description: "The fitment mode is not one of the values ImageFitment declares. Fitment decides whether a source image is scaled inside the target box or cropped to fill it, so an invalid value would silently change how every image of that type looks."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Exception/InvalidImageFitmentException.php"
+        role: implementation
+
+  bulkImageTypeFailed:
+    id: catalog.ERR430
+    name: "BulkImageTypeFailed"
+    description: "At least one image type in a bulk delete could not be removed. The batch is not transactional."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Exception/BulkImageTypeException.php"
+        role: implementation
+
+  imageNotDeleted:
+    id: catalog.ERR431
+    name: "ImageNotDeleted"
+    description: "A generated image file could not be removed from disk while clearing an image type."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Exception/ImageNotDeletedException.php"
+        role: implementation
+
+  regenerateThumbnailsFailed:
+    id: catalog.ERR432
+    name: "RegenerateThumbnailsFailed"
+    description: "The regeneration run failed for a reason that is neither a timeout nor a write fault."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Exception/RegenerateThumbnailsException.php"
+        role: implementation
+
+  regenerateThumbnailsTimeout:
+    id: catalog.ERR433
+    name: "RegenerateThumbnailsTimeout"
+    description: "The regeneration run hit the request time limit before it finished. The domain gives this its own class because it is the expected outcome on a large catalog, not a fault: the merchant restarts the run, and whether the erase flag was set decides whether the finished work is repeated."
+    category: timeout
+    severity: warning
+    http_status: 504
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Exception/RegenerateThumbnailsTimeoutException.php"
+        role: implementation
+
+  regenerateThumbnailsWriteFailed:
+    id: catalog.ERR434
+    name: "RegenerateThumbnailsWriteFailed"
+    description: "A regenerated file could not be written, usually a directory permission or a full disk. Separate from the timeout because retrying will not help until the cause is fixed."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/ImageSettings/Exception/RegenerateThumbnailsWriteException.php"
+        role: implementation

@@ -79,7 +79,14 @@ components:
           example: "use_highest_range"
         zones:
           type: array
-          description: "Zone assignments with cost ranges."
+          description: "What the carrier charges, zone by zone. A destination with no entry here is a destination this carrier does not serve, so the list is the carrier's coverage as well as its price list."
+          example:
+            - zoneId: 1
+              zoneName: "Europe"
+              ranges:
+                - rangeFrom: 0
+                  rangeTo: 10.0
+                  price: "5.990000"
           items:
             $ref: "#/components/schemas/CarrierZoneConfig"
         shopIds:
@@ -111,7 +118,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Carrier/Command/AddCarrierCommand.php"
           role: schema
-        - path: "src/Core/Domain/Carrier/CommandHandler/AddCarrierHandler.php"
+        - path: "src/Adapter/Carrier/CommandHandler/AddCarrierHandler.php"
           role: implementation
 
     CarrierResource:
@@ -231,7 +238,14 @@ components:
           example: [1]
         zones:
           type: array
-          description: "Zone assignments with cost ranges."
+          description: "What the carrier charges, zone by zone, as stored. A zone missing from this list is not served by the carrier at all."
+          example:
+            - zoneId: 1
+              zoneName: "Europe"
+              ranges:
+                - rangeFrom: 0
+                  rangeTo: 10.0
+                  price: "5.990000"
           items:
             $ref: "#/components/schemas/CarrierZoneConfig"
       code_refs:
@@ -257,7 +271,7 @@ components:
       properties:
         carrierId:
           type: integer
-          description: "Carrier identifier."
+          description: "The carrier row this entry is. PrestaShop versions a carrier by inserting a new row on every edit and marking the old one deleted, so this id changes and the reference id below does not."
           example: 5
         carrierReferenceId:
           type: integer
@@ -337,27 +351,40 @@ components:
           example: "pending"
         products:
           type: array
-          description: "Products assigned to this shipment."
+          description: "What this parcel contains. An order's lines may be spread across several shipments, so the sum across shipments is what the order dispatched, and this list alone never is."
+          example:
+            - orderDetailId: 89
+              productId: 42
+              combinationId: 7
+              productName: "Classic Laptop 15-inch - Size: M, Color: Black"
+              reference: "LAPTOP-15-BLK-M"
+              quantity: 2
           items:
             type: object
             properties:
               orderDetailId:
                 type: integer
+                description: "The order line this shipment draws from. A line can be split across shipments, so the quantity below is what this shipment carries, not what the line ordered."
                 example: 89
               productId:
                 type: integer
+                description: "The catalog product on the line, kept so a picker can look up its location."
                 example: 42
               combinationId:
                 type: integer
+                description: "The variant being shipped, or 0 when the product has none. A picker needs it: the size and colour are what distinguish two otherwise identical lines."
                 example: 7
               productName:
                 type: string
+                description: "The name as it was at order time, including the variant summary. Printed on the packing slip, so it must match what the shopper was told they bought."
                 example: "Classic Laptop 15-inch - Size: M, Color: Black"
               reference:
                 type: string
+                description: "The SKU as it was at order time, which is what the warehouse picks against."
                 example: "LAPTOP-15-BLK-M"
               quantity:
                 type: integer
+                description: "How many units of this line go in this shipment. Less than the ordered quantity when the order is shipped in parts."
                 example: 2
         createdAt:
           type: string
@@ -383,7 +410,7 @@ components:
       properties:
         carrierId:
           type: integer
-          description: "Carrier identifier."
+          description: "The carrier version that produced this quote. Quoting the version rather than the reference matters, because a later edit to the carrier's ranges creates a new row and must not silently restate an existing quote."
           example: 5
         carrierName:
           type: string
@@ -395,7 +422,7 @@ components:
           example: "5.830000"
         shippingCostTaxIncluded:
           type: string
-          description: "Shipping cost with tax."
+          description: "Delivery charge with tax, at the rate of the carrier's own tax rules group rather than the goods'. This is the figure the cart shows; the tax-excluded one above is what the invoice breaks out."
           example: "7.000000"
         taxRate:
           type: number
@@ -444,7 +471,11 @@ components:
           example: "Europe"
         ranges:
           type: array
-          description: "Cost brackets within this zone."
+          description: "The brackets the charge is looked up in, by weight or by order total depending on the carrier's shipping method. An order above the last bracket falls to the carrier's rangeBehavior, which either charges the highest bracket or withdraws the carrier from checkout."
+          example:
+            - rangeFrom: 0
+              rangeTo: 10.0
+              price: "5.990000"
           items:
             type: object
             properties:

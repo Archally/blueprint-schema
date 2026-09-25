@@ -11,6 +11,15 @@ operations:
   importTheme:
     id: content.CMD013
     kind: command
+    dispatch: inprocess
+    responses:
+      - code: "ok"
+        type: success
+        description: "The theme is unpacked and available to enable."
+      - code: "422"
+        type: failure
+        description: "The archive, URL or FTP path could not be turned into a theme."
+        error: content.ERR005
     name: "ImportTheme"
     description: "Import a theme from an archive upload, web URL, or FTP path. Uses ThemeImportSource polymorphic value object to determine source type."
     delivery_priority: must-have
@@ -18,6 +27,9 @@ operations:
     produces:
       operations: [content.EVT009]
       mode: all
+    materializes:
+      - concept: content.CN003
+        action: create
     code_refs:
       - path: "src/Core/Domain/Theme/Command/ImportThemeCommand.php"
         role: implementation
@@ -27,6 +39,15 @@ operations:
   enableTheme:
     id: content.CMD014
     kind: command
+    dispatch: inprocess
+    responses:
+      - code: "ok"
+        type: success
+        description: "The theme is active for this shop and the previous one is not."
+      - code: "404"
+        type: failure
+        description: "No theme with that name is installed."
+        error: content.ERR004
     name: "EnableTheme"
     description: "Activate a front-office theme for the current shop context. Only one theme can be active per shop - enabling a theme implicitly deactivates the current one."
     delivery_priority: must-have
@@ -37,6 +58,9 @@ operations:
     governed_by:
       - rule: content.VR004
       - rule: content.TR001
+    materializes:
+      - concept: content.CN003
+        action: update
     code_refs:
       - path: "src/Core/Domain/Theme/Command/EnableThemeCommand.php"
         role: implementation
@@ -46,6 +70,19 @@ operations:
   deleteTheme:
     id: content.CMD015
     kind: command
+    dispatch: inprocess
+    responses:
+      - code: "ok"
+        type: success
+        description: "The theme's files and record were removed."
+      - code: "404"
+        type: failure
+        description: "No theme with that name is installed."
+        error: content.ERR004
+      - code: "409"
+        type: failure
+        description: "The theme is the active one. Another theme must be enabled first."
+        error: content.ERR006
     name: "DeleteTheme"
     description: "Delete a theme from the system. The currently active theme cannot be deleted."
     delivery_priority: must-have
@@ -55,6 +92,9 @@ operations:
       mode: all
     governed_by:
       - rule: content.VR005
+    materializes:
+      - concept: content.CN003
+        action: delete
     code_refs:
       - path: "src/Core/Domain/Theme/Command/DeleteThemeCommand.php"
         role: implementation
@@ -64,6 +104,7 @@ operations:
   resetThemeLayouts:
     id: content.CMD016
     kind: command
+    dispatch: inprocess
     name: "ResetThemeLayouts"
     description: "Reset all page layouts for a theme back to their defaults. Used after theme updates or when layout customizations need to be reverted."
     delivery_priority: should-have
@@ -71,6 +112,9 @@ operations:
     produces:
       operations: [content.EVT012]
       mode: all
+    materializes:
+      - concept: content.CN003
+        action: update
     code_refs:
       - path: "src/Core/Domain/Theme/Command/ResetThemeLayoutsCommand.php"
         role: implementation
@@ -80,22 +124,37 @@ operations:
   adaptThemeToRtl:
     id: content.CMD017
     kind: command
+    dispatch: inprocess
     name: "AdaptThemeToRtlLanguages"
-    description: "Generate RTL (Right-to-Left) CSS adaptations for a theme. Required when the store serves RTL languages (Arabic, Hebrew, etc.)."
+    description: "Generate RTL (Right-to-Left) CSS adaptations for a theme. Required when the store serves RTL languages (Arabic, Hebrew, etc.). A merchant dispatches it per theme from the theme page, and installing or editing a right-to-left language reaches the same processor on its own."
     delivery_priority: should-have
     initiated_by: [content.ACT002]
     produces:
       operations: [content.EVT013]
       mode: all
+    reacts_to:
+      - operation: international.EVT007
+        policy: "A right-to-left language brings right-to-left stylesheets with it"
+        condition: "The language carries is_rtl; a left-to-right language changes no stylesheet"
+      - operation: international.EVT008
+        policy: "A language that is right-to-left has its stylesheets regenerated on every edit"
+        condition: "The language carries is_rtl; a left-to-right language changes no stylesheet"
+    materializes:
+      - concept: content.CN003
+        action: update
     code_refs:
       - path: "src/Core/Domain/Theme/Command/AdaptThemeToRTLLanguagesCommand.php"
         role: implementation
       - path: "src/Core/Domain/Theme/CommandHandler/AdaptThemeToRTLLanguagesHandler.php"
         role: implementation
+      - path: "classes/Language.php"
+        role: implementation
+        description: "add() at line 232 and update() at line 259 run Core\\Localization\\RTL\\Processor, the class the command's own handler builds through StyleSheetProcessorFactoryInterface, whenever is_rtl is set. The language path asks it for the back-office theme and the default modules; the command asks it for one named front-office theme, so the two are the same operation aimed at different targets. The language path runs after parent::add and parent::update have fired the language hooks."
 
   generateMailTemplates:
     id: content.CMD018
     kind: command
+    dispatch: inprocess
     name: "GenerateThemeMailTemplates"
     description: "Generate email templates for a given theme and language. Service operation - not a CRUD lifecycle command. Can optionally overwrite existing templates and specify custom output folders for core and module emails."
     delivery_priority: should-have
@@ -103,10 +162,100 @@ operations:
     produces:
       operations: [content.EVT014]
       mode: all
+    materializes:
+      - concept: content.CN006
+        action: create
     code_refs:
       - path: "src/Core/Domain/MailTemplate/Command/GenerateThemeMailTemplatesCommand.php"
         role: implementation
       - path: "src/Core/Domain/MailTemplate/CommandHandler/GenerateThemeMailTemplatesHandler.php"
+        role: implementation
+
+  # --- Mail Template Bodies ---
+  #
+  # GenerateThemeMailTemplates above writes a whole theme's templates from source. These three are
+  # the per-template editor a merchant uses afterwards: the back-office "Design > Email theme"
+  # screen lists the templates for one locale, opens one, and saves its HTML and text bodies.
+  # ps_apiresources declares no MailTemplate resource, so all three run on the command bus.
+
+  editEmailBodyTemplate:
+    id: content.CMD021
+    kind: command
+    dispatch: inprocess
+    responses:
+      - code: "ok"
+        type: success
+        description: "Both bodies were written for that locale and source."
+      - code: "404"
+        type: failure
+        description: "No template with that name exists for the locale and source."
+        error: content.ERR013
+      - code: "422"
+        type: failure
+        description: "The template name or source failed validation before the handler ran."
+        error: content.ERR014
+    name: "EditEmailBodyTemplate"
+    description: "Overwrite the HTML body and the plain-text body of one email template, for one locale and one source. The source is core or a named module, wrapped in EmailTemplateSource, so a module's own templates are edited through the same command."
+    delivery_priority: should-have
+    initiated_by: [content.ACT002]
+    produces:
+      operations: [content.EVT017]
+      mode: all
+    materializes:
+      - concept: content.CN006
+        action: update
+    code_refs:
+      - path: "src/Core/Domain/MailTemplate/Command/EditEmailBodyTemplateCommand.php"
+        role: implementation
+      - path: "src/Adapter/MailTemplate/CommandHandler/EditEmailBodyTemplateHandler.php"
+        role: implementation
+      - path: "src/Core/Domain/MailTemplate/ValueObject/EmailTemplateSource.php"
+        role: model
+        description: "core or a module technical name; decides which folder the body is written to."
+
+  emailBodyTemplateEdited:
+    id: content.EVT017
+    kind: event
+    name: "EmailBodyTemplateEdited"
+    description: >-
+      One email template's HTML and text bodies have been overwritten for one locale. Restated
+      2026-09-14: no hook is fired. The template is a file, not an ObjectModel row, so the dynamic
+      family does not apply; a module whose own template was edited is not notified.
+
+  getEmailBodyTemplateForEditing:
+    id: content.QRY009
+    kind: query
+    dispatch: inprocess
+    responses:
+      - code: "ok"
+        type: success
+        description: "The stored HTML and plain-text bodies."
+      - code: "404"
+        type: failure
+        description: "No template with that name exists for the locale and source."
+        error: content.ERR013
+    name: "GetEmailBodyTemplateForEditing"
+    description: "Load one email template's HTML and text bodies for one locale and source, so the editor opens on what is currently stored."
+    delivery_priority: should-have
+    initiated_by: [content.ACT002]
+    code_refs:
+      - path: "src/Core/Domain/MailTemplate/Query/GetEmailBodyTemplateForEditing.php"
+        role: implementation
+      - path: "src/Adapter/MailTemplate/QueryHandler/GetEmailBodyTemplateForEditingHandler.php"
+        role: implementation
+
+  getEmailBodyTemplatesForListing:
+    id: content.QRY010
+    kind: query
+    dispatch: inprocess
+    name: "GetEmailBodyTemplatesForListing"
+    description: "List every email template available for one locale, across core and every installed module, for the back-office grid. Takes only the locale - there is no per-source filter."
+    delivery_priority: should-have
+    initiated_by: [content.ACT002]
+    code_refs:
+      - path: "src/Core/Domain/MailTemplate/Query/GetEmailBodyTemplatesForListing.php"
+        role: implementation
+      - path: "src/Adapter/MailTemplate/QueryHandler/GetEmailBodyTemplatesForListingHandler.php"
         role: implementation
 
   # --- Theme Events ---
@@ -115,37 +264,80 @@ operations:
     id: content.EVT009
     kind: event
     name: "ThemeImported"
-    description: "A new theme has been imported into the system."
+    description: >-
+      A new theme has been imported and is available to enable. Restated 2026-09-14 rather than
+      regrounded: no hook is fired for this transition, so modules cannot observe it. The Theme
+      class is not an ObjectModel (it is src/Core/Addon/Theme/Theme.php, a descriptor over a
+      folder), so the dynamic actionObject family does not reach it either, and the registry's six
+      theme entries are all mail-theme or legacy admin-controller hooks. A module that needs to
+      react to a theme change has to poll.
+    code_refs:
+      - path: "src/Core/Domain/Theme/CommandHandler/ImportThemeHandler.php"
+        role: implementation
+        description: "Searched for Hook::exec, HookManager::exec and dispatchWithParameters on 2026-09-14: none."
 
   themeEnabled:
     id: content.EVT010
     kind: event
     name: "ThemeEnabled"
-    description: "A theme has been activated for the current shop. The previously active theme was deactivated."
+    description: >-
+      A theme has been activated for the current shop, and the previously active one was
+      deactivated by the same act, since only one theme is active per shop. No hook is fired, so
+      modules cannot observe the switch - which matters, because a module whose markup depends on
+      the theme's layout has no way to know the layout changed.
+    code_refs:
+      - path: "src/Core/Domain/Theme/CommandHandler/EnableThemeHandler.php"
+        role: implementation
+        description: "Searched for Hook::exec, HookManager::exec and dispatchWithParameters on 2026-09-14: none."
 
   themeDeleted:
     id: content.EVT011
     kind: event
     name: "ThemeDeleted"
-    description: "A theme has been deleted from the system."
+    description: >-
+      A theme's files and record have been removed. The active theme cannot be deleted, so this
+      transition is always from an inactive theme. Restated 2026-09-14: no hook is fired.
+    code_refs:
+      - path: "src/Core/Domain/Theme/CommandHandler/DeleteThemeHandler.php"
+        role: implementation
+        description: "Searched for Hook::exec, HookManager::exec and dispatchWithParameters on 2026-09-14: none."
 
   themeLayoutsReset:
     id: content.EVT012
     kind: event
     name: "ThemeLayoutsReset"
-    description: "A theme's page layouts have been reset to defaults."
+    description: >-
+      A theme's page layouts are back at the values it shipped with, discarding every layout
+      customization made through GetPagesForLayoutCustomization. Restated 2026-09-14: no hook is
+      fired, so a module that stored per-layout configuration is not told it is now stale.
 
   themeAdaptedToRtl:
     id: content.EVT013
     kind: event
     name: "ThemeAdaptedToRtl"
-    description: "A theme has been adapted with RTL CSS for right-to-left language support."
+    description: >-
+      A theme now carries generated right-to-left CSS, so it can serve Arabic, Hebrew and the
+      other RTL languages the shop has installed. Restated 2026-09-14: no hook is fired. The
+      generation reads the theme's existing CSS, so running it again after a theme update is the
+      merchant's responsibility and nothing signals that it is needed.
 
   mailTemplatesGenerated:
     id: content.EVT014
     kind: event
     name: "MailTemplatesGenerated"
-    description: "Email templates have been generated for a specific theme and language."
+    description: >-
+      Every email template for one mail theme and one language has been written to disk, optionally
+      overwriting what was there. Restated 2026-09-14: no completion hook is fired. Hooks do take
+      part in the generation - actionListMailThemes lets a module add or remove a theme,
+      actionGetMailThemeFolder redirects where one is read from, actionBuildMailLayoutVariables and
+      actionGetMailLayoutTransformations shape the output - but they are consulted during the run,
+      not fired after it, so a module contributes to the result and is not told the result exists.
+    code_refs:
+      - path: "src/Core/Domain/MailTemplate/CommandHandler/GenerateThemeMailTemplatesHandler.php"
+        role: implementation
+      - path: "src/Core/MailTemplate/FolderThemeCatalog.php"
+        role: implementation
+        description: "Line 72 dispatches ThemeCatalogInterface::LIST_MAIL_THEMES_HOOK as a class constant, which is why actionListMailThemes is invisible to a grep for a quoted hook name."
 
 errors:
   themeNotFound:
@@ -172,3 +364,19 @@ errors:
     severity: error
     http_status: 409
     related_rules: [content.VR005]
+
+questions:
+
+  - id: content.QN003
+    name: "What A Theme Changes"
+    statement: "What does adopting this theme change about the storefront's layout and its emails?"
+    category: behavioral
+    priority: high
+    bounded_context_ref: prestashop.BC004
+    answered_by: [content.CMD016, content.CMD017, content.CMD018, content.QRY008]
+    concepts: [content.CN003, content.CN006]
+    resolved: true
+    resolution: >
+      A theme owns the page layouts, which ResetThemeLayouts returns to the theme's own
+      defaults, and the mail templates, which GenerateThemeMailTemplates regenerates per
+      language; AdaptThemeToRtlLanguages is the third thing it rewrites.

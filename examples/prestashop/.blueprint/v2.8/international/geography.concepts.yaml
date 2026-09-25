@@ -37,6 +37,7 @@ concepts:
       addressFormat:
         id: CAT520
         description: "Address line format template for this country"
+        example: "firstname lastname\\ncompany\\nvat_number\\naddress1\\naddress2\\npostcode city\\nCountry:name\\nphone"
       containsStates:
         id: CAT521
         description: "Whether this country has states/provinces/regions"
@@ -44,12 +45,15 @@ concepts:
       needIdNumber:
         id: CAT522
         description: "Whether customers need an identification number (e.g., DNI in Spain)"
+        example: "false"
       displayTaxLabel:
         id: CAT523
         description: "Whether to show tax-inclusive/exclusive labels for this country"
+        example: "true"
       enabled:
         id: CAT524
         description: "Whether this country is active for store operations"
+        example: "true"
     code_refs:
       - path: "src/Core/Domain/Country/Command/AddCountryCommand.php"
         role: implementation
@@ -73,12 +77,15 @@ concepts:
       countryId:
         id: CAT527
         description: "Reference to the parent country"
+        example: "21"
       zoneId:
         id: CAT528
         description: "Reference to the geographic zone (may differ from country's zone)"
+        example: "2"
       enabled:
         id: CAT529
         description: "Whether this state is active"
+        example: "true"
     code_refs:
       - path: "src/Core/Domain/State/Command/AddStateCommand.php"
         role: implementation
@@ -98,6 +105,7 @@ concepts:
       enabled:
         id: CAT531
         description: "Whether this zone is active"
+        example: "true"
     code_refs:
       - path: "src/Core/Domain/Zone/Command/AddZoneCommand.php"
         role: implementation
@@ -105,21 +113,21 @@ concepts:
         role: implementation
 
 associations:
-  - id: international.AS002
+  - id: international.ASC002
     subject: international.CN004
     predicate: depends-on
     object: international.CN006
     cardinality: "1"
     description: "Each country is assigned to exactly one zone."
 
-  - id: international.AS003
+  - id: international.ASC003
     subject: international.CN005
     predicate: depends-on
     object: international.CN004
     cardinality: "1"
     description: "Each state belongs to exactly one country."
 
-  - id: international.AS004
+  - id: international.ASC004
     subject: international.CN005
     predicate: depends-on
     object: international.CN006

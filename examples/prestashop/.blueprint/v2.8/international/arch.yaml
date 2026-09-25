@@ -11,8 +11,11 @@ contexts:
   - id: prestashop.BC006
     name: International
     kind: support
+    value_stream_ref: VS002
     complexity: transformation
+    business_model_role: compliance-enforcer
     evolution: product
+    model_traits: [information-holder, structurer]
     summary: Currencies, countries, zones, languages, tax rules - localization backbone.
     owned_by:
       team: TM006
@@ -32,11 +35,12 @@ contexts:
             contract_name: exchange-rates
             slice: international
             write:
-              - international:exchangeRateSnapshot
+              - international.DOC001
           openapi:
-            output: international/international-api.openapi
+            contract_name: international-api
+            slice: international
             expose:
-              - international:getCurrencyForEditing
-              - international:getTaxRulesGroupForEditing
-              - international:getCountryForEditing
-              - international:getLanguageForEditing
+              - international.QRY001
+              - international.QRY010
+              - international.QRY005
+              - international.QRY004

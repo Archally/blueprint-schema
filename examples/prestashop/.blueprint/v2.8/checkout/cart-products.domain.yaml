@@ -1,5 +1,11 @@
 ---
 name: "Cart Products"
+description: >-
+  The lines inside a cart: adding a product, changing its quantity or its price, attaching a
+  customization, removing it. PrestaShop serves NO cart-item route: the Admin API's Cart resource
+  declares only PUT /carts/{cartId}/emails, so every operation here executes in the same process, over the
+  command bus. All five converge on Cart::updateQty or Cart::deleteProduct, which is why they share
+  one event.
 version: "1.0.0"
 scope: checkout
 tags: [cart, cart-products]
@@ -8,25 +14,25 @@ operations:
   addProductToCart:
     id: checkout.CMD009
     kind: command
-    exchange:
-      protocol: http
-      endpoint:
-        path: /checkout/carts/{cartId}/items
-        method: POST
-        group: checkout
+    responses:
+      - code: "ProductAdded"
+        type: success
+        description: "The line exists at the new quantity."
+      - code: "MinimalQuantityNotMet"
+        type: failure
+        description: "The resulting quantity is below the product's minimum order quantity."
+        error: checkout.ERR004
+      - code: "CartConstraintViolation"
+        type: failure
+        description: "The product cannot be carted: it is not available for order, or the shop is in catalog mode, or stock is short and backorders are off."
+        error: checkout.ERR005
+    dispatch: inprocess
     payload:
       schema: AddToCartPayload
       contentType: application/json
-    responses:
-      - code: "200"
-        type: success
-        description: "The cart as it stands after the addition."
-        schema: CartResource
-        contentType: application/json
-    idempotent: true
-    idempotency_key: "$.body.cartId+$.body.productId+$.body.combinationId"
+      description: "The command's own argument shape, carried over the command bus rather than a wire."
     name: "AddProductToCart"
-    description: "Add a product with specified quantity and optional combination to the cart. Creates cart session if none exists."
+    description: "Add a quantity of a product, optionally a named combination and a set of customizations, to a cart. The handler reads the line's current quantity and adds to it, so the same call twice adds twice - it is not idempotent. The Admin API serves no cart-item route: the Cart resource in ps_apiresources declares only PUT /carts/{cartId}/emails, so this runs over the command bus from the back-office cart view and from the storefront controller."
     delivery_priority: must-have
     initiated_by: [orders.ACT001]
     governed_by:
@@ -34,39 +40,64 @@ operations:
     produces:
       operations: [checkout.EVT004]
       mode: all
+    materializes:
+      - concept: checkout.CN002
+        action: create
     code_refs:
       - path: "src/Core/Domain/Cart/Command/AddProductToCartCommand.php"
         role: implementation
+      - path: "src/Adapter/Cart/CommandHandler/AddProductToCartHandler.php"
+        role: implementation
+        description: "Adds the requested quantity to the line's existing quantity, then delegates to UpdateProductQuantityInCartHandler."
 
   removeProductFromCart:
     id: checkout.CMD010
     kind: command
-    exchange:
-      protocol: http
-      endpoint:
-        path: /checkout/carts/{cartId}/items/{productId}
-        method: DELETE
-        group: checkout
-    responses:
-      - code: "200"
-        type: success
-        description: "The cart as it stands after the removal."
-        schema: CartResource
-        contentType: application/json
+    dispatch: inprocess
     name: "RemoveProductFromCart"
-    description: "Remove a product line from the cart entirely."
+    description: "Remove a product line from a cart entirely, combination and customization included. No Admin API route serves it - PrestaShop declares no cart-item route at all - so it runs over the command bus from the back-office cart view and from the storefront CartController."
     delivery_priority: must-have
     initiated_by: [orders.ACT001]
+    reacts_to:
+      - operation: catalog.EVT003
+        policy: "Strip the deleted product out of every cart that still holds it, so no shopper can check out a line whose product no longer exists"
+        condition: "the product is being removed outright rather than from one shop of a multistore"
     produces:
       operations: [checkout.EVT004]
       mode: all
+    materializes:
+      - concept: checkout.CN002
+        action: delete
     code_refs:
+      - path: "classes/Product.php"
+        role: implementation
+        description: "Proves the reaction to catalog.EVT003. Product::delete fires actionProductDelete at line 1284 and calls deleteCartProducts at line 1293, which deletes every cart_product row for the product. The removal is a single statement there, not a dispatch of this command."
       - path: "src/Core/Domain/Cart/Command/RemoveProductFromCartCommand.php"
         role: implementation
+      - path: "src/Adapter/Cart/CommandHandler/RemoveProductFromCartHandler.php"
+        role: implementation
+        description: "Calls Cart::deleteProduct."
 
   updateProductQuantityInCart:
     id: checkout.CMD011
     kind: command
+    responses:
+      - code: "QuantityUpdated"
+        type: success
+        description: "The line carries the requested quantity, or is gone if the quantity was zero."
+      - code: "MinimalQuantityNotMet"
+        type: failure
+        description: "The requested quantity is below the product's minimum order quantity."
+        error: checkout.ERR004
+      - code: "CartConstraintViolation"
+        type: failure
+        description: "The product cannot be carted at that quantity."
+        error: checkout.ERR005
+    payload:
+      schema: UpdateCartQuantityPayload
+      contentType: application/json
+      description: "The command's own argument shape, carried over the command bus."
+    dispatch: inprocess
     name: "UpdateProductQuantityInCart"
     description: "Change the quantity of an existing product in the cart."
     delivery_priority: must-have
@@ -76,6 +107,9 @@ operations:
     produces:
       operations: [checkout.EVT004]
       mode: all
+    materializes:
+      - concept: checkout.CN002
+        action: update
     code_refs:
       - path: "src/Core/Domain/Cart/Command/UpdateProductQuantityInCartCommand.php"
         role: implementation
@@ -83,6 +117,7 @@ operations:
   updateProductPriceInCart:
     id: checkout.CMD012
     kind: command
+    dispatch: inprocess
     name: "UpdateProductPriceInCart"
     description: "Override the unit price for a product in the cart. Used by back-office for custom pricing."
     delivery_priority: should-have
@@ -90,6 +125,9 @@ operations:
     produces:
       operations: [checkout.EVT004]
       mode: all
+    materializes:
+      - concept: checkout.CN002
+        action: update
     code_refs:
       - path: "src/Core/Domain/Cart/Command/UpdateProductPriceInCartCommand.php"
         role: implementation
@@ -97,6 +135,7 @@ operations:
   addCartCustomization:
     id: checkout.CMD013
     kind: command
+    dispatch: inprocess
     name: "AddCartCustomization"
     description: "Add product customization data (text fields, file uploads) to a cart item."
     delivery_priority: could-have
@@ -104,6 +143,9 @@ operations:
     produces:
       operations: [checkout.EVT004]
       mode: all
+    materializes:
+      - concept: checkout.CN002
+        action: update
     code_refs:
       - path: "src/Core/Domain/Cart/Command/AddCustomizationCommand.php"
         role: implementation
@@ -112,7 +154,20 @@ operations:
     id: checkout.EVT004
     kind: event
     name: "CartProductsUpdated"
-    description: "Emitted when cart product lines change. Triggers total recalculation and cart rule re-evaluation."
+    description: >-
+      A cart's product lines changed, which invalidates the cart totals and makes every attached
+      cart rule eligible for re-evaluation. The hook a module receives is
+      actionCartUpdateQuantityBefore, and its name is precise: it fires BEFORE the quantity is
+      written, so a module reading the cart inside it still sees the old line. A quantity of zero
+      or less is routed to deleteProduct immediately after, so the same hook covers removal.
+    tags: ["hook:actionCartUpdateQuantityBefore"]
+    code_refs:
+      - path: "classes/Cart.php"
+        role: implementation
+        description: "Line 1725, inside updateQty(), fires actionCartUpdateQuantityBefore; line 1727 then routes a non-positive quantity to deleteProduct."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "The hook registry; actionCartUpdateQuantityBefore is registered at line 4596."
 
 errors:
   minimalQuantityNotMet:

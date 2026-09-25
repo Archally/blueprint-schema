@@ -11,10 +11,14 @@ operations:
   createShipment:
     id: shipping.CMD011
     kind: command
+    dispatch: inprocess
     name: "CreateShipment"
     description: "Create a new shipment for an order, assigning a carrier and an initial product with quantity. Multiple shipments can exist per order for split delivery."
     delivery_priority: must-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN004
+        action: create
     produces:
       operations: [shipping.EVT009]
       mode: all
@@ -27,10 +31,14 @@ operations:
   editShipment:
     id: shipping.CMD012
     kind: command
+    dispatch: inprocess
     name: "EditShipment"
     description: "Update a shipment's tracking number and/or carrier. Cannot be performed on shipments that have already been shipped."
     delivery_priority: must-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN004
+        action: update
     produces:
       operations: [shipping.EVT010]
       mode: all
@@ -45,10 +53,14 @@ operations:
   addProductToShipment:
     id: shipping.CMD013
     kind: command
+    dispatch: inprocess
     name: "AddProductToShipment"
     description: "Add a product line with quantity to an existing shipment."
     delivery_priority: must-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN005
+        action: create
     produces:
       operations: [shipping.EVT011]
       mode: all
@@ -59,10 +71,14 @@ operations:
   deleteProductFromShipment:
     id: shipping.CMD014
     kind: command
+    dispatch: inprocess
     name: "DeleteProductFromShipment"
     description: "Remove a product line from a shipment."
     delivery_priority: must-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN005
+        action: delete
     produces:
       operations: [shipping.EVT012]
       mode: all
@@ -75,10 +91,14 @@ operations:
   splitShipment:
     id: shipping.CMD015
     kind: command
+    dispatch: inprocess
     name: "SplitShipment"
     description: "Split a shipment into two by extracting specified product quantities into a new shipment with a potentially different carrier. Enables partial fulfillment scenarios."
     delivery_priority: should-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN004
+        action: create
     produces:
       operations: [shipping.EVT013]
       mode: all
@@ -93,10 +113,14 @@ operations:
   mergeProductsToShipment:
     id: shipping.CMD016
     kind: command
+    dispatch: inprocess
     name: "MergeProductsToShipment"
     description: "Merge products from one or more shipments into a target shipment. Consolidates parcels when separate shipping is no longer needed."
     delivery_priority: should-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN004
+        action: update
     produces:
       operations: [shipping.EVT014]
       mode: all
@@ -113,10 +137,14 @@ operations:
   switchShipmentCarrier:
     id: shipping.CMD017
     kind: command
+    dispatch: inprocess
     name: "SwitchShipmentCarrier"
     description: "Change the carrier assigned to a shipment. Useful when the original carrier becomes unavailable or a better option is identified."
     delivery_priority: should-have
     initiated_by: [shipping.ACT001]
+    materializes:
+      - concept: shipping.CN004
+        action: update
     produces:
       operations: [shipping.EVT015]
       mode: all
@@ -124,55 +152,152 @@ operations:
       - path: "src/Core/Domain/Shipment/Command/SwitchShipmentCarrierCommand.php"
         role: implementation
 
+  # --- Fulfilment ---
+
+  fulfillShipment:
+    id: shipping.CMD018
+    kind: command
+    dispatch: inprocess
+    name: "FulfillShipment"
+    description: "Record that a shipment has been packed and handed to its carrier: the handler stores the tracking number and stamps packedAt with the current time. It publishes no hook, because Shipment is a Doctrine entity rather than an ObjectModel, so no module can observe the moment a parcel leaves."
+    delivery_priority: must-have
+    initiated_by: [shipping.ACT001]
+    governed_by:
+      - rule: shipping.VR009
+    materializes:
+      - concept: shipping.CN004
+        action: update
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Command/FulfillShipmentCommand.php"
+        role: implementation
+      - path: "src/Adapter/Shipment/CommandHandler/FulfillShipmentCommandHandler.php"
+        role: implementation
+      - path: "src/Core/Domain/Shipment/ValueObject/TrackingNumber.php"
+        role: model
+
   # --- Shipment Events ---
 
   shipmentCreated:
     id: shipping.EVT009
     kind: event
     name: "ShipmentCreated"
-    description: "A new shipment has been created for an order with initial product assignment."
+    description: >
+      A shipment has been created for an order, with its carrier and its first product line. No
+      hook is fired for this change; modules cannot observe it. Shipment is a Doctrine entity
+      persisted through ShipmentRepository, so it never passes through ObjectModel and the
+      actionObject family does not apply, and no shipment-specific hook exists at any call site.
+      The only shipment names in PrestaShop's hook registry are the back-office form hooks around
+      the fulfilment form, which announce an admin submitting a form rather than a shipment
+      changing.
+    code_refs:
+      - path: "src/PrestaShopBundle/Entity/Shipment.php"
+        role: model
+        description: "Shipment is a Doctrine ORM entity, not an ObjectModel, so the actionObject<Class> hook family never fires for it"
+      - path: "src/Adapter/Shipment/CommandHandler/CreateShipmentHandler.php"
+        role: implementation
+        description: "Persists the shipment through the Doctrine repository; fires nothing"
 
   shipmentUpdated:
     id: shipping.EVT010
     kind: event
     name: "ShipmentUpdated"
-    description: "A shipment's tracking number or carrier has been updated."
+    description: >
+      A shipment's tracking number or carrier has been changed. No hook is fired for this change;
+      modules cannot observe it. The handler saves the Doctrine entity and returns, so a module
+      that wants to forward a tracking number to a courier has nothing to subscribe to and has to
+      poll.
+    code_refs:
+      - path: "src/PrestaShopBundle/Entity/Shipment.php"
+        role: model
+        description: "Shipment is a Doctrine ORM entity, not an ObjectModel, so the actionObject<Class> hook family never fires for it"
+      - path: "src/Adapter/Shipment/CommandHandler/EditShipmentHandler.php"
+        role: implementation
+        description: "Saves the Doctrine entity; fires nothing"
 
   productAddedToShipment:
     id: shipping.EVT011
     kind: event
     name: "ProductAddedToShipment"
-    description: "A product line has been added to a shipment."
+    description: >
+      A product line and its quantity have been added to a shipment. No hook is fired for this
+      change; modules cannot observe it. The shipment's product rows are Doctrine-managed like
+      the shipment itself.
+    code_refs:
+      - path: "src/PrestaShopBundle/Entity/Shipment.php"
+        role: model
+        description: "Shipment is a Doctrine ORM entity, not an ObjectModel, so the actionObject<Class> hook family never fires for it"
+      - path: "src/Adapter/Shipment/CommandHandler/AddProductToShipmentHandler.php"
+        role: implementation
+        description: "Adds the product row through the Doctrine repository; fires nothing"
 
   productRemovedFromShipment:
     id: shipping.EVT012
     kind: event
     name: "ProductRemovedFromShipment"
-    description: "A product line has been removed from a shipment."
+    description: >
+      A product line has been removed from a shipment. No hook is fired for this change; modules
+      cannot observe it.
+    code_refs:
+      - path: "src/PrestaShopBundle/Entity/Shipment.php"
+        role: model
+        description: "Shipment is a Doctrine ORM entity, not an ObjectModel, so the actionObject<Class> hook family never fires for it"
+      - path: "src/Adapter/Shipment/CommandHandler/DeleteProductFromShipmentHandler.php"
+        role: implementation
+        description: "Removes the product row through the Doctrine repository; fires nothing"
 
   shipmentSplit:
     id: shipping.EVT013
     kind: event
     name: "ShipmentSplit"
-    description: "A shipment has been split - products moved to a new shipment."
+    description: >
+      A shipment has been split, moving quantities into a new shipment that may carry a different
+      carrier. No hook is fired for this change; modules cannot observe it - neither the split
+      nor the shipment it creates is announced.
+    code_refs:
+      - path: "src/PrestaShopBundle/Entity/Shipment.php"
+        role: model
+        description: "Shipment is a Doctrine ORM entity, not an ObjectModel, so the actionObject<Class> hook family never fires for it"
+      - path: "src/Adapter/Shipment/CommandHandler/SplitShipmentHandler.php"
+        role: implementation
+        description: "Splits through ShipmentSplitterInterface; fires nothing"
 
   shipmentsMerged:
     id: shipping.EVT014
     kind: event
     name: "ShipmentsMerged"
-    description: "Products from one or more shipments have been merged into a target shipment."
+    description: >
+      Products from one or more shipments have been merged into a target shipment, consolidating
+      parcels. No hook is fired for this change; modules cannot observe it.
+    code_refs:
+      - path: "src/PrestaShopBundle/Entity/Shipment.php"
+        role: model
+        description: "Shipment is a Doctrine ORM entity, not an ObjectModel, so the actionObject<Class> hook family never fires for it"
+      - path: "src/Adapter/Shipment/CommandHandler/MergeProductsToShipmentHandler.php"
+        role: implementation
+        description: "Merges through ShipmentMergerInterface; fires nothing"
 
   shipmentCarrierSwitched:
     id: shipping.EVT015
     kind: event
     name: "ShipmentCarrierSwitched"
-    description: "A shipment's assigned carrier has been changed."
+    description: >
+      A shipment has been reassigned to a different carrier. No hook is fired for this change;
+      modules cannot observe it, which matters here because a carrier switch is exactly the
+      moment a shipping module would want to cancel one label and buy another.
+    code_refs:
+      - path: "src/PrestaShopBundle/Entity/Shipment.php"
+        role: model
+        description: "Shipment is a Doctrine ORM entity, not an ObjectModel, so the actionObject<Class> hook family never fires for it"
+      - path: "src/Adapter/Shipment/CommandHandler/SwitchShipmentCarrierHandler.php"
+        role: implementation
+        description: "Writes the new carrier on the Doctrine entity; fires nothing"
 
   # --- Shipment Queries ---
 
   getOrderShipments:
     id: shipping.QRY005
     kind: query
+    dispatch: inprocess
     name: "GetOrderShipments"
     description: "Retrieve all shipments for a given order."
     delivery_priority: must-have
@@ -183,6 +308,7 @@ operations:
   getShipmentForEditing:
     id: shipping.QRY006
     kind: query
+    dispatch: inprocess
     name: "GetShipmentForEditing"
     description: "Retrieve a single shipment with all editable fields for the edit form."
     delivery_priority: must-have
@@ -193,6 +319,7 @@ operations:
   getShipmentForViewing:
     id: shipping.QRY007
     kind: query
+    dispatch: inprocess
     name: "GetShipmentForViewing"
     description: "Retrieve a shipment's full details for display including products and tracking info."
     delivery_priority: must-have
@@ -203,6 +330,7 @@ operations:
   getShipmentProducts:
     id: shipping.QRY008
     kind: query
+    dispatch: inprocess
     name: "GetShipmentProducts"
     description: "Retrieve the list of products assigned to a specific shipment."
     delivery_priority: should-have
@@ -213,6 +341,7 @@ operations:
   getShipmentsForOrderDetail:
     id: shipping.QRY009
     kind: query
+    dispatch: inprocess
     name: "GetShipmentsForOrderDetail"
     description: "Retrieve shipments associated with a specific order detail (line item)."
     delivery_priority: should-have
@@ -223,6 +352,7 @@ operations:
   listAvailableShipments:
     id: shipping.QRY010
     kind: query
+    dispatch: inprocess
     name: "ListAvailableShipments"
     description: "List shipments available for product assignment or merging."
     delivery_priority: should-have
@@ -233,6 +363,7 @@ operations:
   listAvailableShipmentsForProduct:
     id: shipping.QRY011
     kind: query
+    dispatch: inprocess
     name: "ListAvailableShipmentsForProduct"
     description: "List shipments that a specific product can be assigned to."
     delivery_priority: should-have
@@ -277,3 +408,48 @@ errors:
         role: implementation
       - path: "src/Core/Domain/Shipment/Exception/CannotMergeProductToShipmentException.php"
         role: implementation
+      - path: "src/Core/Domain/Shipment/Exception/ShipmentException.php"
+        role: implementation
+        description: "The base every Shipment exception extends"
+
+  invalidTrackingNumber:
+    id: shipping.ERR007
+    name: "InvalidTrackingNumber"
+    description: "The tracking number supplied when fulfilling a shipment is empty or is nothing but whitespace. The TrackingNumber value object refuses it in its constructor, so the shipment is never marked packed."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [shipping.VR009]
+    code_refs:
+      - path: "src/Core/Domain/Shipment/Exception/InvalidShipmentTrackingNumberException.php"
+        role: implementation
+
+questions:
+
+  - id: shipping.QN002
+    name: "Where The Shipment Is"
+    statement: "Which shipments carry this order, what is on each one, and has it left?"
+    category: existence
+    priority: critical
+    bounded_context_ref: prestashop.BC010
+    answered_by: [shipping.QRY005, shipping.QRY007, shipping.QRY008]
+    concepts: [shipping.CN004, shipping.CN005]
+    resolved: true
+    resolution: >
+      GetOrderShipments lists the shipments an order was split into, GetShipmentProducts
+      says which order lines each one carries, and GetShipmentForViewing carries the
+      tracking number and the fulfilled flag that answer whether it has left.
+
+  - id: shipping.QN003
+    name: "Whether A Shipment May Still Change"
+    statement: "Can this shipment still be split, merged or moved to another carrier?"
+    category: behavioral
+    priority: high
+    bounded_context_ref: prestashop.BC010
+    answered_by: [shipping.CMD015, shipping.CMD016, shipping.CMD017, shipping.CMD018]
+    concepts: [shipping.CN004]
+    resolved: true
+    resolution: >
+      Fulfilment is the boundary. SplitShipment, MergeProductsToShipment and
+      SwitchShipmentCarrier act on a shipment that FulfillShipment has not yet closed;
+      afterwards CannotModifyShippedShipment is raised instead.

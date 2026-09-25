@@ -12,6 +12,7 @@ concepts:
       orderStateId:
         id: CAT133
         description: "Unique order state identifier."
+        example: "2"
       name:
         id: CAT134
         description: "State label (multi-language)."
@@ -23,9 +24,11 @@ concepts:
       logable:
         id: CAT136
         description: "Whether orders in this state count in stats."
+        example: "true"
       sendEmail:
         id: CAT137
         description: "Whether transitioning to this state triggers an email."
+        example: "true"
     code_refs:
       - path: "src/Core/Domain/OrderState/"
         role: model
@@ -41,6 +44,7 @@ concepts:
       orderMessageId:
         id: CAT138
         description: "Unique order message identifier."
+        example: "4"
       messageName:
         id: CAT139
         description: "Template name for back-office selection."
@@ -48,6 +52,7 @@ concepts:
       messageBody:
         id: CAT140
         description: "Message content (multi-language)."
+        example: "Your order has shipped and should reach you within three working days."
     code_refs:
       - path: "src/Core/Domain/OrderMessage/"
         role: model

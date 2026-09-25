@@ -10,6 +10,7 @@ execution:
 race_conditions:
   - id: international.RC001
     name: "Exchange rate update during order"
+    description: "The invariant at risk is that a shopper pays what they were shown. The rate is read twice, once to display and once to charge, and only a snapshot taken at the first reading makes the two agree."
     scenario: "Exchange rates refresh via external provider while a customer is mid-checkout, causing price to change between cart display and order placement."
     impact: "Customer charged a different amount than displayed at checkout."
     likelihood: low
@@ -19,6 +20,7 @@ race_conditions:
 parallelism:
   - id: international.PAR001
     name: "Bulk exchange rate refresh"
+    description: "Each currency's rate is fetched independently, so the refresh divides cleanly across currencies. The external provider's rate limit, not the shop, is what bounds how far it divides."
     operations: [international.CMD005]
     relationship: embarrassingly-parallel
     benefit: "Multiple currency rates fetched from external API concurrently."

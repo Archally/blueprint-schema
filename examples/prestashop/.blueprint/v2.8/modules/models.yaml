@@ -85,61 +85,205 @@ components:
         - path: "src/Core/Domain/Module/Command/UploadModuleCommand.php"
           role: schema
 
-    HookStatusResource:
+    HookResource:
       x-model-id: MDL702
       purpose: read-model
-      description: "Hook representation for back-office management. Exposes hook identity, status, and registered module positions."
+      description: "The Hook resource the Admin API serves on GET /hooks/{hookId} and returns from PUT /hooks/{hookId}/status. Its five fields are exactly what the GetHook query result carries; the API renames active to enabled."
       represents:
         - concept: modules.CN002
           kind: api
           mapping:
             strategy: property-map
             property_map:
-              hookId: CAT705
-              hookName: CAT705
-              active: CAT708
+              name: CAT705
+              title: CAT706
+              description: CAT707
+              enabled: CAT708
       type: object
       properties:
         hookId:
           type: integer
-          description: "Unique hook identifier."
+          description: "Primary key of the hook row. The URL parameter hookId is mapped onto the query's id."
           example: 15
-        hookName:
+        name:
           type: string
-          description: "Hook identifier name."
+          description: "The hook identifier core fires and a module registers against. The prefix is the kind: action or display."
           example: "displayHeader"
         title:
           type: string
-          description: "Human-readable hook title."
-          example: "Display Header"
+          description: "Registry title, shown in the back office. Blank for many internal hooks."
+          example: "Pages html head section"
         description:
           type: string
-          description: "Hook purpose description."
-          example: "Allows modules to add content to the page header"
-        active:
+          description: "Registry description. For most hooks this is the only documentation there is."
+          example: "This hook adds additional elements in the head section of your pages (head section of html)"
+        enabled:
           type: boolean
-          description: "Whether this hook is currently active."
+          description: "Whether the hook executes. The domain calls this active; the API renames it, and the resource's COMMAND_MAPPING and QUERY_MAPPING record the rename."
           example: true
-        modules:
-          type: array
-          description: "Modules registered to this hook, ordered by position."
-          items:
-            type: object
-            properties:
-              moduleId:
-                type: integer
-                description: "Module identifier."
-                example: 42
-              technicalName:
-                type: string
-                description: "Module technical name."
-                example: "ps_emailsubscription"
-              position:
-                type: integer
-                description: "Module execution order on this hook."
-                example: 1
       code_refs:
         - path: "src/Core/Domain/Hook/Query/GetHook.php"
           role: schema
         - path: "src/Core/Domain/Hook/QueryResult/Hook.php"
           role: model
+          description: "getId, isActive, getName, getTitle, getDescription - the five fields above and no more."
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Hook.php"
+          role: api-spec
+
+    HookStatusResource:
+      x-model-id: MDL1900
+      purpose: read-model
+      description: "What GET /hooks/{hookId}/status returns: whether one hook executes, and nothing else. The lightweight twin of HookResource, for a caller that only needs the switch."
+      represents:
+        - concept: modules.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              enabled: CAT708
+      type: object
+      properties:
+        hookId:
+          type: integer
+          description: "Primary key of the hook row."
+          example: 15
+        enabled:
+          type: boolean
+          description: "Whether the hook executes. A hook switched off runs no module callback at that extension point."
+          example: true
+      code_refs:
+        - path: "src/Core/Domain/Hook/Query/GetHookStatus.php"
+          role: schema
+        - path: "src/Core/Domain/Hook/QueryResult/HookStatus.php"
+          role: model
+          description: "getId and isActive only."
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Hook.php"
+          role: api-spec
+
+    UpdateModuleStatusPayload:
+      x-model-id: MDL1901
+      purpose: command-payload
+      description: "Body of PUT /modules/{technicalName}/status. One field, because which module is in the URL and what to do with it is the only decision left."
+      represents:
+        - concept: modules.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              enabled: CAT703
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: "Target status. True enables the module, false disables it. There is no separate enable and disable command in the code - UpdateModuleStatusCommand carries this flag."
+          example: false
+      code_refs:
+        - path: "src/Core/Domain/Module/Command/UpdateModuleStatusCommand.php"
+          role: schema
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Module/Module.php"
+          role: api-spec
+
+    UninstallModulePayload:
+      x-model-id: MDL1902
+      purpose: command-payload
+      description: "Body of PUT /modules/{technicalName}/uninstall. The route declares allowEmptyBody, so an empty body means deleteFiles false."
+      represents:
+        - concept: modules.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              deleteFiles: CAT704
+      type: object
+      properties:
+        deleteFiles:
+          type: boolean
+          description: "Whether to remove the module's files from disk as well as uninstalling it. False leaves the package in place, so the module can be reinstalled without uploading it again."
+          example: false
+      code_refs:
+        - path: "src/Core/Domain/Module/Command/UninstallModuleCommand.php"
+          role: schema
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Module/UninstallModule.php"
+          role: api-spec
+          description: "class UninstallModule extends Module, adding public bool $deleteFiles = false."
+
+    ResetModulePayload:
+      x-model-id: MDL1903
+      purpose: command-payload
+      description: "Body of PATCH /modules/{technicalName}/reset. A reset uninstalls and reinstalls; this is the one thing the caller chooses about it."
+      represents:
+        - concept: modules.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              keepData: CAT704
+      type: object
+      properties:
+        keepData:
+          type: boolean
+          description: "Whether the module's stored configuration survives the reset. False makes a reset equivalent to uninstall then install."
+          example: true
+      code_refs:
+        - path: "src/Core/Domain/Module/Command/ResetModuleCommand.php"
+          role: schema
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Module/ResetModule.php"
+          role: api-spec
+          description: "class ResetModule extends Module, adding public bool $keepData."
+
+    BulkModulesPayload:
+      x-model-id: MDL1904
+      purpose: command-payload
+      description: "Body of PUT /modules/bulk-update-status and PUT /modules/bulk-uninstall. One class serves both routes, so enabled is meaningful only for the first."
+      represents:
+        - concept: modules.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              enabled: CAT703
+      type: object
+      properties:
+        modules:
+          type: array
+          description: "Technical names of the modules to act on. Each is wrapped in a ModuleTechnicalName value object, so an empty entry fails the whole request before anything is changed."
+          items:
+            type: string
+          example: ["ps_emailsubscription", "ps_banner"]
+        enabled:
+          type: boolean
+          description: "Target status for bulk-update-status, mapped onto the command's expectedStatus. Ignored by bulk-uninstall."
+          example: false
+      code_refs:
+        - path: "src/Core/Domain/Module/Command/BulkToggleModuleStatusCommand.php"
+          role: schema
+        - path: "src/Core/Domain/Module/Command/BulkUninstallModuleCommand.php"
+          role: schema
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Module/BulkModules.php"
+          role: api-spec
+          description: "CQRSCommandMapping renames the body's enabled to the command's expectedStatus."
+
+    UpdateHookStatusPayload:
+      x-model-id: MDL1905
+      purpose: command-payload
+      description: "Body of PUT /hooks/{hookId}/status. The hook is in the URL; this is the switch."
+      represents:
+        - concept: modules.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              enabled: CAT708
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: "Whether the hook executes. Switching it off stops every registered module's callback at that extension point, which is the blunt instrument for isolating a misbehaving module."
+          example: false
+      code_refs:
+        - path: "src/Core/Domain/Hook/Command/UpdateHookStatusCommand.php"
+          role: schema
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Hook.php"
+          role: api-spec
+          description: "COMMAND_MAPPING renames the body's enabled to the command's active."
+

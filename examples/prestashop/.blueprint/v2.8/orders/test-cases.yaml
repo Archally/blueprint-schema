@@ -1,17 +1,17 @@
 ---
-version: "1.0.0"
+version: "1.1.0"
 scope: orders
 
 happy_path:
   - id: orders.TC001
     name: "Place order - happy path"
-    summary: "Valid cart, sufficient stock, payment succeeds."
+    summary: "A validated cart becomes an order."
     validates:
       operations: [orders.CMD001, orders.EVT001]
       rules: [orders.SR001, orders.VR001]
     contract:
       kind: openapi
-      file: orders/orders-api.openapi
+      file: orders-api
     given:
       description: "Cart with 2 items, both in stock. Shipping address provided."
       state:
@@ -21,121 +21,381 @@ happy_path:
     expected_result:
       status: success
       code: 201
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Cart/cart_to_order.feature"
+        role: test
+        description: "Scenario '1 product in cart, 1 cart rule' (line 24) and its seven siblings, the only scenarios that turn a cart into an order."
+      - path: "classes/PaymentModule.php"
+        role: implementation
+        description: "validateOrder, the method every cart-to-order path goes through."
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Cart/cart_to_order.feature line 24"
+          date: "2026-09-19"
+          summary: >-
+            Every scenario in the file validates a cart into an order, so the happy path runs in
+            all of them. None of them asserts it: each carries a cart rule and asserts the
+            resulting discount and totals, so order placement is their precondition rather than
+            their subject. PrestaShop has no plain place-an-order scenario.
+          confidence_impact: supports
 
   - id: orders.TC002
-    name: "Cancel order - happy path"
-    summary: "Order in payment-accepted status, not yet shipped."
+    name: "Cancel order products before payment - happy path"
+    summary: "Cancelling every product on an unpaid order moves the order to canceled."
     validates:
       operations: [orders.CMD002, orders.EVT002]
       rules: [orders.CR001]
     given:
-      description: "Existing order in payment-accepted status."
+      description: >-
+        An order in an unpaid state, such as Awaiting check payment. Corrected 2026-09-19: this
+        case gave the order as payment-accepted. The command orders.CMD002 points at is
+        CancelOrderProductCommand, and its handler's checkOrderState refuses outright when
+        Order::hasBeenPaid or hasPayments is true, raising InvalidOrderStateException::ALREADY_PAID.
+        Payment accepted is the built-in paid state, so the case as written asserted a success
+        the code turns into a failure.
       state:
-        orderStatus: "payment-accepted"
+        orderStatus: "awaiting-check-payment"
     expected_result:
       status: success
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Order/order_cancel_product.feature"
+        role: test
+        description: "Scenario 'Order status is set to canceled when all products have been cancelled' (line 93), which starts the order unpaid."
+      - path: "src/Adapter/Order/CommandHandler/CancelOrderProductHandler.php"
+        role: implementation
+        description: "checkOrderState (line 120) - the paid-order refusal that decides this case's given."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Order/order_cancel_product.feature line 93"
+          date: "2026-09-19"
+          summary: >-
+            The scenario cancels every product on an order that is awaiting check payment and
+            asserts the order becomes canceled. Same assertion, and it is the reason the given
+            had to change.
+          confidence_impact: supports
+        - kind: codebase-analysis
+          source: "src/Adapter/Order/CommandHandler/CancelOrderProductHandler.php lines 120 to 127"
+          date: "2026-09-19"
+          summary: >-
+            Read for the retired given. The handler throws ALREADY_PAID when the order has been
+            paid or carries payments, so cancelling a payment-accepted order through this
+            command cannot succeed.
+          confidence_impact: invalidates
 
   - id: orders.TC003
     name: "Generate invoice - happy path"
-    summary: "Order with payment-accepted status, no existing invoice."
+    summary: "An order with invoicing enabled and no existing invoice gets one."
     validates:
       operations: [orders.CMD017, orders.EVT007]
       rules: [orders.SR002]
     given:
-      description: "Order in payment-accepted status with no existing invoice."
+      description: >-
+        An order with no existing invoice, on a shop where PS_INVOICE is on. Note what the
+        handler does NOT check: nothing requires payment-accepted in the status history, which
+        is what orders.SR002 states. GenerateInvoiceHandler checks the invoicing configuration
+        and Order::hasInvoice, and nothing else.
       state:
-        orderStatus: "payment-accepted"
         existingInvoice: false
     expected_result:
       status: success
       code: 201
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Order/order_from_bo.feature"
+        role: test
+        description: "Scenario 'Generating invoice for Order' (line 462)."
+      - path: "src/Adapter/Order/CommandHandler/GenerateInvoiceHandler.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Order/order_from_bo.feature line 462"
+          date: "2026-09-19"
+          summary: "The scenario generates an invoice for an order and asserts it exists, which is this case's assertion."
+          confidence_impact: supports
+        - kind: codebase-analysis
+          source: "src/Adapter/Order/CommandHandler/GenerateInvoiceHandler.php"
+          date: "2026-09-19"
+          summary: >-
+            Read to check orders.SR002's claim that the status history must contain
+            payment-accepted. The handler makes no such check. The rule overstates the code;
+            this case no longer repeats the overstatement in its given.
+          confidence_impact: weakens
 
   - id: orders.TC004
     name: "Add payment - happy path"
-    summary: "Manually add a bank transfer payment to an order."
+    summary: "A manual payment is recorded against an order."
     validates:
       operations: [orders.CMD019, orders.EVT008]
       rules: [orders.VR002]
     given:
-      description: "Order awaiting wire payment. Payment amount matches order total."
+      description: >-
+        An order awaiting a wire payment, and a positive payment amount in the order's currency.
+        The amount is not required to match the order total: AddPaymentCommand asserts only that
+        the amount is positive, and no code anywhere caps the sum of payments at the order total,
+        which is the second half of what orders.VR002 claims.
       state:
         orderStatus: "awaiting-wire-payment"
         paymentAmount: 129.99
-        orderTotal: 129.99
     expected_result:
       status: success
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Order/order_add_payment.feature"
+        role: test
+        description: "Scenario 'Add a payment when Order is in default_currency and Payment is in Order currency' (line 72)."
+      - path: "src/Core/Domain/Order/Payment/Command/AddPaymentCommand.php"
+        role: validation
+        description: "assertAmountIsPositive (line 194) - the only amount constraint the command carries."
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Order/order_add_payment.feature line 72"
+          date: "2026-09-19"
+          summary: >-
+            The scenario adds a 6.00 payment to an order whose total is not 6.00 and asserts the
+            payment is recorded. It asserts the recording, not an amount-equals-total rule.
+          confidence_impact: supports
+        - kind: codebase-analysis
+          source: "src/Core/Domain/Order/Payment/Command/AddPaymentCommand.php"
+          date: "2026-09-19"
+          summary: >-
+            Read for orders.VR002's second clause. Only the positive-amount assertion exists;
+            no handler compares the running total of payments against totalPaidTaxIncl.
+          confidence_impact: weakens
 
 edge_cases:
   - id: orders.EC001
-    name: "Place order - insufficient stock"
-    summary: "Cart item exceeds available stock during checkout."
+    name: "Quantity beyond available stock is refused"
+    summary: "A cart cannot take more units of a product than the shop has, so the order never forms."
     validates:
       operations: [orders.CMD001]
       rules: [orders.SR001]
     given:
-      description: "Cart with 5 units of a product; only 2 in stock."
+      description: >-
+        A cart asked for 5 units of a product with 2 in stock. The refusal happens at
+        add-to-cart, which is earlier than this case used to imply: Cart::checkQuantities and
+        CartController::areProductsAvailable both guard the checkout, but the scenario that
+        exists asserts the add-to-cart refusal.
       state:
         requestedQty: 5
         availableQty: 2
     expected_result:
       status: failure
       code: 409
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Cart/Product/add_standard_product.feature"
+        role: test
+        description: "Scenario 'Cannot add product in cart with quantity exceeding availability' (line 17)."
+      - path: "classes/Cart.php"
+        role: implementation
+        description: "checkQuantities, the checkout-time guard."
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Cart/Product/add_standard_product.feature line 17"
+          date: "2026-09-19"
+          summary: >-
+            The scenario asserts the refusal when the requested quantity exceeds availability.
+            It fires at add-to-cart rather than at order placement, so it proves the constraint
+            and not the exact moment this case names.
+          confidence_impact: supports
 
   - id: orders.EC002
-    name: "Partial refund - maximum refundable amount"
-    summary: "Partial refund for the exact remaining refundable amount after a previous partial refund."
+    name: "A partial refund cannot refund more than remains"
+    summary: "Refunding beyond what is left is capped per order line rather than accepted."
     validates:
       operations: [orders.CMD015]
       rules: [orders.VR004]
     given:
-      description: "Order with total 100.00, previous partial refund of 30.00. Requesting refund of 70.00."
+      description: >-
+        An order line already partly refunded, asked for more than its remainder. The
+        enforcement is per order line and by capping, not a rejection against a single
+        order-level accumulator as orders.VR004 describes: OrderRefundCalculator reduces the
+        requested amount to the line's remaining refundable quantity.
       state:
         orderTotal: 100.00
         previousRefunds: 30.00
         requestedRefund: 70.00
     expected_result:
       status: success
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Order/partial_refund.feature"
+        role: test
+        description: "Scenario 'Partial refund of products avoids refunding too much' (line 363)."
+      - path: "src/Adapter/Order/Refund/OrderRefundCalculator.php"
+        role: implementation
+        description: "flattenCheckedProductRefunds (line 144), where the per-line cap is applied via product_quantity_refunded."
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Order/partial_refund.feature line 363"
+          date: "2026-09-19"
+          summary: >-
+            The scenario asserts that an excessive refund request does not over-refund. It does
+            not chain two sequential partial refunds to the exact remaining boundary, which is
+            the shape this case's given describes.
+          confidence_impact: supports
+        - kind: codebase-analysis
+          source: "src/Adapter/Order/Refund/OrderRefundCalculator.php"
+          date: "2026-09-19"
+          summary: >-
+            The cap is per order_detail through product_quantity_refunded. There is no
+            order-level remaining-amount accumulator, so orders.VR004's shape is not the code's.
+          confidence_impact: weakens
 
 error_cases:
   - id: orders.ER001
-    name: "Place order - payment gateway timeout"
-    summary: "Payment gateway does not respond within SLA timeout."
+    name: "Place an order naming a payment method that does not exist"
+    summary: "Back-office order creation refuses an unknown payment module."
     validates:
       operations: [orders.CMD001]
     given:
-      description: "Valid cart, stock available, but payment gateway times out after 30 seconds."
+      description: >-
+        A back-office order whose payment method names no installed module. Corrected
+        2026-09-19: this case asserted a 504 when a payment gateway times out. PrestaShop core
+        has no payment gateway. PaymentModule::validateOrder records whatever state the calling
+        payment module hands it and never calls out to anything, so no timeout and no 504 can
+        arise in core; a gateway is a module's business. The refusal the command really makes on
+        the payment axis is this one.
       state:
-        gatewayResponse: "timeout"
+        paymentMethod: "no-such-module"
     expected_result:
-      status: error
-      code: 504
+      status: failure
+      code: 400
+    code_refs:
+      - path: "src/Adapter/Order/CommandHandler/AddOrderFromBackOfficeHandler.php"
+        role: implementation
+        description: "Line 65 raises OrderException when the named payment method does not exist; lines 200 and 204 refuse a disabled delivery or invoice country."
+      - path: "classes/PaymentModule.php"
+        role: implementation
+        description: "validateOrder, read for the retired claim. No outbound call, no timeout handling."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "src/Adapter/Order/CommandHandler/AddOrderFromBackOfficeHandler.php line 65"
+          date: "2026-09-19"
+          summary: >-
+            The handler's refusals are: unknown payment method, invalid customer message,
+            disabled delivery country, disabled invoice country, and a generic add failure.
+            None of them is a gateway error.
+          confidence_impact: supports
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. No test names a non-existent payment method, so the
+            refusal is read from the handler rather than observed.
+          confidence_impact: weakens
 
   - id: orders.ER002
-    name: "Return after window - eligibility expired"
-    summary: "Customer attempts to return an order after the 14-day return window."
+    name: "The return window is enforced in the storefront, not by the command"
+    summary: "A return past PS_ORDER_RETURN_NB_DAYS is refused before the command is reached."
     validates:
       operations: [orders.CMD016]
       rules: [orders.VR003]
     given:
-      description: "Order delivered 21 days ago. Return window is 14 days."
+      description: >-
+        An order delivered longer ago than PS_ORDER_RETURN_NB_DAYS, whose customer asks to
+        return a product. Corrected 2026-09-19: this case put the refusal on orders.CMD016.
+        IssueReturnProductHandler checks two things, the PS_ORDER_RETURN toggle and the order
+        state, and never counts days. The window lives in Order::getNumberOfDays, reached
+        through Order::isReturnable, and the caller that consults it is the front-office
+        OrderFollowController - so a shopper never gets as far as the command.
       state:
         daysSinceDelivery: 21
         returnWindowDays: 14
     expected_result:
       status: failure
       code: 422
+    code_refs:
+      - path: "classes/order/Order.php"
+        role: implementation
+        description: "getNumberOfDays (line 1221) compares the delivery date against PS_ORDER_RETURN_NB_DAYS; isReturnable (line 1243) gates on it."
+      - path: "controllers/front/OrderFollowController.php"
+        role: implementation
+        description: "Line 56 refuses the return form when isReturnable is false. This is where the window is actually enforced."
+      - path: "src/Adapter/Order/CommandHandler/IssueReturnProductHandler.php"
+        role: implementation
+        description: "Read for the retired claim: line 94 checks the PS_ORDER_RETURN toggle, line 100 the order state, and nothing checks the day count."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "src/Adapter/Order/CommandHandler/IssueReturnProductHandler.php, classes/order/Order.php, controllers/front/OrderFollowController.php"
+          date: "2026-09-19"
+          summary: >-
+            The window is real and the operation this case names does not enforce it. The
+            enforcement point is the storefront controller, which the model does not yet carry
+            as an operation; step 17 authors the storefront.
+          confidence_impact: weakens
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. Nothing in tests/ exercises the return window at any
+            layer.
+          confidence_impact: weakens
 
   - id: orders.ER003
-    name: "Invalid state transition - refunded to processing"
-    summary: "Attempt to transition a refunded order back to processing."
+    name: "Re-assigning the status an order already has is refused"
+    summary: "The only status change PrestaShop refuses is the one to the current status."
     validates:
       operations: [orders.CMD004]
-      rules: [orders.CR001]
     given:
-      description: "Order in refunded state. Merchant attempts to change status to processing."
+      description: >-
+        An order already in the target status, asked to move to it again. Corrected
+        2026-09-19: this case asserted that refunded to processing is rejected as an invalid
+        transition. PrestaShop's order state machine is permissive by design.
+        UpdateOrderStatusCommand is a plain DTO with no validation, and
+        UpdateOrderStatusHandler's only guard is that the new status differs from the current
+        one, which it raises as a plain OrderException. No adjacency table and no transition
+        graph exists anywhere; InvalidOrderStateException is used for ALREADY_PAID, NOT_PAID,
+        DELIVERY_NOT_FOUND, UNEXPECTED_DELIVERY and INVALID_ID, never for a transition.
       state:
         currentStatus: "refunded"
-        targetStatus: "processing"
+        targetStatus: "refunded"
     expected_result:
       status: failure
       code: 422
+    code_refs:
+      - path: "src/Adapter/Order/CommandHandler/UpdateOrderStatusHandler.php"
+        role: implementation
+        description: "The same-status guard, and the absence of any other transition check."
+      - path: "src/Core/Domain/Order/Command/UpdateOrderStatusCommand.php"
+        role: implementation
+        description: "A DTO. Read for the retired claim; it validates nothing."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "src/Adapter/Order/CommandHandler/UpdateOrderStatusHandler.php"
+          date: "2026-09-19"
+          summary: >-
+            Read in full. The handler loads the order and the target state, refuses only when
+            they are already the same, then writes an OrderHistory row. Any other status change
+            is accepted.
+          confidence_impact: invalidates
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. No test asserts the same-status refusal, and none could
+            assert the retired one.
+          confidence_impact: weakens

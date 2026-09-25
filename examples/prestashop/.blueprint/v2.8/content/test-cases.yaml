@@ -1,5 +1,5 @@
 ---
-version: "1.0.0"
+version: "1.1.0"
 scope: content
 
 happy_path:
@@ -12,7 +12,7 @@ happy_path:
       concepts: [content.CN001]
     contract:
       kind: openapi
-      file: content/content-api.openapi
+      file: content-api
     given:
       description: "A CMS page category exists."
       state:
@@ -23,6 +23,21 @@ happy_path:
     expected_result:
       status: success
       code: 200
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/CmsPage/cms_page_management.feature"
+        role: test
+        description: "Scenario 'Adding new CMS page' (line 8), which dispatches AddCmsPageCommand."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/CmsPage/cms_page_management.feature line 8"
+          date: "2026-09-19"
+          summary: >-
+            The scenario creates a CMS page through AddCmsPageCommand with its category and
+            asserts the stored fields, which is this case's assertion.
+          confidence_impact: supports
 
   - id: content.TC002
     name: "Create CMS page category with parent"
@@ -40,6 +55,30 @@ happy_path:
     expected_result:
       status: success
       code: 200
+    code_refs:
+      - path: "src/Adapter/CMS/PageCategory/CommandHandler/AddCmsPageCategoryHandler.php"
+        role: implementation
+      - path: "tests/Unit/Core/Domain/CmsPageCategory/Command/AddCmsPageCategoryCommandTest.php"
+        role: test
+        description: "Covers the command's REFUSALS only - invalid name, invalid meta title, invalid meta description. There is no happy-path test."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Unit/Core/Domain/CmsPageCategory/Command/AddCmsPageCategoryCommandTest.php"
+          date: "2026-09-19"
+          summary: >-
+            The only test on this command exercises its failure paths. No Behat scenario creates
+            a CMS page category at all; the CmsPage feature file covers pages, not categories.
+          confidence_impact: weakens
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. The happy path is read from AddCmsPageCategoryHandler,
+            not observed.
+          confidence_impact: weakens
 
   - id: content.TC003
     name: "Import and enable theme"
@@ -56,6 +95,31 @@ happy_path:
         newThemeName: "modern"
     expected_result:
       status: success
+    code_refs:
+      - path: "src/Core/Domain/Theme/CommandHandler/ImportThemeHandler.php"
+        role: implementation
+      - path: "src/Core/Addon/Theme/ThemeManager.php"
+        role: implementation
+        description: "enable() calls disable() on the shop's current theme before activating the new one - the deactivation half of this case."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "src/Core/Addon/Theme/ThemeManager.php enable()"
+          date: "2026-09-19"
+          summary: >-
+            enable() validates the theme, disables the shop's current theme by name, then runs
+            the activation sequence. The deactivation of the previous theme is explicit in the
+            code, which is the part of this case worth asserting.
+          confidence_impact: supports
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. Nothing in tests/ references ImportThemeCommand or
+            EnableThemeCommand: the whole theme lifecycle is untested in Behat and PHPUnit alike.
+          confidence_impact: weakens
 
   - id: content.TC004
     name: "Add SEO meta entry for page type"
@@ -73,6 +137,21 @@ happy_path:
     expected_result:
       status: success
       code: 200
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Meta/meta_management.feature"
+        role: test
+        description: "Scenario 'Create new metadata' (line 10), which dispatches AddMetaCommand."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Meta/meta_management.feature line 10"
+          date: "2026-09-19"
+          summary: >-
+            The scenario creates a meta entry with localized titles and rewrite urls and asserts
+            each stored field, which is this case's assertion.
+          confidence_impact: supports
 
   - id: content.TC005
     name: "Reset theme layouts to defaults"
@@ -87,6 +166,22 @@ happy_path:
         hasCustomLayouts: true
     expected_result:
       status: success
+    code_refs:
+      - path: "src/Core/Domain/Theme/CommandHandler/ResetThemeLayoutsHandler.php"
+        role: implementation
+    provenance:
+      discovery_stage: exploring
+      certainty: speculative
+      evidence:
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code, and the weakest case in this slice. Nothing in tests/
+            references ResetThemeLayoutsCommand or its handler, and the modeler read the
+            handler's presence rather than its behaviour. A reader should treat this as a
+            statement of intent about the command, not a described outcome.
+          confidence_impact: weakens
 
 edge_cases:
   - id: content.EC001
@@ -106,67 +201,213 @@ edge_cases:
     expected_result:
       status: failure
       code: 422
+    code_refs:
+      - path: "src/Adapter/CMS/PageCategory/CommandHandler/EditCmsPageCategoryHandler.php"
+        role: implementation
+        description: "assertCmsCategoryCanBeMovedToParent, which delegates to CMSCategory::checkBeforeMove and raises CANNOT_MOVE_CATEGORY_TO_PARENT."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "src/Adapter/CMS/PageCategory/CommandHandler/EditCmsPageCategoryHandler.php"
+          date: "2026-09-19"
+          summary: >-
+            The guard is real and named: the handler refuses a move to the category itself or to
+            one of its own children, with CmsPageCategoryConstraintException.
+          confidence_impact: supports
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. EditCmsPageCategoryCommandTest covers type checking on
+            setParentId and not the cycle, and no Behat scenario moves a category.
+          confidence_impact: weakens
 
   - id: content.EC002
-    name: "Enable already-active theme is idempotent"
-    summary: "Verify that enabling the already-active theme does not cause errors."
+    name: "Enabling the already-active theme runs the activation again and succeeds"
+    summary: "Enabling the active theme does not error, but it is a re-activation rather than a no-op."
     validates:
       operations: [content.CMD014]
       rules: [content.VR004]
       concepts: [content.CN003]
     given:
-      description: "Theme 'classic' is currently active."
+      description: >-
+        Theme 'classic' is currently active and is enabled again. Corrected 2026-09-19: this
+        case was called idempotent. ThemeManager::enable has no already-active short-circuit -
+        it disables the shop's current theme (itself, in this case) and re-runs the whole
+        activation sequence: custom hooks, configuration, module enable and reset, image types,
+        hook and unhook. It returns true, so nothing errors, but the second call does work.
       state:
         activeTheme: "classic"
         enableTheme: "classic"
     expected_result:
       status: success
+    code_refs:
+      - path: "src/Core/Addon/Theme/ThemeManager.php"
+        role: implementation
+        description: "enable(), read in full for this case. No comparison against the shop's current theme name guards the sequence."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "src/Core/Addon/Theme/ThemeManager.php enable()"
+          date: "2026-09-19"
+          summary: >-
+            Read for the retired claim of idempotence. The method's only early returns are the
+            permission check and the theme validator; after those it always disables the current
+            theme and runs the full activation chain.
+          confidence_impact: weakens
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: "Modeler-derived from code. No test enables a theme, let alone an already-active one."
+          confidence_impact: weakens
 
 error_cases:
   - id: content.ER001
-    name: "Delete category with child pages is rejected"
-    summary: "Verify that deleting a category containing CMS pages is rejected."
+    name: "Deleting a CMS page category cascades; only the root is refused"
+    summary: "A category with children and pages is deleted along with all of them; category id 1 is refused."
     validates:
       operations: [content.CMD009]
       rules: [content.VR003]
       concepts: [content.CN002]
     given:
-      description: "Category 'Legal' has 3 assigned CMS pages."
+      description: >-
+        Category 'Legal' has 3 assigned CMS pages and at least one child category. Corrected
+        2026-09-19: this case asserted that such a delete is rejected with a 409, and step 10
+        had already corrected content.VR003 and content.ERR003 the other way without this file
+        being in scope. CMSCategory::delete returns false for exactly one input, id 1; for
+        everything else it walks getAllChildren, deletes each descendant's CMS pages and the
+        descendant itself, and returns true. The cascade is the fact worth testing, because it
+        loses page content silently.
       state:
         categoryId: 5
         assignedPageCount: 3
     expected_result:
-      status: failure
-      code: 409
+      status: success
+    note: >-
+      The 409 half of the old assertion survives, narrowed to its real subject: deleting the
+      root CMS category (id 1) returns false and the handler raises
+      CannotDeleteCmsPageCategoryException.
+    code_refs:
+      - path: "classes/CMSCategory.php"
+        role: implementation
+        description: "delete() lines 247 to 265 - the root guard at 249 and the cascade at 255 to 262."
+      - path: "src/Core/Domain/CmsPageCategory/Exception/CannotDeleteCmsPageCategoryException.php"
+        role: implementation
+        description: "FAILED_DELETE and FAILED_BULK_DELETE. There is no with-children code, because there is no with-children refusal."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "classes/CMSCategory.php delete(), lines 247 to 265"
+          date: "2026-09-19"
+          summary: >-
+            Read twice, by step 10 and again here. The only false return is the root; every
+            other category deletes itself and all its descendants' pages and returns true. The
+            rejection this case used to assert does not exist.
+          confidence_impact: invalidates
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. No Behat scenario and no PHPUnit test deletes a CMS page
+            category at all, so neither the cascade nor the root refusal is observed anywhere.
+          confidence_impact: weakens
 
   - id: content.ER002
-    name: "Delete active theme is rejected"
-    summary: "Verify that the currently active theme cannot be deleted."
+    name: "Deleting a theme is refused only for want of permission"
+    summary: "The delete raises CannotDeleteTheme when the caller lacks the right, not when the theme is active."
     validates:
       operations: [content.CMD015]
-      rules: [content.VR005]
       concepts: [content.CN003]
     given:
-      description: "Theme 'classic' is the active theme."
+      description: >-
+        A theme is deleted by a caller without the AdminThemes delete permission and without the
+        theme_write API scope. Corrected 2026-09-19: this case asserted that the ACTIVE theme
+        cannot be deleted. Nothing in the path checks that. ThemeManager::uninstall returns
+        false on the permission check alone, then unconditionally calls onUninstall (a no-op
+        returning true) and removes the theme directory; no comparison against the shop's
+        theme_name appears in ThemeManager, ThemeRepository, DeleteThemeHandler or the
+        controller. The exception's own message, "Theme is used and thus cannot be deleted",
+        names a reason the code never establishes.
       state:
-        themeName: "classic"
-        isActive: true
+        hasDeletePermission: false
     expected_result:
       status: failure
       code: 409
+    code_refs:
+      - path: "src/Core/Addon/Theme/ThemeManager.php"
+        role: implementation
+        description: "uninstall(), read in full: a permission check, then onUninstall and a filesystem remove."
+      - path: "src/Core/Domain/Theme/CommandHandler/DeleteThemeHandler.php"
+        role: implementation
+        description: "Raises CannotDeleteThemeException when uninstall returns false, which only the permission check can cause."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "src/Core/Addon/Theme/ThemeManager.php uninstall(), src/Core/Domain/Theme/CommandHandler/DeleteThemeHandler.php"
+          date: "2026-09-19"
+          summary: >-
+            Both read in full for the retired claim. The active-theme guard content.VR005 and
+            content.ERR006 describe is absent from every class on the call path.
+          confidence_impact: invalidates
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from a static reading; no running instance was consulted and no test
+            deletes a theme. An absence is the hardest thing to prove from source, so a reader
+            who needs certainty should run the delete against the active theme.
+          confidence_impact: weakens
 
   - id: content.ER003
     name: "Add meta with duplicate page name is rejected"
-    summary: "Verify that creating a meta entry with an existing page name is rejected."
+    summary: "Creating a meta entry for a page that already has one is refused as an unavailable page name."
     validates:
       operations: [content.CMD019]
       rules: [content.VR006]
       concepts: [content.CN005]
     given:
-      description: "A meta entry for page name 'category' already exists."
+      description: >-
+        A meta entry for page name 'index' already exists and a second is submitted for the same
+        page. The refusal is real, and the mechanism is not a duplicate check: AddMetaHandler
+        asks MetaDataProvider for the pages still AVAILABLE, and an already-used page is not
+        among them, so the submission fails as an invalid page name.
       state:
-        existingPageName: "category"
-        newPageName: "category"
+        existingPageName: "index"
+        newPageName: "index"
     expected_result:
       status: failure
       code: 409
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Meta/meta_management.feature"
+        role: test
+        description: "Scenario 'Creating new metadata with already created page name' (line 47), which asserts 'page name value is incorrect'."
+      - path: "src/Adapter/Meta/CommandHandler/AddMetaHandler.php"
+        role: implementation
+        description: "assertIsValidPageName (line 148), which raises MetaConstraintException::INVALID_PAGE_NAME against getAvailablePages()."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Meta/meta_management.feature line 47"
+          date: "2026-09-19"
+          summary: >-
+            The scenario submits a meta for the already-used page 'index' and asserts the
+            refusal. Same outcome as this case.
+          confidence_impact: supports
+        - kind: codebase-analysis
+          source: "src/Adapter/Meta/CommandHandler/AddMetaHandler.php line 148"
+          date: "2026-09-19"
+          summary: >-
+            The refusal reuses INVALID_PAGE_NAME, the same code an unrecognised page name gets.
+            PrestaShop has no dedicated duplicate-meta error, so a client cannot tell the two
+            apart from the code alone.
+          confidence_impact: supports

@@ -10,6 +10,7 @@ execution:
 race_conditions:
   - id: checkout.RC001
     name: "Concurrent cart modification"
+    description: "The invariant at risk is that a cart's totals match its lines. The two are written separately, so an overlapping change can leave a total that no set of lines produces, and the shopper is quoted a price the shop cannot justify."
     scenario: "Customer adds item while another tab removes an item from same cart."
     impact: "Cart state inconsistent, totals miscalculated."
     likelihood: medium
@@ -18,6 +19,7 @@ race_conditions:
 
   - id: checkout.RC002
     name: "Voucher usage race"
+    description: "The invariant at risk is the voucher's usage limit, which is the whole of what makes a single-use code single-use. Checking the counter and spending it are two steps, and the limit holds only if nothing runs between them."
     scenario: "Two customers apply the same single-use voucher code simultaneously."
     impact: "Voucher used twice, exceeding usage limit."
     likelihood: low

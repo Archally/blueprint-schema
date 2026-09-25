@@ -1,145 +1,368 @@
 ---
-version: "1.0.0"
+version: "1.1.0"
 tags: [shop-and-buy]
+
+# The capabilities a shopper's money passes through, from finding a product to being told the
+# parcel is on its way. This file is the largest of the three capability files because the
+# shopper-facing side of PrestaShop is where the product is thickest, not because the other two
+# were left unfinished - see the note at the head of each sibling.
+#
+# `operations` lists a REPRESENTATIVE SPINE, not an inventory: the commands and queries that
+# define the ability, so a reader can jump from "what the business can do" to the code that does
+# it. The model holds 680 operations; a capability that listed all of its own would be a second
+# copy of the domain layer (step-00 D9).
+
 capabilities:
-  # ── Level 1: Core Commerce (Customer-Facing) ─────────────────────────
+  # Level 1: discovery
   - id: CAP018
     name: "Search & Discovery"
     level: 1
     description: >
-      Ability for customers to find products through full-text search,
-      faceted filters, search aliases, and SEO-driven discovery.
+      Ability for a shopper to find a product without knowing its name: full-text search over the
+      catalogue, category browsing, related-product association, and the search aliases and SEO
+      metadata a merchant tunes so external search engines land on the right page.
     goal_refs:
-      - catalog.G001
+      - catalog.GL001
+    operations:
+      - catalog.QRY001
+      - catalog.QRY009
+      - catalog.QRY005
+      - catalog.QRY006
+      - catalog.QRY101
+      - catalog.QRY102
+      - shop.CMD006
+      - shop.CMD010
+      - shop.CMD011
+      - content.CMD019
+      - content.CMD020
+    owned_by:
+      team: TM002
     maturity: developing
     strategic_importance: high
     delivery_priority: should-have
     discovery_stage: validated
     certainty: probable
-    value_stream_refs: [VS001]
+    evidence:
+      - kind: codebase-analysis
+        source: "catalog/product-core.domain.yaml, shop/domain.yaml, content/seo.domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          Product search and listing are catalogue queries; search aliases and search-engine
+          records are shop-slice commands; page metadata is a content-slice command. Three
+          contexts serve one shopper ability, which is why it is a capability and not a context.
+        confidence_impact: supports
+      - kind: documentation
+        source: "https://www.prestashop.com/en/partners"
+        date: "2026-09-19"
+        summary: >
+          PrestaShop states the platform serves "over 300,000 merchants worldwide", so discovery
+          quality is a merchant-visible differentiator rather than an internal concern.
+        confidence_impact: supports
 
+  - id: CAP104
+    name: "Store Locator"
+    level: 1
+    description: >
+      Ability to publish the merchant's physical shops so a customer can find opening hours and
+      an address, and to take one out of the published list without deleting its record. Distinct
+      from running several online shops from one back office, which is CAP017. Only the delete,
+      toggle and read side reaches the CQRS layer; creating and editing a store record is still
+      done by a legacy controller, so the capability is only partly reachable through the
+      operations below.
+    operations:
+      - shop.CMD002
+      - shop.CMD003
+      - shop.CMD004
+      - shop.CMD005
+      - shop.QRY003
+    owned_by:
+      team: TM010
+    maturity: established
+    strategic_importance: low
+    delivery_priority: could-have
+    discovery_stage: validated
+    certainty: probable
+    evidence:
+      - kind: codebase-analysis
+        source: "shop/domain.yaml, src/Core/Domain/Store"
+        date: "2026-09-19"
+        summary: >
+          The Store aggregate carries address, hours and a published flag, and its commands are
+          the toggle and delete pair a merchant uses to curate the locator list.
+        confidence_impact: supports
+
+  # Level 1: the order, and the cart that becomes one
   - id: CAP001
     name: "Order Management"
     level: 1
     description: >
-      Ability to create, validate, and fulfill customer orders across all sales
-      channels. Encompasses order placement, state management, cancellation,
-      refund, returns, and credit slips.
+      Ability to turn an accepted cart into an order and to carry that order through its whole
+      life: status changes, invoices, payments recorded against it, standard and partial refunds,
+      returns, and the credit slips a refund produces.
     goal_refs:
-      - orders.G001
-      - orders.G003
+      - orders.GL001
+      - orders.GL003
     operations:
       - orders.CMD001
       - orders.CMD002
+      - orders.CMD004
+      - orders.CMD017
+      - orders.CMD019
       - orders.CMD003
+      - orders.CMD015
+      - orders.CMD016
+      - orders.CMD023
       - orders.QRY001
+      - orders.QRY004
+    owned_by:
+      team: TM001
     maturity: established
     strategic_importance: critical
     delivery_priority: must-have
     discovery_stage: committed
     certainty: confirmed
-    value_stream_refs: [VS001, VS002]
+    evidence:
+      - kind: codebase-analysis
+        source: "src/Core/Domain/Order, orders/order-core.domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          The Order domain holds 27 command and query classes covering placement, status,
+          invoicing, payment, refund and return, all modelled in the orders slice with resolving
+          code references.
+        confidence_impact: supports
     children:
       - id: CAP002
         name: "Cart Calculation"
         level: 2
         description: >
-          Accurate computation of cart totals including product prices, quantity
-          discounts, cart rules, tax rules, and shipping costs.
+          Ability to price a cart correctly: line prices, quantity discounts, cart rules, catalog
+          price rules, tax by delivery address, and the shipping cost the chosen carrier charges.
+          The number a shopper is asked to pay comes from here, so an error is visible to every
+          buyer at once.
         goal_refs:
-          - orders.G001
+          - orders.GL001
+        operations:
+          - checkout.QRY009
+          - checkout.QRY001
+          - checkout.CMD011
+          - checkout.CMD012
+          - checkout.CMD014
+          - checkout.CMD015
+        owned_by:
+          team: TM003
         maturity: developing
         strategic_importance: critical
         delivery_priority: must-have
         discovery_stage: validated
         certainty: confirmed
-        value_stream_refs: [VS001]
+        evidence:
+          - kind: codebase-analysis
+            source: "classes/Cart.php, checkout/cart-core.domain.yaml"
+            date: "2026-09-19"
+            summary: >
+              Cart totals are computed by the legacy Cart class rather than by a domain service,
+              so the calculation is reachable from the storefront and the back office alike and
+              has no single CQRS owner.
+            confidence_impact: supports
 
       - id: CAP003
         name: "Checkout Flow"
         level: 2
         description: >
-          End-to-end checkout: cart review, shipping selection, payment
-          initiation, and order confirmation.
+          Ability to take a shopper from a filled cart to a placed order: choosing the delivery
+          and invoice address, choosing a carrier, choosing a currency and language, and handing
+          the cart to order placement once payment is initiated.
         goal_refs:
-          - checkout.G001
-          - checkout.G002
+          - checkout.GL001
+          - checkout.GL002
         operations:
           - checkout.CMD001
+          - checkout.CMD009
+          - checkout.CMD010
+          - checkout.CMD002
           - checkout.CMD003
+          - checkout.CMD005
+          - checkout.QRY002
+          - orders.CMD001
+        owned_by:
+          team: TM003
         maturity: developing
         strategic_importance: critical
         delivery_priority: must-have
         discovery_stage: committed
         certainty: confirmed
-        value_stream_refs: [VS001]
+        evidence:
+          - kind: codebase-analysis
+            source: "src/Core/Domain/Cart, checkout/cart-core.domain.yaml"
+            date: "2026-09-19"
+            summary: >
+              The Cart domain's 20 command and query classes cover creation, address, carrier,
+              currency and line editing; order placement itself is an Orders-slice command, so
+              the capability crosses the Checkout and Orders contexts.
+            confidence_impact: supports
 
       - id: CAP004
-        name: "Stock Reservation"
+        name: "Stock Availability Control"
         level: 2
         description: >
-          Reserve inventory at checkout to prevent over-selling, with automatic
-          release on cart abandonment or order cancellation.
+          Ability to know how many of each product and combination are available per shop, to
+          decide per product whether a shopper may buy while out of stock, to refuse a checkout
+          that would breach that decision, and to decrement the count when the order is
+          validated. PrestaShop does NOT hold stock for a cart: nothing is reserved while a
+          shopper browses, and two carts can both pass the availability check on the last unit.
         goal_refs:
-          - orders.G003
+          - orders.GL003
+        operations:
+          - catalog.CMD114
+          - catalog.CMD200
+          - catalog.QRY110
+          - catalog.QRY111
+        owned_by:
+          team: TM002
         maturity: established
         strategic_importance: high
         delivery_priority: must-have
-        discovery_stage: committed
+        discovery_stage: validated
         certainty: confirmed
-        value_stream_refs: [VS001]
+        evidence:
+          - kind: codebase-analysis
+            source: "classes/Cart.php checkQuantities(), classes/order/OrderDetail.php:532, classes/stock/StockAvailable.php"
+            date: "2026-09-19"
+            summary: >
+              Availability is checked at checkout by Cart::checkQuantities() against the
+              allow_oosp flag, and the quantity is decremented by
+              StockAvailable::updateQuantity() from OrderDetail when the order is created. No
+              reservation, hold or timed release exists anywhere in src/Core or classes/.
+            confidence_impact: supports
 
   - id: CAP006
     name: "Customer Notifications"
     level: 1
     description: >
-      Ability to send transactional notifications (order confirmation, shipping
-      updates, refund receipts) via email and optional SMS channels.
+      Ability to tell a customer what has happened to their order or account by email, using
+      templates the merchant can edit per language and per theme. The channel is email only in
+      core; SMS and push are module territory.
     goal_refs:
-      - orders.G001
+      - orders.GL001
+    operations:
+      - orders.CMD013
+      - orders.CMD036
+      - orders.CMD028
+      - content.CMD021
+      - content.CMD018
+      - content.QRY009
+      - admin.CMD007
+    owned_by:
+      team: TM001
     maturity: established
     strategic_importance: medium
     delivery_priority: should-have
     discovery_stage: validated
     certainty: probable
-    value_stream_refs: [VS001]
+    evidence:
+      - kind: codebase-analysis
+        source: "src/Core/Domain/MailTemplate, content/theme.domain.yaml, orders/order-admin.domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          Template generation and body editing are content-slice commands; resending an order
+          email and order messages are orders-slice commands; the password-reset mail is an
+          admin-slice command. No SMS or push command exists in core.
+        confidence_impact: supports
 
-  # ── Level 1: Customer Management ────────────────────────────────────
+  # Level 1: the person behind the order
   - id: CAP007
     name: "Customer Account Management"
     level: 1
     description: >
-      Ability to register, authenticate, and manage customer accounts including
-      personal data, addresses, groups, and customer service interactions.
+      Ability to register, identify and maintain the people who buy: their account and personal
+      data, the group that decides their price and tax treatment, the private notes staff keep
+      about them, and the conversion of a guest checkout into a full account.
+    operations:
+      - customers.CMD001
+      - customers.CMD002
+      - customers.CMD003
+      - customers.CMD008
+      - customers.CMD009
+      - customers.CMD006
+      - customers.CMD007
+      - customers.QRY001
+      - customers.QRY002
+      - customers.QRY003
+    owned_by:
+      team: TM004
     maturity: established
     strategic_importance: high
     delivery_priority: must-have
     discovery_stage: committed
     certainty: confirmed
-    value_stream_refs: [VS001, VS003]
+    evidence:
+      - kind: codebase-analysis
+        source: "src/Core/Domain/Customer, customers/customer-core.domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          The Customer domain carries account, group, required-field and guest-transformation
+          commands, each modelled with a resolving code reference after phase 1.
+        confidence_impact: supports
     children:
       - id: CAP008
         name: "Address Management"
         level: 2
         description: >
-          CRUD for customer billing and shipping addresses with country/state
-          validation and format rules.
+          Ability to hold billing and delivery addresses that are valid for their country: the
+          per-country required fields, the state or province where one applies, and the separate
+          address records an order and a cart each freeze at their own moment.
+        operations:
+          - customers.CMD012
+          - customers.CMD013
+          - customers.CMD014
+          - customers.CMD015
+          - customers.CMD025
+          - customers.CMD026
+          - customers.QRY009
+          - customers.QRY010
+        owned_by:
+          team: TM004
         maturity: established
         strategic_importance: high
         delivery_priority: must-have
         discovery_stage: committed
         certainty: confirmed
-        value_stream_refs: [VS001]
+        evidence:
+          - kind: codebase-analysis
+            source: "src/Core/Domain/Address, customers/address.domain.yaml"
+            date: "2026-09-19"
+            summary: >
+              The Address domain holds 13 command and query classes, including the separate
+              EditCartAddress and EditOrderAddress commands that show an order keeps its own
+              copy of the address rather than pointing at the customer's current one.
+            confidence_impact: supports
 
       - id: CAP009
         name: "Customer Service"
         level: 2
         description: >
-          Threaded messaging between customers and merchant support staff,
-          with status tracking and assignment.
+          Ability to hold a threaded conversation with a customer from the back office: reply,
+          forward to a colleague, change the thread's status, and sign the reply with the shop's
+          configured signature.
+        operations:
+          - customers.CMD016
+          - customers.CMD017
+          - customers.CMD018
+          - customers.CMD019
+          - customers.QRY011
+          - customers.QRY012
+        owned_by:
+          team: TM004
         maturity: developing
         strategic_importance: medium
         delivery_priority: should-have
         discovery_stage: validated
         certainty: probable
-        value_stream_refs: [VS001]
+        evidence:
+          - kind: codebase-analysis
+            source: "src/Core/Domain/CustomerService, customers/customer-service.domain.yaml"
+            date: "2026-09-19"
+            summary: >
+              Threads carry a status and a forward command; there is no SLA, queue or assignment
+              construct in core, which is what keeps the maturity at developing.
+            confidence_impact: supports

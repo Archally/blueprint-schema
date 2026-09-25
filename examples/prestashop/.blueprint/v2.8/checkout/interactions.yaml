@@ -11,15 +11,15 @@ screens:
   - id: checkout.SCR001
     name: "Cart Detail (Back-Office)"
     summary: "Back-office view of a cart session with products, totals, applied discounts, and customer info."
-    uses_models: ["CartForViewing"]
-    motivated_by: [checkout.G001]
+    uses_models: ["CartResource"]
+    motivated_by: [checkout.GL001]
     processes: [checkout.PRC001]
 
   - id: checkout.SCR002
     name: "Discount List"
     summary: "Paginated list of all discounts with status filters (active, scheduled, expired), search, and bulk actions."
     uses_models: ["DiscountList"]
-    motivated_by: [checkout.G002]
+    motivated_by: [checkout.GL002]
 
   - id: checkout.SCR003
     name: "Discount Edit"
@@ -31,6 +31,73 @@ screens:
     name: "Catalog Price Rule List"
     summary: "List of catalog price rules with bulk delete and status management."
     uses_models: ["CatalogPriceRuleList"]
+
+  # The storefront half of checkout. The four screens above are back office; the three below are
+  # the pages a shopper passes through between the product page and the confirmation. Measured:
+  # no front controller dispatches the command bus, so each action below names the domain
+  # operation the shopper's request performs and says which legacy method it reaches.
+
+  - id: checkout.SCR005
+    name: "Shopping cart"
+    summary: "The shopper's cart, with quantities, vouchers, shipping estimate and the link into checkout."
+    description: >
+      Two pages behind one controller: CartController renders checkout/cart when the cart holds
+      products and checkout/cart-empty when it does not, and the empty variant carries a link to
+      the configured home category so the shopper has somewhere to go. Everything the shopper
+      changes here happens in postProcess before the page is drawn, and every change is written
+      to the legacy Cart object directly: updateQty for a quantity, deleteProduct for a removal,
+      addCartRule and removeCartRule for a voucher. Requests from a bot, and logged-in requests
+      with an invalid token, are ignored rather than applied.
+    uses_models: [MDL202, MDL203]
+    processes: [shop.PRC003]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/CartController.php"
+        role: implementation
+        description: "The page. initContent line 87 chooses between checkout/cart and checkout/cart-empty; postProcess line 219 applies the change first."
+
+  - id: checkout.SCR006
+    name: "Checkout"
+    summary: "The whole checkout on one page, as an accordion of four steps, one of which is skipped for a virtual cart."
+    description: >
+      PrestaShop does not have a multi-page checkout. OrderController builds a CheckoutProcess
+      and renders every step into checkout/checkout as an accordion, so the shopper stays on one
+      URL throughout. The steps, in the order the controller adds them, are Personal Information,
+      Addresses, Shipping Method and Payment. The third is added only when the cart is not
+      virtual, so a shopper buying a downloadable product sees three steps and not four. A step
+      declares itself complete and the next one opens; nothing is submitted until the payment
+      step, where the chosen payment module takes over. Model four steps here and not the five a
+      competitor has, because four is what the code adds.
+    uses_models: [MDL202, MDL304, MDL402]
+    processes: [shop.PRC003]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/OrderController.php"
+        role: implementation
+        description: "The page. bindCheckoutProcess at line 407 adds the four steps; the delivery step is conditional on isVirtualCart at line 424; setTemplate('checkout/checkout') at line 327."
+      - path: "classes/checkout/CheckoutProcess.php"
+        role: model
+        description: "The accordion itself: which step is reachable, which is complete, which renders open."
+      - path: "classes/checkout/CheckoutDeliveryStep.php"
+        role: model
+        description: "The step a virtual cart never sees; it also carries the gift-wrapping and recyclable-packaging options."
+
+  - id: checkout.SCR007
+    name: "Order confirmation"
+    summary: "The page a shopper lands on after payment, and the only place a guest is offered an account."
+    description: >
+      OrderConfirmationController renders checkout/order-confirmation once the payment module has
+      returned. It is not only a receipt: it is where PrestaShop offers a guest the chance to
+      keep the account it created for them, by submitting a password. Modules extend the page
+      through the display hooks the theme exposes, which is how payment providers add their own
+      confirmation block.
+    uses_models: [MDL103]
+    processes: [shop.PRC003]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/OrderConfirmationController.php"
+        role: implementation
+        description: "The page. postProcess line 107 handles submitTransformGuestToCustomer; setTemplate('checkout/order-confirmation') at line 222."
 
 actions:
   - id: checkout.UAC001
@@ -62,6 +129,129 @@ actions:
     name: "Bulk Delete Discounts"
     description: "Delete selected discounts from the list."
     triggers_operations: [checkout.CMD018]
+
+  - id: checkout.UAC006
+    screen: checkout.SCR005
+    name: "Change a line's quantity"
+    description: >
+      Typing a new quantity or pressing the plus or minus control reloads the cart with an
+      update parameter, and CartController calls Cart::updateQty. That is the same method the
+      UpdateProductQuantityInCart handler calls, so the shopper and the back office perform one
+      domain operation through two adapters: the storefront through the controller, the back
+      office over the command bus.
+    triggers_operations: [checkout.CMD011]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/CartController.php"
+        role: implementation
+        description: "processChangeProductInCart calls Cart::updateQty at line 497."
+      - path: "src/Adapter/Cart/CommandHandler/UpdateProductQuantityInCartHandler.php"
+        role: model
+        description: "The back-office path to the same method, Cart::updateQty at line 106."
+
+  - id: checkout.UAC007
+    screen: checkout.SCR005
+    name: "Remove a line"
+    description: >
+      The delete control reloads the cart with a delete parameter and the line is removed
+      through Cart::deleteProduct, the method the RemoveProductFromCart handler also calls. The
+      controller first checks whether the same product is in the cart under another
+      customization, because removing one customized line must not remove the others.
+    triggers_operations: [checkout.CMD010]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/CartController.php"
+        role: implementation
+        description: "processDeleteProductInCart at line 284 checks for sibling customizations before deleting."
+
+  - id: checkout.UAC008
+    screen: checkout.SCR005
+    name: "Enter a voucher code"
+    description: >
+      The code is looked up with CartRule::getIdByCode, checked with CartRule::checkValidity and
+      applied with Cart::addCartRule, which is the method the ApplyCartRuleToCart handler calls.
+      Three distinct refusals reach the shopper as different messages: an empty code, a code
+      that does not exist, and a code that exists but conflicts with one already applied.
+    triggers_operations: [checkout.CMD014]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/CartController.php"
+        role: implementation
+        description: "updateCart, lines 237 to 265: validation and Cart::addCartRule at line 255."
+      - path: "src/Adapter/Cart/CommandHandler/AddCartRuleToCartHandler.php"
+        role: model
+        description: "The back-office path to the same method, Cart::addCartRule at line 67."
+
+  - id: checkout.UAC009
+    screen: checkout.SCR005
+    name: "Remove a voucher"
+    description: >
+      Removing a voucher calls Cart::removeCartRule and then CartRule::autoAddToCart, so a
+      voucher the shop applies automatically comes straight back. A shopper who removes an
+      automatic discount will see it reappear, which is the behaviour and not a defect.
+    triggers_operations: [checkout.CMD015]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/CartController.php"
+        role: implementation
+        description: "updateCart, lines 272 and 273: Cart::removeCartRule then CartRule::autoAddToCart."
+
+  - id: checkout.UAC010
+    screen: checkout.SCR006
+    name: "Choose a delivery option"
+    description: >
+      The shipping step lists the carriers DeliveryOptionsFinder returns for the cart's address
+      and contents, and the choice is written to the cart. The same update carries the gift
+      wrapping and recyclable packaging flags, which is why one operation covers all three.
+    triggers_operations: [checkout.CMD004]
+    implementation: as-is
+    code_refs:
+      - path: "classes/checkout/CheckoutDeliveryStep.php"
+        role: implementation
+        description: "The step; it also sets the gift and recyclable options from configuration."
+      - path: "classes/checkout/DeliveryOptionsFinder.php"
+        role: model
+        description: "Builds the carrier list the step offers."
+
+  - id: checkout.UAC011
+    screen: checkout.SCR006
+    name: "Confirm the order"
+    description: >
+      The last control in the payment step belongs to the chosen payment module, not to core,
+      and what it does is settled by that module. Every route converges on
+      PaymentModule::validateOrder, which writes the order, its first state, its invoice if one
+      is due and its confirmation mail, then fires actionValidateOrder. That hook is what the
+      OrderPlaced event in this model is grounded on. The action names no command because the
+      one PrestaShop has, AddOrderFromBackOfficeCommand, is the back-office path and the
+      storefront does not take it.
+    implementation: as-is
+    code_refs:
+      - path: "classes/PaymentModule.php"
+        role: implementation
+        description: "validateOrder at line 194 is the convergence point of every order-placing path; it fires actionValidateOrder at line 608."
+      - path: "classes/checkout/CheckoutPaymentStep.php"
+        role: model
+        description: "Lists the payment options a module offers and the conditions the shopper must approve."
+
+  - id: checkout.UAC012
+    screen: checkout.SCR007
+    name: "Keep this account"
+    description: >
+      A guest who checked out is offered a password on the confirmation page, and submitting it
+      calls Customer::transformToCustomer. That is the method the TransformGuestToCustomer
+      handler also reaches, so this is the same domain operation the back office can perform,
+      arrived at directly rather than over the command bus. The password is checked against the
+      shop's configured minimum length and strength score before anything is written, and the
+      page refuses politely if the guest has already been converted in another window.
+    triggers_operations: [customers.CMD008]
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/OrderConfirmationController.php"
+        role: implementation
+        description: "postProcess line 109 onward: password policy checks, then Customer::transformToCustomer at line 186."
+      - path: "classes/Customer.php"
+        role: implementation
+        description: "transformToCustomer at line 1218, the method both paths reach."
 
 navigation:
   - id: checkout.UNV001

@@ -8,6 +8,12 @@ operations:
   updateOrderReturnState:
     id: orders.CMD023
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /order-returns/{orderReturnId}
+        method: PATCH
+        group: orders
     name: "UpdateOrderReturnState"
     description: "Update the state of a merchandise return request. Transitions the return through its lifecycle (confirmation, package receipt, completion, denial)."
     delivery_priority: must-have
@@ -20,6 +26,9 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderReturn/Command/UpdateOrderReturnStateCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderReturn/OrderReturn.php"
+        role: api-spec
+        description: "Declares PATCH /order-returns/{orderReturnId} and names the CQRS class it fronts"
 
   # --- Events ---
 
@@ -27,18 +36,150 @@ operations:
     id: orders.EVT010
     kind: event
     name: "ReturnStateChanged"
-    description: "Emitted when a merchandise return transitions to a new state. Triggers customer notification."
+    description: >
+      A merchandise return has moved to a new state. PrestaShop publishes this as the hook
+      actionObjectOrderReturnUpdateAfter, fired by ObjectModel when the repository writes the
+      return; there is no return-specific hook for the transition. The registry's actionOrderReturn
+      is a different moment - the customer creating a return from the front office - and is not
+      this one. Nothing in core sends the customer a notification on this transition, so the old
+      description's claim that it triggers one was not true of PrestaShop itself; a module
+      subscribing to the hook is what makes it so.
+    tags: [hook:actionObjectOrderReturnUpdateAfter]
+    code_refs:
+      - path: "src/Adapter/OrderReturn/CommandHandler/UpdateOrderReturnStateHandler.php"
+        role: implementation
+        description: "Calls OrderReturnRepository::update, which goes through updateObjectModel"
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObjectUpdateAfter and actionObject<Class>UpdateAfter"
+      - path: "classes/order/OrderReturn.php"
+        role: implementation
+        description: "OrderReturnCore extends ObjectModel, which supplies the <Class> in the hook name"
+
+  orderReturnDeleted:
+    id: orders.EVT011
+    kind: event
+    name: "OrderReturnDeleted"
+    description: "A merchandise return has been removed from the database, singly or as part of a bulk delete. PrestaShop publishes this as the hook actionObjectOrderReturnDeleteAfter, fired by ObjectModel::delete for every persisted class, so a module that tracks returns learns of the deletion the same way it learns of any other."
+    tags: [hook:actionObjectOrderReturnDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 922-923 fire actionObjectDeleteAfter and actionObject<Class>DeleteAfter for every ObjectModel"
+      - path: "classes/order/OrderReturn.php"
+        role: implementation
+        description: "OrderReturnCore extends ObjectModel, so its fully qualified name supplies the <Class> in the hook name"
+      - path: "src/Adapter/OrderReturn/Repository/OrderReturnRepository.php"
+        role: implementation
+        description: "delete() calls deleteObjectModel, which calls OrderReturn::delete"
 
   # --- Queries ---
 
   getCreditSlips:
     id: orders.QRY004
     kind: query
+    dispatch: inprocess
     name: "GetCreditSlips"
     description: "Retrieve credit slips filtered by date range. Used for accounting reconciliation and customer refund history."
     delivery_priority: should-have
     code_refs:
-      - path: "src/Core/Domain/Order/Query/GetCreditSlipIdsByDateRange.php"
+      - path: "src/Core/Domain/CreditSlip/Query/GetCreditSlipIdsByDateRange.php"
+        role: implementation
+
+  deleteOrderReturn:
+    id: orders.CMD037
+    kind: command
+    dispatch: inprocess
+    name: "DeleteOrderReturn"
+    description: "Remove an entire merchandise return and its product detail rows. Issued from the row action of the back-office merchandise-returns grid; the return and its lines leave the database rather than being archived."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT003]
+    produces:
+      operations: [orders.EVT011]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/OrderReturn/Command/DeleteOrderReturnCommand.php"
+        role: implementation
+      - path: "src/Adapter/OrderReturn/CommandHandler/DeleteOrderReturnHandler.php"
+        role: implementation
+
+  bulkDeleteOrderReturns:
+    id: orders.CMD038
+    kind: command
+    dispatch: inprocess
+    name: "BulkDeleteOrderReturns"
+    description: "Remove several merchandise returns at once from the grid bulk action. Each return is deleted in turn, so a failure part-way through leaves the earlier deletions in place."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT003]
+    produces:
+      operations: [orders.EVT011]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/OrderReturn/Command/BulkDeleteOrderReturnsCommand.php"
+        role: implementation
+      - path: "src/Adapter/OrderReturn/CommandHandler/BulkDeleteOrderReturnsHandler.php"
+        role: implementation
+
+  deleteProductFromOrderReturn:
+    id: orders.CMD039
+    kind: command
+    dispatch: inprocess
+    name: "DeleteProductFromOrderReturn"
+    description: "Remove a single product row from a merchandise return. The handler refuses when it is the last remaining line, because a return with no products is not a return."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT003]
+    governed_by:
+      - rule: orders.SR003
+    code_refs:
+      - path: "src/Core/Domain/OrderReturn/Command/DeleteProductFromOrderReturnCommand.php"
+        role: implementation
+      - path: "src/Adapter/OrderReturn/CommandHandler/DeleteProductFromOrderReturnHandler.php"
+        role: implementation
+
+  bulkDeleteProductsFromOrderReturn:
+    id: orders.CMD040
+    kind: command
+    dispatch: inprocess
+    name: "BulkDeleteProductsFromOrderReturn"
+    description: "Remove several product rows from a merchandise return in one form submit, so the back office can stage deletions and apply them with the rest of the edit. The same last-line rule applies to the set as a whole."
+    delivery_priority: could-have
+    initiated_by: [orders.ACT003]
+    governed_by:
+      - rule: orders.SR003
+    code_refs:
+      - path: "src/Core/Domain/OrderReturn/Command/BulkDeleteProductsFromOrderReturnCommand.php"
+        role: implementation
+      - path: "src/Adapter/OrderReturn/CommandHandler/BulkDeleteProductsFromOrderReturnHandler.php"
+        role: implementation
+
+  getOrderReturnForEditing:
+    id: orders.QRY007
+    kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /order-returns/{orderReturnId}
+        method: GET
+        group: orders
+    name: "GetOrderReturnForEditing"
+    description: "Retrieve a merchandise return with the fields the back-office edit form needs: its state, its order and customer, and the dates it moved through."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/OrderReturn/Query/GetOrderReturnForEditing.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderReturn/OrderReturn.php"
+        role: api-spec
+        description: "Declares GET /order-returns/{orderReturnId} and names the CQRS class it fronts"
+
+  getOrderReturnProducts:
+    id: orders.QRY008
+    kind: query
+    dispatch: inprocess
+    name: "GetOrderReturnProducts"
+    description: "List the product lines of a merchandise return, including customized lines, for the edit form's product table."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/OrderReturn/Query/GetOrderReturnProducts.php"
         role: implementation
 
 errors:
@@ -50,3 +191,89 @@ errors:
     severity: error
     http_status: 422
     related_rules: [orders.VR003]
+
+  orderReturnNotFound:
+    id: orders.ERR020
+    name: "OrderReturnNotFound"
+    description: "No merchandise return exists with the given id. Raised by every return command and query before it does anything, since the return is the aggregate root they all address."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/OrderReturn/Exception/OrderReturnNotFoundException.php"
+        role: implementation
+
+  orderReturnConstraintViolation:
+    id: orders.ERR021
+    name: "OrderReturnConstraintViolation"
+    description: "A return field failed its own validation: an id that is not a positive integer, an empty product set, or a return state the order's own state does not allow. The order-state variant is the interesting one - a return cannot move to a state that contradicts where its order stands."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [orders.VR003]
+    code_refs:
+      - path: "src/Core/Domain/OrderReturn/Exception/OrderReturnConstraintException.php"
+        role: implementation
+      - path: "src/Core/Domain/OrderReturn/Exception/OrderReturnOrderStateConstraintException.php"
+        role: implementation
+      - path: "src/Core/Domain/OrderReturn/Exception/OrderReturnException.php"
+        role: implementation
+        description: "The base every OrderReturn exception extends"
+
+  cannotDeleteLastProductFromOrderReturn:
+    id: orders.ERR022
+    name: "CannotDeleteLastProductFromOrderReturn"
+    description: "The request would leave the return with no product lines. Both the single-row and the staged bulk delete refuse it, because a return that returns nothing cannot be processed or credited."
+    category: conflict
+    severity: error
+    http_status: 409
+    related_rules: [orders.SR003]
+    code_refs:
+      - path: "src/Core/Domain/OrderReturn/Exception/CannotDeleteLastProductFromOrderReturnException.php"
+        role: implementation
+
+  cannotDeleteOrderReturn:
+    id: orders.ERR023
+    name: "CannotDeleteOrderReturn"
+    description: "Deleting a return, a set of returns, or one of a return's product lines failed while it was being written. The bulk variants stop at the first failure, so some of the set may already be gone."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/OrderReturn/Exception/DeleteOrderReturnException.php"
+        role: implementation
+      - path: "src/Core/Domain/OrderReturn/Exception/BulkDeleteOrderReturnsException.php"
+        role: implementation
+      - path: "src/Core/Domain/OrderReturn/Exception/DeleteProductFromOrderReturnException.php"
+        role: implementation
+      - path: "src/Core/Domain/OrderReturn/Exception/BulkDeleteProductsFromOrderReturnException.php"
+        role: implementation
+
+  cannotUpdateOrderReturn:
+    id: orders.ERR024
+    name: "CannotUpdateOrderReturn"
+    description: "The return's new state was valid but persisting it failed, so the return is still in its previous state and the customer has not been notified."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/OrderReturn/Exception/UpdateOrderReturnException.php"
+        role: implementation
+
+questions:
+
+  - id: orders.QN003
+    name: "What May Still Be Returned"
+    statement: "Which products on this order may still be returned, and where is the return now?"
+    category: behavioral
+    priority: high
+    bounded_context_ref: prestashop.BC008
+    answered_by: [orders.QRY007, orders.QRY008, orders.CMD016, orders.CMD023]
+    concepts: [orders.CN007, orders.CN008]
+    resolved: true
+    resolution: >
+      The return window and the merchant's returns switch decide eligibility, answered by
+      ReturnWindowExpired and ReturnProductDisabled; the OrderReturnState the merchant
+      configured says where an accepted return has got to.

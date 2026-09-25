@@ -5,6 +5,7 @@ scope: checkout
 
 processes:
   - id: checkout.PRC001
+    tracker_ref: "42400"
     title: "Shopper cart journey"
     description: "Shopper adds products to cart, applies voucher, and prepares for checkout."
     initiated_by: [orders.ACT001]
@@ -26,12 +27,12 @@ processes:
       - id: checkout.PA001
         name: "Add products to cart"
         entry_operation: checkout.CMD009
-        next_activities: [checkout.PA002]
+        next: [{to: checkout.PA002}]
         path_type: happy
       - id: checkout.PA002
         name: "Apply voucher code"
         entry_operation: checkout.CMD014
-        next_activities: [checkout.PA003]
+        next: [{to: checkout.PA003}]
         path_type: happy
       - id: checkout.PA003
         name: "Configure cart for checkout"
@@ -168,6 +169,80 @@ user_stories:
       - "Cart link emailed to customer"
     operations: [checkout.CMD001, checkout.CMD008]
 
+  - id: checkout.US008
+    actor: orders.ACT001
+    goal: "put products in my cart and change what is in it before I commit to anything"
+    benefit: "I can gather, reconsider and re-quantify without being asked to sign in or to pay."
+    summary: "Shopper builds and edits the cart."
+    description: >
+      Every change on this page is a full page load rather than an in-page update: PrestaShop
+      applies the change in postProcess and then draws the cart. The domain operations are the
+      three cart-line commands, which the storefront reaches by calling Cart::updateQty and
+      Cart::deleteProduct directly rather than over the command bus. A cart exists for a signed-
+      out shopper too, which is why the shop can see abandoned carts.
+    acceptance_criteria:
+      - "Adding a product from the product page carries the chosen combination and lands on the cart."
+      - "Changing a quantity or removing a line redraws the cart with the new totals."
+      - "Removing one customized line leaves the other customizations of the same product in place."
+      - "An empty cart renders the cart-empty page with a link to the shop's configured home category."
+      - "A request that fails the token check, or comes from a recognised bot, is ignored rather than applied."
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    operations: [checkout.CMD009, checkout.CMD010, checkout.CMD011, checkout.EVT004]
+    code_refs:
+      - path: "controllers/front/CartController.php"
+        role: implementation
+        description: "updateCart at line 224 holds the bot and token guards; Cart::updateQty at line 497."
+
+  - id: checkout.US009
+    actor: orders.ACT001
+    goal: "type a voucher code into my cart and see the discount before I pay"
+    benefit: "I know what I will actually be charged while I can still change my mind."
+    summary: "Shopper redeems a voucher in the cart."
+    description: >
+      Worth its own story because of the one behaviour that surprises people: a voucher the
+      shop applies automatically comes straight back after the shopper removes it, because
+      CartRule::autoAddToCart runs immediately after the removal. The three refusals are also
+      distinct and each has its own message.
+    acceptance_criteria:
+      - "A valid code applies the discount and the totals change on the redrawn page."
+      - "An empty code, an unknown code and a code that conflicts with one already applied each produce their own message."
+      - "Removing a voucher the shop applies automatically results in that voucher being applied again."
+    delivery_priority: should-have
+    status: ready
+    release_target: "v1.0"
+    operations: [checkout.CMD014, checkout.CMD015, checkout.EVT005, checkout.EVT006]
+    code_refs:
+      - path: "controllers/front/CartController.php"
+        role: implementation
+        description: "updateCart lines 237 to 273: the three refusals, Cart::addCartRule, then removeCartRule followed by CartRule::autoAddToCart."
+
+  - id: checkout.US010
+    actor: orders.ACT001
+    goal: "complete checkout without leaving the page or filling in more than my cart needs"
+    benefit: "I reach payment in as few decisions as the order actually requires."
+    summary: "Shopper works through the four-step checkout."
+    description: >
+      Four steps, one page, one URL. The shipping step is added only when the cart is not
+      virtual, so a shopper buying a downloadable product genuinely sees three. The last step
+      belongs to the payment module, which is why this story reaches the OrderPlaced event
+      rather than a command: PrestaShop's only order-creation command is the back office's.
+    acceptance_criteria:
+      - "The checkout renders as an accordion of Personal Information, Addresses, Shipping Method and Payment, in that order."
+      - "A virtual cart is offered three steps, with Shipping Method absent rather than skipped-and-shown."
+      - "A step marks itself complete and the next one opens, without a page change."
+      - "Choosing a delivery option writes the carrier, the gift-wrapping choice and the recyclable-packaging choice to the cart in one update."
+      - "Confirming payment ends in an order whose creation fired actionValidateOrder."
+    delivery_priority: must-have
+    status: ready
+    release_target: "v1.0"
+    operations: [checkout.CMD002, checkout.CMD004, checkout.EVT002, orders.EVT001]
+    code_refs:
+      - path: "controllers/front/OrderController.php"
+        role: implementation
+        description: "bindCheckoutProcess at line 407; the conditional shipping step at line 424."
+
 use_cases:
   - id: checkout.UC001
     name: "Add to Cart"
@@ -289,3 +364,73 @@ use_cases:
         emotion: satisfied
     user_stories: [checkout.US004]
     delivery_priority: must-have
+
+  - id: checkout.UC005
+    name: "Check out in four steps"
+    summary: "A shopper turns a cart into a placed order on one page, through the four steps PrestaShop composes."
+    description: >
+      The buying half of the storefront. Written against OrderController's own composition and
+      not against what a checkout usually looks like: four steps, on one URL, the third of them
+      added only when the cart is not virtual. Its last step performs no modelled operation,
+      which is the honest shape - the control belongs to the chosen payment module and every
+      route converges on PaymentModule::validateOrder, whose actionValidateOrder hook is what
+      the OrderPlaced event is grounded on. The guest-to-account offer on the confirmation page
+      is an alternative flow rather than a step, because a shopper who already has an account
+      never sees it.
+    primary_actor: orders.ACT001
+    goal: "Turn a cart into an order the shop has accepted."
+    preconditions:
+      - "The cart holds at least one product; an empty cart renders the cart-empty page instead."
+      - "The shop is not in catalog mode."
+    postconditions:
+      - "An order exists with its first state, its invoice if the state carries one, and its confirmation mail sent."
+      - "actionValidateOrder has fired, so every payment and notification module has seen the order."
+    main_scenario:
+      - step: 1
+        action: "The shopper reviews the cart, adjusts quantities and applies any voucher, then goes to checkout."
+        operation: checkout.CMD011
+        screen: checkout.SCR005
+        emotion: neutral
+      - step: 2
+        action: "Personal Information: the shopper signs in, or fills the customer form, or continues as a guest where the shop allows it."
+        screen: checkout.SCR006
+        actor: orders.ACT001
+        emotion: frustrated
+        pain_point: "This is the step a shopper who only wanted to buy something meets first, and the one where carts are most often abandoned."
+      - step: 3
+        action: "Addresses: the shopper picks or enters a delivery address, and an invoice address if it differs."
+        screen: checkout.SCR006
+        actor: orders.ACT001
+        emotion: neutral
+        pain_point: "The required fields change with the country, so the form the shopper started filling is not always the form they finish."
+      - step: 4
+        action: "Shipping Method: the shopper chooses a carrier, and with it the gift-wrapping and recyclable-packaging options."
+        operation: checkout.CMD004
+        screen: checkout.SCR006
+        emotion: neutral
+      - step: 5
+        action: "Payment: the shopper picks a payment option, approves the shop's conditions and confirms."
+        screen: checkout.SCR006
+        actor: orders.ACT001
+        emotion: satisfied
+      - step: 6
+        action: "The order is written, its confirmation mail sent, and actionValidateOrder fired; the shopper lands on the confirmation page."
+        operation: orders.EVT001
+        screen: checkout.SCR007
+        emotion: delighted
+    alternative_flows:
+      - step: 4
+        condition: "Every product in the cart is virtual."
+        action: "OrderController does not add the shipping step at all, so the shopper sees three steps rather than four."
+      - step: 5
+        condition: "The shop requires conditions to be approved and the shopper has not ticked them."
+        action: "ConditionsToApproveFinder holds the step open; no payment option can be submitted until every condition is approved."
+        actor: orders.ACT001
+      - step: 6
+        condition: "The shopper checked out as a guest."
+        action: "The confirmation page offers a password; submitting it calls Customer::transformToCustomer and the guest keeps the account."
+        operation: customers.CMD008
+    user_stories: [checkout.US008, checkout.US009, checkout.US010, customers.US008]
+    processes: [shop.PRC003]
+    delivery_priority: must-have
+    release_target: "v1.0"

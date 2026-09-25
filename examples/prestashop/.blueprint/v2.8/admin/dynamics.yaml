@@ -10,6 +10,7 @@ execution:
 race_conditions:
   - id: admin.RC001
     name: "Concurrent employee profile edit"
+    description: "The invariant at risk is that an employee's saved profile is the one someone meant to save. Two edits that overlap produce a third profile neither administrator chose, and nothing in the record shows it happened."
     scenario: "Two administrators edit the same employee's profile simultaneously."
     impact: "One set of changes silently overwritten."
     likelihood: very-low

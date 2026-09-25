@@ -12,12 +12,15 @@ concepts:
       attributeGroupId:
         id: CAT013
         description: "Unique attribute group identifier"
+        example: "1"
       name:
         id: CAT014
         description: "Group name (e.g. 'Size', 'Color')"
+        example: "Size"
       groupType:
         id: CAT015
         description: "Display type: select, radio, color"
+        example: "select"
     code_refs:
       - path: "src/Core/Domain/AttributeGroup/"
         role: model
@@ -31,9 +34,11 @@ concepts:
       featureId:
         id: CAT016
         description: "Unique feature identifier"
+        example: "3"
       name:
         id: CAT017
         description: "Feature name (e.g. 'Weight', 'Material')"
+        example: "Weight"
     code_refs:
       - path: "src/Core/Domain/Feature/"
         role: model
@@ -47,10 +52,42 @@ concepts:
       featureValueId:
         id: CAT034
         description: "Unique feature value identifier"
+        example: "12"
       value:
         id: CAT035
         description: "The feature value text"
+        example: "2.1 kg"
     code_refs:
       - path: "src/Core/Domain/Feature/"
         role: model
     tags: [value-object]
+
+  - id: catalog.CN300
+    name: "Attribute"
+    description: "One value on a variant axis, for example Red under Color or XL under Size. Choosing one attribute from each of a product's attribute groups is what identifies a combination a shopper can add to the basket, so an attribute is the smallest unit of product variation. A colour attribute additionally carries a hex value or an uploaded texture image, which is what the storefront swatch renders. It lives inside its AttributeGroup and is never referenced without one, which is why the code nests its commands under AttributeGroup/Attribute/; the legacy layer calls the same row a ProductAttribute."
+    stereotype: entity
+    attributes:
+      attributeId:
+        id: CAT329
+        description: "Unique attribute identifier, primary key of the ps_attribute table."
+        example: "14"
+      attributeGroupId:
+        id: CAT330
+        description: "The group this value belongs to. An attribute has exactly one, and moving it changes which axis every combination using it sits on."
+        example: "3"
+      name:
+        id: CAT331
+        description: "Localized value text shown in the storefront variant selector, one entry per language id."
+        example: "Red"
+      color:
+        id: CAT332
+        description: "Hex colour used to draw the swatch when the group's display type is colour. Empty for a group rendered as a dropdown or radio buttons."
+        example: "#E30613"
+    code_refs:
+      - path: "src/Core/Domain/AttributeGroup/Attribute/"
+        role: model
+        description: "Commands, queries and value objects for the attribute."
+      - path: "classes/ProductAttribute.php"
+        role: model
+        description: "The legacy ObjectModel behind the same row; it fires actionAttributeSave and actionAttributeDelete."
+    tags: [entity, "within:catalog.CN005"]

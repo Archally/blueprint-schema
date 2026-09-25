@@ -5,6 +5,76 @@ tags: [product, models]
 
 components:
   schemas:
+    AssignProductToCategoryPayload:
+      x-model-id: MDL1003
+      purpose: command-payload
+      description: "Request body for filing a product under one more category, served at POST /products/{productId}/assign-to-categories. Adds a category; it does not replace the set, which is what SetProductCategoriesPayload does."
+      represents:
+        - concept: catalog.CN001
+          kind: api
+      type: object
+      properties:
+        categoryId:
+          type: integer
+          description: "The category to add the product to. The categories it already belongs to are left alone."
+          example: 11
+
+    SetProductCategoriesPayload:
+      x-model-id: MDL1000
+      purpose: command-payload
+      description: "Request body for replacing a product's category associations. The Admin API serves it at POST /products/{productId}/categories and answers 204, so the caller re-reads the product to see the result."
+      represents:
+        - concept: catalog.CN001
+          kind: api
+      type: object
+      properties:
+        categoryIds:
+          type: array
+          description: "Every category the product should belong to after the call. The previous set is replaced, not merged, so a category left out is removed."
+          items:
+            type: integer
+          example: [2, 11, 14]
+        defaultCategoryId:
+          type: integer
+          description: "The category the product is filed under for breadcrumbs and canonical URLs. Must be one of categoryIds."
+          example: 11
+
+    SetProductCarriersPayload:
+      x-model-id: MDL1001
+      purpose: command-payload
+      description: "Request body for restricting a product to a set of carriers, served at PUT /products/{productId}/carriers. The response echoes the resulting associations through the read-only carriers property."
+      represents:
+        - concept: catalog.CN001
+          kind: api
+      type: object
+      properties:
+        carrierReferenceIds:
+          type: array
+          description: "Carrier REFERENCE ids, not carrier primary keys: a reference outlives the versioned carrier rows behind it, so the restriction survives a carrier edit. An empty array lifts the restriction and every enabled carrier may deliver the product."
+          items:
+            type: integer
+          example: [1, 2]
+
+    SetProductShopsPayload:
+      x-model-id: MDL1002
+      purpose: command-payload
+      description: "Request body for setting which shops of a multistore installation carry a product, served at PATCH /products/{productId}/shops."
+      represents:
+        - concept: catalog.CN001
+          kind: api
+      type: object
+      properties:
+        sourceShopId:
+          type: integer
+          description: "The shop whose values are copied into every newly associated shop. Must itself appear in associatedShopIds, or the command refuses."
+          example: 1
+        associatedShopIds:
+          type: array
+          description: "Every shop that should carry the product after the call. An empty array is refused: a product with no shop is unreachable rather than hidden."
+          items:
+            type: integer
+          example: [1, 2]
+
     CreateProductPayload:
       x-model-id: MDL001
       purpose: command-payload
@@ -61,7 +131,7 @@ components:
       properties:
         productId:
           type: integer
-          description: "Product to update."
+          description: "Which product the edit targets. Every other field here is optional, so the payload states a change rather than a whole product: an omitted field is left alone, not cleared."
           example: 42
         localizedNames:
           type: object
@@ -110,20 +180,20 @@ components:
           example: "0.000000"
         unity:
           type: string
-          description: "Unit label (e.g. 'kg', 'liter')."
-          example: ""
+          description: "The measure the unit price is quoted per, printed after it as 'per kg'. Free text, so the shop decides the vocabulary; empty means no unit price is shown at all."
+          example: "kg"
         reference:
           type: string
           description: "Internal reference / merchant SKU."
           example: "LAPTOP-15-BLK"
         isbn:
           type: string
-          description: "ISBN for books."
-          example: ""
+          description: "Book number, checked by isIsbn at up to 32 characters. One of four separate code columns on a product: isbn, upc, ean13 and mpn are stored side by side and none is derived from another."
+          example: "9783161484100"
         upc:
           type: string
-          description: "UPC barcode."
-          example: ""
+          description: "Twelve-digit North American barcode, checked by isUpc. Empty on a shop selling only into EAN-13 markets."
+          example: "012345678905"
         ean13:
           type: string
           description: "EAN-13 barcode."
@@ -138,8 +208,8 @@ components:
           example: true
         condition:
           type: string
-          enum: [new, used, refurbished]
-          description: "Product condition."
+          enum: [new, used, refurbished, open_box, damaged, new_with_defects]
+          description: "State of the goods, taken from the six values Product declares. It is a merchandising claim rather than a computed one, and it only reaches the shopper when showCondition is on."
           example: "new"
         showCondition:
           type: boolean
@@ -249,10 +319,15 @@ components:
           example: true
         basicInformation:
           type: object
-          description: "Core product info: names, descriptions."
+          example:
+            localizedNames: { "1": "Classic Laptop 15-inch" }
+            localizedDescriptions: { "1": "<p>High-performance laptop with 16GB RAM and 512GB SSD.</p>" }
+            localizedShortDescriptions: { "1": "Powerful 15-inch laptop for professionals." }
+          description: "The text a shopper reads, keyed by language id in every field. A shop with one language still gets a map of one entry, because the storage shape does not change with the number of languages installed."
           properties:
             localizedNames:
               type: object
+              description: "Product name per language id. The name is what the search index and the breadcrumb are built from, so an untranslated language falls back to an empty title rather than to the default language."
               additionalProperties:
                 type: string
               example:
@@ -260,146 +335,213 @@ components:
                 "2": "Ordinateur Portable Classique 15 pouces"
             localizedDescriptions:
               type: object
+              description: "Long description per language id, stored as HTML because the back office edits it in a rich-text field. It is the body of the product page and is not used in listings."
               additionalProperties:
                 type: string
               example:
                 "1": "<p>High-performance laptop with 16GB RAM and 512GB SSD.</p>"
             localizedShortDescriptions:
               type: object
+              description: "Summary per language id, used in listings and in the category grid where the long description would not fit. Kept as a separate field rather than truncated, so the shop controls what the teaser says."
               additionalProperties:
                 type: string
               example:
                 "1": "Powerful 15-inch laptop for professionals."
         categoriesInformation:
           type: object
-          description: "Category assignments and default category."
+          description: "Where the product sits in the tree. A product may be in many categories but has exactly one default, and the two facts are kept apart because they answer different questions."
+          example:
+            categoriesIds: [2, 5, 12]
+            defaultCategoryId: 5
           properties:
             categoriesIds:
               type: array
+              description: "Every category the product is listed in. Membership is what a category page queries; it carries no ordering, which lives on the product-category link instead."
               items:
                 type: integer
               example: [2, 5, 12]
             defaultCategoryId:
               type: integer
+              description: "The one category that stands for the product elsewhere: it supplies the breadcrumb and the canonical URL. It must be one of the ids above."
               example: 5
         pricesInformation:
           $ref: "#/components/schemas/ProductPricesInfo"
         options:
           type: object
-          description: "Product display and behavior options."
+          description: "The six switches that decide how the product behaves in the storefront rather than what it is. They are grouped because they are edited together on one tab of the product form."
+          example:
+            visibility: "both"
+            availableForOrder: true
+            showPrice: true
+            onlineOnly: false
+            condition: "new"
+            showCondition: true
           properties:
             visibility:
               type: string
               enum: [both, catalog, search, none]
+              description: "Where in the storefront the product can be reached: through category browsing, through search, through both, or through neither. 'none' still leaves the product orderable by direct link, so it is a listing rule and not a switch-off."
               example: "both"
             availableForOrder:
               type: boolean
+              description: "Whether the product can be added to a cart at all. A visible product with this off is a display page without a buy button, which is how a shop shows a range it does not sell online."
               example: true
             showPrice:
               type: boolean
+              description: "Whether the price is printed on the storefront. Turning it off is how a quote-only or restricted-range product is published; it does not stop the price being used in the cart."
               example: true
             onlineOnly:
               type: boolean
+              description: "Marks a product sold only through the website, so a connected point-of-sale or marketplace feed leaves it out."
               example: false
             condition:
               type: string
-              enum: [new, used, refurbished]
+              enum: [new, used, refurbished, open_box, damaged, new_with_defects]
+              description: "State of the goods, one of the six values Product declares. Shown to the shopper only when showCondition is on."
               example: "new"
             showCondition:
               type: boolean
+              description: "Whether the condition above is printed on the product page. Off by default on a new-goods shop, where saying 'new' on every product adds nothing."
               example: true
         details:
           type: object
-          description: "Product identifiers and references."
+          description: "The five ways this product is named outside the shop's own database. None is generated and none is required, so a product can carry all five, one, or none."
+          example:
+            reference: "LAPTOP-15-BLK"
+            isbn: "9783161484100"
+            upc: "012345678905"
+            ean13: "5901234123457"
+            mpn: "MPN-LAP-2026"
           properties:
             reference:
               type: string
+              description: "The shop's own SKU, free text and not checked. It is the code a warehouse search is run on, and a variant may override it with one of its own."
               example: "LAPTOP-15-BLK"
             isbn:
               type: string
-              example: ""
+              description: "Book number, checked by isIsbn. Empty for anything that is not a book."
+              example: "9783161484100"
             upc:
               type: string
-              example: ""
+              description: "Twelve-digit North American barcode, checked by isUpc and stored separately from ean13."
+              example: "012345678905"
             ean13:
               type: string
+              description: "Thirteen-digit European barcode, checked by isEan13. This is the code most retail scanners read."
               example: "5901234123457"
             mpn:
               type: string
+              description: "The manufacturer's part number, up to 40 characters. Unlike the reference it is not the shop's to choose, which is why marketplace feeds match on it."
               example: "MPN-LAP-2026"
         shippingInformation:
           type: object
-          description: "Shipping dimensions and cost."
+          description: "What the carrier needs to price and promise the delivery. The dimensions and weight are the product's own; the cost below is a surcharge on top of whatever the carrier's rules compute."
+          example:
+            width: "38.000000"
+            height: "2.500000"
+            depth: "26.000000"
+            weight: "2.100000"
+            additionalShippingCost: "0.000000"
+            deliveryTimeNoteType: 1
           properties:
             width:
               type: string
+              description: "Packed width in the shop's dimension unit. Carriers that price by volume read all three dimensions; those that price by weight ignore them."
               example: "38.000000"
             height:
               type: string
+              description: "Packed height in the shop's dimension unit."
               example: "2.500000"
             depth:
               type: string
+              description: "Packed depth in the shop's dimension unit."
               example: "26.000000"
             weight:
               type: string
+              description: "Packed weight in the shop's weight unit. A variant's impactOnWeight is added to this, and the sum is what the carrier's weight ranges are matched against."
               example: "2.100000"
             additionalShippingCost:
               type: string
+              description: "A per-product surcharge added to the carrier's computed cost, for goods that are awkward rather than heavy. Zero on most products."
               example: "0.000000"
             deliveryTimeNoteType:
               type: integer
+              description: "Which delivery-time note the product page shows: 0 none, 1 the shop's default note, 2 a note written on this product. The note text itself lives in the localized delivery fields, not here."
               example: 1
         stockInformation:
           $ref: "#/components/schemas/ProductStockInfo"
         seoOptions:
           type: object
-          description: "SEO metadata per language."
+          description: "How the product appears to a search engine, and what happens to its URL once it stops being sold. The second half is the part that is easy to forget and expensive to get wrong."
+          example:
+            localizedMetaTitles: { "1": "Classic Laptop 15-inch | Best Price" }
+            localizedMetaDescriptions: { "1": "Buy the Classic Laptop 15-inch with free shipping." }
+            localizedLinkRewrites: { "1": "classic-laptop-15-inch" }
+            redirectType: "301-product"
+            redirectTarget: 0
           properties:
             localizedMetaTitles:
               type: object
+              description: "Page title per language id. Left empty, the product name is used instead, so an empty map is a choice to accept the default rather than a gap."
               additionalProperties:
                 type: string
               example:
                 "1": "Classic Laptop 15-inch | Best Price"
             localizedMetaDescriptions:
               type: object
+              description: "The snippet a search engine is offered, per language id. Not shown anywhere on the storefront itself."
               additionalProperties:
                 type: string
               example:
                 "1": "Buy the Classic Laptop 15-inch with free shipping."
             localizedLinkRewrites:
               type: object
+              description: "The URL slug per language id, so each language has its own readable address. Changing it changes the product's public URL, which is why the redirect fields below exist."
               additionalProperties:
                 type: string
               example:
                 "1": "classic-laptop-15-inch"
             redirectType:
               type: string
+              description: "What the shop serves at this product's URL once it is disabled: one of default, 404, 410, 301-product, 302-product, 301-category, 302-category, or the three -displayed variants that show the page anyway. It decides whether search-engine ranking is passed on or dropped."
               example: "301-product"
             redirectTarget:
               type: integer
+              description: "The product or category the redirect points at, read according to redirectType. Zero when the type needs no target, as with 404 or default."
               example: 0
         attachments:
           type: array
-          description: "Downloadable attachments."
+          description: "Files offered beside the product page, such as a manual or a datasheet. Unlike a virtual product's file these are public and are not what the shopper is buying."
+          example:
+            - attachmentId: 7
+              fileName: "laptop-manual.pdf"
+              localizedNames: { "1": "User Manual" }
           items:
             type: object
             properties:
               attachmentId:
                 type: integer
+                description: "The attachment record, which is shared: one uploaded file can be attached to many products."
                 example: 7
               fileName:
                 type: string
+                description: "The stored file name, which is what the download is served as."
                 example: "laptop-manual.pdf"
               localizedNames:
                 type: object
+                description: "The link text per language id, so the shopper sees 'User Manual' rather than the file name."
                 additionalProperties:
                   type: string
                 example:
                   "1": "User Manual"
         virtualProductFile:
           type: object
-          description: "Virtual product download info (null for non-virtual)."
+          description: "The downloadable the shopper is buying, present only when productType is virtual. Null everywhere else, which is the field that tells a virtual product from a standard one carrying an attachment."
+          example:
+            fileName: "ebook-2026.pdf"
+            displayName: "Practical Ecommerce, 2026 edition"
+            nbDownloadable: 3
+            expirationDate: "2027-01-01"
           nullable: true
         coverThumbnailUrl:
           type: string
@@ -435,7 +577,7 @@ components:
       properties:
         productId:
           type: integer
-          description: "Product identifier."
+          description: "The product this row stands for, which the list links to its edit form. The reference beside it is the human code; this is what the system joins on."
           example: 42
         name:
           type: string
@@ -443,7 +585,7 @@ components:
           example: "Classic Laptop 15-inch"
         reference:
           type: string
-          description: "Merchant SKU."
+          description: "The shop's own SKU for the product, shown in the list because it is the code a warehouse or a supplier quotes. Free text and not unique by any constraint."
           example: "LAPTOP-15-BLK"
         price:
           type: string
@@ -456,6 +598,7 @@ components:
         productType:
           type: string
           enum: [standard, combinations, pack, virtual]
+          description: "Which of the four product shapes this is. It decides what the row's stock figure means: a combinations product sums its variants, a pack is limited by its scarcest component, and a virtual product may not be stock-tracked at all."
           example: "combinations"
         quantity:
           type: integer
@@ -513,11 +656,11 @@ components:
           example: "0.600000"
         taxRulesGroupId:
           type: integer
-          description: "Tax rules group ID."
+          description: "The tax rules group that decides this product's rate. The rate is not stored here because it depends on the delivery address as well as the product, so the group is resolved per order rather than per product."
           example: 1
         onSale:
           type: boolean
-          description: "On-sale flag."
+          description: "Puts the 'on sale' flash on the product without changing any price. It is a display flag, and the actual reduction lives in a specific price rule."
           example: false
         wholesalePrice:
           type: string
@@ -529,12 +672,12 @@ components:
           example: "0.000000"
         unitPriceTaxIncluded:
           type: string
-          description: "Unit price with tax."
+          description: "The per-unit comparison price with tax, which is the figure consumer law requires on the shelf in most EU markets. Zero when the shop quotes no unit price."
           example: "0.000000"
         unity:
           type: string
-          description: "Unit label (kg, liter, etc.)."
-          example: ""
+          description: "The measure the unit price is quoted per, printed after it as 'per kg'. Empty means no unit price is shown."
+          example: "kg"
         unitPriceRatio:
           type: string
           description: "Computed unit price ratio."
@@ -547,6 +690,9 @@ components:
       x-model-id: MDL006
       purpose: dto
       description: "Product stock subsection - quantity, minimum order, low stock alert, availability labels."
+      represents:
+        - concept: catalog.CN001
+          kind: api
       type: object
       properties:
         quantity:

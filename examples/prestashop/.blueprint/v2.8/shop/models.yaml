@@ -80,8 +80,8 @@ components:
           example: "/"
         virtualUri:
           type: string
-          description: "Virtual URI for URL rewriting."
-          example: ""
+          description: "Optional path segment that distinguishes this shop from others on the same domain and physical path, used only when URL rewriting is on. Stored normalised with no leading slash and a trailing one. The empty string is the common case and the default shop's value; the example shows the populated shape, which is the one a reader cannot guess."
+          example: "outlet/"
         active:
           type: boolean
           description: "Whether the shop is currently active."
@@ -94,7 +94,15 @@ components:
     CreateStorePayload:
       x-model-id: MDL902
       purpose: command-payload
-      description: "Request body for creating a physical retail store location with address, coordinates, and operating hours."
+      description: >-
+        The shape a physical store location is created in: localized names, address, coordinates,
+        phone and weekly opening hours. NO OPERATION CARRIES IT, and that is the fact rather than a
+        gap in the model. Core/Domain/Store declares four commands - delete, toggle status, bulk
+        delete, bulk update status - and no create; the Admin API's Store resource declares get,
+        delete, toggle and the two bulk routes, and no POST /stores. A store is created by the
+        legacy AdminStoresController writing the Store ObjectModel directly, outside CQRS. The model
+        is kept because it says what that legacy write carries, and because the day the create
+        command arrives this is the payload it takes.
       represents:
         - concept: shop.CN002
           kind: api
@@ -128,7 +136,7 @@ components:
           example: "75001"
         countryId:
           type: integer
-          description: "Country identifier."
+          description: "Which country the store is in, as a ps_country row id. It is required and validated as an unsigned id, and it is what the storefront locator groups and filters stores by."
           example: 8
         latitude:
           type: string
@@ -155,7 +163,10 @@ components:
       code_refs:
         - path: "src/Core/Domain/Store/Command/"
           role: schema
-          description: "Store creation - CQRS layer covers delete/toggle only; creation implied by domain model"
+          description: "Holds four commands and no create, which is why no operation binds this model."
+        - path: "controllers/admin/AdminStoresController.php"
+          role: implementation
+          description: "The legacy controller that creates and edits a store, writing the ObjectModel without a command."
 
     StoreResource:
       x-model-id: MDL903
@@ -189,7 +200,7 @@ components:
           example: "15 Rue de la Paix"
         city:
           type: string
-          description: "City."
+          description: "Town the store stands in. It is a free-text field on the store row, not a reference to a geography table, so two stores in one town can spell it differently and the locator will list both spellings."
           example: "Paris"
         postCode:
           type: string
@@ -197,7 +208,7 @@ components:
           example: "75001"
         countryId:
           type: integer
-          description: "Country identifier."
+          description: "Which country the store is in, as a ps_country row id. It is required and validated as an unsigned id, and it is what the storefront locator groups and filters stores by."
           example: 8
         countryName:
           type: string
@@ -288,37 +299,77 @@ components:
           role: schema
           description: "GetSearchEngineForEditing query result - populates the search engine edit form"
 
-    CreateAliasPayload:
+    SearchAliasWritePayload:
       x-model-id: MDL906
       purpose: command-payload
-      description: "Request body for creating a search term alias mapping to improve storefront search relevance."
+      description: >-
+        Request body for both alias writes: POST /search-aliases and PUT
+        /search-aliases/{searchTerm}. The unit is a search term together with its whole alias
+        list, never a single alias, because PrestaShop stores no alias identity a route could
+        address. Renamed from CreateAliasPayload on 2026-09-19: it was never create-only, and its
+        three scalar properties described a shape neither the command nor the route has.
       represents:
         - concept: shop.CN004
           kind: api
           mapping:
             strategy: property-map
             property_map:
-              search: CAT909
-              alias: CAT910
-              active: CAT911
+              searchTerm: CAT909
+              aliases: CAT910
       type: object
-      required: [search, alias, active]
+      required: [searchTerm, aliases]
       properties:
-        search:
+        searchTerm:
           type: string
-          description: "The original search term entered by customers."
+          description: >-
+            The word a shopper types. It is the resource identifier, so on the PUT it arrives in
+            the URI and the resource maps it to the command's oldSearchTerm - which is why a
+            rename needs newSearchTerm alongside it rather than simply sending a different value
+            here.
           example: "tshirt"
-        alias:
+        aliases:
+          type: array
+          description: >-
+            The terms the catalog should also search for, at least one. Sending the list replaces
+            the stored one entirely: the update handler deletes every alias of the term and adds
+            what was sent, so an omitted alias is a deletion rather than an unchanged row.
+          items:
+            type: object
+            required: [alias]
+            properties:
+              alias:
+                type: string
+                description: "A term the catalog actually indexes."
+                example: "t-shirt"
+              enabled:
+                type: boolean
+                description: >-
+                  Whether this one alias is in use. The wire says enabled and the domain says
+                  active; the resource's command mapping translates between them, so a reader
+                  comparing the payload with AddSearchTermAliasesCommand will see two names for
+                  one field.
+                example: true
+          example:
+            - alias: "t-shirt"
+              enabled: true
+            - alias: "tee"
+              enabled: true
+        newSearchTerm:
           type: string
-          description: "Comma-separated alias terms to map to."
-          example: "t-shirt,tee"
-        active:
-          type: boolean
-          description: "Whether this alias mapping is currently active."
-          example: true
+          description: >-
+            Only meaningful on the PUT, where it renames the term itself while keeping the alias
+            list sent with it. Omitted on a create, and omitted on an update that is not a rename.
+          example: "t-shirt"
       code_refs:
         - path: "src/Core/Domain/Alias/Command/AddSearchTermAliasesCommand.php"
           role: schema
+          description: "Takes (array aliases, string searchTerm); each alias entry is {alias: string, active: bool}."
+        - path: "src/Core/Domain/Alias/Command/UpdateSearchTermAliasesCommand.php"
+          role: schema
+          description: "The PUT counterpart, which additionally carries the old and new search term."
+        - path: "ps_apiresources/src/ApiPlatform/Resources/SearchAlias/SearchAlias.php"
+          role: api-spec
+          description: "Declares searchTerm, aliases (array of {alias, enabled}) and newSearchTerm, and maps aliases[].enabled to the command's aliases[].active at lines 114-123."
 
     ContactResource:
       x-model-id: MDL907
@@ -368,3 +419,224 @@ components:
         - path: "src/Core/Domain/Contact/Query/GetContactForEditing.php"
           role: schema
           description: "GetContactForEditing query result - populates the contact edit form"
+
+    BulkDeleteStoresPayload:
+      x-model-id: MDL1805
+      purpose: command-payload
+      description: "The body DELETE /stores/bulk-delete carries. It is a resource class of its own because the by-id delete takes no body, and ApiPlatform cannot serve both shapes from one."
+      represents:
+        - concept: shop.CN002
+          kind: api
+      type: object
+      required: [storeIds]
+      properties:
+        storeIds:
+          type: array
+          description: "The store locations to remove. The list may not be empty; an empty one is rejected before the handler runs."
+          items:
+            type: integer
+          example: [1, 3]
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Store/BulkDeleteStores.php"
+          role: schema
+          description: "Declares storeIds with NotBlank."
+
+    BulkUpdateStoreStatusPayload:
+      x-model-id: MDL1806
+      purpose: command-payload
+      description: "The body PUT /stores/bulk-update-status carries: which store locations to switch, and whether the storefront locator should show them."
+      represents:
+        - concept: shop.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              enabled: CAT906
+      type: object
+      required: [storeIds, enabled]
+      properties:
+        storeIds:
+          type: array
+          description: "The store locations to switch."
+          items:
+            type: integer
+          example: [1, 3]
+        enabled:
+          type: boolean
+          description: "True to show the listed stores on the storefront locator, false to hide them. The resource maps this to the domain's `active`."
+          example: true
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Store/BulkUpdateStatusStores.php"
+          role: schema
+          description: "Declares storeIds with NotBlank, and enabled."
+
+    BulkDeleteSearchEnginesPayload:
+      x-model-id: MDL1807
+      purpose: command-payload
+      description: "The body DELETE /search-engines/bulk-delete carries. Removing a referrer search engine stops PrestaShop attributing future visits to it; the visits already recorded keep their attribution."
+      represents:
+        - concept: shop.CN003
+          kind: api
+      type: object
+      required: [searchEngineIds]
+      properties:
+        searchEngineIds:
+          type: array
+          description: "The referrer search engines to remove. At least one is required."
+          items:
+            type: integer
+          example: [2, 5]
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/SearchEngine/BulkDeleteSearchEngines.php"
+          role: schema
+          description: "Declares searchEngineIds with NotBlank and Count(min: 1)."
+
+    BulkDeleteSearchAliasesPayload:
+      x-model-id: MDL1808
+      purpose: command-payload
+      description: "The body DELETE /search-aliases/bulk-delete carries. It is a list of search TERMS rather than of ids, because a search term is its own key: PrestaShop addresses an alias group by the word a shopper typed, not by a row number."
+      represents:
+        - concept: shop.CN004
+          kind: api
+      type: object
+      required: [searchTerms]
+      properties:
+        searchTerms:
+          type: array
+          description: "The search terms whose aliases are removed, with every alias of each. At least one is required."
+          items:
+            type: string
+          example: ["tshirt", "trainers"]
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/SearchAlias/BulkDeleteSearchAliases.php"
+          role: schema
+          description: "Declares searchTerms as an array of strings with NotBlank and Count(min: 1)."
+
+    SearchAliasResource:
+      x-model-id: MDL1809
+      purpose: read-model
+      description: "One search term with every alias mapped to it, which is the unit the Admin API works in: there is no route that addresses a single alias. `newSearchTerm` is present only on a write, and is how the term itself is renamed without losing its aliases."
+      represents:
+        - concept: shop.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              searchTerm: CAT909
+              aliases: CAT910
+      type: object
+      properties:
+        searchTerm:
+          type: string
+          description: "The word a shopper types. It is the resource's identifier, so the route is /search-aliases/{searchTerm} rather than an id."
+          example: "tshirt"
+        aliases:
+          type: array
+          description: "Every term the search should also look for. Sending this list replaces the stored one entirely: the handler deletes and re-adds, because PrestaShop keeps no alias identity to update in place."
+          items:
+            type: object
+            properties:
+              alias:
+                type: string
+                description: "A term the catalog actually indexes."
+                example: "t-shirt"
+              enabled:
+                type: boolean
+                description: "Whether this one alias is currently used. The domain calls the same field `active`."
+                example: true
+          example:
+            - alias: "t-shirt"
+              enabled: true
+            - alias: "tee"
+              enabled: false
+        newSearchTerm:
+          type: string
+          description: "On a write, the term to rename to. Absent means keep the current one, which is why an update that only changes the alias list omits it."
+          example: "t shirt"
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/SearchAlias/SearchAlias.php"
+          role: schema
+          description: "Declares searchTerm, aliases and newSearchTerm; QUERY_MAPPING renames the domain's active to enabled."
+
+    CreateContactPayload:
+      x-model-id: MDL1810
+      purpose: command-payload
+      description: "The body POST /contacts and PATCH /contacts/{contactId} carry. The same shape serves both because ApiPlatform validates it in a Create or an Update group rather than with two classes; on the PATCH a caller sends only the fields it changes."
+      represents:
+        - concept: shop.CN006
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              names: CAT912
+              email: CAT913
+              descriptions: CAT914
+      type: object
+      required: [names, email]
+      properties:
+        names:
+          type: object
+          description: "The department's name per language id, as the shopper sees it in the 'Contact Us' subject list. The shop's default language is required on a create."
+          additionalProperties:
+            type: string
+          example:
+            "1": "Customer Support"
+            "2": "Support Client"
+        email:
+          type: string
+          format: email
+          description: "Where messages to this department are delivered. Checked in strict mode, so an address that merely looks plausible is rejected."
+          example: "support@store.com"
+        descriptions:
+          type: object
+          description: "A sentence per language id telling the shopper when to pick this department."
+          additionalProperties:
+            type: string
+          example:
+            "1": "For any question about an order you have already placed."
+            "2": "Pour toute question sur une commande deja passee."
+        messagesSavingEnabled:
+          type: boolean
+          description: "Whether messages to this department are also stored as customer service threads. False means the mail is sent and nothing is kept, which is the setting a shop picks for a department handled outside PrestaShop."
+          example: true
+        shopIds:
+          type: array
+          description: "Which shops of a multi-store installation offer this department."
+          items:
+            type: integer
+          example: [1, 3]
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/Contact/Contact.php"
+          role: schema
+          description: "Declares names, email, descriptions, messagesSavingEnabled and shopIds; CREATE_COMMAND_MAPPING and UPDATE_COMMAND_MAPPING rename them to the command's localisedTitles, localisedDescription and isMessageSavingEnabled."
+
+    ShowcaseCardResource:
+      x-model-id: MDL1811
+      purpose: read-model
+      description: "Whether one employee has dismissed one of the informational cards the back office shows above a page. It is per employee, not per shop: a card one person closed stays open for everyone else. PrestaShop stores it as a Configuration key rather than as a row, which is why nothing observes a dismissal."
+      represents:
+        - concept: shop.CN008
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              showcaseCardName: CAT915
+              closed: CAT916
+      type: object
+      properties:
+        showcaseCardName:
+          type: string
+          description: "Which card, by the name the Configuration key is built from."
+          example: "modules_list"
+        employeeId:
+          type: integer
+          description: "The back-office user whose choice this is."
+          example: 1
+        closed:
+          type: boolean
+          description: "True once the employee has dismissed the card, which is what stops the page drawing it again."
+          example: true
+      code_refs:
+        - path: "ps_apiresources/src/ApiPlatform/Resources/ShowcaseCard/ShowcaseCard.php"
+          role: schema
+          description: "Declares showcaseCardName, employeeId and closed."

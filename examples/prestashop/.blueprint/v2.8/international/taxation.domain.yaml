@@ -15,6 +15,16 @@ operations:
     description: "Create a new tax rate definition with localized name and percentage."
     delivery_priority: must-have
     initiated_by: [international.ACT002]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /taxes
+        method: POST
+        group: international
+        description: "Admin API, OAuth scope tax_write. Declared as a CQRSCreate."
+    materializes:
+      - concept: international.CN007
+        action: create
     produces:
       operations: [international.EVT023]
       mode: all
@@ -23,6 +33,9 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Tax/Command/AddTaxCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Tax/Tax.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
   editTax:
     id: international.CMD024
@@ -31,44 +44,124 @@ operations:
     description: "Update a tax rate's name, percentage, or status."
     delivery_priority: must-have
     initiated_by: [international.ACT002]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /taxes/{taxId}
+        method: PATCH
+        group: international
+        description: "Admin API, OAuth scope tax_write. Declared as a CQRSPartialUpdate."
+    materializes:
+      - concept: international.CN007
+        action: update
     produces:
       operations: [international.EVT024]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Tax/Command/EditTaxCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Tax/Tax.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
   deleteTax:
     id: international.CMD025
     kind: command
     name: "DeleteTax"
-    description: "Delete a tax rate. Supports single and bulk deletion."
+    description: "Delete one tax rate. Any tax rule still bound to it stops resolving, so a delete here can silently remove tax from a country rather than raising anything."
     delivery_priority: must-have
     initiated_by: [international.ACT002]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /taxes/{taxId}
+        method: DELETE
+        group: international
+        description: "Admin API, OAuth scope tax_write. Declared as a CQRSDelete."
+    materializes:
+      - concept: international.CN007
+        action: delete
     produces:
       operations: [international.EVT025]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Tax/Command/DeleteTaxCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Tax/Tax.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
+
+  bulkDeleteTaxes:
+    id: international.CMD040
+    kind: command
+    name: "BulkDeleteTaxes"
+    description: "Delete several tax rates in one call. Its Admin API route is declared as an update rather than a delete, so the selection travels as a PUT body - a deviation from the single-rate route worth knowing before generating a client."
+    delivery_priority: should-have
+    initiated_by: [international.ACT002]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /taxes/bulk-delete
+        method: PUT
+        group: international
+        description: "Admin API, OAuth scope tax_write. Declared as a CQRSUpdate, not a CQRSDelete."
+    materializes:
+      - concept: international.CN007
+        action: delete
+    produces:
+      operations: [international.EVT025]
+      mode: all
+    code_refs:
       - path: "src/Core/Domain/Tax/Command/BulkDeleteTaxCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Tax/BulkTaxDelete.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
   toggleTaxStatus:
     id: international.CMD026
     kind: command
     name: "ToggleTaxStatus"
-    description: "Enable or disable a tax rate. Supports single and bulk toggle."
+    description: "Set one tax rate's enabled state. Despite the name it carries the state to apply rather than inverting the current one. A disabled rate keeps its bindings and stops being charged."
     delivery_priority: should-have
     initiated_by: [international.ACT002]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN007
+        action: update
     produces:
       operations: [international.EVT026]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Tax/Command/ToggleTaxStatusCommand.php"
         role: implementation
+
+  bulkToggleTaxStatus:
+    id: international.CMD041
+    kind: command
+    name: "BulkToggleTaxStatus"
+    description: "Set several tax rates to one enabled state in a single call. It is the only status route Tax has: the single-rate toggle executes through the command bus with no route of its own."
+    delivery_priority: should-have
+    initiated_by: [international.ACT002]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /taxes/bulk-set-status
+        method: PUT
+        group: international
+        description: "Admin API, OAuth scope tax_write. Declared as a CQRSUpdate."
+    materializes:
+      - concept: international.CN007
+        action: update
+    produces:
+      operations: [international.EVT026]
+      mode: all
+    code_refs:
       - path: "src/Core/Domain/Tax/Command/BulkToggleTaxStatusCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Tax/BulkTaxToggleStatus.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
   # --- TaxRulesGroup ---
 
@@ -79,12 +172,25 @@ operations:
     description: "Create a new tax rules group with name and shop associations. Tax rules (bindings) are added via the group's configuration."
     delivery_priority: must-have
     initiated_by: [international.ACT002]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /tax-rules-groups
+        method: POST
+        group: international
+        description: "Admin API, OAuth scope tax_rules_group_write. Declared as a CQRSCreate."
+    materializes:
+      - concept: international.CN008
+        action: create
     produces:
       operations: [international.EVT027]
       mode: all
     code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/Command/AddTaxRulesGroupCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRulesGroup/TaxRulesGroup.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
   editTaxRulesGroup:
     id: international.CMD028
@@ -93,43 +199,230 @@ operations:
     description: "Update a tax rules group's name, status, or shop associations."
     delivery_priority: must-have
     initiated_by: [international.ACT002]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /tax-rules-groups/{taxRulesGroupId}
+        method: PATCH
+        group: international
+        description: "Admin API, OAuth scope tax_rules_group_write. Declared as a CQRSPartialUpdate."
+    materializes:
+      - concept: international.CN008
+        action: update
     produces:
       operations: [international.EVT028]
       mode: all
     code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/Command/EditTaxRulesGroupCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRulesGroup/TaxRulesGroup.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
   deleteTaxRulesGroup:
     id: international.CMD029
     kind: command
     name: "DeleteTaxRulesGroup"
-    description: "Delete a tax rules group and its associated tax rules. Supports single and bulk deletion."
+    description: "Delete one tax rules group and every tax rule it owns. Products and carriers pointing at the group are left pointing at nothing, which shows up as untaxed orders rather than as a rejected delete."
     delivery_priority: must-have
     initiated_by: [international.ACT002]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /tax-rules-groups/{taxRulesGroupId}
+        method: DELETE
+        group: international
+        description: "Admin API, OAuth scope tax_rules_group_write. Declared as a CQRSDelete."
+    materializes:
+      - concept: international.CN008
+        action: delete
     produces:
       operations: [international.EVT029]
       mode: all
     code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/Command/DeleteTaxRulesGroupCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRulesGroup/TaxRulesGroup.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
+
+  bulkDeleteTaxRulesGroups:
+    id: international.CMD042
+    kind: command
+    name: "BulkDeleteTaxRulesGroups"
+    description: "Delete several tax rules groups, and with them every tax rule they own, in one call. A partial failure is reported as one failure for the batch and names no group."
+    delivery_priority: should-have
+    initiated_by: [international.ACT002]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /tax-rules-groups/bulk-delete
+        method: DELETE
+        group: international
+        description: "Admin API, OAuth scope tax_rules_group_write. Declared as a CQRSDelete."
+    materializes:
+      - concept: international.CN008
+        action: delete
+    produces:
+      operations: [international.EVT029]
+      mode: all
+    code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/Command/BulkDeleteTaxRulesGroupCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRulesGroup/BulkDeleteTaxRulesGroup.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
   setTaxRulesGroupStatus:
     id: international.CMD030
     kind: command
     name: "SetTaxRulesGroupStatus"
-    description: "Set the enabled/disabled status of a tax rules group. Supports single and bulk operations. Uses 'set' semantics (explicit boolean) rather than 'toggle'."
+    description: "Set one tax rules group's enabled state. The command carries the state to apply rather than inverting the current one, and the code says so in its name - the only aggregate in this slice that does."
     delivery_priority: should-have
     initiated_by: [international.ACT002]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /tax-rules-groups/{taxRulesGroupId}/set-status
+        method: PATCH
+        group: international
+        description: "Admin API, OAuth scope tax_rules_group_write. Declared as a CQRSPartialUpdate."
+    materializes:
+      - concept: international.CN008
+        action: update
     produces:
       operations: [international.EVT030]
       mode: all
     code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/Command/SetTaxRulesGroupStatusCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRulesGroup/TaxRulesGroup.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
+
+  bulkSetTaxRulesGroupStatus:
+    id: international.CMD043
+    kind: command
+    name: "BulkSetTaxRulesGroupStatus"
+    description: "Set several tax rules groups to one enabled state in a single call. Disabling a group is how a merchant withdraws a whole tax regime without deleting the rules that would be needed to put it back."
+    delivery_priority: should-have
+    initiated_by: [international.ACT002]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /tax-rules-groups/bulk-update-status
+        method: PUT
+        group: international
+        description: "Admin API, OAuth scope tax_rules_group_write. Declared as a CQRSUpdate."
+    materializes:
+      - concept: international.CN008
+        action: update
+    produces:
+      operations: [international.EVT030]
+      mode: all
+    code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/Command/BulkSetTaxRulesGroupStatusCommand.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRulesGroup/BulkUpdateStatusTaxRulesGroup.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
+
+  # --- TaxRule ---
+  #
+  # A tax rule is the binding itself: this tax rate, in this country, optionally narrowed to a state
+  # or a zip code. It lives under TaxRulesGroup in the code and every command carries the group it
+  # belongs to, so it is an entity of that aggregate - but it has its own commands, its own queries
+  # and its own Admin API routes, which is why it is modelled as operations and not as a field of
+  # the group.
+
+  addTaxRule:
+    id: international.CMD034
+    kind: command
+    name: "AddTaxRule"
+    description: "Bind a tax rate to a country inside a tax rules group, optionally narrowed to states and a zip code range. A countryId of 0 is not a missing value: the handler reads it as every active country and writes one rule for each, which is how a merchant applies one rate across a market in a single call."
+    delivery_priority: must-have
+    initiated_by: [international.ACT002]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /tax-rules
+        method: POST
+        group: international
+        description: "Admin API, OAuth scope tax_rule_write. Declared as a CQRSCreate."
+    materializes:
+      - concept: international.CN009
+        action: create
+    produces:
+      operations: [international.EVT033]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/TaxRule/Command/AddTaxRuleCommand.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRule/TaxRule.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
+
+  editTaxRule:
+    id: international.CMD035
+    kind: command
+    name: "EditTaxRule"
+    description: "Change which tax rate, country, state, behavior or zip code range a single tax rule binds. Every field is nullable in the command, so an edit states only what moves and leaves the rest of the binding standing."
+    delivery_priority: must-have
+    initiated_by: [international.ACT002]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN009
+        action: update
+    produces:
+      operations: [international.EVT034]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/TaxRule/Command/EditTaxRuleCommand.php"
+        role: implementation
+
+  deleteTaxRule:
+    id: international.CMD036
+    kind: command
+    name: "DeleteTaxRule"
+    description: "Remove one tax rule from its group. The countries the rule covered fall back to whatever broader rule still matches them, or to no tax at all - a gap that shows up as zero-tax orders rather than as an error."
+    delivery_priority: must-have
+    initiated_by: [international.ACT002]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /tax-rules/{taxRuleId}
+        method: DELETE
+        group: international
+        description: "Admin API, OAuth scope tax_rule_write. Declared as a CQRSDelete."
+    materializes:
+      - concept: international.CN009
+        action: delete
+    produces:
+      operations: [international.EVT035]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/TaxRule/Command/DeleteTaxRuleCommand.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRule/TaxRule.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
+
+  bulkDeleteTaxRules:
+    id: international.CMD037
+    kind: command
+    name: "BulkDeleteTaxRules"
+    description: "Remove several tax rules from one group in a single operation. The command carries the group id as well as the rule ids, so a caller cannot delete across groups by accident."
+    delivery_priority: should-have
+    initiated_by: [international.ACT002]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN009
+        action: delete
+    produces:
+      operations: [international.EVT035]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/TaxRule/Command/BulkDeleteTaxRuleCommand.php"
         role: implementation
 
   # --- Events ---
@@ -138,49 +431,144 @@ operations:
     id: international.EVT023
     kind: event
     name: "TaxCreated"
-    description: "A new tax rate has been added."
+    description: "A new tax rate has been added. Modules observe it as the hook actionObjectTaxAddAfter, composed at runtime by ObjectModel when the Tax row is inserted."
+    tags: [hook:actionObjectTaxAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 614-615 fire actionObject<Class>AddAfter for every persisted class."
+      - path: "classes/tax/Tax.php"
+        role: model
 
   taxUpdated:
     id: international.EVT024
     kind: event
     name: "TaxUpdated"
-    description: "A tax rate has been modified."
+    description: "A tax rate has been modified. Modules observe it as the hook actionObjectTaxUpdateAfter, composed at runtime by ObjectModel when the Tax row is updated."
+    tags: [hook:actionObjectTaxUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/tax/Tax.php"
+        role: model
 
   taxDeleted:
     id: international.EVT025
     kind: event
     name: "TaxDeleted"
-    description: "One or more tax rates have been deleted."
+    description: "One or more tax rates have been deleted. Modules observe it as the hook actionObjectTaxDeleteAfter, composed at runtime by ObjectModel when the Tax row is deleted."
+    tags: [hook:actionObjectTaxDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 922-923 fire actionObject<Class>DeleteAfter for every persisted class."
+      - path: "classes/tax/Tax.php"
+        role: model
 
   taxStatusToggled:
     id: international.EVT026
     kind: event
     name: "TaxStatusToggled"
-    description: "A tax rate's enabled/disabled status has changed."
+    description: "A tax rate's enabled/disabled status has changed. Modules observe it as the hook actionObjectTaxUpdateAfter, composed at runtime by ObjectModel when the Tax row is updated."
+    tags: [hook:actionObjectTaxUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/tax/Tax.php"
+        role: model
 
   taxRulesGroupCreated:
     id: international.EVT027
     kind: event
     name: "TaxRulesGroupCreated"
-    description: "A new tax rules group has been created."
+    description: "A new tax rules group has been created. Modules observe it as the hook actionObjectTaxRulesGroupAddAfter, composed at runtime by ObjectModel when the TaxRulesGroup row is inserted."
+    tags: [hook:actionObjectTaxRulesGroupAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 614-615 fire actionObject<Class>AddAfter for every persisted class."
+      - path: "classes/tax/TaxRulesGroup.php"
+        role: model
 
   taxRulesGroupUpdated:
     id: international.EVT028
     kind: event
     name: "TaxRulesGroupUpdated"
-    description: "A tax rules group has been modified."
+    description: "A tax rules group has been modified. Modules observe it as the hook actionObjectTaxRulesGroupUpdateAfter, composed at runtime by ObjectModel when the TaxRulesGroup row is updated."
+    tags: [hook:actionObjectTaxRulesGroupUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/tax/TaxRulesGroup.php"
+        role: model
 
   taxRulesGroupDeleted:
     id: international.EVT029
     kind: event
     name: "TaxRulesGroupDeleted"
-    description: "One or more tax rules groups have been deleted."
+    description: "One or more tax rules groups have been deleted. Modules observe it as the hook actionObjectTaxRulesGroupDeleteAfter, composed at runtime by ObjectModel when the TaxRulesGroup row is deleted."
+    tags: [hook:actionObjectTaxRulesGroupDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 922-923 fire actionObject<Class>DeleteAfter for every persisted class."
+      - path: "classes/tax/TaxRulesGroup.php"
+        role: model
 
   taxRulesGroupStatusSet:
     id: international.EVT030
     kind: event
     name: "TaxRulesGroupStatusSet"
-    description: "A tax rules group's status has been explicitly set."
+    description: "A tax rules group's status has been explicitly set. Modules observe it as the hook actionObjectTaxRulesGroupUpdateAfter, composed at runtime by ObjectModel when the TaxRulesGroup row is updated."
+    tags: [hook:actionObjectTaxRulesGroupUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/tax/TaxRulesGroup.php"
+        role: model
+
+  taxRuleCreated:
+    id: international.EVT033
+    kind: event
+    name: "TaxRuleCreated"
+    description: "A tax rate is now bound to a country inside a group. One AddTaxRule call with countryId 0 raises this once per active country, so the count of facts is not the count of commands. Modules observe it as the hook actionObjectTaxRuleAddAfter, composed at runtime by ObjectModel when the TaxRule row is inserted."
+    tags: [hook:actionObjectTaxRuleAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 614-615 fire actionObject<Class>AddAfter for every persisted class."
+      - path: "classes/tax/TaxRule.php"
+        role: model
+
+  taxRuleUpdated:
+    id: international.EVT034
+    kind: event
+    name: "TaxRuleUpdated"
+    description: "A tax rule's binding has changed - its rate, its country, its state, its zip code range or its combination behavior. Modules observe it as the hook actionObjectTaxRuleUpdateAfter, composed at runtime by ObjectModel when the TaxRule row is updated."
+    tags: [hook:actionObjectTaxRuleUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/tax/TaxRule.php"
+        role: model
+
+  taxRuleDeleted:
+    id: international.EVT035
+    kind: event
+    name: "TaxRuleDeleted"
+    description: "One or more tax rules have been removed from a group. Anything they covered is now taxed by whatever broader rule still matches, or not at all. Modules observe it as the hook actionObjectTaxRuleDeleteAfter, composed at runtime by ObjectModel when the TaxRule row is deleted."
+    tags: [hook:actionObjectTaxRuleDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 922-923 fire actionObject<Class>DeleteAfter for every persisted class."
+      - path: "classes/tax/TaxRule.php"
+        role: model
 
   # --- Queries ---
 
@@ -190,31 +578,71 @@ operations:
     name: "GetTaxForEditing"
     description: "Retrieve a tax rate's configuration for the edit form."
     delivery_priority: must-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /taxes/{taxId}
+        method: GET
+        group: international
+        description: "Admin API, OAuth scope tax_read. Declared as a CQRSGet."
     code_refs:
       - path: "src/Core/Domain/Tax/Query/GetTaxForEditing.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Tax/Tax.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
   getTaxRulesGroupForEditing:
     id: international.QRY010
     kind: query
+    name: "GetTaxRulesGroupForEditing"
+    description: "Retrieve a tax rules group with all its tax rule bindings for the edit form."
+    delivery_priority: must-have
     exchange:
       protocol: http
       endpoint:
-        path: /international/tax-rules-groups/{taxRulesGroupId}
+        path: /tax-rules-groups/{taxRulesGroupId}
         method: GET
         group: international
+        description: "Admin API, OAuth scope tax_rules_group_read. Declared as a CQRSGet."
     responses:
       - code: "200"
         type: success
         description: "The tax rules group, in the shape the edit form needs."
         schema: TaxRulesGroupResource
         contentType: application/json
-    name: "GetTaxRulesGroupForEditing"
-    description: "Retrieve a tax rules group with all its tax rule bindings for the edit form."
-    delivery_priority: must-have
     code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/Query/GetTaxRulesGroupForEditing.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRulesGroup/TaxRulesGroup.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
+
+  getTaxRuleForEditing:
+    id: international.QRY011
+    kind: query
+    name: "GetTaxRuleForEditing"
+    description: "Retrieve one tax rule's binding for the edit form: the rate, the country, the states, the zip code range and the combination behavior."
+    delivery_priority: must-have
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/TaxRule/Query/GetTaxRuleForEditing.php"
+        role: implementation
+      - path: "src/Core/Domain/TaxRulesGroup/TaxRule/QueryResult/EditableTaxRule.php"
+        role: model
+
+  getTaxRuleList:
+    id: international.QRY012
+    kind: query
+    name: "GetTaxRuleList"
+    description: "Retrieve a paginated, language-resolved list of the tax rules inside one group. It is the list a merchant reads to find the gap that is charging no tax, so it names country and state rather than only their ids."
+    delivery_priority: must-have
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/TaxRule/Query/GetTaxRuleList.php"
+        role: implementation
+      - path: "src/Core/Domain/TaxRulesGroup/TaxRule/QueryResult/TaxRuleForList.php"
+        role: model
 
 errors:
   taxNotFound:
@@ -232,11 +660,111 @@ errors:
     category: not-found
     severity: error
     http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/Exception/TaxRulesGroupNotFoundException.php"
+        role: implementation
 
   taxRulesGroupConstraintViolation:
     id: international.ERR009
     name: "TaxRulesGroupConstraintViolation"
-    description: "Tax rules group data violates constraints (invalid shop association)."
+    description: "A tax rules group field is out of range for its type. The exception names which as a code constant - id, shop association, name, active flag, deleted flag, creation date or update date."
     category: validation
     severity: error
     http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/Exception/TaxRulesGroupConstraintException.php"
+        role: implementation
+        description: "INVALID_ID 1, INVALID_SHOP_ASSOCIATION 2, INVALID_NAME 3, INVALID_ACTIVE 4, INVALID_DELETED 5, INVALID_CREATION_DATE 6, INVALID_UPDATE_DATE 7"
+
+  taxRulesGroupWriteFailed:
+    id: international.ERR015
+    name: "TaxRulesGroupWriteFailed"
+    description: "A tax rules group write did not persist. PrestaShop raises one exception per verb rather than one per cause; the update case is the only one that distinguishes a failed status toggle from a failed field update."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/Exception/CannotAddTaxRulesGroupException.php"
+        role: implementation
+      - path: "src/Core/Domain/TaxRulesGroup/Exception/CannotUpdateTaxRulesGroupException.php"
+        role: implementation
+        description: "FAILED_TOGGLE_STATUS 1, FAILED_UPDATE_TAX_RULES_GROUP 10"
+      - path: "src/Core/Domain/TaxRulesGroup/Exception/CannotDeleteTaxRulesGroupException.php"
+        role: implementation
+
+  taxRulesGroupBulkOperationFailed:
+    id: international.ERR016
+    name: "TaxRulesGroupBulkOperationFailed"
+    description: "A bulk delete or bulk status update over tax rules groups did not complete. The exception says which verb failed and nothing about which rows landed, so the merchant re-reads the list to find out."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/Exception/CannotBulkDeleteTaxRulesGroupException.php"
+        role: implementation
+      - path: "src/Core/Domain/TaxRulesGroup/Exception/CannotBulkUpdateTaxRulesGroupException.php"
+        role: implementation
+
+  taxRuleNotFound:
+    id: international.ERR017
+    name: "TaxRuleNotFound"
+    description: "The specified tax rule does not exist. Its exception extends the tax rules group's, which is the code stating that a rule is only ever reached through its group."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/TaxRule/Exception/TaxRuleNotFoundException.php"
+        role: implementation
+
+  taxRuleConstraintViolation:
+    id: international.ERR018
+    name: "TaxRuleConstraintViolation"
+    description: "A tax rule field is out of range for its type: the rule id, the country, the tax rate, the combination behavior or the zip code range. A rejected behavior value is the interesting one, because it decides how this rule stacks with the others that match the same address."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/TaxRule/Exception/TaxRuleConstraintException.php"
+        role: implementation
+        description: "INVALID_ID 1, INVALID_COUNTRY_ID 2, INVALID_TAX_ID 3, INVALID_BEHAVIOR 4, INVALID_ZIPCODE 5"
+
+  taxRuleWriteFailed:
+    id: international.ERR019
+    name: "TaxRuleWriteFailed"
+    description: "A tax rule write did not persist. On an AddTaxRule that fans out over every active country this can leave a group half-bound, with some countries taxed and some not, and the caller is told only that the call failed."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/TaxRule/Exception/CannotAddTaxRuleException.php"
+        role: implementation
+      - path: "src/Core/Domain/TaxRulesGroup/TaxRule/Exception/CannotUpdateTaxRuleException.php"
+        role: implementation
+      - path: "src/Core/Domain/TaxRulesGroup/TaxRule/Exception/CannotDeleteTaxRuleException.php"
+        role: implementation
+
+  taxRuleBulkDeleteFailed:
+    id: international.ERR020
+    name: "TaxRuleBulkDeleteFailed"
+    description: "A bulk delete of tax rules did not complete. Which of the selected rules survived is not reported, and a surviving rule keeps charging tax that the merchant believes is gone."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/TaxRulesGroup/TaxRule/Exception/CannotBulkDeleteTaxRuleException.php"
+        role: implementation
+
+questions:
+
+  - id: international.QN001
+    name: "Which Tax Applies"
+    statement: "Which tax rate applies to this product when it is delivered to this address?"
+    category: compliance
+    priority: critical
+    bounded_context_ref: prestashop.BC006
+    answered_by: [international.QRY012, international.QRY010, international.QRY009]
+    concepts: [international.CN007, international.CN008, international.CN009]
+    resolved: true
+    resolution: >
+      A product carries a TaxRulesGroup; that group holds one TaxRule per country and state,
+      each naming a Tax with its rate. GetTaxRuleList is the lookup from destination to rate.

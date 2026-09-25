@@ -15,24 +15,31 @@ concepts:
       cartId:
         id: CAT200
         description: "Unique cart identifier"
+        example: "42"
       customerId:
         id: CAT201
-        description: "Reference to the customer who owns this cart"
+        description: "Reference to the customer who owns this cart. A guest cart carries the guest's customer row, so the field is always populated once the cart is attached to a visitor."
+        example: "17"
       totalProducts:
         id: CAT202
         description: "Sum of product line totals excluding tax"
+        example: "129.90"
       totalDiscounts:
         id: CAT203
         description: "Sum of all applied discount reductions"
+        example: "13.00"
       totalShipping:
         id: CAT204
         description: "Shipping cost for the selected carrier"
+        example: "7.90"
       currencyId:
         id: CAT205
-        description: "Currency used for all cart calculations"
+        description: "Currency the cart's amounts are expressed in. Every total on the cart is in this currency; changing it re-expresses the cart rather than converting a stored value."
+        example: "1"
       carrierId:
         id: CAT206
         description: "Selected shipping carrier reference"
+        example: "2"
     code_refs:
       - path: "src/Core/Domain/Cart/ValueObject/CartId.php"
         role: model
@@ -47,15 +54,19 @@ concepts:
       productId:
         id: CAT207
         description: "Reference to the catalog product"
+        example: "19"
       combinationId:
         id: CAT208
-        description: "Reference to the product variant (combination)"
+        description: "Reference to the product variant, or absent when the product has no combinations. The command models it as a nullable int, so no-variant is null rather than zero."
+        example: "null"
       quantity:
         id: CAT209
         description: "Number of units in the cart"
+        example: "2"
       unitPrice:
         id: CAT210
-        description: "Unit price at time of addition"
+        description: "Unit price at the moment the line was added. It is a snapshot: a later catalog price change or catalog price rule does not rewrite an existing cart line."
+        example: "23.90"
     code_refs:
       - path: "src/Core/Domain/Cart/Command/AddProductToCartCommand.php"
         role: implementation
@@ -67,10 +78,12 @@ concepts:
     attributes:
       cartRuleId:
         id: CAT211
-        description: "Legacy cart rule identifier (maps to Discount in v9 CQRS)"
+        description: "Legacy cart rule identifier. PrestaShop 9 persists a Discount as a CartRule row, so this is the same row a Discount id addresses, reached through the legacy read path."
+        example: "5"
       code:
         id: CAT212
         description: "Voucher code for manual application"
+        example: "SPRING10"
     code_refs:
       - path: "src/Core/Domain/CartRule/ValueObject/CartRuleId.php"
         role: model
@@ -80,18 +93,30 @@ concepts:
 enumerations:
   - id: checkout.EN001
     name: "CartStatus"
-    description: "Cart lifecycle states."
+    description: >-
+      The cart lifecycle as a reader needs it. Corrected 2026-09-19: PrestaShop does not persist
+      this. Its own CartStatus enum holds three values - ordered, not_ordered, abandoned_cart -
+      and they are DERIVED in the back-office grid query from whether an order exists and how old
+      the cart is, not stored on the cart row. The five values below are a modeling vocabulary;
+      only the three named against them exist in code.
     values:
       - name: empty
-        description: "Cart has no items."
+        description: "Cart has no items. Not distinguished in code: PrestaShop reads as not_ordered."
       - name: active
-        description: "Cart has items, shopper is browsing."
+        description: "Cart has items and the shopper is browsing. Reads as not_ordered in code."
       - name: checkout-started
-        description: "Shopper initiated checkout flow."
+        description: "Shopper entered the checkout flow. Not represented in code at all: no cart field or status records that checkout began."
       - name: completed
-        description: "Order placed from this cart."
+        description: "An order was placed from this cart. This is CartStatus::ORDERED, derived from the existence of a linked order."
       - name: abandoned
-        description: "Cart inactive for > 30 days."
+        description: "Cart carries items, has no order, and is older than the expiration window. This is CartStatus::ABANDONED_CART, and the window is 86400 seconds - 24 hours, which the code itself annotates as such. A previous description here said 30 days, which no code supports."
+    code_refs:
+      - path: "src/Core/Domain/Cart/CartStatus.php"
+        role: model
+        description: "Declares the three values and ABANDONED_CART_EXPIRATION_TIME = 86400, commented (For now: 24h)."
+      - path: "src/Core/Grid/Query/CartQueryBuilder.php"
+        role: implementation
+        description: "Line 60 binds the expiration time into the grid query that derives the status; the value is computed per row, never stored."
 
   - id: checkout.EN002
     name: "CartAddressType"
@@ -106,14 +131,14 @@ enumerations:
         role: model
 
 associations:
-  - id: checkout.AS001
+  - id: checkout.ASC001
     subject: checkout.CN001
     predicate: depends-on
     object: checkout.CN002
     cardinality: "0..*"
     description: "Cart total depends on its cart items (quantities and prices)."
 
-  - id: checkout.AS002
+  - id: checkout.ASC002
     subject: checkout.CN001
     predicate: uses
     object: checkout.CN003

@@ -5,82 +5,1616 @@ scope: catalog
 tags: [supply-chain]
 
 operations:
+  # ---------------------------------------------------------------------------
+  # Manufacturer (brand). src/Core/Domain/Manufacturer - 7 commands, 2 queries.
+  # 5 of the 9 are fronted by an Admin API route in the ps_apiresources module;
+  # the other 4 execute through the Symfony command bus only.
+  # ---------------------------------------------------------------------------
   addManufacturer:
     id: catalog.CMD034
+    responses:
+      - code: "201"
+        type: success
+        description: "The manufacturer was created and its id returned."
+      - code: "422"
+        type: failure
+        description: "A field failed a manufacturer constraint, such as an empty or over-long name."
+        error: catalog.ERR408
     kind: command
     name: "AddManufacturer"
-    description: "Register a new manufacturer/brand."
+    description: "Register a new manufacturer (brand) with its localized description, meta fields and shop associations. Fronted by POST /manufacturers under the manufacturer_write OAuth scope."
     delivery_priority: should-have
+    initiated_by: [catalog.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /manufacturers
+        method: POST
+        group: manufacturers
+    payload:
+      schema: CreateManufacturerPayload
+      contentType: application/json
+    materializes:
+      - concept: catalog.CN008
+        action: create
     produces:
-      operations: [catalog.EVT002]
+      operations: [catalog.EVT403]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Manufacturer/Command/AddManufacturerCommand.php"
         role: implementation
+      - path: "src/Adapter/Manufacturer/CommandHandler/AddManufacturerHandler.php"
+        role: implementation
+        description: "Builds a legacy Manufacturer ObjectModel and calls add()."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Manufacturer/Manufacturer.php"
+        role: api-spec
+        description: "CQRSCreate route POST /manufacturers, scope manufacturer_write."
 
   editManufacturer:
     id: catalog.CMD035
+    responses:
+      - code: "200"
+        type: success
+        description: "The manufacturer was updated; the route returns the manufacturer read model."
+      - code: "404"
+        type: failure
+        description: "No manufacturer exists with that id."
+        error: catalog.ERR407
+      - code: "422"
+        type: failure
+        description: "A field failed a manufacturer constraint."
+        error: catalog.ERR408
+      - code: "500"
+        type: error
+        description: "The underlying update failed."
+        error: catalog.ERR410
     kind: command
     name: "EditManufacturer"
-    description: "Update manufacturer name, logo, description, address."
+    description: "Update a manufacturer's name, logo, localized descriptions, meta fields or shop associations. Every field is optional, which is why the route is a PATCH rather than a PUT."
     delivery_priority: should-have
+    initiated_by: [catalog.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /manufacturers/{manufacturerId}
+        method: PATCH
+        group: manufacturers
+    materializes:
+      - concept: catalog.CN008
+        action: update
     produces:
-      operations: [catalog.EVT002]
+      operations: [catalog.EVT404]
       mode: all
+    code_refs:
+      - path: "src/Core/Domain/Manufacturer/Command/EditManufacturerCommand.php"
+        role: implementation
+      - path: "src/Adapter/Manufacturer/CommandHandler/EditManufacturerHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Manufacturer/Manufacturer.php"
+        role: api-spec
+        description: "CQRSPartialUpdate route PATCH /manufacturers/{manufacturerId}, scope manufacturer_write."
 
   deleteManufacturer:
     id: catalog.CMD036
+    responses:
+      - code: "204"
+        type: success
+        description: "The manufacturer was removed."
+      - code: "404"
+        type: failure
+        description: "No manufacturer exists with that id."
+        error: catalog.ERR407
+      - code: "500"
+        type: error
+        description: "The underlying delete failed."
+        error: catalog.ERR409
     kind: command
     name: "DeleteManufacturer"
-    description: "Remove a manufacturer. Products referencing it are unlinked."
+    description: "Remove a manufacturer. Products referencing it keep their row and lose the brand link; the handler raises DeleteManufacturerException when the underlying delete fails."
     delivery_priority: should-have
+    initiated_by: [catalog.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /manufacturers/{manufacturerId}
+        method: DELETE
+        group: manufacturers
+    materializes:
+      - concept: catalog.CN008
+        action: delete
     produces:
-      operations: [catalog.EVT002]
+      operations: [catalog.EVT405]
       mode: all
+    code_refs:
+      - path: "src/Core/Domain/Manufacturer/Command/DeleteManufacturerCommand.php"
+        role: implementation
+      - path: "src/Adapter/Manufacturer/CommandHandler/DeleteManufacturerHandler.php"
+        role: implementation
+      - path: "src/Adapter/Manufacturer/CommandHandler/AbstractManufacturerCommandHandler.php"
+        role: implementation
+        description: "Holds deleteManufacturer(), which calls the ObjectModel delete() both delete commands share."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Manufacturer/Manufacturer.php"
+        role: api-spec
+        description: "CQRSDelete route DELETE /manufacturers/{manufacturerId}, scope manufacturer_write."
 
+  bulkDeleteManufacturers:
+    id: catalog.CMD407
+    responses:
+      - code: "204"
+        type: success
+        description: "Every selected manufacturer was removed."
+      - code: "500"
+        type: error
+        description: "At least one delete failed; the batch is not transactional."
+        error: catalog.ERR409
+    kind: command
+    name: "BulkDeleteManufacturers"
+    description: "Delete several manufacturers in one request from the back-office grid selection. The route is declared as a CQRSUpdate, so it is served over PUT rather than DELETE and answers 204 with no body."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /manufacturers/bulk-delete
+        method: PUT
+        group: manufacturers
+    materializes:
+      - concept: catalog.CN008
+        action: delete
+    produces:
+      operations: [catalog.EVT405]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Manufacturer/Command/BulkDeleteManufacturerCommand.php"
+        role: implementation
+      - path: "src/Adapter/Manufacturer/CommandHandler/BulkDeleteManufacturerHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Manufacturer/BulkManufacturers.php"
+        role: api-spec
+        description: "CQRSUpdate route PUT /manufacturers/bulk-delete, scope manufacturer_write."
+
+  toggleManufacturerStatus:
+    id: catalog.CMD405
+    responses:
+      - code: "204"
+        type: success
+        description: "The manufacturer's visibility was flipped."
+      - code: "404"
+        type: failure
+        description: "No manufacturer exists with that id."
+        error: catalog.ERR407
+      - code: "500"
+        type: error
+        description: "The status write failed."
+        error: catalog.ERR410
+    kind: command
+    name: "ToggleManufacturerStatus"
+    description: "Flip a single manufacturer between visible and hidden on the storefront. No Admin API route fronts it; the back-office grid's status switch is the only caller."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN008
+        action: update
+    produces:
+      operations: [catalog.EVT404]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Manufacturer/Command/ToggleManufacturerStatusCommand.php"
+        role: implementation
+      - path: "src/Adapter/Manufacturer/CommandHandler/ToggleManufacturerStatusHandler.php"
+        role: implementation
+
+  bulkToggleManufacturerStatus:
+    id: catalog.CMD406
+    responses:
+      - code: "204"
+        type: success
+        description: "Every selected manufacturer's visibility was set."
+      - code: "500"
+        type: error
+        description: "At least one status write failed."
+        error: catalog.ERR410
+    kind: command
+    name: "BulkToggleManufacturerStatus"
+    description: "Enable or disable several manufacturers at once from the grid selection. No Admin API route fronts it, unlike the supplier equivalent, which has two."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN008
+        action: update
+    produces:
+      operations: [catalog.EVT404]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Manufacturer/Command/BulkToggleManufacturerStatusCommand.php"
+        role: implementation
+      - path: "src/Adapter/Manufacturer/CommandHandler/BulkToggleManufacturerStatusHandler.php"
+        role: implementation
+
+  deleteManufacturerLogoImage:
+    id: catalog.CMD408
+    responses:
+      - code: "204"
+        type: success
+        description: "The logo file and its thumbnails were removed."
+      - code: "404"
+        type: failure
+        description: "No manufacturer exists with that id."
+        error: catalog.ERR407
+      - code: "422"
+        type: failure
+        description: "The logo file could not be handled."
+        error: catalog.ERR411
+    kind: command
+    name: "DeleteManufacturerLogoImage"
+    description: "Remove the brand logo file and its generated thumbnails while keeping the manufacturer itself. Modeled separately from EditManufacturer because deleting the image is its own command with its own failure mode, ManufacturerImageUploadingException. It produces no event and materializes nothing: the handler walks the filesystem and removes files named after the manufacturer id, and never loads the row, so no ObjectModel hook fires and no module can observe a brand losing its logo."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN008
+        action: update
+    code_refs:
+      - path: "src/Core/Domain/Manufacturer/Command/DeleteManufacturerLogoImageCommand.php"
+        role: implementation
+      - path: "src/Adapter/Manufacturer/CommandHandler/DeleteManufacturerLogoImageHandler.php"
+        role: implementation
+
+  getManufacturerForEditing:
+    id: catalog.QRY402
+    responses:
+      - code: "200"
+        type: success
+        description: "The manufacturer read model."
+      - code: "404"
+        type: failure
+        description: "No manufacturer exists with that id."
+        error: catalog.ERR407
+    kind: query
+    name: "GetManufacturerForEditing"
+    description: "Read one manufacturer in the shape the edit form and the Admin API resource need: localized fields as maps, shop associations as ids. The write routes reuse it to return the updated resource."
+    delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /manufacturers/{manufacturerId}
+        method: GET
+        group: manufacturers
+    code_refs:
+      - path: "src/Core/Domain/Manufacturer/Query/GetManufacturerForEditing.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Manufacturer/Manufacturer.php"
+        role: api-spec
+        description: "CQRSGet route GET /manufacturers/{manufacturerId}, scope manufacturer_read."
+
+  getManufacturerForViewing:
+    id: catalog.QRY403
+    responses:
+      - code: "200"
+        type: success
+        description: "The manufacturer with its addresses and branded products."
+      - code: "404"
+        type: failure
+        description: "No manufacturer exists with that id."
+        error: catalog.ERR407
+    kind: query
+    name: "GetManufacturerForViewing"
+    description: "Read one manufacturer with its addresses and the products it brands, for the back-office view page. No Admin API route fronts it, so its shape is free to differ from the editing read model."
+    delivery_priority: could-have
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/Manufacturer/Query/GetManufacturerForViewing.php"
+        role: implementation
+
+  getManufacturers:
+    id: catalog.QRY010
+    responses:
+      - code: "200"
+        type: success
+        description: "A page of manufacturers with the grid's filters applied."
+    kind: query
+    name: "GetManufacturers"
+    description: "List manufacturers with pagination, filtering and sorting. This one is not a Core/Domain query class: the route is a PaginatedList served from the manufacturer grid data factory, which is why no Command/Query class is named in its code_refs."
+    delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /manufacturers
+        method: GET
+        group: manufacturers
+    code_refs:
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Manufacturer/ManufacturerList.php"
+        role: api-spec
+        description: "PaginatedList route GET /manufacturers, gridDataFactory prestashop.core.grid.data.factory.manufacturer_decorator."
+
+  # ---------------------------------------------------------------------------
+  # Supplier. src/Core/Domain/Supplier - 8 concrete commands plus one abstract
+  # base, and 2 queries. 9 of the 11 are fronted by an Admin API route.
+  # ---------------------------------------------------------------------------
   addSupplier:
     id: catalog.CMD037
+    responses:
+      - code: "201"
+        type: success
+        description: "The supplier and its address were created and the supplier id returned."
+      - code: "422"
+        type: failure
+        description: "A field failed a supplier constraint."
+        error: catalog.ERR401
     kind: command
     name: "AddSupplier"
-    description: "Register a new product supplier."
+    description: "Register a new product supplier together with its address. The handler writes the address first and the supplier second, so a rejected address leaves no supplier behind."
     delivery_priority: should-have
+    initiated_by: [catalog.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /suppliers
+        method: POST
+        group: suppliers
+    payload:
+      schema: CreateSupplierPayload
+      contentType: application/json
+    materializes:
+      - concept: catalog.CN009
+        action: create
     produces:
-      operations: [catalog.EVT002]
+      operations: [catalog.EVT400]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Supplier/Command/AddSupplierCommand.php"
         role: implementation
+      - path: "src/Adapter/Supplier/CommandHandler/AddSupplierHandler.php"
+        role: implementation
+        description: "Fills a legacy Supplier ObjectModel, adds the address, then calls add()."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/Supplier.php"
+        role: api-spec
+        description: "CQRSCreate route POST /suppliers, scope supplier_write."
 
   editSupplier:
     id: catalog.CMD038
+    responses:
+      - code: "200"
+        type: success
+        description: "The supplier was updated; the route returns the supplier read model."
+      - code: "404"
+        type: failure
+        description: "No supplier exists with that id."
+        error: catalog.ERR400
+      - code: "422"
+        type: failure
+        description: "A field failed a supplier constraint."
+        error: catalog.ERR401
     kind: command
     name: "EditSupplier"
-    description: "Update supplier name, contact, address."
+    description: "Update a supplier's name, contact details, localized descriptions or address. Served as a PATCH because every field is optional."
     delivery_priority: should-have
+    initiated_by: [catalog.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /suppliers/{supplierId}
+        method: PATCH
+        group: suppliers
+    materializes:
+      - concept: catalog.CN009
+        action: update
     produces:
-      operations: [catalog.EVT002]
+      operations: [catalog.EVT401]
       mode: all
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Command/EditSupplierCommand.php"
+        role: implementation
+      - path: "src/Adapter/Supplier/CommandHandler/EditSupplierHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/Supplier.php"
+        role: api-spec
+        description: "CQRSPartialUpdate route PATCH /suppliers/{supplierId}, scope supplier_write."
 
   deleteSupplier:
     id: catalog.CMD039
+    responses:
+      - code: "204"
+        type: success
+        description: "The supplier, its product relations and its address were removed."
+      - code: "404"
+        type: failure
+        description: "No supplier exists with that id."
+        error: catalog.ERR400
+      - code: "409"
+        type: failure
+        description: "The supplier itself could not be deleted."
+        error: catalog.ERR402
+      - code: "500"
+        type: error
+        description: "The product-supplier relations could not be unlinked, so the delete was abandoned."
+        error: catalog.ERR404
+      - code: "500"
+        type: error
+        description: "The supplier address could not be flagged deleted."
+        error: catalog.ERR403
     kind: command
     name: "DeleteSupplier"
-    description: "Remove a supplier. Products referencing it are unlinked."
+    description: "Remove a supplier. The shared delete handler first unlinks the product-supplier relations, then flags the supplier address deleted when no other shop still uses it, and only then deletes the supplier."
     delivery_priority: should-have
+    initiated_by: [catalog.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /suppliers/{supplierId}
+        method: DELETE
+        group: suppliers
+    materializes:
+      - concept: catalog.CN009
+        action: delete
     produces:
-      operations: [catalog.EVT002]
+      operations: [catalog.EVT402]
       mode: all
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Command/DeleteSupplierCommand.php"
+        role: implementation
+      - path: "src/Adapter/Supplier/CommandHandler/DeleteSupplierHandler.php"
+        role: implementation
+      - path: "src/Adapter/Supplier/CommandHandler/AbstractDeleteSupplierHandler.php"
+        role: implementation
+        description: "The three-step delete both the single and the bulk delete share."
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/Supplier.php"
+        role: api-spec
+        description: "CQRSDelete route DELETE /suppliers/{supplierId}, scope supplier_write."
 
-  getManufacturers:
-    id: catalog.QRY010
+  bulkDeleteSuppliers:
+    id: catalog.CMD402
+    responses:
+      - code: "204"
+        type: success
+        description: "Every selected supplier was removed."
+      - code: "409"
+        type: failure
+        description: "At least one supplier could not be deleted; the batch is not transactional."
+        error: catalog.ERR402
+    kind: command
+    name: "BulkDeleteSuppliers"
+    description: "Delete several suppliers in one request from the grid selection, each through the same three-step unlink-then-delete path as the single delete."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /suppliers/bulk-delete
+        method: DELETE
+        group: suppliers
+    materializes:
+      - concept: catalog.CN009
+        action: delete
+    produces:
+      operations: [catalog.EVT402]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Command/BulkDeleteSupplierCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Supplier/Command/AbstractBulkSupplierCommand.php"
+        role: implementation
+        description: "Abstract base carrying the supplier id list for all three bulk supplier commands."
+      - path: "src/Adapter/Supplier/CommandHandler/BulkDeleteSupplierHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/BulkSuppliers.php"
+        role: api-spec
+        description: "CQRSDelete route DELETE /suppliers/bulk-delete, scope supplier_write."
+
+  bulkEnableSuppliers:
+    id: catalog.CMD403
+    responses:
+      - code: "204"
+        type: success
+        description: "Every selected supplier is now visible; the route returns no body."
+      - code: "500"
+        type: error
+        description: "At least one status write failed."
+        error: catalog.ERR406
+    kind: command
+    name: "BulkEnableSuppliers"
+    description: "Make several suppliers visible at once. Modeled apart from BulkDisableSuppliers rather than folded into one toggle because the code has two commands and the Admin API two routes, and a fold would have had to invent which one a caller reached."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /suppliers/bulk-enable
+        method: PUT
+        group: suppliers
+    materializes:
+      - concept: catalog.CN009
+        action: update
+    produces:
+      operations: [catalog.EVT401]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Command/BulkEnableSupplierCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Supplier/Command/AbstractBulkSupplierCommand.php"
+        role: implementation
+      - path: "src/Adapter/Supplier/CommandHandler/BulkEnableSupplierHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/BulkSuppliers.php"
+        role: api-spec
+        description: "CQRSUpdate route PUT /suppliers/bulk-enable, scope supplier_write, answers 204 with no body."
+
+  bulkDisableSuppliers:
+    id: catalog.CMD404
+    responses:
+      - code: "204"
+        type: success
+        description: "Every selected supplier is now hidden; the route returns no body."
+      - code: "500"
+        type: error
+        description: "At least one status write failed."
+        error: catalog.ERR406
+    kind: command
+    name: "BulkDisableSuppliers"
+    description: "Hide several suppliers at once. The counterpart of BulkEnableSuppliers, with its own command class and its own route."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /suppliers/bulk-disable
+        method: PUT
+        group: suppliers
+    materializes:
+      - concept: catalog.CN009
+        action: update
+    produces:
+      operations: [catalog.EVT401]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Command/BulkDisableSupplierCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Supplier/Command/AbstractBulkSupplierCommand.php"
+        role: implementation
+      - path: "src/Adapter/Supplier/CommandHandler/BulkDisableSupplierHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/BulkSuppliers.php"
+        role: api-spec
+        description: "CQRSUpdate route PUT /suppliers/bulk-disable, scope supplier_write, answers 204 with no body."
+
+  toggleSupplierStatus:
+    id: catalog.CMD400
+    responses:
+      - code: "204"
+        type: success
+        description: "The supplier's visibility was flipped."
+      - code: "404"
+        type: failure
+        description: "No supplier exists with that id."
+        error: catalog.ERR400
+      - code: "500"
+        type: error
+        description: "The toggle failed."
+        error: catalog.ERR405
+    kind: command
+    name: "ToggleSupplierStatus"
+    description: "Flip a single supplier between visible and hidden. Unlike the manufacturer equivalent this one is reachable over the Admin API, which is the kind of asymmetry the model exists to make visible."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /suppliers/{supplierId}/toggle-status
+        method: PUT
+        group: suppliers
+    materializes:
+      - concept: catalog.CN009
+        action: update
+    produces:
+      operations: [catalog.EVT401]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Command/ToggleSupplierStatusCommand.php"
+        role: implementation
+      - path: "src/Adapter/Supplier/CommandHandler/ToggleSupplierStatusHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/Supplier.php"
+        role: api-spec
+        description: "CQRSUpdate route PUT /suppliers/{supplierId}/toggle-status, scope supplier_write."
+
+  deleteSupplierLogoImage:
+    id: catalog.CMD401
+    responses:
+      - code: "204"
+        type: success
+        description: "The logo file and its thumbnails were removed."
+      - code: "404"
+        type: failure
+        description: "No supplier exists with that id."
+        error: catalog.ERR400
+    kind: command
+    name: "DeleteSupplierLogoImage"
+    description: "Remove the supplier logo file and its thumbnails, keeping the supplier. Like its manufacturer twin it produces no event and materializes nothing: the handler only removes files named after the supplier id, so no ObjectModel hook fires."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /suppliers/{supplierId}/logo
+        method: DELETE
+        group: suppliers
+    materializes:
+      - concept: catalog.CN009
+        action: update
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Command/DeleteSupplierLogoImageCommand.php"
+        role: implementation
+      - path: "src/Adapter/Supplier/CommandHandler/DeleteSupplierLogoImageHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/Supplier.php"
+        role: api-spec
+        description: "CQRSDelete route DELETE /suppliers/{supplierId}/logo, scope supplier_write."
+
+  getSupplierForEditing:
+    id: catalog.QRY400
+    responses:
+      - code: "200"
+        type: success
+        description: "The supplier read model, address included."
+      - code: "404"
+        type: failure
+        description: "No supplier exists with that id."
+        error: catalog.ERR400
     kind: query
-    name: "GetManufacturers"
-    description: "List all manufacturers/brands."
+    name: "GetSupplierForEditing"
+    description: "Read one supplier in the shape the edit form and the Admin API resource need, address included. The PATCH route reuses it to return the updated resource."
     delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /suppliers/{supplierId}
+        method: GET
+        group: suppliers
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Query/GetSupplierForEditing.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/Supplier.php"
+        role: api-spec
+        description: "CQRSGet route GET /suppliers/{supplierId}, scope supplier_read."
+
+  getSupplierForViewing:
+    id: catalog.QRY401
+    responses:
+      - code: "200"
+        type: success
+        description: "The supplier with the products it supplies."
+      - code: "404"
+        type: failure
+        description: "No supplier exists with that id."
+        error: catalog.ERR400
+    kind: query
+    name: "GetSupplierForViewing"
+    description: "Read one supplier with the products it supplies, for the back-office view page. No Admin API route fronts it, so it executes through the command bus only."
+    delivery_priority: could-have
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Query/GetSupplierForViewing.php"
+        role: implementation
 
   getSuppliers:
     id: catalog.QRY011
+    responses:
+      - code: "200"
+        type: success
+        description: "A page of suppliers with the grid's filters applied."
     kind: query
     name: "GetSuppliers"
-    description: "List all suppliers."
+    description: "List suppliers with pagination, filtering and sorting. Like the manufacturer list it is served from a grid data factory rather than from a Core/Domain query class, so no Command/Query class appears in its code_refs."
     delivery_priority: should-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /suppliers
+        method: GET
+        group: suppliers
+    code_refs:
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/SupplierList.php"
+        role: api-spec
+        description: "PaginatedList route GET /suppliers, gridDataFactory prestashop.core.grid.factory.supplier_decorator."
+
+  # ---------------------------------------------------------------------------
+  # Events. PrestaShop has no Event/ directory anywhere in src/Core; what it has
+  # is hooks. Supplier and Manufacturer both extend ObjectModel, and their CQRS
+  # handlers persist through ObjectModel add()/update()/delete(), each of which
+  # fires actionObject<Class><Verb>Before and After. Those dynamic names appear
+  # in no grep and in no registry entry - only the ten generic actionObject*
+  # entries are registered - which is why the hook name is carried in tags and
+  # the code_ref points at classes/ObjectModel.php.
+  # ---------------------------------------------------------------------------
+  supplierAdded:
+    id: catalog.EVT400
+    kind: event
+    name: "SupplierAdded"
+    description: "A supplier row was written. Fired as the dynamic hook actionObjectSupplierAddAfter from ObjectModel::add(), so any module listening on it sees every supplier the back office or the Admin API creates."
+    tags: [hook:actionObjectSupplierAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "add() fires actionObject<Class>AddBefore and AddAfter for every persisted class."
+      - path: "classes/Supplier.php"
+        role: model
+        description: "SupplierCore extends ObjectModel, which is what makes the dynamic hook name resolve to Supplier."
+
+  supplierUpdated:
+    id: catalog.EVT401
+    kind: event
+    name: "SupplierUpdated"
+    description: "A supplier row was changed, by an edit, a status toggle or a bulk enable or disable. Fired as the dynamic hook actionObjectSupplierUpdateAfter from ObjectModel::update()."
+    tags: [hook:actionObjectSupplierUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/Supplier.php"
+        role: model
+
+  supplierDeleted:
+    id: catalog.EVT402
+    kind: event
+    name: "SupplierDeleted"
+    description: "A supplier row was removed after its product relations were unlinked. Fired as the dynamic hook actionObjectSupplierDeleteAfter from ObjectModel::delete()."
+    tags: [hook:actionObjectSupplierDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "src/Adapter/Supplier/CommandHandler/AbstractDeleteSupplierHandler.php"
+        role: implementation
+        description: "Calls delete() on the Supplier ObjectModel, which is where the hook fires."
+
+  manufacturerAdded:
+    id: catalog.EVT403
+    kind: event
+    name: "ManufacturerAdded"
+    description: "A manufacturer row was written. Fired as the dynamic hook actionObjectManufacturerAddAfter from ObjectModel::add()."
+    tags: [hook:actionObjectManufacturerAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/Manufacturer.php"
+        role: model
+
+  manufacturerUpdated:
+    id: catalog.EVT404
+    kind: event
+    name: "ManufacturerUpdated"
+    description: "A manufacturer row was changed, by an edit, a status toggle or a bulk toggle. Fired as the dynamic hook actionObjectManufacturerUpdateAfter from ObjectModel::update()."
+    tags: [hook:actionObjectManufacturerUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/Manufacturer.php"
+        role: model
+
+  manufacturerDeleted:
+    id: catalog.EVT405
+    kind: event
+    name: "ManufacturerDeleted"
+    description: "A manufacturer row was removed. Fired as the dynamic hook actionObjectManufacturerDeleteAfter from ObjectModel::delete()."
+    tags: [hook:actionObjectManufacturerDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "src/Adapter/Manufacturer/CommandHandler/AbstractManufacturerCommandHandler.php"
+        role: implementation
+        description: "Calls delete() on the Manufacturer ObjectModel, which is where the hook fires."
+
+  # ---------------------------------------------------------------------------
+  # Tag. src/Core/Domain/Tag - 4 commands, 1 query, and no Admin API route at
+  # all, so every one of them dispatches inprocess. Tags are modeled here rather
+  # than in media.domain.yaml only because that shard belongs to another slice of
+  # this plan; the concept itself is catalog.CN012 in product.concepts.yaml.
+  # ---------------------------------------------------------------------------
+  addTag:
+    id: catalog.CMD409
+    responses:
+      - code: "201"
+        type: success
+        description: "The tag was created and its id returned."
+      - code: "409"
+        type: failure
+        description: "A tag with that name already exists in that language."
+        error: catalog.ERR414
+      - code: "422"
+        type: failure
+        description: "The name failed a tag constraint."
+        error: catalog.ERR413
+      - code: "500"
+        type: error
+        description: "The tag row could not be written."
+        error: catalog.ERR415
+    kind: command
+    name: "AddTag"
+    description: "Create a product keyword tag in one language. The handler refuses a name that already exists for that language, which is the one business rule tags have."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN012
+        action: create
+    produces:
+      operations: [catalog.EVT406]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Tag/Command/AddTagCommand.php"
+        role: implementation
+      - path: "src/Adapter/Tag/CommandHandler/AddTagHandler.php"
+        role: implementation
+        description: "Asserts the tag is not a duplicate, then builds and adds the legacy Tag ObjectModel."
+
+  editTag:
+    id: catalog.CMD410
+    responses:
+      - code: "200"
+        type: success
+        description: "The tag was renamed or moved to another language."
+      - code: "404"
+        type: failure
+        description: "No tag exists with that id."
+        error: catalog.ERR412
+      - code: "409"
+        type: failure
+        description: "The new name already exists in that language."
+        error: catalog.ERR414
+      - code: "500"
+        type: error
+        description: "The tag row could not be updated."
+        error: catalog.ERR416
+    kind: command
+    name: "EditTag"
+    description: "Rename a tag or move it to another language. The same duplicate check applies as on create."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN012
+        action: update
+    produces:
+      operations: [catalog.EVT407]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Tag/Command/EditTagCommand.php"
+        role: implementation
+      - path: "src/Adapter/Tag/CommandHandler/EditTagHandler.php"
+        role: implementation
+
+  deleteTag:
+    id: catalog.CMD411
+    responses:
+      - code: "204"
+        type: success
+        description: "The tag and its product associations were removed."
+      - code: "404"
+        type: failure
+        description: "No tag exists with that id."
+        error: catalog.ERR412
+    kind: command
+    name: "DeleteTag"
+    description: "Remove a tag and its product associations."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN012
+        action: delete
+    produces:
+      operations: [catalog.EVT408]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Tag/Command/DeleteTagCommand.php"
+        role: implementation
+      - path: "src/Adapter/Tag/CommandHandler/DeleteTagHandler.php"
+        role: implementation
+
+  bulkDeleteTags:
+    id: catalog.CMD412
+    responses:
+      - code: "204"
+        type: success
+        description: "Every selected tag was removed."
+      - code: "404"
+        type: failure
+        description: "One of the selected ids has no tag."
+        error: catalog.ERR412
+    kind: command
+    name: "BulkDeleteTags"
+    description: "Remove several tags in one request from the grid selection."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN012
+        action: delete
+    produces:
+      operations: [catalog.EVT408]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Tag/Command/BulkDeleteTagCommand.php"
+        role: implementation
+      - path: "src/Adapter/Tag/CommandHandler/BulkDeleteTagHandler.php"
+        role: implementation
+
+  getTagForEditing:
+    id: catalog.QRY404
+    responses:
+      - code: "200"
+        type: success
+        description: "The tag's name and language."
+      - code: "404"
+        type: failure
+        description: "No tag exists with that id."
+        error: catalog.ERR412
+    kind: query
+    name: "GetTagForEditing"
+    description: "Read one tag's name and language for the edit form."
+    delivery_priority: could-have
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/Tag/Query/GetTagForEditing.php"
+        role: implementation
+
+  # ---------------------------------------------------------------------------
+  # Attachment. src/Core/Domain/Attachment - 4 commands and 4 queries. The three
+  # read routes are the only Admin API surface: every write is back-office only,
+  # because uploading a file is not something the resource classes model. The
+  # concept is catalog.CN011 in product.concepts.yaml. Twelve exception classes
+  # sit behind four commands, which is the shape file upload always has.
+  # ---------------------------------------------------------------------------
+  addAttachment:
+    id: catalog.CMD413
+    responses:
+      - code: "201"
+        type: success
+        description: "The file was stored and the attachment row written."
+      - code: "422"
+        type: failure
+        description: "No file reached the handler."
+        error: catalog.ERR420
+      - code: "422"
+        type: failure
+        description: "A field failed an attachment constraint."
+        error: catalog.ERR418
+      - code: "500"
+        type: error
+        description: "The upload could not be written to disk."
+        error: catalog.ERR419
+      - code: "500"
+        type: error
+        description: "The attachment row could not be written after the file was stored."
+        error: catalog.ERR421
+    kind: command
+    name: "AddAttachment"
+    description: "Upload a downloadable file (manual, datasheet, certificate) and register it as an attachment with localized names and descriptions. The handler rejects an empty upload before it touches disk, writes the file under a generated unique name, and only then adds the row."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN011
+        action: create
+    produces:
+      operations: [catalog.EVT409]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Command/AddAttachmentCommand.php"
+        role: implementation
+      - path: "src/Adapter/Attachment/CommandHandler/AddAttachmentHandler.php"
+        role: implementation
+        description: "Upload then add(); raises EmptyFileException, CannotAddAttachmentException or AttachmentException."
+
+  editAttachment:
+    id: catalog.CMD414
+    responses:
+      - code: "200"
+        type: success
+        description: "The attachment was updated, with or without a replacement file."
+      - code: "404"
+        type: failure
+        description: "No attachment exists with that id."
+        error: catalog.ERR417
+      - code: "500"
+        type: error
+        description: "The attachment row could not be updated."
+        error: catalog.ERR422
+      - code: "500"
+        type: error
+        description: "The replaced file could not be unlinked."
+        error: catalog.ERR424
+    kind: command
+    name: "EditAttachment"
+    description: "Change an attachment's localized names and descriptions, and optionally replace the file. Replacing the file unlinks the old one, which is where CannotUnlinkAttachmentException comes from."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN011
+        action: update
+    produces:
+      operations: [catalog.EVT410]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Command/EditAttachmentCommand.php"
+        role: implementation
+      - path: "src/Adapter/Attachment/CommandHandler/EditAttachmentHandler.php"
+        role: implementation
+
+  deleteAttachment:
+    id: catalog.CMD415
+    responses:
+      - code: "204"
+        type: success
+        description: "The attachment row and its file were removed."
+      - code: "404"
+        type: failure
+        description: "No attachment exists with that id."
+        error: catalog.ERR417
+      - code: "500"
+        type: error
+        description: "The attachment could not be deleted."
+        error: catalog.ERR423
+    kind: command
+    name: "DeleteAttachment"
+    description: "Remove an attachment row and its file. Products linked to it lose the link."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN011
+        action: delete
+    produces:
+      operations: [catalog.EVT411]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Command/DeleteAttachmentCommand.php"
+        role: implementation
+      - path: "src/Adapter/Attachment/CommandHandler/DeleteAttachmentHandler.php"
+        role: implementation
+      - path: "src/Adapter/Attachment/AbstractAttachmentHandler.php"
+        role: implementation
+        description: "Holds deleteAttachment(), the ObjectModel delete() both delete commands share."
+
+  bulkDeleteAttachments:
+    id: catalog.CMD416
+    responses:
+      - code: "204"
+        type: success
+        description: "Every selected attachment was removed."
+      - code: "500"
+        type: error
+        description: "At least one attachment could not be deleted."
+        error: catalog.ERR425
+    kind: command
+    name: "BulkDeleteAttachments"
+    description: "Remove several attachments in one request. Its own exception type exists because a partial failure has to name which ids survived."
+    delivery_priority: could-have
+    initiated_by: [catalog.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN011
+        action: delete
+    produces:
+      operations: [catalog.EVT411]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Command/BulkDeleteAttachmentsCommand.php"
+        role: implementation
+      - path: "src/Adapter/Attachment/CommandHandler/BulkDeleteAttachmentsHandler.php"
+        role: implementation
+
+  getAttachment:
+    id: catalog.QRY405
+    responses:
+      - code: "200"
+        type: success
+        description: "The attachment's file metadata."
+      - code: "404"
+        type: failure
+        description: "No attachment exists with that id."
+        error: catalog.ERR417
+    kind: query
+    name: "GetAttachment"
+    description: "Read one attachment's file metadata, the read model the download route serves. Distinct from GetAttachmentInformation, which returns the localized descriptive fields rather than the file."
+    delivery_priority: could-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /attachments/{attachmentId}/files
+        method: GET
+        group: attachments
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Query/GetAttachment.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Attachment/AttachmentFile.php"
+        role: api-spec
+        description: "CQRSGet route GET /attachments/{attachmentId}/files, scope attachment_read."
+
+  getAttachmentInformation:
+    id: catalog.QRY406
+    responses:
+      - code: "200"
+        type: success
+        description: "The attachment's localized names, descriptions and file type."
+      - code: "404"
+        type: failure
+        description: "No attachment exists with that id."
+        error: catalog.ERR417
+    kind: query
+    name: "GetAttachmentInformation"
+    description: "Read one attachment's localized names, descriptions and file type for display beside a product."
+    delivery_priority: could-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /attachments/{attachmentId}/information
+        method: GET
+        group: attachments
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Query/GetAttachmentInformation.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Attachment/AttachmentInformation.php"
+        role: api-spec
+        description: "CQRSGet route GET /attachments/{attachmentId}/information, scope attachment_read; the resource imports the query aliased as GetAttachmentInformationQuery."
+
+  searchAttachments:
+    id: catalog.QRY407
+    responses:
+      - code: "200"
+        type: success
+        description: "The attachments matching the phrase."
+      - code: "422"
+        type: failure
+        description: "The search phrase was empty."
+        error: catalog.ERR426
+      - code: "404"
+        type: failure
+        description: "The phrase matched no attachment."
+        error: catalog.ERR427
+    kind: query
+    name: "SearchAttachment"
+    description: "Find attachments by a search phrase, for the picker that links a file to a product. An empty phrase and an empty result are separate failures, which is why the domain has two exception classes for them."
+    delivery_priority: could-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /attachments/search
+        method: GET
+        group: attachments
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Query/SearchAttachment.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Attachment/FoundAttachment.php"
+        role: api-spec
+        description: "CQRSGetCollection route GET /attachments/search, scope attachment_read."
+
+  getAttachmentForEditing:
+    id: catalog.QRY408
+    responses:
+      - code: "200"
+        type: success
+        description: "The attachment in the shape the edit form needs."
+      - code: "404"
+        type: failure
+        description: "No attachment exists with that id."
+        error: catalog.ERR417
+    kind: query
+    name: "GetAttachmentForEditing"
+    description: "Read one attachment in the shape the back-office edit form needs. No Admin API route fronts it, unlike the other three attachment queries."
+    delivery_priority: could-have
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Query/GetAttachmentForEditing.php"
+        role: implementation
+
+  # ---------------------------------------------------------------------------
+  # Tag and Attachment events. Both classes extend ObjectModel and both sets of
+  # handlers persist through add()/update()/delete(), so the same dynamic hook
+  # family applies as for Supplier and Manufacturer.
+  # ---------------------------------------------------------------------------
+  tagAdded:
+    id: catalog.EVT406
+    kind: event
+    name: "TagAdded"
+    description: "A tag row was written. Fired as the dynamic hook actionObjectTagAddAfter from ObjectModel::add()."
+    tags: [hook:actionObjectTagAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/Tag.php"
+        role: model
+
+  tagUpdated:
+    id: catalog.EVT407
+    kind: event
+    name: "TagUpdated"
+    description: "A tag row was changed. Fired as the dynamic hook actionObjectTagUpdateAfter from ObjectModel::update()."
+    tags: [hook:actionObjectTagUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/Tag.php"
+        role: model
+
+  tagDeleted:
+    id: catalog.EVT408
+    kind: event
+    name: "TagDeleted"
+    description: "A tag row was removed, singly or as part of a bulk delete. Fired as the dynamic hook actionObjectTagDeleteAfter from ObjectModel::delete()."
+    tags: [hook:actionObjectTagDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/Tag.php"
+        role: model
+
+  attachmentAdded:
+    id: catalog.EVT409
+    kind: event
+    name: "AttachmentAdded"
+    description: "An attachment row was written after its file reached disk. Fired as the dynamic hook actionObjectAttachmentAddAfter from ObjectModel::add()."
+    tags: [hook:actionObjectAttachmentAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/Attachment.php"
+        role: model
+
+  attachmentUpdated:
+    id: catalog.EVT410
+    kind: event
+    name: "AttachmentUpdated"
+    description: "An attachment row was changed, with or without a file replacement. Fired as the dynamic hook actionObjectAttachmentUpdateAfter from ObjectModel::update()."
+    tags: [hook:actionObjectAttachmentUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/Attachment.php"
+        role: model
+
+  attachmentDeleted:
+    id: catalog.EVT411
+    kind: event
+    name: "AttachmentDeleted"
+    description: "An attachment row was removed, singly or as part of a bulk delete. Fired as the dynamic hook actionObjectAttachmentDeleteAfter from ObjectModel::delete()."
+    tags: [hook:actionObjectAttachmentDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "src/Adapter/Attachment/AbstractAttachmentHandler.php"
+        role: implementation
+        description: "Calls delete() on the Attachment ObjectModel, which is where the hook fires."
+
+# Errors. 32 of the 40 exception classes in the four Exception/ folders this shard
+# covers. The eight not mapped are listed at the end of this block and in the commit.
+errors:
+  supplierNotFound:
+    id: catalog.ERR400
+    name: "SupplierNotFound"
+    description: "No supplier exists with the given id. The Admin API resource maps it to 404 explicitly, which is the only supplier status the code declares."
+    category: not-found
+    severity: warning
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Exception/SupplierNotFoundException.php"
+        role: implementation
+
+  supplierConstraint:
+    id: catalog.ERR401
+    name: "SupplierConstraint"
+    description: "A supplier field failed its constraint: an empty name, a name over the legacy length limit, or an invalid id."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Exception/SupplierConstraintException.php"
+        role: implementation
+
+  cannotDeleteSupplier:
+    id: catalog.ERR402
+    name: "CannotDeleteSupplier"
+    description: "The supplier row itself could not be deleted after its relations were unlinked."
+    category: conflict
+    severity: error
+    http_status: 409
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Exception/CannotDeleteSupplierException.php"
+        role: implementation
+
+  cannotDeleteSupplierAddress:
+    id: catalog.ERR403
+    name: "CannotDeleteSupplierAddress"
+    description: "The supplier's address could not be flagged deleted. The address is soft-deleted rather than removed, because orders and product records still point at it."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Exception/CannotDeleteSupplierAddressException.php"
+        role: implementation
+
+  cannotDeleteSupplierProductRelation:
+    id: catalog.ERR404
+    name: "CannotDeleteSupplierProductRelation"
+    description: "The rows linking the supplier to its products could not be removed, so the delete was abandoned before the supplier itself was touched. This is the first of the three delete steps and the reason the order of those steps matters."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Exception/CannotDeleteSupplierProductRelationException.php"
+        role: implementation
+
+  cannotToggleSupplierStatus:
+    id: catalog.ERR405
+    name: "CannotToggleSupplierStatus"
+    description: "Flipping one supplier's visibility failed."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Exception/CannotToggleSupplierStatusException.php"
+        role: implementation
+
+  cannotUpdateSupplierStatus:
+    id: catalog.ERR406
+    name: "CannotUpdateSupplierStatus"
+    description: "Setting the visibility of one supplier in a bulk enable or disable failed. Distinct from CannotToggleSupplierStatus because the bulk path sets an absolute value rather than flipping the current one, and it is not transactional."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Supplier/Exception/CannotUpdateSupplierStatusException.php"
+        role: implementation
+
+  manufacturerNotFound:
+    id: catalog.ERR407
+    name: "ManufacturerNotFound"
+    description: "No manufacturer exists with the given id. Mapped to 404 by both manufacturer resource classes."
+    category: not-found
+    severity: warning
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Manufacturer/Exception/ManufacturerNotFoundException.php"
+        role: implementation
+
+  manufacturerConstraint:
+    id: catalog.ERR408
+    name: "ManufacturerConstraint"
+    description: "A manufacturer field failed its constraint. Mapped to 422 by the manufacturer resource class."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Manufacturer/Exception/ManufacturerConstraintException.php"
+        role: implementation
+
+  deleteManufacturerFailed:
+    id: catalog.ERR409
+    name: "DeleteManufacturerFailed"
+    description: "The manufacturer row could not be deleted. Mapped to 500 by the bulk resource class."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Manufacturer/Exception/DeleteManufacturerException.php"
+        role: implementation
+
+  updateManufacturerFailed:
+    id: catalog.ERR410
+    name: "UpdateManufacturerFailed"
+    description: "The manufacturer row could not be updated, whether by an edit or by a status toggle."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Manufacturer/Exception/UpdateManufacturerException.php"
+        role: implementation
+
+  manufacturerImageUploading:
+    id: catalog.ERR411
+    name: "ManufacturerImageUploading"
+    description: "The brand logo could not be stored or removed. The one failure mode that belongs to the image rather than to the row, which is why deleting the logo is its own command."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Manufacturer/Exception/ManufacturerImageUploadingException.php"
+        role: implementation
+
+  tagNotFound:
+    id: catalog.ERR412
+    name: "TagNotFound"
+    description: "No tag exists with the given id."
+    category: not-found
+    severity: warning
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Tag/Exception/TagNotFoundException.php"
+        role: implementation
+
+  tagConstraint:
+    id: catalog.ERR413
+    name: "TagConstraint"
+    description: "A tag name failed its constraint: empty, over the length limit, or containing a character the legacy validator rejects."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Tag/Exception/TagConstraintException.php"
+        role: implementation
+
+  duplicateTag:
+    id: catalog.ERR414
+    name: "DuplicateTag"
+    description: "A tag with that name already exists in that language. Tags are unique per language, not globally, so the same word is two rows in two languages."
+    category: conflict
+    severity: error
+    http_status: 409
+    code_refs:
+      - path: "src/Core/Domain/Tag/Exception/DuplicateTagException.php"
+        role: implementation
+
+  cannotAddTag:
+    id: catalog.ERR415
+    name: "CannotAddTag"
+    description: "The tag row could not be written after the duplicate check passed."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Tag/Exception/CannotAddTagException.php"
+        role: implementation
+
+  cannotUpdateTag:
+    id: catalog.ERR416
+    name: "CannotUpdateTag"
+    description: "The tag row could not be updated."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Tag/Exception/CannotUpdateTagException.php"
+        role: implementation
+
+  attachmentNotFound:
+    id: catalog.ERR417
+    name: "AttachmentNotFound"
+    description: "No attachment exists with the given id. All three attachment resource classes map it to 404."
+    category: not-found
+    severity: warning
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Exception/AttachmentNotFoundException.php"
+        role: implementation
+
+  attachmentConstraint:
+    id: catalog.ERR418
+    name: "AttachmentConstraint"
+    description: "An attachment field failed its constraint, such as a missing name in the default language."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Exception/AttachmentConstraintException.php"
+        role: implementation
+
+  attachmentUploadFailed:
+    id: catalog.ERR419
+    name: "AttachmentUploadFailed"
+    description: "The uploaded file could not be written to the attachment directory under its generated unique name."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Exception/AttachmentUploadFailedException.php"
+        role: implementation
+
+  emptyFile:
+    id: catalog.ERR420
+    name: "EmptyFile"
+    description: "No file reached the handler. Raised before anything touches disk, which is why it is separate from the upload failure."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Exception/EmptyFileException.php"
+        role: implementation
+
+  cannotAddAttachment:
+    id: catalog.ERR421
+    name: "CannotAddAttachment"
+    description: "The attachment row could not be written after its file was already stored, which leaves an orphan file on disk."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Exception/CannotAddAttachmentException.php"
+        role: implementation
+
+  cannotUpdateAttachment:
+    id: catalog.ERR422
+    name: "CannotUpdateAttachment"
+    description: "The attachment row could not be updated."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Exception/CannotUpdateAttachmentException.php"
+        role: implementation
+
+  deleteAttachmentFailed:
+    id: catalog.ERR423
+    name: "DeleteAttachmentFailed"
+    description: "Deleting one attachment failed."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Exception/DeleteAttachmentException.php"
+        role: implementation
+
+  cannotUnlinkAttachment:
+    id: catalog.ERR424
+    name: "CannotUnlinkAttachment"
+    description: "The file behind an attachment could not be removed from disk, typically when an edit replaces it."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Exception/CannotUnlinkAttachmentException.php"
+        role: implementation
+
+  bulkDeleteAttachmentsFailed:
+    id: catalog.ERR425
+    name: "BulkDeleteAttachmentsFailed"
+    description: "At least one attachment in a bulk delete could not be removed. The batch is not transactional, so the others are gone."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Exception/BulkDeleteAttachmentsException.php"
+        role: implementation
+
+  emptySearchInput:
+    id: catalog.ERR426
+    name: "EmptySearchInput"
+    description: "The attachment search was called with no phrase. Mapped to 422 by the search resource class."
+    category: validation
+    severity: warning
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Exception/EmptySearchInputException.php"
+        role: implementation
+
+  emptySearch:
+    id: catalog.ERR427
+    name: "EmptySearch"
+    description: "The phrase matched no attachment. Modeled as an error rather than an empty list because the code raises it and the resource class maps it to 404, which is a design choice a reader of the generated contract should see rather than discover."
+    category: not-found
+    severity: warning
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Attachment/Exception/EmptySearchException.php"
+        role: implementation
+
+# Not mapped, by decision: SupplierException, ManufacturerException, TagException and
+# AttachmentException are the abstract or catch-all parents the four domains throw when
+# a PrestaShopException escapes. They carry no distinct business meaning and no distinct
+# status, so modeling them would add four nodes that say only "something failed".
+
+questions:
+
+  - id: catalog.QN004
+    name: "Who Can Restock This"
+    statement: "Which suppliers can restock this product, and under which reference and price?"
+    category: relationship
+    priority: high
+    bounded_context_ref: prestashop.BC002
+    answered_by: [catalog.QRY108, catalog.QRY109, catalog.QRY110]
+    concepts: [catalog.CN001, catalog.CN009]
+    resolved: true
+    resolution: >
+      GetAssociatedSuppliers lists the suppliers attached to the product and
+      GetProductSupplierOptions the per-supplier reference and price; GetProductStockMovements
+      shows what those supplies have actually delivered.

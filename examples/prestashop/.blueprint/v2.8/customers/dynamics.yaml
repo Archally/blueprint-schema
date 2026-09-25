@@ -10,6 +10,7 @@ execution:
 race_conditions:
   - id: customers.RC001
     name: "Duplicate email registration"
+    description: "The invariant at risk is one account per email per shop, which every later lookup assumes. A duplicate does not fail at creation; it fails afterwards, when a password reset or an order lookup has two accounts to choose from."
     scenario: "Two registration requests with the same email arrive simultaneously."
     impact: "Duplicate customer account created."
     likelihood: low

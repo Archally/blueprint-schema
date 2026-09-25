@@ -1,5 +1,23 @@
 ---
-version: "1.0.0"
+version: "1.1.0"
+
+# Provenance convention. A fitness function's provenance answers "what made this a
+# guardrail", and there are only three honest answers in this model:
+#
+#   a deterministic checker already enforces it - the rule is in
+#     the shared semantic-rules pack and `bp check` (Archally Pro) reports it by name;
+#   the schema states it - the constraint is settled by reading the model against
+#     the v2.8 schema, and nothing runs;
+#   the modeler chose it - a convention with no checker and no schema clause behind it.
+#
+# The third is the weakest and is labelled `kind: assumption` so a reader can tell without
+# opening anything. A path into the modelling toolchain belongs in `evidence.source` and
+# never in `code_refs`: a code_ref on this model resolves against the PrestaShop source
+# tree, so a toolchain path there resolves to nothing.
+#
+# Where the model's own standing against a guardrail was measured, the figure and its date
+# are in the evidence. A guardrail this model does not meet is not a defect in the
+# guardrail; it is the guardrail doing its job, and the figure says how far off it is.
 
 fitness_functions:
   - id: FF001
@@ -8,6 +26,26 @@ fitness_functions:
     scope: operation
     assertion: "Every operation with kind=command must have at least one entry in produces.operations."
     severity: warning
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "semantic rule missing-causal-links"
+          date: "2026-09-19"
+          summary: >-
+            A deterministic checker already enforces this. The shared rule
+            `missing-causal-links` carries the same sentence and `bp check` reports it per
+            operation, so this fitness function restates a guardrail rather than adding one.
+          confidence_impact: supports
+        - kind: analytics
+          source: "bp check prestashop, 2026-09-19"
+          date: "2026-09-19"
+          summary: >-
+            47 commands in this model produce no event. Two of them are honest and were argued
+            in step 10: modules.CMD010 ExecuteHook and modules.CMD011 RenderDisplayHook produce
+            whatever the listening modules do, which the model cannot name.
+          confidence_impact: weakens
 
   - id: FF002
     name: "No orphan events"
@@ -15,6 +53,26 @@ fitness_functions:
     scope: operation
     assertion: "Every operation with kind=event must appear in at least one produces.operations or reacts_to reference."
     severity: warning
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "semantic rule orphan-entities"
+          date: "2026-09-19"
+          summary: >-
+            A deterministic checker covers the general case: `orphan-entities` reports any
+            entity no relation reaches, in either direction, and an event nothing produces and
+            nothing reacts to is one.
+          confidence_impact: supports
+        - kind: analytics
+          source: "step 11 execution notes, bp render --check, 2026-09-19"
+          date: "2026-09-19"
+          summary: >-
+            The second half of this assertion is currently carried by nothing: no event in the
+            model is reacted to. Phase 1 authored produces and no reacts_to, so every event that
+            satisfies this guardrail does so through its producer alone.
+          confidence_impact: weakens
 
   - id: FF003
     name: "All actors have personas"
@@ -22,13 +80,50 @@ fitness_functions:
     scope: concept
     assertion: "Every actor must have at least one entry in personas[]."
     severity: warning
+    provenance:
+      discovery_stage: exploring
+      certainty: speculative
+      evidence:
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-chosen. No semantic rule and no quality metric measures actor personas, and
+            the schema makes personas optional, so nothing enforces this and nothing will
+            report a breach. It is a design-thinking convention written down as a guardrail.
+          confidence_impact: weakens
+        - kind: analytics
+          source: "projects/prestashop/.blueprint/v2.8, measured 2026-09-19"
+          date: "2026-09-19"
+          summary: "19 of the model's 20 actors carry at least one persona."
+          confidence_impact: supports
 
   - id: FF004
-    name: "Stories have process metadata"
-    description: "Process blocks enable BPMN generation and flow analysis."
+    name: "Processes declare their trigger and their outcomes"
+    description: >-
+      A process that does not say what starts it and how it can end cannot be generated as BPMN
+      and cannot be walked by a reader. Schema v2.8 carries the process as its own entity in
+      the PRC### band, with its trigger and its end states declared on the process itself.
     scope: story
-    assertion: "Every story (STR###) must have a process: block with trigger and at least one end_state."
+    assertion: "Every process (PRC###) must declare a trigger and at least one end_state."
     severity: warning
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: documentation
+          source: "schemas/blueprint/v2.8/schema/design/story.schema.yaml"
+          date: "2026-09-19"
+          summary: >-
+            The schema states the shape: trigger and end_states are direct properties of a
+            process, and both are optional, so a checker cannot infer the constraint. It is
+            settled by reading the model against the schema; nothing runs.
+          confidence_impact: supports
+        - kind: analytics
+          source: "projects/prestashop/.blueprint/v2.8, measured 2026-09-19"
+          date: "2026-09-19"
+          summary: "All 25 processes in the model declare a trigger and at least one end_state."
+          confidence_impact: supports
 
   - id: FF005
     name: "Capabilities linked to value streams"
@@ -36,6 +131,23 @@ fitness_functions:
     scope: cross-cutting
     assertion: "Every capability (CAP###) must have at least one value_stream_ref."
     severity: warning
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: documentation
+          source: "blueprint-builder.v3 agent definition, anti-pattern AP25 'Orphan Capabilities'"
+          date: "2026-09-19"
+          summary: >-
+            The convention is written down in the modeling harness rather than in a checker:
+            AP25 says a capability should appear in at least one value stream stage. No semantic
+            rule enforces it.
+          confidence_impact: supports
+        - kind: analytics
+          source: "projects/prestashop/.blueprint/v2.8, measured 2026-09-19"
+          date: "2026-09-19"
+          summary: "11 of the model's 19 capabilities carry value_stream_refs; 8 do not."
+          confidence_impact: weakens
 
   - id: FF006
     name: "Goals have KPI coverage"
@@ -43,6 +155,24 @@ fitness_functions:
     scope: cross-cutting
     assertion: "Every goal must be referenced by at least one KPI via goal_refs."
     severity: warning
+    provenance:
+      discovery_stage: exploring
+      certainty: speculative
+      evidence:
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-chosen. No checker and no quality metric joins goals to KPIs, so this
+            guardrail is judged by reading the two layers side by side.
+          confidence_impact: weakens
+        - kind: analytics
+          source: "projects/prestashop/.blueprint/v2.8, measured 2026-09-19"
+          date: "2026-09-19"
+          summary: >-
+            The model has 35 goals and 3 KPIs, and no KPI declares goal_refs at all, so 0 of 35
+            goals meet this guardrail today. The motivation chain is step 13's work.
+          confidence_impact: weakens
 
   - id: FF007
     name: "Service dependency fan-out limit"
@@ -50,6 +180,26 @@ fitness_functions:
     scope: dependency
     assertion: "No bounded context may have more than 5 direct dependencies in arch.yaml."
     severity: warning
+    provenance:
+      discovery_stage: exploring
+      certainty: speculative
+      evidence:
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-chosen, and the number 5 has no source. It is a common coupling heuristic,
+            not a PrestaShop fact and not a schema constraint; no checker counts context
+            dependencies. A reader should treat the threshold as a discussion prompt.
+          confidence_impact: weakens
+        - kind: analytics
+          source: "projects/prestashop/.blueprint/v2.8 arch files, measured 2026-09-19"
+          date: "2026-09-19"
+          summary: >-
+            The model's 12 bounded contexts declare 0 to 5 dependencies each; the highest,
+            prestashop.BC008, sits exactly on the limit. Nothing breaches it, which is also why
+            the threshold has never been tested against this model.
+          confidence_impact: supports
 
   - id: FF008
     name: "Test coverage per aggregate"
@@ -57,6 +207,27 @@ fitness_functions:
     scope: cross-cutting
     assertion: "Every concept with stereotype=aggregate-root must be validated by at least one test case."
     severity: warning
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "semantic rule untested-rules"
+          date: "2026-09-19"
+          summary: >-
+            The nearest checker covers rules, not aggregates: `untested-rules` reports a
+            business rule no test case validates. Nothing reports an untested aggregate root, so
+            this guardrail is judged by reading validates.concepts across the test-case files.
+          confidence_impact: supports
+        - kind: analytics
+          source: "projects/prestashop/.blueprint/v2.8, measured 2026-09-19"
+          date: "2026-09-19"
+          summary: >-
+            12 of the model's 40 aggregate-root concepts are named by a test case's
+            validates.concepts. 28 are not, so the model meets this guardrail for less than a
+            third of its aggregates. That is the honest standing after phase 1, which authored
+            operations rather than tests.
+          confidence_impact: weakens
 
   - id: FF009
     name: "Arch expose refs valid"
@@ -64,6 +235,24 @@ fitness_functions:
     scope: service
     assertion: "Every operation in expose/call/send/receive blocks must exist as a domain operation key."
     severity: error
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "bp validate, cross-reference pass (schema line v2.8)"
+          date: "2026-09-19"
+          summary: >-
+            This one is already a build error rather than a recommendation. On the v2.8 line a
+            typed reference to an id nothing declares is an ERROR on every validator surface,
+            and a contract's operation_ref is a typed reference, so `bp validate prestashop`
+            fails outright rather than warning. Severity error is therefore accurate.
+          confidence_impact: supports
+        - kind: analytics
+          source: "bp validate prestashop, 2026-09-19"
+          date: "2026-09-19"
+          summary: "Exit 0 with one unrelated gap warning, so the model satisfies this guardrail."
+          confidence_impact: supports
 
   - id: FF010
     name: "Transition rules for state machines"
@@ -71,6 +260,25 @@ fitness_functions:
     scope: rule
     assertion: "Every enumeration with transitions_to must have at least one governing transition or classification rule."
     severity: warning
+    provenance:
+      discovery_stage: exploring
+      certainty: speculative
+      evidence:
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-chosen. No checker joins an enumeration's transitions_to to a transition
+            rule, and the schema requires neither, so this is judged by reading the concepts and
+            rules files together.
+          confidence_impact: weakens
+        - kind: analytics
+          source: "projects/prestashop/.blueprint/v2.8, measured 2026-09-19"
+          date: "2026-09-19"
+          summary: >-
+            Two enumerations in the model declare transitions_to, so the guardrail has a small
+            population to govern and a breach would be easy to miss by eye.
+          confidence_impact: supports
 
   - id: FF011
     name: "Owned_by coverage"
@@ -78,10 +286,52 @@ fitness_functions:
     scope: cross-cutting
     assertion: "Every story file must have owned_by at file or entity level."
     severity: info
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: documentation
+          source: "archally-blueprint MCP tool get_ownership_gaps"
+          date: "2026-09-19"
+          summary: >-
+            An ownership report exists as an MCP tool, so the question is answerable on demand,
+            but no rule in the shared pack and no quality metric gates it. Severity info matches
+            that: reported, never blocking.
+          confidence_impact: supports
+        - kind: analytics
+          source: "projects/prestashop/.blueprint/v2.8, measured 2026-09-19"
+          date: "2026-09-19"
+          summary: >-
+            None of the model's 10 narrative files declares a file-level owned_by, so the model
+            meets this guardrail nowhere. The organization layer exists (step 14's teams and
+            departments); the join from a file to a team does not.
+          confidence_impact: weakens
 
   - id: FF012
-    name: "Process lanes cover story actors"
-    description: "Process swim lanes should reflect the actors declared on the story."
+    name: "Process lanes cover the actors its activities name"
+    description: >-
+      A swim lane that names an actor no activity triggers draws a role into the picture that
+      the process does not use. An actor reaches a process through an activity's triggered_by,
+      which is where a lane's actor has to be found; the narrative schema carries no
+      initiated_by on a process.
     scope: story
-    assertion: "Every process lane actor must match the story's initiated_by or an activity's triggered_by."
+    assertion: "Every actor named by a process lane must also be named by at least one of that process's activities in triggered_by."
     severity: warning
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: documentation
+          source: "schemas/blueprint/v2.8/schema/design/story.schema.yaml"
+          date: "2026-09-19"
+          summary: >-
+            The schema decides the corrected wording: process.lanes[].actor and
+            activity.triggered_by[] are the two places an actor reaches a process, and there is
+            no initiated_by on either. Nothing checks the correspondence, so this is settled by
+            reading a process.
+          confidence_impact: supports
+        - kind: analytics
+          source: "projects/prestashop/.blueprint/v2.8, measured 2026-09-19"
+          date: "2026-09-19"
+          summary: "The model's 25 processes declare 27 lanes between them, so the population is small enough to read."
+          confidence_impact: supports

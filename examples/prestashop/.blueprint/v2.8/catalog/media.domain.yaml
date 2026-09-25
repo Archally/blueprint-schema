@@ -9,43 +9,156 @@ operations:
     id: catalog.CMD016
     kind: command
     name: "AddProductImage"
-    description: "Upload and associate an image with a product. Image is processed into multiple sizes."
+    description: "Upload an image file and attach it to a product within a shop constraint. The uploaded original is kept and every declared image type is generated from it, so one upload becomes a family of files on disk."
     delivery_priority: must-have
+    implementation: as-is
     governed_by:
       - rule: catalog.VR001
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/{productId}/images
+        method: POST
+        group: catalog
+    materializes:
+      - concept: catalog.CN004
+        action: create
     produces:
       operations: [catalog.EVT006]
       mode: all
+    responses:
+      - code: "404"
+        type: error
+        description: "The product the image would belong to does not exist."
+        error: catalog.ERR001
+      - code: "400"
+        type: failure
+        description: "The uploaded file fails the image constraints (type, size, dimensions)."
+        error: catalog.ERR209
+      - code: "500"
+        type: error
+        description: "The image could not be written or its derived sizes could not be generated."
+        error: catalog.ERR210
     code_refs:
       - path: "src/Core/Domain/Product/Image/Command/AddProductImageCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/NewProductImage.php"
+        role: api-spec
+        description: "Multipart upload; the response is read back with GetProductImage."
+
+  updateProductImage:
+    id: catalog.CMD018
+    kind: command
+    name: "UpdateProductImage"
+    description: "Change an existing product image: replace the file, set it as the product's cover, reorder it, or edit its per-language legend. Every field is optional, so the command carries only what the form changed."
+    delivery_priority: should-have
+    implementation: as-is
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/images/{imageId}
+        method: POST
+        group: catalog
+    materializes:
+      - concept: catalog.CN004
+        action: update
+    produces:
+      operations: [catalog.EVT006]
+      mode: all
+    responses:
+      - code: "404"
+        type: error
+        description: "No image carries that identifier."
+        error: catalog.ERR208
+      - code: "400"
+        type: failure
+        description: "A replacement file or a legend fails the image constraints."
+        error: catalog.ERR209
+      - code: "409"
+        type: failure
+        description: "The product's cover cannot be taken away without another image becoming the cover."
+        error: catalog.ERR211
+    code_refs:
+      - path: "src/Core/Domain/Product/Image/Command/UpdateProductImageCommand.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductImage.php"
+        role: api-spec
+        description: "CQRSUpdate forced to POST, because PUT cannot carry a file and data together."
 
   deleteProductImage:
     id: catalog.CMD017
     kind: command
     name: "DeleteProductImage"
-    description: "Remove an image from a product and delete all generated sizes."
+    description: "Remove an image from its product and delete the original and every size generated from it, along with its combination associations."
     delivery_priority: must-have
+    implementation: as-is
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/images/{imageId}
+        method: DELETE
+        group: catalog
+    materializes:
+      - concept: catalog.CN004
+        action: delete
+    reacts_to:
+      - operation: catalog.EVT003
+        policy: "Delete every image of a product being deleted, so no orphaned row or generated file survives the product it belonged to"
     produces:
       operations: [catalog.EVT006]
       mode: all
+    responses:
+      - code: "404"
+        type: error
+        description: "No image carries that identifier."
+        error: catalog.ERR208
+      - code: "500"
+        type: error
+        description: "The image row or its files could not be removed."
+        error: catalog.ERR210
+    code_refs:
+      - path: "classes/Product.php"
+        role: implementation
+        description: "Proves the reaction to catalog.EVT003. Product::delete fires actionProductDelete at line 1284 and calls deleteImages at line 1288, which loads every Image of the product and calls Image::delete on each. The deletion is reached there directly, not through the command bus."
+      - path: "src/Core/Domain/Product/Image/Command/DeleteProductImageCommand.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductImage.php"
+        role: api-spec
 
-  setProductImagePosition:
-    id: catalog.CMD018
+  setProductImagesForAllShop:
+    id: catalog.CMD204
     kind: command
-    name: "SetProductImagePosition"
-    description: "Reorder product images by setting the display position."
-    delivery_priority: should-have
+    name: "SetProductImagesForAllShop"
+    description: "Set, for each shop of a multishop installation, which of a product's images that shop shows and which of them is its cover. It exists because image association is per shop while the image file itself is shared."
+    delivery_priority: could-have
+    implementation: as-is
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN004
+        action: update
     produces:
-      operations: [catalog.EVT002]
+      operations: [catalog.EVT006]
       mode: all
+    responses:
+      - code: "ProductImageNotFound"
+        type: error
+        description: "One of the listed images does not exist."
+        error: catalog.ERR208
+      - code: "CannotUpdateProductImage"
+        type: error
+        description: "The per-shop association could not be written."
+        error: catalog.ERR210
+    code_refs:
+      - path: "src/Core/Domain/Product/Image/Command/SetProductImagesForAllShopCommand.php"
+        role: implementation
 
   manageAttachment:
     id: catalog.CMD019
     kind: command
     name: "ManageAttachment"
-    description: "Add, update, or remove a downloadable attachment from a product."
+    description: "Add, update or remove a downloadable attachment of a product - a manual, a datasheet, a size chart. Attachments are files a shopper can download without buying, which is what separates them from a virtual product's file."
     delivery_priority: could-have
+    dispatch: inprocess
     produces:
       operations: [catalog.EVT002]
       mode: all
@@ -53,18 +166,304 @@ operations:
       - path: "src/Core/Domain/Attachment/Command/"
         role: implementation
 
-  setVirtualProductFile:
+  addVirtualProductFile:
     id: catalog.CMD020
     kind: command
-    name: "SetVirtualProductFile"
-    description: "Upload the downloadable file for a virtual product."
+    name: "AddVirtualProductFile"
+    description: "Attach the downloadable file a virtual product sells, with the display name a buyer sees and the terms of access: an expiration date, a number of days the link stays live, and how many times it may be downloaded."
     delivery_priority: should-have
+    implementation: as-is
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN013
+        action: create
     produces:
-      operations: [catalog.EVT002]
+      operations: [catalog.EVT201]
       mode: all
+    responses:
+      - code: "VirtualProductFileConstraintViolation"
+        type: failure
+        description: "The file, the display name or an access term fails the domain's constraints."
+        error: catalog.ERR213
+      - code: "CannotAddVirtualProductFile"
+        type: error
+        description: "The file reached persistence and failed there."
+        error: catalog.ERR214
+    code_refs:
+      - path: "src/Core/Domain/Product/VirtualProductFile/Command/AddVirtualProductFileCommand.php"
+        role: implementation
+
+  updateVirtualProductFile:
+    id: catalog.CMD205
+    kind: command
+    name: "UpdateVirtualProductFile"
+    description: "Change a virtual product's downloadable file or the terms of access to it. Replacing the file leaves orders already placed pointing at the new one, which is why the operation is distinct from adding."
+    delivery_priority: should-have
+    implementation: as-is
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN013
+        action: update
+    produces:
+      operations: [catalog.EVT201]
+      mode: all
+    responses:
+      - code: "VirtualProductFileNotFound"
+        type: error
+        description: "No virtual product file carries that identifier."
+        error: catalog.ERR212
+      - code: "VirtualProductFileConstraintViolation"
+        type: failure
+        description: "A submitted value fails the domain's constraints."
+        error: catalog.ERR213
+      - code: "CannotUpdateVirtualProductFile"
+        type: error
+        description: "The change reached persistence and failed there."
+        error: catalog.ERR214
+    code_refs:
+      - path: "src/Core/Domain/Product/VirtualProductFile/Command/UpdateVirtualProductFileCommand.php"
+        role: implementation
+
+  deleteVirtualProductFile:
+    id: catalog.CMD206
+    kind: command
+    name: "DeleteVirtualProductFile"
+    description: "Remove a virtual product's downloadable file. The product stays a virtual product with nothing to deliver until another file is attached."
+    delivery_priority: should-have
+    implementation: as-is
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN013
+        action: delete
+    produces:
+      operations: [catalog.EVT201]
+      mode: all
+    responses:
+      - code: "VirtualProductFileNotFound"
+        type: error
+        description: "No virtual product file carries that identifier."
+        error: catalog.ERR212
+      - code: "CannotDeleteVirtualProductFile"
+        type: error
+        description: "The deletion reached persistence and failed there."
+        error: catalog.ERR214
+    code_refs:
+      - path: "src/Core/Domain/Product/VirtualProductFile/Command/DeleteVirtualProductFileCommand.php"
+        role: implementation
+
+  getProductImage:
+    id: catalog.QRY207
+    kind: query
+    name: "GetProductImage"
+    description: "One image with its cover flag, position, per-language legends and the URLs of every size generated from it, read in a shop constraint."
+    delivery_priority: should-have
+    implementation: as-is
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/images/{imageId}
+        method: GET
+        group: catalog
+    responses:
+      - code: "200"
+        type: success
+        description: "The image and the sizes derived from it."
+        contentType: application/json
+      - code: "404"
+        type: error
+        description: "No image carries that identifier."
+        error: catalog.ERR208
+    code_refs:
+      - path: "src/Core/Domain/Product/Image/Query/GetProductImage.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductImage.php"
+        role: api-spec
+
+  getProductImages:
+    id: catalog.QRY208
+    kind: query
+    name: "GetProductImages"
+    description: "Every image of one product in a shop constraint, in display order, as the product form's image tab shows them."
+    delivery_priority: should-have
+    implementation: as-is
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/{productId}/images
+        method: GET
+        group: catalog
+    responses:
+      - code: "200"
+        type: success
+        description: "The product's images in display order."
+        contentType: application/json
+      - code: "404"
+        type: error
+        description: "The product does not exist."
+        error: catalog.ERR001
+    code_refs:
+      - path: "src/Core/Domain/Product/Image/Query/GetProductImages.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductImageList.php"
+        role: api-spec
+
+  getShopProductImages:
+    id: catalog.QRY209
+    kind: query
+    name: "GetShopProductImages"
+    description: "One product's images broken down per shop: which shops show each image and which of them treats it as the cover. It answers the multishop question GetProductImages deliberately flattens away."
+    delivery_priority: could-have
+    implementation: as-is
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/Product/Image/Query/GetShopProductImages.php"
+        role: implementation
 
   productImageChanged:
     id: catalog.EVT006
     kind: event
     name: "ProductImageChanged"
-    description: "Emitted when product images are added, removed, or reordered."
+    description: "A product image was added, replaced, reordered or removed. PrestaShop fires no dedicated product-image hook: modules observe it as the dynamic actionObjectImageAddAfter, actionObjectImageUpdateAfter and actionObjectImageDeleteAfter, because ProductImageRepository writes every image through AbstractMultiShopObjectModelRepository and Image extends ObjectModel. Resizing the file additionally fires actionOnImageResizeAfter and actionOnImageCutAfter from ImageManager, which is a file-processing fact rather than a catalog one."
+    implementation: as-is
+    tags: [hook:actionObjectImageAddAfter, hook:actionObjectImageUpdateAfter, hook:actionObjectImageDeleteAfter, hook:actionOnImageResizeAfter, hook:actionOnImageCutAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 615, 847 and 923: the dynamic actionObject<Class>(Add|Update|Delete)After hooks."
+      - path: "src/Adapter/Product/Image/Repository/ProductImageRepository.php"
+        role: implementation
+        description: "Writes every product image through the ObjectModel repository."
+      - path: "classes/ImageManager.php"
+        role: implementation
+        description: "Lines 334 and 592: Hook::exec for actionOnImageResizeAfter and actionOnImageCutAfter."
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Hook registry entries for actionOnImageResizeAfter and actionOnImageCutAfter."
+
+  virtualProductFileChanged:
+    id: catalog.EVT201
+    kind: event
+    name: "VirtualProductFileChanged"
+    description: "The downloadable file of a virtual product was attached, replaced or removed. Modules observe it as the dynamic actionObjectProductDownloadAddAfter, actionObjectProductDownloadUpdateAfter and actionObjectProductDownloadDeleteAfter - ProductDownload, not VirtualProductFile, because the domain name is an alias over the legacy ObjectModel class and the hook name is built from the runtime class."
+    implementation: as-is
+    tags: [hook:actionObjectProductDownloadAddAfter, hook:actionObjectProductDownloadUpdateAfter, hook:actionObjectProductDownloadDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 615, 847 and 923: the dynamic actionObject<Class>(Add|Update|Delete)After hooks."
+      - path: "src/Adapter/Product/VirtualProduct/Repository/VirtualProductFileRepository.php"
+        role: implementation
+        description: "Line 21 aliases the legacy ProductDownload class as VirtualProductFile; every write goes through AbstractObjectModelRepository."
+      - path: "classes/ProductDownload.php"
+        role: implementation
+        description: "ProductDownloadCore extends ObjectModel, so its class name is what the hook name is built from."
+
+errors:
+  productImageNotFound:
+    id: catalog.ERR208
+    name: "ProductImageNotFound"
+    description: "No product image carries the requested identifier. The Admin API maps it to 404 on every /products/images route."
+    category: not-found
+    severity: error
+    http_status: 404
+    retry_eligible: false
+    implementation: as-is
+    tags: [media]
+    code_refs:
+      - path: "src/Core/Domain/Product/Image/Exception/ProductImageNotFoundException.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductImage.php"
+        role: api-spec
+        description: "exceptionToStatus maps ProductImageNotFoundException to 404."
+
+  productImageConstraintViolation:
+    id: catalog.ERR209
+    name: "ProductImageConstraintViolation"
+    description: "An uploaded file or a submitted legend fails the image domain's constraints - an unsupported file type, a file over the configured limit, or dimensions below the smallest declared image type."
+    category: validation
+    severity: error
+    http_status: 400
+    retry_eligible: false
+    implementation: as-is
+    tags: [media]
+    code_refs:
+      - path: "src/Core/Domain/Product/Image/Exception/ProductImageConstraintException.php"
+        role: implementation
+
+  productImagePersistenceFailed:
+    id: catalog.ERR210
+    name: "ProductImagePersistenceFailed"
+    description: "An image write reached persistence or the filesystem and failed there. The three exception classes differ only in which write failed - add, update or delete."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    implementation: as-is
+    tags: [media]
+    code_refs:
+      - path: "src/Core/Domain/Product/Image/Exception/CannotAddProductImageException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Image/Exception/CannotUpdateProductImageException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/Image/Exception/CannotDeleteProductImageException.php"
+        role: implementation
+
+  cannotRemoveProductImageCover:
+    id: catalog.ERR211
+    name: "CannotRemoveProductImageCover"
+    description: "A change would leave a product with images but no cover. A product that has images always has exactly one cover, so the cover flag can be moved but not simply cleared."
+    category: conflict
+    severity: error
+    http_status: 409
+    retry_eligible: false
+    implementation: as-is
+    tags: [media]
+    code_refs:
+      - path: "src/Core/Domain/Product/Image/Exception/CannotRemoveCoverException.php"
+        role: implementation
+
+  virtualProductFileNotFound:
+    id: catalog.ERR212
+    name: "VirtualProductFileNotFound"
+    description: "No downloadable file carries the requested identifier, or the product has none attached."
+    category: not-found
+    severity: error
+    http_status: 404
+    retry_eligible: false
+    implementation: as-is
+    tags: [media]
+    code_refs:
+      - path: "src/Core/Domain/Product/VirtualProductFile/Exception/VirtualProductFileNotFoundException.php"
+        role: implementation
+
+  virtualProductFileConstraintViolation:
+    id: catalog.ERR213
+    name: "VirtualProductFileConstraintViolation"
+    description: "A submitted downloadable file fails the domain's constraints - a missing or empty display name, a negative access-days value, or a download limit below zero."
+    category: validation
+    severity: error
+    http_status: 400
+    retry_eligible: false
+    implementation: as-is
+    tags: [media]
+    code_refs:
+      - path: "src/Core/Domain/Product/VirtualProductFile/Exception/VirtualProductFileConstraintException.php"
+        role: implementation
+
+  virtualProductFilePersistenceFailed:
+    id: catalog.ERR214
+    name: "VirtualProductFilePersistenceFailed"
+    description: "A downloadable-file write reached persistence and failed there. The three exception classes differ only in which write failed - add, update or delete."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    implementation: as-is
+    tags: [media]
+    code_refs:
+      - path: "src/Core/Domain/Product/VirtualProductFile/Exception/CannotAddVirtualProductFileException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/VirtualProductFile/Exception/CannotUpdateVirtualProductFileException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/VirtualProductFile/Exception/CannotDeleteVirtualProductFileException.php"
+        role: implementation

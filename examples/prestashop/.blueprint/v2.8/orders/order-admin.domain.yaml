@@ -10,6 +10,7 @@ operations:
   addOrderState:
     id: orders.CMD024
     kind: command
+    dispatch: inprocess
     name: "AddOrderState"
     description: "Create a new order state definition with label, color, email template, and behavioral flags."
     delivery_priority: should-have
@@ -21,6 +22,7 @@ operations:
   editOrderState:
     id: orders.CMD025
     kind: command
+    dispatch: inprocess
     name: "EditOrderState"
     description: "Update an existing order state's label, color, or behavioral flags."
     delivery_priority: should-have
@@ -32,6 +34,7 @@ operations:
   deleteOrderState:
     id: orders.CMD026
     kind: command
+    dispatch: inprocess
     name: "DeleteOrderState"
     description: "Delete an order state. Fails if any orders are currently in this state."
     delivery_priority: could-have
@@ -43,6 +46,7 @@ operations:
   bulkDeleteOrderState:
     id: orders.CMD027
     kind: command
+    dispatch: inprocess
     name: "BulkDeleteOrderState"
     description: "Delete multiple order states in a single operation."
     delivery_priority: could-have
@@ -56,6 +60,12 @@ operations:
   addOrderMessage:
     id: orders.CMD028
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /order-messages
+        method: POST
+        group: orders
     name: "AddOrderMessage"
     description: "Create a new predefined message template for merchant-customer communication."
     delivery_priority: should-have
@@ -63,10 +73,19 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderMessage/Command/AddOrderMessageCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderMessage/OrderMessage.php"
+        role: api-spec
+        description: "Declares POST /order-messages and names the CQRS class it fronts"
 
   editOrderMessage:
     id: orders.CMD029
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /order-messages/{orderMessageId}
+        method: PATCH
+        group: orders
     name: "EditOrderMessage"
     description: "Update an existing message template's name or body."
     delivery_priority: should-have
@@ -74,10 +93,19 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderMessage/Command/EditOrderMessageCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderMessage/OrderMessage.php"
+        role: api-spec
+        description: "Declares PATCH /order-messages/{orderMessageId} and names the CQRS class it fronts"
 
   deleteOrderMessage:
     id: orders.CMD030
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /order-messages/{orderMessageId}
+        method: DELETE
+        group: orders
     name: "DeleteOrderMessage"
     description: "Delete a predefined message template."
     delivery_priority: could-have
@@ -85,10 +113,19 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderMessage/Command/DeleteOrderMessageCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderMessage/OrderMessage.php"
+        role: api-spec
+        description: "Declares DELETE /order-messages/{orderMessageId} and names the CQRS class it fronts"
 
   bulkDeleteOrderMessage:
     id: orders.CMD031
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /order-messages/bulk-delete
+        method: DELETE
+        group: orders
     name: "BulkDeleteOrderMessage"
     description: "Delete multiple predefined message templates in a single operation."
     delivery_priority: could-have
@@ -96,12 +133,21 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderMessage/Command/BulkDeleteOrderMessageCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderMessage/BulkDeleteOrderMessages.php"
+        role: api-spec
+        description: "Declares DELETE /order-messages/bulk-delete and names the CQRS class it fronts"
 
   # --- OrderReturnState CRUD ---
 
   addOrderReturnState:
     id: orders.CMD032
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /order-return-states
+        method: POST
+        group: orders
     name: "AddOrderReturnState"
     description: "Create a new return state definition with label and color."
     delivery_priority: could-have
@@ -109,10 +155,19 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderReturnState/Command/AddOrderReturnStateCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderReturnState/OrderReturnState.php"
+        role: api-spec
+        description: "Declares POST /order-return-states and names the CQRS class it fronts"
 
   editOrderReturnState:
     id: orders.CMD033
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /order-return-states/{orderReturnStateId}
+        method: PATCH
+        group: orders
     name: "EditOrderReturnState"
     description: "Update an existing return state's label or color."
     delivery_priority: could-have
@@ -120,10 +175,19 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderReturnState/Command/EditOrderReturnStateCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderReturnState/OrderReturnState.php"
+        role: api-spec
+        description: "Declares PATCH /order-return-states/{orderReturnStateId} and names the CQRS class it fronts"
 
   deleteOrderReturnState:
     id: orders.CMD034
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /order-return-states/{orderReturnStateId}
+        method: DELETE
+        group: orders
     name: "DeleteOrderReturnState"
     description: "Delete a return state definition."
     delivery_priority: could-have
@@ -131,10 +195,19 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderReturnState/Command/DeleteOrderReturnStateCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderReturnState/OrderReturnState.php"
+        role: api-spec
+        description: "Declares DELETE /order-return-states/{orderReturnStateId} and names the CQRS class it fronts"
 
   bulkDeleteOrderReturnState:
     id: orders.CMD035
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /order-return-states/bulk-delete
+        method: DELETE
+        group: orders
     name: "BulkDeleteOrderReturnState"
     description: "Delete multiple return state definitions in a single operation."
     delivery_priority: could-have
@@ -142,12 +215,16 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderReturnState/Command/BulkDeleteOrderReturnStateCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderReturnState/BulkDeleteOrderReturnState.php"
+        role: api-spec
+        description: "Declares DELETE /order-return-states/bulk-delete and names the CQRS class it fronts"
 
   # --- CustomerMessage (from Domain/CustomerMessage/ - order-scoped customer messages) ---
 
   addOrderCustomerMessage:
     id: orders.CMD036
     kind: command
+    dispatch: inprocess
     name: "AddOrderCustomerMessage"
     description: "Add a customer-initiated message to an order. Distinct from OrderMessage templates - this is an actual message attached to a specific order."
     delivery_priority: should-have
@@ -161,13 +238,98 @@ operations:
   getOrderStateForEditing:
     id: orders.QRY005
     kind: query
+    dispatch: inprocess
     name: "GetOrderStateForEditing"
     description: "Retrieve a single order state definition with all configurable fields for the edit form."
     delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/OrderState/Query/GetOrderStateForEditing.php"
+        role: implementation
+      - path: "src/Adapter/OrderState/QueryHandler/GetOrderStateForEditingHandler.php"
+        role: implementation
+
+  getOrderReturnStateForEditing:
+    id: orders.QRY009
+    kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /order-return-states/{orderReturnStateId}
+        method: GET
+        group: orders
+    name: "GetOrderReturnStateForEditing"
+    description: "Retrieve a single return state definition - its per-language label and its colour - for the edit form."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/OrderReturnState/Query/GetOrderReturnStateForEditing.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderReturnState/OrderReturnState.php"
+        role: api-spec
+        description: "Declares GET /order-return-states/{orderReturnStateId} and names the CQRS class it fronts"
 
   getOrderMessageForEditing:
     id: orders.QRY006
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /order-messages/{orderMessageId}
+        method: GET
+        group: orders
     name: "GetOrderMessageForEditing"
     description: "Retrieve a single order message template for the edit form."
     delivery_priority: should-have
+
+    code_refs:
+      - path: "src/Core/Domain/OrderMessage/Query/GetOrderMessageForEditing.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderMessage/OrderMessage.php"
+        role: api-spec
+        description: "Declares GET /order-messages/{orderMessageId} and names the CQRS class it fronts"
+errors:
+  orderReturnStateNotFound:
+    id: orders.ERR025
+    name: "OrderReturnStateNotFound"
+    description: "No return state exists with the given id, or the id is not a usable one. Return states are merchant-defined, so an id that worked in one shop may name nothing in another."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/OrderReturnState/Exception/OrderReturnStateNotFoundException.php"
+        role: implementation
+      - path: "src/Core/Domain/OrderReturnState/Exception/InvalidOrderReturnStateIdException.php"
+        role: implementation
+
+  orderReturnStateConstraintViolation:
+    id: orders.ERR026
+    name: "OrderReturnStateConstraintViolation"
+    description: "A return state definition failed validation: a name already used by another state, a required field left out, or a field whose value is not allowed. The duplicate-name check is per language, because the label is translated and two states that read alike in one language would be indistinguishable to the merchant."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/OrderReturnState/Exception/OrderReturnStateConstraintException.php"
+        role: implementation
+      - path: "src/Core/Domain/OrderReturnState/Exception/DuplicateOrderReturnStateNameException.php"
+        role: implementation
+      - path: "src/Core/Domain/OrderReturnState/Exception/MissingOrderReturnStateRequiredFieldsException.php"
+        role: implementation
+      - path: "src/Core/Domain/OrderReturnState/Exception/InvalidOrderReturnStateRequiredFieldsException.php"
+        role: implementation
+      - path: "src/Core/Domain/OrderReturnState/Exception/OrderReturnStateException.php"
+        role: implementation
+        description: "The base every OrderReturnState exception extends"
+
+  cannotDeleteOrderReturnState:
+    id: orders.ERR027
+    name: "CannotDeleteOrderReturnState"
+    description: "Deleting a return state, singly or in bulk, failed while it was being written. Returns already sitting in the state keep pointing at it, so a partial bulk delete leaves the merchant with a mixed grid."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/OrderReturnState/Exception/DeleteOrderReturnStateException.php"
+        role: implementation
+      - path: "src/Core/Domain/OrderReturnState/Exception/BulkDeleteOrderReturnStateException.php"
+        role: implementation

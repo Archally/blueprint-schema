@@ -11,6 +11,7 @@ operations:
   addSqlRequest:
     id: admin.CMD029
     kind: command
+    dispatch: inprocess
     name: "AddSqlRequest"
     description: "Create a new saved SQL query."
     delivery_priority: should-have
@@ -20,6 +21,9 @@ operations:
       mode: all
     governed_by:
       - rule: admin.VR006
+    materializes:
+      - concept: admin.CN007
+        action: create
     code_refs:
       - path: "src/Core/Domain/SqlManagement/Command/AddSqlRequestCommand.php"
         role: implementation
@@ -28,11 +32,22 @@ operations:
     id: admin.EVT021
     kind: event
     name: "SqlRequestAdded"
-    description: "New SQL query saved."
-
+    description: "Fact: a saved SQL query exists and can be executed from the back office. The hook carries the legacy class name, RequestSql, not the domain's spelling SqlRequest: ObjectModel builds the hook name from the instantiated class, and the table is ps_request_sql."
+    tags: [hook:actionObjectRequestSqlAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 615 fires actionObject<Class>AddAfter for every persisted ObjectModel"
+      - path: "classes/RequestSql.php"
+        role: model
+        description: "RequestSqlCore extends ObjectModel, which is what makes the dynamic hook name resolve"
+      - path: "src/Adapter/SqlManager/CommandHandler/AddSqlRequestHandler.php"
+        role: implementation
+        description: "Line 37 instantiates RequestSql, line 41 calls add()"
   editSqlRequest:
     id: admin.CMD030
     kind: command
+    dispatch: inprocess
     name: "EditSqlRequest"
     description: "Update an existing saved SQL query."
     delivery_priority: should-have
@@ -42,6 +57,9 @@ operations:
       mode: all
     governed_by:
       - rule: admin.VR006
+    materializes:
+      - concept: admin.CN007
+        action: update
     code_refs:
       - path: "src/Core/Domain/SqlManagement/Command/EditSqlRequestCommand.php"
         role: implementation
@@ -50,11 +68,19 @@ operations:
     id: admin.EVT022
     kind: event
     name: "SqlRequestEdited"
-    description: "Saved SQL query updated."
-
+    description: "Fact: a saved SQL query's name or statement changed. As with creation, the hook name is actionObjectRequestSql..., after the legacy class."
+    tags: [hook:actionObjectRequestSqlUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847 fires actionObject<Class>UpdateAfter for every persisted ObjectModel"
+      - path: "classes/RequestSql.php"
+        role: model
+        description: "RequestSqlCore extends ObjectModel, which is what makes the dynamic hook name resolve"
   deleteSqlRequest:
     id: admin.CMD031
     kind: command
+    dispatch: inprocess
     name: "DeleteSqlRequest"
     description: "Remove a saved SQL query."
     delivery_priority: should-have
@@ -62,6 +88,9 @@ operations:
     produces:
       operations: [admin.EVT023]
       mode: all
+    materializes:
+      - concept: admin.CN007
+        action: delete
     code_refs:
       - path: "src/Core/Domain/SqlManagement/Command/DeleteSqlRequestCommand.php"
         role: implementation
@@ -70,11 +99,19 @@ operations:
     id: admin.EVT023
     kind: event
     name: "SqlRequestDeleted"
-    description: "Saved SQL query removed."
-
+    description: "Fact: a saved SQL query no longer exists, singly or in a bulk selection."
+    tags: [hook:actionObjectRequestSqlDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 923 fires actionObject<Class>DeleteAfter for every persisted ObjectModel"
+      - path: "classes/RequestSql.php"
+        role: model
+        description: "RequestSqlCore extends ObjectModel, which is what makes the dynamic hook name resolve"
   bulkDeleteSqlRequest:
     id: admin.CMD032
     kind: command
+    dispatch: inprocess
     name: "BulkDeleteSqlRequest"
     description: "Delete multiple saved SQL queries at once."
     delivery_priority: could-have
@@ -82,6 +119,9 @@ operations:
     produces:
       operations: [admin.EVT023]
       mode: all
+    materializes:
+      - concept: admin.CN007
+        action: delete
     code_refs:
       - path: "src/Core/Domain/SqlManagement/Command/BulkDeleteSqlRequestCommand.php"
         role: implementation
@@ -89,6 +129,7 @@ operations:
   saveSqlRequestSettings:
     id: admin.CMD033
     kind: command
+    dispatch: inprocess
     name: "SaveSqlRequestSettings"
     description: "Save global SQL manager configuration settings (e.g., default file encoding for CSV export)."
     delivery_priority: could-have
@@ -96,6 +137,9 @@ operations:
     produces:
       operations: [admin.EVT024]
       mode: all
+    materializes:
+      - concept: admin.CN007
+        action: update
     code_refs:
       - path: "src/Core/Domain/SqlManagement/Command/SaveSqlRequestSettingsCommand.php"
         role: implementation
@@ -104,11 +148,15 @@ operations:
     id: admin.EVT024
     kind: event
     name: "SqlRequestSettingsSaved"
-    description: "SQL manager settings updated."
-
+    description: "Fact: the SQL manager's export settings changed, which decides how an exported result set is encoded and separated. No hook is fired for this transition: SaveSqlRequestSettingsHandler writes two Configuration keys and nothing else."
+    code_refs:
+      - path: "src/Core/Domain/SqlManagement/CommandHandler/SaveSqlRequestSettingsHandler.php"
+        role: implementation
+        description: "Two configuration->set() calls; no ObjectModel and no hook"
   getSqlRequestForEditing:
     id: admin.QRY007
     kind: query
+    dispatch: inprocess
     name: "GetSqlRequestForEditing"
     description: "Retrieve a saved SQL query for editing."
     delivery_priority: should-have
@@ -119,6 +167,7 @@ operations:
   executeSqlRequest:
     id: admin.QRY008
     kind: query
+    dispatch: inprocess
     name: "ExecuteSqlRequest"
     description: "Execute a saved SQL query and return the result set. Core business value of the SqlManagement feature."
     delivery_priority: must-have
@@ -131,6 +180,7 @@ operations:
   getSqlRequestSettings:
     id: admin.QRY009
     kind: query
+    dispatch: inprocess
     name: "GetSqlRequestSettings"
     description: "Retrieve global SQL manager configuration settings."
     delivery_priority: could-have
@@ -138,11 +188,40 @@ operations:
       - path: "src/Core/Domain/SqlManagement/Query/GetSqlRequestSettings.php"
         role: implementation
 
+  getDatabaseTablesList:
+    id: admin.QRY014
+    kind: query
+    dispatch: inprocess
+    name: "GetDatabaseTablesList"
+    description: "List the store's database tables so the SQL manager's query builder can offer them. Modeled because the SQL manager is the one back-office feature whose subject IS the schema: without this read an employee cannot compose a saved query at all."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/SqlManagement/Query/GetDatabaseTablesList.php"
+        role: implementation
+      - path: "src/Core/Domain/SqlManagement/DatabaseTablesList.php"
+        role: model
+
+  getDatabaseTableFieldsList:
+    id: admin.QRY015
+    kind: query
+    dispatch: inprocess
+    name: "GetDatabaseTableFieldsList"
+    description: "List the columns of one database table, with each column's name and type, so the SQL manager can offer the fields of a table the employee has picked."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/SqlManagement/Query/GetDatabaseTableFieldsList.php"
+        role: implementation
+      - path: "src/Core/Domain/SqlManagement/DatabaseTableFields.php"
+        role: model
+      - path: "src/Core/Domain/SqlManagement/ValueObject/DatabaseTableField.php"
+        role: model
+
   # ── Configuration (1 CMD) ──
 
   switchDebugMode:
     id: admin.CMD034
     kind: command
+    dispatch: inprocess
     name: "SwitchDebugMode"
     description: "Toggle debug mode on/off for the store. Only CQRS command in the Configuration aggregate - most config is handled by legacy infrastructure."
     delivery_priority: should-have
@@ -150,6 +229,9 @@ operations:
     produces:
       operations: [admin.EVT025]
       mode: all
+    materializes:
+      - concept: admin.CN008
+        action: update
     code_refs:
       - path: "src/Core/Domain/Configuration/Command/SwitchDebugModeCommand.php"
         role: implementation
@@ -158,13 +240,32 @@ operations:
     id: admin.EVT025
     kind: event
     name: "DebugModeSwitched"
-    description: "Store debug mode toggled."
-
+    description: "Fact: the shop's debug mode is on or off, which changes what an error page shows to whoever triggers it. No hook announces the completed switch. The registry does declare actionAdminAdvancedParametersPerformanceControllerPostProcessDebugModeBefore, but it is a Before hook on the back-office Performance page's post-processing, so it precedes the change and does not report it."
+    code_refs:
+      - path: "src/PrestaShopBundle/Controller/Admin/Configure/AdvancedParameters/PerformanceController.php"
+        role: implementation
+        description: "Line 226 dispatches the Before hook; nothing dispatches an After counterpart"
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry for actionAdminAdvancedParametersPerformanceControllerPostProcessDebugModeBefore"
   # ── Tab (1 CMD) ──
 
   updateTabStatus:
     id: admin.CMD035
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /tabs/{className}
+        method: PUT
+        group: admin-api
+    payload:
+      schema: UpdateTabStatusPayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The tab with its new visibility."
     name: "UpdateTabStatus"
     description: "Enable or disable a back-office admin menu tab by its PHP controller class name."
     delivery_priority: could-have
@@ -172,6 +273,9 @@ operations:
     produces:
       operations: [admin.EVT026]
       mode: all
+    materializes:
+      - concept: admin.CN009
+        action: update
     code_refs:
       - path: "src/Core/Domain/Tab/Command/UpdateTabStatusByClassNameCommand.php"
         role: implementation
@@ -180,7 +284,450 @@ operations:
     id: admin.EVT026
     kind: event
     name: "TabStatusUpdated"
-    description: "Admin menu tab visibility changed."
+    description: "Fact: a back-office menu tab is visible or hidden. No hook is fired for this transition: UpdateTabStatusByClassNameHandler goes through the Doctrine TabRepository, not the legacy Tab ObjectModel, so actionObjectTabUpdateAfter does not run. actionAdminMenuTabsModifier exists but is a menu-rendering hook, not a save hook, and asserting it here would say the wrong thing."
+    code_refs:
+      - path: "src/Adapter/Tab/CommandHandler/UpdateTabStatusByClassNameHandler.php"
+        role: implementation
+        description: "entityManager->getRepository(Tab::class)->changeStatusByClassName(); a Doctrine path"
+  # ── QuickAccess (5 CMD + 1 QRY) ──
+  # Adopted by step 08: no slice referenced src/Core/Domain/QuickAccess/ before this.
+
+  addQuickAccess:
+    id: admin.CMD036
+    kind: command
+    dispatch: inprocess
+    name: "AddQuickAccess"
+    description: "Create a back-office quick-access shortcut: a localized label, the admin link it points at, and whether it opens in a new window. Shortcuts are what the back office lists in its Quick Access menu, so a broken or duplicated link is visible to every employee."
+    delivery_priority: could-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT027]
+      mode: all
+    materializes:
+      - concept: admin.CN010
+        action: create
+    code_refs:
+      - path: "src/Core/Domain/QuickAccess/Command/AddQuickAccessCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/QuickAccess/CommandHandler/AddQuickAccessHandlerInterface.php"
+        role: interface
+
+  quickAccessAdded:
+    id: admin.EVT027
+    kind: event
+    name: "QuickAccessAdded"
+    description: "A quick-access shortcut was persisted. QuickAccess extends ObjectModel, so saving it fires the dynamic hook actionObjectQuickAccessAddAfter and every registered module can observe the new shortcut."
+    tags: [hook:actionObjectQuickAccessAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 615 fires actionObject<Class>AddAfter for every persisted ObjectModel"
+      - path: "classes/QuickAccess.php"
+        role: implementation
+        description: "QuickAccessCore extends ObjectModel, which is what makes the dynamic hook name resolve to actionObjectQuickAccessAddAfter"
+
+  editQuickAccess:
+    id: admin.CMD037
+    kind: command
+    dispatch: inprocess
+    name: "EditQuickAccess"
+    description: "Update a quick-access shortcut's localized names, link and new-window flag."
+    delivery_priority: could-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT028]
+      mode: all
+    materializes:
+      - concept: admin.CN010
+        action: update
+    code_refs:
+      - path: "src/Core/Domain/QuickAccess/Command/EditQuickAccessCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/QuickAccess/CommandHandler/EditQuickAccessHandlerInterface.php"
+        role: interface
+
+  quickAccessUpdated:
+    id: admin.EVT028
+    kind: event
+    name: "QuickAccessUpdated"
+    description: "A quick-access shortcut was rewritten in place, by a full edit or by the new-window toggle. Both paths update the same ObjectModel, so both fire actionObjectQuickAccessUpdateAfter."
+    tags: [hook:actionObjectQuickAccessUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847 fires actionObject<Class>UpdateAfter for every persisted ObjectModel"
+      - path: "classes/QuickAccess.php"
+        role: implementation
+
+  deleteQuickAccess:
+    id: admin.CMD038
+    kind: command
+    dispatch: inprocess
+    name: "DeleteQuickAccess"
+    description: "Remove a single quick-access shortcut from the back-office menu."
+    delivery_priority: could-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT029]
+      mode: all
+    materializes:
+      - concept: admin.CN010
+        action: delete
+    code_refs:
+      - path: "src/Core/Domain/QuickAccess/Command/DeleteQuickAccessCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/QuickAccess/CommandHandler/DeleteQuickAccessHandlerInterface.php"
+        role: interface
+
+  quickAccessDeleted:
+    id: admin.EVT029
+    kind: event
+    name: "QuickAccessDeleted"
+    description: "A quick-access shortcut was removed, singly or as part of a bulk selection. Deleting the ObjectModel fires actionObjectQuickAccessDeleteAfter once per shortcut, so a bulk delete of three shortcuts is three hook calls, not one."
+    tags: [hook:actionObjectQuickAccessDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 923 fires actionObject<Class>DeleteAfter for every deleted ObjectModel"
+      - path: "classes/QuickAccess.php"
+        role: implementation
+
+  bulkDeleteQuickAccess:
+    id: admin.CMD039
+    kind: command
+    dispatch: inprocess
+    name: "BulkDeleteQuickAccess"
+    description: "Remove several quick-access shortcuts in one back-office action. Modeled apart from DeleteQuickAccess because it fails partially: BulkQuickAccessException collects the ids that could not be removed instead of aborting the whole selection."
+    delivery_priority: could-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT029]
+      mode: all
+    materializes:
+      - concept: admin.CN010
+        action: delete
+    code_refs:
+      - path: "src/Core/Domain/QuickAccess/Command/BulkDeleteQuickAccessCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/QuickAccess/CommandHandler/BulkDeleteQuickAccessHandlerInterface.php"
+        role: interface
+
+  toggleQuickAccessNewWindow:
+    id: admin.CMD040
+    kind: command
+    dispatch: inprocess
+    name: "ToggleQuickAccessNewWindow"
+    description: "Flip a single shortcut between opening in the current tab and opening in a new window. Kept as its own operation rather than folded into EditQuickAccess because the grid toggles it directly, without the edit form and without resubmitting the localized names."
+    delivery_priority: could-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT028]
+      mode: all
+    materializes:
+      - concept: admin.CN010
+        action: update
+    code_refs:
+      - path: "src/Core/Domain/QuickAccess/Command/ToggleQuickAccessNewWindowCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/QuickAccess/CommandHandler/ToggleQuickAccessNewWindowHandlerInterface.php"
+        role: interface
+
+  getQuickAccessForEditing:
+    id: admin.QRY010
+    kind: query
+    dispatch: inprocess
+    name: "GetQuickAccessForEditing"
+    description: "Read one shortcut in the shape its edit form needs: the localized names keyed by language id, the link, and the new-window flag."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/QuickAccess/Query/GetQuickAccessForEditing.php"
+        role: implementation
+      - path: "src/Core/Domain/QuickAccess/QueryResult/EditableQuickAccess.php"
+        role: model
+
+  # ── ExtraProperty (4 CMD + 1 QRY) ──
+  # Adopted by step 08: no slice referenced src/Core/Domain/ExtraProperty/ before this.
+
+  addExtraPropertyDefinition:
+    id: admin.CMD041
+    kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /extra-property-definitions
+        method: POST
+        group: admin-api
+    payload:
+      schema: CreateExtraPropertyDefinitionPayload
+      contentType: application/json
+    responses:
+      - code: "201"
+        type: success
+        description: "The definition as registered, with the storage decisions the shop resolved."
+        schema: ExtraPropertyDefinitionResource
+        contentType: application/json
+      - code: "422"
+        type: failure
+        description: "The definition is malformed, or the registry refused it."
+        error: admin.ERR017
+    name: "AddExtraPropertyDefinition"
+    description: "Declare a new extra property on a core entity: which entity carries it, its name, its type, its scope (common, per-language or per-shop), whether it is indexed, its validation constraints and where it appears in forms, grids and the API. Registering a definition alters the storage schema, so this is a structural change and not a data write."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT030]
+      mode: all
+    materializes:
+      - concept: admin.CN011
+        action: create
+    code_refs:
+      - path: "src/Core/Domain/ExtraProperty/Command/AddExtraPropertyDefinitionCommand.php"
+        role: implementation
+      - path: "src/Adapter/ExtraProperty/CommandHandler/AddExtraPropertyDefinitionHandler.php"
+        role: implementation
+
+  extraPropertyDefinitionAdded:
+    id: admin.EVT030
+    kind: event
+    name: "ExtraPropertyDefinitionAdded"
+    description: "An extra property was registered and its storage prepared. The back-office form path fires actionAfterCreateExtraPropertyDefinitionFormHandler; the Admin API route does not go through the form handler, so an API-created definition raises no hook."
+    tags: [hook:actionAfterCreateExtraPropertyDefinitionFormHandler]
+    code_refs:
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry for actionAfterCreateExtraPropertyDefinitionFormHandler"
+      - path: "src/Core/Form/IdentifiableObject/Handler/FormHandler.php"
+        role: implementation
+        description: "Line 178 dispatches actionAfterCreate<Form>FormHandler after a back-office create form is handled"
+
+  updateExtraPropertyDefinition:
+    id: admin.CMD042
+    kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /extra-property-definitions/{extraPropertyDefinitionId}
+        method: PATCH
+        group: admin-api
+    payload:
+      schema: UpdateExtraPropertyDefinitionPayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The definition as stored after the partial update."
+        schema: ExtraPropertyDefinitionResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No definition carries that id."
+        error: admin.ERR015
+      - code: "422"
+        type: failure
+        description: "The change would destroy stored values, or the definition belongs to a module."
+        error: admin.ERR018
+    name: "UpdateExtraPropertyDefinition"
+    description: "Change an existing extra property definition. The handler refuses a destructive change (DESTRUCTIVE_CHANGE) and, for a module-owned definition, accepts nothing but a shop association change."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT031]
+      mode: all
+    materializes:
+      - concept: admin.CN011
+        action: update
+    code_refs:
+      - path: "src/Core/Domain/ExtraProperty/Command/UpdateExtraPropertyDefinitionCommand.php"
+        role: implementation
+      - path: "src/Adapter/ExtraProperty/CommandHandler/UpdateExtraPropertyDefinitionHandler.php"
+        role: implementation
+
+  extraPropertyDefinitionUpdated:
+    id: admin.EVT031
+    kind: event
+    name: "ExtraPropertyDefinitionUpdated"
+    description: "An extra property definition was changed. As with creation, the hook is the back-office form hook actionAfterUpdateExtraPropertyDefinitionFormHandler and the Admin API route does not fire it."
+    tags: [hook:actionAfterUpdateExtraPropertyDefinitionFormHandler]
+    code_refs:
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry for actionAfterUpdateExtraPropertyDefinitionFormHandler"
+      - path: "src/Core/Form/IdentifiableObject/Handler/FormHandler.php"
+        role: implementation
+        description: "Line 144 dispatches actionAfterUpdate<Form>FormHandler"
+
+  deleteExtraPropertyDefinition:
+    id: admin.CMD043
+    kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /extra-property-definitions/{extraPropertyDefinitionId}
+        method: DELETE
+        group: admin-api
+    responses:
+      - code: "204"
+        type: success
+        description: "The definition was removed."
+      - code: "404"
+        type: failure
+        description: "No definition carries that id."
+        error: admin.ERR015
+    name: "DeleteExtraPropertyDefinition"
+    description: "Remove an extra property definition. The caller chooses whether to drop the storage column with it, which is the difference between retiring a property and destroying every value ever stored in it."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT032]
+      mode: all
+    materializes:
+      - concept: admin.CN011
+        action: delete
+    code_refs:
+      - path: "src/Core/Domain/ExtraProperty/Command/DeleteExtraPropertyDefinitionCommand.php"
+        role: implementation
+      - path: "src/Adapter/ExtraProperty/CommandHandler/DeleteExtraPropertyDefinitionHandler.php"
+        role: implementation
+
+  extraPropertyDefinitionDeleted:
+    id: admin.EVT032
+    kind: event
+    name: "ExtraPropertyDefinitionDeleted"
+    description: "An extra property definition was removed, singly or in a bulk selection, and its storage column dropped if the caller asked for it. No hook is fired for this transition: ExtraPropertyDefinition is not an ObjectModel, and the registry declares create and update form hooks for it but no delete hook, so modules cannot observe a deletion."
+    code_refs:
+      - path: "src/Core/ExtraProperty/Definition/ExtraPropertyDefinition.php"
+        role: model
+        description: "A final class, not an ObjectModel, so the dynamic actionObject<Class>DeleteAfter family does not apply"
+
+  bulkDeleteExtraPropertyDefinition:
+    id: admin.CMD044
+    kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /extra-property-definitions/bulk-delete
+        method: DELETE
+        group: admin-api
+    payload:
+      schema: BulkDeleteExtraPropertyDefinitionsPayload
+      contentType: application/json
+    responses:
+      - code: "204"
+        type: success
+        description: "Every named definition was removed."
+      - code: "404"
+        type: failure
+        description: "One of the named ids has no definition behind it."
+        error: admin.ERR015
+      - code: "422"
+        type: failure
+        description: "One of the named definitions belongs to a module."
+        error: admin.ERR018
+    name: "BulkDeleteExtraPropertyDefinition"
+    description: "Remove several extra property definitions in one action. This is the one bulk operation in the slice that the Admin API exposes, at DELETE /extra-property-definitions/bulk-delete."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT032]
+      mode: all
+    materializes:
+      - concept: admin.CN011
+        action: delete
+    code_refs:
+      - path: "src/Core/Domain/ExtraProperty/Command/BulkDeleteExtraPropertyDefinitionCommand.php"
+        role: implementation
+      - path: "src/Adapter/ExtraProperty/CommandHandler/BulkDeleteExtraPropertyDefinitionHandler.php"
+        role: implementation
+
+  getExtraPropertyDefinitionForEditing:
+    id: admin.QRY011
+    kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /extra-property-definitions/{extraPropertyDefinitionId}
+        method: GET
+        group: admin-api
+    responses:
+      - code: "200"
+        type: success
+        description: "The definition, with its storage decisions and its form, grid and API bindings."
+        schema: ExtraPropertyDefinitionResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No definition carries that id."
+        error: admin.ERR015
+    name: "GetExtraPropertyDefinitionForEditing"
+    description: "Read one extra property definition with everything the edit form and the API representation need: type, scope, index, constraints, label and description wordings, and the forms, grids, API routes and shops it is associated with."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/ExtraProperty/Query/GetExtraPropertyDefinitionForEditing.php"
+        role: implementation
+      - path: "src/Core/Domain/ExtraProperty/QueryResult/EditableExtraPropertyDefinition.php"
+        role: model
+
+  # ── BusinessEntity (1 CMD + 2 QRY) ──
+  # Adopted by step 08: no slice referenced src/Core/Domain/BusinessEntity/ before this.
+
+  addBusinessEntity:
+    id: admin.CMD045
+    kind: command
+    dispatch: inprocess
+    name: "AddBusinessEntity"
+    description: "Register a B2B business entity: its trading and legal name, an optional external reference, the shop and customer group it belongs to, whether delivery is authorized, its approval status, and its billing and shipping addresses. The command refuses at construction if the addresses are inconsistent, so an entity never reaches the handler without a default billing address."
+    delivery_priority: should-have
+    initiated_by: [admin.ACT001]
+    produces:
+      operations: [admin.EVT033]
+      mode: all
+    governed_by:
+      - rule: admin.VR007
+    materializes:
+      - concept: admin.CN012
+        action: create
+    code_refs:
+      - path: "src/Core/Domain/BusinessEntity/Command/AddBusinessEntityCommand.php"
+        role: implementation
+      - path: "src/Adapter/BusinessEntity/CommandHandler/AddBusinessEntityHandler.php"
+        role: implementation
+
+  businessEntityAdded:
+    id: admin.EVT033
+    kind: event
+    name: "BusinessEntityAdded"
+    description: "A business entity was persisted, normally in status pending until an administrator activates it. No hook is fired for this transition: BusinessEntity is a Doctrine entity rather than an ObjectModel, and the hook registry declares no BusinessEntity hook, so modules cannot observe a new B2B account."
+    code_refs:
+      - path: "src/PrestaShopBundle/Entity/B2B/BusinessEntity.php"
+        role: model
+        description: "A Doctrine entity, so the dynamic actionObject<Class>AddAfter family does not apply"
+
+  getBusinessEntityForViewing:
+    id: admin.QRY012
+    kind: query
+    dispatch: inprocess
+    name: "GetBusinessEntityForViewing"
+    description: "Read one business entity for the back-office detail view: its names, status, delivery authorization, addresses and identifiers."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/BusinessEntity/Query/GetBusinessEntityForViewing.php"
+        role: implementation
+      - path: "src/Core/Domain/BusinessEntity/QueryResult/BusinessEntityForViewing.php"
+        role: model
+
+  getPendingBusinessEntitiesCount:
+    id: admin.QRY013
+    kind: query
+    dispatch: inprocess
+    name: "GetPendingBusinessEntitiesCount"
+    description: "Count the business entities still waiting for approval. It takes no argument and exists so the back office can badge the B2B menu with the size of the approval queue."
+    delivery_priority: could-have
+    code_refs:
+      - path: "src/Core/Domain/BusinessEntity/Query/GetPendingBusinessEntitiesCount.php"
+        role: implementation
+      - path: "src/PrestaShopBundle/Entity/Enum/BusinessEntityStatus.php"
+        role: model
+        description: "pending is one of four statuses: pending, active, inactive, rejected"
 
 errors:
   sqlRequestNotFound:
@@ -190,6 +737,9 @@ errors:
     category: not-found
     severity: error
     http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/SqlManagement/Exception/SqlRequestNotFoundException.php"
+        role: implementation
 
   sqlQueryForbidden:
     id: admin.ERR010
@@ -199,3 +749,215 @@ errors:
     severity: error
     http_status: 403
     related_rules: [admin.VR006]
+    code_refs:
+      - path: "classes/RequestSql.php"
+        role: implementation
+        description: "Line 31 requires SELECT and FROM; line 47 lists the forbidden keywords (DROP, UPDATE, LOCK, EXECUTE and the rest); validateSql() at line 142 is the guard"
+
+
+  quickAccessNotFound:
+    id: admin.ERR011
+    name: "QuickAccessNotFound"
+    description: "The requested quick-access shortcut id does not exist. Raised by the edit query and by every command that addresses one shortcut."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/QuickAccess/Exception/QuickAccessNotFoundException.php"
+        role: implementation
+
+  quickAccessConstraintViolation:
+    id: admin.ERR012
+    name: "QuickAccessConstraintViolation"
+    description: "A shortcut's id, name or link is not acceptable, or a shortcut with the same link already exists. The exception carries four codes and the duplicate-link one is the only business rule among them: the Quick Access menu refuses to list the same destination twice."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/QuickAccess/Exception/QuickAccessConstraintException.php"
+        role: implementation
+        description: "INVALID_ID, INVALID_NAME, INVALID_LINK, LINK_ALREADY_EXISTS"
+
+  cannotPersistQuickAccess:
+    id: admin.ERR013
+    name: "CannotPersistQuickAccess"
+    description: "The shortcut passed validation and the write still failed. One error for the three storage failures the code separates by verb, because the caller can do nothing different about an add, an update or a delete that the database refused."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/QuickAccess/Exception/CannotAddQuickAccessException.php"
+        role: implementation
+      - path: "src/Core/Domain/QuickAccess/Exception/CannotUpdateQuickAccessException.php"
+        role: implementation
+      - path: "src/Core/Domain/QuickAccess/Exception/CannotDeleteQuickAccessException.php"
+        role: implementation
+
+  bulkQuickAccessFailure:
+    id: admin.ERR014
+    name: "BulkQuickAccessFailure"
+    description: "A bulk delete finished with some shortcuts still present. The exception implements BulkCommandExceptionInterface, so it reports the ids that failed rather than claiming the whole selection failed."
+    category: conflict
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/QuickAccess/Exception/BulkQuickAccessException.php"
+        role: implementation
+
+  extraPropertyDefinitionNotFound:
+    id: admin.ERR015
+    name: "ExtraPropertyDefinitionNotFound"
+    description: "The requested extra property definition id does not exist. The Admin API maps it to 404 on every /extra-property-definitions route."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/ExtraProperty/Exception/ExtraPropertyDefinitionNotFoundException.php"
+        role: implementation
+
+  extraPropertyConstraintViolation:
+    id: admin.ERR016
+    name: "ExtraPropertyConstraintViolation"
+    description: "The definition's id, entity name, property name or constraint DSL is malformed. Raised at command construction, before the registry is touched, so nothing has been altered when the caller sees it."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/ExtraProperty/Exception/ExtraPropertyConstraintException.php"
+        role: implementation
+        description: "INVALID_ID, INVALID_ENTITY_NAME, INVALID_PROPERTY_NAME, INVALID_CONSTRAINTS"
+
+  extraPropertyRegistrationFailure:
+    id: admin.ERR017
+    name: "ExtraPropertyRegistrationFailure"
+    description: "The definition was well formed and the registry refused it anyway: an unknown entity or shop, a scope conflict, a change that would destroy stored values, a default value the column cannot hold, or a schema change the database rejected. Eleven codes, and they are the reason a definition is a structural change rather than a row."
+    category: conflict
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/ExtraProperty/Exception/ExtraPropertyRegistrationFailureException.php"
+        role: implementation
+        description: "BASE_TABLE_MISSING, SCOPE_CONFLICT, DESTRUCTIVE_CHANGE, PERSISTENCE_FAILURE, SCHEMA_FAILURE, INVALID_FORM_OPTIONS, UNKNOWN_SHOP, STORAGE_CONFLICT, INVALID_DEFAULT_VALUE, INVALID_CONSTRAINTS, UNKNOWN"
+
+  protectedModuleExtraPropertyDefinition:
+    id: admin.ERR018
+    name: "ProtectedModuleExtraPropertyDefinition"
+    description: "The definition belongs to a module, and a module-owned definition accepts nothing but a shop association change. It protects a module from having the property it ships redefined underneath it."
+    category: authorization
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/ExtraProperty/Exception/ProtectedModuleExtraPropertyDefinitionException.php"
+        role: implementation
+
+  bulkExtraPropertyFailure:
+    id: admin.ERR019
+    name: "BulkExtraPropertyFailure"
+    description: "A bulk delete of extra property definitions left some of them in place, and the exception names which. Same partial-failure shape as the quick-access bulk error."
+    category: conflict
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/ExtraProperty/Exception/BulkExtraPropertyException.php"
+        role: implementation
+
+  businessEntityNotFound:
+    id: admin.ERR020
+    name: "BusinessEntityNotFound"
+    description: "The requested business entity id does not exist, or has been soft-deleted."
+    category: not-found
+    severity: error
+    http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/BusinessEntity/Exception/BusinessEntityNotFoundException.php"
+        role: implementation
+
+  businessEntityConstraintViolation:
+    id: admin.ERR021
+    name: "BusinessEntityConstraintViolation"
+    description: "A business entity identifier is not a usable value. The exception declares one code, INVALID_ID, which is what the value object raises before any query runs."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/BusinessEntity/Exception/BusinessEntityConstraintException.php"
+        role: implementation
+
+  businessEntityAddressConstraintViolation:
+    id: admin.ERR022
+    name: "BusinessEntityAddressConstraintViolation"
+    description: "The billing and shipping addresses submitted with a business entity are inconsistent: one of them is missing, has no default, or has more than one default. This is admin.VR007 refusing at command construction."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [admin.VR007]
+    code_refs:
+      - path: "src/Core/Domain/BusinessEntity/Exception/BusinessEntityBillingAddressConstraintException.php"
+        role: implementation
+        description: "MISSING_BILLING_ADDRESS, MISSING_DEFAULT_BILLING_ADDRESS, MISSING_SHIPPING_ADDRESS, MISSING_DEFAULT_SHIPPING_ADDRESS, MULTIPLE_DEFAULT_BILLING_ADDRESSES, MULTIPLE_DEFAULT_SHIPPING_ADDRESSES"
+
+  unableToCreateBusinessEntityAddress:
+    id: admin.ERR023
+    name: "UnableToCreateBusinessEntityAddress"
+    description: "The entity was accepted and one of its addresses could not be written. It is separate from the address constraint error because the submission was valid: the failure is on the storage side, and the entity is left without the address it was promised."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/BusinessEntity/Exception/UnableToCreateBusinessEntityAddress.php"
+        role: implementation
+
+  sqlRequestConstraintViolation:
+    id: admin.ERR024
+    name: "SqlRequestConstraintViolation"
+    description: "A saved query's name is empty, its SQL is empty or malformed, or a bulk action arrived with no ids. Distinct from SqlQueryForbidden, which is about what the query would DO; this is about whether it is a query at all."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/SqlManagement/Exception/SqlRequestConstraintException.php"
+        role: implementation
+        description: "INVALID_NAME, INVALID_SQL_QUERY, MALFORMED_SQL_QUERY, MISSING_BULK_DATA"
+
+  cannotPersistSqlRequest:
+    id: admin.ERR025
+    name: "CannotPersistSqlRequest"
+    description: "A saved query could not be written or removed. One error for the three storage failures the code separates by verb; the delete exception additionally distinguishes a single delete from a bulk one."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/SqlManagement/Exception/CannotAddSqlRequestException.php"
+        role: implementation
+      - path: "src/Core/Domain/SqlManagement/Exception/CannotEditSqlRequestException.php"
+        role: implementation
+      - path: "src/Core/Domain/SqlManagement/Exception/CannotDeleteSqlRequestException.php"
+        role: implementation
+        description: "CANNOT_SINGLE_DELETE, CANNOT_BULK_DELETE"
+
+  databaseIntrospectionConstraintViolation:
+    id: admin.ERR026
+    name: "DatabaseIntrospectionConstraintViolation"
+    description: "The table or field the SQL manager was asked to describe is not a usable name or type. Raised by the two schema-reading queries rather than by a saved query, which is why it sits on the SqlManagement exception branch and not the SqlRequest one."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/SqlManagement/Exception/SqlManagementConstraintException.php"
+        role: implementation
+        description: "INVALID_DATABASE_TABLE_NAME, INVALID_DATABASE_TABLE_FIELD, INVALID_DATABASE_TABLE_FIELD_NAME, INVALID_DATABASE_TABLE_FIELD_TYPE"
+
+  sqlRequestSettingsConstraintViolation:
+    id: admin.ERR027
+    name: "SqlRequestSettingsConstraintViolation"
+    description: "The SQL manager's export settings are not acceptable: an unknown or unsupported file encoding, or an invalid field separator. These settings decide how an exported result set is read, so a wrong encoding silently corrupts the export rather than failing it."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/SqlManagement/Exception/SqlRequestSettingsConstraintException.php"
+        role: implementation
+        description: "INVALID_FILE_ENCODING, NOT_SUPPORTED_FILE_ENCODING, INVALID_FILE_SEPARATOR"

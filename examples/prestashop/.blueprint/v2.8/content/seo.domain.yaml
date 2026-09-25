@@ -11,6 +11,15 @@ operations:
   addMeta:
     id: content.CMD019
     kind: command
+    dispatch: inprocess
+    responses:
+      - code: "ok"
+        type: success
+        description: "The handler returns the new MetaId."
+      - code: "409"
+        type: failure
+        description: "A meta row already claims that page name."
+        error: content.ERR008
     name: "AddMeta"
     description: "Create a new SEO metadata entry for a page type. The page name identifies the internal route (e.g., 'category', 'product', 'cms'). Localized page titles, meta descriptions, and URL rewrites are optional."
     delivery_priority: must-have
@@ -21,15 +30,31 @@ operations:
     governed_by:
       - rule: content.VR006
       - rule: content.VR002
+    materializes:
+      - concept: content.CN005
+        action: create
     code_refs:
       - path: "src/Core/Domain/Meta/Command/AddMetaCommand.php"
         role: implementation
-      - path: "src/Core/Domain/Meta/CommandHandler/AddMetaHandler.php"
+      - path: "src/Adapter/Meta/CommandHandler/AddMetaHandler.php"
         role: implementation
 
   editMeta:
     id: content.CMD020
     kind: command
+    dispatch: inprocess
+    responses:
+      - code: "ok"
+        type: success
+        description: "The handler returns nothing on success."
+      - code: "404"
+        type: failure
+        description: "No meta row has that id."
+        error: content.ERR007
+      - code: "409"
+        type: failure
+        description: "Another meta row already claims that page name."
+        error: content.ERR008
     name: "EditMeta"
     description: "Update an existing SEO metadata entry. All fields are optional via setters."
     delivery_priority: must-have
@@ -40,10 +65,13 @@ operations:
     governed_by:
       - rule: content.VR006
       - rule: content.VR002
+    materializes:
+      - concept: content.CN005
+        action: update
     code_refs:
       - path: "src/Core/Domain/Meta/Command/EditMetaCommand.php"
         role: implementation
-      - path: "src/Core/Domain/Meta/CommandHandler/EditMetaHandler.php"
+      - path: "src/Adapter/Meta/CommandHandler/EditMetaHandler.php"
         role: implementation
 
   # --- Meta Events ---
@@ -52,19 +80,56 @@ operations:
     id: content.EVT015
     kind: event
     name: "MetaCreated"
-    description: "A new SEO metadata entry has been created."
+    description: >-
+      A new SEO metadata entry has been created. Regrounded 2026-09-14: the mechanism is the hook
+      actionObjectMetaAddAfter, fired by ObjectModel::add at line 615 because the Meta class
+      extends ObjectModel. There is no meta-specific lifecycle hook in the registry; the
+      actionAdminMetaSave and actionMetaPageSave entries belong to the legacy admin controller,
+      not to this command.
+    tags: [hook:actionObjectMetaAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 615: Hook::exec('actionObject' . getFullyQualifiedName() . 'AddAfter')."
+      - path: "classes/Meta.php"
+        role: implementation
+        description: "MetaCore extends ObjectModel, and var/class_stub.php line 161 aliases Meta onto it, so the hook name is actionObjectMeta*."
+      - path: "src/Adapter/Meta/CommandHandler/AddMetaHandler.php"
+        role: implementation
+        description: "Line 96 calls $entity->add(), which is what fires it."
 
   metaUpdated:
     id: content.EVT016
     kind: event
     name: "MetaUpdated"
-    description: "An existing SEO metadata entry has been modified."
+    description: >-
+      An existing SEO metadata entry has been modified. Regrounded 2026-09-14: the mechanism is the
+      hook actionObjectMetaUpdateAfter, fired by ObjectModel::update at line 847.
+    tags: [hook:actionObjectMetaUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847 for the after hook, line 717 for actionObjectMetaUpdateBefore."
+      - path: "classes/Meta.php"
+        role: implementation
+      - path: "src/Adapter/Meta/CommandHandler/EditMetaHandler.php"
+        role: implementation
 
   # --- Meta Queries ---
 
   getMetaForEditing:
     id: content.QRY007
     kind: query
+    dispatch: inprocess
+    responses:
+      - code: "ok"
+        type: success
+        description: "The meta row's page name and localized title, description and URL rewrite, as EditableMeta."
+        schema: MetaResource
+      - code: "404"
+        type: failure
+        description: "No meta row has that id."
+        error: content.ERR007
     name: "GetMetaForEditing"
     description: "Retrieve a single meta entry with all editable fields for the edit form."
     delivery_priority: must-have
@@ -78,6 +143,7 @@ operations:
   getPagesForLayoutCustomization:
     id: content.QRY008
     kind: query
+    dispatch: inprocess
     name: "GetPagesForLayoutCustomization"
     description: "Get available pages for theme layout customization. Used in theme configuration to map layouts to page types."
     delivery_priority: should-have
@@ -105,3 +171,18 @@ errors:
     severity: error
     http_status: 409
     related_rules: [content.VR006]
+
+questions:
+
+  - id: content.QN002
+    name: "What A Search Engine Sees"
+    statement: "What title, description and URL does a search engine see for this page?"
+    category: data
+    priority: high
+    bounded_context_ref: prestashop.BC004
+    answered_by: [content.QRY007]
+    concepts: [content.CN005]
+    resolved: true
+    resolution: >
+      Each route carries a Meta record holding the page title, meta description, keywords
+      and the rewritten URL; GetMetaForEditing is the whole of that answer.

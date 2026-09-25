@@ -21,6 +21,7 @@ concepts:
       enabled:
         id: CAT815
         description: "Whether the API client is currently active"
+        example: "true"
       description:
         id: CAT816
         description: "Purpose description for the API client"
@@ -53,6 +54,7 @@ concepts:
       key:
         id: CAT819
         description: "The webservice access key string"
+        example: "ZR4H2FVVMTHGL8KJ3QW9XPCND6BYS5TA"
       description:
         id: CAT820
         description: "Purpose description for the webservice key"
@@ -60,6 +62,7 @@ concepts:
       permissions:
         id: CAT821
         description: "Resource-level permission matrix (read/write per resource)"
+        example: "{resource: products, GET: true, POST: false, PUT: false, DELETE: false}"
     code_refs:
       - path: "src/Core/Domain/Webservice/Command/AddWebserviceKeyCommand.php"
         role: implementation

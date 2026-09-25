@@ -14,18 +14,22 @@ operations:
     exchange:
       protocol: http
       endpoint:
-        path: /admin/api-clients
+        path: /api-clients
         method: POST
-        group: admin
+        group: admin-api
     payload:
       schema: CreateApiClientPayload
       contentType: application/json
     responses:
       - code: "201"
         type: success
-        description: "The API client was created."
+        description: "The API client as stored. This is the one response that carries the generated secret, which is never returned again."
         schema: ApiClientResource
         contentType: application/json
+      - code: "422"
+        type: failure
+        description: "A field of the client is not acceptable."
+        error: admin.ERR007
     name: "AddApiClient"
     description: "Create a new OAuth2 API client with name, client ID, scopes, lifetime, and enabled status."
     delivery_priority: must-have
@@ -35,6 +39,9 @@ operations:
       mode: all
     governed_by:
       - rule: admin.VR005
+    materializes:
+      - concept: admin.CN005
+        action: create
     code_refs:
       - path: "src/Core/Domain/ApiClient/Command/AddApiClientCommand.php"
         role: implementation
@@ -43,11 +50,41 @@ operations:
     id: admin.EVT014
     kind: event
     name: "ApiClientAdded"
-    description: "New API client registered."
-
+    description: "Fact: an API client exists and may request tokens. The back-office form path fires actionAfterCreateApiClientFormHandler; a client created through the Admin API does not go through the form handler and raises no hook, so a module mirroring API clients sees only the ones an employee created by hand."
+    tags: [hook:actionAfterCreateApiClientFormHandler]
+    code_refs:
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry for actionAfterCreateApiClientFormHandler"
+      - path: "src/Core/Form/IdentifiableObject/Handler/FormHandler.php"
+        role: implementation
+        description: "Line 178 dispatches actionAfterCreate<Form>FormHandler after a back-office form is handled"
   editApiClient:
     id: admin.CMD022
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /api-clients/{apiClientId}
+        method: PATCH
+        group: admin-api
+    payload:
+      schema: UpdateApiClientPayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The API client as stored after the partial update."
+        schema: ApiClientResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No API client carries that id."
+        error: admin.ERR006
+      - code: "422"
+        type: failure
+        description: "A field of the client is not acceptable."
+        error: admin.ERR007
     name: "EditApiClient"
     description: "Update an existing API client's configuration including scopes, lifetime, and enabled status."
     delivery_priority: must-have
@@ -57,6 +94,9 @@ operations:
       mode: all
     governed_by:
       - rule: admin.VR005
+    materializes:
+      - concept: admin.CN005
+        action: update
     code_refs:
       - path: "src/Core/Domain/ApiClient/Command/EditApiClientCommand.php"
         role: implementation
@@ -65,11 +105,32 @@ operations:
     id: admin.EVT015
     kind: event
     name: "ApiClientEdited"
-    description: "API client configuration updated."
-
+    description: "Fact: an API client's configuration changed, which may have widened or narrowed what an integration can reach. Same hook shape as creation: the back-office form path fires actionAfterUpdateApiClientFormHandler, the API path fires nothing."
+    tags: [hook:actionAfterUpdateApiClientFormHandler]
+    code_refs:
+      - path: "install-dev/data/xml/hook.xml"
+        role: documentation
+        description: "Registry entry for actionAfterUpdateApiClientFormHandler"
+      - path: "src/Core/Form/IdentifiableObject/Handler/FormHandler.php"
+        role: implementation
+        description: "Line 144 dispatches actionAfterUpdate<Form>FormHandler after a back-office form is handled"
   deleteApiClient:
     id: admin.CMD023
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /api-clients/{apiClientId}
+        method: DELETE
+        group: admin-api
+    responses:
+      - code: "204"
+        type: success
+        description: "The API client was removed and its tokens revoked."
+      - code: "404"
+        type: failure
+        description: "No API client carries that id."
+        error: admin.ERR006
     name: "DeleteApiClient"
     description: "Remove an API client and revoke all associated tokens."
     delivery_priority: must-have
@@ -77,6 +138,9 @@ operations:
     produces:
       operations: [admin.EVT016]
       mode: all
+    materializes:
+      - concept: admin.CN005
+        action: delete
     code_refs:
       - path: "src/Core/Domain/ApiClient/Command/DeleteApiClientCommand.php"
         role: implementation
@@ -85,11 +149,15 @@ operations:
     id: admin.EVT016
     kind: event
     name: "ApiClientDeleted"
-    description: "API client removed and tokens revoked."
-
+    description: "Fact: an API client no longer exists and the tokens issued to it are void. No hook is fired for this transition: ApiClient is a Doctrine entity deleted through its repository, and the registry declares create and update form hooks for it but no delete hook. A module cannot observe a revocation."
+    code_refs:
+      - path: "src/Adapter/ApiClient/CommandHandler/DeleteApiClientHandler.php"
+        role: implementation
+        description: "repository->delete(); a Doctrine entity, so no actionObject* hook"
   rotateApiClientSecret:
     id: admin.CMD024
     kind: command
+    dispatch: inprocess
     name: "RotateApiClientSecret"
     description: "Rotate an API client's secret. Virtual operation grouping ForceApiClientSecret (explicit value) and GenerateApiClientSecret (auto-generated). Both accomplish the same domain goal: secret rotation."
     delivery_priority: must-have
@@ -97,6 +165,9 @@ operations:
     produces:
       operations: [admin.EVT017]
       mode: all
+    materializes:
+      - concept: admin.CN005
+        action: update
     code_refs:
       - path: "src/Core/Domain/ApiClient/Command/ForceApiClientSecretCommand.php"
         role: implementation
@@ -109,11 +180,36 @@ operations:
     id: admin.EVT017
     kind: event
     name: "ApiClientSecretRotated"
-    description: "API client secret changed."
-
+    description: "Fact: an API client's secret changed, so every credential the integration held is stale. No hook is fired for this transition, which matters more here than elsewhere: the one moment an integration is guaranteed to break is invisible to the modules that might have warned about it."
+    code_refs:
+      - path: "src/Adapter/ApiClient/CommandHandler/GenerateApiClientSecretHandler.php"
+        role: implementation
+      - path: "src/Adapter/ApiClient/CommandHandler/ForceApiClientSecretHandler.php"
+        role: implementation
   getApiClientForEditing:
     id: admin.QRY005
     kind: query
+    exchange:
+      - protocol: http
+        endpoint:
+          path: /api-clients/{apiClientId}
+          method: GET
+          group: admin-api
+      - protocol: http
+        endpoint:
+          path: /api-clients/infos
+          method: GET
+          group: admin-api
+    responses:
+      - code: "200"
+        type: success
+        description: "The API client. Two routes reach this one query: the module route reads any client by id, and the core route reads the client the caller is authenticated as."
+        schema: ApiClientResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No API client carries that id."
+        error: admin.ERR006
     name: "GetApiClientForEditing"
     description: "Retrieve API client details for the edit form."
     delivery_priority: must-have
@@ -126,6 +222,21 @@ operations:
   addWebserviceKey:
     id: admin.CMD025
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /webservice-keys
+        method: POST
+        group: admin-api
+    payload:
+      schema: CreateWebserviceKeyPayload
+      contentType: application/json
+    responses:
+      - code: "201"
+        type: success
+        description: "The webservice key as stored."
+        schema: WebserviceKeyResource
+        contentType: application/json
     name: "AddWebserviceKey"
     description: "Create a new legacy webservice access key with resource permissions."
     delivery_priority: should-have
@@ -133,6 +244,9 @@ operations:
     produces:
       operations: [admin.EVT018]
       mode: all
+    materializes:
+      - concept: admin.CN006
+        action: create
     code_refs:
       - path: "src/Core/Domain/Webservice/Command/AddWebserviceKeyCommand.php"
         role: implementation
@@ -141,11 +255,37 @@ operations:
     id: admin.EVT018
     kind: event
     name: "WebserviceKeyAdded"
-    description: "New webservice key created."
-
+    description: "Fact: a legacy webservice key exists with its resource permissions. WebserviceKey is an ObjectModel, so unlike its successor the API client, its creation IS observable: actionObjectWebserviceKeyAddAfter fires."
+    tags: [hook:actionObjectWebserviceKeyAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 615 fires actionObject<Class>AddAfter for every persisted ObjectModel"
+      - path: "classes/webservice/WebserviceKey.php"
+        role: model
+        description: "WebserviceKeyCore extends ObjectModel, which is what makes the dynamic hook name resolve"
   editWebserviceKey:
     id: admin.CMD026
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /webservice-keys/{webserviceKeyId}
+        method: PATCH
+        group: admin-api
+    payload:
+      schema: UpdateWebserviceKeyPayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The webservice key as stored after the partial update."
+        schema: WebserviceKeyResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No webservice key carries that id."
+        error: admin.ERR008
     name: "EditWebserviceKey"
     description: "Update a webservice key's description and resource permissions."
     delivery_priority: should-have
@@ -153,6 +293,9 @@ operations:
     produces:
       operations: [admin.EVT019]
       mode: all
+    materializes:
+      - concept: admin.CN006
+        action: update
     code_refs:
       - path: "src/Core/Domain/Webservice/Command/EditWebserviceKeyCommand.php"
         role: implementation
@@ -161,11 +304,19 @@ operations:
     id: admin.EVT019
     kind: event
     name: "WebserviceKeyEdited"
-    description: "Webservice key permissions updated."
-
+    description: "Fact: a webservice key's description or permission matrix changed, so what the legacy API grants is different."
+    tags: [hook:actionObjectWebserviceKeyUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 847 fires actionObject<Class>UpdateAfter for every persisted ObjectModel"
+      - path: "classes/webservice/WebserviceKey.php"
+        role: model
+        description: "WebserviceKeyCore extends ObjectModel, which is what makes the dynamic hook name resolve"
   deleteWebserviceKey:
     id: admin.CMD027
     kind: command
+    dispatch: inprocess
     name: "DeleteWebserviceKey"
     description: "Remove a webservice key, revoking legacy API access."
     delivery_priority: should-have
@@ -173,6 +324,9 @@ operations:
     produces:
       operations: [admin.EVT020]
       mode: all
+    materializes:
+      - concept: admin.CN006
+        action: delete
     code_refs:
       - path: "src/Core/Domain/Webservice/Command/DeleteWebserviceKeyCommand.php"
         role: implementation
@@ -181,11 +335,19 @@ operations:
     id: admin.EVT020
     kind: event
     name: "WebserviceKeyDeleted"
-    description: "Webservice key removed."
-
+    description: "Fact: a webservice key no longer exists, singly or in a bulk selection, and legacy API access through it stops."
+    tags: [hook:actionObjectWebserviceKeyDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Line 923 fires actionObject<Class>DeleteAfter for every persisted ObjectModel"
+      - path: "classes/webservice/WebserviceKey.php"
+        role: model
+        description: "WebserviceKeyCore extends ObjectModel, which is what makes the dynamic hook name resolve"
   bulkDeleteWebserviceKey:
     id: admin.CMD028
     kind: command
+    dispatch: inprocess
     name: "BulkDeleteWebserviceKey"
     description: "Delete multiple webservice keys at once."
     delivery_priority: could-have
@@ -193,6 +355,9 @@ operations:
     produces:
       operations: [admin.EVT020]
       mode: all
+    materializes:
+      - concept: admin.CN006
+        action: delete
     code_refs:
       - path: "src/Core/Domain/Webservice/Command/BulkDeleteWebserviceKeyCommand.php"
         role: implementation
@@ -200,6 +365,22 @@ operations:
   getWebserviceKeyForEditing:
     id: admin.QRY006
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /webservice-keys/{webserviceKeyId}
+        method: GET
+        group: admin-api
+    responses:
+      - code: "200"
+        type: success
+        description: "The webservice key with its per-resource permission matrix."
+        schema: WebserviceKeyResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No webservice key carries that id."
+        error: admin.ERR008
     name: "GetWebserviceKeyForEditing"
     description: "Retrieve webservice key details for the edit form."
     delivery_priority: should-have
@@ -232,3 +413,51 @@ errors:
     category: not-found
     severity: error
     http_status: 404
+
+questions:
+
+  - id: admin.QN003
+    name: "Which Credentials Reach The API"
+    statement: "Which credentials can call this shop's APIs, and how is one revoked?"
+    category: compliance
+    priority: critical
+    bounded_context_ref: prestashop.BC001
+    answered_by: [admin.QRY005, admin.QRY006, admin.CMD024]
+    concepts: [admin.CN005, admin.CN006]
+    resolved: true
+    resolution: >
+      Two credential kinds coexist: an OAuth2 API client with its scopes, and a legacy
+      webservice key with its per-resource permissions. RotateApiClientSecret is the
+      revocation path for the first; deleting the key is the only one for the second.
+
+  # ExternalApiConsumers (prestashop.BC009) has no slice folder of its own, so its competency
+  # questions are written here, beside the Admin API surface they are about, and bound to the
+  # context by `bounded_context_ref` rather than by the file they sit in. Band QN100+ keeps them
+  # legible as a separate allocation from admin's own QN001-QN003.
+  - id: admin.QN100
+    name: "What An Integrator May Read"
+    statement: "Which of this shop's data can an external system read through the Admin API, and under which scope?"
+    category: compliance
+    priority: critical
+    bounded_context_ref: prestashop.BC009
+    answered_by: [admin.QRY001, catalog.QRY001, catalog.QRY002, orders.QRY001]
+    concepts: [admin.CN005]
+    resolved: true
+    resolution: >
+      The AdminApiClient contract names exactly the operations an integrator calls, and the
+      admin:read and admin:write scopes on its OAuth2 scheme decide which of them a given
+      client may reach. The contract is the boundary, not a convention.
+
+  - id: admin.QN101
+    name: "How An Integration Authenticates"
+    statement: "Which credential does this integration authenticate with, and what happens when it is rotated?"
+    category: dependency
+    priority: high
+    bounded_context_ref: prestashop.BC009
+    answered_by: [admin.CMD021, admin.CMD024, admin.QRY005]
+    concepts: [admin.CN005, admin.CN006]
+    resolved: true
+    resolution: >
+      AddApiClient returns the generated secret once and never again, so rotating it with
+      RotateApiClientSecret breaks every integration that did not store the new value. That
+      consequence is the reason this question belongs to the consumer rather than to Admin.

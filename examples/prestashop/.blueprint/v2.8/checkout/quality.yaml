@@ -4,28 +4,45 @@ scope: checkout
 
 kpis:
   - id: checkout.KPI001
+    domain_scope: checkout
     name: "Cart-to-Order Conversion Rate"
     target: ">= 3.5% of active carts result in completed orders"
+    description: >
+      A merchant outcome, not a platform measurement. PrestaShop stores carts and
+      orders but ships no funnel counter, so the ratio is computed from the cart
+      and order tables or from the shop's own analytics. It is recorded here
+      because it is the number a merchant judges checkout by.
     window: "monthly"
-    goal: checkout.G001
+    goal: checkout.GL001
     thresholds:
       warning: "2.5%"
       critical: "2.0%"
 
   - id: checkout.KPI002
+    domain_scope: checkout
     name: "Discount Calculation Accuracy"
     target: "100% of applied discounts compute correct reduction amounts"
+    description: >
+      Discounts are applied by the cart rule and discount aggregates, and no job
+      re-computes a cart total afterwards to compare. The target is verified by
+      test rather than observed in production: a divergence surfaces as a customer
+      complaint, or as the negative total RSK002 describes.
     window: "daily"
-    goal: checkout.G002
+    goal: checkout.GL002
     thresholds:
       warning: "99.9%"
       critical: "99.5%"
 
   - id: checkout.KPI003
+    domain_scope: checkout
     name: "Active Discount Campaign Count"
     target: "System supports 200+ concurrent active discounts without degradation"
+    description: >
+      A capacity target rather than a quality one. Every active cart rule is
+      evaluated on every cart change, so the count of active rules is the load
+      driver behind GL003 and RSK003. Read straight from the discount table.
     window: "continuous"
-    goal: checkout.G003
+    goal: checkout.GL003
 
 slos:
   - id: checkout.SLO001

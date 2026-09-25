@@ -16,15 +16,25 @@ structural:
         role: validation
 
   - id: catalog.SR002
-    name: "Category tree maximum depth"
-    description: "Category hierarchy cannot exceed a configurable maximum depth (default: 10 levels). Prevents performance degradation in breadcrumb generation and tree queries."
+    name: "Category depth is derived from the parent, never set"
+    description: >-
+      A category's level_depth is computed from its parent and is not writable: Category::add
+      calls calcLevelDepth() when the field is unset, Category::update recomputes it whenever
+      the stored value disagrees, and the field definition carries 'setter' => false. No code
+      enforces a maximum nesting depth - CategorySettings defines length and format constants
+      only, and the only maxDepth in the category code is a rendering argument on a
+      tree-building helper. The invariant PrestaShop holds is the derivation.
     logic:
-      then: "category.depth <= MAX_CATEGORY_DEPTH"
+      then: "category.level_depth == parent.level_depth + 1"
     modality: necessary
     concepts: [catalog.CN002]
     code_refs:
+      - path: "classes/Category.php"
+        role: implementation
+        description: "calcLevelDepth, the recompute in add and update, and the 'setter' => false field definition"
       - path: "src/Core/Domain/Category/CategorySettings.php"
         role: implementation
+        description: "The constants a category really is constrained by: title, link-rewrite and description lengths. No depth constant is defined here."
       - path: "src/Core/Domain/Category/Exception/CategoryConstraintException.php"
         role: implementation
 

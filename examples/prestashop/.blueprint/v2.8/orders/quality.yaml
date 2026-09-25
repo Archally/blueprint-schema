@@ -10,9 +10,9 @@ metrics:
     measures:
       operations: [orders.CMD001]
     collection:
-      method: automated
-      source: "Application metrics (Prometheus)"
-      frequency: continuous
+      method: manual
+      source: "PHP slow-request log and the back-office order list; core ships no metrics exporter"
+      frequency: weekly
 
   - id: orders.MT002
     name: "Refund Processing Time"
@@ -21,38 +21,80 @@ metrics:
     measures:
       operations: [orders.CMD003, orders.CMD015, orders.CMD016]
     collection:
-      method: automated
-      source: "Application metrics (Prometheus)"
-      frequency: continuous
+      method: manual
+      source: "PHP slow-request log and the back-office order list; core ships no metrics exporter"
+      frequency: weekly
+
+  - id: orders.MT100
+    name: "Order Conversion Rate Records"
+    summary: "Share of orders that stored the currency conversion rate they were placed at"
+    type: business
+    unit: "%"
+    description: >
+      Order.conversion_rate is a required column filled when the order is
+      placed, and OrderPayment stores the rate again at payment. Together they
+      are what keeps a past order priced at the rate it was sold at when the
+      currency moves afterwards. A zero or absent rate is an order whose total
+      a later report will restate.
+    measures:
+      operations: [orders.CMD001, orders.CMD007]
+      concepts: [orders.CN002]
 
 kpis:
   - id: KPI001
     name: "Order Error Rate"
+    domain_scope: orders
     metric: orders.MT001
     target: "< 0.1% of orders result in processing errors"
+    description: >
+      Counts orders whose placement or state change raised a domain exception,
+      against orders attempted. Core keeps no error counter, so the source is the
+      PHP error log joined to the order log.
     window: "monthly"
-    goal: orders.G003
+    goal: orders.GL003
     thresholds:
       warning: "0.5%"
       critical: "1.0%"
 
   - id: KPI002
+    domain_scope: orders
     name: "Checkout-to-Confirmation Time"
     target: "p95 < 3 seconds from checkout click to order confirmation"
+    description: >
+      Wall-clock from the shopper confirming the cart to the order confirmation
+      page. INQ003 asked whether the template engine is what makes this number
+      large.
     window: "weekly"
-    goal: orders.G001
+    goal: orders.GL001
     thresholds:
       warning: "5s"
       critical: "10s"
 
   - id: KPI003
+    domain_scope: orders
     name: "Invoice Generation Compliance Rate"
     target: "100% of paid orders have a compliant invoice within 24h"
+    description: >
+      GenerateInvoice assigns the invoice number and date, and an order that is
+      paid without one cannot be reported for VAT. Countable from the order invoice
+      table against paid orders.
     window: "monthly"
-    goal: orders.G004
+    goal: orders.GL004
     thresholds:
       warning: "99%"
       critical: "95%"
+
+  - id: orders.KPI100
+    domain_scope: orders
+    name: "Order Currency Rate Integrity"
+    metric: orders.MT100
+    target: "100% of orders carry a non-zero conversion rate recorded at the moment they were placed"
+    window: "monthly"
+    goal: orders.GL002
+    description: >
+      GL002's measure. Multi-currency ordering is correct only if a past order
+      keeps the rate it was sold at; re-deriving it from today's rate changes
+      history, which is the dispute RSK002 describes.
 
 slos:
   - id: SLO001
@@ -88,7 +130,7 @@ security:
   - id: orders.SEC002
     name: "Refund Authorization"
     type: authorization
-    requirement: "Only users with Employee profile permission 'AdminOrders' can issue refunds. Two-factor authentication required for refunds exceeding EUR 500."
+    requirement: "Only employees whose profile grants the AdminOrders permission can issue a refund. Core offers no second authentication factor to require above a threshold: an employee signs in with an email address and a password and nothing else, so the permission row is the whole of the control."
     operations: [orders.CMD003, orders.CMD015, orders.CMD016]
 
 compliance:

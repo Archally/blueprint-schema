@@ -17,6 +17,7 @@ concepts:
       active:
         id: CAT617
         description: "Whether this theme is currently enabled for the shop"
+        example: "true"
       directory:
         id: CAT618
         description: "Filesystem directory containing theme files"
@@ -28,6 +29,7 @@ concepts:
       responsive:
         id: CAT620
         description: "Whether the theme supports responsive design"
+        example: "true"
     code_refs:
       - path: "src/Core/Domain/Theme/Command/EnableThemeCommand.php"
         role: implementation
@@ -52,6 +54,41 @@ concepts:
       - path: "src/Core/Domain/Theme/ValueObject/ThemeImportSource.php"
         role: model
         description: "Polymorphic value object with fromArchive/fromWeb/fromFtp factory methods"
+
+  - id: content.CN006
+    name: "MailTemplate"
+    stereotype: aggregate-root
+    description: "The HTML and plain-text body of one transactional email template, for one locale and one source (core or a named module). GenerateThemeMailTemplates writes a whole theme's set from source; EditEmailBodyTemplate and GetEmailBodyTemplateForEditing are the per-template editor a merchant uses afterwards. Added step-25: the code names this domain (src/Core/Domain/MailTemplate/, its own Command/Query/ValueObject/Exception folders) but no concept named it before this step."
+    tags: [aggregate-root, presentation, email]
+    attributes:
+      templateName:
+        id: CAT5000
+        description: "The template's technical name (an EmailTemplateName value object), e.g. order_conf."
+        example: "order_conf"
+      locale:
+        id: CAT5001
+        description: "The language locale this body is written in."
+        example: "en-US"
+      source:
+        id: CAT5002
+        description: "Where the template belongs: core, or a named module (an EmailTemplateSource value object of source + moduleName)."
+        example: "core"
+      htmlContent:
+        id: CAT5003
+        description: "The template's HTML body."
+        example: "<p>Thank you for your order.</p>"
+      txtContent:
+        id: CAT5004
+        description: "The template's plain-text body, sent alongside the HTML part."
+        example: "Thank you for your order."
+    code_refs:
+      - path: "src/Core/Domain/MailTemplate/Command/EditEmailBodyTemplateCommand.php"
+        role: implementation
+        description: "Constructor carries templateName, locale, source, moduleName, htmlContent, txtContent"
+      - path: "src/Core/Domain/MailTemplate/ValueObject/EmailTemplateName.php"
+        role: model
+      - path: "src/Core/Domain/MailTemplate/ValueObject/EmailTemplateSource.php"
+        role: model
 
 actors:
   - id: content.ACT002

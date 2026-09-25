@@ -103,6 +103,7 @@ components:
             "1": "Laptops & Notebooks"
         localizedDescriptions:
           type: object
+          description: "Category description per language id, stored as HTML. It prints above the product grid on the category page, so it is copy rather than metadata."
           additionalProperties:
             type: string
           example:
@@ -117,18 +118,21 @@ components:
           example: 2
         localizedMetaTitles:
           type: object
+          description: "Page title per language id. Empty falls back to the category name, so leaving it out is a choice to accept the default."
           additionalProperties:
             type: string
           example:
             "1": "Laptops & Notebooks - Best Prices"
         localizedMetaDescriptions:
           type: object
+          description: "The snippet offered to a search engine, per language id. Not printed anywhere on the storefront itself."
           additionalProperties:
             type: string
           example:
             "1": "Shop laptops and notebooks from top brands."
         localizedLinkRewrites:
           type: object
+          description: "URL slug per language id. Changing it changes the category's public address and the address of every product page reached through it, so an edit here is an SEO event."
           additionalProperties:
             type: string
           example:
@@ -169,6 +173,7 @@ components:
           example: true
         localizedNames:
           type: object
+          description: "Category name per language id. It is what the breadcrumb and the menu read, and an untranslated language shows an empty label rather than falling back."
           additionalProperties:
             type: string
           example:
@@ -176,24 +181,28 @@ components:
             "2": "Ordinateurs Portables"
         localizedDescriptions:
           type: object
+          description: "Category description per language id, stored as HTML and printed above the product grid."
           additionalProperties:
             type: string
           example:
             "1": "<p>Browse our selection of laptops.</p>"
         localizedMetaTitles:
           type: object
+          description: "Page title per language id, falling back to the category name when empty."
           additionalProperties:
             type: string
           example:
             "1": "Laptops - Best Prices"
         localizedMetaDescriptions:
           type: object
+          description: "The snippet offered to a search engine, per language id."
           additionalProperties:
             type: string
           example:
             "1": "Shop laptops from top brands."
         localizedLinkRewrites:
           type: object
+          description: "URL slug per language id, which fixes the category's public address in that language."
           additionalProperties:
             type: string
           example:
@@ -220,6 +229,7 @@ components:
           example: 47
         shopIds:
           type: array
+          description: "Which shops of a multistore installation show this category. A category absent from a shop is unreachable there even though its products may not be."
           items:
             type: integer
           example: [1]
@@ -238,6 +248,7 @@ components:
       properties:
         categoryId:
           type: integer
+          description: "The category this node stands for, which a picker returns as the selected value."
           example: 5
         name:
           type: string
@@ -245,12 +256,20 @@ components:
           example: "Laptops"
         active:
           type: boolean
+          description: "Whether the category is live on the storefront. A disabled branch is still shown in the back-office tree, greyed, because an employee has to be able to find it to re-enable it."
           example: true
         depth:
           type: integer
+          description: "How far below the root this node sits, counted from 0. The tree widget uses it for indentation rather than recomputing it from the nesting."
           example: 2
         children:
           type: array
-          description: "Child category nodes (recursive)."
+          description: "Child category nodes, nested to the full depth of the branch. The tree arrives whole in one response rather than being fetched level by level."
+          example:
+            - categoryId: 12
+              name: "Gaming laptops"
+              active: true
+              depth: 3
+              children: []
           items:
             $ref: "#/components/schemas/CategoryTreeNode"

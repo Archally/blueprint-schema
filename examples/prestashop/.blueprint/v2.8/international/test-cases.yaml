@@ -1,5 +1,5 @@
 ---
-version: "1.0.0"
+version: "1.1.0"
 scope: international
 
 happy_path:
@@ -11,7 +11,7 @@ happy_path:
       rules: [international.VR001, international.SR001]
     contract:
       kind: openapi
-      file: international/international-api.openapi
+      file: international-api
     given:
       description: "ISO code 'GBP' not yet in store. Exchange rate 0.85."
       state:
@@ -21,6 +21,24 @@ happy_path:
     expected_result:
       status: success
       code: 200
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Currency/currency_management.feature"
+        role: test
+        description: "Scenario 'Adding and editing currency' (line 16), which adds an official currency and asserts its stored values."
+      - path: "src/Adapter/Currency/CommandHandler/AddOfficialCurrencyHandler.php"
+        role: implementation
+        description: "Where the ISO code is checked against CLDR before the currency is created."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Currency/currency_management.feature line 16"
+          date: "2026-09-19"
+          summary: >-
+            The scenario adds a currency and asserts its ISO code, rate and enabled flag. It
+            uses EUR rather than this case's GBP; the assertion is the same.
+          confidence_impact: supports
 
   - id: international.TC002
     name: "Refresh exchange rates - happy path"
@@ -33,31 +51,77 @@ happy_path:
         activeCurrencies: 3
     expected_result:
       status: success
+    code_refs:
+      - path: "src/Adapter/Currency/CommandHandler/RefreshExchangeRatesHandler.php"
+        role: implementation
+    provenance:
+      discovery_stage: exploring
+      certainty: speculative
+      evidence:
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code, and untested at every layer: nothing under tests/
+            references RefreshExchangeRatesCommand or its handler, in Behat, in PHPUnit or in
+            the Playwright campaigns. The operation reaches an external rate provider, which is
+            the usual reason a command has no test, and the usual reason it deserves one.
+          confidence_impact: weakens
 
   - id: international.TC003
-    name: "Create tax rules group with rules - happy path"
-    summary: "Create a tax rules group and assign a tax rate to a zone."
+    name: "Create tax rules group - happy path"
+    summary: "Create an empty tax rules group; binding a rate to a country is a second command."
     validates:
       operations: [international.CMD027, international.EVT027]
-      rules: [international.VR008]
     given:
-      description: "Tax rate 'VAT 20%' exists. Zone 'Europe' exists."
+      description: >-
+        A new tax rules group is created by name. Corrected 2026-09-19: this case's given
+        carried a taxId and a zoneId and its summary said the group is created WITH a rule.
+        AddTaxRulesGroup takes a name and its flags; binding a tax rate to a country is
+        international.CMD034 AddTaxRule, a separate command with its own handler. The case now
+        asserts only what the cited operation does, and international.TC004 covers the binding.
       state:
         groupName: "EU VAT Standard"
-        taxId: 1
-        zoneId: 1
     expected_result:
       status: success
       code: 200
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/TaxRulesGroup/tax_rule_group_management.feature"
+        role: test
+        description: "Scenario 'Adding new tax rules group' (line 7)."
+      - path: "src/Core/Domain/TaxRulesGroup/Command/AddTaxRulesGroupCommand.php"
+        role: implementation
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/TaxRulesGroup/tax_rule_group_management.feature line 7"
+          date: "2026-09-19"
+          summary: >-
+            The scenario creates a tax rules group and asserts it exists with its name. Same
+            assertion as the corrected case.
+          confidence_impact: supports
+        - kind: codebase-analysis
+          source: "src/Core/Domain/TaxRulesGroup/Command/AddTaxRulesGroupCommand.php"
+          date: "2026-09-19"
+          summary: >-
+            Read for the retired given. The command carries no tax id and no zone id, so the
+            rule-binding this case used to describe could not have been performed by it.
+          confidence_impact: invalidates
 
   - id: international.TC004
-    name: "Configure EU VAT across countries - happy path"
-    summary: "Set up different VAT rates per EU country within a tax rules group."
+    name: "Bind a tax rate to a country inside a group - happy path"
+    summary: "A tax rules group gains a per-country rate through AddTaxRule."
     validates:
-      operations: [international.CMD023, international.CMD027, international.CMD028]
-      rules: [international.VR006]
+      operations: [international.CMD023, international.CMD034]
+      rules: [international.VR008]
     given:
-      description: "EU zone exists. France (20%), Germany (19%), Ireland (23%) rates needed."
+      description: >-
+        A tax rules group exists and tax rates for France, Germany and Ireland have been
+        created with AddTax. Each is then bound to its country with AddTaxRule. Corrected
+        2026-09-19: this case named CMD027 and CMD028, group create and group edit, neither of
+        which binds anything. The binding command is CMD034.
       state:
         taxRates:
           - name: "FR VAT 20%"
@@ -68,6 +132,27 @@ happy_path:
             rate: 23.0
     expected_result:
       status: success
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/TaxRulesGroup/tax_rule_management.feature"
+        role: test
+        description: "Scenario 'Adding a tax rule to a group for a specific country' (line 12)."
+      - path: "src/Adapter/TaxRulesGroup/CommandHandler/AddTaxRuleHandler.php"
+        role: implementation
+      - path: "src/Core/Domain/Tax/Command/AddTaxCommand.php"
+        role: implementation
+        description: "The rate creation half."
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/TaxRulesGroup/tax_rule_management.feature line 12"
+          date: "2026-09-19"
+          summary: >-
+            The scenario binds a tax rule to a group for one named country and asserts it. It
+            binds one country rather than this case's three; the mechanism is the same command
+            run three times.
+          confidence_impact: supports
 
 edge_cases:
   - id: international.EC001
@@ -84,62 +169,204 @@ edge_cases:
     expected_result:
       status: failure
       code: 422
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Currency/currency_management.feature"
+        role: test
+        description: "Scenario 'Deleting default currency should not be allowed' (line 71)."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Currency/currency_management.feature line 71"
+          date: "2026-09-19"
+          summary: >-
+            The scenario deletes the default currency and asserts the refusal. Same assertion.
+            Note that international.VR002, the rule this case validates, carries no code_refs
+            of its own, so the test is currently the rule's only evidence.
+          confidence_impact: supports
 
   - id: international.EC002
-    name: "Duplicate tax rule binding rejected"
-    summary: "Attempt to add a second tax rule for the same zone+country in a group."
+    name: "A duplicate tax rule binding is skipped, not rejected"
+    summary: "Re-binding a rate to a country the group already covers adds nothing and raises nothing."
     validates:
-      operations: [international.CMD028]
-      rules: [international.VR008]
+      operations: [international.CMD034]
     given:
-      description: "Tax rule for Tax 1 + Zone 1 + Country FR already exists in group."
+      description: >-
+        A tax rules group that already has a rule for country FR, asked to add one again.
+        Corrected 2026-09-19: this case asserted a 422 refusal, and named CMD028 EditTaxRulesGroup,
+        which does not bind rules at all. AddTaxRuleHandler loops over the requested countries
+        and states, asks hasUniqueTaxRuleForCountry, and where the pair already exists it
+        CONTINUES - silently skipping that country. AddTaxRuleResult is returned with fewer
+        rule ids and no error. The silence is the fact worth knowing, because a merchant
+        rebinding a country gets a success and no new rule.
       state:
         taxId: 1
-        zoneId: 1
         countryIso: "FR"
     expected_result:
-      status: failure
-      code: 422
+      status: success
+    code_refs:
+      - path: "src/Adapter/TaxRulesGroup/CommandHandler/AddTaxRuleHandler.php"
+        role: implementation
+        description: "The hasUniqueTaxRuleForCountry check and the continue that follows it."
+      - path: "classes/tax/TaxRulesGroup.php"
+        role: implementation
+        description: "hasUniqueTaxRuleForCountry, which deduplicates on the country and state pair."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "src/Adapter/TaxRulesGroup/CommandHandler/AddTaxRuleHandler.php"
+          date: "2026-09-19"
+          summary: >-
+            Read for the retired claim. The duplicate branch is a continue inside the country
+            loop; no exception is constructed anywhere in the handler for this case.
+          confidence_impact: invalidates
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. All seven scenarios in tax_rule_management.feature bind
+            distinct countries, so nothing observes the skip.
+          confidence_impact: weakens
 
 error_cases:
   - id: international.ER001
     name: "Invalid currency ISO code"
-    summary: "Attempt to create a currency with an invalid (non-3-letter) ISO code."
+    summary: "Attempt to create a currency with an ISO code outside the two-to-three letter pattern."
     validates:
       operations: [international.CMD001]
       rules: [international.VR001]
     given:
-      description: "ISO code 'EURO' is 4 characters."
+      description: >-
+        ISO code 'EURO' is 4 characters. Note what the pattern really is: AlphaIsoCode accepts
+        two OR three letters, not three exactly, so a two-letter code passes and only length
+        and non-alphabetic characters are refused.
       state:
         isoCode: "EURO"
     expected_result:
       status: failure
       code: 422
+    code_refs:
+      - path: "tests/Unit/Core/Domain/Currency/ValueObject/CurrencyIsoCodeTest.php"
+        role: test
+        description: "testItThrowsAnExceptionOnIncorrectIsoCodeRegex, whose data provider includes the four-letter 'LTUU'. The class is named for the currency and tests AlphaIsoCode."
+      - path: "src/Core/Domain/Currency/ValueObject/AlphaIsoCode.php"
+        role: validation
+        description: "PATTERN '/^[a-zA-Z]{2,3}$/'."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Unit/Core/Domain/Currency/ValueObject/CurrencyIsoCodeTest.php"
+          date: "2026-09-19"
+          summary: >-
+            The data provider includes a four-letter code and the test asserts the refusal, so
+            this case's exact input shape is covered.
+          confidence_impact: supports
+        - kind: codebase-analysis
+          source: "src/Core/Domain/Currency/ValueObject/AlphaIsoCode.php"
+          date: "2026-09-19"
+          summary: >-
+            The pattern accepts two or three letters. international.VR001's description says a
+            valid three-letter alphabetic code, which is narrower than the code.
+          confidence_impact: weakens
 
   - id: international.ER002
-    name: "Negative tax rate rejected"
-    summary: "Attempt to create a tax rate with a negative percentage."
+    name: "A negative tax rate is accepted, and nothing refuses it"
+    summary: "Neither AddTax nor the Tax object model rejects a rate below zero."
     validates:
       operations: [international.CMD023]
-      rules: [international.VR006]
     given:
-      description: "Tax rate -5%."
+      description: >-
+        A tax created with a rate of -5. Corrected 2026-09-19: this case asserted a 422.
+        classes/tax/Tax.php declares rate with validate isFloat, and Validate::isFloat accepts
+        any numeric float including a negative one; the unsigned variant isUnsignedFloat exists
+        and is not used here. AddTaxHandler calls validateFields and validateFieldsLang and
+        adds nothing of its own, and AddTaxCommand carries no assertion. The case now records
+        the gap rather than a refusal that does not happen.
       state:
         rate: -5.0
     expected_result:
-      status: failure
-      code: 422
+      status: success
+    note: >-
+      This case exists to record a missing constraint. If PrestaShop adds one, the case flips
+      back to a refusal and international.VR006 gains the code_refs it currently lacks.
+    code_refs:
+      - path: "classes/tax/Tax.php"
+        role: validation
+        description: "The rate field, declared with validate isFloat."
+      - path: "classes/Validate.php"
+        role: validation
+        description: "isFloat, which accepts a negative value, beside the unused isUnsignedFloat."
+      - path: "src/Adapter/Tax/CommandHandler/AddTaxHandler.php"
+        role: implementation
+        description: "Read for the retired claim; it adds no rate check of its own."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: "classes/tax/Tax.php, classes/Validate.php, src/Adapter/Tax/CommandHandler/AddTaxHandler.php"
+          date: "2026-09-19"
+          summary: >-
+            Three files read for the retired claim. The validator chosen for the rate field is
+            the signed one, and no other guard exists on the path.
+          confidence_impact: invalidates
+        - kind: assumption
+          source: "modeler, step 19"
+          date: "2026-09-19"
+          summary: >-
+            Modeler-derived from code. tax_management.feature has no negative-rate scenario, so
+            nobody has observed either the acceptance or a refusal.
+          confidence_impact: weakens
 
   - id: international.ER003
-    name: "Non-existent zone for country"
-    summary: "Attempt to assign a country to a zone that does not exist."
+    name: "Moving countries to a zone that does not exist is refused"
+    summary: "BulkUpdateCountryZone checks the zone; AddCountry does not."
     validates:
-      operations: [international.CMD011]
+      operations: [international.CMD032]
     given:
-      description: "Zone ID 99999 does not exist."
+      description: >-
+        Several countries are bulk-moved to zone 99999, which no zone carries. Corrected
+        2026-09-19: this case put the refusal on international.CMD011 AddCountry.
+        AddCountryHandler assigns id_zone straight from the command; ZoneId asserts only that
+        the value is greater than zero, Country declares id_zone with isUnsignedId, and the
+        database schema declares no foreign keys at all, so AddCountry accepts an unknown zone.
+        The check exists on the bulk-move command, which is where the test is too.
       state:
-        isoCode: "XX"
         zoneId: 99999
     expected_result:
       status: failure
       code: 404
+    code_refs:
+      - path: "tests/Integration/Behaviour/Features/Scenario/Country/bulk_update_country_zone.feature"
+        role: test
+        description: "Scenario 'Bulk update countries zone should fail when zone does not exist' (line 52)."
+      - path: "src/Adapter/Country/CommandHandler/AddCountryHandler.php"
+        role: implementation
+        description: "Read for the retired claim: id_zone is assigned with no existence check."
+      - path: "src/Core/Domain/Zone/ValueObject/ZoneId.php"
+        role: validation
+        description: "Asserts the id is positive, nothing more."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "tests/Integration/Behaviour/Features/Scenario/Country/bulk_update_country_zone.feature line 52"
+          date: "2026-09-19"
+          summary: >-
+            The scenario moves countries to a zone that does not exist and asserts the failure.
+            It is the only test of a zone-existence check anywhere, and it is on the bulk
+            command.
+          confidence_impact: supports
+        - kind: codebase-analysis
+          source: "src/Adapter/Country/CommandHandler/AddCountryHandler.php, src/Core/Domain/Zone/ValueObject/ZoneId.php"
+          date: "2026-09-19"
+          summary: >-
+            Read for the retired operation reference. Nothing on the AddCountry path resolves
+            the zone, and the schema has no foreign key to catch it either.
+          confidence_impact: invalidates

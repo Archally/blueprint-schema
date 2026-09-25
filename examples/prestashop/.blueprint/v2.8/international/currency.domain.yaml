@@ -13,6 +13,10 @@ operations:
     description: "Create a new currency with ISO code, exchange rate, precision, and localized names/symbols. Supports both official (CLDR-backed) and unofficial (custom) currencies via separate command variants sharing the same aggregate."
     delivery_priority: must-have
     initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN001
+        action: create
     produces:
       operations: [international.EVT001]
       mode: all
@@ -36,6 +40,10 @@ operations:
     description: "Update an existing currency's exchange rate, precision, names, symbols, or status."
     delivery_priority: must-have
     initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN001
+        action: update
     produces:
       operations: [international.EVT002]
       mode: all
@@ -54,6 +62,10 @@ operations:
     description: "Delete a currency. The default (reference) currency cannot be deleted."
     delivery_priority: must-have
     initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN001
+        action: delete
     produces:
       operations: [international.EVT003]
       mode: all
@@ -72,6 +84,10 @@ operations:
     description: "Enable or disable a currency. Disabled currencies are not available in storefront currency selectors."
     delivery_priority: must-have
     initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN001
+        action: update
     produces:
       operations: [international.EVT004]
       mode: all
@@ -88,6 +104,10 @@ operations:
     description: "Fetch current exchange rates from an external provider and update all non-reference currencies. Depends on configured exchange rate service."
     delivery_priority: should-have
     initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN003
+        action: update
     produces:
       operations: [international.EVT005, international.DOC001]
       mode: all
@@ -99,14 +119,22 @@ operations:
     id: international.CMD006
     kind: command
     name: "SetDefaultCurrency"
-    description: "Designate a currency as the store's default (reference) currency. All exchange rates are relative to this currency. Modeled as a virtual operation - in code, default currency is managed through shop configuration."
+    description: "Designate a currency as the store's default (reference) currency. Every exchange rate in the store is expressed relative to it, so changing it re-bases the whole table. There is no CQRS command for this: it is the PS_CURRENCY_DEFAULT configuration value, written by the Localization preferences form, and the operation is modelled because the intent is real even though the implementation is a settings write."
     delivery_priority: must-have
     initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN001
+        action: update
     produces:
       operations: [international.EVT006]
       mode: all
     governed_by:
       - rule: international.VR002
+    code_refs:
+      - path: "src/Adapter/Localization/LocalizationConfiguration.php"
+        role: implementation
+        description: "updateConfiguration() writes PS_CURRENCY_DEFAULT; there is no Currency/Command class for it."
 
   # --- Events ---
 
@@ -114,49 +142,83 @@ operations:
     id: international.EVT001
     kind: event
     name: "CurrencyCreated"
-    description: "A new currency has been added (official or unofficial)."
+    description: "A new currency has been added (official or unofficial). Modules observe it as the hook actionObjectCurrencyAddAfter, composed at runtime by ObjectModel when the Currency row is inserted."
+    tags: [hook:actionObjectCurrencyAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 614-615 fire actionObject<Class>AddAfter for every persisted class."
+      - path: "classes/Currency.php"
+        role: model
 
   currencyUpdated:
     id: international.EVT002
     kind: event
     name: "CurrencyUpdated"
-    description: "A currency's configuration has been modified."
+    description: "A currency's configuration has been modified. Modules observe it as the hook actionObjectCurrencyUpdateAfter, composed at runtime by ObjectModel when the Currency row is updated."
+    tags: [hook:actionObjectCurrencyUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/Currency.php"
+        role: model
 
   currencyDeleted:
     id: international.EVT003
     kind: event
     name: "CurrencyDeleted"
-    description: "One or more currencies have been deleted."
+    description: "One or more currencies have been deleted. Modules observe it as the hook actionObjectCurrencyDeleteAfter, composed at runtime by ObjectModel when the Currency row is deleted."
+    tags: [hook:actionObjectCurrencyDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 922-923 fire actionObject<Class>DeleteAfter for every persisted class."
+      - path: "classes/Currency.php"
+        role: model
 
   currencyStatusToggled:
     id: international.EVT004
     kind: event
     name: "CurrencyStatusToggled"
-    description: "A currency's enabled/disabled status has changed."
+    description: "A currency's enabled/disabled status has changed. Modules observe it as the hook actionObjectCurrencyUpdateAfter, composed at runtime by ObjectModel when the Currency row is updated. A toggle is an update, so it is the same hook a field edit fires and a listener cannot tell them apart."
+    tags: [hook:actionObjectCurrencyUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/Currency.php"
+        role: model
 
   exchangeRatesRefreshed:
     id: international.EVT005
     kind: event
     name: "ExchangeRatesRefreshed"
-    description: "Exchange rates have been refreshed from an external provider."
+    description: "Exchange rates have been refreshed from an external provider. Modules observe it as the hook actionObjectCurrencyUpdateAfter, composed at runtime by ObjectModel when the Currency row is updated. One refresh run fires it once per non-reference currency, not once for the run."
+    tags: [hook:actionObjectCurrencyUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/Currency.php"
+        role: model
 
   defaultCurrencyChanged:
     id: international.EVT006
     kind: event
     name: "DefaultCurrencyChanged"
-    description: "The store's default (reference) currency has been changed."
+    description: "The store's default (reference) currency has been changed. No hook is fired for this transition: the default currency is the PS_CURRENCY_DEFAULT configuration value, not an ObjectModel write, so modules cannot observe it."
+    code_refs:
+      - path: "src/Adapter/Localization/LocalizationConfiguration.php"
+        role: implementation
+        description: "updateConfiguration() writes PS_CURRENCY_DEFAULT with no Hook::exec around it."
 
   # --- Queries ---
 
   getCurrencyForEditing:
     id: international.QRY001
     kind: query
-    exchange:
-      protocol: http
-      endpoint:
-        path: /international/currencies/{currencyId}
-        method: GET
-        group: international
+    dispatch: inprocess
     responses:
       - code: "200"
         type: success
@@ -176,6 +238,7 @@ operations:
     name: "GetCurrencyExchangeRate"
     description: "Retrieve the current exchange rate for a specific currency."
     delivery_priority: must-have
+    dispatch: inprocess
     code_refs:
       - path: "src/Core/Domain/Currency/Query/GetCurrencyExchangeRate.php"
         role: implementation
@@ -186,6 +249,7 @@ operations:
     name: "GetReferenceCurrency"
     description: "Retrieve the store's default (reference) currency."
     delivery_priority: must-have
+    dispatch: inprocess
     code_refs:
       - path: "src/Core/Domain/Currency/Query/GetReferenceCurrency.php"
         role: implementation
@@ -193,7 +257,7 @@ operations:
   # ── The rate table the refresh leaves behind (1 DOC) ──
   #
   # Every context pricing in a non-default currency reads these rates, and reads them as of the last
-  # run rather than as of now. The lag is the coupling: assumption orders.A001 says the cron refresh
+  # run rather than as of now. The lag is the coupling: assumption orders.ASM001 says the cron refresh
   # exists because of shared hosting and would be a pub/sub topic without it, which is the same
   # coupling moved onto a wire.
 
@@ -222,3 +286,19 @@ errors:
     category: validation
     severity: error
     http_status: 422
+
+questions:
+
+  - id: international.QN003
+    name: "What A Price Converts To"
+    statement: "What is this price in the shopper's currency, and how recent is the rate behind it?"
+    category: measurement
+    priority: high
+    bounded_context_ref: prestashop.BC006
+    answered_by: [international.QRY002, international.QRY003, international.CMD005, international.DOC001]
+    concepts: [international.CN001, international.CN003]
+    resolved: true
+    resolution: >
+      GetCurrencyExchangeRate returns the stored rate against the reference currency;
+      RefreshExchangeRates is the only thing that moves it, and the ExchangeRateSnapshot it
+      consumes carries the date the answer is as of.

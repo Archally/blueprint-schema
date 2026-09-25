@@ -12,7 +12,7 @@ screens:
     name: "Employee List"
     summary: "Grid of employees with status, profile, email, and bulk action controls."
     uses_models: ["EmployeeList"]
-    motivated_by: [admin.G001]
+    motivated_by: [admin.GL001]
 
   - id: admin.SCR002
     name: "Employee Form"
@@ -24,25 +24,25 @@ screens:
     name: "Profile Permissions"
     summary: "Permission matrix editor for tab and module access per profile."
     uses_models: ["PermissionMatrix"]
-    motivated_by: [admin.G001]
+    motivated_by: [admin.GL001]
 
   - id: admin.SCR004
     name: "API Client Management"
     summary: "API client list with create, edit, delete, and secret rotation controls."
     uses_models: ["ApiClientList"]
-    motivated_by: [admin.G002]
+    motivated_by: [admin.GL002]
 
   - id: admin.SCR005
     name: "Session Management"
     summary: "Active session list with delete and bulk cleanup controls."
     uses_models: ["SessionList"]
-    motivated_by: [admin.G003]
+    motivated_by: [admin.GL003]
 
   - id: admin.SCR006
     name: "SQL Manager"
     summary: "Saved SQL query list with add, edit, execute, and export controls."
     uses_models: ["SqlRequestList"]
-    motivated_by: [admin.G004]
+    motivated_by: [admin.GL004]
 
 actions:
   - id: admin.UAC001

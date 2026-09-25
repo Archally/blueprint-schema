@@ -3,7 +3,7 @@ version: "1.0.0"
 scope: checkout
 
 goals:
-  - id: checkout.G001
+  - id: checkout.GL001
     statement: "Cart-to-order conversion rate above 3.5%"
     description: >
       E-commerce average conversion is 2-3%. PrestaShop's checkout must reduce
@@ -11,10 +11,14 @@ goals:
     summary: "Above-average checkout conversion rate"
     priority: critical
     measure: "Monthly cart-to-order conversion rate >= 3.5%"
+    affects:
+      operation_refs: [checkout.CMD001, checkout.CMD009]
+      concept_refs: [checkout.CN001]
+      process_refs: [checkout.PRC001]
     discovery_stage: committed
     certainty: probable
 
-  - id: checkout.G002
+  - id: checkout.GL002
     statement: "Promotion ROI tracking with attribution"
     description: >
       Marketing managers need to measure the revenue impact of each discount
@@ -23,10 +27,14 @@ goals:
     summary: "Measurable promotion campaign effectiveness"
     priority: high
     measure: "Each discount campaign has attributable revenue and margin impact"
+    affects:
+      operation_refs: [checkout.CMD016, checkout.CMD017]
+      concept_refs: [checkout.CN004]
+      process_refs: [checkout.PRC002]
     discovery_stage: exploring
     certainty: probable
 
-  - id: checkout.G003
+  - id: checkout.GL003
     statement: "Sub-second cart rule evaluation under load"
     description: >
       Cart rule evaluation is the primary performance bottleneck during sales
@@ -35,11 +43,15 @@ goals:
     summary: "Fast cart rule evaluation"
     priority: high
     measure: "Cart rule evaluation p99 < 500ms with 50+ active rules"
+    affects:
+      operation_refs: [checkout.CMD014, checkout.CMD015]
+      concept_refs: [checkout.CN003]
+      process_refs: [checkout.PRC001]
     discovery_stage: validated
     certainty: confirmed
 
 risks:
-  - id: checkout.R001
+  - id: checkout.RSK001
     statement: "Cart abandonment spike during flash sales"
     description: >
       High-traffic flash sales cause checkout latency spikes. When add-to-cart
@@ -48,14 +60,18 @@ risks:
     summary: "Flash sale checkout latency"
     likelihood: high
     impact: critical
+    affects:
+      operation_refs: [checkout.CMD009, checkout.CMD014]
+      concept_refs: [checkout.CN001]
+      process_refs: [checkout.PRC001]
     mitigation: "Cache computed cart rule results per session with 60-second TTL. Pre-warm cache for announced sales."
     contingency: "Disable non-essential cart rules during flash sales via feature flag."
     goal_refs:
-      - checkout.G001
+      - checkout.GL001
     discovery_stage: validated
     certainty: confirmed
 
-  - id: checkout.R002
+  - id: checkout.RSK002
     statement: "Discount stacking abuse leading to negative order totals"
     description: >
       Complex stacking of percentage and amount discounts can theoretically
@@ -64,13 +80,17 @@ risks:
     summary: "Discount stacking exploitation"
     likelihood: medium
     impact: high
+    affects:
+      operation_refs: [checkout.CMD014, checkout.CMD016]
+      concept_refs: [checkout.CN003, checkout.CN004]
+      process_refs: [checkout.PRC002]
     mitigation: "Enforce cart total floor at zero. Log and flag unusual discount combinations for review."
     goal_refs:
-      - checkout.G002
+      - checkout.GL002
     discovery_stage: exploring
     certainty: probable
 
-  - id: checkout.R003
+  - id: checkout.RSK003
     statement: "Cart rule evaluation performance degrades with complex conditions"
     description: >
       Each cart rule can have multiple condition groups (customer groups, product
@@ -79,14 +99,18 @@ risks:
     summary: "Cart rule evaluation scalability"
     likelihood: high
     impact: high
+    affects:
+      operation_refs: [checkout.CMD014]
+      concept_refs: [checkout.CN003]
+      process_refs: [checkout.PRC001]
     mitigation: "Index cart rules by activation criteria. Short-circuit evaluation on first failing condition."
     goal_refs:
-      - checkout.G003
+      - checkout.GL003
     discovery_stage: validated
     certainty: confirmed
 
 trade_offs:
-  - id: checkout.T001
+  - id: checkout.TRO001
     choice: "Guest checkout vs mandatory account creation"
     selected: "Guest checkout with optional account creation post-purchase"
     rejected: "Mandatory account creation before checkout"
@@ -100,24 +124,32 @@ trade_offs:
 
 non_goals:
   - id: checkout.NG001
-    statement: "No cryptocurrency or BNPL payment processing in core"
+    statement: "No payment method of any kind is implemented in core"
     reason: >
-      All payment methods are module-based. Core provides the PaymentModule
-      interface; specific payment methods (crypto, BNPL, credit card) are
-      implemented as installable modules. This preserves core stability
-      and lets payment providers iterate independently.
+      Core provides the PaymentModule interface and the hooks a payment module
+      answers, and implements no method itself - not cards, not instalments,
+      not buy-now-pay-later, not cryptocurrency. The boundary is visible in
+      PrestaShop's own marketing: its payment page
+      (prestashop.com/payment-solutions/, read 2026-09-19) presents Stripe,
+      Alma, Klarna, Viva.com and Airwallex, and every one of them is a module a
+      merchant installs. That is a company statement about its own partner
+      line-up rather than a measurement made here, and it is cited because it
+      shows where the vendor itself puts the line. Keeping payment outside core
+      is what lets a provider ship on its own schedule and a shop change
+      provider without changing PrestaShop.
     discovery_stage: committed
     certainty: confirmed
 
 assumptions:
-  - id: checkout.A001
+  - id: checkout.ASM001
+    domain_scope: checkout
     statement: "Payment module authors follow the PaymentModule interface contract"
     consequence: >
       If payment modules bypass the PaymentModule interface and manipulate
       cart/order state directly, the cart-to-order flow cannot guarantee
       transactional consistency or proper event emission.
     risk_refs:
-      - checkout.R001
+      - checkout.RSK001
     discovery_stage: validated
     certainty: probable
 
@@ -130,10 +162,14 @@ inquiries:
       and high traffic, this is the primary bottleneck. A dedicated service
       could scale independently and cache aggressively.
     category: technical
+    affects:
+      operation_refs: [checkout.CMD014]
+      concept_refs: [checkout.CN003]
+      process_refs: [checkout.PRC001]
     goal_refs:
-      - checkout.G003
+      - checkout.GL003
     risk_refs:
-      - checkout.R003
+      - checkout.RSK003
     blocking: false
     due_date: "2026-05-01"
     status: investigating
@@ -149,8 +185,12 @@ inquiries:
       real-time (e.g., when a cart rule auto-applies or expires). SSE or
       WebSocket push would eliminate polling.
     category: technical
+    affects:
+      operation_refs: [checkout.CMD009, checkout.QRY001]
+      concept_refs: [checkout.CN001]
+      process_refs: [checkout.PRC001]
     goal_refs:
-      - checkout.G001
+      - checkout.GL001
     blocking: false
     status: investigating
     discovery_stage: exploring

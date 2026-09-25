@@ -4,28 +4,45 @@ scope: international
 
 kpis:
   - id: international.KPI001
+    domain_scope: international
     name: "Exchange Rate Freshness"
     target: ">= 95% of active currencies have exchange rates updated within 24 hours"
+    description: >
+      RefreshExchangeRates pulls api.prestashop.com/xml/currencies.xml and writes
+      conversion_rate on each currency. Core schedules nothing, so freshness is a
+      property of whatever cron the merchant set up, and the age of the newest rate
+      is the only part of this the system can report on its own.
     window: "daily"
-    goal: international.G001
+    goal: international.GL001
     thresholds:
       warning: "90%"
       critical: "80%"
 
   - id: international.KPI002
+    domain_scope: international
     name: "Tax Rule Coverage"
     target: "100% of active zone/country combinations covered by at least one tax rule"
+    description: >
+      A tax rules group with no rule for a country charges no tax there, and says
+      nothing about it. Countable from the tax rule table against the active
+      countries and states, which is the audit RSK002 asks for.
     window: "weekly"
-    goal: international.G002
+    goal: international.GL002
     thresholds:
       warning: "95%"
       critical: "90%"
 
   - id: international.KPI003
+    domain_scope: international
     name: "Localization Completeness"
     target: ">= 90% of target market languages and currencies configured and active"
+    description: >
+      A localization pack installs a market's taxes, currency, language, units and
+      states in one act; 96 ship with core. This counts the target markets whose
+      pack has been imported and whose language and currency are active, which is
+      what makes the storefront usable in that market.
     window: "monthly"
-    goal: international.G003
+    goal: international.GL003
 
 slos:
   - id: international.SLO001

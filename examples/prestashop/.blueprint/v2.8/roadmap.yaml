@@ -1,228 +1,606 @@
 ---
-version: "1.0.0"
+version: "2.0.0"
+owned_by:
+  party: PRT001
+tags: [roadmap, release-train]
 
-# Sprint cadence anchor (v2.7.2) - enables sprint-based placement on work_items below.
+# ─────────────────────────────────────────────────────────────────────────────
+#  PRESTASHOP DELIVERY ROADMAP
+#
+#  Two tiers of truth, and every entry says which one it is.
+#
+#  1. THE RELEASE TRAIN (MS100, MS101, MS102 and the WI1xx work items). These are
+#     PrestaShop's real minor releases. Every date is a published release date from
+#     `presta-code/docs/CHANGELOG.txt`, cross-checked against the git tag of the same
+#     name; every feature is one the project documents in
+#     `presta-docs/modules/core-updates/9.{0,1,2}.md`; every work-item window starts at
+#     a measured first commit or merge and ends at the release that carried it. The one
+#     date that is not published is 9.2.0's, which has not shipped: it is derived, and
+#     MS102 shows the arithmetic.
+#
+#  2. TWO PROPOSALS (MS002 and MS003, and the work items that carry them). These are
+#     changes THIS MODEL proposes, not work PrestaShop has announced. Each one is staged
+#     as a draft migration in `.blueprint/migrations.yaml` or named by a leverage point in
+#     `leverage.yaml`. They are placed on the development phase of the next minor line,
+#     which is a derivation and not a schedule, and each says so.
+#
+#  What is deliberately absent: this model's own construction. Phase 1 of the modeling
+#  plan added roughly 190 classes' worth of operations and regrounded the event layer.
+#  That is work on the blueprint, not work on PrestaShop, and a product roadmap that
+#  listed it would be describing its own author.
+#
+#  Sources, once, so no entry has to repeat them:
+#    CHANGELOG   presta-code/docs/CHANGELOG.txt          (dated release headers)
+#    tags        git -C presta-code tag                   (one lightweight tag per release)
+#    notable     presta-docs/modules/core-updates/9.N.md  ("Notable changes in 9.N.x")
+#    lifecycle   presta-docs/project/release/minor-release-lifecycle.md
+#  Clones measured 2026-09-19: presta-code a27e912eef9, presta-docs 1a93cfba.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# The Gantt renderer needs an axis origin and a tick size, and this block is where the
+# schema puts them; it is not a claim that PrestaShop plans in sprints. It does not:
+# `minor-release-lifecycle.md` describes a phase-based cycle of about four months of
+# development, one month of stabilization, one month of public beta and then a
+# release-candidate timer. Sprint 1 therefore begins on the first published build of the
+# 9 line (9.0.0 Alpha 1, 2024-06-06, CHANGELOG), which is the earliest date anything below
+# carries, so no work item lands on a negative sprint. Every work item is placed by
+# explicit date; not one of them asserts a sprint number.
 cadence:
   anchor_sprint: 1
-  anchor_start: "2026-01-07"     # Wed; sprint 1 start
-  sprint_length_days: 14         # two-week sprints
+  anchor_start: "2024-06-06"
+  sprint_length_days: 14
 
 milestones:
-  - id: MS001
-    name: "MVP - Cart & Checkout"
-    description: "Minimal viable checkout: cart management, order placement, payment integration."
-    target_date: "2026-06-30"
+  # ── Shipped ────────────────────────────────────────────────────────────────
+  - id: MS100
+    name: "PrestaShop 9.0.0"
+    description: >
+      The first release of the 9 line, and the one that moved the platform onto a
+      current foundation: Symfony 6.4 in place of 4.4, PHP 8.1 as the minimum with 8.2,
+      8.3 and 8.4 supported, back-office login and authorization rebuilt on Symfony, and
+      a new Admin API built on API Platform behind its own AdminAPIKernel with OAuth2
+      clients and scopes. That API is the surface every HTTP exchange in this model
+      resolves against: the notable-changes page for 9.0 introduces it, and 8.1's names no
+      Admin API at all, so before the 9 line the only programmatic surface was the legacy
+      webservice.
+    target_date: "2025-06-06"
+    status: achieved
+    deliverables:
+      - kind: capability
+        ref: CAP016
+        description: "The Admin API moves onto API Platform with OAuth2 clients and scoped tokens."
+      - kind: capability
+        ref: CAP015
+        description: "Back-office login and authorization are served by Symfony rather than legacy controllers."
+      - kind: operation
+        ref: admin.CMD021
+        description: "AddApiClient: an OAuth2 client becomes a first-class back-office object."
+      - kind: user-story
+        ref: admin.US003
+        description: "An administrator sets up an Admin API client for a third-party integration."
+    success_criteria:
+      - "PHP 8.1 is the minimum supported version, with 8.2, 8.3 and 8.4 supported (notable changes, 9.0.md)"
+      - "Symfony 6.4 replaces Symfony 4.4 across the core, with per-component dependencies rather than symfony/symfony"
+      - "The Admin API runs on a dedicated AdminAPIKernel with its own configuration, cache and front controller"
+    realizes_decisions: [DC006, DC007]
+    advances_goals: [admin.GL002]
+    value_streams: [VS003]
+    owned_by:
+      team: TM010
+    tags: [release, shipped]
+
+  - id: MS101
+    name: "PrestaShop 9.1.0"
+    description: >
+      The release that began splitting an order across carriers. Multi-shipment and the
+      redesigned discount system both shipped behind feature flags and both are marked
+      Work in Progress in the project's own notes, so the honest reading is that 9.1
+      delivered their first usable form rather than their finished one. Hummingbird also
+      became the default theme for new installations, and PHP 8.5 joined the supported
+      set.
+    target_date: "2026-03-13"
+    status: achieved
+    deliverables:
+      - kind: capability
+        ref: CAP010
+        description: "Shipping and delivery gains shipments: an order can be split across carriers and parcels."
+      - kind: capability
+        ref: CAP100
+        description: "Promotion and discount management is rebuilt on a new interface and architecture over cart rules."
+      - kind: capability
+        ref: CAP013
+        description: "Hummingbird becomes the default theme a new installation renders with."
+      - kind: operation
+        ref: shipping.CMD011
+        description: "CreateShipment: the command the multi-shipment system is built around."
+      - kind: user-story
+        ref: shipping.US005
+        description: "A logistics operator splits a shipment into multiple parcels."
+      - kind: user-story
+        ref: checkout.US004
+        description: "A merchant creates a discount campaign with conditions and usage limits."
+    success_criteria:
+      - "An order can carry more than one shipment, each with its own carrier and product set"
+      - "The discount interface and its domain commands exist behind a feature flag, disabled by default"
+      - "A new installation renders on Hummingbird; an installation upgraded from 9.0 keeps its theme"
+    dependencies: [MS100]
+    advances_goals: [shipping.GL003]
+    value_streams: [VS002]
+    owned_by:
+      team: TM005
+    tags: [release, shipped]
+
+  # ── In flight ──────────────────────────────────────────────────────────────
+  - id: MS102
+    name: "PrestaShop 9.2.0"
+    description: >
+      In release-candidate stage, not shipped. Beta 1 was published 2026-07-09 and
+      Release Candidate 1 on 2026-09-11 (CHANGELOG, and the 9.2.0-rc.1 tag). Its three
+      headline features are Extra Properties, a native way for a module to attach a field
+      to a core entity and have it appear in the back office, the front office and the
+      Admin API without an override; a One Page Checkout module in the bundle; and the
+      foundation of an improved B2B mode. The target date below is DERIVED, not announced:
+      RC 1 shipped on 2026-09-11, and the last three minor releases took 14 days (9.0.0),
+      22 days (9.1.0) and 29 days (8.1.0) from their first release candidate to general
+      availability, whose median is 22. 2026-09-11 plus 22 days is 2026-10-03. PrestaShop
+      publishes no date of its own, and the lifecycle document is explicit that a new
+      regression resets the timer.
+    target_date: "2026-10-03"
     status: in-progress
     deliverables:
       - kind: capability
-        ref: CAP001
-        description: "Order Management - place, cancel, refund."
+        ref: CAP016
+        description: "A module-registered extra field reaches the Admin API with no extra wiring."
       - kind: capability
         ref: CAP003
-        description: "Checkout Flow - cart + payment initiation."
-      - kind: user-story
-        ref: orders.US001
-        description: "Shopper places an order."
-      - kind: user-story
-        ref: checkout.US001
-        description: "Shopper adds product to cart."
+        description: "A native One Page Checkout joins the bundled multi-step flow."
+      - kind: capability
+        ref: CAP007
+        description: "Business entities, B2B customer profiles and B2B addresses enter the customer model."
       - kind: operation
-        ref: orders.CMD001
-        description: "PlaceOrder command fully operational."
+        ref: admin.CMD041
+        description: "AddExtraPropertyDefinition: the command that registers a new field on a core entity."
+      - kind: user-story
+        ref: customers.US005
+        description: "A merchant sets up a B2B customer group with wholesale pricing."
     success_criteria:
-      - "Shopper can complete end-to-end purchase in < 3 minutes"
-      - "Order error rate < 0.5% in staging"
-      - "At least 2 payment gateways integrated (Stripe + PayPal)"
+      - "A module registers an extra field on a supported entity and the field appears in back office, front office and Admin API with no override"
+      - "The bundled One Page Checkout renders the whole checkout on one page, with its feature flag removed"
+      - "The improved_b2b feature flag exists and is disabled by default"
+    dependencies: [MS101]
+    advances_goals: [admin.GL002]
+    value_streams: [VS001]
     owned_by:
-      team: TM001
+      team: TM010
+    tags: [release, in-release-candidate]
 
+  # ── Proposed by this model, not announced by PrestaShop ────────────────────
+  # Both carry the same target date because both are placed on the same thing: the next
+  # minor line. Development of a minor begins when the previous one enters feature freeze
+  # (lifecycle), and 9.2's freeze is measured as the oldest commit on origin/9.2.x that is
+  # not on develop, 2026-06-26. The lifecycle's own durations then give four months of
+  # development to 2026-10-26, a month of stabilization to 2026-11-26, a month of public
+  # beta to 2026-12-26 and a one-week release-candidate timer to 2027-01-02. Nothing about
+  # that arithmetic is a commitment by anyone, and neither proposal is sequenced ahead of
+  # the other by any source.
   - id: MS002
-    name: "Catalog v2 - Search & Filters"
-    description: "Elasticsearch-powered search, faceted filters, and bulk product import."
-    target_date: "2026-09-30"
+    name: "Proposed: faceted product search"
+    description: >
+      A proposal of this model, staged as the draft migration `facet-product-search`
+      (MIG002) in `.blueprint/migrations.yaml`, which adds a SearchFacet value object and
+      a SearchProductsByFacet query that returns products narrowed by facet selections
+      together with the remaining facet counts. PrestaShop has announced no such work and
+      the codebase contains no facet query today, so this is a statement of what the model
+      proposes rather than of what the product will do. Note for a reader following the
+      decision log: the model's own DC002 records a choice of Elasticsearch, which the
+      codebase does not contain; this proposal is about facets over the search the product
+      has, and says nothing about a search engine.
+    target_date: "2027-01-02"
     status: planned
     deliverables:
       - kind: capability
-        ref: CAP005
-        description: "Catalog Management - full CRUD + search."
-      - kind: capability
         ref: CAP018
-        description: "Search & Discovery - faceted search with ES."
+        description: "Search and discovery gains facet counts, so a shopper can see what each narrowing costs them."
       - kind: user-story
-        ref: catalog.US001
-        description: "CategoryManager creates a product."
-      - kind: operation
-        ref: catalog.CMD001
-        description: "CreateProduct command with ES indexing."
+        ref: catalog.US003
+        description: "A shopper searches for products by keyword and narrows the result with filters."
     success_criteria:
-      - "Search returns results in < 100ms for 100k product catalog"
-      - "Faceted filters on category, price range, attributes"
-    dependencies: [MS001]
+      - "A search result carries, for every remaining facet, the count of products a shopper would be left with"
+      - "The facet query is served without a second search service to operate"
+    dependencies: [MS102]
+    advances_goals: [catalog.GL002]
+    value_streams: [VS001]
     owned_by:
       team: TM002
+    tags: [proposal, not-announced]
 
   - id: MS003
-    name: "Scale - Async Orders & Inventory"
-    description: "Event-driven order processing with async stock reservation for flash-sale volumes."
-    target_date: "2026-12-31"
+    name: "Proposed: stock reservation at checkout and asynchronous order side effects"
+    description: >
+      Two proposals of this model that share a cause. The first is staged as the draft
+      migration `reserve-stock-at-checkout` (MIG001) in `.blueprint/migrations.yaml`: a
+      cart asks the catalog to hold the quantities its lines depend on, the hold is
+      consumed when the order is placed and released when the cart is abandoned, so two
+      shoppers cannot both buy the last unit during a flash sale. The second is leverage
+      point LP001, which moves fulfilment, mail and webhook work off the request thread.
+      PrestaShop today decrements stock at order placement and runs those side effects
+      inline, so neither is a description of the product as it stands.
+    target_date: "2027-01-02"
     status: planned
     deliverables:
       - kind: capability
         ref: CAP004
-        description: "Stock Reservation - pessimistic locking under concurrency."
+        description: "Stock availability control gains a hold with a window, between availability and decrement."
       - kind: operation
-        ref: orders.EVT001
-        description: "OrderPlaced event triggers async downstream."
+        ref: orders.CMD001
+        description: "PlaceOrder stops carrying fulfilment side effects on the request thread."
     success_criteria:
-      - "Handle 500+ concurrent checkouts without stock over-sell"
-      - "Order processing error rate < 0.1%"
-    dependencies: [MS001, MS002]
+      - "Two concurrent checkouts for the last unit of a product cannot both succeed"
+      - "An abandoned cart returns its held quantity to available stock without an operator acting"
+      - "A slow mail or webhook provider does not extend the time an order placement takes"
+    dependencies: [MS102]
+    realizes_decisions: [DC001]
+    mitigates_risks: [orders.RSK003]
+    advances_goals: [orders.GL001, orders.GL003]
+    value_streams: [VS001]
     owned_by:
       team: TM001
+    tags: [proposal, not-announced]
 
-  - id: MS004
-    name: "International & Multi-Store"
-    description: >
-      Multi-currency ordering, zone-based tax rules, multi-language storefront,
-      and multi-store configuration for EU market expansion.
-    target_date: "2027-03-31"
-    status: planned
-    deliverables:
-      - kind: capability
-        ref: CAP011
-        description: "Multi-Currency & Tax - global compliance."
-      - kind: capability
-        ref: CAP012
-        description: "Localization - multi-language support."
-      - kind: capability
-        ref: CAP017
-        description: "Multi-Store Management - shared/independent configs."
-    success_criteria:
-      - "Support 10+ currencies with daily exchange rate updates"
-      - "Tax calculation compliant with EU VAT rules for 5+ countries"
-      - "Multi-store: independent catalog per shop with shared customer base"
-    dependencies: [MS001]
-    owned_by:
-      team: TM006
-
-  - id: MS005
-    name: "API-First & Headless"
-    description: >
-      New Admin API with OAuth2, headless storefront support, and API client management
-      for third-party integrations and composable commerce.
-    target_date: "2027-06-30"
-    status: planned
-    deliverables:
-      - kind: capability
-        ref: CAP016
-        description: "API & Integration Platform - OAuth2 Admin API."
-      - kind: capability
-        ref: CAP014
-        description: "Module Ecosystem - API-compatible module hooks."
-    success_criteria:
-      - "100% of CQRS commands accessible via Admin API"
-      - "OAuth2 token issuance < 200ms p95"
-      - "OpenAPI spec auto-generated and published"
-    dependencies: [MS002, MS003]
-    owned_by:
-      team: TM009
-
-# ── Execution-tier work breakdown (WBS, v2.7.2) - epics/subscopes rolling up to
-#    milestones, placed by sprint, with typed traceability to decisions/value-streams.
+# ─────────────────────────────────────────────────────────────────────────────
+#  EXECUTION TIER
+#
+#  Every item is placed by explicit date. A shipped release's window runs from the
+#  earliest measured commit or merge of the work it carried to the release date itself;
+#  the measurement is named per item so a reader can re-run it. `progress` is asserted
+#  only where a release shipped, because PrestaShop publishes no percentage and a number
+#  invented to fill a bar is worse than an empty field.
+# ─────────────────────────────────────────────────────────────────────────────
 work_items:
-  - id: WI001
+  - id: WI100
     kind: epic
-    name: "Cart & Checkout MVP"
-    description: "End-to-end checkout epic delivering the MS001 release."
-    milestone: MS001
+    name: "PrestaShop 9.0 release"
+    description: >
+      The 9.0 line from its first published build to general availability. Its content is
+      a foundation change rather than a feature set, which is why it carries no child
+      bars: Symfony, PHP, the back-office authorization rewrite and the Admin API all
+      landed across the same window and none of them is separable on a published date.
+    milestone: MS100
+    status: achieved
+    confidence: committed
+    progress: 100
+    start_date: "2024-06-06"
+    end_date: "2025-06-06"
+    owned_by:
+      team: TM010
+    tracker_ref: "33993"
+    note: >
+      Window is 9.0.0 Alpha 1 (CHANGELOG, 2024-06-06) to 9.0.0 (CHANGELOG, 2025-06-06).
+      The tracker reference is the Symfony 6.4 tracking issue the notable-changes page
+      cites for the framework upgrade.
+    realizes_decisions: [DC006, DC007]
+    advances_goals: [admin.GL002]
+    value_streams: [VS003]
+    tags: [release, shipped]
+
+  - id: WI101
+    kind: epic
+    name: "PrestaShop 9.1 release"
+    description: >
+      The 9.1 line, whose two large features were both under way for more than a year
+      before the release that first shipped them. The window therefore starts at the
+      earliest of its children rather than at the 9.1.0 Beta 1 build (2025-12-18), which
+      would hide the fact that this work overlapped the 9.0 stabilization.
+    milestone: MS101
+    status: achieved
+    confidence: committed
+    progress: 100
+    start_date: "2025-01-27"
+    end_date: "2026-03-13"
+    owned_by:
+      team: TM010
+    value_streams: [VS002]
+    tags: [release, shipped]
+    children:
+      - id: WI102
+        kind: subscope
+        name: "Multi-shipment system"
+        description: >
+          Splitting one order across several shipments, each with its own carrier and
+          product set, and the split, merge and carrier-switch operations that go with it.
+        status: achieved
+        confidence: committed
+        progress: 100
+        start_date: "2025-02-24"
+        end_date: "2026-03-13"
+        owned_by:
+          team: TM005
+        advances_goals: [shipping.GL003]
+        user_stories: [shipping.US004, shipping.US005, shipping.US006]
+        note: >
+          Window starts at the first commit that added src/Core/Domain/Shipment
+          (2025-02-24, measured with git log --diff-filter=A). Shipped behind a feature
+          flag, disabled by default, and the project's notes mark it Work in Progress;
+          shipment pull requests continue into the 9.2 line.
+
+      - id: WI103
+        kind: subscope
+        name: "New discount system"
+        description: >
+          A redesigned discount interface and domain on top of the existing cart-rule
+          storage, with its own CQRS commands and its own Admin API resource.
+        status: achieved
+        confidence: committed
+        progress: 100
+        start_date: "2025-01-27"
+        end_date: "2026-03-13"
+        owned_by:
+          team: TM003
+        user_stories: [checkout.US004, checkout.US005]
+        note: >
+          Window starts at the first commit that added src/Core/Domain/Discount
+          (2025-01-27, measured). Shipped behind a feature flag, disabled by default, and
+          marked Work in Progress; discount pull requests continue into the 9.2 line.
+
+      - id: WI104
+        kind: subscope
+        name: "Hummingbird as the default theme"
+        description: >
+          Making Hummingbird the theme a new installation renders with, in place of
+          Classic, and bumping it to its 2.0 line.
+        status: achieved
+        confidence: committed
+        progress: 100
+        start_date: "2025-12-30"
+        end_date: "2026-03-13"
+        owned_by:
+          team: TM007
+        tracker_ref: "40418"
+        note: >
+          Window starts at the merge of "Enable Hummingbird as default theme"
+          (2025-12-30, measured from the merge commit). An installation upgraded from 9.0
+          keeps the theme it had.
+
+  - id: WI105
+    kind: epic
+    name: "PrestaShop 9.2 release"
+    description: >
+      The 9.2 line, in release-candidate stage. Its window overlaps 9.1's on purpose:
+      the lifecycle document says development of a minor begins the moment the previous
+      one enters feature freeze, and the merge dates below show exactly that happening.
+    milestone: MS102
     status: in-progress
     confidence: committed
-    start_sprint: 1
-    end_sprint: 6
-    buffer_end_sprint: 7
-    progress: 60
+    start_date: "2026-01-20"
+    end_date: "2026-10-03"
+    owned_by:
+      team: TM010
+    value_streams: [VS001]
+    blockers:
+      - text: >
+          The release ships only once a release candidate completes its regression timer
+          with nothing new reported, and every further candidate resets that timer.
+          Release Candidate 1 shipped 2026-09-11; no candidate has yet cleared the timer.
+    note: >
+      End date is the derived general-availability date MS102 shows the arithmetic for,
+      not an announced one. Start is the earliest merge among the children below.
+    tags: [release, in-release-candidate]
+    children:
+      - id: WI106
+        kind: subscope
+        name: "Extra Properties"
+        description: >
+          A native extension point that lets a module register a typed, validated,
+          multilang and multistore field on a core entity, and have it appear in the back
+          office, on the front office and in the Admin API with no override and no table
+          of its own.
+        status: in-progress
+        confidence: estimated
+        start_date: "2026-03-24"
+        end_date: "2026-10-03"
+        owned_by:
+          team: TM010
+        executor: ["Kiwik", "PrestaShop SA teams"]
+        tracker_ref: "41422"
+        note: >
+          Window starts at the merge of "Define the architecture for the new extra
+          property feature" (2026-03-24, measured); the domain folder
+          src/Core/Domain/ExtraProperty followed on 2026-06-24. The code is marked
+          @experimental for the beta period and the project reserves the right to a
+          backward-compatibility break, which is why confidence is estimated rather than
+          committed.
+        value_streams: [VS003]
+
+      - id: WI107
+        kind: subscope
+        name: "One Page Checkout"
+        description: >
+          A bundled module that renders the whole checkout on a single page, brought into
+          the project because relying on third-party one-page modules produced
+          incompatibilities between payment modules, carrier modules and themes.
+        status: in-progress
+        confidence: committed
+        start_date: "2026-02-20"
+        end_date: "2026-10-03"
+        owned_by:
+          team: TM003
+        tracker_ref: "40796"
+        note: >
+          Window starts at the merge of "Add feature flag for One-page checkout"
+          (2026-02-20, measured); the flag was removed again on 2026-05-29, which is why
+          confidence is committed.
+        value_streams: [VS001]
+
+      - id: WI108
+        kind: subscope
+        name: "Improved B2B mode"
+        description: >
+          The foundation of a business-to-business mode: native business entities, B2B
+          customer profiles, business identifiers, B2B addresses and role-based access for
+          B2B users.
+        status: in-progress
+        confidence: tentative
+        start_date: "2026-01-20"
+        end_date: "2026-10-03"
+        owned_by:
+          team: TM004
+        executor: ["Soledis", "PrestaShop SA teams"]
+        tracker_ref: "40224"
+        note: >
+          Window starts at the merge of the improved_b2b feature flag (2026-01-20,
+          measured); src/Core/Domain/BusinessEntity followed on 2026-02-25. The project's
+          notes say the database schema and APIs are expected to change before the final
+          release and advise against building on it, which is what tentative records.
+        user_stories: [customers.US005]
+        value_streams: [VS001]
+
+  # ── The proposal tier ──────────────────────────────────────────────────────
+  # Every item below shares one window, the 9.3 line's development phase (2026-06-26 to
+  # 2026-10-26), derived in the comment above MS002. That is deliberate: no source
+  # sequences these against each other, so giving them staggered bars would be a schedule
+  # nobody wrote. What order there is between them is stated by `depends_on`, which comes
+  # from the leverage DAG in `leverage.yaml`, not from a calendar.
+  - id: WI001
+    kind: epic
+    name: "Asynchronous order side effects"
+    description: >
+      Move fulfilment, mail and webhook work off the request thread that places an order,
+      so that checkout latency stops tracking the latency of whichever provider is slowest
+      and so that a failed side effect can be retried rather than losing the order.
+    milestone: MS003
+    status: planned
+    confidence: tentative
+    start_date: "2026-06-26"
+    end_date: "2026-10-26"
     owned_by:
       team: TM001
-    realizes_decisions: [D001]
+    realizes_decisions: [DC001]
     value_streams: [VS001]
-    children:
-      - id: WI002
-        kind: subscope
-        name: "Cart management"
-        start_sprint: 1
-        end_sprint: 3
-        confidence: committed
-        progress: 90
-      - id: WI003
-        kind: subscope
-        name: "Payment initiation"
-        start_sprint: 3.5
-        end_sprint: 6
-        confidence: estimated
-        progress: 30
-        depends_on: [WI002]
-        blockers:
-          - text: "Awaiting PSP sandbox credentials"
+    advances_goals: [orders.GL001]
+    note: >
+      This is the work leverage point LP001 calls for. The linkage itself belongs in
+      `leverage.yaml`, which is the only place the schema admits a leverage reference in
+      either direction, and LP001's realized_by is empty there today. The window is the
+      next minor line's development phase, derived and not scheduled; PrestaShop has
+      announced no such work.
+    tags: [proposal, not-announced]
+
+  - id: WI002
+    kind: epic
+    name: "Explicit module and payment-provider seam"
+    description: >
+      Draw the payment and shipping module boundaries as explicit seams before the next
+      provider integration lands, so that adding a provider is an additive module rather
+      than an edit inside shared checkout code.
+    status: planned
+    confidence: tentative
+    start_date: "2026-06-26"
+    end_date: "2026-10-26"
+    owned_by:
+      team: TM008
+    realizes_decisions: [DC003]
+    value_streams: [VS002]
+    note: >
+      This is the work leverage point LP002 calls for; LP002's realized_by in
+      `leverage.yaml` is empty today. It rolls up to no milestone because none of the five
+      above covers it. The window is the next minor line's development phase, derived and
+      not scheduled.
+    tags: [proposal, not-announced]
+
+  - id: WI003
+    kind: epic
+    name: "Order-history read model"
+    description: >
+      Serve the buyer and back-office order-history views from a projection instead of
+      joining the live transactional tables, so that heavy reporting reads stop contending
+      with order writes.
+    milestone: MS003
+    status: planned
+    confidence: tentative
+    start_date: "2026-06-26"
+    end_date: "2026-10-26"
+    owned_by:
+      team: TM001
+    value_streams: [VS001, VS002]
+    depends_on: [WI001]
+    note: >
+      This is the work leverage point LP003 calls for; LP003's realized_by in
+      `leverage.yaml` is empty today. The dependency on WI001 is the leverage DAG's own
+      edge (LP003 depends_on LP001) and not a scheduling claim. No realizes_decisions:
+      LP003 cites DC004, which is the server-side cart decision, and a read model for the
+      order view does not realize it. The window is the next minor line's development
+      phase, derived and not scheduled.
+    tags: [proposal, not-announced]
 
   - id: WI010
     kind: epic
-    name: "Search & Filters"
-    description: "Elasticsearch-backed search epic for the MS002 release."
+    name: "Faceted product search"
+    description: >
+      Return, alongside a search result, the count of products the shopper would be left
+      with for every facet still available, so that narrowing a result is an informed
+      choice rather than a guess.
     milestone: MS002
     status: planned
-    confidence: estimated
-    start_sprint: 7
-    end_sprint: 12
-    progress: 0
+    confidence: tentative
+    start_date: "2026-06-26"
+    end_date: "2026-10-26"
     owned_by:
       team: TM002
-    value_streams: [VS002]
-    depends_on: [WI001]
+    value_streams: [VS001]
+    advances_goals: [catalog.GL002]
+    user_stories: [catalog.US003]
+    note: >
+      Carries the draft migration `facet-product-search` (MIG002) in
+      `.blueprint/migrations.yaml`. The window is the next minor line's development phase,
+      derived and not scheduled; PrestaShop has announced no such work.
+    tags: [proposal, not-announced]
 
-  # Placed by explicit dates rather than by sprint. Carrier integration is bound to contract
-  # renewal dates, not to the delivery cadence - which is exactly the case `start_date`/`end_date`
-  # exist for, and `start_date` overrides `start_sprint` when both are present.
   - id: WI011
     kind: epic
-    name: "Shipping provider seam"
+    name: "Shipping-rate provider seam"
     description: >
-      Abstract carrier rate lookups behind a provider interface with an anticorruption layer,
-      so a new carrier ships as configuration plus a small adapter instead of an edit inside
-      the checkout context.
-    milestone: MS004
+      Abstract carrier rate lookups behind a provider interface with an anticorruption
+      layer, so that a new carrier ships as configuration plus a small adapter instead of
+      an edit inside the checkout context.
     status: planned
-    confidence: estimated
-    start_date: "2027-01-06"
-    end_date: "2027-03-26"
-    progress: 0
+    confidence: tentative
+    start_date: "2026-06-26"
+    end_date: "2026-10-26"
     owned_by:
-      team: TM006
-    realizes_decisions: [D005]
-    value_streams: [VS003]
-    depends_on: [WI001]
-    children:
-      - id: WI012
-        kind: subscope
-        name: "Carrier rate provider interface"
-        start_date: "2027-01-06"
-        end_date: "2027-02-12"
-        confidence: estimated
-        progress: 0
-      - id: WI013
-        kind: subscope
-        name: "Anticorruption layer for carrier APIs"
-        start_date: "2027-02-15"
-        end_date: "2027-03-26"
-        confidence: tentative
-        progress: 0
-        depends_on: [WI012]
-      # Deliberately OVERLAPS WI012 and WI013 and depends on neither - rate caching is
-      # independent of the adapter work. This is the corpus's only pair of concurrent work
-      # items, so it is the only fixture an interval-packing renderer can be tested against.
-      - id: WI014
-        kind: subscope
-        name: "Carrier rate caching"
-        start_date: "2027-01-20"
-        end_date: "2027-02-26"
-        confidence: estimated
-        progress: 0
+      team: TM005
+    value_streams: [VS001, VS002]
+    depends_on: [WI002]
+    advances_goals: [shipping.GL001, shipping.GL002]
+    note: >
+      Delivers leverage point LP004, which is the one leverage point in `leverage.yaml`
+      that names its work item: its realized_by reads [WI011]. The dependency on WI002 is
+      the leverage DAG's own edge (LP004 depends_on LP002). No realizes_decisions: LP004
+      cites DC005, which is the CQRS decision, and a carrier rate seam does not realize
+      it. It rolls up to no milestone, because the three release milestones have shipped
+      or are in release candidate and neither proposal milestone covers carriers. The
+      window is the next minor line's development phase, derived and not scheduled.
+    tags: [proposal, not-announced]
+
+  - id: WI109
+    kind: epic
+    name: "Stock reservation at checkout"
+    description: >
+      Hold the quantities a cart depends on for a bounded window, consume the hold when
+      the order is placed and release it when the cart is abandoned, so that the shopper
+      who reached checkout first is the one who can complete it.
+    milestone: MS003
+    status: planned
+    confidence: tentative
+    start_date: "2026-06-26"
+    end_date: "2026-10-26"
+    owned_by:
+      team: TM001
+    value_streams: [VS001]
+    mitigates_risks: [orders.RSK003]
+    note: >
+      Carries the draft migration `reserve-stock-at-checkout` (MIG001) in
+      `.blueprint/migrations.yaml`, which stages a StockReservation entity, the reserve,
+      release and consume commands and the four events between them. PrestaShop decrements
+      stock at order placement today and has announced no reservation work. The window is
+      the next minor line's development phase, derived and not scheduled.
+    tags: [proposal, not-announced]

@@ -1,103 +1,397 @@
 ---
-version: "1.0.0"
+version: "2.0.0"
+
+# Two organizations run PrestaShop and the model now says so. PRT001 is the company; PRT100 is the
+# open-source project, whose councils hold both company staff and contributors who are not employed
+# by it. `presta-code/composer.json` names exactly these two as the software's authors -
+# "PrestaShop SA" and "PrestaShop Community" (https://contributors.prestashop-project.org/) - so
+# the split is the project's own statement, not a modelling flourish.
+#
+# TM001 to TM010 are MODELLING ABSTRACTIONS and are tagged as such. PrestaShop publishes no
+# per-bounded-context team structure; these ten exist because every context in `*/arch.yaml`
+# carries an `owned_by` and ownership has to resolve to something. Their names say what they own,
+# not who anyone is. The fabricated contact details they carried - ten addresses at a
+# `prestashop.example` domain and ten Slack channels - are removed: an abstraction with a Slack
+# channel reads as a real team.
+#
+# TM100 to TM104 and DPT100 to DPT103 are PUBLISHED FACT, sourced to
+# https://www.prestashop-project.org/project-organization/people-and-roles/ (read 2026-09-19). No
+# individual is named, here or anywhere. Which council a role sits under is this model's reading
+# of the published remits rather than a published reporting line, and each description says so
+# where it matters.
+
+owned_by:
+  party: PRT001
+
+subject_party: PRT001
+
 parties:
   - id: PRT001
     name: "PrestaShop SA"
-    description: "Open-source e-commerce platform company headquartered in Paris, France."
+    description: >
+      The company behind the platform. It is named as the first author of the software in
+      `composer.json`, it holds the PrestaShop trademark, and its employees sit on all four of the
+      project's governance councils alongside contributors it does not employ. It publishes the
+      commercial editions and runs the addons marketplace and the partner programmes.
+    responsibilities:
+      - "Holding the PrestaShop trademark and the associated logos."
+      - "Employing contributors who serve on the project's Leadership, Product, Technical and Quality councils."
+      - "Providing the design team that currently covers the project's UX-designer role."
+      - "Publishing the commercial editions and operating the addons marketplace."
+    relations:
+      - party_ref: PRT100
+        type: partner_of
+        about: >
+          The company and the community are the two declared authors of the same codebase. Neither
+          buys from the other and neither contains the other, which is why this is a partnership
+          rather than a supplier or subsidiary edge.
+      - party_ref: PRT101
+        type: partner_of
+        about: "Certified agencies, experts and module authors who implement and extend PrestaShop for merchants."
+    tags: [company, trademark-holder]
+    properties:
+      source: "presta-code/composer.json authors[]; https://www.prestashop-project.org/maintainers-guide/"
+      source_read: "2026-09-19"
     departments:
       - id: DPT001
-        name: "Engineering"
-        description: "Core platform development, CQRS domain layer, Symfony framework."
-        teams: [TM001, TM002, TM003, TM004, TM005, TM006, TM010]
-      - id: DPT002
-        name: "Product & Design"
-        description: "Product management, UX design, content strategy, and theme ecosystem."
-        teams: [TM007]
-      - id: DPT003
-        name: "Platform & Ecosystem"
-        description: "Module marketplace, developer relations, API platform, and security."
-        teams: [TM008, TM009]
+        name: "Platform Engineering"
+        description: >
+          The grouping that holds the ten context-owning teams. It is a modelling construct, not a
+          department PrestaShop publishes: it exists so the ownership `*/arch.yaml` declares has a
+          home, and it is the only place in this file where the shape is invented rather than
+          sourced. The two departments that stood beside it, "Product & Design" and "Platform &
+          Ecosystem", were removed for the same reason and were referenced by nothing.
+        responsibilities:
+          - "Owning each of the ten bounded contexts the platform implements."
+          - "Carrying the `owned_by` target that every arch context, decision and infrastructure resource resolves to."
+        interacts_with:
+          - team_ref: TM100
+            nature: approval
+            mode: collaboration
+            about: >
+              No change reaches the codebase without a project committer reviewing and merging it.
+              This is the dependency no derivation can reach, and it is the one that actually
+              governs delivery here.
+          - department_ref: DPT102
+            nature: approval
+            mode: collaboration
+            about: "Architecture and implementation decisions of any weight are taken to the Technical Council."
+          - department_ref: DPT101
+            nature: approval
+            mode: collaboration
+            about: "Feature specifications and the UI/UX guidelines a back-office screen must follow come from the Product Council."
+          - department_ref: DPT103
+            nature: approval
+            mode: x-as-a-service
+            about: "Bug triage and the release quality assessment are the Quality Council's, not each team's."
+        teams: [TM001, TM002, TM003, TM004, TM005, TM006, TM007, TM008, TM009, TM010]
+        tags: [modeling-abstraction]
+
     teams:
       - id: TM001
         name: "Order Platform Team"
-        description: "Owns order lifecycle, fulfillment, invoicing, returns, and credit slips."
-        contact:
-          email: orders@prestashop.example
-          slack: "#team-orders"
-        tags: [core, orders]
+        kind: dev-stream-aligned
+        description: >
+          Modelling abstraction. Notional owner of the Orders bounded context: the order lifecycle,
+          invoicing, payments recorded against an order, refunds, returns and credit slips.
+        responsibilities:
+          - "The Orders bounded context (prestashop.BC008) and its 49 operations."
+          - "The order state machine and the order return states."
+        tags: [core, orders, modeling-abstraction]
 
       - id: TM002
         name: "Catalog Team"
-        description: "Owns product catalog, categories, combinations, search indexing, and media."
-        contact:
-          email: catalog@prestashop.example
-          slack: "#team-catalog"
-        tags: [core, catalog]
+        kind: dev-stream-aligned
+        description: >
+          Modelling abstraction. Notional owner of the Catalog bounded context: products and their
+          combinations, categories, attributes and features, media, suppliers and brands, and the
+          stock quantities the catalogue holds.
+        responsibilities:
+          - "The Catalog bounded context (prestashop.BC002), the largest in the model."
+          - "Capabilities CAP005, CAP101, CAP102, CAP004 and the catalogue half of CAP018."
+        tags: [core, catalog, modeling-abstraction]
 
       - id: TM003
         name: "Checkout & Payments Team"
-        description: "Owns cart, checkout flow, cart rules, promotions, and payment gateway integration."
+        kind: dev-stream-aligned
+        description: >
+          Modelling abstraction. Notional owner of the Checkout bounded context: the cart and its
+          lines, cart rules and discounts, catalog price rules, and payment initiation.
+        responsibilities:
+          - "The Checkout bounded context (prestashop.BC003)."
+          - "Capabilities CAP002, CAP003 and CAP100."
         interacts_with:
+          # The architecture already states these four, through
+          # context --depends_on--> context --owned_by--> team. They are declared here as well
+          # because this team had adopted `interacts_with` and listed ONE of the four, which made
+          # its list a wrong statement rather than an absent one. `bp check` reported it as
+          # `org-interaction-underived`. Each was read against the code before being written.
           - team_ref: TM002
             nature: architectural
-            about: "product, price and availability data the checkout reads"
-        contact:
-          email: checkout@prestashop.example
-          slack: "#team-checkout"
-        tags: [core, checkout, payments]
+            mode: x-as-a-service
+            about: "Product price, availability and attribute data the cart reads for every line it prices."
+          - team_ref: TM004
+            nature: architectural
+            mode: x-as-a-service
+            about: "Customer, customer-group and address data that cart rules and guest checkout depend on."
+          - team_ref: TM006
+            nature: architectural
+            mode: x-as-a-service
+            about: "Currency, tax and zone data the cart total is computed with."
+          - team_ref: TM001
+            nature: architectural
+            mode: collaboration
+            about: >
+              The cart-to-order handover. Declared shared-kernel in `checkout/arch.yaml`, which is
+              the one of the four that is a collaboration rather than a consumed service.
+        tags: [core, checkout, payments, modeling-abstraction]
 
       - id: TM004
         name: "Customer Experience Team"
-        description: "Owns customer accounts, addresses, customer service messaging, and customer groups."
-        contact:
-          email: customers@prestashop.example
-          slack: "#team-customers"
-        tags: [support, customers]
+        kind: dev-stream-aligned
+        description: >
+          Modelling abstraction. Notional owner of the Customers bounded context: accounts, groups,
+          addresses and their per-country required fields, titles, and customer-service threads.
+        responsibilities:
+          - "The Customers bounded context (prestashop.BC005)."
+          - "Capabilities CAP007, CAP008 and CAP009."
+        tags: [support, customers, modeling-abstraction]
 
       - id: TM005
         name: "Logistics Team"
-        description: "Owns carrier configuration, shipping cost calculation, and shipment tracking."
-        contact:
-          email: shipping@prestashop.example
-          slack: "#team-shipping"
-        tags: [support, shipping]
+        kind: dev-stream-aligned
+        description: >
+          Modelling abstraction. Notional owner of the Shipping bounded context: carrier
+          configuration with its weight and price ranges per zone, and the shipments an order is
+          dispatched in.
+        responsibilities:
+          - "The Shipping bounded context (prestashop.BC010)."
+          - "Capability CAP010."
+        tags: [support, shipping, modeling-abstraction]
 
       - id: TM006
         name: "International & Localization Team"
-        description: "Owns currencies, taxes, countries, zones, languages, and locale formatting."
-        contact:
-          email: international@prestashop.example
-          slack: "#team-i18n"
-        tags: [support, international, localization]
+        kind: dev-stream-aligned
+        description: >
+          Modelling abstraction. Notional owner of the International bounded context: currencies
+          and exchange rates, taxes and tax rules, countries, states, zones and languages. Six of
+          the other nine contexts depend on it, which makes it the model's most depended-upon
+          context.
+        responsibilities:
+          - "The International bounded context (prestashop.BC006)."
+          - "Capabilities CAP011 and CAP012."
+        tags: [support, international, localization, modeling-abstraction]
 
       - id: TM007
         name: "Content & Design Team"
-        description: "Owns CMS pages, themes, email templates, SEO meta, and design system."
-        contact:
-          email: content@prestashop.example
-          slack: "#team-content"
-        tags: [support, content, design]
+        kind: dev-stream-aligned
+        description: >
+          Modelling abstraction. Notional owner of the Content bounded context: CMS pages and their
+          categories, themes and their layouts, email templates, and page metadata.
+        responsibilities:
+          - "The Content bounded context (prestashop.BC004)."
+          - "Capability CAP013."
+        tags: [support, content, design, modeling-abstraction]
 
       - id: TM008
         name: "Module Ecosystem Team"
-        description: "Owns module lifecycle, hook system, marketplace integration, and developer docs."
-        contact:
-          email: modules@prestashop.example
-          slack: "#team-modules"
-        tags: [generic, modules, ecosystem]
+        kind: dev-platform
+        description: >
+          Modelling abstraction. Notional owner of the Modules bounded context: module lifecycle
+          and the hook mechanism every other context's behaviour is extended through. Platform
+          rather than stream-aligned, because what it owns is consumed by all the others.
+        responsibilities:
+          - "The Modules bounded context (prestashop.BC007) and the hook dispatch path."
+          - "Capability CAP014."
+        tags: [generic, modules, ecosystem, modeling-abstraction]
 
       - id: TM009
         name: "Platform Security Team"
-        description: "Owns employee management, access control, API clients, webservice, and audit logging."
-        contact:
-          email: security@prestashop.example
-          slack: "#team-security"
-        tags: [generic, admin, security]
+        kind: security
+        description: >
+          Modelling abstraction. Notional owner of the Admin bounded context: employees and their
+          permission profiles, sessions, OAuth2 API clients, legacy webservice keys, and the
+          back-office administration surface.
+        responsibilities:
+          - "The Admin bounded context (prestashop.BC001)."
+          - "Capabilities CAP015, CAP016 and CAP103."
+        tags: [generic, admin, security, modeling-abstraction]
 
       - id: TM010
         name: "Core Platform Team"
-        description: "Owns multi-store configuration, shop settings, search, contacts, and infrastructure."
-        contact:
-          email: platform@prestashop.example
-          slack: "#team-platform"
-        tags: [generic, shop, platform]
+        kind: dev-platform
+        description: >
+          Modelling abstraction. Notional owner of the Shop bounded context and of the model's
+          infrastructure layer: multi-store configuration, shop branding, search engines and
+          aliases, physical store records, and the deployment scopes `infrastructure.yaml` declares.
+        responsibilities:
+          - "The Shop bounded context (prestashop.BC011)."
+          - "Capabilities CAP017 and CAP104."
+          - "The infrastructure layer, which names this team as its file-level owner."
+        tags: [generic, shop, platform, modeling-abstraction]
+
+  - id: PRT100
+    name: "The PrestaShop Project"
+    description: >
+      The open-source project, named in `composer.json` as "PrestaShop Community" with
+      https://contributors.prestashop-project.org/ as its homepage. It governs itself through four
+      councils whose membership spans PrestaShop SA staff and contributors who are not employed by
+      the company, and it holds the merge right over the codebase.
+    responsibilities:
+      - "Setting the project's direction, product vision, technical vision and quality vision, through its four councils."
+      - "Reviewing and merging every code contribution."
+      - "Triaging issues and deciding what a release must satisfy before it ships."
+    relations:
+      - party_ref: PRT001
+        type: partner_of
+        about: "The company that founded the project, holds its trademark and staffs part of every council."
+    tags: [open-source, governance]
+    properties:
+      source: "https://www.prestashop-project.org/project-organization/people-and-roles/"
+      source_read: "2026-09-19"
+    departments:
+      - id: DPT100
+        name: "Leadership Council"
+        description: >
+          The council described as being in charge of providing structure and a general direction
+          for the project. It oversees the other three and holds final authority over their
+          decisions, which is why they carry it as their `parent`.
+        responsibilities:
+          - "Setting the project's structure and general direction."
+          - "Final authority over decisions taken by the Product, Technical and Quality councils."
+        teams: [TM104]
+        tags: [council, published]
+
+      - id: DPT101
+        name: "Product Council"
+        description: >
+          The council responsible for the product vision: that the software meets the needs of its
+          various users, expressed as features, specifications and UI/UX guidelines.
+        responsibilities:
+          - "Product vision, feature scope and specifications."
+          - "The UI/UX guidelines an interface is expected to follow."
+        parent: DPT100
+        teams: [TM103]
+        tags: [council, published]
+
+      - id: DPT102
+        name: "Technical Council"
+        description: >
+          The council responsible for the technical vision for the whole project: reviewing and
+          merging code contributions, and deciding architecture and implementation. It is the body
+          a committer escalates an important decision to.
+        responsibilities:
+          - "Technical vision, architecture and implementation decisions."
+          - "Deciding contributions that a committer judges too consequential to merge alone."
+        parent: DPT100
+        teams: [TM100]
+        tags: [council, published]
+
+      - id: DPT103
+        name: "Quality Council"
+        description: >
+          The council responsible for the quality-assurance vision: the test automation strategy,
+          the bug triage process, and quality assessment. It is the council the project's public
+          pages point contributors at for pull-request and issue process.
+        responsibilities:
+          - "Test automation strategy."
+          - "Bug triage process and issue sorting."
+          - "Quality assessment of a release."
+        parent: DPT100
+        teams: [TM101, TM102]
+        tags: [council, published]
+
+    teams:
+      - id: TM100
+        name: "Committers"
+        description: >
+          Contributors who hold the right to review and merge code contributions, involving the
+          Technical Council for decisions they judge important. Fifteen were listed at the source
+          read, a mix of PrestaShop SA staff and contributors not employed by the company. No
+          `kind` is set: the Team Topologies vocabulary has no value for a project-wide merge
+          right, and every candidate would say something untrue.
+        responsibilities:
+          - "Reviewing and merging pull requests across the codebase."
+          - "Escalating consequential changes to the Technical Council."
+        interacts_with:
+          - department_ref: DPT102
+            nature: approval
+            mode: collaboration
+            about: "Decisions a committer judges too consequential to take alone go to the Technical Council."
+        tags: [published, maintainer]
+
+      - id: TM101
+        name: "Software Testers"
+        kind: qa
+        description: >
+          Contributors who test pull requests, releases and the built-in modules, as the project's
+          own contribution guide asks of anyone who wants to help without writing code.
+        responsibilities:
+          - "Testing pull requests before they are merged."
+          - "Testing releases and the native modules that ship with them."
+        interacts_with:
+          - team_ref: TM102
+            nature: enablement
+            mode: facilitating
+            about: "The Software Developers in Test write the automation that lets manual testing scale."
+        tags: [published]
+
+      - id: TM102
+        name: "Software Developers in Test"
+        kind: test-automation
+        description: >
+          Contributors who provide technical vision for testing, review contributions and write the
+          automated tests that make testing faster than doing it by hand.
+        responsibilities:
+          - "Writing and maintaining the automated test suites."
+          - "Reviewing contributions from a testability standpoint."
+        tags: [published]
+
+      - id: TM103
+        name: "UX Designers"
+        kind: design
+        description: >
+          The role responsible for interfaces following usability and design best practice. The
+          project states that it is currently covered collectively by PrestaShop SA's design team
+          rather than by named community contributors, which is why this team declares a capacity
+          dependency on the company.
+        responsibilities:
+          - "Usability and visual design of the back office and the default theme."
+        interacts_with:
+          - party_ref: PRT001
+            nature: capacity
+            mode: x-as-a-service
+            about: >
+              The role is staffed from the company's design team, so the project draws on people it
+              does not itself have.
+        tags: [published]
+
+      - id: TM104
+        name: "Dedicated Maintainers"
+        description: >
+          Contributors who take responsibility for one sub-project of their own. At the source read
+          the user-documentation seat was unfilled, so this is a role the project defines and does
+          not always have someone in. No `kind` is set, for the same reason as TM100: the value
+          would name a function the role does not have.
+        responsibilities:
+          - "Maintaining a named sub-project of the PrestaShop organization."
+        tags: [published]
+
+  - id: PRT101
+    name: "PrestaShop Partner and Expert Network"
+    description: >
+      The agencies, certified experts and module authors who implement, extend and support
+      PrestaShop for merchants. PrestaShop invites module authors to reach, in its own words, "over
+      300,000 merchants worldwide" through the marketplace; that figure is the company's published
+      marketing claim rather than anything this model measured.
+    responsibilities:
+      - "Implementing and supporting PrestaShop installations for merchants."
+      - "Publishing modules and themes to the marketplace."
+    relations:
+      - party_ref: PRT001
+        type: partner_of
+        about: "The company runs the certification and partner programmes the network is organised by."
+    tags: [ecosystem, external]
+    properties:
+      source: "https://www.prestashop.com/en/partners"
+      source_read: "2026-09-19"

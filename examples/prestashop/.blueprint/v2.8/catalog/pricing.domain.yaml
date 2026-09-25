@@ -9,14 +9,42 @@ operations:
     id: catalog.CMD021
     kind: command
     name: "AddSpecificPrice"
-    description: "Create a price override rule for a product (discount by amount or percentage, for specific customer group, quantity, or date range)."
+    description: "Create a price override for a product: a reduction by amount or percentage, or a fixed price, qualified by any combination of shop, currency, country, customer group, single customer, variant and from-quantity, optionally between two dates."
     delivery_priority: must-have
+    implementation: as-is
     governed_by:
       - rule: catalog.VR003
+    dispatch: inprocess
+    payload:
+      schema: AddSpecificPricePayload
+      contentType: application/json
+    materializes:
+      - concept: catalog.CN010
+        action: create
+    reacts_to:
+      - operation: checkout.EVT010
+        policy: "Materialize the new catalog price rule as one stored price override per matching product, because PrestaShop resolves a rule once at save time rather than on every price read"
+      - operation: checkout.EVT011
+        policy: "Re-materialize the price overrides of an edited catalog price rule, because the rows written by the previous version no longer match its conditions"
     produces:
       operations: [catalog.EVT007]
       mode: all
+    responses:
+      - code: "SpecificPriceConstraintViolation"
+        type: failure
+        description: "The reduction, the fixed price or the date range fails the domain's constraints."
+        error: catalog.ERR007
+      - code: "CannotAddSpecificPrice"
+        type: error
+        description: "The rule reached persistence and failed there."
+        error: catalog.ERR206
     code_refs:
+      - path: "src/Adapter/CatalogPriceRule/CommandHandler/AddCatalogPriceRuleHandler.php"
+        role: implementation
+        description: "Proves the reaction to checkout.EVT010. Line 36 calls SpecificPriceRule::add, which fires actionObjectSpecificPriceRuleAddAfter; line 41 then calls apply. EditCatalogPriceRuleHandler line 43 is the same call for checkout.EVT011."
+      - path: "classes/SpecificPriceRule.php"
+        role: implementation
+        description: "apply() walks the matching products and applyRuleToProduct at lines 284 to 308 builds a SpecificPrice and calls add on it, which is the row AddSpecificPriceHandler writes. The override is reached there directly, not through the command bus."
       - path: "src/Core/Domain/Product/SpecificPrice/Command/AddSpecificPriceCommand.php"
         role: implementation
 
@@ -24,43 +52,209 @@ operations:
     id: catalog.CMD022
     kind: command
     name: "EditSpecificPrice"
-    description: "Modify an existing specific price rule."
+    description: "Change an existing price override. Every qualifier is nullable and a null means 'applies to all', so editing a rule can widen or narrow which carts it catches."
     delivery_priority: must-have
+    implementation: as-is
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN010
+        action: update
     produces:
       operations: [catalog.EVT007]
       mode: all
+    responses:
+      - code: "SpecificPriceNotFound"
+        type: error
+        description: "No specific price carries that identifier."
+        error: catalog.ERR204
+      - code: "SpecificPriceConstraintViolation"
+        type: failure
+        description: "A submitted value fails the domain's constraints."
+        error: catalog.ERR007
+      - code: "CannotUpdateSpecificPrice"
+        type: error
+        description: "The change reached persistence and failed there."
+        error: catalog.ERR206
+    code_refs:
+      - path: "src/Core/Domain/Product/SpecificPrice/Command/EditSpecificPriceCommand.php"
+        role: implementation
 
   deleteSpecificPrice:
     id: catalog.CMD023
     kind: command
     name: "DeleteSpecificPrice"
-    description: "Remove a specific price rule from a product."
+    description: "Remove one price override. The product's price returns to whatever the next matching rule, or the base price, computes."
     delivery_priority: must-have
+    implementation: as-is
+    dispatch: inprocess
+    materializes:
+      - concept: catalog.CN010
+        action: delete
+    reacts_to:
+      - operation: catalog.EVT003
+        policy: "Remove every price override of a product being deleted, so no override outlives the product whose price it was overriding"
     produces:
       operations: [catalog.EVT007]
       mode: all
+    responses:
+      - code: "SpecificPriceNotFound"
+        type: error
+        description: "No specific price carries that identifier."
+        error: catalog.ERR204
+      - code: "CannotDeleteSpecificPrice"
+        type: error
+        description: "The deletion reached persistence and failed there."
+        error: catalog.ERR206
+    code_refs:
+      - path: "classes/Product.php"
+        role: implementation
+        description: "Proves the reaction to catalog.EVT003. Product::delete fires actionProductDelete at line 1284 and calls SpecificPrice::deleteByProductId at line 1296. The same cascade also removes the product's virtual files at line 1304 and its attachments at line 1294; those two are true and are left unbound to keep the wall readable."
+      - path: "src/Core/Domain/Product/SpecificPrice/Command/DeleteSpecificPriceCommand.php"
+        role: implementation
 
-  setProductCustomizationFields:
-    id: catalog.CMD024
+  setSpecificPricePriority:
+    id: catalog.CMD203
     kind: command
-    name: "SetProductCustomizationFields"
-    description: "Define customization fields for a product (text or file upload fields that customers fill in)."
-    delivery_priority: could-have
+    name: "SetSpecificPricePriority"
+    description: "Set the order in which qualifiers win for one product when several overrides match the same cart - shop, currency, country, group, customer - or remove the product's own order so it falls back to the shop-wide default. Priority is what decides the price when rules overlap, which is why it is a command of its own and not a field of a rule."
+    delivery_priority: should-have
+    implementation: as-is
+    dispatch: inprocess
     produces:
-      operations: [catalog.EVT002]
+      operations: [catalog.EVT007]
       mode: all
+    responses:
+      - code: "CannotSetSpecificPricePriorities"
+        type: error
+        description: "The priority list could not be written."
+        error: catalog.ERR207
+    code_refs:
+      - path: "src/Core/Domain/Product/SpecificPrice/Command/SetSpecificPricePriorityForProductCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/SpecificPrice/Command/RemoveSpecificPricePriorityForProductCommand.php"
+        role: implementation
+        description: "The fall-back-to-default half of the same concern."
+
+  getSpecificPriceForEditing:
+    id: catalog.QRY205
+    kind: query
+    name: "GetSpecificPriceForEditing"
+    description: "One price override in the shape its edit form needs: the reduction or fixed price, every qualifier it carries, and the date range it is live in."
+    delivery_priority: should-have
+    implementation: as-is
+    dispatch: inprocess
+    responses:
+      - code: "SpecificPriceNotFound"
+        type: error
+        description: "No specific price carries that identifier."
+        error: catalog.ERR204
+    code_refs:
+      - path: "src/Core/Domain/Product/SpecificPrice/Query/GetSpecificPriceForEditing.php"
+        role: implementation
+
+  getSpecificPriceList:
+    id: catalog.QRY206
+    kind: query
+    name: "GetSpecificPriceList"
+    description: "One page of a product's price overrides as the pricing tab lists them, with the qualifier names resolved into the requested language so a reader sees 'Wholesale, France' rather than two identifiers."
+    delivery_priority: should-have
+    implementation: as-is
+    dispatch: inprocess
+    code_refs:
+      - path: "src/Core/Domain/Product/SpecificPrice/Query/GetSpecificPriceList.php"
+        role: implementation
 
   specificPriceChanged:
     id: catalog.EVT007
     kind: event
     name: "SpecificPriceChanged"
-    description: "Emitted when a specific price rule is added, modified, or removed."
+    description: "A price override was created, changed or removed. PrestaShop fires no dedicated hook for it: modules observe it as the dynamic actionObjectSpecificPriceAddAfter, actionObjectSpecificPriceUpdateAfter and actionObjectSpecificPriceDeleteAfter, which ObjectModel fires for every persisted SpecificPrice because SpecificPriceRepository writes through AbstractObjectModelRepository."
+    implementation: as-is
+    tags: [hook:actionObjectSpecificPriceAddAfter, hook:actionObjectSpecificPriceUpdateAfter, hook:actionObjectSpecificPriceDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 615, 847 and 923: the dynamic actionObject<Class>(Add|Update|Delete)After hooks."
+      - path: "classes/SpecificPrice.php"
+        role: implementation
+        description: "SpecificPriceCore extends ObjectModel, so its class name is what the hook name is built from."
+      - path: "src/Adapter/Product/SpecificPrice/Repository/SpecificPriceRepository.php"
+        role: implementation
+        description: "Writes every specific price through AbstractObjectModelRepository."
 
 errors:
-  specificPriceConflict:
+  specificPriceConstraintViolation:
     id: catalog.ERR007
-    name: "SpecificPriceConflict"
-    description: "A specific price with the same conditions (customer group, quantity, date range) already exists."
-    category: conflict
+    name: "SpecificPriceConstraintViolation"
+    description: "A submitted price override fails the domain's own constraints - a reduction that is neither an amount nor a percentage, a negative fixed price, or a date range that ends before it starts."
+    category: validation
     severity: error
-    http_status: 409
+    http_status: 400
+    retry_eligible: false
+    implementation: as-is
+    tags: [pricing]
+    code_refs:
+      - path: "src/Core/Domain/Product/SpecificPrice/Exception/SpecificPriceConstraintException.php"
+        role: implementation
+
+  specificPriceNotFound:
+    id: catalog.ERR204
+    name: "SpecificPriceNotFound"
+    description: "No price override carries the requested identifier. It is the miss an edit, a delete or an editing read reports."
+    category: not-found
+    severity: error
+    http_status: 404
+    retry_eligible: false
+    implementation: as-is
+    tags: [pricing]
+    code_refs:
+      - path: "src/Core/Domain/Product/SpecificPrice/Exception/SpecificPriceNotFoundException.php"
+        role: implementation
+
+  specificPricePersistenceFailed:
+    id: catalog.ERR206
+    name: "SpecificPricePersistenceFailed"
+    description: "A price override write reached persistence and failed there. The three exception classes differ only in which write failed - add, update or delete."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    implementation: as-is
+    tags: [pricing]
+    code_refs:
+      - path: "src/Core/Domain/Product/SpecificPrice/Exception/CannotAddSpecificPriceException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/SpecificPrice/Exception/CannotUpdateSpecificPriceException.php"
+        role: implementation
+      - path: "src/Core/Domain/Product/SpecificPrice/Exception/CannotDeleteSpecificPriceException.php"
+        role: implementation
+
+  specificPricePriorityUpdateFailed:
+    id: catalog.ERR207
+    name: "SpecificPricePriorityUpdateFailed"
+    description: "The per-product order of price-override qualifiers could not be written, so which rule wins on an overlapping cart is still whatever it was before the call."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    implementation: as-is
+    tags: [pricing]
+    code_refs:
+      - path: "src/Core/Domain/Product/SpecificPrice/Exception/CannotSetSpecificPricePrioritiesException.php"
+        role: implementation
+
+questions:
+
+  - id: catalog.QN002
+    name: "What A Product Costs This Shopper"
+    statement: "What price is this product offered at, and to which customers does that price apply?"
+    category: measurement
+    priority: critical
+    bounded_context_ref: prestashop.BC002
+    answered_by: [catalog.QRY002, catalog.QRY205, catalog.QRY206]
+    concepts: [catalog.CN001, catalog.CN010]
+    resolved: true
+    resolution: >
+      The product carries a base price; a SpecificPrice narrows it by customer group,
+      country, currency, shop and date window, so the answer is always a price plus the
+      audience it was granted to. GetSpecificPriceList returns that audience.

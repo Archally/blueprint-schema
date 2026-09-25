@@ -59,7 +59,7 @@ components:
       properties:
         orderId:
           type: integer
-          description: "Order to update."
+          description: "Which order the status change applies to. The order keeps its whole state history, so this is the target of an append rather than of an overwrite."
           example: 4217
         newOrderStatusId:
           type: integer
@@ -113,7 +113,7 @@ components:
           example: 4217
         paymentMethod:
           type: string
-          description: "Payment method name."
+          description: "Free text naming how the money arrived, as it will be shown on the order and the invoice. It is not a module identifier and is not validated against the installed payment modules, because a back-office payment is often recorded for a channel the shop has no module for."
           example: "Bank Wire"
         amount:
           type: string
@@ -134,10 +134,10 @@ components:
         dateAdd:
           type: string
           format: date
-          description: "Payment date."
+          description: "The day the money was received, which is not the day the record was created. A back-office payment is usually entered after the fact, so this is what the accounting period is taken from."
           example: "2026-03-19"
       code_refs:
-        - path: "src/Core/Domain/Order/Command/AddPaymentCommand.php"
+        - path: "src/Core/Domain/Order/Payment/Command/AddPaymentCommand.php"
           role: schema
 
     IssuePartialRefundPayload:
@@ -170,7 +170,7 @@ components:
             "42": { "quantity": 1, "amount": "29.990000" }
         shippingCostRefundAmount:
           type: string
-          description: "Amount of shipping cost to refund."
+          description: "How much of the delivery charge goes back, decided separately from the product refunds above because returning goods does not by itself entitle the shopper to the postage. A decimal string, not a float, so the value the shop stores is the value it was given."
           example: "0.000000"
         restockProducts:
           type: boolean
@@ -245,11 +245,11 @@ components:
           example: "2026-03-19T14:23:45+01:00"
         currencyId:
           type: integer
-          description: "Currency identifier."
+          description: "Currency the order was placed in. The order also stores the conversion rate that applied at the time, so a later rate change never restates a past order's totals."
           example: 1
         carrierId:
           type: integer
-          description: "Carrier identifier."
+          description: "Carrier chosen at checkout. Required on every order, and it is what the delivery cost and the delivery-time note were computed from."
           example: 2
         carrierName:
           type: string
@@ -257,7 +257,7 @@ components:
           example: "Colissimo"
         shopId:
           type: integer
-          description: "Shop identifier."
+          description: "Which shop of a multistore installation took the order. It fixes the order's own context: an employee restricted to another shop does not see this order at all."
           example: 1
         note:
           type: string
@@ -277,84 +277,127 @@ components:
           example: 156
         customer:
           type: object
-          description: "Customer summary."
+          description: "Enough of the buyer to head the order page without a second query. The full account lives in the customers slice; this is a snapshot, so an order placed by a guest still reads correctly after the guest record is purged."
+          example:
+            customerId: 42
+            firstName: "Jean"
+            lastName: "Dupont"
+            email: "jean.dupont@example.com"
           properties:
             customerId:
               type: integer
+              description: "The account that placed the order, or 0 for a guest checkout."
               example: 42
             firstName:
               type: string
+              description: "Given name as it stood when the order was placed."
               example: "Jean"
             lastName:
               type: string
+              description: "Family name as it stood when the order was placed."
               example: "Dupont"
             email:
               type: string
+              description: "Address every order notification for this order is sent to."
               example: "jean.dupont@example.com"
         shippingAddress:
           type: object
-          description: "Formatted delivery address."
+          description: "Where the goods go, already rendered to the destination country's address format so the back office does not have to know 244 layouts. Kept apart from the invoice address because the two differ on gifts and on most B2B orders."
+          example:
+            addressId: 12
+            formatted: "Jean Dupont\n15 Rue de la Paix\n75001 Paris\nFrance"
           properties:
             addressId:
               type: integer
+              description: "The address record the order was shipped to. Editing that record later does not change a placed order."
               example: 12
             formatted:
               type: string
+              description: "The address as lines of text, laid out by the country's address format. Newline separated, ready to print on a label."
               example: "Jean Dupont\n15 Rue de la Paix\n75001 Paris\nFrance"
         invoiceAddress:
           type: object
-          description: "Formatted billing address."
+          description: "Where the invoice is billed, in the same rendered form as the delivery address. This is the address the tax was computed against, which is why it is stored on the order rather than looked up."
+          example:
+            addressId: 12
+            formatted: "Jean Dupont\n15 Rue de la Paix\n75001 Paris\nFrance"
           properties:
             addressId:
               type: integer
+              description: "The address record the invoice was issued to."
               example: 12
             formatted:
               type: string
+              description: "The billing address as newline separated lines, laid out by its own country's address format."
               example: "Jean Dupont\n15 Rue de la Paix\n75001 Paris\nFrance"
         products:
           type: array
-          description: "Order line items."
+          description: "The lines as they were ordered, each carrying the name, reference and prices frozen at placement. A later catalog edit is not reflected here, which is what makes an old order still printable."
+          example:
+            - orderDetailId: 89
+              productId: 42
+              productName: "Classic Laptop 15-inch - Size: M, Color: Black"
+              quantity: 2
+              unitPriceTaxIncluded: "1259.990000"
           items:
             $ref: "#/components/schemas/OrderProductItem"
         prices:
           $ref: "#/components/schemas/OrderPricesInfo"
         history:
           type: array
-          description: "Order status change history."
+          description: "Every state the order has been in, oldest first, appended and never rewritten. The current state is the last entry; the rest is the audit trail a dispute is settled from."
+          example:
+            - date: "2026-03-19T14:23:45+01:00"
+              stateName: "Payment accepted"
+              employeeName: "Admin PrestaShop"
           items:
             type: object
             properties:
               date:
                 type: string
                 format: date-time
+                description: "When the order entered this state."
                 example: "2026-03-19T14:23:45+01:00"
               stateName:
                 type: string
+                description: "The state's label in the employee's language, not its id, because the label is what the history is read as."
                 example: "Payment accepted"
               employeeName:
                 type: string
+                description: "Who moved the order into this state, empty when the shop did it automatically on a payment callback."
                 example: "Admin PrestaShop"
         payments:
           type: array
-          description: "Payment records."
+          description: "Every sum received against the order. More than one is normal: a deposit and a balance, a split across two cards, or a partial payment on a B2B account. The order is paid when these sum to its total, not when the list is non-empty."
+          example:
+            - paymentId: 1
+              transactionId: "pi_3Mq2Dj2eZvKYlo2C0"
+              amount: "129.990000"
+              paymentMethod: "Bank Wire"
+              dateAdd: "2026-03-19T14:25:00+01:00"
           items:
             type: object
             properties:
               paymentId:
                 type: integer
+                description: "The payment record itself, which is what a correction or a refund is attached to."
                 example: 1
               transactionId:
                 type: string
+                description: "The reference the payment provider gave the transaction, kept verbatim so a reconciliation can match it. Empty on a payment entered by hand."
                 example: "pi_3Mq2Dj2eZvKYlo2C0"
               amount:
                 type: string
+                description: "Sum received, as a decimal string in the order's currency."
                 example: "129.990000"
               paymentMethod:
                 type: string
+                description: "How the money arrived, as free text; the same value the order header shows when there is only one payment."
                 example: "Bank Wire"
               dateAdd:
                 type: string
                 format: date-time
+                description: "When the payment was received."
                 example: "2026-03-19T14:25:00+01:00"
       code_refs:
         - path: "src/Core/Domain/Order/QueryResult/OrderForViewing.php"
@@ -378,7 +421,7 @@ components:
       properties:
         orderId:
           type: integer
-          description: "Order identifier."
+          description: "The order this row stands for, which the list uses to link to its detail page. The reference below is what a shopper quotes; this is what the system joins on."
           example: 4217
         reference:
           type: string
@@ -394,7 +437,7 @@ components:
           example: "129.990000"
         paymentMethod:
           type: string
-          description: "Payment method."
+          description: "How the order was paid, shown in the list so an unpaid bank transfer can be picked out without opening each order."
           example: "Bank Wire"
         currentStateName:
           type: string
@@ -415,8 +458,8 @@ components:
           example: "France"
         companyName:
           type: string
-          description: "Customer company name (B2B)."
-          example: ""
+          description: "Company on the order's invoice address, empty for a consumer order. The list shows it because B2B orders are usually handled on different terms."
+          example: "Acme SAS"
       code_refs:
         - path: "src/Core/Domain/Order/QueryResult/OrderPreview.php"
           role: schema
@@ -444,7 +487,7 @@ components:
           example: 89
         productId:
           type: integer
-          description: "Product identifier."
+          description: "The catalog product the line came from. It may now be renamed or deleted; the name and reference on this line are the ones that were true at placement."
           example: 42
         combinationId:
           type: integer
@@ -468,7 +511,7 @@ components:
           example: "1049.990000"
         unitPriceTaxIncluded:
           type: string
-          description: "Unit price with tax."
+          description: "Price of one unit with tax, at the rate that applied on the order date and in the order's currency. Stored rather than computed, so a tax-rate change does not rewrite a past order."
           example: "1259.990000"
         totalPriceTaxExcluded:
           type: string

@@ -11,8 +11,11 @@ contexts:
   - id: prestashop.BC003
     name: Checkout
     kind: core
+    value_stream_ref: VS001
     complexity: concurrency
+    business_model_role: revenue-generator
     evolution: product
+    model_traits: [analyser, information-holder]
     summary: Cart management, checkout flow, cart rules, promotions, payment orchestration.
     owned_by:
       team: TM003
@@ -25,25 +28,24 @@ contexts:
       - Cart total calculation (products, discounts, tax, shipping)
     dependencies:
       - name: Catalog
-        type: api
+        coupling: http
         relationship: customer-supplier
         direction: downstream
         description: Reads product prices, stock, and availability for cart items.
         bounded_context_ref: prestashop.BC002
       - name: Customers
-        type: api
+        coupling: http
         relationship: customer-supplier
         direction: downstream
         description: Reads customer data for cart rules and guest checkout.
         bounded_context_ref: prestashop.BC005
       - name: International
-        type: api
+        coupling: http
         relationship: customer-supplier
         direction: downstream
         description: Reads currency and tax data for cart totals.
         bounded_context_ref: prestashop.BC006
       - name: Orders
-        type: events
         relationship: shared-kernel
         direction: upstream
         description: Publishes cart-to-order transition event.
@@ -63,15 +65,17 @@ contexts:
             environment: development
         contracts:
           openapi:
-            output: checkout/checkout-api.openapi
+            contract_name: checkout-api
+            slice: checkout
             expose:
-              - checkout:addProductToCart
-              - checkout:removeProductFromCart
-              - checkout:getCartForViewing
+              - checkout.CMD009
+              - checkout.CMD010
+              - checkout.QRY001
           asyncapi:
-            output: checkout/checkout-events.asyncapi
+            contract_name: checkout-events
+            slice: checkout
             send:
-              - checkout:cartProductsUpdated
+              - checkout.EVT004
             receive:
-              - orders:orderPlaced
+              - orders.EVT001
             brokerId: prestashop-event-bus

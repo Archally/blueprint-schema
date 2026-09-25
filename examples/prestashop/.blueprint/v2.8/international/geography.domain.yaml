@@ -15,6 +15,16 @@ operations:
     description: "Create a new country with ISO code, zone assignment, address format, zip code configuration, and tax display settings."
     delivery_priority: must-have
     initiated_by: [international.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /countries
+        method: POST
+        group: international
+        description: "Admin API, OAuth scope country_write. Declared as a CQRSCreate."
+    materializes:
+      - concept: international.CN004
+        action: create
     produces:
       operations: [international.EVT011]
       mode: all
@@ -23,6 +33,9 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Country/Command/AddCountryCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Country/Country.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
   editCountry:
     id: international.CMD012
@@ -31,12 +44,25 @@ operations:
     description: "Update a country's zone assignment, address format, zip code settings, or status."
     delivery_priority: must-have
     initiated_by: [international.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /countries/{countryId}
+        method: PATCH
+        group: international
+        description: "Admin API, OAuth scope country_write. Declared as a CQRSPartialUpdate."
+    materializes:
+      - concept: international.CN004
+        action: update
     produces:
       operations: [international.EVT012]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Country/Command/EditCountryCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Country/Country.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
   deleteCountry:
     id: international.CMD013
@@ -45,11 +71,87 @@ operations:
     description: "Delete a country definition."
     delivery_priority: should-have
     initiated_by: [international.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /countries/{countryId}
+        method: DELETE
+        group: international
+        description: "Admin API, OAuth scope country_write. Declared as a CQRSDelete."
+    materializes:
+      - concept: international.CN004
+        action: delete
     produces:
       operations: [international.EVT013]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Country/Command/DeleteCountryCommand.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Country/Country.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
+
+  toggleCountryStatus:
+    id: international.CMD031
+    kind: command
+    name: "ToggleCountryStatus"
+    description: "Enable or disable a country. A disabled country is offered in no address form and in no carrier zone selector, so switching it off withdraws a whole market without deleting its addresses. Supports single and bulk toggle."
+    delivery_priority: should-have
+    initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN004
+        action: update
+    produces:
+      operations: [international.EVT031]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Country/Command/ToggleCountryStatusCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Country/Command/BulkToggleCountriesStatusCommand.php"
+        role: implementation
+        description: "Same intent over a list of country ids"
+
+  bulkUpdateCountryZone:
+    id: international.CMD032
+    kind: command
+    name: "BulkUpdateCountryZone"
+    description: "Reassign several countries to a different geographic zone in one operation. Zone membership is what carrier price ranges and tax rules are written against, so this is how a merchant restructures shipping and taxation for a region at once."
+    delivery_priority: could-have
+    initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN004
+        action: update
+    produces:
+      operations: [international.EVT032]
+      mode: all
+    reacts_to:
+      - operation: international.EVT021
+        policy: "Every country in a deleted zone is moved out of it"
+    code_refs:
+      - path: "src/Core/Domain/Country/Command/BulkUpdateCountryZoneCommand.php"
+        role: implementation
+      - path: "classes/Zone.php"
+        role: implementation
+        description: "delete() at lines 79-92 runs its body only after parent::delete has fired actionObjectZoneDeleteAfter, and sets country.id_zone to 0 for every country that was in the zone. It writes the column directly rather than dispatching BulkUpdateCountryZoneCommand, so this is the same reassignment by a different route - and the zone it reassigns to is the null zone."
+
+  bulkDeleteCountries:
+    id: international.CMD033
+    kind: command
+    name: "BulkDeleteCountries"
+    description: "Delete several countries in one operation. Fails as a unit: BulkCountryException carries FAILED_BULK_DELETE and the merchant is told the batch did not complete, not which row survived."
+    delivery_priority: should-have
+    initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN004
+        action: delete
+    produces:
+      operations: [international.EVT013]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Country/Command/BulkDeleteCountriesCommand.php"
         role: implementation
 
   # --- State ---
@@ -61,6 +163,10 @@ operations:
     description: "Create a new state/province/region within a country with its own zone assignment."
     delivery_priority: must-have
     initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN005
+        action: create
     produces:
       operations: [international.EVT014]
       mode: all
@@ -75,6 +181,10 @@ operations:
     description: "Update a state's name, ISO code, country, zone, or status."
     delivery_priority: must-have
     initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN005
+        action: update
     produces:
       operations: [international.EVT015]
       mode: all
@@ -89,6 +199,10 @@ operations:
     description: "Delete a state definition. Supports single and bulk deletion."
     delivery_priority: should-have
     initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN005
+        action: delete
     produces:
       operations: [international.EVT016]
       mode: all
@@ -105,6 +219,10 @@ operations:
     description: "Enable or disable a state. Supports single and bulk toggle."
     delivery_priority: should-have
     initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN005
+        action: update
     produces:
       operations: [international.EVT017]
       mode: all
@@ -121,12 +239,22 @@ operations:
     description: "Reassign multiple states to a different zone in a single operation. Enables bulk geographic restructuring."
     delivery_priority: could-have
     initiated_by: [international.ACT001]
+    dispatch: inprocess
+    materializes:
+      - concept: international.CN005
+        action: update
     produces:
       operations: [international.EVT018]
       mode: all
+    reacts_to:
+      - operation: international.EVT021
+        policy: "Every state in a deleted zone is moved out of it"
     code_refs:
       - path: "src/Core/Domain/State/Command/BulkUpdateStateZoneCommand.php"
         role: implementation
+      - path: "classes/Zone.php"
+        role: implementation
+        description: "delete() at line 89 sets state.id_zone to 0 for every state in the zone, in the same block that clears the countries and after actionObjectZoneDeleteAfter has fired. The column is written directly rather than by dispatching BulkUpdateStateZoneCommand."
 
   # --- Zone ---
 
@@ -137,12 +265,25 @@ operations:
     description: "Create a new geographic zone for grouping countries/states."
     delivery_priority: must-have
     initiated_by: [international.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /zones
+        method: POST
+        group: international
+        description: "Admin API, OAuth scope zone_write. Declared as a CQRSCreate."
+    materializes:
+      - concept: international.CN006
+        action: create
     produces:
       operations: [international.EVT019]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Zone/Command/AddZoneCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Zone/Zone.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
   editZone:
     id: international.CMD020
@@ -151,44 +292,133 @@ operations:
     description: "Update a zone's name or status."
     delivery_priority: must-have
     initiated_by: [international.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /zones/{zoneId}
+        method: PUT
+        group: international
+        description: "Admin API, OAuth scope zone_write. Declared as a CQRSUpdate."
+    materializes:
+      - concept: international.CN006
+        action: update
     produces:
       operations: [international.EVT020]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Zone/Command/EditZoneCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Zone/Zone.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
   deleteZone:
     id: international.CMD021
     kind: command
     name: "DeleteZone"
-    description: "Delete a zone. Supports single and bulk deletion."
+    description: "Delete one zone. Countries and states assigned to it lose their grouping, and the carrier price ranges and tax rules written against it stop matching anything."
     delivery_priority: should-have
     initiated_by: [international.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /zones/{zoneId}
+        method: DELETE
+        group: international
+        description: "Admin API, OAuth scope zone_write. Declared as a CQRSDelete."
+    materializes:
+      - concept: international.CN006
+        action: delete
     produces:
       operations: [international.EVT021]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Zone/Command/DeleteZoneCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Zone/Zone.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
+
+  bulkDeleteZones:
+    id: international.CMD038
+    kind: command
+    name: "BulkDeleteZones"
+    description: "Delete several zones in one call. It is a separate command from DeleteZone, not a variant of it: the Admin API gives it its own route, and the whole selection is sent as one body."
+    delivery_priority: should-have
+    initiated_by: [international.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /zones/bulk-delete
+        method: DELETE
+        group: international
+        description: "Admin API, OAuth scope zone_write. Declared as a CQRSDelete."
+    materializes:
+      - concept: international.CN006
+        action: delete
+    produces:
+      operations: [international.EVT021]
+      mode: all
+    code_refs:
       - path: "src/Core/Domain/Zone/Command/BulkDeleteZoneCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Zone/BulkDeleteZones.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
   toggleZoneStatus:
     id: international.CMD022
     kind: command
     name: "ToggleZoneStatus"
-    description: "Enable or disable a zone. Supports single and bulk toggle."
+    description: "Flip one zone between enabled and disabled. The command carries no target state: it reads the current one and inverts it, which is why the route is an update rather than a field patch."
     delivery_priority: should-have
     initiated_by: [international.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /zones/{zoneId}/toggle-status
+        method: PUT
+        group: international
+        description: "Admin API, OAuth scope zone_write. Declared as a CQRSUpdate."
+    materializes:
+      - concept: international.CN006
+        action: update
     produces:
       operations: [international.EVT022]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Zone/Command/ToggleZoneStatusCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Zone/Zone.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
+
+  bulkToggleZoneStatus:
+    id: international.CMD039
+    kind: command
+    name: "BulkToggleZoneStatus"
+    description: "Set several zones to one enabled state in a single call. Unlike ToggleZoneStatus it carries the state to apply, so a mixed selection ends up uniform rather than each zone ending up inverted."
+    delivery_priority: should-have
+    initiated_by: [international.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /zones/bulk-update-status
+        method: PUT
+        group: international
+        description: "Admin API, OAuth scope zone_write. Declared as a CQRSUpdate."
+    materializes:
+      - concept: international.CN006
+        action: update
+    produces:
+      operations: [international.EVT022]
+      mode: all
+    code_refs:
       - path: "src/Core/Domain/Zone/Command/BulkToggleZoneStatusCommand.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Zone/BulkUpdateStatusZone.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
   # --- Events ---
 
@@ -196,97 +426,210 @@ operations:
     id: international.EVT011
     kind: event
     name: "CountryCreated"
-    description: "A new country has been added."
+    description: "A new country has been added. Modules observe it as the hook actionObjectCountryAddAfter, composed at runtime by ObjectModel when the Country row is inserted."
+    tags: [hook:actionObjectCountryAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 614-615 fire actionObject<Class>AddAfter for every persisted class."
+      - path: "classes/Country.php"
+        role: model
 
   countryUpdated:
     id: international.EVT012
     kind: event
     name: "CountryUpdated"
-    description: "A country's configuration has been modified."
+    description: "A country's configuration has been modified. Modules observe it as the hook actionObjectCountryUpdateAfter, composed at runtime by ObjectModel when the Country row is updated."
+    tags: [hook:actionObjectCountryUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/Country.php"
+        role: model
 
   countryDeleted:
     id: international.EVT013
     kind: event
     name: "CountryDeleted"
-    description: "A country has been deleted."
+    description: "One or more countries have been deleted. Modules observe it as the hook actionObjectCountryDeleteAfter, composed at runtime by ObjectModel when the Country row is deleted."
+    tags: [hook:actionObjectCountryDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 922-923 fire actionObject<Class>DeleteAfter for every persisted class."
+      - path: "classes/Country.php"
+        role: model
+
+  countryStatusToggled:
+    id: international.EVT031
+    kind: event
+    name: "CountryStatusToggled"
+    description: "A country's enabled/disabled status has changed. A disabled country stops appearing in address forms and carrier zone selectors; existing addresses in it are untouched. Modules observe it as the hook actionObjectCountryUpdateAfter, composed at runtime by ObjectModel when the Country row is updated."
+    tags: [hook:actionObjectCountryUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/Country.php"
+        role: model
+
+  countryZonesBulkUpdated:
+    id: international.EVT032
+    kind: event
+    name: "CountryZonesBulkUpdated"
+    description: "Several countries have been reassigned to a different zone, which changes the carrier price ranges and tax rules that reach them. Modules observe it as the hook actionObjectCountryUpdateAfter, composed at runtime by ObjectModel when the Country row is updated. The bulk handler updates each country through its repository, so the hook fires once per country rather than once per call."
+    tags: [hook:actionObjectCountryUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/Country.php"
+        role: model
 
   stateCreated:
     id: international.EVT014
     kind: event
     name: "StateCreated"
-    description: "A new state has been added."
+    description: "A new state has been added. Modules observe it as the hook actionObjectStateAddAfter, composed at runtime by ObjectModel when the State row is inserted."
+    tags: [hook:actionObjectStateAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 614-615 fire actionObject<Class>AddAfter for every persisted class."
+      - path: "classes/State.php"
+        role: model
 
   stateUpdated:
     id: international.EVT015
     kind: event
     name: "StateUpdated"
-    description: "A state's configuration has been modified."
+    description: "A state's configuration has been modified. Modules observe it as the hook actionObjectStateUpdateAfter, composed at runtime by ObjectModel when the State row is updated."
+    tags: [hook:actionObjectStateUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/State.php"
+        role: model
 
   stateDeleted:
     id: international.EVT016
     kind: event
     name: "StateDeleted"
-    description: "One or more states have been deleted."
+    description: "One or more states have been deleted. Modules observe it as the hook actionObjectStateDeleteAfter, composed at runtime by ObjectModel when the State row is deleted."
+    tags: [hook:actionObjectStateDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 922-923 fire actionObject<Class>DeleteAfter for every persisted class."
+      - path: "classes/State.php"
+        role: model
 
   stateStatusToggled:
     id: international.EVT017
     kind: event
     name: "StateStatusToggled"
-    description: "A state's enabled/disabled status has changed."
+    description: "A state's enabled/disabled status has changed. Modules observe it as the hook actionObjectStateUpdateAfter, composed at runtime by ObjectModel when the State row is updated."
+    tags: [hook:actionObjectStateUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/State.php"
+        role: model
 
   stateZonesBulkUpdated:
     id: international.EVT018
     kind: event
     name: "StateZonesBulkUpdated"
-    description: "Multiple states have been reassigned to a different zone."
+    description: "Multiple states have been reassigned to a different zone. No hook is fired for this transition: State::affectZoneToSelection writes one raw UPDATE statement instead of calling ObjectModel::update, so modules cannot observe it. The same intent on countries does fire a hook, once per country - the asymmetry is in the code, not in the model."
+    code_refs:
+      - path: "classes/State.php"
+        role: implementation
+        description: "affectZoneToSelection() issues Db::getInstance()->execute(UPDATE ...) and bypasses ObjectModel."
+      - path: "src/Adapter/State/CommandHandler/BulkUpdateStateZoneHandler.php"
+        role: implementation
 
   zoneCreated:
     id: international.EVT019
     kind: event
     name: "ZoneCreated"
-    description: "A new zone has been added."
+    description: "A new zone has been added. Modules observe it as the hook actionObjectZoneAddAfter, composed at runtime by ObjectModel when the Zone row is inserted."
+    tags: [hook:actionObjectZoneAddAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 614-615 fire actionObject<Class>AddAfter for every persisted class."
+      - path: "classes/Zone.php"
+        role: model
 
   zoneUpdated:
     id: international.EVT020
     kind: event
     name: "ZoneUpdated"
-    description: "A zone's configuration has been modified."
+    description: "A zone's configuration has been modified. Modules observe it as the hook actionObjectZoneUpdateAfter, composed at runtime by ObjectModel when the Zone row is updated."
+    tags: [hook:actionObjectZoneUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/Zone.php"
+        role: model
 
   zoneDeleted:
     id: international.EVT021
     kind: event
     name: "ZoneDeleted"
-    description: "One or more zones have been deleted."
+    description: "One or more zones have been deleted. Modules observe it as the hook actionObjectZoneDeleteAfter, composed at runtime by ObjectModel when the Zone row is deleted."
+    tags: [hook:actionObjectZoneDeleteAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 922-923 fire actionObject<Class>DeleteAfter for every persisted class."
+      - path: "classes/Zone.php"
+        role: model
 
   zoneStatusToggled:
     id: international.EVT022
     kind: event
     name: "ZoneStatusToggled"
-    description: "A zone's enabled/disabled status has changed."
+    description: "A zone's enabled/disabled status has changed. Modules observe it as the hook actionObjectZoneUpdateAfter, composed at runtime by ObjectModel when the Zone row is updated. ObjectModel::toggleStatus ends in update(), so the toggle route and the edit route fire the same hook."
+    tags: [hook:actionObjectZoneUpdateAfter]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+        description: "Lines 846-847 fire actionObject<Class>UpdateAfter for every persisted class."
+      - path: "classes/Zone.php"
+        role: model
 
   # --- Queries ---
 
   getCountryForEditing:
     id: international.QRY005
     kind: query
+    name: "GetCountryForEditing"
+    description: "Retrieve a country's full configuration for the edit form."
+    delivery_priority: must-have
     exchange:
       protocol: http
       endpoint:
-        path: /international/countries/{countryId}
+        path: /countries/{countryId}
         method: GET
         group: international
+        description: "Admin API, OAuth scope country_read. Declared as a CQRSGet."
     responses:
       - code: "200"
         type: success
         description: "The country, in the shape the edit form needs."
         schema: CountryResource
         contentType: application/json
-    name: "GetCountryForEditing"
-    description: "Retrieve a country's full configuration for the edit form."
-    delivery_priority: must-have
     code_refs:
       - path: "src/Core/Domain/Country/Query/GetCountryForEditing.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Country/Country.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
   getCountryRequiredFields:
     id: international.QRY006
@@ -294,6 +637,7 @@ operations:
     name: "GetCountryRequiredFields"
     description: "Retrieve which address fields are required for a specific country."
     delivery_priority: must-have
+    dispatch: inprocess
     code_refs:
       - path: "src/Core/Domain/Country/Query/GetCountryRequiredFields.php"
         role: implementation
@@ -304,6 +648,7 @@ operations:
     name: "GetStateForEditing"
     description: "Retrieve a state's configuration for the edit form."
     delivery_priority: must-have
+    dispatch: inprocess
     code_refs:
       - path: "src/Core/Domain/State/Query/GetStateForEditing.php"
         role: implementation
@@ -314,9 +659,19 @@ operations:
     name: "GetZoneForEditing"
     description: "Retrieve a zone's configuration for the edit form."
     delivery_priority: must-have
+    exchange:
+      protocol: http
+      endpoint:
+        path: /zones/{zoneId}
+        method: GET
+        group: international
+        description: "Admin API, OAuth scope zone_read. Declared as a CQRSGet."
     code_refs:
       - path: "src/Core/Domain/Zone/Query/GetZoneForEditing.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Zone/Zone.php"
+        role: api-spec
+        description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
 errors:
   countryNotFound:
@@ -326,6 +681,77 @@ errors:
     category: not-found
     severity: error
     http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Country/Exception/CountryNotFoundException.php"
+        role: implementation
+
+  countryConstraintViolation:
+    id: international.ERR010
+    name: "CountryConstraintViolation"
+    description: "A country field is out of range for its type: an invalid id, zip code, address format or call prefix. The exception carries which one as a code constant, so the caller can point at the field rather than at the form."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Country/Exception/CountryConstraintException.php"
+        role: implementation
+        description: "INVALID_ID 10, INVALID_ZIP_CODE 20, INVALID_ADDRESS_FORMAT 30, INVALID_CALL_PREFIX 40"
+
+  duplicateCountryIsoCode:
+    id: international.ERR011
+    name: "DuplicateCountryIsoCode"
+    description: "The ISO 3166-1 alpha-2 code given to a new or edited country already belongs to another country. The code is the join key every address, carrier zone and tax rule resolves a country by, so it has to stay unique."
+    category: conflict
+    severity: error
+    http_status: 409
+    code_refs:
+      - path: "src/Core/Domain/Country/Exception/DuplicateCountryIsoCodeException.php"
+        role: implementation
+
+  invalidAddressFormat:
+    id: international.ERR012
+    name: "InvalidAddressFormat"
+    description: "The address format template a country declares was rejected by AddressFormatChecker. It carries the already-translated messages, which is what lets the Admin API report the fault without a form behind it."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Country/Exception/InvalidAddressFormatException.php"
+        role: implementation
+        description: "Extends CountryConstraintException"
+
+  countryWriteFailed:
+    id: international.ERR013
+    name: "CountryWriteFailed"
+    description: "A country write did not persist. PrestaShop raises one exception per verb rather than one per cause, so this error names the whole family: the caller learns the write failed, not why the storage refused it."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Country/Exception/CannotAddCountryException.php"
+        role: implementation
+      - path: "src/Core/Domain/Country/Exception/CannotEditCountryException.php"
+        role: implementation
+        description: "FAILED_TO_UPDATE_COUNTRY 10, UNKNOWN_EXCEPTION 20"
+      - path: "src/Core/Domain/Country/Exception/CannotDeleteCountryException.php"
+        role: implementation
+      - path: "src/Core/Domain/Country/Exception/DeleteCountryException.php"
+        role: implementation
+        description: "FAILED_DELETE 1, FAILED_BULK_DELETE 2"
+      - path: "src/Core/Domain/Country/Exception/CannotToggleCountryStatusException.php"
+        role: implementation
+
+  bulkCountryOperationFailed:
+    id: international.ERR014
+    name: "BulkCountryOperationFailed"
+    description: "A bulk country operation did not complete. The exception says which of the three it was - status update, zone update or delete - and nothing about which rows landed, so a merchant has to re-read the list to find out."
+    category: internal
+    severity: error
+    http_status: 500
+    code_refs:
+      - path: "src/Core/Domain/Country/Exception/BulkCountryException.php"
+        role: implementation
+        description: "FAILED_BULK_UPDATE_STATUS 1, FAILED_BULK_UPDATE_ZONE 2, FAILED_BULK_DELETE 3"
 
   stateNotFound:
     id: international.ERR005
@@ -342,3 +768,19 @@ errors:
     category: not-found
     severity: error
     http_status: 404
+
+questions:
+
+  - id: international.QN002
+    name: "Where We Sell"
+    statement: "Which countries and states can we deliver to, and which zone does each belong to?"
+    category: enumeration
+    priority: critical
+    bounded_context_ref: prestashop.BC006
+    answered_by: [international.QRY005, international.QRY007, international.QRY008, international.CMD032]
+    concepts: [international.CN004, international.CN005, international.CN006]
+    resolved: true
+    resolution: >
+      A country or state is deliverable when it is enabled; the zone it is assigned to is
+      what carriers and tax rules are configured against, so BulkUpdateCountryZone changes
+      shipping and tax for a whole region at once.

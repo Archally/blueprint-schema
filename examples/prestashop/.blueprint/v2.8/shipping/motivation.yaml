@@ -3,7 +3,7 @@ version: "1.0.0"
 scope: shipping
 
 goals:
-  - id: shipping.G001
+  - id: shipping.GL001
     statement: "Accurate shipping cost calculation for all carrier/zone/range combinations"
     description: >
       Ensure customers see correct shipping costs during checkout based on
@@ -12,10 +12,14 @@ goals:
     summary: "Accurate shipping costs"
     priority: high
     measure: ">= 99.5% of orders charged correct shipping cost matching carrier range configuration"
+    affects:
+      operation_refs: [shipping.CMD008, shipping.QRY002, shipping.QRY003]
+      concept_refs: [shipping.CN001, shipping.CN002]
+      process_refs: [shipping.PRC001]
     discovery_stage: validated
     certainty: confirmed
 
-  - id: shipping.G002
+  - id: shipping.GL002
     statement: "Every delivery zone has at least one active carrier"
     description: >
       Ensure carrier availability coverage so no customer is left without
@@ -23,10 +27,14 @@ goals:
     summary: "Full zone coverage"
     priority: high
     measure: "100% of active delivery zones have at least one active carrier"
+    affects:
+      operation_refs: [shipping.CMD009, shipping.QRY003]
+      concept_refs: [shipping.CN001]
+      process_refs: [shipping.PRC001]
     discovery_stage: validated
     certainty: confirmed
 
-  - id: shipping.G003
+  - id: shipping.GL003
     statement: "Flexible shipment management for partial fulfillment"
     description: >
       Support split, merge, and carrier switch operations on shipments to
@@ -34,11 +42,15 @@ goals:
     summary: "Efficient order fulfillment"
     priority: medium
     measure: ">= 95% of orders have all products assigned to shipments within 24 hours"
+    affects:
+      operation_refs: [shipping.CMD011, shipping.CMD015, shipping.CMD016, shipping.CMD017]
+      concept_refs: [shipping.CN004, shipping.CN005]
+      process_refs: [shipping.PRC002]
     discovery_stage: exploring
     certainty: probable
 
 risks:
-  - id: shipping.R001
+  - id: shipping.RSK001
     statement: "Zone coverage gap prevents checkout completion"
     description: >
       Some delivery zones may have no active carrier, preventing customers
@@ -46,13 +58,17 @@ risks:
     summary: "Zone gap risk"
     likelihood: medium
     impact: high
+    affects:
+      operation_refs: [shipping.CMD009, shipping.QRY003]
+      concept_refs: [shipping.CN001]
+      process_refs: [shipping.PRC001]
     mitigation: "Structural rule SR001 enforces at least one zone per carrier. Monitoring should alert when a zone has no active carrier."
     goal_refs:
-      - shipping.G002
+      - shipping.GL002
     discovery_stage: validated
     certainty: confirmed
 
-  - id: shipping.R002
+  - id: shipping.RSK002
     statement: "Overlapping or incorrect ranges cause wrong shipping costs"
     description: >
       Misconfigured ranges may cause undercharging (revenue loss) or
@@ -61,15 +77,17 @@ risks:
     summary: "Range miscalculation risk"
     likelihood: medium
     impact: medium
+    affects:
+      operation_refs: [shipping.CMD008, shipping.QRY002]
+      concept_refs: [shipping.CN002]
+      process_refs: [shipping.PRC001]
     mitigation: "Validation rule VR004 prevents overlapping ranges. Range non-negativity enforced by VR005."
     goal_refs:
-      - shipping.G001
+      - shipping.GL001
     discovery_stage: validated
     certainty: confirmed
 
-  - id: shipping.R003
-    affects:
-      operation_refs: [shipping.CMD012]
+  - id: shipping.RSK003
     statement: "Editing shipped shipments causes data inconsistency"
     description: >
       Modifying a shipment after physical dispatch could cause mismatch
@@ -78,9 +96,13 @@ risks:
     summary: "Shipment integrity after dispatch"
     likelihood: low
     impact: high
+    affects:
+      operation_refs: [shipping.CMD012, shipping.CMD018]
+      concept_refs: [shipping.CN004]
+      process_refs: [shipping.PRC002]
     mitigation: "Transition rule TR001 makes shipped shipments immutable. CannotEditShipmentShippedException enforced at domain level."
     goal_refs:
-      - shipping.G003
+      - shipping.GL003
     discovery_stage: validated
     certainty: confirmed
 
@@ -95,6 +117,39 @@ non_goals:
     discovery_stage: committed
     certainty: confirmed
 
+assumptions:
+  - id: shipping.ASM001
+    domain_scope: shipping
+    statement: "The merchant's range table is what the carrier actually charges"
+    consequence: >
+      A carrier's price in PrestaShop is a row the merchant typed: a weight or
+      price band per zone, held in RangeWeight or RangePrice and read by
+      Carrier::getDeliveryPriceByWeight or ByPrice. No core code asks a carrier
+      what it charges today. When the carrier changes its tariff the shop keeps
+      charging the old one, and the divergence surfaces at the end of the month
+      on the carrier's invoice rather than at checkout.
+    risk_refs:
+      - shipping.RSK002
+    discovery_stage: validated
+    certainty: confirmed
+
+trade_offs:
+  - id: shipping.TRO001
+    choice: "Quoting shipping from a local table against quoting it from the carrier"
+    selected: "A static per-zone band table, priced by weight or by cart value"
+    rejected: "A live rate call to each carrier at checkout"
+    rationale: >
+      Carrier::SHIPPING_METHOD_WEIGHT and SHIPPING_METHOD_PRICE are the only two
+      ways core prices a delivery, and OutOfRangeBehavior decides what happens
+      past the last band: charge the highest one, or hide the carrier. A table
+      answers instantly, works with no credentials, no outbound network call and
+      no carrier account, and cannot fail during a checkout. That is the right
+      default for a platform whose typical install is one small shop on shared
+      hosting. A carrier that wants live rates supplies them as a module.
+    accepted_risk: "The quoted price is only as current as the merchant's last edit, and a band table cannot express dimensional weight, fuel surcharges or a negotiated rate."
+    discovery_stage: validated
+    certainty: confirmed
+
 inquiries:
   - id: shipping.INQ001
     statement: "Should the system offer automated carrier selection based on cost/speed comparison?"
@@ -104,8 +159,12 @@ inquiries:
       comparison across available carriers for a given order could
       optimize shipping costs and delivery times.
     category: business
+    affects:
+      operation_refs: [shipping.QRY003]
+      concept_refs: [shipping.CN001]
+      process_refs: [shipping.PRC001]
     goal_refs:
-      - shipping.G001
+      - shipping.GL001
     blocking: false
     status: investigating
     discovery_stage: exploring

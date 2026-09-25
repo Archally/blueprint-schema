@@ -5,17 +5,44 @@
 # Where the golden is genuinely weak, it says so here - visibly, with a reason and an
 # expiry - rather than the corpus threshold being slackened to hide the gap.
 
-deferrals:
-  - metric: domain.command.exchange
-    reason: >-
-      The golden models 251 commands with no exchange/dispatch binding at all (0%),
-      against a corpus median of 75%. This is a real modelling gap in the reference
-      model, not a tooling false positive: the wire binding was simply never authored.
-      Deferred so the corpus-calibrated bar can stay honest while the reference model
-      is backfilled; do NOT resolve this by lowering the threshold.
-    expires: 2026-10-31
+# No deferrals.
+#
+# The one this file carried, on `domain.command.exchange`, was retired 2026-09-19.
+# It described 251 commands with no exchange or dispatch binding at all, and it was retired
+# because the gap closed, not because the bar moved: the metric now reads 100% against its
+# 70% bar, 353 of 353 commands, and the shared quality spec
+# is byte-identical to what it was before that work started. Of the model's 497 commands and
+# queries, 202 carry a real Admin API route verified against the 152 uriTemplates the code
+# declares, and 295 carry `dispatch: inprocess` because PrestaShop dispatches them through
+# an in-process command bus and they have no wire transport of their own. None carries both,
+# and none carries neither.
 
 # Ratchet - regenerate with `--update-baseline` after an improvement run.
-# Kept empty until the backfill above lands, so the first ratchet does not lock in
-# a score that is about to change.
-baseline: {}
+# Populated 2026-09-19, which is the moment the deferral's own note
+# was waiting for: the score is no longer about to change.
+baseline:
+  model.schema.description: 1
+  model.schema.purpose: 1
+  model.schema.represents: 0.992
+  model.property.description: 0.875
+  model.property.example: 0.957
+  model.enum_property.description: 0.826
+  domain.operation.description: 1
+  domain.event.description: 1
+  domain.command.produces: 0.866
+  domain.command.exchange: 1
+  domain.error.description: 1
+  concept.description: 1
+  concept.attribute.description: 0.987
+  concept.attribute.example: 0.714
+  concept.actor.description: 1
+  concept.enum_value.description: 0.957
+  rule.description: 1
+  user_story.acceptance_criteria: 1
+  story.description: 0.78
+  story.step.note: 1
+  entity.description: 0.783
+  test_case.description: 1
+  test_case.provenance: 0
+  decision.description: 1
+  risk.mitigation: 1

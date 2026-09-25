@@ -11,8 +11,11 @@ contexts:
   - id: prestashop.BC007
     name: Modules
     kind: generic
+    value_stream_ref: VS003
     complexity: integration
+    business_model_role: engagement-creator
     evolution: custom
+    model_traits: [interfacer, coordinator, executor]
     summary: Module lifecycle, hook system, module marketplace integration.
     owned_by:
       team: TM008
@@ -22,7 +25,7 @@ contexts:
       - Module configuration management
     dependencies:
       - name: Admin
-        type: api
+        coupling: http
         relationship: customer-supplier
         direction: downstream
         description: Reads employee permissions for module management authorization.
@@ -35,11 +38,12 @@ contexts:
         contracts:
           inprocess:
             provide:
-              - modules:executeHook
-              - modules:renderDisplayHook
+              - modules.CMD010
+              - modules.CMD011
           openapi:
-            output: modules/modules-api.openapi
+            contract_name: modules-api
+            slice: modules
             expose:
-              - modules:installModule
-              - modules:uninstallModule
-              - modules:getModuleInfos
+              - modules.CMD001
+              - modules.CMD002
+              - modules.QRY001

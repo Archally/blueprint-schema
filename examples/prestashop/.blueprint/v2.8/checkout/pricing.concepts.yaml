@@ -12,24 +12,31 @@ concepts:
       catalogPriceRuleId:
         id: CAT227
         description: "Unique catalog price rule identifier"
+        example: "3"
       name:
         id: CAT228
         description: "Rule display name"
+        example: "Wholesale from 10 units"
       reductionType:
         id: CAT229
-        description: "Percentage or fixed amount reduction"
+        description: "Which reduction shape applies, from Reduction::ALLOWED_TYPES: percentage or amount. The command pairs it with reductionValue into one Reduction value object."
+        example: "percentage"
       reductionValue:
         id: CAT230
         description: "Numeric reduction value"
+        example: "15.00"
       fromQuantity:
         id: CAT231
-        description: "Minimum product quantity to trigger the rule"
+        description: "Quantity of the product at which the rule starts applying. This is what makes a catalog price rule a volume rule rather than a flat discount."
+        example: "10"
       dateFrom:
         id: CAT232
         description: "Validity period start"
+        example: "2026-01-01 00:00:00"
       dateTo:
         id: CAT233
         description: "Validity period end"
+        example: "2026-12-31 23:59:59"
     code_refs:
       - path: "src/Core/Domain/CatalogPriceRule/Command/AddCatalogPriceRuleCommand.php"
         role: implementation

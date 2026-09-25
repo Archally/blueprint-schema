@@ -65,16 +65,29 @@ validation:
 
   - id: customers.VR005
     name: "Address required fields per country"
-    description: "Address validation enforces country-specific required fields. Required fields are configurable globally and may vary by country zone."
+    description: >-
+      Address validation is country-dependent. On top of the shop-wide required_field list that
+      SetRequiredFieldsForAddress writes, the country row decides three further things: whether an
+      identification number is required (need_identification_number, read by Address::dniRequired),
+      whether a postcode is required and in what format (need_zip_code and zip_code_format, checked
+      by Country::checkZipCode), and whether a state may be given at all (contains_states, which
+      EditCustomerAddressHandler uses to reset the state to 0 when the country is changed). The
+      length ceilings in AddressConstraint apply to every country.
     logic:
       when: "address is created or edited"
-      then: "all globally required fields AND all country-required fields are present"
+      then: "all shop-wide required fields AND all fields the selected country requires are present, each within its AddressConstraint length"
     modality: obligatory
-    concepts: [customers.CN004]
+    concepts: [customers.CN004, international.CN004]
     code_refs:
       - path: "src/Core/Domain/Address/Exception/AddressConstraintException.php"
         role: implementation
       - path: "src/Core/Domain/Address/Configuration/AddressConstraint.php"
+        role: implementation
+      - path: "classes/Address.php"
+        role: implementation
+      - path: "classes/Country.php"
+        role: implementation
+      - path: "src/Adapter/Address/CommandHandler/EditCustomerAddressHandler.php"
         role: implementation
 
   - id: customers.VR006

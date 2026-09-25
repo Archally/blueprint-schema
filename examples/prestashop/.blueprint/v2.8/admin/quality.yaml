@@ -2,22 +2,124 @@
 version: "1.0.0"
 scope: admin
 
+metrics:
+  - id: admin.MT100
+    name: "Tab Permission Coverage"
+    summary: "Share of back-office tabs carrying an explicit permission row for every profile"
+    type: business
+    unit: "%"
+    description: >
+      Access to a back-office controller is decided by a row in the profile
+      permission matrix, one per tab and profile. A tab with no row for a
+      profile is decided by the default rather than by an explicit grant,
+      which is how a permission surprise reaches production. This counts the
+      share of tabs for which every profile has an explicit entry.
+    measures:
+      operations: [admin.CMD013, admin.CMD014, admin.QRY004]
+      concepts: [admin.CN002, admin.CN003, admin.CN009]
+    collection:
+      method: manual
+      source: "Back-office Advanced Parameters > Team > Permissions matrix"
+      frequency: monthly
+
+  - id: admin.MT101
+    name: "Outdated Session Backlog"
+    summary: "Employee and customer sessions past their lifetime that a clear has not removed"
+    type: business
+    unit: "sessions"
+    description: >
+      Employee and customer sessions are rows that outlive their cookie. The
+      two clear commands remove the expired ones; whatever survives is the
+      window an attacker holding a stolen session identifier can still use.
+    measures:
+      operations: [admin.CMD019, admin.CMD020]
+      concepts: [admin.CN004]
+
+  - id: admin.MT102
+    name: "API Client Administration Latency"
+    summary: "Time to create an API client or rotate its secret"
+    type: latency
+    unit: "ms"
+    description: >
+      Covers the administration commands the model holds. Token issuance and
+      validation are served by the OAuth2 server in src/Core/Security/OAuth2
+      and are not Domain operations, so they are not part of this metric.
+    measures:
+      operations: [admin.CMD021, admin.CMD024]
+
 kpis:
   - id: admin.KPI001
+    domain_scope: admin
     name: "Failed Login Rate"
     target: "< 5% of all employee login attempts fail due to invalid credentials or disabled accounts"
     window: "daily"
-    goal: admin.G001
+    goal: admin.GL001
+    description: >
+      An access-control signal rather than a model measurement. PrestaShop
+      authenticates employees through the Symfony security firewall, not
+      through a Domain command, and core ships no counter for the outcome, so
+      the number comes from web-server or application logs and no operation in
+      this model produces it.
 
   - id: admin.KPI002
+    domain_scope: externalapiconsumers
     name: "API Client Uptime"
     target: ">= 99.9% of API client authentication requests succeed"
     window: "monthly"
-    goal: admin.G002
+    goal: admin.GL002
+    description: >
+      Measures the OAuth2 token endpoint, which core serves outside the Domain
+      layer. Like KPI001 it has no operation behind it in this model; the
+      source is the web server's own access log.
+
+  - id: admin.KPI100
+    domain_scope: admin
+    name: "Tab Permission Coverage"
+    metric: admin.MT100
+    target: "100% of back-office tabs carry an explicit permission entry for every profile"
+    window: "per release"
+    goal: admin.GL001
+    description: >
+      The measurable half of GL001. Unlike the failed-login rate this is
+      answerable from the model and from the database: count tabs, count
+      profiles, count permission rows.
+    thresholds:
+      warning: "98%"
+      critical: "95%"
+
+  - id: admin.KPI101
+    domain_scope: admin
+    name: "Outdated Session Backlog"
+    metric: admin.MT101
+    target: "0 employee or customer sessions older than the configured lifetime survive a scheduled clear"
+    window: "daily"
+    goal: admin.GL003
+    description: >
+      A non-zero backlog means the scheduled clear is not running, which turns
+      GL003's incident-response capability into a manual one.
+
+  - id: admin.KPI102
+    domain_scope: admin
+    name: "SQL Request Guard Coverage"
+    target: "100% of stored SQL requests parse as SELECT ... FROM over prefixed tables"
+    window: "per release"
+    goal: admin.GL004
+    description: >
+      The guard is SqlQueryValidator (src/Adapter/SqlManager/SqlQueryValidator.php),
+      which runs when a request is saved: RequestSql requires SELECT and FROM
+      and checkedFrom restricts the tables to the shop's own prefix. Execution
+      itself runs on the ordinary connection, so a request that got past the
+      save-time guard would run with write privileges. Coverage of the guard is
+      therefore the whole of the protection.
 
 slos:
   - id: admin.SLO001
-    name: "Authentication Latency SLO"
-    target: "P95 < 200ms for API client token validation"
+    name: "API Client Administration Latency"
+    metric: admin.MT102
+    target: "p95 < 200ms for API client creation and secret rotation"
     window: "weekly"
     operations: [admin.CMD021, admin.CMD024]
+    description: >
+      Restated from "token validation", which these two operations do not
+      perform. Token validation belongs to the OAuth2 server and has no Domain
+      operation to constrain.

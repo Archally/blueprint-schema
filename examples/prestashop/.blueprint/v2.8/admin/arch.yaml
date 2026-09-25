@@ -11,8 +11,11 @@ contexts:
   - id: prestashop.BC001
     name: Admin
     kind: generic
+    value_stream_ref: VS003
     complexity: crud
+    business_model_role: compliance-enforcer
     evolution: commodity
+    model_traits: [information-holder, controller]
     summary: Employee accounts, profiles, security, API clients, configuration.
     owned_by:
       team: TM009
@@ -35,12 +38,13 @@ contexts:
             environment: development
         contracts:
           openapi:
-            output: admin/admin-api.openapi
+            contract_name: admin-api
+            slice: admin
             expose:
-              - admin:addEmployee
-              - admin:editProfile
-              - admin:getEmployeeForEditing
-              - admin:addApiClient
+              - admin.CMD001
+              - admin.CMD010
+              - admin.QRY001
+              - admin.CMD021
           security_schemes:
             bearer:
               type: http

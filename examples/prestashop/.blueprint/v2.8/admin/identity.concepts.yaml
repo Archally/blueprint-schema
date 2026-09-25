@@ -25,6 +25,7 @@ concepts:
       active:
         id: CAT803
         description: "Whether the employee account is currently enabled"
+        example: "true"
       profileId:
         id: CAT804
         description: "Reference to the assigned access control profile"
@@ -32,12 +33,15 @@ concepts:
       defaultPageId:
         id: CAT805
         description: "Admin page shown after login"
+        example: "1"
       languageId:
         id: CAT806
         description: "Back-office language preference"
+        example: "1"
       shopAssociation:
         id: CAT807
         description: "Array of shop IDs this employee can access (multi-store)"
+        example: "[1]"
     code_refs:
       - path: "src/Core/Domain/Employee/Command/AddEmployeeCommand.php"
         role: implementation
@@ -79,9 +83,11 @@ concepts:
       tabPermissions:
         id: CAT809
         description: "Matrix of tab-level permissions (view, add, edit, delete) per profile"
+        example: "{tab: AdminProducts, view: true, add: true, edit: true, delete: false}"
       modulePermissions:
         id: CAT810
         description: "Matrix of module-level permissions per profile"
+        example: "{module: ps_wirepayment, view: true, configure: true, uninstall: false}"
     code_refs:
       - path: "src/Core/Domain/Profile/Permission/Command/UpdateTabPermissionsCommand.php"
         role: implementation
@@ -97,9 +103,11 @@ concepts:
       sessionId:
         id: CAT811
         description: "Unique session identifier"
+        example: "3f9a1c7e2b8d4051a6c3e9f27b14d8a0"
       sessionType:
         id: CAT812
         description: "Whether session belongs to employee or customer"
+        example: "employee"
     code_refs:
       - path: "src/Core/Domain/Security/Command/DeleteEmployeeSessionCommand.php"
         role: implementation
@@ -158,14 +166,14 @@ enumerations:
         description: "Can remove entries"
 
 associations:
-  - id: admin.AS001
+  - id: admin.ASC001
     subject: admin.CN001
     predicate: depends-on
     object: admin.CN002
     cardinality: "1..1"
     description: "Every employee is assigned exactly one profile that determines their RBAC permissions."
 
-  - id: admin.AS002
+  - id: admin.ASC002
     subject: admin.CN003
     predicate: depends-on
     object: admin.CN002

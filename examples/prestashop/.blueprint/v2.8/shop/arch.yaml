@@ -11,8 +11,11 @@ contexts:
   - id: prestashop.BC011
     name: Shop
     kind: generic
+    value_stream_ref: VS003
     complexity: crud
+    business_model_role: engagement-creator
     evolution: commodity
+    model_traits: [information-holder, service-provider]
     summary: Multi-store configuration, physical stores, contacts, search, aliases.
     owned_by:
       team: TM010
@@ -24,7 +27,7 @@ contexts:
       - Showcase card and notification management
     dependencies:
       - name: International
-        type: api
+        coupling: http
         relationship: customer-supplier
         direction: downstream
         description: Reads country and language data for multi-store locale assignment.
@@ -42,9 +45,10 @@ contexts:
             contract_name: shop-context
             slice: shop
             write:
-              - shop:shopContextRecord
+              - shop.DOC001
           openapi:
-            output: shop/shop-api.openapi
+            contract_name: shop-api
+            slice: shop
             expose:
-              - shop:getStoreForEditing
-              - shop:editContact
+              - shop.QRY003
+              - shop.CMD016

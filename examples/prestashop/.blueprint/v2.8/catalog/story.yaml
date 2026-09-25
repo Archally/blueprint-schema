@@ -65,6 +65,7 @@ processes:
             note: "CombinationGenerated event."
 
   - id: catalog.PRC003
+    tracker_ref: "40644"
     title: "Organize category hierarchy"
     description: "CategoryManager creates and organizes the category tree structure."
     initiated_by: [catalog.ACT001]
@@ -110,6 +111,7 @@ user_stories:
     use_case: catalog.UC001
 
   - id: catalog.US002
+    tracker_ref: "42434"
     actor: catalog.ACT001
     goal: "Bulk import products from CSV"
     benefit: "I can add hundreds of products at once instead of creating them one by one."
@@ -124,18 +126,35 @@ user_stories:
 
   - id: catalog.US003
     actor: orders.ACT001
-    goal: "Search for products by keyword with filters"
-    benefit: "I can find exactly what I need without browsing the entire catalog."
-    summary: "Shopper searches the catalog."
+    goal: "Search the shop by keyword and narrow what comes back"
+    benefit: "I find what I need without knowing which category it was filed under."
+    summary: "Shopper searches the catalogue from the storefront."
+    description: >
+      Rewritten by step 17 against the code, which contradicted three of its claims. Its
+      operation was SearchProducts, which is GET /products/search on the Admin API and has no
+      part in the storefront; the storefront search is the shop's own full-text index consulted
+      through classes/Search.php, and no modelled query names it, so the list is now empty and
+      says so. Its "under 100ms" criterion asserted a budget nothing in the model or the code
+      declares. Its facets criterion described ps_facetedsearch, a module, as though it were
+      core. What survived is typo tolerance, which is real: PS_SEARCH_FUZZY switches on a
+      Levenshtein pass bounded by PS_SEARCH_FUZZY_MAX_DIFFERENCE.
     delivery_priority: must-have
     status: ready
     release_target: "v1.0"
     acceptance_criteria:
-      - "Results returned in under 100ms"
-      - "Facets show available filter options (category, price, brand)"
-      - "Typo tolerance catches common misspellings"
-    operations: [catalog.QRY001]
-    use_case: catalog.UC002
+      - "Terms typed into the header search box produce a listing rendered by the same pipeline as a category page."
+      - "A term matching an alias the back office defined returns the aliased results."
+      - "A misspelling within PS_SEARCH_FUZZY_MAX_DIFFERENCE still matches while PS_SEARCH_FUZZY is on, and does not while it is off."
+      - "A product added since the last index rebuild does not appear, which is a property of the index and not a defect."
+      - "Facet filters are present when ps_facetedsearch is installed and absent when it is not."
+    operations: []
+    code_refs:
+      - path: "controllers/front/listing/SearchController.php"
+        role: implementation
+        description: "The page; init validates the terms at line 25 and doProductSearch renders catalog/listing/search at line 80."
+      - path: "classes/Search.php"
+        role: implementation
+        description: "The match itself, over ps_search_word and ps_search_index; the fuzzy pass is at lines 346 and 1184."
 
   - id: catalog.US004
     actor: catalog.ACT001
@@ -168,6 +187,7 @@ user_stories:
     operations: [catalog.CMD025, catalog.CMD009]
 
   - id: catalog.US006
+    tracker_ref: "github:41919"
     actor: catalog.ACT001
     goal: "Set specific prices for promotions and bulk discounts"
     benefit: "I can offer discounts by customer group, quantity, or time period."
@@ -209,6 +229,53 @@ user_stories:
       - "Feature values displayed"
     operations: [catalog.QRY002]
 
+  - id: catalog.US009
+    actor: orders.ACT001
+    goal: "browse a category and narrow it down by price, brand and the attributes that matter to me"
+    benefit: "I can get from a category of hundreds to a shortlist of three without knowing what the product is called."
+    summary: "Shopper browses and narrows a category listing."
+    description: >
+      The narrowing half of this story is not core. PrestaShop's category page offers sort order
+      and page size on its own; facets come from the ps_facetedsearch module, a composer
+      dependency. A merchant who removes that module keeps the listing and loses the filters, so
+      the story is only fully delivered by a shop that has it installed.
+    acceptance_criteria:
+      - "A category page lists the products of that category and of its subcategories according to the shop's setting."
+      - "Changing the sort order or the page size reloads the listing with the new parameters and keeps the category."
+      - "A category that is disabled, deleted or not visible to the shopper's group returns 404, 410 or forbidden rather than an empty listing."
+      - "Facet filters are present when ps_facetedsearch is installed and absent when it is not."
+    delivery_priority: must-have
+    status: ready
+    operations: [catalog.QRY006]
+    code_refs:
+      - path: "controllers/front/listing/CategoryController.php"
+        role: implementation
+        description: "init, lines 65 to 145, holds the three refusals; initContent runs the listing at line 160."
+
+  - id: catalog.US010
+    actor: orders.ACT001
+    goal: "read a product page and pick the size or colour I want before adding it to my cart"
+    benefit: "I buy the variant I meant to buy, at the price and availability that variant actually has."
+    summary: "Shopper reads a product page and chooses a combination."
+    description: >
+      The combination switch is the part of this page worth modelling: price, stock, images and
+      the add-to-cart link all change with the choice, and the page refreshes the block over
+      ajax rather than reloading. No modelled query covers that read, because the storefront
+      resolves the combination in the controller and the presenter instead of asking a CQRS
+      query for it.
+    acceptance_criteria:
+      - "Choosing an attribute refreshes the price, the stock statement and the images for that combination."
+      - "The add-to-cart link carries the chosen combination, so the cart receives the variant and not the base product."
+      - "A product that is disabled, redirected or not visible to the shopper's group returns 404, 410 or forbidden."
+      - "Attachments, features and related products appear where the product declares them."
+    delivery_priority: must-have
+    status: ready
+    operations: [checkout.CMD009]
+    code_refs:
+      - path: "controllers/front/ProductController.php"
+        role: implementation
+        description: "The page, 1874 lines; init at line 122 resolves and guards the product."
+
 use_cases:
   - id: catalog.UC001
     name: "Create Product"
@@ -245,37 +312,71 @@ use_cases:
     delivery_priority: must-have
 
   - id: catalog.UC002
-    name: "Search Products"
-    summary: "Shopper searches the catalog with keywords and filters."
+    name: "Find and choose a product"
+    summary: "A shopper arrives with an intent and leaves with one product in the cart, by browsing or by searching."
+    description: >
+      The discovery half of the storefront. Rewritten by step 17 against the code, which
+      contradicted three of the previous version's five steps. It said the system sends the
+      query to Elasticsearch: PrestaShop core has no Elasticsearch, and the only twelve
+      occurrences of the word in the tree are an inherited API Platform metadata parameter that
+      is always null - the search is the shop's own full-text index in classes/Search.php. It
+      put SearchProducts behind the search, which is GET /products/search on the Admin API. It
+      put GetProductForEditing behind the click into a product, which is the back-office edit
+      read. And it had the system suggest alternative spellings, which nothing does; what
+      PrestaShop has is a silent Levenshtein pass the shopper never sees. Two steps now carry
+      no operation, because two of these reads have no modelled query at all, and that is the
+      honest shape.
     primary_actor: orders.ACT001
-    goal: "Find relevant products quickly."
+    goal: "Reach the right product and put it in the cart."
     preconditions:
-      - "Catalog contains at least one active product"
+      - "The shop is not in catalog mode, or the shopper can browse but not buy."
+      - "The product and its category are active and visible to the shopper's customer group."
     postconditions:
-      - "Search results displayed with facets"
+      - "One product, at the chosen combination and quantity, is a line on the shopper's cart."
+      - "The cart row exists whether or not the shopper is signed in."
     main_scenario:
       - step: 1
-        action: "Shopper types search query in search bar."
+        action: "The shopper lands on the home page and sees whatever blocks the shop's modules put there."
+        screen: shop.SCR006
         emotion: neutral
+        pain_point: "A shop that has not configured its home-page modules shows an empty page, because IndexController contributes nothing of its own."
       - step: 2
-        action: "System sends query to Elasticsearch."
-        operation: catalog.QRY001
+        action: "The shopper picks a category from the menu, or types into the header search box."
+        screen: catalog.SCR001
+        actor: orders.ACT001
+        emotion: neutral
       - step: 3
-        action: "System displays results with faceted filters."
-        emotion: satisfied
+        action: "The listing is read and narrowed by sort order, page size and any facets a module provides."
+        operation: catalog.QRY006
+        screen: catalog.SCR001
+        emotion: confused
+        pain_point: "Filtering state lives in the query string, so a shopper who opens a product and comes back loses a carefully narrowed listing unless the browser restores it."
       - step: 4
-        action: "Shopper applies category and price range filters."
+        action: "The shopper opens a product and switches to the size or colour they want."
+        screen: catalog.SCR002
+        actor: orders.ACT001
         emotion: satisfied
+        pain_point: "The combination refresh is an ajax round trip, so on a slow connection the price shown briefly belongs to the previous choice."
       - step: 5
-        action: "Shopper clicks a product to view detail."
-        operation: catalog.QRY002
-        emotion: delighted
-    extensions:
+        action: "The shopper follows the add-to-cart link, which carries the chosen combination to the cart page."
+        operation: checkout.CMD009
+        screen: checkout.SCR005
+        emotion: satisfied
+    alternative_flows:
       - step: 2
-        condition: "No results match the query."
-        action: "System suggests alternative spellings and related categories."
-    user_stories: [catalog.US003]
+        condition: "The shopper searches instead of browsing."
+        action: "SearchController renders the same listing template from the shop's full-text index; a product added since the last index rebuild is not found."
+        actor: orders.ACT001
+      - step: 3
+        condition: "The category is disabled, deleted, or hidden from the shopper's customer group."
+        action: "CategoryController answers 404, 410 or forbidden respectively, rather than rendering an empty listing."
+      - step: 4
+        condition: "The chosen combination is out of stock and the shop does not allow backorders."
+        action: "The add-to-cart control is refused with the same CartConstraintViolation the back office would get."
+    user_stories: [catalog.US003, catalog.US009, catalog.US010]
+    processes: [shop.PRC003]
     delivery_priority: must-have
+    release_target: "v1.0"
 
   - id: catalog.UC003
     name: "Manage Product Variants"

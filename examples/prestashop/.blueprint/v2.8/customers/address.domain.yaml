@@ -11,7 +11,7 @@ operations:
     exchange:
       protocol: http
       endpoint:
-        path: /customers/{customerId}/addresses
+        path: /addresses/customers
         method: POST
         group: customers
     payload:
@@ -20,83 +20,462 @@ operations:
     responses:
       - code: "201"
         type: success
-        description: "The address was created for this customer."
+        description: "The address was created and is now selectable on the customer's carts and orders."
         schema: AddressResource
         contentType: application/json
+      - code: "422"
+        type: failure
+        description: "A field the selected country requires is missing, or a field exceeds its length constraint."
+        error: customers.ERR006
+      - code: "500"
+        type: error
+        description: "The address passed validation but could not be persisted."
+        error: customers.ERR009
     name: "AddCustomerAddress"
-    description: "Create a new address for a customer with alias, street, city, postcode, country, and phone."
+    description: "Create a new address for a customer with alias, recipient name, street, city, postcode, country and phone. The required-field set depends on the country (VR005)."
     delivery_priority: must-have
     initiated_by: [customers.ACT001, orders.ACT004]
     governed_by:
       - rule: customers.VR005
+    materializes:
+      - concept: customers.CN004
+        action: create
     produces:
       operations: [customers.EVT007]
       mode: all
     code_refs:
       - path: "src/Core/Domain/Address/Command/AddCustomerAddressCommand.php"
         role: implementation
+      - path: "src/Adapter/Address/CommandHandler/AddCustomerAddressHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/CustomerAddress.php"
+        role: api-spec
 
   editCustomerAddress:
     id: customers.CMD013
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /addresses/customers/{addressId}
+        method: PATCH
+        group: customers
+    payload:
+      schema: AddressResource
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The edited address. Its identifier changes when the former address was already used by an order."
+        schema: AddressResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No address with this identifier exists."
+        error: customers.ERR005
+      - code: "422"
+        type: failure
+        description: "A field the selected country requires is missing, or a field exceeds its length constraint."
+        error: customers.ERR006
+      - code: "500"
+        type: error
+        description: "The edit could not be persisted."
+        error: customers.ERR010
     name: "EditCustomerAddress"
-    description: "Update an existing customer address."
+    description: >-
+      Update an existing customer address. When the address is already used by an order
+      (Address::isUsed), the handler does NOT edit it in place: it saves a copy under a new
+      identifier and soft-deletes the former one, so the historical order keeps the address it was
+      placed with. That is why this command can produce either AddressCreated or AddressUpdated.
+      Changing the country to one that has no states resets the state to 0.
     delivery_priority: must-have
     initiated_by: [customers.ACT001, orders.ACT004]
     governed_by:
       - rule: customers.VR005
+    materializes:
+      - concept: customers.CN004
+        action: update
     produces:
-      operations: [customers.EVT008]
-      mode: all
+      operations: [customers.EVT007, customers.EVT008]
+      mode: one_of
     code_refs:
       - path: "src/Core/Domain/Address/Command/EditCustomerAddressCommand.php"
         role: implementation
+      - path: "src/Adapter/Address/CommandHandler/EditCustomerAddressHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/CustomerAddress.php"
+        role: api-spec
 
   deleteAddress:
     id: customers.CMD014
     kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /addresses/{addressId}
+        method: DELETE
+        group: customers
+    responses:
+      - code: "204"
+        type: success
+        description: "The address was soft-deleted. Orders that reference it keep their copy."
+      - code: "404"
+        type: failure
+        description: "No address with this identifier exists."
+        error: customers.ERR005
+      - code: "500"
+        type: error
+        description: "The delete could not be performed."
+        error: customers.ERR013
     name: "DeleteAddress"
-    description: "Delete one or more addresses. Supports single and bulk deletion."
+    description: "Delete one address. PrestaShop soft-deletes an address that an order references, so order history stays readable. A merchant dispatches it from the address list, and deleting the customer reaches it for every address that customer owns."
     delivery_priority: must-have
     initiated_by: [orders.ACT004]
+    materializes:
+      - concept: customers.CN004
+        action: delete
+    produces:
+      operations: [customers.EVT009]
+      mode: all
+    reacts_to:
+      - operation: customers.EVT003
+        policy: "A customer who never ordered takes their addresses with them"
+        condition: "The customer has no orders; a customer who ordered keeps every address those orders reference"
+    code_refs:
+      - path: "src/Core/Domain/Address/Command/DeleteAddressCommand.php"
+        role: implementation
+      - path: "classes/Customer.php"
+        role: implementation
+        description: "delete() at lines 395-401 loads the customer's addresses and calls delete() on each, guarded by Order::getCustomerOrders being empty. The cascade runs before parent::delete fires actionObjectCustomerDeleteAfter, so a module watching both sees the address deletions arrive first."
+      - path: "src/Adapter/Address/CommandHandler/DeleteAddressHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/Address.php"
+        role: api-spec
+
+  bulkDeleteAddress:
+    id: customers.CMD027
+    kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /addresses/bulk-delete
+        method: DELETE
+        group: customers
+    payload:
+      schema: BulkAddressIds
+      contentType: application/json
+    responses:
+      - code: "204"
+        type: success
+        description: "Every listed address was deleted."
+      - code: "500"
+        type: error
+        description: "At least one address in the batch could not be deleted; the exception names it."
+        error: customers.ERR014
+    name: "BulkDeleteAddress"
+    description: "Delete a list of addresses in one call. Split from DeleteAddress because the code raises a distinct exception and the Admin API serves it on its own route."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT004]
+    materializes:
+      - concept: customers.CN004
+        action: delete
     produces:
       operations: [customers.EVT009]
       mode: all
     code_refs:
-      - path: "src/Core/Domain/Address/Command/DeleteAddressCommand.php"
-        role: implementation
       - path: "src/Core/Domain/Address/Command/BulkDeleteAddressCommand.php"
         role: implementation
+      - path: "src/Adapter/Address/CommandHandler/BulkDeleteAddressHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/BulkAddresses.php"
+        role: api-spec
 
-  setRequiredFieldsForAddress:
-    id: customers.CMD015
+  addManufacturerAddress:
+    id: customers.CMD023
     kind: command
-    name: "SetRequiredFieldsForAddress"
-    description: "Configure which address fields are mandatory. Applies globally - affects customer, cart, and order addresses."
+    exchange:
+      protocol: http
+      endpoint:
+        path: /addresses/manufacturers
+        method: POST
+        group: customers
+    payload:
+      schema: ManufacturerAddressResource
+      contentType: application/json
+    responses:
+      - code: "201"
+        type: success
+        description: "The manufacturer address was created."
+        schema: ManufacturerAddressResource
+        contentType: application/json
+      - code: "422"
+        type: failure
+        description: "A required field for the selected country is missing or malformed."
+        error: customers.ERR006
+      - code: "500"
+        type: error
+        description: "The address could not be persisted."
+        error: customers.ERR009
+    name: "AddManufacturerAddress"
+    description: >-
+      Create an address that belongs to a manufacturer rather than to a customer. Address is one
+      polymorphic aggregate in PrestaShop: the same table and the same validation serve customers,
+      manufacturers, carts and orders. The catalog slice owns the Manufacturer concept; this command
+      lives here because its class lives in src/Core/Domain/Address.
     delivery_priority: should-have
     initiated_by: [orders.ACT004]
+    governed_by:
+      - rule: customers.VR005
+    materializes:
+      - concept: customers.CN004
+        action: create
+    produces:
+      operations: [customers.EVT007]
+      mode: all
+    code_refs:
+      - path: "src/Core/Domain/Address/Command/AddManufacturerAddressCommand.php"
+        role: implementation
+      - path: "src/Adapter/Address/CommandHandler/AddManufacturerAddressHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/ManufacturerAddress.php"
+        role: api-spec
+
+  editManufacturerAddress:
+    id: customers.CMD024
+    kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /addresses/manufacturers/{addressId}
+        method: PATCH
+        group: customers
+    payload:
+      schema: ManufacturerAddressResource
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The manufacturer address as stored after the edit."
+        schema: ManufacturerAddressResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No address with this identifier exists."
+        error: customers.ERR005
+      - code: "500"
+        type: error
+        description: "The edit could not be persisted."
+        error: customers.ERR010
+    name: "EditManufacturerAddress"
+    description: "Update a manufacturer's address. Unlike the customer variant this edits in place, because a manufacturer address is never referenced by an order line."
+    delivery_priority: should-have
+    initiated_by: [orders.ACT004]
+    governed_by:
+      - rule: customers.VR005
+    materializes:
+      - concept: customers.CN004
+        action: update
     produces:
       operations: [customers.EVT008]
       mode: all
     code_refs:
+      - path: "src/Core/Domain/Address/Command/EditManufacturerAddressCommand.php"
+        role: implementation
+      - path: "src/Adapter/Address/CommandHandler/EditManufacturerAddressHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/ManufacturerAddress.php"
+        role: api-spec
+
+  editCartAddress:
+    id: customers.CMD025
+    kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /addresses/carts/{cartId}
+        method: PATCH
+        group: customers
+    payload:
+      schema: CartAddressPayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The address the cart now points at, delivery or invoice as the request asked."
+        schema: CartAddressPayload
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No cart with this identifier exists."
+        error: checkout.ERR001
+      - code: "500"
+        type: error
+        description: "The cart could not be repointed at the edited address."
+        error: customers.ERR011
+    name: "EditCartAddress"
+    description: >-
+      Edit the delivery or invoice address of a cart. The handler delegates to
+      EditCustomerAddressHandler and then repoints the cart at whatever address identifier came
+      back, which is a new one when the former address was already used. addressType selects
+      delivery or invoice.
+    delivery_priority: should-have
+    initiated_by: [orders.ACT004]
+    governed_by:
+      - rule: customers.VR005
+    materializes:
+      - concept: customers.CN004
+        action: update
+    produces:
+      operations: [customers.EVT007, customers.EVT008]
+      mode: one_of
+    code_refs:
+      - path: "src/Core/Domain/Address/Command/EditCartAddressCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Address/Command/AbstractEditAddressCommand.php"
+        role: implementation
+      - path: "src/Adapter/Address/CommandHandler/EditCartAddressHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/CartAddress.php"
+        role: api-spec
+
+  editOrderAddress:
+    id: customers.CMD026
+    kind: command
+    exchange:
+      protocol: http
+      endpoint:
+        path: /addresses/orders/{orderId}
+        method: PATCH
+        group: customers
+    payload:
+      schema: OrderAddressPayload
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The address the order now points at, delivery or invoice as the request asked."
+        schema: OrderAddressPayload
+        contentType: application/json
+      - code: "500"
+        type: error
+        description: "The order could not be repointed at the edited address."
+        error: customers.ERR012
+    name: "EditOrderAddress"
+    description: >-
+      Edit the delivery or invoice address of a placed order. The handler delegates to
+      EditCustomerAddressHandler, then issues ChangeOrderDeliveryAddress or
+      ChangeOrderInvoiceAddress to the orders slice with the identifier that came back. Because the
+      address is used by an order it is copied rather than edited, so the order's previous documents
+      keep their address.
+    delivery_priority: should-have
+    initiated_by: [orders.ACT004]
+    governed_by:
+      - rule: customers.VR005
+    materializes:
+      - concept: customers.CN004
+        action: update
+    produces:
+      operations: [customers.EVT007, customers.EVT008]
+      mode: one_of
+    code_refs:
+      - path: "src/Core/Domain/Address/Command/EditOrderAddressCommand.php"
+        role: implementation
+      - path: "src/Core/Domain/Address/Command/AbstractEditAddressCommand.php"
+        role: implementation
+      - path: "src/Adapter/Address/CommandHandler/EditOrderAddressHandler.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/OrderAddress.php"
+        role: api-spec
+
+  setRequiredFieldsForAddress:
+    id: customers.CMD015
+    kind: command
+    dispatch: inprocess
+    name: "SetRequiredFieldsForAddress"
+    description: >-
+      Configure which address fields are mandatory shop-wide, on top of whatever the country
+      requires. The handler writes the required_field table directly rather than through the
+      Address ObjectModel, so no address is touched and no hook fires. No Admin API route serves
+      it; the back-office form is the only caller.
+    delivery_priority: should-have
+    initiated_by: [orders.ACT004]
+    produces:
+      operations: [customers.EVT015]
+      mode: all
+    code_refs:
       - path: "src/Core/Domain/Address/Command/SetRequiredFieldsForAddressCommand.php"
+        role: implementation
+      - path: "src/Adapter/Address/CommandHandler/SetRequiredFieldsForAddressHandler.php"
         role: implementation
 
   getCustomerAddressForEditing:
     id: customers.QRY009
     kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /addresses/customers/{addressId}
+        method: GET
+        group: customers
+    payload:
+      schema: AddressResource
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The address, in the shape the edit form and the Admin API both use."
+        schema: AddressResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No address with this identifier exists."
+        error: customers.ERR005
     name: "GetCustomerAddressForEditing"
-    description: "Retrieve a customer address for the edit form."
+    description: "Retrieve a customer address for the edit form. The same query backs the cart and order address resources, which is why one read model serves four routes."
     delivery_priority: must-have
     code_refs:
       - path: "src/Core/Domain/Address/Query/GetCustomerAddressForEditing.php"
         role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/CustomerAddress.php"
+        role: api-spec
+
+  getManufacturerAddressForEditing:
+    id: customers.QRY014
+    kind: query
+    exchange:
+      protocol: http
+      endpoint:
+        path: /addresses/manufacturers/{addressId}
+        method: GET
+        group: customers
+    payload:
+      schema: ManufacturerAddressResource
+      contentType: application/json
+    responses:
+      - code: "200"
+        type: success
+        description: "The manufacturer address, in the shape the edit form uses."
+        schema: ManufacturerAddressResource
+        contentType: application/json
+      - code: "404"
+        type: failure
+        description: "No address with this identifier exists."
+        error: customers.ERR005
+    name: "GetManufacturerAddressForEditing"
+    description: "Retrieve a manufacturer address for the edit form. Its result carries manufacturerId where the customer variant carries customerId."
+    delivery_priority: should-have
+    code_refs:
+      - path: "src/Core/Domain/Address/Query/GetManufacturerAddressForEditing.php"
+        role: implementation
+      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/ManufacturerAddress.php"
+        role: api-spec
 
   getRequiredFieldsForAddress:
     id: customers.QRY010
     kind: query
+    dispatch: inprocess
     name: "GetRequiredFieldsForAddress"
-    description: "Retrieve the list of mandatory address fields."
+    description: "Retrieve the shop-wide list of mandatory address fields. No Admin API route serves it; the back-office form reads it in the same process."
     delivery_priority: should-have
     code_refs:
       - path: "src/Core/Domain/Address/Query/GetRequiredFieldsForAddress.php"
@@ -106,34 +485,207 @@ operations:
     id: customers.EVT007
     kind: event
     name: "AddressCreated"
-    description: "Emitted when a new customer address is created."
+    description: >-
+      An address row was inserted. Fired as the hook actionObjectAddressAddAfter by
+      ObjectModel::add, so every module listening on it sees customer, manufacturer, cart-copy and
+      order-copy addresses alike.
+    tags: ["hook:actionObjectAddressAddAfter"]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/Address.php"
+        role: implementation
 
   addressUpdated:
     id: customers.EVT008
     kind: event
     name: "AddressUpdated"
-    description: "Emitted when an address or address configuration changes."
+    description: >-
+      An existing address row was updated in place. Fired as the hook
+      actionObjectAddressUpdateAfter by ObjectModel::update. An address already used by an order is
+      never updated in place, so this event does not cover that case; AddressCreated does.
+    tags: ["hook:actionObjectAddressUpdateAfter"]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/Address.php"
+        role: implementation
 
   addressDeleted:
     id: customers.EVT009
     kind: event
     name: "AddressDeleted"
-    description: "Emitted when one or more addresses are deleted."
+    description: >-
+      An address was deleted. Fired as the hook actionObjectAddressDeleteAfter by
+      ObjectModel::delete. Address::delete is a soft delete when an order references the row, so a
+      listener must not assume the data is gone.
+    tags: ["hook:actionObjectAddressDeleteAfter"]
+    code_refs:
+      - path: "classes/ObjectModel.php"
+        role: implementation
+      - path: "classes/Address.php"
+        role: implementation
+
+  addressRequiredFieldsUpdated:
+    id: customers.EVT015
+    kind: event
+    name: "AddressRequiredFieldsUpdated"
+    description: >-
+      The shop-wide set of mandatory address fields changed, so every later address validation
+      applies a different rule. No hook is fired for this transition: the handler writes the
+      required_field table with SQL rather than through an ObjectModel, so modules cannot observe
+      it.
+    code_refs:
+      - path: "src/Adapter/Address/CommandHandler/SetRequiredFieldsForAddressHandler.php"
+        role: implementation
 
 errors:
   addressNotFound:
     id: customers.ERR005
     name: "AddressNotFound"
-    description: "Requested address does not exist."
+    description: "Requested address does not exist, or exists only as a soft-deleted row."
     category: not-found
     severity: error
     http_status: 404
+    code_refs:
+      - path: "src/Core/Domain/Address/Exception/AddressNotFoundException.php"
+        role: implementation
 
   invalidAddressData:
     id: customers.ERR006
     name: "InvalidAddressData"
-    description: "Address data fails validation (missing required fields for the selected country)."
+    description: "Address data fails validation: a field required by the selected country is missing, or a field exceeds the length AddressConstraint fixes for it."
     category: validation
     severity: error
     http_status: 422
     related_rules: [customers.VR005]
+    code_refs:
+      - path: "src/Core/Domain/Address/Exception/AddressConstraintException.php"
+        role: implementation
+      - path: "src/Core/Domain/Address/Configuration/AddressConstraint.php"
+        role: implementation
+
+  cannotAddAddress:
+    id: customers.ERR009
+    name: "CannotAddAddress"
+    description: "The address passed validation but the insert failed. Also raised when the copy an edit makes of an order-used address cannot be saved."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/Address/Exception/CannotAddAddressException.php"
+        role: implementation
+
+  cannotUpdateAddress:
+    id: customers.ERR010
+    name: "CannotUpdateAddress"
+    description: "The update of an existing address row failed at persistence."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/Address/Exception/CannotUpdateAddressException.php"
+        role: implementation
+
+  cannotUpdateCartAddress:
+    id: customers.ERR011
+    name: "CannotUpdateCartAddress"
+    description: "The address was edited but the cart could not be repointed at the resulting address identifier, so the cart still carries the old one."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/Address/Exception/CannotUpdateCartAddressException.php"
+        role: implementation
+
+  cannotUpdateOrderAddress:
+    id: customers.ERR012
+    name: "CannotUpdateOrderAddress"
+    description: "The address was edited but the order could not be repointed at the resulting address identifier."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/Address/Exception/CannotUpdateOrderAddressException.php"
+        role: implementation
+
+  deleteAddressFailed:
+    id: customers.ERR013
+    name: "DeleteAddressFailed"
+    description: "The delete of a single address failed. AddressException is the base class the handler raises when the ObjectModel throws instead of returning false."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/Address/Exception/DeleteAddressException.php"
+        role: implementation
+      - path: "src/Core/Domain/Address/Exception/AddressException.php"
+        role: implementation
+
+  bulkDeleteAddressFailed:
+    id: customers.ERR014
+    name: "BulkDeleteAddressFailed"
+    description: "At least one address in a bulk delete could not be removed. The batch is not transactional, so some addresses may already be gone."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: false
+    code_refs:
+      - path: "src/Core/Domain/Address/Exception/BulkDeleteAddressException.php"
+        role: implementation
+
+  invalidAddressField:
+    id: customers.ERR015
+    name: "InvalidAddressField"
+    description: "A field name passed to the required-fields configuration is not a field the Address ObjectModel declares."
+    category: validation
+    severity: error
+    http_status: 422
+    code_refs:
+      - path: "src/Core/Domain/Address/Exception/InvalidAddressFieldException.php"
+        role: implementation
+
+  invalidAddressRequiredFields:
+    id: customers.ERR016
+    name: "InvalidAddressRequiredFields"
+    description: "The required-fields list as a whole is rejected, for instance because it is not an array of known field names."
+    category: validation
+    severity: error
+    http_status: 422
+    related_rules: [customers.VR005]
+    code_refs:
+      - path: "src/Core/Domain/Address/Exception/InvalidAddressRequiredFieldsException.php"
+        role: implementation
+
+  cannotSetRequiredFieldsForAddress:
+    id: customers.ERR017
+    name: "CannotSetRequiredFieldsForAddress"
+    description: "The required-fields list was accepted but the write to the required_field table failed."
+    category: internal
+    severity: error
+    http_status: 500
+    retry_eligible: true
+    code_refs:
+      - path: "src/Core/Domain/Address/Exception/CannotSetRequiredFieldsForAddressException.php"
+        role: implementation
+
+questions:
+
+  - id: customers.QN003
+    name: "What An Address Must Contain"
+    statement: "Which address fields must this customer fill in before the address is usable?"
+    category: compliance
+    priority: high
+    bounded_context_ref: prestashop.BC005
+    answered_by: [customers.QRY010, customers.CMD015, customers.QRY009]
+    concepts: [customers.CN004]
+    resolved: true
+    resolution: >
+      GetRequiredFieldsForAddress returns the merchant's required-field set, which
+      SetRequiredFieldsForAddress maintains; the country's own address format, held in
+      International, constrains it further.

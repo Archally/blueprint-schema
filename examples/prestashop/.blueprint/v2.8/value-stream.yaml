@@ -1,84 +1,268 @@
 ---
-version: "1.0.0"
+version: "1.1.0"
+
+# Three value streams, each one crossing several bounded contexts on purpose: a stream contained
+# inside one context would be a process, and belongs in that slice's story.yaml instead.
+#
+# `key_operations` names real operations so a reader can walk from a stage to the code. It is a
+# handful per stage, not the stage's whole operation set.
+#
+# No stage carries a `lead_time`. The field exists and would be the natural place for "checkout
+# takes 2-5 minutes", but nothing in the code, in presta-docs or in presta-specs measures it, and
+# an invented duration on a golden model is worse than a missing one (step-00 R10). The same
+# applies to `pain_points`: the ones below are code-grounded frictions, not survey findings.
+
 value_streams:
   - id: VS001
     name: "Shop & Buy"
-    description: "End-customer journey from product discovery through order receipt."
-    trigger: "Customer arrives at storefront"
-    outcome: "Customer receives purchased goods and confirmation"
-    primary_actors: [orders.ACT001]
+    description: >
+      The shopper's journey, from arriving with an unformed intention to holding the goods. Four
+      bounded contexts hand work to each other along it - Catalog, Checkout, Orders and Shipping -
+      and the handover points are where this stream earns its place beside the capability map.
+    trigger: "A visitor arrives at the storefront, with or without a product in mind"
+    outcome: "The customer is charged once, the goods are dispatched, and the customer is told so"
+    primary_actors: [orders.ACT001, customers.ACT001]
+    goal_refs: [catalog.GL001, checkout.GL001, orders.GL001, orders.GL003]
+    metrics: [catalog.KPI001, checkout.KPI001, KPI001]
     discovery_stage: committed
     certainty: confirmed
-    metrics: [catalog.KPI001, checkout.KPI001, orders.KPI001]
+    evidence:
+      - kind: codebase-analysis
+        source: "checkout/cart-core.domain.yaml, orders/order-core.domain.yaml, shipping/shipment.domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          The stream is visible in the model as a causal chain: cart commands produce cart events,
+          order placement is an Orders command that consumes the cart, and shipment creation is a
+          Shipping command against the order. Three slices, one flow.
+        confidence_impact: supports
     stages:
       - name: "Discover"
-        description: "Customer finds products through search, browsing, or external links."
-        capabilities: [CAP018, CAP005]
-        lead_time: "< 2 seconds"
+        description: >
+          The shopper finds a product, by searching, by browsing the category tree, by following a
+          related-product link, or by arriving on a page an external search engine indexed.
+        capabilities: [CAP018, CAP005, CAP104]
+        key_operations:
+          - catalog.QRY001
+          - catalog.QRY009
+          - catalog.QRY005
+          - catalog.QRY101
+        actors: [orders.ACT001]
+
       - name: "Select & Cart"
-        description: "Customer adds products to cart with quantity and variant selection."
-        capabilities: [CAP002]
-        lead_time: "< 1 second per item"
-      - name: "Checkout"
-        description: "Customer provides shipping/billing info, selects carrier, and pays."
-        capabilities: [CAP003, CAP004]
+        description: >
+          The shopper chooses a variant and a quantity and the cart is priced: line prices, any
+          promotion that applies, and the running total.
+        capabilities: [CAP002, CAP102, CAP100]
+        key_operations:
+          - checkout.CMD001
+          - checkout.CMD009
+          - checkout.CMD011
+          - checkout.CMD014
+          - checkout.QRY009
+        actors: [orders.ACT001]
         pain_points:
-          - "Too many form fields"
-          - "Unclear delivery time estimates"
-        lead_time: "2-5 minutes"
+          - >
+            Cart totals are recomputed by the legacy Cart class rather than by a domain service,
+            so the storefront and the back office each reach the calculation by a different path
+            and no CQRS operation owns it.
+
+      - name: "Checkout"
+        description: >
+          The shopper supplies addresses, picks a carrier and a currency, and pays. Availability
+          is checked here, against the product's allow-out-of-stock-purchase setting.
+        capabilities: [CAP003, CAP004, CAP008, CAP011]
+        key_operations:
+          - checkout.CMD002
+          - checkout.CMD003
+          - checkout.CMD005
+          - checkout.QRY002
+          - orders.CMD001
+          - orders.CMD019
+        actors: [orders.ACT001, customers.ACT001]
+        pain_points:
+          - >
+            Nothing holds stock for a cart. Cart::checkQuantities() reads the available quantity
+            at checkout and the order decrements it at validation, so two shoppers can both pass
+            the check on the last unit and one of them is disappointed after paying.
+
       - name: "Fulfill"
-        description: "Merchant processes, ships, and delivers the order."
+        description: >
+          The merchant accepts the order, moves it through its statuses, raises the invoice and
+          creates the shipments the goods leave in, splitting or merging them as the warehouse
+          requires.
         capabilities: [CAP001, CAP010]
-        lead_time: "1-5 business days"
+        key_operations:
+          - orders.CMD004
+          - orders.CMD017
+          - shipping.CMD011
+          - shipping.CMD015
+          - shipping.CMD018
+        actors: [orders.ACT003, shipping.ACT001]
+
       - name: "Notify"
-        description: "Customer receives order confirmation, shipping updates, and delivery notice."
-        capabilities: [CAP006]
+        description: >
+          The customer is told: order confirmation, each status change that has a template, and
+          the message thread if they reply.
+        capabilities: [CAP006, CAP009]
+        key_operations:
+          - orders.CMD013
+          - orders.CMD036
+          - customers.CMD016
+        actors: [customers.ACT002, orders.ACT001]
 
   - id: VS002
     name: "Sell & Fulfill"
-    description: "Merchant journey from catalog setup through order fulfillment and returns."
-    trigger: "Merchant adds or updates products"
-    outcome: "Orders processed, shipped, and revenue collected"
-    primary_actors: [catalog.ACT001]
+    description: >
+      The merchant's journey: having something to sell, pricing it for a market, and turning the
+      orders it attracts into dispatched parcels and settled returns. It crosses Catalog,
+      International, Checkout, Orders and Shipping.
+    trigger: "A merchant has goods to list, or a price or promotion to change"
+    outcome: "Orders are placed against a correct catalogue, fulfilled, and returns settled"
+    primary_actors: [orders.ACT003, catalog.ACT001]
+    goal_refs: [catalog.GL002, catalog.GL005, international.GL002, shipping.GL003]
+    metrics: [catalog.KPI001, KPI001, shipping.KPI001]
     discovery_stage: committed
     certainty: confirmed
-    metrics: [catalog.KPI001, orders.KPI001, shipping.KPI001]
+    evidence:
+      - kind: codebase-analysis
+        source: "catalog/product-core.domain.yaml, international/taxation.domain.yaml, orders/returns.domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          Catalogue authoring, tax configuration, order administration and returns are four
+          separate code domains in four slices, and a merchant passes through all of them for one
+          product to be sold and, if need be, taken back.
+        confidence_impact: supports
     stages:
       - name: "Catalog Setup"
-        description: "Merchant creates products, variants, and organizes categories."
-        capabilities: [CAP005]
+        description: >
+          The merchant creates products, generates their combinations from attribute groups,
+          arranges them in categories, and records where they are sourced from.
+        capabilities: [CAP005, CAP102, CAP101]
+        key_operations:
+          - catalog.CMD001
+          - catalog.CMD011
+          - catalog.CMD025
+          - catalog.CMD101
+          - catalog.CMD111
+        actors: [catalog.ACT001]
+
       - name: "Pricing & Tax"
-        description: "Merchant configures prices, currencies, and tax rules."
-        capabilities: [CAP011, CAP012]
+        description: >
+          The merchant sets prices and the promotions that cut them, and configures the currencies
+          and tax rules that decide what a given buyer in a given country is charged.
+        capabilities: [CAP100, CAP011, CAP012]
+        key_operations:
+          - catalog.CMD021
+          - checkout.CMD016
+          - checkout.CMD021
+          - international.CMD001
+          - international.CMD027
+        actors: [checkout.ACT001, international.ACT002]
+
       - name: "Order Processing"
-        description: "Merchant reviews, validates, and manages orders."
+        description: >
+          The merchant reviews incoming orders, corrects addresses and lines where a customer asks,
+          records payments, and moves each order through its status history.
         capabilities: [CAP001]
-      - name: "Fulfillment"
-        description: "Merchant ships orders and manages returns/refunds."
-        capabilities: [CAP010]
+        key_operations:
+          - orders.CMD004
+          - orders.CMD008
+          - orders.CMD020
+          - orders.CMD019
+          - orders.QRY001
+        actors: [orders.ACT003, orders.ACT004]
+
+      - name: "Fulfillment & Returns"
+        description: >
+          The merchant ships, and handles what comes back: return requests and their states,
+          standard and partial refunds, and the credit slips a refund produces.
+        capabilities: [CAP010, CAP001]
+        key_operations:
+          - shipping.CMD018
+          - orders.CMD016
+          - orders.CMD023
+          - orders.CMD003
+          - orders.QRY004
+        actors: [shipping.ACT001, orders.ACT003]
 
   - id: VS003
     name: "Configure & Scale"
-    description: "Platform admin journey from store setup through multi-store scaling."
-    trigger: "Admin creates or reconfigures a shop"
-    outcome: "Fully configured, extensible multi-store platform"
-    primary_actors: [admin.ACT001]
+    description: >
+      The operator's journey: standing a shop up, dressing it, extending it with modules, opening
+      it to other systems, and adding a second and a third storefront behind the same back office.
+      It crosses Shop, Content, Modules and Admin, and reaches Customers where support staff work.
+    trigger: "An operator installs a shop, or needs the platform to do something it does not yet do"
+    outcome: "A configured, extended, integrated installation that can carry more than one storefront"
+    primary_actors: [admin.ACT001, admin.ACT002]
+    goal_refs: [shop.GL001, content.GL003, modules.GL001, admin.GL002]
+    metrics: [admin.KPI001, modules.KPI001, shop.KPI001]
     discovery_stage: committed
     certainty: confirmed
-    metrics: [admin.KPI001, modules.KPI001, shop.KPI001]
+    evidence:
+      - kind: codebase-analysis
+        source: "shop/domain.yaml, content/theme.domain.yaml, modules/domain.yaml, admin/api.domain.yaml"
+        date: "2026-09-19"
+        summary: >
+          Shop branding, theme import, module installation and API-client creation are four
+          slices' commands that one operator issues in sequence when standing up an installation.
+        confidence_impact: supports
     stages:
       - name: "Store Setup"
-        description: "Admin configures shop identity, contacts, and basic settings."
-        capabilities: [CAP017]
+        description: >
+          The operator gives the shop its identity and, in a multi-store installation, decides what
+          each storefront shares with its siblings.
+        capabilities: [CAP017, CAP104]
+        key_operations:
+          - shop.CMD001
+          - shop.QRY002
+          - catalog.CMD106
+        actors: [shop.ACT001]
+
       - name: "Content & Design"
-        description: "Admin manages CMS pages, themes, and email templates."
+        description: >
+          The operator imports and enables a theme, writes the CMS pages the catalogue does not
+          cover, and tunes the metadata each page is indexed by.
         capabilities: [CAP013]
+        key_operations:
+          - content.CMD013
+          - content.CMD014
+          - content.CMD001
+          - content.CMD019
+        actors: [content.ACT001, content.ACT002]
+
       - name: "Extend"
-        description: "Admin installs and configures modules to add functionality."
+        description: >
+          The operator installs modules and attaches them to the hooks they listen on, which is
+          how the platform acquires behaviour the core does not ship.
         capabilities: [CAP014]
+        key_operations:
+          - modules.CMD001
+          - modules.CMD007
+          - modules.CMD012
+          - modules.CMD009
+        actors: [modules.ACT001, modules.ACT002]
+
       - name: "Secure & Integrate"
-        description: "Admin manages employees, API clients, and integrations."
-        capabilities: [CAP015, CAP016]
+        description: >
+          The operator creates employee accounts against permission profiles, issues OAuth2 API
+          clients and legacy webservice keys, and keeps the installation itself maintainable.
+        capabilities: [CAP015, CAP016, CAP103]
+        key_operations:
+          - admin.CMD001
+          - admin.CMD013
+          - admin.CMD021
+          - admin.CMD025
+          - admin.QRY008
+        actors: [admin.ACT001, admin.ACT003]
+
       - name: "Account Management"
-        description: "Admin oversees customer accounts and service interactions."
+        description: >
+          Support staff run the customer side of the installation: accounts, the groups that decide
+          pricing, addresses, and the service threads customers open.
         capabilities: [CAP007, CAP008, CAP009]
+        key_operations:
+          - customers.CMD001
+          - customers.CMD009
+          - customers.CMD012
+          - customers.CMD016
+        actors: [customers.ACT002, admin.ACT002]

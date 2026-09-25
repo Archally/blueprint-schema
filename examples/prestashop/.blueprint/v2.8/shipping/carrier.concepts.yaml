@@ -89,6 +89,7 @@ concepts:
       zoneId:
         id: CAT415
         description: "Zone this range applies to"
+        example: "1"
       rangeFrom:
         id: CAT416
         description: "Lower bound of the weight/price bracket"
@@ -118,6 +119,7 @@ concepts:
       taxRuleGroupId:
         id: CAT419
         description: "Reference to tax rule group in International context"
+        example: "1"
     code_refs:
       - path: "src/Core/Domain/Carrier/Command/SetCarrierTaxRuleGroupCommand.php"
         role: implementation
@@ -166,7 +168,7 @@ enumerations:
         role: model
 
 associations:
-  - id: shipping.AS001
+  - id: shipping.ASC001
     subject: shipping.CN001
     predicate: depends-on
     object: shipping.CN002

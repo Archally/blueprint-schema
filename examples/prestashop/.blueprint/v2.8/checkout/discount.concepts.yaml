@@ -12,42 +12,55 @@ concepts:
       discountId:
         id: CAT213
         description: "Unique discount identifier"
+        example: "8"
       name:
         id: CAT214
         description: "Display name for the discount"
+        example: "Spring sale 10 percent"
       code:
         id: CAT215
         description: "Voucher code for manual application (empty for automatic discounts)"
+        example: "SPRING10"
       reductionType:
         id: CAT216
-        description: "Type of reduction: percentage or fixed amount"
+        description: "Which of the two reduction shapes applies, from Reduction::ALLOWED_TYPES: percentage or amount. In the v9 command the two are separate nullable fields (reductionPercent, reductionAmount) rather than a type plus a value."
+        example: "percentage"
       reductionValue:
         id: CAT217
         description: "Numeric reduction value"
+        example: "10.00"
       minimumAmount:
         id: CAT218
-        description: "Minimum cart total required to apply"
+        description: "Minimum cart total required before the discount applies. It is a MinimumAmount value object, not a bare number: it carries its own currency and two flags saying whether the threshold is compared tax-included and shipping-included."
+        example: "50.00"
       dateFrom:
         id: CAT219
         description: "Validity period start date"
+        example: "2026-03-01 00:00:00"
       dateTo:
         id: CAT220
         description: "Validity period end date"
+        example: "2026-03-31 23:59:59"
       totalQuantity:
         id: CAT221
         description: "Global usage limit across all customers"
+        example: "500"
       quantityPerUser:
         id: CAT222
         description: "Maximum usage per individual customer"
+        example: "1"
       priority:
         id: CAT223
-        description: "Application priority (lower = higher priority)"
+        description: "Application order when several discounts compete. Lower wins: CartRule's combinability check keeps the rule whose priority value is the smaller one. Defaults to 1."
+        example: "1"
       freeShipping:
         id: CAT224
-        description: "Whether this discount grants free shipping"
+        description: "Free shipping is a discount TYPE in PrestaShop 9, not a flag on a discount: DiscountType holds cart_level, product_level, free_gift, free_shipping and order_level, and a shipping discount is one whose type is free_shipping. No v9 command carries a boolean free-shipping flag."
+        example: "free_shipping"
       active:
         id: CAT225
-        description: "Whether the discount is currently enabled"
+        description: "Whether the discount is currently enabled. Defaults to false on creation, so a discount is not live the moment it is saved."
+        example: "true"
     code_refs:
       - path: "src/Core/Domain/Discount/ValueObject/DiscountId.php"
         role: model
@@ -64,6 +77,7 @@ concepts:
       quantity:
         id: CAT226
         description: "Minimum quantity of matching products required"
+        example: "2"
     code_refs:
       - path: "src/Core/Domain/Discount/ProductRuleGroup.php"
         role: model
@@ -141,7 +155,7 @@ enumerations:
         role: configuration
 
 associations:
-  - id: checkout.AS003
+  - id: checkout.ASC003
     subject: checkout.CN004
     predicate: depends-on
     object: checkout.CN005

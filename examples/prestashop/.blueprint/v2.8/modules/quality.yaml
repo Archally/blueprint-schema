@@ -2,18 +2,56 @@
 version: "1.0.0"
 scope: modules
 
+metrics:
+  - id: modules.MT100
+    name: "Hook Status Coverage"
+    summary: "Share of registered hooks whose active flag can be set independently"
+    type: business
+    unit: "%"
+    description: >
+      Hook carries its own active flag, separate from the modules attached to
+      it, so an administrator can silence an extension point without
+      uninstalling anything that listens on it. This counts the registered
+      hooks for which that is actually true.
+    measures:
+      operations: [modules.CMD009, modules.QRY003]
+      concepts: [modules.CN002]
+
 kpis:
   - id: modules.KPI001
+    domain_scope: modules
     name: "Module Install Success Rate"
     target: ">= 99% of module installation operations complete without error"
+    description: >
+      InstallModule and UploadModule fail with their own exceptions rather than
+      with a counter, so the rate is read from the module page and the error log.
+      The failures that matter most are the ones RSK001 describes: an install that
+      succeeds and breaks the storefront afterwards.
     window: "weekly"
-    goal: modules.G001
+    goal: modules.GL001
 
   - id: modules.KPI002
+    domain_scope: modules
     name: "Module Upgrade Success Rate"
     target: ">= 95% of module upgrades complete successfully preserving configuration"
+    description: >
+      An upgrade that loses configuration is a success by the command's own
+      reckoning, so this target is about the outcome rather than the exit code.
+      ResetModule is the recovery the goal leans on.
     window: "monthly"
-    goal: modules.G002
+    goal: modules.GL002
+
+  - id: modules.KPI100
+    domain_scope: platformkernel
+    name: "Hook Status Coverage"
+    metric: modules.MT100
+    target: "100% of registered hooks can be disabled independently of the modules attached to them"
+    window: "per release"
+    goal: modules.GL003
+    description: >
+      GL003's measure. A hook that cannot be turned off individually forces an
+      administrator to disable a whole module to stop one behaviour, which is
+      the control the goal claims to give.
 
 slos:
   - id: modules.SLO001

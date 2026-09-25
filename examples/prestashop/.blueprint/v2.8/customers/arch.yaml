@@ -11,8 +11,11 @@ contexts:
   - id: prestashop.BC005
     name: Customers
     kind: support
+    value_stream_ref: VS001
     complexity: crud
+    business_model_role: engagement-creator
     evolution: commodity
+    model_traits: [information-holder, coordinator]
     summary: Customer accounts, addresses, customer service messaging, titles.
     owned_by:
       team: TM004
@@ -23,7 +26,7 @@ contexts:
       - Customer group and title management
     dependencies:
       - name: International
-        type: api
+        coupling: http
         relationship: customer-supplier
         direction: downstream
         description: Reads country and state data for address validation.
@@ -37,9 +40,10 @@ contexts:
           - { type_ref: RT001, class: self-hosted, id: prestashop-db }
         contracts:
           openapi:
-            output: customers/customers-api.openapi
+            contract_name: customers-api
+            slice: customers
             expose:
-              - customers:addCustomer
-              - customers:editCustomer
-              - customers:addCustomerAddress
-              - customers:getCustomerForViewing
+              - customers.CMD001
+              - customers.CMD002
+              - customers.CMD012
+              - customers.QRY002
