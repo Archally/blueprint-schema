@@ -385,12 +385,15 @@ export function declaredModelComponents(parsedFiles) {
 }
 
 /**
- * Check an operation's `payload.schema` against the components the model declares.
+ * Check one `model_ref` field on an operation against the components the model declares.
  *
- * `payload.schema` is a `model_ref` and cannot go through the generic reference walk: that walk
- * records a reference only when the value looks like a TYPED ID, and three of the four documented
- * forms are not typed ids. Nor can `schema` become a generic reference key - it is the commonest key
- * in a JSON Schema body, where it means a type definition rather than a reference.
+ * A `model_ref` field cannot go through the generic reference walk: that walk records a reference
+ * only when the value looks like a TYPED ID, and three of the four documented forms are not typed
+ * ids. Nor can `schema` become a generic reference key - it is the commonest key in a JSON Schema
+ * body, where it means a type definition rather than a reference. `fieldPath` names the field so the
+ * message can point at the one that is wrong, since an operation carries several of these
+ * (`payload.schema`, `exchange.endpoint.parameters[].schema`, `responses[].schema`, and their RPC
+ * and header counterparts) and a reader needs to know which one to fix.
  *
  * The form rules are NOT reimplemented here. `model-ref-match.mjs` is emitted from the module the
  * graph builder imports, so the validator and the builder cannot disagree about what a reference
@@ -402,14 +405,64 @@ export function declaredModelComponents(parsedFiles) {
  * which IS an error, but promoting it would hard-fail existing models on upgrade. Promotion is its
  * own decision, as `unbound-operation`'s was.
  */
-export function checkPayloadSchemaResolvable(relFile, operationKey, operationId, ref, components) {
+export function checkModelRefResolvable(relFile, operationKey, operationId, fieldPath, ref, components) {
   if (typeof ref !== "string" || ref.trim() === "") return null;
   if (resolvesAgainst(ref, components)) return null;
   return (
-    `[${relFile}] Operation "${operationKey}" (${operationId ?? "no-id"}) has \`payload.schema: ` +
+    `[${relFile}] Operation "${operationKey}" (${operationId ?? "no-id"}) has \`${fieldPath}: ` +
     `${ref}\` and no model component answers it - declare it under \`components.schemas\` ` +
     `(or \`x-field\` / \`x-parameter\`) in a models file, or correct the reference.`
   );
+}
+
+/** `payload.schema` specifically - kept as its own name because it is the one call site with an existing test suite. */
+export function checkPayloadSchemaResolvable(relFile, operationKey, operationId, ref, components) {
+  return checkModelRefResolvable(relFile, operationKey, operationId, "payload.schema", ref, components);
+}
+
+/**
+ * Every OTHER `model_ref` field an operation can carry, walked and checked the same way.
+ *
+ * `payload.schema` is one of six sites `domain.schema.yaml` types as `model_ref` on an operation;
+ * the other five sit under `exchange` (single object or array, per the oneOf) and `responses`:
+ * a path/query parameter's `schema`, an RPC method parameter's `schema`, an RPC method result's
+ * `schema`, a response's `schema`, and a response header's `schema`. None of these were checked -
+ * `ecommerce`'s `orders.QRY002` points its `status` parameter at `#/components/x-enum/OrderStatus`,
+ * a section this schema line does not materialize (the component lives under `x-field`), and
+ * nothing reported it: the generic reference walk skips `schema` keys on purpose (see above), and
+ * only `payload.schema` had a dedicated check.
+ *
+ * Returns every finding for the operation, in the order the fields appear in the schema, so output
+ * order stays deterministic file-over-file the way the rest of this pass already is.
+ */
+export function checkOperationModelRefs(relFile, operationKey, operationId, op, components) {
+  const findings = [];
+  const add = (fieldPath, ref) => {
+    const finding = checkModelRefResolvable(relFile, operationKey, operationId, fieldPath, ref, components);
+    if (finding) findings.push(finding);
+  };
+
+  const exchanges = Array.isArray(op?.exchange) ? op.exchange : op?.exchange ? [op.exchange] : [];
+  for (const exchange of exchanges) {
+    for (const parameter of exchange?.endpoint?.parameters ?? []) {
+      add(`exchange.endpoint.parameters[${parameter?.name ?? "?"}].schema`, parameter?.schema);
+    }
+    for (const parameter of exchange?.method?.parameters ?? []) {
+      add(`exchange.method.parameters[${parameter?.name ?? "?"}].schema`, parameter?.schema);
+    }
+    if (exchange?.method?.result) {
+      add("exchange.method.result.schema", exchange.method.result.schema);
+    }
+  }
+
+  for (const response of op?.responses ?? []) {
+    add(`responses[${response?.code ?? "?"}].schema`, response?.schema);
+    for (const header of response?.headers ?? []) {
+      add(`responses[${response?.code ?? "?"}].headers[${header?.name ?? "?"}].schema`, header?.schema);
+    }
+  }
+
+  return findings;
 }
 
 /**
@@ -620,6 +673,12 @@ export function validateModel(args) {
   for (const { value, loc } of references.missing) {
     crossErrors.push(`Missing reference '${value}' at ${loc}`);
   }
+  // A `domain_ref` that resolves to nothing is a dangling reference like any other, and it is the
+  // one membership statement that CAN be wrong: an omitted or folder-inferred context is correct
+  // behaviour, while a named domain the model never declares is not.
+  for (const { context, ref, loc } of references.unresolvedDomainRefs) {
+    crossErrors.push(`Context '${context}' declares domain_ref '${ref}', which this model does not declare, at ${loc}`);
+  }
   for (const cycle of references.parentCycles) {
     crossErrors.push(
       cycle.length === 1
@@ -650,6 +709,9 @@ export function validateModel(args) {
           relFile, key, op.id, op.payload?.schema, modelComponents,
         );
         if (payloadFinding) warnings.push(payloadFinding);
+        for (const finding of checkOperationModelRefs(relFile, key, op.id, op, modelComponents)) {
+          warnings.push(finding);
+        }
         const missingExchange = eventsExemptFromExchange
           ? (op.kind === "command" || op.kind === "query") && !op.exchange && !isInProcess(op.dispatch)
           : !op.exchange;

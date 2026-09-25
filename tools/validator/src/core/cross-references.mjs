@@ -70,6 +70,77 @@ export const CATALOG_REF_RE = /^([a-z][a-z0-9-]*\.)?RT\d{3,}$/;
  *   omitted, nothing is retired, which is the right answer for a line that retires nothing
  * @returns {ReferenceFindings}
  */
+const DOMAIN_ID_RE = /^DMN\d{3,}$/;
+const SUBDOMAIN_ID_RE = /^SDM\d{3,}$/;
+
+/**
+ * Every `domain_ref` a context declares, paired with the vocabulary the model declares for it.
+ *
+ * A `domain_ref` resolves three ways, and each has its own way of being wrong: a `DMN###` naming no
+ * registry entry, an `SDM###` naming no nested subdomain, or a bare name outside the declared
+ * vocabulary. All three are references that resolve to nothing, which is what cross-reference
+ * validation means, so all three are errors here rather than advisories.
+ *
+ * The declared vocabulary is the `domains[]` registry when the model has one, and the model's own
+ * source folders otherwise - the same two partitions the domain resolver reads, in the same order.
+ *
+ * @param {ModelDocument[]} documents
+ * @returns {Array<{ context: string, ref: string, loc: string, file: string }>}
+ */
+function unresolvedDomainRefs(documents) {
+  const domainIds = new Set();
+  const subdomainIds = new Set();
+  const names = new Set();
+  const folders = new Set();
+
+  for (const { relFile, data } of documents) {
+    if (!data || typeof data !== "object") continue;
+    if (relFile.includes("/")) folders.add(relFile.slice(0, relFile.indexOf("/")).toLowerCase());
+    const registry = /** @type {Record<string, unknown>} */ (data).domains;
+    if (!Array.isArray(registry)) continue;
+    for (const domain of registry) {
+      if (!domain || typeof domain !== "object") continue;
+      const entry = /** @type {Record<string, unknown>} */ (domain);
+      if (typeof entry.id === "string") domainIds.add(entry.id);
+      if (typeof entry.name === "string") names.add(entry.name.toLowerCase());
+      if (!Array.isArray(entry.subdomains)) continue;
+      for (const subdomain of entry.subdomains) {
+        if (subdomain && typeof subdomain === "object") {
+          const nested = /** @type {Record<string, unknown>} */ (subdomain);
+          if (typeof nested.id === "string") subdomainIds.add(nested.id);
+        }
+      }
+    }
+  }
+  // A model with no registry falls back to its folders, which is the resolver's own second tier.
+  const vocabulary = names.size > 0 ? names : folders;
+
+  const findings = [];
+  const visit = (node, path, relFile) => {
+    if (Array.isArray(node)) {
+      node.forEach((item, index) => visit(item, [...path, String(index)], relFile));
+      return;
+    }
+    if (!node || typeof node !== "object") return;
+    const record = /** @type {Record<string, unknown>} */ (node);
+    const ref = record.domain_ref;
+    if (typeof ref === "string" && ref) {
+      const resolved = DOMAIN_ID_RE.test(ref)
+        ? domainIds.has(ref)
+        : SUBDOMAIN_ID_RE.test(ref)
+          ? subdomainIds.has(ref)
+          : vocabulary.has(ref.toLowerCase());
+      if (!resolved) {
+        const context = typeof record.name === "string" ? record.name : typeof record.id === "string" ? record.id : "(unnamed)";
+        findings.push({ context, ref, loc: [relFile, ...path].join("."), file: relFile });
+      }
+    }
+    for (const [key, value] of Object.entries(record)) visit(value, [...path, key], relFile);
+  };
+  for (const { relFile, data } of documents) visit(data, [], relFile);
+  return findings;
+}
+
 export function resolveModelReferences(documents, refKeys, bandTable, declaredBands = []) {
   const allIds = new Map();
   const allDuplicates = new Map();
@@ -157,5 +228,6 @@ export function resolveModelReferences(documents, refKeys, bandTable, declaredBa
     envelopeConflicts,
     retiredBands: [...retiredBands.values()],
     outOfBand: [...outOfBand.values()],
+    unresolvedDomainRefs: unresolvedDomainRefs(documents),
   };
 }
