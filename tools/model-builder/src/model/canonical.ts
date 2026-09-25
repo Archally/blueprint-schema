@@ -35,9 +35,10 @@ export const EXECUTION_METADATA_KEYS = ['last_loaded'] as const;
 /**
  * Metadata derived FROM the model rather than describing it; excluded so a digest depends only on
  * content, never on which derivations a caller happened to run first. `fingerprint` is here because
- * it is derived from this very function — including it would make the digest self-referential.
+ * it is derived from this very function - including it would make the digest self-referential.
+ * `schemaVersion` is copied from the root document at load time and is already in the source digest.
  */
-export const DERIVED_METADATA_KEYS = ['validation', 'migrationValidation', 'fingerprint'] as const;
+export const DERIVED_METADATA_KEYS = ['validation', 'migrationValidation', 'fingerprint', 'schemaVersion'] as const;
 
 /** Per-file keys that reflect the filesystem rather than file content. */
 const NON_CONTENT_FILE_KEYS = ['lastModified'] as const;

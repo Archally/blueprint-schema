@@ -138,6 +138,11 @@ export interface BlueprintMetadata {
    * "property does not exist". A field that ships but cannot be read is worse than a missing one.
    */
   repositories?: Record<string, RepositoryConfig>;
+  /**
+   * Declared `schemaVersion` copied from a blueprint root document at load time.
+   * Excluded from the canonical digest (it is already in the source documents).
+   */
+  schemaVersion?: string;
 }
 
 /**
