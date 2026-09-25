@@ -1,0 +1,18 @@
+version: "1.0.0"
+scope: orders
+screens:
+  - id: orders.SCR001
+    name: Cart
+  - id: orders.SCR002
+    name: Confirmation
+actions:
+  - id: orders.UAC001
+    screen: orders.SCR001
+    name: Submit the cart
+    triggers_operations:
+      - orders.CMD001
+navigation:
+  - id: orders.UNV001
+    from: orders.SCR001
+    to: orders.SCR002
+    via_action: orders.UAC001

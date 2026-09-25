@@ -1,0 +1,17 @@
+name: Orders
+version: "1.0.0"
+scope: orders
+processes: []
+use_cases:
+  - id: orders.UC010
+    name: Place an order from the cart
+    primary_actor: orders.ACT001
+    main_scenario:
+      - step: 1
+        action: Submit the cart
+        operation: orders.CMD001
+        screen: orders.SCR001
+        ui_action: orders.UAC001
+      - step: 2
+        action: Confirmation is shown
+        screen: orders.SCR002

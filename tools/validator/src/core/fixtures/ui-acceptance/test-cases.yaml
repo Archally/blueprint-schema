@@ -1,0 +1,11 @@
+version: "1.0.0"
+scope: orders
+happy_path:
+  - id: orders.TC010
+    name: Place an order from the cart
+    validates:
+      use_cases:
+        - orders.UC010
+      ui:
+        navigation:
+          - orders.UNV001
