@@ -4,7 +4,7 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
 import { entityDomain, resolveOrPlaceholder } from './resolver.js';
 
 /**
- * Extract relations from domain-layer operation entities:
+ * Extract relations from domain-layer operation and error entities:
  * - Operation.governed_by[] → governed_by (operation → rule)
  * - Operation.preconditions[] → preconditions (operation → rule)
  * - Operation.postconditions[] → postconditions (operation → rule)
@@ -14,11 +14,7 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  * - Operation.initiated_by[] → initiated_by (operation → actor)
  * - Operation.materializes[].concept → materializes (operation → concept)
  * - Operation.responses[].error → raises_error (operation → error)
- *
- * The causal five were missing here until 2026-07-25 while the public model-builder had always
- * emitted them — 458 dropped edges on the prestashop model alone. Keep this list in lockstep with
- * `tools/model-builder/src/extraction/relations/domain.ts` in the public repo: both builders feed
- * the same semantic-rule pack, so a divergence makes one rule mean two things.
+ * - Error.related_rules[] → error_related_rule (error → rule)
  */
 export function extractDomainRelations(
   entities: Entity[],
@@ -27,6 +23,10 @@ export function extractDomainRelations(
   const relations: Relation[] = [];
 
   for (const entity of entities) {
+    if (entity.type === ENTITY_TYPE.Error) {
+      relations.push(...extractErrorRelations(entity, entities, placeholders));
+      continue;
+    }
     if (entity.type !== ENTITY_TYPE.Operation) continue;
 
     const domain = entityDomain(entity);
@@ -184,5 +184,37 @@ export function extractDomainRelations(
     }
   }
 
+  return relations;
+}
+
+/**
+ * related_rules[]: plain rule ref strings naming the business rules that can trigger the error.
+ * One relation per distinct resolved rule; an unresolvable ref gets the shared Missing placeholder,
+ * as an unresolvable governed_by ref does.
+ */
+function extractErrorRelations(
+  entity: Entity,
+  entities: Entity[],
+  placeholders: Map<string, Entity>
+): Relation[] {
+  const data = entity.data as Record<string, unknown> | undefined;
+  const relatedRules = data?.related_rules;
+  if (!Array.isArray(relatedRules)) return [];
+
+  const domain = entityDomain(entity);
+  const relations: Relation[] = [];
+  const seenRuleTargets = new Set<string>();
+  for (const ref of relatedRules) {
+    if (typeof ref !== 'string' || !ref) continue;
+    const targetId = resolveOrPlaceholder(ref, domain, entities, placeholders);
+    if (seenRuleTargets.has(targetId)) continue; // the same rule named twice is one relation
+    seenRuleTargets.add(targetId);
+    relations.push({
+      id: `${entity.id}--${RELATION_TYPE.ErrorRelatedRule}--${targetId}`,
+      source_entity_id: entity.id,
+      target_entity_id: targetId,
+      type: RELATION_TYPE.ErrorRelatedRule,
+    });
+  }
   return relations;
 }

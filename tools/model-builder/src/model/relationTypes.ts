@@ -50,6 +50,9 @@ export const RELATION_TYPE = {
   Materializes: 'materializes',
   // domain.schema: operation can raise a catalog error (operation.responses[].error)
   RaisesError: 'raises_error',
+  // domain.schema: error names the business rules that can trigger it (error.related_rules[]),
+  // error → rule
+  ErrorRelatedRule: 'error_related_rule',
   // domain.schema: operation payload references a data model (operation.payload.schema → Models)
   PayloadModel: 'payload_model',
   // decisions.schema: decision motivated by goal/risk/assumption/trade_off
