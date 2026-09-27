@@ -5,6 +5,22 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.46"
+    date: "2026-09-21"
+    step: "a use-case step names the UI action"
+    summary: |
+      A use-case step can name the UI action it performs, a navigation can name the action that causes it, and a test case can name the use cases and navigations it validates.
+      `UseCase.main_scenario[].ui_action` and `Navigation.via_action` are optional `ui_action_ref`s. `TestCase.validates.use_cases[]` takes `use_case_ref`, and `validates.ui.navigation[]` takes `ui_nav_ref` beside the screens and actions it already lists. All four keys are optional, and `alternative_flow` steps are unchanged.
+      The model builder extracts them as the `use_case_ui_action` and `nav_via_action` relations and as the test-case axes `use_cases` and `ui.navigation`. The semantic checker reports at warn a main-scenario step that names both a UI action and a domain operation when that action's `triggers_operations` does not include the step's operation (`use-case-step-action-operation-disagrees`). Extra operations on the action are not a finding, and a step without either field is silent. Two warnings check the screens agree: `nav-via-action-screen-disagrees` and `use-case-step-action-screen-disagrees`.
+      Additive. A document that declares none of the new keys validates with the verdict and the warning count it had before.
+  - version: "2.8.45"
+    date: "2026-09-20"
+    step: "one field name stops carrying two types"
+    summary: |
+      Breaking: on a business decision, an assumption and a KPI, `bounded_context_ref` is renamed `domain_scope`. A document declaring `bounded_context_ref` on one of the three is rejected, and one declaring `domain_scope` there was rejected by 2.8.44.
+      The name took a typed `BC###` id on an arch context, an inter-context dependency and a competency question, and a kebab-case scope slug on the three constructs above, with nothing at the site to say which applied: `bounded_context_ref: BC006` was correct in one file and rejected in the next. `bounded_context_ref` now means one thing, a reference to a bounded context in the solution space. `domain_scope` names a partition of the problem space: it has the shape a slice name has in `blueprint.schema.yaml` and, wherever a model declares `domains`, corresponds one-to-one with a declared domain.
+      The type (`scope_prefix`), the values and the optionality are unchanged, and the key stays required on a business decision. `linked_contexts[]` beside it keeps its name and its type, and `metric` declares neither field. `scope_prefix` now states both roles it serves: the namespace qualifier on a typed id, and `domain_scope` on the three constructs.
+      What changes for a model: the schema-update chain performs the rename. It reports, and leaves untouched, a site where the value is not a scope slug, where both keys are declared, and where the collection or the entry is written in flow form; those are rewritten by hand.
   - version: "2.8.44"
     date: "2026-09-17"
     step: "a probe is named, so what it cannot see can be queried"
