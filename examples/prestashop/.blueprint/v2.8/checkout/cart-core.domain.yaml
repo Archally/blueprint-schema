@@ -194,7 +194,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Cart/CommandHandler/SendCartToCustomerHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Cart/CartEmail.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Cart/CartEmail.php"
         role: api-spec
         description: "CQRSUpdate on /carts/{cartId}/emails names SendCartToCustomerCommand; scope cart_write, allowEmptyBody true."
 

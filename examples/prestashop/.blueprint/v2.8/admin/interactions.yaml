@@ -11,37 +11,43 @@ screens:
   - id: admin.SCR001
     name: "Employee List"
     summary: "Grid of employees with status, profile, email, and bulk action controls."
-    uses_models: ["EmployeeList"]
+    # The grid (EmployeeQueryBuilder) shows 7 of EmployeeResource's 11 properties, the profile by name; not shown: defaultPageId, languageId, associatedShopIds, avatarUrl.
+    uses_models: ["EmployeeResource"]
     motivated_by: [admin.GL001]
 
   - id: admin.SCR002
     name: "Employee Form"
     summary: "Employee creation/edit form with profile selection and shop association."
-    uses_models: ["EmployeeForm"]
+    # The form (EmployeeFormDataProvider) shows all 11 of EmployeeResource's properties, profileName as the profile selector's label.
+    uses_models: ["EmployeeResource"]
     processes: [admin.PRC001]
 
   - id: admin.SCR003
     name: "Profile Permissions"
     summary: "Permission matrix editor for tab and module access per profile."
-    uses_models: ["PermissionMatrix"]
+    # The page renders the ConfigurablePermissions query result, which no model describes.
+    uses_models: []
     motivated_by: [admin.GL001]
 
   - id: admin.SCR004
     name: "API Client Management"
     summary: "API client list with create, edit, delete, and secret rotation controls."
-    uses_models: ["ApiClientList"]
+    # The grid (ApiClientQueryBuilder) shows 5 of ApiClientResource's 8 properties; not shown: description, lifetime, scopes.
+    uses_models: ["ApiClientResource"]
     motivated_by: [admin.GL002]
 
   - id: admin.SCR005
     name: "Session Management"
     summary: "Active session list with delete and bulk cleanup controls."
-    uses_models: ["SessionList"]
+    # Both session grids read their rows from the Security/Session query builders, and no model describes a grid row.
+    uses_models: []
     motivated_by: [admin.GL003]
 
   - id: admin.SCR006
     name: "SQL Manager"
     summary: "Saved SQL query list with add, edit, execute, and export controls."
-    uses_models: ["SqlRequestList"]
+    # The grid reads its rows from RequestSqlQueryBuilder, and no model describes a grid row.
+    uses_models: []
     motivated_by: [admin.GL004]
 
 actions:

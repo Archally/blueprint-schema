@@ -46,7 +46,7 @@ operations:
       - path: "src/Adapter/Manufacturer/CommandHandler/AddManufacturerHandler.php"
         role: implementation
         description: "Builds a legacy Manufacturer ObjectModel and calls add()."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Manufacturer/Manufacturer.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Manufacturer/Manufacturer.php"
         role: api-spec
         description: "CQRSCreate route POST /manufacturers, scope manufacturer_write."
 
@@ -90,7 +90,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Manufacturer/CommandHandler/EditManufacturerHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Manufacturer/Manufacturer.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Manufacturer/Manufacturer.php"
         role: api-spec
         description: "CQRSPartialUpdate route PATCH /manufacturers/{manufacturerId}, scope manufacturer_write."
 
@@ -133,7 +133,7 @@ operations:
       - path: "src/Adapter/Manufacturer/CommandHandler/AbstractManufacturerCommandHandler.php"
         role: implementation
         description: "Holds deleteManufacturer(), which calls the ObjectModel delete() both delete commands share."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Manufacturer/Manufacturer.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Manufacturer/Manufacturer.php"
         role: api-spec
         description: "CQRSDelete route DELETE /manufacturers/{manufacturerId}, scope manufacturer_write."
 
@@ -169,7 +169,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Manufacturer/CommandHandler/BulkDeleteManufacturerHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Manufacturer/BulkManufacturers.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Manufacturer/BulkManufacturers.php"
         role: api-spec
         description: "CQRSUpdate route PUT /manufacturers/bulk-delete, scope manufacturer_write."
 
@@ -285,7 +285,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Manufacturer/Query/GetManufacturerForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Manufacturer/Manufacturer.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Manufacturer/Manufacturer.php"
         role: api-spec
         description: "CQRSGet route GET /manufacturers/{manufacturerId}, scope manufacturer_read."
 
@@ -325,7 +325,7 @@ operations:
         method: GET
         group: manufacturers
     code_refs:
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Manufacturer/ManufacturerList.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Manufacturer/ManufacturerList.php"
         role: api-spec
         description: "PaginatedList route GET /manufacturers, gridDataFactory prestashop.core.grid.data.factory.manufacturer_decorator."
 
@@ -369,7 +369,7 @@ operations:
       - path: "src/Adapter/Supplier/CommandHandler/AddSupplierHandler.php"
         role: implementation
         description: "Fills a legacy Supplier ObjectModel, adds the address, then calls add()."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/Supplier.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Supplier/Supplier.php"
         role: api-spec
         description: "CQRSCreate route POST /suppliers, scope supplier_write."
 
@@ -409,7 +409,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Supplier/CommandHandler/EditSupplierHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/Supplier.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Supplier/Supplier.php"
         role: api-spec
         description: "CQRSPartialUpdate route PATCH /suppliers/{supplierId}, scope supplier_write."
 
@@ -460,7 +460,7 @@ operations:
       - path: "src/Adapter/Supplier/CommandHandler/AbstractDeleteSupplierHandler.php"
         role: implementation
         description: "The three-step delete both the single and the bulk delete share."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/Supplier.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Supplier/Supplier.php"
         role: api-spec
         description: "CQRSDelete route DELETE /suppliers/{supplierId}, scope supplier_write."
 
@@ -499,7 +499,7 @@ operations:
         description: "Abstract base carrying the supplier id list for all three bulk supplier commands."
       - path: "src/Adapter/Supplier/CommandHandler/BulkDeleteSupplierHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/BulkSuppliers.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Supplier/BulkSuppliers.php"
         role: api-spec
         description: "CQRSDelete route DELETE /suppliers/bulk-delete, scope supplier_write."
 
@@ -537,7 +537,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Supplier/CommandHandler/BulkEnableSupplierHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/BulkSuppliers.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Supplier/BulkSuppliers.php"
         role: api-spec
         description: "CQRSUpdate route PUT /suppliers/bulk-enable, scope supplier_write, answers 204 with no body."
 
@@ -575,7 +575,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Supplier/CommandHandler/BulkDisableSupplierHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/BulkSuppliers.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Supplier/BulkSuppliers.php"
         role: api-spec
         description: "CQRSUpdate route PUT /suppliers/bulk-disable, scope supplier_write, answers 204 with no body."
 
@@ -615,7 +615,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Supplier/CommandHandler/ToggleSupplierStatusHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/Supplier.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Supplier/Supplier.php"
         role: api-spec
         description: "CQRSUpdate route PUT /suppliers/{supplierId}/toggle-status, scope supplier_write."
 
@@ -648,7 +648,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Supplier/CommandHandler/DeleteSupplierLogoImageHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/Supplier.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Supplier/Supplier.php"
         role: api-spec
         description: "CQRSDelete route DELETE /suppliers/{supplierId}/logo, scope supplier_write."
 
@@ -675,7 +675,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Supplier/Query/GetSupplierForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/Supplier.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Supplier/Supplier.php"
         role: api-spec
         description: "CQRSGet route GET /suppliers/{supplierId}, scope supplier_read."
 
@@ -715,7 +715,7 @@ operations:
         method: GET
         group: suppliers
     code_refs:
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Supplier/SupplierList.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Supplier/SupplierList.php"
         role: api-spec
         description: "PaginatedList route GET /suppliers, gridDataFactory prestashop.core.grid.factory.supplier_decorator."
 
@@ -1128,7 +1128,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Attachment/Query/GetAttachment.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Attachment/AttachmentFile.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Attachment/AttachmentFile.php"
         role: api-spec
         description: "CQRSGet route GET /attachments/{attachmentId}/files, scope attachment_read."
 
@@ -1155,7 +1155,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Attachment/Query/GetAttachmentInformation.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Attachment/AttachmentInformation.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Attachment/AttachmentInformation.php"
         role: api-spec
         description: "CQRSGet route GET /attachments/{attachmentId}/information, scope attachment_read; the resource imports the query aliased as GetAttachmentInformationQuery."
 
@@ -1186,7 +1186,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Attachment/Query/SearchAttachment.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Attachment/FoundAttachment.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Attachment/FoundAttachment.php"
         role: api-spec
         description: "CQRSGetCollection route GET /attachments/search, scope attachment_read."
 

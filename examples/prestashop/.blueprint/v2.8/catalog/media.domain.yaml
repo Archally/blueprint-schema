@@ -42,7 +42,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Product/Image/Command/AddProductImageCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/NewProductImage.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/NewProductImage.php"
         role: api-spec
         description: "Multipart upload; the response is read back with GetProductImage."
 
@@ -81,7 +81,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Product/Image/Command/UpdateProductImageCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductImage.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/ProductImage.php"
         role: api-spec
         description: "CQRSUpdate forced to POST, because PUT cannot carry a file and data together."
 
@@ -122,7 +122,7 @@ operations:
         description: "Proves the reaction to catalog.EVT003. Product::delete fires actionProductDelete at line 1284 and calls deleteImages at line 1288, which loads every Image of the product and calls Image::delete on each. The deletion is reached there directly, not through the command bus."
       - path: "src/Core/Domain/Product/Image/Command/DeleteProductImageCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductImage.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/ProductImage.php"
         role: api-spec
 
   setProductImagesForAllShop:
@@ -276,7 +276,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Product/Image/Query/GetProductImage.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductImage.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/ProductImage.php"
         role: api-spec
 
   getProductImages:
@@ -304,7 +304,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Product/Image/Query/GetProductImages.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductImageList.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/ProductImageList.php"
         role: api-spec
 
   getShopProductImages:
@@ -372,7 +372,7 @@ errors:
     code_refs:
       - path: "src/Core/Domain/Product/Image/Exception/ProductImageNotFoundException.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductImage.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/ProductImage.php"
         role: api-spec
         description: "exceptionToStatus maps ProductImageNotFoundException to 404."
 

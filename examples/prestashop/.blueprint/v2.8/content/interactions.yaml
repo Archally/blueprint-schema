@@ -11,36 +11,42 @@ screens:
   - id: content.SCR001
     name: "CMS Page List"
     summary: "Paginated grid of CMS pages with title, category, status, and bulk action controls."
-    uses_models: ["CmsPageList"]
+    # The grid (CmsPageQueryBuilder) shows 5 of CmsPageResource's 11 properties; not shown: localizedContent, localizedMetaDescription, indexedForSearch, categoryId, categoryName, shopIds.
+    uses_models: ["CmsPageResource"]
     motivated_by: [content.GL001]
 
   - id: content.SCR002
     name: "CMS Page Editor"
     summary: "CMS page add/edit form with localized title, content editor, SEO metadata, category selector, and display toggle."
-    uses_models: ["EditableCmsPage"]
+    # The form (CmsPageFormDataProvider) shows all 11 of CmsPageResource's properties, categoryName as the category tree's label.
+    uses_models: ["CmsPageResource"]
     processes: [content.PRC001]
 
   - id: content.SCR003
     name: "CMS Category List"
     summary: "Tree view of CMS page categories with breadcrumb navigation, status, and bulk actions."
-    uses_models: ["CmsPageCategoryList"]
+    # The grid (CmsPageCategoryQueryBuilder) and the page's breadcrumb show 5 of CmsCategoryResource's 10 properties; not shown: localizedFriendlyUrl, localizedMetaTitle, localizedMetaDescription, parentId, shopAssociation.
+    uses_models: ["CmsCategoryResource"]
     motivated_by: [content.GL001]
 
   - id: content.SCR004
     name: "CMS Category Editor"
     summary: "CMS page category add/edit form with localized name, parent selector, SEO metadata, and display toggle."
-    uses_models: ["EditableCmsPageCategory"]
+    # The form (CmsPageCategoryFormDataProvider) shows 9 of CmsCategoryResource's 10 properties; not shown: breadcrumb, which the category list page shows.
+    uses_models: ["CmsCategoryResource"]
 
   - id: content.SCR005
     name: "Theme Management"
     summary: "Theme list with active indicator, import controls, and theme action buttons (enable, delete, reset, RTL)."
-    uses_models: ["ThemeList"]
+    # The page (ThemeController::indexAction) shows 4 of ThemeResource's 5 properties; not shown: directory.
+    uses_models: ["ThemeResource"]
     motivated_by: [content.GL003]
 
   - id: content.SCR006
     name: "SEO & URL Configuration"
     summary: "Meta entry list with page name, URL rewrite, and localized title/description management."
-    uses_models: ["MetaList", "EditableMeta"]
+    # The grid (MetaQueryBuilder) shows 4 of MetaResource's 5 properties, not localizedMetaDescription; the form (MetaFormDataProvider) shows all 5.
+    uses_models: ["MetaResource"]
     motivated_by: [content.GL002]
 
   # The storefront side of content. The six screens above are back office; the one below is the

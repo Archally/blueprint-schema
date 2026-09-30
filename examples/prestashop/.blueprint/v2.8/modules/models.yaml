@@ -127,7 +127,7 @@ components:
         - path: "src/Core/Domain/Hook/QueryResult/Hook.php"
           role: model
           description: "getId, isActive, getName, getTitle, getDescription - the five fields above and no more."
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Hook.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Hook.php"
           role: api-spec
 
     HookStatusResource:
@@ -157,7 +157,7 @@ components:
         - path: "src/Core/Domain/Hook/QueryResult/HookStatus.php"
           role: model
           description: "getId and isActive only."
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Hook.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Hook.php"
           role: api-spec
 
     UpdateModuleStatusPayload:
@@ -180,7 +180,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Module/Command/UpdateModuleStatusCommand.php"
           role: schema
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Module/Module.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Module/Module.php"
           role: api-spec
 
     UninstallModulePayload:
@@ -203,7 +203,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Module/Command/UninstallModuleCommand.php"
           role: schema
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Module/UninstallModule.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Module/UninstallModule.php"
           role: api-spec
           description: "class UninstallModule extends Module, adding public bool $deleteFiles = false."
 
@@ -227,7 +227,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Module/Command/ResetModuleCommand.php"
           role: schema
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Module/ResetModule.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Module/ResetModule.php"
           role: api-spec
           description: "class ResetModule extends Module, adding public bool $keepData."
 
@@ -259,7 +259,7 @@ components:
           role: schema
         - path: "src/Core/Domain/Module/Command/BulkUninstallModuleCommand.php"
           role: schema
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Module/BulkModules.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Module/BulkModules.php"
           role: api-spec
           description: "CQRSCommandMapping renames the body's enabled to the command's expectedStatus."
 
@@ -283,7 +283,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Hook/Command/UpdateHookStatusCommand.php"
           role: schema
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Hook.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Hook.php"
           role: api-spec
           description: "COMMAND_MAPPING renames the body's enabled to the command's active."
 

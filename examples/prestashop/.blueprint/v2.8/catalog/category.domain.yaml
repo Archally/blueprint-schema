@@ -43,7 +43,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Category/CommandHandler/AddCategoryHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/Category.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Category/Category.php"
         role: api-spec
         description: "CQRSCreate on /categories names AddCategoryCommand."
 
@@ -102,7 +102,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Category/CommandHandler/EditCategoryHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/Category.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Category/Category.php"
         role: api-spec
         description: "CQRSPartialUpdate on /categories/{categoryId} names EditCategoryCommand."
 
@@ -164,7 +164,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Category/CommandHandler/DeleteCategoryHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/CategoryDelete.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Category/CategoryDelete.php"
         role: api-spec
         description: "CQRSDelete on /categories/{categoryId}/{mode} names DeleteCategoryCommand."
 
@@ -201,7 +201,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Category/CommandHandler/BulkDeleteCategoriesHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/BulkDeleteCategories.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Category/BulkDeleteCategories.php"
         role: api-spec
         description: "CQRSDelete on /categories/bulk-delete/{deleteMode} names BulkDeleteCategoriesCommand."
 
@@ -238,7 +238,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Category/CommandHandler/SetCategoryIsEnabledHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/Category.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Category/Category.php"
         role: api-spec
         description: "CQRSPartialUpdate on /categories/{categoryId}/status names SetCategoryIsEnabledCommand."
 
@@ -282,7 +282,7 @@ operations:
       - path: "src/PrestaShopBundle/Controller/Admin/Sell/Catalog/CategoryController.php"
         role: implementation
         description: "Dispatches the two subclasses from the grid's bulk actions."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/BulkUpdateStatusCategories.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Category/BulkUpdateStatusCategories.php"
         role: api-spec
         description: "CQRSUpdate on /categories/bulk-update-status names BulkUpdateCategoriesStatusCommand."
 
@@ -339,7 +339,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Category/CommandHandler/DeleteCategoryCoverImageHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/Category.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Category/Category.php"
         role: api-spec
         description: "CQRSDelete on /categories/{categoryId}/cover names DeleteCategoryCoverImageCommand."
 
@@ -374,7 +374,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Category/CommandHandler/DeleteCategoryThumbnailImageHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/Category.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Category/Category.php"
         role: api-spec
         description: "CQRSDelete on /categories/{categoryId}/thumbnail names DeleteCategoryThumbnailImageCommand."
 
@@ -405,7 +405,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Category/QueryHandler/GetCategoryForEditingHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Category/Category.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Category/Category.php"
         role: api-spec
         description: "CQRSGet on /categories/{categoryId} names GetCategoryForEditing."
 

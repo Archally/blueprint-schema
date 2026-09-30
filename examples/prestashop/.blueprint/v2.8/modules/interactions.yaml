@@ -11,19 +11,22 @@ screens:
   - id: modules.SCR001
     name: "Module Manager"
     summary: "Grid of modules with status indicators, bulk actions, and lifecycle controls (install, enable, disable, upgrade)."
-    uses_models: ["ModuleList"]
+    # The page (ModuleController::manageAction) shows all 10 of ModuleResource's properties.
+    uses_models: ["ModuleResource"]
     motivated_by: [modules.GL001]
 
   - id: modules.SCR002
     name: "Module Upload"
     summary: "Module upload form for importing module packages from file archives."
-    uses_models: ["ModuleUpload"]
+    # The form posts an archive to ModuleController::importModuleAction, which installs through ModuleManager; UploadModulePayload is the Admin API's shape.
+    uses_models: []
     processes: [modules.PRC001]
 
   - id: modules.SCR003
     name: "Hook Configuration"
     summary: "Hook list with active status toggles. Shows registered modules per hook."
-    uses_models: ["HookList"]
+    # The page (PositionsController::indexAction) shows all 5 of HookResource's properties.
+    uses_models: ["HookResource"]
     motivated_by: [modules.GL003]
 
 actions:

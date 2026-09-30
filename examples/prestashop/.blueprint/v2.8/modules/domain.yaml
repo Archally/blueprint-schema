@@ -49,7 +49,7 @@ operations:
         role: implementation
       - path: "src/Core/Domain/Module/CommandHandler/InstallModuleHandlerInterface.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/Module.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Module/Module.php"
         role: api-spec
         description: "CQRSUpdate '/modules/{technicalName}/install', scope module_write, reads back with GetModuleInfos; exceptionToStatus maps AlreadyInstalledModuleException to 403."
 
@@ -97,7 +97,7 @@ operations:
         role: implementation
       - path: "src/Core/Domain/Module/CommandHandler/UninstallModuleHandlerInterface.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/UninstallModule.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Module/UninstallModule.php"
         role: api-spec
         description: "CQRSUpdate '/modules/{technicalName}/uninstall', output: false, allowEmptyBody: true, scope module_write."
 
@@ -153,7 +153,7 @@ operations:
       - path: "src/Core/Addon/Theme/ThemeManager.php"
         role: implementation
         description: "enable() calls doDisableModules at line 167 and doEnableModules at line 168; both build a ModuleManager and call disable() or enable() for every module the theme names, which dispatches ModuleManagementEvent and reaches the same Module::enable()."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/Module.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Module/Module.php"
         role: api-spec
         description: "CQRSUpdate '/modules/{technicalName}/status', scope module_write."
 
@@ -194,7 +194,7 @@ operations:
         role: implementation
       - path: "src/Core/Domain/Module/CommandHandler/BulkToggleModuleStatusHandlerInterface.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/BulkModules.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Module/BulkModules.php"
         role: api-spec
         description: "CQRSUpdate '/modules/bulk-update-status', scope module_write; the body's enabled maps to the command's expectedStatus."
 
@@ -236,7 +236,7 @@ operations:
         role: implementation
       - path: "src/Core/Domain/Module/CommandHandler/BulkUninstallModuleHandlerInterface.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/BulkModules.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Module/BulkModules.php"
         role: api-spec
         description: "CQRSUpdate '/modules/bulk-uninstall', scope module_write."
 
@@ -287,7 +287,7 @@ operations:
       - path: "src/Core/Addon/Theme/ThemeManager.php"
         role: implementation
         description: "enable() calls doResetModules at line 169; the method at lines 341-359 builds a ModuleManager and calls reset() for every installed module the theme names, which is the same ModuleManager::reset the ResetModule handler calls."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/ResetModule.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Module/ResetModule.php"
         role: api-spec
         description: "CQRSPartialUpdate '/modules/{technicalName}/reset', the only PATCH in this slice, scope module_write."
 
@@ -328,7 +328,7 @@ operations:
         role: implementation
       - path: "src/Core/Domain/Module/CommandHandler/UpgradeModuleHandlerInterface.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/UpgradeModule.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Module/UpgradeModule.php"
         role: api-spec
         description: "CQRSUpdate '/modules/{technicalName}/upgrade', scope module_write."
 
@@ -371,7 +371,7 @@ operations:
         role: implementation
       - path: "src/Core/Domain/Module/CommandHandler/UploadModuleHandlerInterface.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/UploadModule.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Module/UploadModule.php"
         role: api-spec
         description: "Two CQRSCreate routes onto one command: '/modules/upload-source' (JSON) and '/modules/upload-archive' (multipart, read: false, [archive].pathName mapped to [source]). Both scope module_write."
 
@@ -523,7 +523,7 @@ operations:
         role: implementation
       - path: "src/Core/Domain/Module/QueryResult/ModuleInfos.php"
         role: model
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/Module.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Module/Module.php"
         role: api-spec
         description: "CQRSGet '/modules/{technicalName}', scope module_read. The collection route '/modules' beside it is a PaginatedList built from the grid data factory prestashop.core.grid.data_factory.module and fronts no Core/Domain query, so no operation here claims it."
 
@@ -566,7 +566,7 @@ operations:
         role: implementation
       - path: "src/Core/Domain/Hook/CommandHandler/UpdateHookStatusCommandHandlerInterface.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Hook.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Hook.php"
         role: api-spec
         description: "CQRSUpdate '/hooks/{hookId}/status', scope hook_write; the body's enabled maps to the command's active."
 
@@ -623,7 +623,7 @@ operations:
         role: implementation
       - path: "src/Core/Domain/Hook/QueryResult/Hook.php"
         role: model
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Hook.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Hook.php"
         role: api-spec
         description: "CQRSGet '/hooks/{hookId}', hookId constrained to digits, scope hook_read, HookNotFoundException mapped to 404. The '/hooks' collection beside it is a PaginatedList from the grid data factory and fronts no Core/Domain query."
 
@@ -655,7 +655,7 @@ operations:
         role: implementation
       - path: "src/Core/Domain/Hook/QueryResult/HookStatus.php"
         role: model
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Hook.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Hook.php"
         role: api-spec
         description: "CQRSGet '/hooks/{hookId}/status', scope hook_read. Same path as the PUT above, different method."
 
@@ -826,7 +826,7 @@ errors:
     code_refs:
       - path: "src/Core/Domain/Module/Exception/ModuleNotInstalledException.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/Module.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Module/Module.php"
         role: api-spec
         description: "exceptionToStatus maps ModuleNotInstalledException to 403, not 422. Corrected from the route declaration."
 
@@ -840,7 +840,7 @@ errors:
     code_refs:
       - path: "src/Core/Domain/Module/Exception/AlreadyInstalledModuleException.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Module/Module.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Module/Module.php"
         role: api-spec
         description: "exceptionToStatus maps AlreadyInstalledModuleException to 403, not 409. Corrected from the route declaration."
 
@@ -865,7 +865,7 @@ errors:
     code_refs:
       - path: "src/Core/Domain/Hook/Exception/HookNotFoundException.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Hook.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Hook.php"
         role: api-spec
         description: "exceptionToStatus maps HookNotFoundException to 404 on both CQRSGet routes."
 

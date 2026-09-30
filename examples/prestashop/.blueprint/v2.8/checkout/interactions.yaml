@@ -18,19 +18,22 @@ screens:
   - id: checkout.SCR002
     name: "Discount List"
     summary: "Paginated list of all discounts with status filters (active, scheduled, expired), search, and bulk actions."
-    uses_models: ["DiscountList"]
+    # The grid (DiscountQueryBuilder) shows 8 of CartRuleResource's 20 properties, usage as totalQuantityUsed of totalQuantity, and a discount-type column no property holds; not shown: description, reductionType, reductionValue, reductionCurrency, reductionTax, minimumAmount, minimumAmountCurrency, minimumAmountTax, freeShipping, quantityPerUser, priority, conditions.
+    uses_models: ["CartRuleResource"]
     motivated_by: [checkout.GL002]
 
   - id: checkout.SCR003
     name: "Discount Edit"
     summary: "Form for creating and editing discounts - conditions, actions, validity, usage limits, and product rule groups."
-    uses_models: ["DiscountForEditing"]
+    # The form (DiscountFormDataProvider) shows all 20 of CartRuleResource's properties, free shipping as a discount type, currency and tax on the money values.
+    uses_models: ["CartRuleResource"]
     processes: [checkout.PRC002]
 
   - id: checkout.SCR004
     name: "Catalog Price Rule List"
     summary: "List of catalog price rules with bulk delete and status management."
-    uses_models: ["CatalogPriceRuleList"]
+    # The grid (CatalogPriceRuleQueryBuilder) shows 11 of CatalogPriceRuleResource's 13 properties; not shown: reductionTax, conditionGroups.
+    uses_models: ["CatalogPriceRuleResource"]
 
   # The storefront half of checkout. The four screens above are back office; the three below are
   # the pages a shopper passes through between the product page and the confirmation. Measured:

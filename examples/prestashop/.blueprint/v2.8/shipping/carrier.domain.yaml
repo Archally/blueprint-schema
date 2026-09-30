@@ -36,7 +36,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Carrier/CommandHandler/AddCarrierHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Carrier/Carrier.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Carrier/Carrier.php"
         role: api-spec
         description: "Declares POST /carriers and names the CQRS class it fronts"
 
@@ -67,7 +67,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Carrier/CommandHandler/EditCarrierHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Carrier/Carrier.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Carrier/Carrier.php"
         role: api-spec
         description: "Declares POST /carriers/{carrierId} and names the CQRS class it fronts"
 
@@ -198,7 +198,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Carrier/Command/SetCarrierRangesCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Carrier/CarrierRanges.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Carrier/CarrierRanges.php"
         role: api-spec
         description: "Declares PATCH /carriers/{carrierId}/ranges and names the CQRS class it fronts"
 
@@ -250,7 +250,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Carrier/Command/SetCarrierTaxRuleGroupCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Carrier/Carrier.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Carrier/Carrier.php"
         role: api-spec
         description: "Declares PATCH /carriers/{carrierId}/set-tax-rule-group and names the CQRS class it fronts"
 
@@ -415,7 +415,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Carrier/Query/GetCarrierForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Carrier/Carrier.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Carrier/Carrier.php"
         role: api-spec
         description: "Declares GET /carriers/{carrierId} and names the CQRS class it fronts"
 
@@ -434,7 +434,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Carrier/Query/GetCarrierRanges.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Carrier/CarrierRanges.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Carrier/CarrierRanges.php"
         role: api-spec
         description: "Declares GET /carriers/{carrierId}/ranges and names the CQRS class it fronts"
 
@@ -459,7 +459,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Carrier/Query/GetAvailableCarriers.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Carrier/CompatibleCarriers.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Carrier/CompatibleCarriers.php"
         role: api-spec
         description: "Declares GET /carriers/search-compatible-carriers and names the CQRS class it fronts"
 
@@ -479,7 +479,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Carrier/Query/GetCarriersForProduct.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductCarrier.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/ProductCarrier.php"
         role: api-spec
         description: "Declares GET /products/{productId}/carriers and names the CQRS class it fronts"
 

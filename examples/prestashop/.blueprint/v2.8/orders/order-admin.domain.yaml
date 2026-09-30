@@ -73,7 +73,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderMessage/Command/AddOrderMessageCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderMessage/OrderMessage.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderMessage/OrderMessage.php"
         role: api-spec
         description: "Declares POST /order-messages and names the CQRS class it fronts"
 
@@ -93,7 +93,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderMessage/Command/EditOrderMessageCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderMessage/OrderMessage.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderMessage/OrderMessage.php"
         role: api-spec
         description: "Declares PATCH /order-messages/{orderMessageId} and names the CQRS class it fronts"
 
@@ -113,7 +113,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderMessage/Command/DeleteOrderMessageCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderMessage/OrderMessage.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderMessage/OrderMessage.php"
         role: api-spec
         description: "Declares DELETE /order-messages/{orderMessageId} and names the CQRS class it fronts"
 
@@ -133,7 +133,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderMessage/Command/BulkDeleteOrderMessageCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderMessage/BulkDeleteOrderMessages.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderMessage/BulkDeleteOrderMessages.php"
         role: api-spec
         description: "Declares DELETE /order-messages/bulk-delete and names the CQRS class it fronts"
 
@@ -155,7 +155,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderReturnState/Command/AddOrderReturnStateCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderReturnState/OrderReturnState.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderReturnState/OrderReturnState.php"
         role: api-spec
         description: "Declares POST /order-return-states and names the CQRS class it fronts"
 
@@ -175,7 +175,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderReturnState/Command/EditOrderReturnStateCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderReturnState/OrderReturnState.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderReturnState/OrderReturnState.php"
         role: api-spec
         description: "Declares PATCH /order-return-states/{orderReturnStateId} and names the CQRS class it fronts"
 
@@ -195,7 +195,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderReturnState/Command/DeleteOrderReturnStateCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderReturnState/OrderReturnState.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderReturnState/OrderReturnState.php"
         role: api-spec
         description: "Declares DELETE /order-return-states/{orderReturnStateId} and names the CQRS class it fronts"
 
@@ -215,7 +215,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderReturnState/Command/BulkDeleteOrderReturnStateCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderReturnState/BulkDeleteOrderReturnState.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderReturnState/BulkDeleteOrderReturnState.php"
         role: api-spec
         description: "Declares DELETE /order-return-states/bulk-delete and names the CQRS class it fronts"
 
@@ -263,7 +263,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderReturnState/Query/GetOrderReturnStateForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderReturnState/OrderReturnState.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderReturnState/OrderReturnState.php"
         role: api-spec
         description: "Declares GET /order-return-states/{orderReturnStateId} and names the CQRS class it fronts"
 
@@ -283,7 +283,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/OrderMessage/Query/GetOrderMessageForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/OrderMessage/OrderMessage.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderMessage/OrderMessage.php"
         role: api-spec
         description: "Declares GET /order-messages/{orderMessageId} and names the CQRS class it fronts"
 errors:

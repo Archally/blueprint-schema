@@ -11,35 +11,41 @@ screens:
   - id: international.SCR001
     name: "Currency List"
     summary: "Paginated list of currencies with ISO code, exchange rate, status, and bulk actions."
-    uses_models: ["CurrencyList"]
+    # The grid (CurrencyQueryBuilder) shows 6 of CurrencyResource's 11 properties; not shown: numericIsoCode, precision, localizedTransformations, isDefault, shopIds.
+    uses_models: ["CurrencyResource"]
     motivated_by: [international.GL001]
 
   - id: international.SCR002
     name: "Currency Configuration"
     summary: "Currency add/edit form with ISO code, exchange rate, precision, localized names/symbols."
-    uses_models: ["CurrencyForEditing"]
+    # The form (CurrencyFormDataProvider) shows 9 of CurrencyResource's 11 properties; not shown: numericIsoCode, isDefault.
+    uses_models: ["CurrencyResource"]
     processes: [international.PRC001]
 
   - id: international.SCR003
     name: "Language List"
     summary: "Paginated list of languages with ISO code, locale, RTL flag, and status."
-    uses_models: ["LanguageList"]
+    # The grid (LanguageQueryBuilder) shows 7 of LanguageResource's 9 properties; not shown: rtl, shopIds.
+    uses_models: ["LanguageResource"]
     motivated_by: [international.GL003]
 
   - id: international.SCR004
     name: "Zone List"
     summary: "List of geographic zones with status and assigned country/state counts."
-    uses_models: ["ZoneList"]
+    # The grid (ZoneQueryBuilder) shows 3 of ZoneResource's 4 properties; not shown: shopIds.
+    uses_models: ["ZoneResource"]
 
   - id: international.SCR005
     name: "Country List"
     summary: "Paginated list of countries with ISO code, zone assignment, and status."
-    uses_models: ["CountryList"]
+    # The grid (CountryQueryBuilder) shows 6 of CountryResource's 13 properties, the zone by name; not shown: needZipCode, zipCodeFormat, addressFormat, containsStates, needIdNumber, displayTaxLabel, shopIds.
+    uses_models: ["CountryResource"]
 
   - id: international.SCR006
     name: "Tax Rules Group Configuration"
     summary: "Tax rules group edit form with matrix of zone/country tax rule bindings."
-    uses_models: ["TaxRulesGroupForEditing"]
+    # The form (TaxRulesGroupFormDataProvider) shows all 5 of TaxRulesGroupResource's properties, the tax rules in a grid on the same page.
+    uses_models: ["TaxRulesGroupResource"]
     processes: [international.PRC002]
 
 actions:

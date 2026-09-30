@@ -140,7 +140,7 @@ operations:
       - path: "src/Adapter/Store/CommandHandler/DeleteStoreHandler.php"
         role: implementation
         description: "Delegates to StoreRepository::delete, which calls deleteObjectModel on the Store."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Store/Store.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Store/Store.php"
         role: api-spec
         description: "CQRSDelete on /stores/{storeId} names DeleteStoreCommand; scope store_write."
 
@@ -204,7 +204,7 @@ operations:
       - path: "src/Adapter/Store/CommandHandler/ToggleStoreStatusHandler.php"
         role: implementation
         description: "Reads the store, flips active, and partially updates that one property."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Store/Store.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Store/Store.php"
         role: api-spec
         description: "CQRSUpdate on /stores/{storeId}/toggle-status names ToggleStoreStatusCommand; COMMAND_MAPPING renames enabled to active."
 
@@ -266,7 +266,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Store/CommandHandler/BulkDeleteStoreHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Store/BulkDeleteStores.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Store/BulkDeleteStores.php"
         role: api-spec
         description: "CQRSDelete on /stores/bulk-delete names BulkDeleteStoreCommand; the body carries storeIds and may not be empty."
 
@@ -306,7 +306,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Store/CommandHandler/BulkUpdateStoreStatusHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Store/BulkUpdateStatusStores.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Store/BulkUpdateStatusStores.php"
         role: api-spec
         description: "CQRSUpdate on /stores/bulk-update-status names BulkUpdateStoreStatusCommand; the body carries storeIds and enabled."
 
@@ -340,7 +340,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Store/Query/GetStoreForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Store/Store.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Store/Store.php"
         role: api-spec
         description: "CQRSGet on /stores/{storeId} names GetStoreForEditing; QUERY_MAPPING renames active to enabled."
 
@@ -379,7 +379,7 @@ operations:
       - path: "src/Adapter/SearchEngine/CommandHandler/AddSearchEngineHandler.php"
         role: implementation
         description: "Constructs a SearchEngine ObjectModel and calls add."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchEngine/SearchEngine.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/SearchEngine/SearchEngine.php"
         role: api-spec
         description: "CQRSCreate on /search-engines names AddSearchEngineCommand; scope search_engine_write."
 
@@ -437,7 +437,7 @@ operations:
         role: implementation
       - path: "src/Adapter/SearchEngine/CommandHandler/EditSearchEngineHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchEngine/SearchEngine.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/SearchEngine/SearchEngine.php"
         role: api-spec
         description: "CQRSPartialUpdate on /search-engines/{searchEngineId} names EditSearchEngineCommand."
 
@@ -495,7 +495,7 @@ operations:
         role: implementation
       - path: "src/Adapter/SearchEngine/CommandHandler/DeleteSearchEngineHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchEngine/DeleteSearchEngine.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/SearchEngine/DeleteSearchEngine.php"
         role: api-spec
         description: "CQRSDelete on /search-engines/{searchEngineId} names DeleteSearchEngineCommand. A resource of its own, separate from SearchEngine.php."
 
@@ -548,7 +548,7 @@ operations:
         role: implementation
       - path: "src/Adapter/SearchEngine/CommandHandler/BulkDeleteSearchEngineHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchEngine/BulkDeleteSearchEngines.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/SearchEngine/BulkDeleteSearchEngines.php"
         role: api-spec
         description: "CQRSDelete on /search-engines/bulk-delete names BulkDeleteSearchEngineCommand; the body carries searchEngineIds, at least one."
 
@@ -580,7 +580,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/SearchEngine/Query/GetSearchEngineForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchEngine/SearchEngine.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/SearchEngine/SearchEngine.php"
         role: api-spec
         description: "CQRSGet on /search-engines/{searchEngineId} names GetSearchEngineForEditing; scope search_engine_read."
 
@@ -625,7 +625,7 @@ operations:
       - path: "src/Adapter/Alias/Repository/AliasRepository.php"
         role: implementation
         description: "addAliases builds one Alias ObjectModel per alias and adds each through addObjectModel."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchAlias/SearchAlias.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/SearchAlias/SearchAlias.php"
         role: api-spec
         description: "CQRSCreate on /search-aliases names AddSearchTermAliasesCommand; the body carries searchTerm and a non-empty aliases list of {alias, enabled}."
 
@@ -692,7 +692,7 @@ operations:
       - path: "src/Adapter/Alias/CommandHandler/UpdateSearchTermAliasesHandler.php"
         role: implementation
         description: "Deletes every alias of the old search term, then adds the new list. There is no in-place update."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchAlias/SearchAlias.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/SearchAlias/SearchAlias.php"
         role: api-spec
         description: "CQRSUpdate on /search-aliases/{searchTerm} names UpdateSearchTermAliasesCommand; UPDATE_COMMAND_MAPPING renames searchTerm to oldSearchTerm."
 
@@ -785,7 +785,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Alias/CommandHandler/BulkDeleteSearchTermsAliasesHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchAlias/BulkDeleteSearchAliases.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/SearchAlias/BulkDeleteSearchAliases.php"
         role: api-spec
         description: "CQRSDelete on /search-aliases/bulk-delete names BulkDeleteSearchTermsAliasesCommand; the body carries searchTerms, at least one."
 
@@ -828,7 +828,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Alias/Query/GetAliasesBySearchTermForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/SearchAlias/SearchAlias.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/SearchAlias/SearchAlias.php"
         role: api-spec
         description: "CQRSGet on /search-aliases/{searchTerm} names GetAliasesBySearchTermForEditing; scope search_alias_read."
 
@@ -935,7 +935,7 @@ operations:
       - path: "src/Adapter/Contact/CommandHandler/AddContactHandler.php"
         role: implementation
         description: "Constructs a Contact ObjectModel and calls add."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Contact/Contact.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Contact/Contact.php"
         role: api-spec
         description: "CQRSCreate on /contacts names AddContactCommand; CREATE_COMMAND_MAPPING renames names to localisedTitles."
 
@@ -991,7 +991,7 @@ operations:
       - path: "src/Adapter/Contact/CommandHandler/EditContactHandler.php"
         role: implementation
         description: "Loads the Contact ObjectModel and calls update."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Contact/Contact.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Contact/Contact.php"
         role: api-spec
         description: "CQRSPartialUpdate on /contacts/{contactId} names EditContactCommand; scope contact_write."
 
@@ -1040,7 +1040,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Contact/Query/GetContactForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Contact/Contact.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Contact/Contact.php"
         role: api-spec
         description: "CQRSGet on /contacts/{contactId} names GetContactForEditing; scope contact_read."
 
@@ -1126,7 +1126,7 @@ operations:
       - path: "src/Core/Domain/ShowcaseCard/CommandHandler/CloseShowcaseCardHandler.php"
         role: implementation
         description: "Writes a Configuration key per card and employee. No entity is stored and no hook is fired."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/ShowcaseCard/ShowcaseCard.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/ShowcaseCard/ShowcaseCard.php"
         role: api-spec
         description: "CQRSUpdate on /showcase-cards/{showcaseCardName}/{employeeId}/close names CloseShowcaseCardCommand; scope showcase_card_write."
 
@@ -1169,7 +1169,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/ShowcaseCard/Query/GetShowcaseCardIsClosed.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/ShowcaseCard/ShowcaseCard.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/ShowcaseCard/ShowcaseCard.php"
         role: api-spec
         description: "CQRSGet on /showcase-cards/{showcaseCardName}/{employeeId} names GetShowcaseCardIsClosed; scope showcase_card_read."
 

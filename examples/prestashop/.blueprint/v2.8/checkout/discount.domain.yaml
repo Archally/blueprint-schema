@@ -61,7 +61,7 @@ operations:
       - path: "src/Adapter/Discount/CommandHandler/AddDiscountHandler.php"
         role: implementation
         description: "Builds a CartRule ObjectModel and hands it to DiscountRepository::add."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/Discount.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Discount/Discount.php"
         role: api-spec
         description: "CQRSCreate on /discounts names AddDiscountCommand; scope discount_write."
 
@@ -108,7 +108,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Discount/CommandHandler/UpdateDiscountHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/Discount.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Discount/Discount.php"
         role: api-spec
         description: "CQRSPartialUpdate on /discounts/{discountId} names UpdateDiscountCommand; scope discount_write."
 
@@ -162,10 +162,10 @@ operations:
         role: implementation
       - path: "src/Adapter/Discount/CommandHandler/BulkDeleteDiscountsHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/Discount.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Discount/Discount.php"
         role: api-spec
         description: "CQRSDelete on /discounts/{discountId} names DeleteDiscountCommand."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/BulkDeleteDiscounts.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Discount/BulkDeleteDiscounts.php"
         role: api-spec
         description: "CQRSDelete on /discounts/bulk-delete names BulkDeleteDiscountsCommand; the body carries discountIds."
 
@@ -211,7 +211,7 @@ operations:
       - path: "src/Adapter/Discount/Update/DiscountDuplicator.php"
         role: implementation
         description: "Fires actionAdminDuplicateDiscountBefore and After around the copy."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/Discount.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Discount/Discount.php"
         role: api-spec
         description: "CQRSCreate on /discounts/{discountId}/duplicate names DuplicateDiscountCommand."
 
@@ -251,7 +251,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Discount/CommandHandler/BulkUpdateDiscountsStatusHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/BulkUpdateStatusDiscounts.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Discount/BulkUpdateStatusDiscounts.php"
         role: api-spec
         description: "CQRSPartialUpdate on /discounts/bulk-update-status names BulkUpdateDiscountsStatusCommand; the body maps enabled to newStatus."
 
@@ -283,7 +283,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Discount/Query/GetDiscountForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/Discount.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Discount/Discount.php"
         role: api-spec
         description: "CQRSGet on /discounts/{discountId} names GetDiscountForEditing; scope discount_read."
 
@@ -311,7 +311,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Discount/Query/GetDiscountTypes.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Discount/DiscountTypeList.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Discount/DiscountTypeList.php"
         role: api-spec
         description: "CQRSGetCollection on /discounts/types names GetDiscountTypes; scope discount_read."
 

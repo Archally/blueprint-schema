@@ -33,7 +33,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Country/Command/AddCountryCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Country/Country.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Country/Country.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -60,7 +60,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Country/Command/EditCountryCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Country/Country.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Country/Country.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -87,7 +87,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Country/Command/DeleteCountryCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Country/Country.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Country/Country.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -281,7 +281,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Zone/Command/AddZoneCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Zone/Zone.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Zone/Zone.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -308,7 +308,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Zone/Command/EditZoneCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Zone/Zone.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Zone/Zone.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -335,7 +335,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Zone/Command/DeleteZoneCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Zone/Zone.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Zone/Zone.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -362,7 +362,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Zone/Command/BulkDeleteZoneCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Zone/BulkDeleteZones.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Zone/BulkDeleteZones.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -389,7 +389,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Zone/Command/ToggleZoneStatusCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Zone/Zone.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Zone/Zone.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -416,7 +416,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Zone/Command/BulkToggleZoneStatusCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Zone/BulkUpdateStatusZone.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Zone/BulkUpdateStatusZone.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -627,7 +627,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Country/Query/GetCountryForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Country/Country.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Country/Country.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -669,7 +669,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Zone/Query/GetZoneForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Zone/Zone.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Zone/Zone.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 

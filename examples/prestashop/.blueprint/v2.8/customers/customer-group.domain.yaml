@@ -44,7 +44,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Customer/Group/CommandHandler/AddCustomerGroupHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/CustomerGroup.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/CustomerGroup.php"
         role: api-spec
 
   editCustomerGroup:
@@ -90,7 +90,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Customer/Group/CommandHandler/EditCustomerGroupHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/CustomerGroup.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/CustomerGroup.php"
         role: api-spec
 
   deleteCustomerGroup:
@@ -125,7 +125,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Customer/Group/CommandHandler/DeleteCustomerGroupHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/CustomerGroup.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/CustomerGroup.php"
         role: api-spec
 
   getCustomerGroupForEditing:
@@ -156,7 +156,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Customer/Group/Query/GetCustomerGroupForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/CustomerGroup.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/CustomerGroup.php"
         role: api-spec
 
   customerGroupCreated:

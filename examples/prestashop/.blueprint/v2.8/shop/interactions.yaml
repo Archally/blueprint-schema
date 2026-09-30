@@ -11,30 +11,35 @@ screens:
   - id: shop.SCR001
     name: "Logos & Favicons"
     summary: "Logo upload form for header, invoice, mail, and favicon images."
-    uses_models: ["ShopLogos"]
+    # The form (ShopLogosFormDataProvider) shows all 4 of UploadLogosPayload's properties.
+    uses_models: ["UploadLogosPayload"]
     motivated_by: [shop.GL001]
 
   - id: shop.SCR002
     name: "Store Locations"
     summary: "Grid of physical store locations with status toggles and bulk actions."
-    uses_models: ["StoreList"]
+    # The grid (StoreQueryBuilder) shows 9 of StoreResource's 12 properties, the country by name; not shown: latitude, longitude, hours.
+    uses_models: ["StoreResource"]
 
   - id: shop.SCR003
     name: "Search Engine Referrers"
     summary: "List of SEO referrer search engines with CRUD controls."
-    uses_models: ["SearchEngineList"]
+    # The grid (SearchEngineQueryBuilder) shows all 3 of SearchEngineResource's properties.
+    uses_models: ["SearchEngineResource"]
     motivated_by: [shop.GL003]
 
   - id: shop.SCR004
     name: "Search Aliases"
     summary: "Search term alias management with add, edit, and bulk delete."
-    uses_models: ["AliasList"]
+    # The grid (AliasQueryBuilder) shows 2 of SearchAliasResource's 3 properties; not shown: newSearchTerm, which only a write carries.
+    uses_models: ["SearchAliasResource"]
     motivated_by: [shop.GL002]
 
   - id: shop.SCR005
     name: "Contact Departments"
     summary: "Contact Us form department list with add and edit controls."
-    uses_models: ["ContactList"]
+    # The grid (ContactQueryBuilder) shows 4 of ContactResource's 5 properties; not shown: isMessages.
+    uses_models: ["ContactResource"]
 
   # The shop-wide storefront pages. The five screens above are back office; the three below are
   # what a shopper meets. Each names the front controller that serves it, which is the only

@@ -50,7 +50,7 @@ operations:
       - path: "src/Adapter/Product/CommandHandler/AddProductHandler.php"
         role: implementation
         description: "Concrete handler; creates the product through ProductRepository."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/Product.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/Product.php"
         role: api-spec
         description: "CQRSCreate at POST /products, scope product_write."
 
@@ -92,7 +92,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Product/CommandHandler/UpdateProductHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/Product.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/Product.php"
         role: api-spec
         description: "CQRSPartialUpdate at PATCH /products/{productId}, scope product_write."
 
@@ -119,7 +119,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Product/CommandHandler/DeleteProductHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/Product.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/Product.php"
         role: api-spec
         description: "CQRSDelete at DELETE /products/{productId}, scope product_write."
     responses:
@@ -279,7 +279,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Product/CommandHandler/AssignProductToCategoryHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductCategory.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/ProductCategory.php"
         role: api-spec
         description: "CQRSCreate at POST /products/{productId}/assign-to-categories, scope product_write."
 
@@ -335,7 +335,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Product/QueryHandler/SearchProductsHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/FoundProduct.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/FoundProduct.php"
         role: api-spec
         description: "CQRSGetCollection at GET /products/search, scope product_read."
 
@@ -367,7 +367,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Product/QueryHandler/GetProductForEditingHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/Product.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/Product.php"
         role: api-spec
         description: "CQRSGet at GET /products/{productId}, scope product_read."
 
@@ -388,7 +388,7 @@ operations:
       - path: "src/Adapter/Product/Grid/Data/Factory/ProductGridDataFactoryDecorator.php"
         role: implementation
         description: "Builds the rows; the route names it as its gridDataFactory."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductList.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/ProductList.php"
         role: api-spec
         description: "PaginatedList at GET /products, scope product_read."
 
@@ -445,7 +445,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Product/CommandHandler/SetAssociatedProductCategoriesHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductCategory.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/ProductCategory.php"
         role: api-spec
         description: "CQRSCreate at POST /products/{productId}/categories, scope product_write."
 
@@ -476,7 +476,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Product/CommandHandler/RemoveAllAssociatedProductCategoriesHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductCategory.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/ProductCategory.php"
         role: api-spec
         description: "CQRSDelete at DELETE /products/{productId}/categories, scope product_write."
 
@@ -515,7 +515,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Product/CommandHandler/SetCarriersHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductCarrier.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/ProductCarrier.php"
         role: api-spec
         description: "CQRSUpdate at PUT /products/{productId}/carriers, scope product_write, from PrestaShop 9.2.0."
 
@@ -595,7 +595,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Product/Shop/CommandHandler/SetProductShopsHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/ProductShops.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/ProductShops.php"
         role: api-spec
         description: "CQRSPartialUpdate at PATCH /products/{productId}/shops, scope product_write."
 

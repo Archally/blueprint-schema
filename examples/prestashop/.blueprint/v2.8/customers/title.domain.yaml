@@ -49,7 +49,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Title/CommandHandler/AddTitleHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Title/Title.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Title/Title.php"
         role: api-spec
 
   editTitle:
@@ -93,7 +93,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Title/CommandHandler/EditTitleHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Title/Title.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Title/Title.php"
         role: api-spec
 
   deleteTitle:
@@ -128,7 +128,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Title/CommandHandler/DeleteTitleHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Title/Title.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Title/Title.php"
         role: api-spec
 
   bulkDeleteTitle:
@@ -166,7 +166,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Title/CommandHandler/BulkDeleteTitleHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Title/BulkDeleteTitles.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Title/BulkDeleteTitles.php"
         role: api-spec
 
   getTitleForEditing:
@@ -197,7 +197,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Title/Query/GetTitleForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Title/Title.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Title/Title.php"
         role: api-spec
 
   titleCreated:

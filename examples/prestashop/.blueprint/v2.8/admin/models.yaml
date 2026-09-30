@@ -442,7 +442,7 @@ components:
             type: string
           example: ["product_read", "order_read"]
       code_refs:
-        - path: "ps_apiresources/src/ApiPlatform/Resources/ApiClient/ApiClient.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/ApiClient/ApiClient.php"
           role: api-spec
           description: "CQRSPartialUpdate, uriTemplate /api-clients/{apiClientId}"
         - path: "src/Core/Domain/ApiClient/Command/EditApiClientCommand.php"
@@ -544,7 +544,7 @@ components:
             type: integer
           example: [1, 2]
       code_refs:
-        - path: "ps_apiresources/src/ApiPlatform/Resources/ExtraPropertyDefinition/ExtraPropertyDefinition.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/ExtraPropertyDefinition/ExtraPropertyDefinition.php"
           role: api-spec
           description: "CQRSCreate, uriTemplate /extra-property-definitions; CREATE_DEFAULT_VALUES carries the defaults stated above"
         - path: "src/Core/Domain/ExtraProperty/Command/AddExtraPropertyDefinitionCommand.php"
@@ -607,7 +607,7 @@ components:
             type: integer
           example: [1]
       code_refs:
-        - path: "ps_apiresources/src/ApiPlatform/Resources/ExtraPropertyDefinition/ExtraPropertyDefinition.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/ExtraPropertyDefinition/ExtraPropertyDefinition.php"
           role: api-spec
           description: "CQRSPartialUpdate, uriTemplate /extra-property-definitions/{extraPropertyDefinitionId}"
         - path: "src/Core/Domain/ExtraProperty/Command/UpdateExtraPropertyDefinitionCommand.php"
@@ -641,7 +641,7 @@ components:
           additionalProperties: true
           example: {"products": ["GET"], "orders": ["GET", "PUT"]}
       code_refs:
-        - path: "ps_apiresources/src/ApiPlatform/Resources/WebserviceKey/WebserviceKey.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/WebserviceKey/WebserviceKey.php"
           role: api-spec
           description: "CQRSPartialUpdate, uriTemplate /webservice-keys/{webserviceKeyId}"
         - path: "src/Core/Domain/Webservice/Command/EditWebserviceKeyCommand.php"
@@ -671,7 +671,7 @@ components:
           description: "Whether the tab appears in the admin menu. The resource maps this to the command's status argument."
           example: true
       code_refs:
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Tab/Tab.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Tab/Tab.php"
           role: api-spec
           description: "CQRSUpdate, uriTemplate /tabs/{className}, CQRSCommandMapping [enabled] to [status]"
         - path: "src/Core/Domain/Tab/Command/UpdateTabStatusByClassNameCommand.php"
@@ -758,7 +758,7 @@ components:
             type: integer
           example: [1, 2]
       code_refs:
-        - path: "ps_apiresources/src/ApiPlatform/Resources/ExtraPropertyDefinition/ExtraPropertyDefinition.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/ExtraPropertyDefinition/ExtraPropertyDefinition.php"
           role: api-spec
         - path: "src/Core/Domain/ExtraProperty/QueryResult/EditableExtraPropertyDefinition.php"
           role: schema
@@ -788,7 +788,7 @@ components:
           description: "Also drop the storage columns and every stored value of these properties. Defaults to false, which retires the definitions and leaves the data recoverable."
           example: false
       code_refs:
-        - path: "ps_apiresources/src/ApiPlatform/Resources/ExtraPropertyDefinition/BulkDeleteExtraPropertyDefinitions.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/ExtraPropertyDefinition/BulkDeleteExtraPropertyDefinitions.php"
           role: api-spec
           description: "CQRSDelete, uriTemplate /extra-property-definitions/bulk-delete, with the request body declared inline in openapiContext"
         - path: "src/Core/Domain/ExtraProperty/Command/BulkDeleteExtraPropertyDefinitionCommand.php"
@@ -814,7 +814,7 @@ components:
           description: "The employee's email address. An address with no employee behind it answers 404, so the route does not conceal whether an account exists."
           example: "john.smith@store.com"
       code_refs:
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Employee/EmployeePasswordReset.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Employee/EmployeePasswordReset.php"
           role: api-spec
           description: "CQRSCreate, uriTemplate /employees/send-password-reset-email, EmployeeNotFoundException mapped to 404"
         - path: "src/Core/Domain/Employee/Command/SendEmployeePasswordResetEmailCommand.php"

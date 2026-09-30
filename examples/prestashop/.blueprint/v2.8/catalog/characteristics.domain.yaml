@@ -48,7 +48,7 @@ operations:
         role: implementation
       - path: "src/Adapter/AttributeGroup/CommandHandler/AddAttributeGroupHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/AttributeGroup.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Attribute/AttributeGroup.php"
         role: api-spec
         description: "CQRSCreate on /attributes/groups names AddAttributeGroupCommand."
 
@@ -85,7 +85,7 @@ operations:
         role: implementation
       - path: "src/Adapter/AttributeGroup/CommandHandler/EditAttributeGroupHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/AttributeGroup.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Attribute/AttributeGroup.php"
         role: api-spec
         description: "CQRSPartialUpdate on /attributes/groups/{attributeGroupId} names EditAttributeGroupCommand."
 
@@ -124,7 +124,7 @@ operations:
         role: implementation
       - path: "src/Adapter/AttributeGroup/CommandHandler/DeleteAttributeGroupHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/AttributeGroup.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Attribute/AttributeGroup.php"
         role: api-spec
         description: "CQRSDelete on /attributes/groups/{attributeGroupId} names DeleteAttributeGroupCommand."
 
@@ -159,7 +159,7 @@ operations:
         role: implementation
       - path: "src/Adapter/AttributeGroup/CommandHandler/BulkDeleteAttributeGroupHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/BulkAttributeGroups.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Attribute/BulkAttributeGroups.php"
         role: api-spec
         description: "CQRSDelete on /attributes/groups/bulk-delete names BulkDeleteAttributeGroupCommand."
 
@@ -190,7 +190,7 @@ operations:
         role: implementation
       - path: "src/Adapter/AttributeGroup/QueryHandler/GetAttributeGroupForEditingHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/AttributeGroup.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Attribute/AttributeGroup.php"
         role: api-spec
         description: "CQRSGet on /attributes/groups/{attributeGroupId} names GetAttributeGroupForEditing."
 
@@ -216,7 +216,7 @@ operations:
         role: implementation
       - path: "src/Adapter/AttributeGroup/QueryHandler/GetAttributeGroupListHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/AttributeGroupWithAttributes.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Attribute/AttributeGroupWithAttributes.php"
         role: api-spec
         description: "CQRSGetCollection on /attributes/groups-with-attributes names GetAttributeGroupList."
 
@@ -253,7 +253,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Attribute/CommandHandler/AddAttributeHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/Attribute.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Attribute/Attribute.php"
         role: api-spec
         description: "CQRSCreate on /attributes/attributes names AddAttributeCommand."
 
@@ -289,7 +289,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Attribute/CommandHandler/EditAttributeHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/Attribute.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Attribute/Attribute.php"
         role: api-spec
         description: "CQRSPartialUpdate on /attributes/attributes/{attributeId} names EditAttributeCommand."
 
@@ -328,7 +328,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Attribute/CommandHandler/DeleteAttributeHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/Attribute.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Attribute/Attribute.php"
         role: api-spec
         description: "CQRSDelete on /attributes/attributes/{attributeId} names DeleteAttributeCommand."
 
@@ -363,7 +363,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Attribute/CommandHandler/BulkDeleteAttributeHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/BulkAttribute.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Attribute/BulkAttribute.php"
         role: api-spec
         description: "CQRSDelete on /attributes/attributes/bulk-delete names BulkDeleteAttributeCommand."
 
@@ -412,7 +412,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Attribute/QueryHandler/GetAttributeForEditingHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Attribute/Attribute.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Attribute/Attribute.php"
         role: api-spec
         description: "CQRSGet on /attributes/attributes/{attributeId} names GetAttributeForEditing."
 
@@ -453,7 +453,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Feature/CommandHandler/AddFeatureHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/Feature.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Feature/Feature.php"
         role: api-spec
         description: "CQRSCreate on /features names AddFeatureCommand."
 
@@ -490,7 +490,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Feature/CommandHandler/EditFeatureHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/Feature.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Feature/Feature.php"
         role: api-spec
         description: "CQRSPartialUpdate on /features/{featureId} names EditFeatureCommand."
 
@@ -529,7 +529,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Feature/CommandHandler/DeleteFeatureHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/Feature.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Feature/Feature.php"
         role: api-spec
         description: "CQRSDelete on /features/{featureId} names DeleteFeatureCommand."
 
@@ -564,7 +564,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Feature/CommandHandler/BulkDeleteFeatureHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/BulkFeatures.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Feature/BulkFeatures.php"
         role: api-spec
         description: "CQRSDelete on /features/bulk-delete names BulkDeleteFeatureCommand."
 
@@ -595,7 +595,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Feature/QueryHandler/GetFeatureForEditingHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/Feature.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Feature/Feature.php"
         role: api-spec
         description: "CQRSGet on /features/{featureId} names GetFeatureForEditing."
 
@@ -617,7 +617,7 @@ operations:
         description: "A page of feature rows."
         contentType: application/json
     code_refs:
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/FeatureList.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Feature/FeatureList.php"
         role: api-spec
         description: "PaginatedList on /features, gridDataFactory prestashop.core.grid.data.factory.feature; it names no CQRS query."
 
@@ -654,7 +654,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Feature/CommandHandler/AddFeatureValueHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/FeatureValue.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Feature/FeatureValue.php"
         role: api-spec
         description: "CQRSCreate on /features/values names AddFeatureValueCommand."
 
@@ -690,7 +690,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Feature/CommandHandler/EditFeatureValueHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/FeatureValue.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Feature/FeatureValue.php"
         role: api-spec
         description: "CQRSPartialUpdate on /features/values/{featureValueId} names EditFeatureValueCommand."
 
@@ -729,7 +729,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Feature/CommandHandler/DeleteFeatureValueHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/FeatureValue.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Feature/FeatureValue.php"
         role: api-spec
         description: "CQRSDelete on /features/values/{featureValueId} names DeleteFeatureValueCommand."
 
@@ -764,7 +764,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Feature/CommandHandler/BulkDeleteFeatureValueHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/BulkFeatureValues.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Feature/BulkFeatureValues.php"
         role: api-spec
         description: "CQRSDelete on /features/values/bulk-delete names BulkDeleteFeatureValueCommand."
 
@@ -794,7 +794,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Feature/QueryHandler/GetFeatureValueForEditingHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Feature/FeatureValue.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Feature/FeatureValue.php"
         role: api-spec
         description: "CQRSGet on /features/values/{featureValueId} names GetFeatureValueForEditing."
 

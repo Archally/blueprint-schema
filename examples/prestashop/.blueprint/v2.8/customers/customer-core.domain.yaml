@@ -49,7 +49,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Customer/CommandHandler/AddCustomerHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/Customer.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/Customer.php"
         role: api-spec
 
   editCustomer:
@@ -95,7 +95,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Customer/CommandHandler/EditCustomerHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/Customer.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/Customer.php"
         role: api-spec
 
   deleteCustomer:
@@ -135,7 +135,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Customer/CommandHandler/DeleteCustomerHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/Customer.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/Customer.php"
         role: api-spec
 
   bulkDeleteCustomer:
@@ -175,7 +175,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Customer/CommandHandler/BulkDeleteCustomerHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/BulkDeleteCustomers.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/BulkDeleteCustomers.php"
         role: api-spec
 
   bulkEnableCustomer:
@@ -213,7 +213,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Customer/CommandHandler/BulkEnableCustomerHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/BulkCustomers.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/BulkCustomers.php"
         role: api-spec
 
   bulkDisableCustomer:
@@ -251,7 +251,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Customer/CommandHandler/BulkDisableCustomerHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/BulkCustomers.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/BulkCustomers.php"
         role: api-spec
 
   setPrivateNoteAboutCustomer:
@@ -307,7 +307,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Customer/CommandHandler/SetRequiredFieldsForCustomerHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/CustomerRequiredFields.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/CustomerRequiredFields.php"
         role: api-spec
 
   transformGuestToCustomer:
@@ -366,7 +366,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Customer/Query/GetCustomerForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/Customer.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/Customer.php"
         role: api-spec
 
   getCustomerForViewing:
@@ -397,7 +397,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Customer/Query/GetCustomerForViewing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/CustomerDetails.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/CustomerDetails.php"
         role: api-spec
 
   searchCustomers:
@@ -424,7 +424,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Customer/Query/SearchCustomers.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/FoundCustomer.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/FoundCustomer.php"
         role: api-spec
 
   getCustomerForAddressCreation:
@@ -484,7 +484,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Customer/Query/GetRequiredFieldsForCustomer.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/CustomerRequiredFields.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/CustomerRequiredFields.php"
         role: api-spec
 
   customerCreated:

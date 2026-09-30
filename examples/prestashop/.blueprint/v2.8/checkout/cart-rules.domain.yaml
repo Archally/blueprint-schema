@@ -99,7 +99,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/CartRule/Query/SearchCartRules.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/CartRule/FoundCartRule.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/CartRule/FoundCartRule.php"
         role: api-spec
         description: "CQRSGetCollection on /cart-rules/search names SearchCartRules; the required query parameter `phrase` maps to the query's searchPhrase."
 

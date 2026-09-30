@@ -42,7 +42,7 @@ operations:
       - path: "src/Adapter/Product/Combination/Create/CombinationCreator.php"
         role: implementation
         description: "Creates the combinations and fires actionAttributeCombinationSave."
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/GenerateCombinations.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/GenerateCombinations.php"
         role: api-spec
 
   updateCombination:
@@ -275,7 +275,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Product/Combination/Query/GetEditableCombinationsList.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/CombinationList.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/CombinationList.php"
         role: api-spec
 
   getCombinationForEditing:
@@ -304,7 +304,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Product/Combination/Query/GetCombinationForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/Combination.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/Combination.php"
         role: api-spec
 
   getCombinationIds:
@@ -332,7 +332,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Product/Combination/Query/GetCombinationIds.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Product/CombinationIdList.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Product/CombinationIdList.php"
         role: api-spec
 
   getCombinationSuppliers:

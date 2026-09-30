@@ -13,6 +13,15 @@ repository:
   branch: "develop"
   provider: "github"
 
+# The Admin API's resource classes live in the ps_apiresources module, a separate repository the
+# core requires as a composer dependency. A code_ref into it is written
+# `PrestaShop/ps_apiresources#<path inside the module>`; unprefixed refs point into the core above.
+repositories:
+  PrestaShop/ps_apiresources:
+    url: "https://github.com/PrestaShop/ps_apiresources"
+    branch: "dev"
+    provider: "github"
+
 # Where the work behind a story or use case is tracked. PrestaShop plans and reviews in the open, so
 # the tracker is the same GitHub repository the code_refs point into; GitHub resolves an issue URL to
 # a pull request of the same number, so one template serves both. Each ref below names a pull request

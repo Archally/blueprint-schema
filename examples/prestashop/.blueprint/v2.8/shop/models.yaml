@@ -367,7 +367,7 @@ components:
         - path: "src/Core/Domain/Alias/Command/UpdateSearchTermAliasesCommand.php"
           role: schema
           description: "The PUT counterpart, which additionally carries the old and new search term."
-        - path: "ps_apiresources/src/ApiPlatform/Resources/SearchAlias/SearchAlias.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/SearchAlias/SearchAlias.php"
           role: api-spec
           description: "Declares searchTerm, aliases (array of {alias, enabled}) and newSearchTerm, and maps aliases[].enabled to the command's aliases[].active at lines 114-123."
 
@@ -437,7 +437,7 @@ components:
             type: integer
           example: [1, 3]
       code_refs:
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Store/BulkDeleteStores.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Store/BulkDeleteStores.php"
           role: schema
           description: "Declares storeIds with NotBlank."
 
@@ -466,7 +466,7 @@ components:
           description: "True to show the listed stores on the storefront locator, false to hide them. The resource maps this to the domain's `active`."
           example: true
       code_refs:
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Store/BulkUpdateStatusStores.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Store/BulkUpdateStatusStores.php"
           role: schema
           description: "Declares storeIds with NotBlank, and enabled."
 
@@ -487,7 +487,7 @@ components:
             type: integer
           example: [2, 5]
       code_refs:
-        - path: "ps_apiresources/src/ApiPlatform/Resources/SearchEngine/BulkDeleteSearchEngines.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/SearchEngine/BulkDeleteSearchEngines.php"
           role: schema
           description: "Declares searchEngineIds with NotBlank and Count(min: 1)."
 
@@ -508,7 +508,7 @@ components:
             type: string
           example: ["tshirt", "trainers"]
       code_refs:
-        - path: "ps_apiresources/src/ApiPlatform/Resources/SearchAlias/BulkDeleteSearchAliases.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/SearchAlias/BulkDeleteSearchAliases.php"
           role: schema
           description: "Declares searchTerms as an array of strings with NotBlank and Count(min: 1)."
 
@@ -554,7 +554,7 @@ components:
           description: "On a write, the term to rename to. Absent means keep the current one, which is why an update that only changes the alias list omits it."
           example: "t shirt"
       code_refs:
-        - path: "ps_apiresources/src/ApiPlatform/Resources/SearchAlias/SearchAlias.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/SearchAlias/SearchAlias.php"
           role: schema
           description: "Declares searchTerm, aliases and newSearchTerm; QUERY_MAPPING renames the domain's active to enabled."
 
@@ -606,7 +606,7 @@ components:
             type: integer
           example: [1, 3]
       code_refs:
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Contact/Contact.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Contact/Contact.php"
           role: schema
           description: "Declares names, email, descriptions, messagesSavingEnabled and shopIds; CREATE_COMMAND_MAPPING and UPDATE_COMMAND_MAPPING rename them to the command's localisedTitles, localisedDescription and isMessageSavingEnabled."
 
@@ -637,6 +637,6 @@ components:
           description: "True once the employee has dismissed the card, which is what stops the page drawing it again."
           example: true
       code_refs:
-        - path: "ps_apiresources/src/ApiPlatform/Resources/ShowcaseCard/ShowcaseCard.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/ShowcaseCard/ShowcaseCard.php"
           role: schema
           description: "Declares showcaseCardName, employeeId and closed."

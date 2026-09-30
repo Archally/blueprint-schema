@@ -33,7 +33,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Tax/Command/AddTaxCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Tax/Tax.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Tax/Tax.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -60,7 +60,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Tax/Command/EditTaxCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Tax/Tax.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Tax/Tax.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -87,7 +87,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Tax/Command/DeleteTaxCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Tax/Tax.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Tax/Tax.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -114,7 +114,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Tax/Command/BulkDeleteTaxCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Tax/BulkTaxDelete.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Tax/BulkTaxDelete.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -159,7 +159,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Tax/Command/BulkToggleTaxStatusCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Tax/BulkTaxToggleStatus.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Tax/BulkTaxToggleStatus.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -188,7 +188,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/Command/AddTaxRulesGroupCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRulesGroup/TaxRulesGroup.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/TaxRulesGroup/TaxRulesGroup.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -215,7 +215,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/Command/EditTaxRulesGroupCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRulesGroup/TaxRulesGroup.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/TaxRulesGroup/TaxRulesGroup.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -242,7 +242,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/Command/DeleteTaxRulesGroupCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRulesGroup/TaxRulesGroup.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/TaxRulesGroup/TaxRulesGroup.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -269,7 +269,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/Command/BulkDeleteTaxRulesGroupCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRulesGroup/BulkDeleteTaxRulesGroup.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/TaxRulesGroup/BulkDeleteTaxRulesGroup.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -296,7 +296,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/Command/SetTaxRulesGroupStatusCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRulesGroup/TaxRulesGroup.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/TaxRulesGroup/TaxRulesGroup.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -323,7 +323,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/Command/BulkSetTaxRulesGroupStatusCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRulesGroup/BulkUpdateStatusTaxRulesGroup.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/TaxRulesGroup/BulkUpdateStatusTaxRulesGroup.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -358,7 +358,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/TaxRule/Command/AddTaxRuleCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRule/TaxRule.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/TaxRule/TaxRule.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -403,7 +403,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/TaxRule/Command/DeleteTaxRuleCommand.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRule/TaxRule.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/TaxRule/TaxRule.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -588,7 +588,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Tax/Query/GetTaxForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Tax/Tax.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Tax/Tax.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 
@@ -614,7 +614,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/TaxRulesGroup/Query/GetTaxRulesGroupForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/TaxRulesGroup/TaxRulesGroup.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/TaxRulesGroup/TaxRulesGroup.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
 

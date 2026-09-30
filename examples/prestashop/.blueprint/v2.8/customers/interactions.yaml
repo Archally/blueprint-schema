@@ -11,25 +11,29 @@ screens:
   - id: customers.SCR001
     name: "Customer List"
     summary: "Paginated list of customer accounts with search, filter by group, and bulk enable/disable/delete actions."
-    uses_models: ["CustomerList"]
+    # The grid (CustomerQueryBuilder) shows 12 of CustomerListItem's 14 properties; not shown: orderCount, country.
+    uses_models: ["CustomerListItem"]
     motivated_by: [customers.GL001]
 
   - id: customers.SCR002
     name: "Customer Detail"
     summary: "Full customer profile with personal info, addresses, order history, carts, and group assignment."
-    uses_models: ["CustomerForViewing"]
+    # The view page (GetCustomerForViewing) shows all 15 of CustomerResource's properties; the orders, carts, addresses and messages it also lists are outside this model.
+    uses_models: ["CustomerResource"]
     processes: [customers.PRC001]
 
   - id: customers.SCR003
     name: "Customer Service Thread"
     summary: "Service thread view with message history, customer context, and reply form."
-    uses_models: ["CustomerThreadForViewing"]
+    # The view page (GetCustomerThreadForViewing) shows 11 of CustomerServiceThread's 14 properties; not shown: subject, employeeId, updatedAt.
+    uses_models: ["CustomerServiceThread"]
     processes: [customers.PRC002]
 
   - id: customers.SCR004
     name: "Address Edit"
     summary: "Address creation/edit form with country-specific required field indicators."
-    uses_models: ["CustomerAddressForEditing"]
+    # The form (AddressFormDataProvider) shows all 18 of AddressResource's properties, countryName as the country selector's label.
+    uses_models: ["AddressResource"]
     motivated_by: [customers.GL002]
 
   # The storefront account pages. The four screens above are back office; the six below are the

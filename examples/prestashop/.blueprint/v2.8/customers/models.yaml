@@ -758,7 +758,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Address/Query/GetManufacturerAddressForEditing.php"
           role: schema
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Address/ManufacturerAddress.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/ManufacturerAddress.php"
           role: api-spec
 
     CartAddressPayload:
@@ -862,7 +862,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Address/Command/EditCartAddressCommand.php"
           role: schema
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Address/CartAddress.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/CartAddress.php"
           role: api-spec
 
     OrderAddressPayload:
@@ -966,7 +966,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Address/Command/EditOrderAddressCommand.php"
           role: schema
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Address/OrderAddress.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/OrderAddress.php"
           role: api-spec
 
     BulkAddressIds:
@@ -992,7 +992,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Address/Command/BulkDeleteAddressCommand.php"
           role: schema
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Address/BulkAddresses.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/BulkAddresses.php"
           role: api-spec
 
     BulkCustomerIds:
@@ -1018,7 +1018,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Customer/Command/BulkEnableCustomerCommand.php"
           role: schema
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/BulkCustomers.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/BulkCustomers.php"
           role: api-spec
 
     BulkDeleteCustomersPayload:
@@ -1048,7 +1048,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Customer/Command/BulkDeleteCustomerCommand.php"
           role: schema
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/BulkDeleteCustomers.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/BulkDeleteCustomers.php"
           role: api-spec
 
     CustomerRequiredFields:
@@ -1070,7 +1070,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Customer/Command/SetRequiredFieldsForCustomerCommand.php"
           role: schema
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/CustomerRequiredFields.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/CustomerRequiredFields.php"
           role: api-spec
 
     FoundCustomer:
@@ -1130,7 +1130,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Customer/Query/SearchCustomers.php"
           role: schema
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Customer/FoundCustomer.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Customer/FoundCustomer.php"
           role: api-spec
 
     TitleResource:
@@ -1178,7 +1178,7 @@ components:
       code_refs:
         - path: "src/Core/Domain/Title/Query/GetTitleForEditing.php"
           role: schema
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Title/Title.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Title/Title.php"
           role: api-spec
 
     BulkTitleIds:
@@ -1204,5 +1204,5 @@ components:
       code_refs:
         - path: "src/Core/Domain/Title/Command/BulkDeleteTitleCommand.php"
           role: schema
-        - path: "ps_apiresources/src/ApiPlatform/Resources/Title/BulkDeleteTitles.php"
+        - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Title/BulkDeleteTitles.php"
           role: api-spec

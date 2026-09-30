@@ -48,7 +48,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Address/CommandHandler/AddCustomerAddressHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/CustomerAddress.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/CustomerAddress.php"
         role: api-spec
 
   editCustomerAddress:
@@ -103,7 +103,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Address/CommandHandler/EditCustomerAddressHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/CustomerAddress.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/CustomerAddress.php"
         role: api-spec
 
   deleteAddress:
@@ -149,7 +149,7 @@ operations:
         description: "delete() at lines 395-401 loads the customer's addresses and calls delete() on each, guarded by Order::getCustomerOrders being empty. The cascade runs before parent::delete fires actionObjectCustomerDeleteAfter, so a module watching both sees the address deletions arrive first."
       - path: "src/Adapter/Address/CommandHandler/DeleteAddressHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/Address.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/Address.php"
         role: api-spec
 
   bulkDeleteAddress:
@@ -187,7 +187,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Address/CommandHandler/BulkDeleteAddressHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/BulkAddresses.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/BulkAddresses.php"
         role: api-spec
 
   addManufacturerAddress:
@@ -237,7 +237,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Address/CommandHandler/AddManufacturerAddressHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/ManufacturerAddress.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/ManufacturerAddress.php"
         role: api-spec
 
   editManufacturerAddress:
@@ -283,7 +283,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Address/CommandHandler/EditManufacturerAddressHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/ManufacturerAddress.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/ManufacturerAddress.php"
         role: api-spec
 
   editCartAddress:
@@ -335,7 +335,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Address/CommandHandler/EditCartAddressHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/CartAddress.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/CartAddress.php"
         role: api-spec
 
   editOrderAddress:
@@ -384,7 +384,7 @@ operations:
         role: implementation
       - path: "src/Adapter/Address/CommandHandler/EditOrderAddressHandler.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/OrderAddress.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/OrderAddress.php"
         role: api-spec
 
   setRequiredFieldsForAddress:
@@ -436,7 +436,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Address/Query/GetCustomerAddressForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/CustomerAddress.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/CustomerAddress.php"
         role: api-spec
 
   getManufacturerAddressForEditing:
@@ -467,7 +467,7 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Address/Query/GetManufacturerAddressForEditing.php"
         role: implementation
-      - path: "ps_apiresources/src/ApiPlatform/Resources/Address/ManufacturerAddress.php"
+      - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/ManufacturerAddress.php"
         role: api-spec
 
   getRequiredFieldsForAddress:
