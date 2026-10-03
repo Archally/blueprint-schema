@@ -22,9 +22,20 @@ export interface ReferenceFindings {
   retiredBands: Array<{ id: string; band: RetiredBand; rebanded: string; loc: string; file: string }>;
 }
 
+/** What a schema line says about the space some nested ids are unique in. */
+export interface IdSpaces {
+  /** A concept attribute (`CAT`) is unique within its bounded context rather than across the model. */
+  attributesPerContext: boolean;
+}
+
+/** The id spaces a schema line declares, read off its `attribute_ref` - see cross-references.mjs. */
+export function deriveIdSpaces(registry: Map<string, unknown>): IdSpaces;
+
 /** Resolve every reference the documents make against every id they declare - see cross-references.mjs. */
 export function resolveModelReferences(
   documents: ModelDocument[],
   refKeys: ReferenceKeys,
   bandTable?: RetiredBandTable,
+  declaredBands?: unknown[],
+  idSpaces?: IdSpaces,
 ): ReferenceFindings;

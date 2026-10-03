@@ -85,9 +85,19 @@ export function isIdentityOrReferenceViolation(instancePath, message, refKeys) {
   return leaf === "id" || refKeys.keys.has(leaf);
 }
 
-export function collectIds(node, ids = new Map(), duplicates = new Map(), pathStack = []) {
+/**
+ * Every id a node declares, with where it was declared, and every id declared more than once.
+ *
+ * `spaceOf` names the space a declaration is unique in, as the key both maps are indexed by. It
+ * defaults to the declared string itself, one space for the whole model, which is what reference
+ * resolution needs. The duplicate check passes a narrower space for the kinds whose identity is
+ * scoped to a parent or a bounded context; see `cross-references.mjs`.
+ *
+ * @param {(declared: string, pathStack: string[]) => string} [spaceOf]
+ */
+export function collectIds(node, ids = new Map(), duplicates = new Map(), pathStack = [], spaceOf = (declared) => declared) {
   if (Array.isArray(node)) {
-    node.forEach((item, idx) => collectIds(item, ids, duplicates, [...pathStack, `[${idx}]`]));
+    node.forEach((item, idx) => collectIds(item, ids, duplicates, [...pathStack, `[${idx}]`], spaceOf));
     return { ids, duplicates };
   }
   if (!node || typeof node !== "object") return { ids, duplicates };
@@ -96,17 +106,18 @@ export function collectIds(node, ids = new Map(), duplicates = new Map(), pathSt
     const declared = node[key];
     if (typeof declared !== "string" || !ID_RE.test(declared)) continue;
     const loc = pathStack.join(".") || "root";
-    if (ids.has(declared)) {
-      const current = duplicates.get(declared) ?? [ids.get(declared)];
+    const space = spaceOf(declared, pathStack);
+    if (ids.has(space)) {
+      const current = duplicates.get(space) ?? [ids.get(space)];
       current.push(loc);
-      duplicates.set(declared, current);
+      duplicates.set(space, current);
     } else {
-      ids.set(declared, loc);
+      ids.set(space, loc);
     }
   }
 
   for (const [k, v] of Object.entries(node)) {
-    collectIds(v, ids, duplicates, [...pathStack, k]);
+    collectIds(v, ids, duplicates, [...pathStack, k], spaceOf);
   }
   return { ids, duplicates };
 }
@@ -216,9 +227,6 @@ export function collectRefs(node, refs = [], pathStack = [], refKeys, parent = "
   return refs;
 }
 
-/** The identity a party folds on: the bare `PRT###`, whichever scope prefix a spelling carries. */
-const barePartyId = (id) => (String(id).includes(".") ? String(id).split(".").pop() : String(id));
-
 /**
  * Every nested service whose `system_ref` names a party other than the one it is declared under.
  *
@@ -226,8 +234,8 @@ const barePartyId = (id) => (String(id).includes(".") ? String(id).split(".").po
  * same fact by reference. Two statements of one fact that disagree is a contradiction, so it is an
  * error rather than a preference for either. A service whose `system_ref` names its own envelope
  * is redundancy, not contradiction, and is left alone; a service under a root-declared context has
- * no envelope and cannot conflict here. Ids compare on the bare `PRT###`, which is the identity
- * the party fold uses, so `billing.PRT001` and `PRT001` are one party.
+ * no envelope and cannot conflict here. Ids compare as whole strings, prefix included, so
+ * `billing.PRT001` and `PRT001` are two parties.
  *
  * A party declared without an id gives the comparison no basis and is skipped; the schema requires
  * the id from v2.8, so that state is reported already.
@@ -242,7 +250,7 @@ export function collectEnvelopeConflicts(node, hits = [], pathStack = []) {
       if (!context || typeof context !== "object") return;
       (Array.isArray(context.services) ? context.services : []).forEach((service, serviceIndex) => {
         if (!service || typeof service !== "object" || typeof service.system_ref !== "string") return;
-        if (barePartyId(service.system_ref) === barePartyId(envelope)) return;
+        if (service.system_ref === envelope) return;
         hits.push({
           service: typeof service.id === "string" ? service.id : String(service.name ?? "?"),
           declared: service.system_ref,

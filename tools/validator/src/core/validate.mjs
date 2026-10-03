@@ -3,7 +3,7 @@ import path from "node:path";
 import { toPosixPath, walkFiles, loadYaml } from "./utils.mjs";
 import { loadSchemaRegistry, makeAjv, SCHEMA_BASE_URI } from "./schema-registry.mjs";
 import { deriveReferenceKeys } from "./reference-keys.mjs";
-import { resolveModelReferences } from "./cross-references.mjs";
+import { deriveIdSpaces, resolveModelReferences } from "./cross-references.mjs";
 import {
   retiredBandTable,
   retiredBandMessage,
@@ -658,9 +658,13 @@ export function validateModel(args) {
   // What the MODEL reserves, as opposed to what the SCHEMA LINE retires. Empty for every model
   // that declares no band, which is what keeps the whole check opt-in.
   const declaredBands = declaredBandTable(parsedFiles);
-  const references = resolveModelReferences(parsedFiles, refKeys, bandTable, declaredBands);
+  // The space each id is unique in is read off the same schema tree, so a line that scopes an
+  // attribute to its bounded context is judged by that rule and no other.
+  const references = resolveModelReferences(parsedFiles, refKeys, bandTable, declaredBands, deriveIdSpaces(registry));
+  // A duplicate id is an error: two declarations of one id leave every lookup by that id answering
+  // one of them, so the other cannot be addressed at all.
   for (const { id, locations } of references.duplicates) {
-    warnings.push(`Duplicate ID '${id}' in: ${locations.join(", ")}`);
+    crossErrors.push(`Duplicate ID '${id}' in: ${locations.join(", ")}`);
   }
   for (const finding of references.retiredBands) {
     warnings.push(retiredBandMessage(finding, bandTable));
