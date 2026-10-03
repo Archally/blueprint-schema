@@ -213,9 +213,51 @@ $defs:
         minimum: 0
         description: "Errors it reported afterwards."
 
+  edit_site:
+    type: object
+    description: "What one operation of an applied migration did to one file: the runs of text it replaced, what stood there before, and a digest of the whole file on each side of the change. Offsets count UTF-16 code units of the file's text, as read in UTF-8."
+    additionalProperties: false
+    required: [file, windows, before_sha, after_sha]
+    properties:
+      file:
+        type: string
+        description: "The file, relative to the model directory, with forward slashes."
+        examples: ["catalog/supply-chain.concepts.yaml"]
+      windows:
+        type: array
+        description: "The runs of text the operation changed in this file, ascending by `start` and not overlapping."
+        items:
+          $ref: "#/$defs/edit_window"
+      before_sha:
+        type: string
+        pattern: "^sha256:[0-9a-f]{64}$"
+        description: "Digest of the whole file before the operation ran. A rollback checks that the file it restores has this digest."
+      after_sha:
+        type: string
+        pattern: "^sha256:[0-9a-f]{64}$"
+        description: "Digest of the whole file after the operation ran. A rollback proceeds only while the file still has this digest."
+
+  edit_window:
+    type: object
+    description: "One contiguous run of text an operation replaced, and the text that stood there before."
+    additionalProperties: false
+    required: [start, end, prior]
+    properties:
+      start:
+        type: integer
+        minimum: 0
+        description: "Where the run starts in the file as the operation left it."
+      end:
+        type: integer
+        minimum: 0
+        description: "Where the run ends in the file as the operation left it, exclusive. Equal to `start` when the operation removed text without adding any."
+      prior:
+        type: string
+        description: "The text that stood in the run before the operation. Empty when the operation only inserted text."
+
   tracked_entry:
     type: object
-    description: "One migration: a named set of changes with a status, and once applied, the changes that would undo it."
+    description: "One migration: a named set of changes with a status, and once applied, a record of what it changed and the changes that would undo it."
     additionalProperties: false
     required: [id, name, status, change_set]
     properties:
@@ -260,8 +302,20 @@ $defs:
           $ref: "#/$defs/patch_op"
       inverse_change_set:
         type: array
-        description: "The changes that undo this migration, recorded when it was applied. Absent until then, and removed again once the migration is rolled back."
+        description: "The changes that undo this migration, recorded when it was applied. It describes the rollback rather than performing it: rolling back restores the recorded `edit_sites`. Empty when at least one operation has no faithful inverse, and `inverse_unavailable` then says which. Absent until the migration is applied, and removed again once it is rolled back."
         items:
           $ref: "#/$defs/patch_op"
+      inverse_unavailable:
+        type: array
+        minItems: 1
+        description: "Why no inverse could be described, one line per operation that has none. Recorded when the migration is applied, and only when `inverse_change_set` is empty for that reason. The migration can still be rolled back from its `edit_sites`. Kept after a rollback."
+        items:
+          type: string
+        examples: [["rewrite-ref catalog.CN001 -> catalog.CN002: references already pointed at the target before this ran, so reversing it would move them too"]]
+      edit_sites:
+        type: array
+        description: "What this migration changed, file by file, recorded when it was applied: one site per operation per file it touched, in the order the operations ran. Rolling the migration back restores these sites from the last to the first, and refuses without changing anything when a file no longer matches what the migration left. Absent until the migration is applied, and removed again once it is rolled back."
+        items:
+          $ref: "#/$defs/edit_site"
       validation_delta:
         $ref: "#/$defs/validation_delta"

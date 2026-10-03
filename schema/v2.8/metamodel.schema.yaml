@@ -1828,3 +1828,63 @@ x-gdsm:
         Every governance element added in one modelling pass needed an `affects` ref to clear
         `orphan-entities`, and the same refs are what place the element on the process boards.
       schema_version: "2.8.43"
+    - lesson: >
+        A leverage dependency means blocks, and it is stated once, on the dependent. A leverage
+        point lists another in `depends_on` only when it cannot start, or cannot finish, until the
+        other lands; what a point unblocks is that relation read backwards, not a second list. A
+        claim that landing one makes the other cheaper, faster or safer is a benefit, and belongs
+        in `consequences_if_done`. Written as a dependency, a benefit asserts a prerequisite nobody
+        has, and because benefits run in both directions between related interventions, it is the
+        usual way a leverage graph acquires a cycle.
+      category: semantics
+      date: "2026-09-30"
+      evidence: >
+        A three-node cycle in a v2.8 model was closed by one edge whose target declared
+        `depends_on: []`: the source's `enables` carried "makes it cheaper", not a prerequisite.
+        Removing the edge and moving its wording to `consequences_if_done` broke the cycle and lost
+        no statement.
+      schema_version: "2.8.47"
+    - lesson: >
+        An evidence record's `source` is authored text, and the renderers carry it verbatim into
+        delivered artifacts. Cite a file relative to the model root and without the model-version
+        directory (`orders/domain.yaml`, not `.blueprint/v2.7/orders/domain.yaml` or a path from
+        the repository root), or cite the ticket or document by its URL. A versioned path stops
+        resolving when the model moves to the next schema line and names the old line in every
+        artifact that quotes it; a repository path names the repository layout to a reader who has
+        neither.
+      category: gotcha
+      date: "2026-09-30"
+      evidence: >
+        In one v2.8 model, `source` strings citing an older version directory or a path from the
+        repository root reached 10 delivered artifacts from 8 model files.
+      schema_version: "2.8.47"
+    - lesson: >
+        Keep an account and an assumption about it apart, because they carry different certainty
+        and fail differently. A person's spoken account, relayed by someone else, is an `evidence`
+        record of kind `interview` whose `source` names who said it and who relayed it, dated when
+        it was said, and the element it supports sits at `certainty: probable` - the account is
+        partial and second-hand, not speculative. What the relayer believes on top of it is a
+        separate assumption at `speculative` with its own evidence record. Folded into the account,
+        the assumption inherits a certainty nobody gave it, and disproving it later appears to
+        disprove the account.
+      category: semantics
+      date: "2026-09-30"
+      evidence: >
+        A developer's verbal description of an algorithm, relayed by the product owner, was recorded
+        as `interview` evidence on an element at `probable`; the owner's own assumption layered on it
+        was kept as a separate assumption at `speculative`.
+      schema_version: "2.8.47"
+    - lesson: >
+        A user story has no field for the concept it shows, and needs none. Name the query that
+        returns what the story shows in `operations`, and the test case that checks it in
+        `test_cases`; the test case's `concepts` names the concept, and that is the edge the graph
+        keeps between the story and the term. A concept slot on the story would state the same
+        proposition a second time, and two statements of one proposition drift apart.
+      category: structure
+      date: "2026-09-30"
+      evidence: >
+        `user_story` carries `operations`, `test_cases`, `use_case` and `concern_ref` and no concept
+        reference; `operations` admits a `QRY` id, and `test_case.concepts` is a typed concept
+        reference that extraction turns into a relation. In one v2.8 modelling pass the concept a
+        story showed was linked through its test cases and named in its acceptance criteria.
+      schema_version: "2.8.47"

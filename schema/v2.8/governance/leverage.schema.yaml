@@ -163,12 +163,10 @@ $defs:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/leverage_ref"
-        description: "Leverage points that must land first (prerequisites). Forms the leverage DAG."
-      enables:
-        type: array
-        items:
-          $ref: "../metamodel.schema.yaml#/$defs/leverage_ref"
-        description: "Leverage points this one unblocks once done. Inverse edge of `depends_on`."
+        description: >
+          Leverage points that must land first (prerequisites). Forms the leverage DAG. Each edge is
+          stated once, here on the dependent; what a leverage point unblocks is this relation read
+          backwards.
       # --- Consequence framing ---
       consequences_if_done:
         type: array
