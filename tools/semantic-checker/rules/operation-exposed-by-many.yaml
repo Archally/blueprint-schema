@@ -1,0 +1,22 @@
+engineVersion: "0.1"
+rules:
+  - id: operation-exposed-by-many
+    severity: info
+    description: >-
+      An operation that three or more services provide. A service provides an operation when a
+      contract it provides lists the operation under `expose`, `send` or `provide`, whatever the
+      contract's kind; the services are counted once each, so one service listing the operation
+      under two contract kinds counts once. Calling, receiving, consuming, reading or writing an
+      operation does not count. A surface several services offer alike is stated once per service
+      in the contracts, so the shape is easy to miss when reading one service at a time. INFO,
+      not a defect: services may share a surface on purpose, and the finding names them so a
+      reader can confirm it or state the surface once where the model allows it. One finding per
+      operation, naming up to eight of its services sorted by id. Override per-project via
+      .blueprint-lint.yaml (e.g. `operation-exposed-by-many: off`).
+    find:
+      entity_type: Operation
+    check:
+      custom:
+        module: ./operation-exposed-by-many.mjs
+        export: operationExposedByMany
+    message: 'Operation "{operation}" ({operation_name}) is provided by {count} services: {services}. State the shared surface once where the model allows it, or accept it.'

@@ -130,6 +130,8 @@ Severities: `error` (fails), `warn`, `info`, `off`.
 | `uses-target-is-library` | warn | no service a service names in `uses` states `kind: library`; a library is built into the service, so the item belongs in `imports` |
 | `uses-restates-contract` | info | a `uses` item the service's contracts already state - an operation it calls, receives or consumes that the named service exposes, sends or provides - can be deleted, since the contracts carry the operations, direction and transport |
 | `imports-cycle` | warn | no service's `imports` lead back to itself; one finding per cycle group, listing its members and one cycle through them. A cycle among `uses` edges is not reported |
+| `operation-exposed-by-many` | info | reports an operation three or more services provide through a contract's `expose`, `send` or `provide`, in any contract kind, naming the services; a service listing it under two kinds counts once |
+| `assumption-unplaced` | info | reports an assumption that names nothing it bears on: no `affects` edge, no `risk_refs`, and no decision citing it. An owner says who confirms the assumption, not what depends on it, so ownership does not place it |
 
 ## Custom rules
 

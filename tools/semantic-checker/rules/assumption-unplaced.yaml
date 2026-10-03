@@ -1,0 +1,28 @@
+engineVersion: "0.1"
+rules:
+  - id: assumption-unplaced
+    severity: info
+    description: >-
+      An assumption that names nothing it bears on: no operation, concept or process through
+      `affects`, no risk through `risk_refs`, and no decision cites it through `motivation_refs`.
+      Ownership does not place it. An owner, stated on the assumption or inherited from its file's
+      `owned_by`, says who confirms or retires the assumption, not what depends on it holding, so
+      an owned assumption can still be placed nowhere, and `orphan-entities` stops reporting it once
+      it has an owner. Advisory: a model may record an assumption before it knows what the
+      assumption touches. Override per project via .blueprint-lint.yaml (e.g.
+      `assumption-unplaced: off`).
+    find:
+      entity_type: Assumption
+    # Satisfied by an outgoing `assumption_affects` (affects.*_refs) or `assumption_risk`
+    # (risk_refs), or by an incoming `motivation_refs` (a decision citing the assumption).
+    check:
+      any_of:
+        - has_relation:
+            direction: out
+            type: [assumption_affects, assumption_risk]
+            exists: true
+        - has_relation:
+            direction: in
+            type: motivation_refs
+            exists: true
+    message: 'Assumption "{displayId}" names nothing it bears on: no affects, no risk_refs, and no decision cites it. Name the operation, concept or process that depends on it holding under affects, or the risk it carries under risk_refs.'
