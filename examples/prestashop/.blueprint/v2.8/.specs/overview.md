@@ -8769,7 +8769,6 @@ graph TD
     LP001 -.->|"leverage_value_stream"| VS001
     LP001 -.->|"leverage_capability"| CAP001
     LP001 -.->|"leverage_capability"| CAP003
-    LP003 -.->|"leverage_depends_on"| LP001
     LP002 -.->|"leverage_risk"| modules_RSK001
     LP002 -.->|"leverage_decision"| DC003
     LP002 -.->|"leverage_decision"| DC010
@@ -8777,13 +8776,12 @@ graph TD
     LP002 -.->|"leverage_value_stream"| VS001
     LP002 -.->|"leverage_capability"| CAP003
     LP002 -.->|"leverage_capability"| CAP014
-    LP004 -.->|"leverage_depends_on"| LP002
-    LP005 -.->|"leverage_depends_on"| LP002
     LP003 -.->|"leverage_decision"| DC005
     LP003 -.->|"leverage_advances_goal"| orders_GL003
     LP003 -.->|"leverage_value_stream"| VS001
     LP003 -.->|"leverage_value_stream"| VS002
     LP003 -.->|"leverage_capability"| CAP001
+    LP003 -.->|"leverage_depends_on"| LP001
     LP004 -.->|"leverage_risk"| shipping_RSK002
     LP004 -.->|"leverage_decision"| DC010
     LP004 -.->|"leverage_realized_by"| WI011
@@ -8792,6 +8790,7 @@ graph TD
     LP004 -.->|"leverage_value_stream"| VS001
     LP004 -.->|"leverage_value_stream"| VS002
     LP004 -.->|"leverage_capability"| CAP010
+    LP004 -.->|"leverage_depends_on"| LP002
     LP005 -.->|"leverage_risk"| modules_RSK001
     LP005 -.->|"leverage_risk"| modules_RSK002
     LP005 -.->|"leverage_decision"| DC003
@@ -8800,6 +8799,7 @@ graph TD
     LP005 -.->|"leverage_value_stream"| VS001
     LP005 -.->|"leverage_capability"| CAP003
     LP005 -.->|"leverage_capability"| CAP014
+    LP005 -.->|"leverage_depends_on"| LP002
     AdminService -.->|"deployed_in_environment"| prestashop_ENV001
     CatalogService -.->|"deployed_in_environment"| prestashop_ENV001
     CheckoutService -.->|"deployed_in_environment"| prestashop_ENV001

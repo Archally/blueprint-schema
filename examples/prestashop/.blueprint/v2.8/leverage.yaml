@@ -47,7 +47,6 @@ leverage_points:
     advances_goals: [orders.GL001, checkout.GL001]
     advances_value_streams: [VS001]
     capability_refs: [CAP001, CAP003]
-    enables: [LP003]
     code_refs:
       - path: "classes/PaymentModule.php"
         role: implementation
@@ -95,7 +94,6 @@ leverage_points:
     advances_goals: [checkout.GL002]
     advances_value_streams: [VS001]
     capability_refs: [CAP003, CAP014]
-    enables: [LP004, LP005]
     code_refs:
       - path: "classes/PaymentModule.php"
         role: implementation
