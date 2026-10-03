@@ -26,7 +26,7 @@ export const ID_FIELD_PREFIXES: Readonly<Record<string, readonly string[]>> = Ob
   dependencies: ['MS'],
   depends_on: ['LP', 'MIG'],
   domain_ref: ['DMN'],
-  enables: ['CMD', 'DOC', 'EVT', 'LP', 'QRY'],
+  enables: ['CMD', 'DOC', 'EVT', 'QRY'],
   entry_operation: ['CMD', 'DOC', 'EVT', 'QRY'],
   environment_ref: ['ENV'],
   error: ['ERR'],
