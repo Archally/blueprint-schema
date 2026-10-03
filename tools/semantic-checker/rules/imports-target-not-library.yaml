@@ -1,0 +1,22 @@
+engineVersion: "0.1"
+rules:
+  - id: imports-target-not-library
+    severity: warn
+    description: >-
+      A service names, in `imports`, a service whose stated `kind` is something other than
+      `library`. `imports` names the libraries a service is built on - a package it imports, a
+      component it embeds - so its target is something a build contains. A target that states it is
+      an api, a worker, a cli or another running kind is either a runtime dependency written in the
+      wrong list, or a library whose `kind` misstates it. Silent when the target states no `kind`:
+      the field is optional, and a missing kind is not a wrong one. A service naming itself is left
+      to `imports-cycle`. One finding per service, naming every such target. Fix by moving the item
+      to `uses` (or stating the dependency in the contracts) when the service calls the target while
+      running, or by setting the target's `kind: library` when it is one. Override per-project via
+      .blueprint-lint.yaml (e.g. `imports-target-not-library: off`).
+    find:
+      entity_type: Service
+    check:
+      custom:
+        module: ./service-dependency-kind.mjs
+        export: importsTargetNotLibrary
+    message: 'Service {service} "{service_name}" imports {targets}. `imports` names a library a service is built on: if {service_name} calls the target while running, move it to `uses` (or to its contracts); if the target is a library, set its `kind` to `library`.'

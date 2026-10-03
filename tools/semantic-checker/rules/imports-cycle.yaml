@@ -1,0 +1,23 @@
+engineVersion: "0.1"
+rules:
+  - id: imports-cycle
+    severity: warn
+    description: >-
+      Services whose `imports` lead back to themselves. `imports` names the libraries a service is
+      built on, and a build cannot finish when one service needs another built first and that one
+      needs the first built first; a service importing itself is the shortest such cycle. One
+      finding per strongly connected component of `imports` edges, however many cycles it holds,
+      attached to the member with the lowest id; the message lists every member sorted by id and one
+      cycle through them, found by a depth-first walk from the lowest id that takes neighbours in id
+      order. A cycle among `uses` edges is not reported, because two running services may depend on
+      each other by design: a callback, a webhook, an orchestrator and its participant. Fix by
+      breaking the cycle: move what both need into a library both import, or, where one direction is
+      a call made while running rather than a build dependency, state it in `uses` or the contracts.
+      Override per-project via .blueprint-lint.yaml (e.g. `imports-cycle: off`).
+    find:
+      entity_type: Service
+    check:
+      custom:
+        module: ./imports-cycle.mjs
+        export: importsCycle
+    message: '{cycle}. {fix}'

@@ -126,6 +126,10 @@ Severities: `error` (fails), `warn`, `info`, `off`.
 | `use-case-step-action-operation-disagrees` | warn | a use-case step naming both a UI action and an operation agrees with that action's `triggers_operations` |
 | `use-case-step-action-screen-disagrees` | warn | a use-case step naming both a UI action and a screen agrees with that action's own `screen` |
 | `nav-via-action-screen-disagrees` | warn | a navigation naming `via_action` starts `from` the screen that action belongs to |
+| `imports-target-not-library` | warn | every service a service names in `imports` is a library when it states a `kind`; a running kind there is a runtime dependency in the wrong list, or a library whose `kind` misstates it |
+| `uses-target-is-library` | warn | no service a service names in `uses` states `kind: library`; a library is built into the service, so the item belongs in `imports` |
+| `uses-restates-contract` | info | a `uses` item the service's contracts already state - an operation it calls, receives or consumes that the named service exposes, sends or provides - can be deleted, since the contracts carry the operations, direction and transport |
+| `imports-cycle` | warn | no service's `imports` lead back to itself; one finding per cycle group, listing its members and one cycle through them. A cycle among `uses` edges is not reported |
 
 ## Custom rules
 

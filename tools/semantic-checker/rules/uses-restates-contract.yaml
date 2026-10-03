@@ -1,0 +1,25 @@
+engineVersion: "0.1"
+rules:
+  - id: uses-restates-contract
+    severity: info
+    description: >-
+      A service names, in `uses`, a service its contracts already show it depends on. `uses` states
+      a runtime dependency at the level of a container diagram, and is the statement to make before
+      the contracts between two services are written. Once they are, the contracts state the same
+      dependency with its operations, direction and transport: an operation one of this service's
+      contracts calls, receives or consumes is exposed, sent or provided by a contract of the named
+      service. Reading data the named service writes does not count: a shared store makes a service
+      depend on the data, not on the writer running. `imports` is never compared with contracts,
+      because a build containing a library and a call into it are two different statements. Silent
+      when the named service states `kind: library`, which `uses-target-is-library` reports with its
+      own fix. INFO because the item is true, only redundant. One finding per service, naming each
+      restated service with up to three of the operations that state it. Fix by dropping the item
+      from `uses`. Override per-project via .blueprint-lint.yaml (e.g.
+      `uses-restates-contract: off`).
+    find:
+      entity_type: Service
+    check:
+      custom:
+        module: ./uses-restates-contract.mjs
+        export: usesRestatesContract
+    message: 'Service {service} "{service_name}" names in `uses` what its contracts already state: it depends on {restated}. Drop the item from `uses`; the contracts carry the operations, direction and transport.'

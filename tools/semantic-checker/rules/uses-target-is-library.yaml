@@ -1,0 +1,19 @@
+engineVersion: "0.1"
+rules:
+  - id: uses-target-is-library
+    severity: warn
+    description: >-
+      A service names, in `uses`, a service whose stated `kind` is `library`. `uses` names the
+      services a service depends on while running; a library is built into the service that depends
+      on it rather than called while running, so the item belongs in `imports`, which names what a
+      service is built on. Silent when the target states no `kind`: the field is optional, and a
+      missing kind is not a wrong one. A service naming itself is not reported. One finding per
+      service, naming every such target. Fix by moving the item to `imports`. Override per-project
+      via .blueprint-lint.yaml (e.g. `uses-target-is-library: off`).
+    find:
+      entity_type: Service
+    check:
+      custom:
+        module: ./service-dependency-kind.mjs
+        export: usesTargetIsLibrary
+    message: 'Service {service} "{service_name}" uses {targets}. A library is built into the service that uses it, not called while running: move it to the `imports` of {service_name}.'
