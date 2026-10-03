@@ -5,6 +5,37 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.56"
+    date: "2026-10-03"
+    step: "a bounded context carries its code and its evidence, and an assumption names what it affects"
+    summary: |
+      A bounded context accepts `code_refs`, `implementation` and `provenance`, the three properties a service already carries. A context can now name the module directory or integration package that implements it as a whole, say whether it exists yet, and record how the model knows it exists, such as an `interview` evidence entry with its source and date for a context known from a conversation before its services are. The model graph draws a `code_ref` edge from the context to each file or directory it names, so the coverage check traces a changed file beneath a named directory back to the context, and the `implementation-as-is-without-code-refs` and `implementation-to-be-with-code-refs` rules read a context's `implementation` as they read a service's. A code reference may name a directory for an entity larger than one file; its description says so.
+      An assumption accepts `affects` and `owned_by`, in the shape a risk carries them. `affects` names the operations, concepts and processes that depend on the assumption holding, and the model graph draws an `assumption_affects` edge to each; `affects.context_refs` is a scope name and builds no edge. `owned_by` names the team, department or party accountable for confirming or retiring the assumption, and an assumption in a motivation file with a file-level `owned_by` inherits that owner. `bp affects-report` (Archally Pro) counts assumptions beside goals, risks, inquiries and findings, and `--kind Assumption` narrows to them.
+      The model builder reads a file-level `owned_by` per schema line: it reaches an item only where the line the model declares in `schemaVersion` lets that item name an owner. An assumption in a v2.6 or v2.7 model therefore inherits no owner, since those lines give it no `owned_by`, and the same holds for a v2.6 finding, leverage point or work item and for an item under `stories` in a v2.8 model. A model that declares no `schemaVersion`, or a line newer than v2.8, is read as v2.8; one that declares a line older than v2.6 is read as v2.6.
+      The semantic checker adds `assumption-unplaced` (info): an assumption with no `affects` edge, no `risk_refs` and no decision citing it. Ownership does not place an assumption, so an owned assumption that names nothing is reported here although `orphan-entities` no longer reports it.
+      Additive: a context declaring any of the three properties, and an assumption declaring `affects` or `owned_by`, were rejected under 2.8.55. Nothing that validated under 2.8.55 is rejected.
+  - version: "2.8.55"
+    date: "2026-10-02"
+    step: "the model server names the ids a missing reference could mean"
+    summary: |
+      The Blueprint MCP server and the GraphQL API (Archally Pro) carry the same did-you-mean suggestion the validator prints. A missing reference that differs from declared ids only by a slice prefix gains a `suggestions` list of those ids, beside its message. The ids come from the same rule the validator uses, so the surfaces name the same candidates for the same reference. A suggestion is never a match: the reference is still missing, the finding is still an error, and its message is unchanged. A finding with no candidate carries no `suggestions` key. In the model builder, `ValidationResult.errors` items declare the optional `suggestions: string[]`.
+      The semantic checker adds `operation-exposed-by-many` (info): an operation that three or more services provide, naming the services. A service provides an operation when a contract it provides lists it under `expose`, `send` or `provide`, in any contract kind, and a service listing it under two kinds counts once.
+      The schema reference documents which files form a model: the root `blueprint.yaml` at the model root plus files named `<layer>.yaml` or `<topic>.<layer>.yaml`, the narrative file `story.yaml`, that any other file is not part of the model, and which names validation reports as errors.
+      A decision's `decision_scope` is described as a named scope: a slice, a cross-cutting area that spans slices, or the whole system named by the project's name. Unlike a file's `scope:`, it need not name a slice, so a decision in a file at the model root states its subject there. The property's type is unchanged.
+      The validator adds a warning: a file at the model root whose `scope:` names none of the model's slices is reported, naming the file and the value. A file at the model root belongs to no slice, so the fix is to remove its `scope:`; a decision states the scope it applies to with `decision_scope`. A nested file, a root file with no `scope:`, a root `scope:` that names a slice, and a single file validated on its own are not reported.
+      The accepted set is unchanged: nothing that validated under 2.8.54 is rejected, and nothing rejected is accepted.
+  - version: "2.8.54"
+    date: "2026-10-02"
+    step: "the validator checks exactly the files the model builder loads"
+    summary: |
+      Breaking for a model that keeps content in a file the model builder does not load, in a file named `process.yaml`, or in more than one root document. The validator now checks exactly the files the model builder loads, decided by the builder's own routing table, and reports three kinds of file as cross-reference errors, which `--compat` does not relax:
+      - a file whose name looks like a model file and is not one: `<name>-<layer>.yaml`, `<name>.blueprint.yaml`, `<name>.migrations.yaml`. The message names the spelling that is read (`orders-domain.yaml`: rename it `orders.domain.yaml`);
+      - a retired file name: `process.yaml`, `<name>.process.yaml` and their `.yml` forms. The message names the replacement (`story.yaml`, `<name>.story.yaml`);
+      - a root document below the model root, or a second root document at the model root. Such a file is still part of the model, and still checked.
+      A file the builder loads is schema-checked, including a dot-prefixed shard (`.orders.domain.yaml`) and a shard whose layer is written in upper case (`orders.DOMAIN.yaml`). A file the builder does not load takes no part in validation: its declarations no longer satisfy a reference and its own references are no longer resolved. It is listed as not part of the model.
+      The model builder no longer loads `process.yaml`, on any line it serves (2.6 to 2.8). The narrative file is `story.yaml`, still read under both collection keys, `processes:` and `stories:`. The model builder's routing module names each retired file type with its replacement (`RETIRED_FILE_TYPES`, `getRetiredFileName`), so a consumer can name the replacement of a retired file instead of ignoring it. The Blueprint MCP server (Archally Pro) applies the same membership through the same module.
+      What to do: rename a reported file as its message says, or move its content into the file it names.
+      A model holding any such file validated under 2.8.53 and is rejected now. Across the published examples, no verdict changed. The `shared.process` description, which now names `story.yaml`, is the one schema file change, and it changes no accepted document.
   - version: "2.8.53"
     date: "2026-10-02"
     step: "a service can say which libraries it is built on and which services it uses"
@@ -998,11 +1029,10 @@ entries:
 
       Breaking. A v2.8 document carrying the former names is rejected.
 
-      Only the v2.8 line moves. Every earlier line keeps `story`, and the loader reads both file
-      names and both collection keys, so a model on an earlier line is unaffected. A model's own
-      narrative file may be named `story.yaml` or `process.yaml` on any line from 2.6; both
-      resolve to the same schema and give the same verdict, and the migration moves the content
-      without moving the file.
+      Only the v2.8 line moves. Every earlier line keeps `story`, and the loader reads both
+      collection keys, so a model on an earlier line is unaffected. A model's own narrative file
+      is `story.yaml` on every line (2.8.54 retired the second name, `process.yaml`), and the
+      migration moves the content without moving the file.
   - version: "2.8.9"
     date: "2026-09-09"
     summary: >
