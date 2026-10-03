@@ -1,6 +1,6 @@
 # PrestaShop-v9
 
-> Generated from blueprint model. 3711 entities, 7947 relations.
+> Generated from blueprint model. 3714 entities, 8020 relations.
 
 ## Context Map
 
@@ -3387,12 +3387,14 @@ graph TD
         DMN010["DMN010: shop"]
     end
     subgraph governance_capability["governance.capability"]
+        CAP107["CAP107: Platform Operation & Extension"]
         CAP013["CAP013: Content Management"]
         CAP014["CAP014: Module Ecosystem"]
         CAP015["CAP015: Employee & Access Management"]
         CAP016["CAP016: API & Integration Platform"]
         CAP103["CAP103: Back-office Administration"]
         CAP017["CAP017: Multi-Store Management"]
+        CAP105["CAP105: Merchandising & Fulfilment"]
         CAP005["CAP005: Catalog Management"]
         CAP102["CAP102: Product Variants & Options"]
         CAP101["CAP101: Supply Chain & Sourcing"]
@@ -3400,6 +3402,7 @@ graph TD
         CAP010["CAP010: Shipping & Delivery"]
         CAP011["CAP011: Multi-Currency & Tax"]
         CAP012["CAP012: Localization"]
+        CAP106["CAP106: Customer-Facing Commerce"]
         CAP018["CAP018: Search & Discovery"]
         CAP104["CAP104: Store Locator"]
         CAP001["CAP001: Order Management"]
@@ -7264,12 +7267,14 @@ graph TD
     Orders -.->|"owned_by"| TM001
     Shipping -.->|"owned_by"| TM005
     Shop -.->|"owned_by"| TM010
+    CAP107 -.->|"owned_by"| DPT001
     CAP013 -.->|"owned_by"| TM007
     CAP014 -.->|"owned_by"| TM008
     CAP015 -.->|"owned_by"| TM009
     CAP016 -.->|"owned_by"| TM009
     CAP103 -.->|"owned_by"| TM009
     CAP017 -.->|"owned_by"| TM010
+    CAP105 -.->|"owned_by"| DPT001
     CAP005 -.->|"owned_by"| TM002
     CAP102 -.->|"owned_by"| TM002
     CAP101 -.->|"owned_by"| TM002
@@ -7277,6 +7282,7 @@ graph TD
     CAP010 -.->|"owned_by"| TM005
     CAP011 -.->|"owned_by"| TM006
     CAP012 -.->|"owned_by"| TM006
+    CAP106 -.->|"owned_by"| DPT001
     CAP018 -.->|"owned_by"| TM002
     CAP104 -.->|"owned_by"| TM010
     CAP001 -.->|"owned_by"| TM001
@@ -8411,15 +8417,18 @@ graph TD
     admin_GL001 -.->|"goal_affects"| admin_CN002
     admin_GL001 -.->|"goal_affects"| admin_CN003
     admin_GL001 -.->|"goal_affects"| admin_CN009
+    admin_GL001 -.->|"goal_affects"| admin_PRC001
     admin_GL002 -.->|"goal_affects"| admin_CMD021
     admin_GL002 -.->|"goal_affects"| admin_CMD022
     admin_GL002 -.->|"goal_affects"| admin_CMD024
     admin_GL002 -.->|"goal_affects"| admin_CN005
+    admin_GL002 -.->|"goal_affects"| admin_PRC002
     admin_GL003 -.->|"goal_affects"| admin_CMD015
     admin_GL003 -.->|"goal_affects"| admin_CMD017
     admin_GL003 -.->|"goal_affects"| admin_CMD019
     admin_GL003 -.->|"goal_affects"| admin_CMD020
     admin_GL003 -.->|"goal_affects"| admin_CN004
+    admin_GL003 -.->|"goal_affects"| admin_PRC003
     admin_GL004 -.->|"goal_affects"| admin_CMD029
     admin_GL004 -.->|"goal_affects"| admin_CMD030
     admin_GL004 -.->|"goal_affects"| admin_QRY008
@@ -8430,6 +8439,7 @@ graph TD
     admin_RSK001 -.->|"risk_affects"| admin_CMD014
     admin_RSK001 -.->|"risk_affects"| admin_CN002
     admin_RSK001 -.->|"risk_affects"| admin_CN003
+    admin_RSK001 -.->|"risk_affects"| admin_PRC001
     admin_RSK002 -.->|"risk_affects"| admin_CMD029
     admin_RSK002 -.->|"risk_affects"| admin_CMD030
     admin_RSK002 -.->|"risk_affects"| admin_QRY008
@@ -8437,8 +8447,10 @@ graph TD
     admin_RSK003 -.->|"risk_affects"| admin_CMD021
     admin_RSK003 -.->|"risk_affects"| admin_CMD024
     admin_RSK003 -.->|"risk_affects"| admin_CN005
+    admin_RSK003 -.->|"risk_affects"| admin_PRC002
     admin_INQ001 -.->|"inquiry_affects"| admin_CMD021
     admin_INQ001 -.->|"inquiry_affects"| admin_CN005
+    admin_INQ001 -.->|"inquiry_affects"| admin_PRC002
     admin_INQ002 -.->|"inquiry_affects"| admin_CMD034
     admin_INQ002 -.->|"inquiry_affects"| admin_CN008
     catalog_GL001 -.->|"goal_affects"| catalog_QRY001
@@ -8453,6 +8465,7 @@ graph TD
     catalog_GL003 -.->|"goal_affects"| catalog_CMD002
     catalog_GL003 -.->|"goal_affects"| catalog_QRY002
     catalog_GL003 -.->|"goal_affects"| catalog_CN001
+    catalog_GL003 -.->|"goal_affects"| catalog_PRC001
     catalog_GL004 -.->|"goal_affects"| catalog_CMD001
     catalog_GL004 -.->|"goal_affects"| catalog_CMD002
     catalog_GL004 -.->|"goal_affects"| catalog_QRY001
@@ -8462,6 +8475,7 @@ graph TD
     catalog_RSK001 -.->|"risk_affects"| catalog_CMD007
     catalog_RSK001 -.->|"risk_affects"| catalog_EVT002
     catalog_RSK001 -.->|"risk_affects"| catalog_CN001
+    catalog_RSK001 -.->|"risk_affects"| catalog_PRC001
     catalog_RSK002 -.->|"risk_affects"| catalog_CMD016
     catalog_RSK002 -.->|"risk_affects"| catalog_CMD018
     catalog_RSK002 -.->|"risk_affects"| catalog_CN004
@@ -8470,8 +8484,10 @@ graph TD
     catalog_RSK003 -.->|"risk_affects"| catalog_CMD002
     catalog_RSK003 -.->|"risk_affects"| catalog_CMD006
     catalog_RSK003 -.->|"risk_affects"| catalog_CN001
+    catalog_RSK003 -.->|"risk_affects"| catalog_PRC001
     catalog_RSK004 -.->|"risk_affects"| catalog_CMD011
     catalog_RSK004 -.->|"risk_affects"| catalog_CN003
+    catalog_RSK004 -.->|"risk_affects"| catalog_PRC002
     catalog_INQ001 -.->|"inquiry_affects"| catalog_QRY001
     catalog_INQ001 -.->|"inquiry_affects"| catalog_QRY002
     catalog_INQ001 -.->|"inquiry_affects"| catalog_CN001
@@ -8479,69 +8495,90 @@ graph TD
     checkout_GL001 -.->|"goal_affects"| checkout_CMD001
     checkout_GL001 -.->|"goal_affects"| checkout_CMD009
     checkout_GL001 -.->|"goal_affects"| checkout_CN001
+    checkout_GL001 -.->|"goal_affects"| checkout_PRC001
     checkout_GL002 -.->|"goal_affects"| checkout_CMD016
     checkout_GL002 -.->|"goal_affects"| checkout_CMD017
     checkout_GL002 -.->|"goal_affects"| checkout_CN004
+    checkout_GL002 -.->|"goal_affects"| checkout_PRC002
     checkout_GL003 -.->|"goal_affects"| checkout_CMD014
     checkout_GL003 -.->|"goal_affects"| checkout_CMD015
     checkout_GL003 -.->|"goal_affects"| checkout_CN003
+    checkout_GL003 -.->|"goal_affects"| checkout_PRC001
     checkout_RSK001 -.->|"risk_affects"| checkout_CMD009
     checkout_RSK001 -.->|"risk_affects"| checkout_CMD014
     checkout_RSK001 -.->|"risk_affects"| checkout_CN001
+    checkout_RSK001 -.->|"risk_affects"| checkout_PRC001
     checkout_RSK002 -.->|"risk_affects"| checkout_CMD014
     checkout_RSK002 -.->|"risk_affects"| checkout_CMD016
     checkout_RSK002 -.->|"risk_affects"| checkout_CN003
     checkout_RSK002 -.->|"risk_affects"| checkout_CN004
+    checkout_RSK002 -.->|"risk_affects"| checkout_PRC002
     checkout_RSK003 -.->|"risk_affects"| checkout_CMD014
     checkout_RSK003 -.->|"risk_affects"| checkout_CN003
+    checkout_RSK003 -.->|"risk_affects"| checkout_PRC001
     checkout_INQ001 -.->|"inquiry_affects"| checkout_CMD014
     checkout_INQ001 -.->|"inquiry_affects"| checkout_CN003
+    checkout_INQ001 -.->|"inquiry_affects"| checkout_PRC001
     checkout_INQ002 -.->|"inquiry_affects"| checkout_CMD009
     checkout_INQ002 -.->|"inquiry_affects"| checkout_QRY001
     checkout_INQ002 -.->|"inquiry_affects"| checkout_CN001
+    checkout_INQ002 -.->|"inquiry_affects"| checkout_PRC001
     content_GL001 -.->|"goal_affects"| content_CMD001
     content_GL001 -.->|"goal_affects"| content_CMD002
     content_GL001 -.->|"goal_affects"| content_CMD007
     content_GL001 -.->|"goal_affects"| content_CN001
     content_GL001 -.->|"goal_affects"| content_CN002
+    content_GL001 -.->|"goal_affects"| content_PRC001
     content_GL002 -.->|"goal_affects"| content_CMD019
     content_GL002 -.->|"goal_affects"| content_CMD020
     content_GL002 -.->|"goal_affects"| content_QRY007
     content_GL002 -.->|"goal_affects"| content_CN005
+    content_GL002 -.->|"goal_affects"| content_PRC001
     content_GL003 -.->|"goal_affects"| content_CMD013
     content_GL003 -.->|"goal_affects"| content_CMD014
     content_GL003 -.->|"goal_affects"| content_CMD016
     content_GL003 -.->|"goal_affects"| content_CN003
+    content_GL003 -.->|"goal_affects"| content_PRC002
     content_RSK001 -.->|"risk_affects"| content_CMD019
     content_RSK001 -.->|"risk_affects"| content_CMD020
     content_RSK001 -.->|"risk_affects"| content_CN005
+    content_RSK001 -.->|"risk_affects"| content_PRC001
     content_RSK002 -.->|"risk_affects"| content_CMD014
     content_RSK002 -.->|"risk_affects"| content_CMD016
     content_RSK002 -.->|"risk_affects"| content_CN003
+    content_RSK002 -.->|"risk_affects"| content_PRC002
     content_RSK003 -.->|"risk_affects"| content_CMD008
     content_RSK003 -.->|"risk_affects"| content_CMD009
     content_RSK003 -.->|"risk_affects"| content_CN002
+    content_RSK003 -.->|"risk_affects"| content_PRC001
     content_INQ001 -.->|"inquiry_affects"| content_QRY001
     content_INQ001 -.->|"inquiry_affects"| content_CN001
+    content_INQ001 -.->|"inquiry_affects"| content_PRC001
     customers_GL001 -.->|"goal_affects"| customers_CMD001
     customers_GL001 -.->|"goal_affects"| customers_CMD008
     customers_GL001 -.->|"goal_affects"| customers_CN001
+    customers_GL001 -.->|"goal_affects"| customers_PRC001
     customers_GL002 -.->|"goal_affects"| customers_CMD012
     customers_GL002 -.->|"goal_affects"| customers_CMD013
     customers_GL002 -.->|"goal_affects"| customers_CMD015
     customers_GL002 -.->|"goal_affects"| customers_CN004
+    customers_GL002 -.->|"goal_affects"| customers_PRC001
     customers_GL003 -.->|"goal_affects"| customers_CMD016
     customers_GL003 -.->|"goal_affects"| customers_CMD018
     customers_GL003 -.->|"goal_affects"| customers_CN005
+    customers_GL003 -.->|"goal_affects"| customers_PRC002
     customers_GL004 -.->|"goal_affects"| customers_CMD003
     customers_GL004 -.->|"goal_affects"| customers_CMD028
     customers_GL004 -.->|"goal_affects"| customers_CN001
     customers_GL004 -.->|"goal_affects"| customers_CN004
+    customers_GL004 -.->|"goal_affects"| customers_PRC001
     customers_RSK001 -.->|"risk_affects"| customers_CMD001
     customers_RSK001 -.->|"risk_affects"| customers_CN001
+    customers_RSK001 -.->|"risk_affects"| customers_PRC001
     customers_RSK002 -.->|"risk_affects"| customers_CMD012
     customers_RSK002 -.->|"risk_affects"| customers_CMD013
     customers_RSK002 -.->|"risk_affects"| customers_CN004
+    customers_RSK002 -.->|"risk_affects"| customers_PRC001
     customers_RSK003 -.->|"risk_affects"| customers_CMD003
     customers_RSK003 -.->|"risk_affects"| customers_QRY002
     customers_RSK003 -.->|"risk_affects"| customers_QRY003
@@ -8551,132 +8588,171 @@ graph TD
     customers_INQ001 -.->|"inquiry_affects"| customers_CN002
     customers_INQ002 -.->|"inquiry_affects"| customers_CMD003
     customers_INQ002 -.->|"inquiry_affects"| customers_CN001
+    customers_INQ002 -.->|"inquiry_affects"| customers_PRC001
     international_GL001 -.->|"goal_affects"| international_CMD005
     international_GL001 -.->|"goal_affects"| international_QRY002
     international_GL001 -.->|"goal_affects"| international_CN001
     international_GL001 -.->|"goal_affects"| international_CN003
+    international_GL001 -.->|"goal_affects"| international_PRC001
     international_GL002 -.->|"goal_affects"| international_CMD027
     international_GL002 -.->|"goal_affects"| international_CMD034
     international_GL002 -.->|"goal_affects"| international_QRY012
     international_GL002 -.->|"goal_affects"| international_CN007
     international_GL002 -.->|"goal_affects"| international_CN008
     international_GL002 -.->|"goal_affects"| international_CN009
+    international_GL002 -.->|"goal_affects"| international_PRC002
     international_GL003 -.->|"goal_affects"| international_CMD007
     international_GL003 -.->|"goal_affects"| international_CMD011
     international_GL003 -.->|"goal_affects"| international_CMD019
     international_GL003 -.->|"goal_affects"| international_CN002
     international_GL003 -.->|"goal_affects"| international_CN004
     international_GL003 -.->|"goal_affects"| international_CN006
+    international_GL003 -.->|"goal_affects"| international_PRC001
     international_RSK001 -.->|"risk_affects"| international_CMD005
     international_RSK001 -.->|"risk_affects"| international_QRY002
     international_RSK001 -.->|"risk_affects"| international_CN001
     international_RSK001 -.->|"risk_affects"| international_CN003
+    international_RSK001 -.->|"risk_affects"| international_PRC001
     international_RSK002 -.->|"risk_affects"| international_CMD027
     international_RSK002 -.->|"risk_affects"| international_CMD034
     international_RSK002 -.->|"risk_affects"| international_CN008
     international_RSK002 -.->|"risk_affects"| international_CN009
+    international_RSK002 -.->|"risk_affects"| international_PRC002
     international_RSK003 -.->|"risk_affects"| international_CMD013
     international_RSK003 -.->|"risk_affects"| international_CMD021
     international_RSK003 -.->|"risk_affects"| international_CMD032
     international_RSK003 -.->|"risk_affects"| international_CN004
     international_RSK003 -.->|"risk_affects"| international_CN006
+    international_RSK003 -.->|"risk_affects"| international_PRC001
     international_INQ001 -.->|"inquiry_affects"| international_CMD005
     international_INQ001 -.->|"inquiry_affects"| international_CN003
+    international_INQ001 -.->|"inquiry_affects"| international_PRC001
     international_INQ002 -.->|"inquiry_affects"| international_CMD034
     international_INQ002 -.->|"inquiry_affects"| international_CN009
+    international_INQ002 -.->|"inquiry_affects"| international_PRC002
     modules_GL001 -.->|"goal_affects"| modules_CMD001
     modules_GL001 -.->|"goal_affects"| modules_CMD002
     modules_GL001 -.->|"goal_affects"| modules_CMD008
     modules_GL001 -.->|"goal_affects"| modules_CN001
+    modules_GL001 -.->|"goal_affects"| modules_PRC001
     modules_GL002 -.->|"goal_affects"| modules_CMD006
     modules_GL002 -.->|"goal_affects"| modules_CMD007
     modules_GL002 -.->|"goal_affects"| modules_CN001
+    modules_GL002 -.->|"goal_affects"| modules_PRC001
     modules_GL003 -.->|"goal_affects"| modules_CMD009
     modules_GL003 -.->|"goal_affects"| modules_CMD012
     modules_GL003 -.->|"goal_affects"| modules_QRY003
     modules_GL003 -.->|"goal_affects"| modules_CN002
+    modules_GL003 -.->|"goal_affects"| modules_PRC002
     modules_RSK001 -.->|"risk_affects"| modules_CMD001
     modules_RSK001 -.->|"risk_affects"| modules_CMD003
     modules_RSK001 -.->|"risk_affects"| modules_CMD007
     modules_RSK001 -.->|"risk_affects"| modules_CN001
+    modules_RSK001 -.->|"risk_affects"| modules_PRC001
     modules_RSK002 -.->|"risk_affects"| modules_CMD002
     modules_RSK002 -.->|"risk_affects"| modules_CMD008
     modules_RSK002 -.->|"risk_affects"| modules_CN001
+    modules_RSK002 -.->|"risk_affects"| modules_PRC002
     modules_INQ001 -.->|"inquiry_affects"| modules_CMD013
     modules_INQ001 -.->|"inquiry_affects"| modules_CN002
+    modules_INQ001 -.->|"inquiry_affects"| modules_PRC002
     modules_INQ002 -.->|"inquiry_affects"| modules_CMD001
     modules_INQ002 -.->|"inquiry_affects"| modules_CN001
+    modules_INQ002 -.->|"inquiry_affects"| modules_PRC001
     orders_GL001 -.->|"goal_affects"| orders_CMD001
     orders_GL001 -.->|"goal_affects"| orders_QRY002
     orders_GL001 -.->|"goal_affects"| orders_CN002
+    orders_GL001 -.->|"goal_affects"| orders_PRC001
     orders_GL002 -.->|"goal_affects"| orders_CMD007
     orders_GL002 -.->|"goal_affects"| orders_CN002
+    orders_GL002 -.->|"goal_affects"| orders_PRC001
     orders_GL003 -.->|"goal_affects"| orders_CMD001
     orders_GL003 -.->|"goal_affects"| orders_CMD004
     orders_GL003 -.->|"goal_affects"| orders_CN002
     orders_GL003 -.->|"goal_affects"| orders_CN010
+    orders_GL003 -.->|"goal_affects"| orders_PRC001
     orders_GL004 -.->|"goal_affects"| orders_CMD017
     orders_GL004 -.->|"goal_affects"| orders_CMD019
     orders_GL004 -.->|"goal_affects"| orders_CN006
+    orders_GL004 -.->|"goal_affects"| orders_PRC004
     orders_RSK001 -.->|"risk_affects"| orders_CMD001
     orders_RSK001 -.->|"risk_affects"| orders_CN002
+    orders_RSK001 -.->|"risk_affects"| orders_PRC001
     orders_RSK002 -.->|"risk_affects"| orders_CMD007
     orders_RSK002 -.->|"risk_affects"| orders_CN002
+    orders_RSK002 -.->|"risk_affects"| orders_PRC001
     orders_RSK003 -.->|"risk_affects"| orders_CMD001
     orders_RSK003 -.->|"risk_affects"| orders_CN002
+    orders_RSK003 -.->|"risk_affects"| orders_PRC001
     orders_RSK004 -.->|"risk_affects"| orders_CMD004
     orders_RSK004 -.->|"risk_affects"| orders_CMD024
     orders_RSK004 -.->|"risk_affects"| orders_CN010
+    orders_RSK004 -.->|"risk_affects"| orders_PRC001
     orders_INQ001 -.->|"inquiry_affects"| orders_CMD010
     orders_INQ001 -.->|"inquiry_affects"| orders_CN002
+    orders_INQ001 -.->|"inquiry_affects"| orders_PRC001
     orders_INQ002 -.->|"inquiry_affects"| orders_CMD007
     orders_INQ002 -.->|"inquiry_affects"| orders_CN002
+    orders_INQ002 -.->|"inquiry_affects"| orders_PRC001
     orders_INQ003 -.->|"inquiry_affects"| orders_CMD001
+    orders_INQ003 -.->|"inquiry_affects"| orders_PRC001
     shipping_GL001 -.->|"goal_affects"| shipping_CMD008
     shipping_GL001 -.->|"goal_affects"| shipping_QRY002
     shipping_GL001 -.->|"goal_affects"| shipping_QRY003
     shipping_GL001 -.->|"goal_affects"| shipping_CN001
     shipping_GL001 -.->|"goal_affects"| shipping_CN002
+    shipping_GL001 -.->|"goal_affects"| shipping_PRC001
     shipping_GL002 -.->|"goal_affects"| shipping_CMD009
     shipping_GL002 -.->|"goal_affects"| shipping_QRY003
     shipping_GL002 -.->|"goal_affects"| shipping_CN001
+    shipping_GL002 -.->|"goal_affects"| shipping_PRC001
     shipping_GL003 -.->|"goal_affects"| shipping_CMD011
     shipping_GL003 -.->|"goal_affects"| shipping_CMD015
     shipping_GL003 -.->|"goal_affects"| shipping_CMD016
     shipping_GL003 -.->|"goal_affects"| shipping_CMD017
     shipping_GL003 -.->|"goal_affects"| shipping_CN004
     shipping_GL003 -.->|"goal_affects"| shipping_CN005
+    shipping_GL003 -.->|"goal_affects"| shipping_PRC002
     shipping_RSK001 -.->|"risk_affects"| shipping_CMD009
     shipping_RSK001 -.->|"risk_affects"| shipping_QRY003
     shipping_RSK001 -.->|"risk_affects"| shipping_CN001
+    shipping_RSK001 -.->|"risk_affects"| shipping_PRC001
     shipping_RSK002 -.->|"risk_affects"| shipping_CMD008
     shipping_RSK002 -.->|"risk_affects"| shipping_QRY002
     shipping_RSK002 -.->|"risk_affects"| shipping_CN002
+    shipping_RSK002 -.->|"risk_affects"| shipping_PRC001
     shipping_RSK003 -.->|"risk_affects"| shipping_CMD012
     shipping_RSK003 -.->|"risk_affects"| shipping_CMD018
     shipping_RSK003 -.->|"risk_affects"| shipping_CN004
+    shipping_RSK003 -.->|"risk_affects"| shipping_PRC002
     shipping_INQ001 -.->|"inquiry_affects"| shipping_QRY003
     shipping_INQ001 -.->|"inquiry_affects"| shipping_CN001
+    shipping_INQ001 -.->|"inquiry_affects"| shipping_PRC001
     shop_GL001 -.->|"goal_affects"| shop_CMD001
     shop_GL001 -.->|"goal_affects"| shop_QRY001
     shop_GL001 -.->|"goal_affects"| shop_CN001
+    shop_GL001 -.->|"goal_affects"| shop_PRC001
     shop_GL002 -.->|"goal_affects"| shop_CMD010
     shop_GL002 -.->|"goal_affects"| shop_CMD011
     shop_GL002 -.->|"goal_affects"| shop_CMD014
     shop_GL002 -.->|"goal_affects"| shop_QRY007
     shop_GL002 -.->|"goal_affects"| shop_CN004
     shop_GL002 -.->|"goal_affects"| shop_CN005
+    shop_GL002 -.->|"goal_affects"| shop_PRC002
     shop_GL003 -.->|"goal_affects"| shop_CMD006
     shop_GL003 -.->|"goal_affects"| shop_CMD007
     shop_GL003 -.->|"goal_affects"| shop_CN003
     shop_RSK001 -.->|"risk_affects"| shop_CMD014
     shop_RSK001 -.->|"risk_affects"| shop_CN005
+    shop_RSK001 -.->|"risk_affects"| shop_PRC002
     shop_RSK002 -.->|"risk_affects"| shop_CMD001
     shop_RSK002 -.->|"risk_affects"| shop_QRY002
     shop_RSK002 -.->|"risk_affects"| shop_CN001
     shop_RSK002 -.->|"risk_affects"| shop_CN002
+    shop_RSK002 -.->|"risk_affects"| shop_PRC001
     shop_INQ001 -.->|"inquiry_affects"| shop_CMD001
     shop_INQ001 -.->|"inquiry_affects"| shop_CN001
+    shop_INQ001 -.->|"inquiry_affects"| shop_PRC001
     shop_INQ002 -.->|"inquiry_affects"| shop_CMD002
     shop_INQ002 -.->|"inquiry_affects"| shop_QRY003
     shop_INQ002 -.->|"inquiry_affects"| shop_CN002
@@ -13019,7 +13095,7 @@ graph TD
 
 ## Entity Catalog
 
-**3711 entities** across 56 types.
+**3714 entities** across 56 types.
 
 | ID | Type | Name | Layer | Source |
 |----|------|------|-------|--------|
@@ -13141,6 +13217,9 @@ graph TD
 | CAP102 | Capability | Product Variants & Options | governance.capability | sell-and-fulfill.capability.yaml |
 | CAP103 | Capability | Back-office Administration | governance.capability | configure-and-scale.capability.yaml |
 | CAP104 | Capability | Store Locator | governance.capability | shop-and-buy.capability.yaml |
+| CAP105 | Capability | Merchandising & Fulfilment | governance.capability | sell-and-fulfill.capability.yaml |
+| CAP106 | Capability | Customer-Facing Commerce | governance.capability | shop-and-buy.capability.yaml |
+| CAP107 | Capability | Platform Operation & Extension | governance.capability | configure-and-scale.capability.yaml |
 | catalog.CR001 | ClassificationRule | Product lifecycle transitions | design.rules | catalog/rules.yaml |
 | catalog.CR002 | ClassificationRule | Product type determines combination eligibility | design.rules | catalog/rules.yaml |
 | checkout.CR001 | ClassificationRule | Cart status transitions | design.rules | checkout/rules.yaml |
@@ -16772,7 +16851,7 @@ graph TD
 | Association | 28 |
 | Process | 27 |
 | UseCase | 27 |
-| Capability | 23 |
+| Capability | 26 |
 | Enumeration | 22 |
 | Contract | 22 |
 | Actor | 20 |
@@ -16812,7 +16891,7 @@ graph TD
 
 ## Relations
 
-**7947 relations** discovered.
+**8020 relations** discovered.
 
 | Source | Type | Target |
 |--------|------|--------|
@@ -19890,15 +19969,18 @@ graph TD
 | admin.GL001 (Goal) | goal_affects | admin.CN002 (Concept) |
 | admin.GL001 (Goal) | goal_affects | admin.CN003 (Concept) |
 | admin.GL001 (Goal) | goal_affects | admin.CN009 (Concept) |
+| admin.GL001 (Goal) | goal_affects | admin.PRC001 (Process) |
 | admin.GL002 (Goal) | goal_affects | admin.CMD021 (Operation) |
 | admin.GL002 (Goal) | goal_affects | admin.CMD022 (Operation) |
 | admin.GL002 (Goal) | goal_affects | admin.CMD024 (Operation) |
 | admin.GL002 (Goal) | goal_affects | admin.CN005 (Concept) |
+| admin.GL002 (Goal) | goal_affects | admin.PRC002 (Process) |
 | admin.GL003 (Goal) | goal_affects | admin.CMD015 (Operation) |
 | admin.GL003 (Goal) | goal_affects | admin.CMD017 (Operation) |
 | admin.GL003 (Goal) | goal_affects | admin.CMD019 (Operation) |
 | admin.GL003 (Goal) | goal_affects | admin.CMD020 (Operation) |
 | admin.GL003 (Goal) | goal_affects | admin.CN004 (Concept) |
+| admin.GL003 (Goal) | goal_affects | admin.PRC003 (Process) |
 | admin.GL004 (Goal) | goal_affects | admin.CMD029 (Operation) |
 | admin.GL004 (Goal) | goal_affects | admin.CMD030 (Operation) |
 | admin.GL004 (Goal) | goal_affects | admin.QRY008 (Operation) |
@@ -19915,6 +19997,7 @@ graph TD
 | catalog.GL003 (Goal) | goal_affects | catalog.CMD002 (Operation) |
 | catalog.GL003 (Goal) | goal_affects | catalog.QRY002 (Operation) |
 | catalog.GL003 (Goal) | goal_affects | catalog.CN001 (Concept) |
+| catalog.GL003 (Goal) | goal_affects | catalog.PRC001 (Process) |
 | catalog.GL004 (Goal) | goal_affects | catalog.CMD001 (Operation) |
 | catalog.GL004 (Goal) | goal_affects | catalog.CMD002 (Operation) |
 | catalog.GL004 (Goal) | goal_affects | catalog.QRY001 (Operation) |
@@ -19923,101 +20006,126 @@ graph TD
 | checkout.GL001 (Goal) | goal_affects | checkout.CMD001 (Operation) |
 | checkout.GL001 (Goal) | goal_affects | checkout.CMD009 (Operation) |
 | checkout.GL001 (Goal) | goal_affects | checkout.CN001 (Concept) |
+| checkout.GL001 (Goal) | goal_affects | checkout.PRC001 (Process) |
 | checkout.GL002 (Goal) | goal_affects | checkout.CMD016 (Operation) |
 | checkout.GL002 (Goal) | goal_affects | checkout.CMD017 (Operation) |
 | checkout.GL002 (Goal) | goal_affects | checkout.CN004 (Concept) |
+| checkout.GL002 (Goal) | goal_affects | checkout.PRC002 (Process) |
 | checkout.GL003 (Goal) | goal_affects | checkout.CMD014 (Operation) |
 | checkout.GL003 (Goal) | goal_affects | checkout.CMD015 (Operation) |
 | checkout.GL003 (Goal) | goal_affects | checkout.CN003 (Concept) |
+| checkout.GL003 (Goal) | goal_affects | checkout.PRC001 (Process) |
 | content.GL001 (Goal) | goal_affects | content.CMD001 (Operation) |
 | content.GL001 (Goal) | goal_affects | content.CMD002 (Operation) |
 | content.GL001 (Goal) | goal_affects | content.CMD007 (Operation) |
 | content.GL001 (Goal) | goal_affects | content.CN001 (Concept) |
 | content.GL001 (Goal) | goal_affects | content.CN002 (Concept) |
+| content.GL001 (Goal) | goal_affects | content.PRC001 (Process) |
 | content.GL002 (Goal) | goal_affects | content.CMD019 (Operation) |
 | content.GL002 (Goal) | goal_affects | content.CMD020 (Operation) |
 | content.GL002 (Goal) | goal_affects | content.QRY007 (Operation) |
 | content.GL002 (Goal) | goal_affects | content.CN005 (Concept) |
+| content.GL002 (Goal) | goal_affects | content.PRC001 (Process) |
 | content.GL003 (Goal) | goal_affects | content.CMD013 (Operation) |
 | content.GL003 (Goal) | goal_affects | content.CMD014 (Operation) |
 | content.GL003 (Goal) | goal_affects | content.CMD016 (Operation) |
 | content.GL003 (Goal) | goal_affects | content.CN003 (Concept) |
+| content.GL003 (Goal) | goal_affects | content.PRC002 (Process) |
 | customers.GL001 (Goal) | goal_affects | customers.CMD001 (Operation) |
 | customers.GL001 (Goal) | goal_affects | customers.CMD008 (Operation) |
 | customers.GL001 (Goal) | goal_affects | customers.CN001 (Concept) |
+| customers.GL001 (Goal) | goal_affects | customers.PRC001 (Process) |
 | customers.GL002 (Goal) | goal_affects | customers.CMD012 (Operation) |
 | customers.GL002 (Goal) | goal_affects | customers.CMD013 (Operation) |
 | customers.GL002 (Goal) | goal_affects | customers.CMD015 (Operation) |
 | customers.GL002 (Goal) | goal_affects | customers.CN004 (Concept) |
+| customers.GL002 (Goal) | goal_affects | customers.PRC001 (Process) |
 | customers.GL003 (Goal) | goal_affects | customers.CMD016 (Operation) |
 | customers.GL003 (Goal) | goal_affects | customers.CMD018 (Operation) |
 | customers.GL003 (Goal) | goal_affects | customers.CN005 (Concept) |
+| customers.GL003 (Goal) | goal_affects | customers.PRC002 (Process) |
 | customers.GL004 (Goal) | goal_affects | customers.CMD003 (Operation) |
 | customers.GL004 (Goal) | goal_affects | customers.CMD028 (Operation) |
 | customers.GL004 (Goal) | goal_affects | customers.CN001 (Concept) |
 | customers.GL004 (Goal) | goal_affects | customers.CN004 (Concept) |
+| customers.GL004 (Goal) | goal_affects | customers.PRC001 (Process) |
 | international.GL001 (Goal) | goal_affects | international.CMD005 (Operation) |
 | international.GL001 (Goal) | goal_affects | international.QRY002 (Operation) |
 | international.GL001 (Goal) | goal_affects | international.CN001 (Concept) |
 | international.GL001 (Goal) | goal_affects | international.CN003 (Concept) |
+| international.GL001 (Goal) | goal_affects | international.PRC001 (Process) |
 | international.GL002 (Goal) | goal_affects | international.CMD027 (Operation) |
 | international.GL002 (Goal) | goal_affects | international.CMD034 (Operation) |
 | international.GL002 (Goal) | goal_affects | international.QRY012 (Operation) |
 | international.GL002 (Goal) | goal_affects | international.CN007 (Concept) |
 | international.GL002 (Goal) | goal_affects | international.CN008 (Concept) |
 | international.GL002 (Goal) | goal_affects | international.CN009 (Concept) |
+| international.GL002 (Goal) | goal_affects | international.PRC002 (Process) |
 | international.GL003 (Goal) | goal_affects | international.CMD007 (Operation) |
 | international.GL003 (Goal) | goal_affects | international.CMD011 (Operation) |
 | international.GL003 (Goal) | goal_affects | international.CMD019 (Operation) |
 | international.GL003 (Goal) | goal_affects | international.CN002 (Concept) |
 | international.GL003 (Goal) | goal_affects | international.CN004 (Concept) |
 | international.GL003 (Goal) | goal_affects | international.CN006 (Concept) |
+| international.GL003 (Goal) | goal_affects | international.PRC001 (Process) |
 | modules.GL001 (Goal) | goal_affects | modules.CMD001 (Operation) |
 | modules.GL001 (Goal) | goal_affects | modules.CMD002 (Operation) |
 | modules.GL001 (Goal) | goal_affects | modules.CMD008 (Operation) |
 | modules.GL001 (Goal) | goal_affects | modules.CN001 (Concept) |
+| modules.GL001 (Goal) | goal_affects | modules.PRC001 (Process) |
 | modules.GL002 (Goal) | goal_affects | modules.CMD006 (Operation) |
 | modules.GL002 (Goal) | goal_affects | modules.CMD007 (Operation) |
 | modules.GL002 (Goal) | goal_affects | modules.CN001 (Concept) |
+| modules.GL002 (Goal) | goal_affects | modules.PRC001 (Process) |
 | modules.GL003 (Goal) | goal_affects | modules.CMD009 (Operation) |
 | modules.GL003 (Goal) | goal_affects | modules.CMD012 (Operation) |
 | modules.GL003 (Goal) | goal_affects | modules.QRY003 (Operation) |
 | modules.GL003 (Goal) | goal_affects | modules.CN002 (Concept) |
+| modules.GL003 (Goal) | goal_affects | modules.PRC002 (Process) |
 | orders.GL001 (Goal) | goal_affects | orders.CMD001 (Operation) |
 | orders.GL001 (Goal) | goal_affects | orders.QRY002 (Operation) |
 | orders.GL001 (Goal) | goal_affects | orders.CN002 (Concept) |
+| orders.GL001 (Goal) | goal_affects | orders.PRC001 (Process) |
 | orders.GL002 (Goal) | goal_affects | orders.CMD007 (Operation) |
 | orders.GL002 (Goal) | goal_affects | orders.CN002 (Concept) |
+| orders.GL002 (Goal) | goal_affects | orders.PRC001 (Process) |
 | orders.GL003 (Goal) | goal_affects | orders.CMD001 (Operation) |
 | orders.GL003 (Goal) | goal_affects | orders.CMD004 (Operation) |
 | orders.GL003 (Goal) | goal_affects | orders.CN002 (Concept) |
 | orders.GL003 (Goal) | goal_affects | orders.CN010 (Concept) |
+| orders.GL003 (Goal) | goal_affects | orders.PRC001 (Process) |
 | orders.GL004 (Goal) | goal_affects | orders.CMD017 (Operation) |
 | orders.GL004 (Goal) | goal_affects | orders.CMD019 (Operation) |
 | orders.GL004 (Goal) | goal_affects | orders.CN006 (Concept) |
+| orders.GL004 (Goal) | goal_affects | orders.PRC004 (Process) |
 | shipping.GL001 (Goal) | goal_affects | shipping.CMD008 (Operation) |
 | shipping.GL001 (Goal) | goal_affects | shipping.QRY002 (Operation) |
 | shipping.GL001 (Goal) | goal_affects | shipping.QRY003 (Operation) |
 | shipping.GL001 (Goal) | goal_affects | shipping.CN001 (Concept) |
 | shipping.GL001 (Goal) | goal_affects | shipping.CN002 (Concept) |
+| shipping.GL001 (Goal) | goal_affects | shipping.PRC001 (Process) |
 | shipping.GL002 (Goal) | goal_affects | shipping.CMD009 (Operation) |
 | shipping.GL002 (Goal) | goal_affects | shipping.QRY003 (Operation) |
 | shipping.GL002 (Goal) | goal_affects | shipping.CN001 (Concept) |
+| shipping.GL002 (Goal) | goal_affects | shipping.PRC001 (Process) |
 | shipping.GL003 (Goal) | goal_affects | shipping.CMD011 (Operation) |
 | shipping.GL003 (Goal) | goal_affects | shipping.CMD015 (Operation) |
 | shipping.GL003 (Goal) | goal_affects | shipping.CMD016 (Operation) |
 | shipping.GL003 (Goal) | goal_affects | shipping.CMD017 (Operation) |
 | shipping.GL003 (Goal) | goal_affects | shipping.CN004 (Concept) |
 | shipping.GL003 (Goal) | goal_affects | shipping.CN005 (Concept) |
+| shipping.GL003 (Goal) | goal_affects | shipping.PRC002 (Process) |
 | shop.GL001 (Goal) | goal_affects | shop.CMD001 (Operation) |
 | shop.GL001 (Goal) | goal_affects | shop.QRY001 (Operation) |
 | shop.GL001 (Goal) | goal_affects | shop.CN001 (Concept) |
+| shop.GL001 (Goal) | goal_affects | shop.PRC001 (Process) |
 | shop.GL002 (Goal) | goal_affects | shop.CMD010 (Operation) |
 | shop.GL002 (Goal) | goal_affects | shop.CMD011 (Operation) |
 | shop.GL002 (Goal) | goal_affects | shop.CMD014 (Operation) |
 | shop.GL002 (Goal) | goal_affects | shop.QRY007 (Operation) |
 | shop.GL002 (Goal) | goal_affects | shop.CN004 (Concept) |
 | shop.GL002 (Goal) | goal_affects | shop.CN005 (Concept) |
+| shop.GL002 (Goal) | goal_affects | shop.PRC002 (Process) |
 | shop.GL003 (Goal) | goal_affects | shop.CMD006 (Operation) |
 | shop.GL003 (Goal) | goal_affects | shop.CMD007 (Operation) |
 | shop.GL003 (Goal) | goal_affects | shop.CN003 (Concept) |
@@ -21156,6 +21264,7 @@ graph TD
 | shop.CMD016 (Operation) | initiated_by | shop.ACT001 (Actor) |
 | admin.INQ001 (Inquiry) | inquiry_affects | admin.CMD021 (Operation) |
 | admin.INQ001 (Inquiry) | inquiry_affects | admin.CN005 (Concept) |
+| admin.INQ001 (Inquiry) | inquiry_affects | admin.PRC002 (Process) |
 | admin.INQ002 (Inquiry) | inquiry_affects | admin.CMD034 (Operation) |
 | admin.INQ002 (Inquiry) | inquiry_affects | admin.CN008 (Concept) |
 | catalog.INQ001 (Inquiry) | inquiry_affects | catalog.QRY001 (Operation) |
@@ -21164,32 +21273,45 @@ graph TD
 | catalog.INQ002 (Inquiry) | inquiry_affects | catalog.CN001 (Concept) |
 | checkout.INQ001 (Inquiry) | inquiry_affects | checkout.CMD014 (Operation) |
 | checkout.INQ001 (Inquiry) | inquiry_affects | checkout.CN003 (Concept) |
+| checkout.INQ001 (Inquiry) | inquiry_affects | checkout.PRC001 (Process) |
 | checkout.INQ002 (Inquiry) | inquiry_affects | checkout.CMD009 (Operation) |
 | checkout.INQ002 (Inquiry) | inquiry_affects | checkout.QRY001 (Operation) |
 | checkout.INQ002 (Inquiry) | inquiry_affects | checkout.CN001 (Concept) |
+| checkout.INQ002 (Inquiry) | inquiry_affects | checkout.PRC001 (Process) |
 | content.INQ001 (Inquiry) | inquiry_affects | content.QRY001 (Operation) |
 | content.INQ001 (Inquiry) | inquiry_affects | content.CN001 (Concept) |
+| content.INQ001 (Inquiry) | inquiry_affects | content.PRC001 (Process) |
 | customers.INQ001 (Inquiry) | inquiry_affects | customers.CMD009 (Operation) |
 | customers.INQ001 (Inquiry) | inquiry_affects | customers.CN002 (Concept) |
 | customers.INQ002 (Inquiry) | inquiry_affects | customers.CMD003 (Operation) |
 | customers.INQ002 (Inquiry) | inquiry_affects | customers.CN001 (Concept) |
+| customers.INQ002 (Inquiry) | inquiry_affects | customers.PRC001 (Process) |
 | international.INQ001 (Inquiry) | inquiry_affects | international.CMD005 (Operation) |
 | international.INQ001 (Inquiry) | inquiry_affects | international.CN003 (Concept) |
+| international.INQ001 (Inquiry) | inquiry_affects | international.PRC001 (Process) |
 | international.INQ002 (Inquiry) | inquiry_affects | international.CMD034 (Operation) |
 | international.INQ002 (Inquiry) | inquiry_affects | international.CN009 (Concept) |
+| international.INQ002 (Inquiry) | inquiry_affects | international.PRC002 (Process) |
 | modules.INQ001 (Inquiry) | inquiry_affects | modules.CMD013 (Operation) |
 | modules.INQ001 (Inquiry) | inquiry_affects | modules.CN002 (Concept) |
+| modules.INQ001 (Inquiry) | inquiry_affects | modules.PRC002 (Process) |
 | modules.INQ002 (Inquiry) | inquiry_affects | modules.CMD001 (Operation) |
 | modules.INQ002 (Inquiry) | inquiry_affects | modules.CN001 (Concept) |
+| modules.INQ002 (Inquiry) | inquiry_affects | modules.PRC001 (Process) |
 | orders.INQ001 (Inquiry) | inquiry_affects | orders.CMD010 (Operation) |
 | orders.INQ001 (Inquiry) | inquiry_affects | orders.CN002 (Concept) |
+| orders.INQ001 (Inquiry) | inquiry_affects | orders.PRC001 (Process) |
 | orders.INQ002 (Inquiry) | inquiry_affects | orders.CMD007 (Operation) |
 | orders.INQ002 (Inquiry) | inquiry_affects | orders.CN002 (Concept) |
+| orders.INQ002 (Inquiry) | inquiry_affects | orders.PRC001 (Process) |
 | orders.INQ003 (Inquiry) | inquiry_affects | orders.CMD001 (Operation) |
+| orders.INQ003 (Inquiry) | inquiry_affects | orders.PRC001 (Process) |
 | shipping.INQ001 (Inquiry) | inquiry_affects | shipping.QRY003 (Operation) |
 | shipping.INQ001 (Inquiry) | inquiry_affects | shipping.CN001 (Concept) |
+| shipping.INQ001 (Inquiry) | inquiry_affects | shipping.PRC001 (Process) |
 | shop.INQ001 (Inquiry) | inquiry_affects | shop.CMD001 (Operation) |
 | shop.INQ001 (Inquiry) | inquiry_affects | shop.CN001 (Concept) |
+| shop.INQ001 (Inquiry) | inquiry_affects | shop.PRC001 (Process) |
 | shop.INQ002 (Inquiry) | inquiry_affects | shop.CMD002 (Operation) |
 | shop.INQ002 (Inquiry) | inquiry_affects | shop.QRY003 (Operation) |
 | shop.INQ002 (Inquiry) | inquiry_affects | shop.CN002 (Concept) |
@@ -22472,12 +22594,14 @@ graph TD
 | Orders (Context) | owned_by | TM001 (Team) |
 | Shipping (Context) | owned_by | TM005 (Team) |
 | Shop (Context) | owned_by | TM010 (Team) |
+| CAP107 (Capability) | owned_by | DPT001 (Department) |
 | CAP013 (Capability) | owned_by | TM007 (Team) |
 | CAP014 (Capability) | owned_by | TM008 (Team) |
 | CAP015 (Capability) | owned_by | TM009 (Team) |
 | CAP016 (Capability) | owned_by | TM009 (Team) |
 | CAP103 (Capability) | owned_by | TM009 (Team) |
 | CAP017 (Capability) | owned_by | TM010 (Team) |
+| CAP105 (Capability) | owned_by | DPT001 (Department) |
 | CAP005 (Capability) | owned_by | TM002 (Team) |
 | CAP102 (Capability) | owned_by | TM002 (Team) |
 | CAP101 (Capability) | owned_by | TM002 (Team) |
@@ -22485,6 +22609,7 @@ graph TD
 | CAP010 (Capability) | owned_by | TM005 (Team) |
 | CAP011 (Capability) | owned_by | TM006 (Team) |
 | CAP012 (Capability) | owned_by | TM006 (Team) |
+| CAP106 (Capability) | owned_by | DPT001 (Department) |
 | CAP018 (Capability) | owned_by | TM002 (Team) |
 | CAP104 (Capability) | owned_by | TM010 (Team) |
 | CAP001 (Capability) | owned_by | TM001 (Team) |
@@ -23614,6 +23739,7 @@ graph TD
 | admin.RSK001 (Risk) | risk_affects | admin.CMD014 (Operation) |
 | admin.RSK001 (Risk) | risk_affects | admin.CN002 (Concept) |
 | admin.RSK001 (Risk) | risk_affects | admin.CN003 (Concept) |
+| admin.RSK001 (Risk) | risk_affects | admin.PRC001 (Process) |
 | admin.RSK002 (Risk) | risk_affects | admin.CMD029 (Operation) |
 | admin.RSK002 (Risk) | risk_affects | admin.CMD030 (Operation) |
 | admin.RSK002 (Risk) | risk_affects | admin.QRY008 (Operation) |
@@ -23621,10 +23747,12 @@ graph TD
 | admin.RSK003 (Risk) | risk_affects | admin.CMD021 (Operation) |
 | admin.RSK003 (Risk) | risk_affects | admin.CMD024 (Operation) |
 | admin.RSK003 (Risk) | risk_affects | admin.CN005 (Concept) |
+| admin.RSK003 (Risk) | risk_affects | admin.PRC002 (Process) |
 | catalog.RSK001 (Risk) | risk_affects | catalog.CMD002 (Operation) |
 | catalog.RSK001 (Risk) | risk_affects | catalog.CMD007 (Operation) |
 | catalog.RSK001 (Risk) | risk_affects | catalog.EVT002 (Operation) |
 | catalog.RSK001 (Risk) | risk_affects | catalog.CN001 (Concept) |
+| catalog.RSK001 (Risk) | risk_affects | catalog.PRC001 (Process) |
 | catalog.RSK002 (Risk) | risk_affects | catalog.CMD016 (Operation) |
 | catalog.RSK002 (Risk) | risk_affects | catalog.CMD018 (Operation) |
 | catalog.RSK002 (Risk) | risk_affects | catalog.CN004 (Concept) |
@@ -23633,31 +23761,41 @@ graph TD
 | catalog.RSK003 (Risk) | risk_affects | catalog.CMD002 (Operation) |
 | catalog.RSK003 (Risk) | risk_affects | catalog.CMD006 (Operation) |
 | catalog.RSK003 (Risk) | risk_affects | catalog.CN001 (Concept) |
+| catalog.RSK003 (Risk) | risk_affects | catalog.PRC001 (Process) |
 | catalog.RSK004 (Risk) | risk_affects | catalog.CMD011 (Operation) |
 | catalog.RSK004 (Risk) | risk_affects | catalog.CN003 (Concept) |
+| catalog.RSK004 (Risk) | risk_affects | catalog.PRC002 (Process) |
 | checkout.RSK001 (Risk) | risk_affects | checkout.CMD009 (Operation) |
 | checkout.RSK001 (Risk) | risk_affects | checkout.CMD014 (Operation) |
 | checkout.RSK001 (Risk) | risk_affects | checkout.CN001 (Concept) |
+| checkout.RSK001 (Risk) | risk_affects | checkout.PRC001 (Process) |
 | checkout.RSK002 (Risk) | risk_affects | checkout.CMD014 (Operation) |
 | checkout.RSK002 (Risk) | risk_affects | checkout.CMD016 (Operation) |
 | checkout.RSK002 (Risk) | risk_affects | checkout.CN003 (Concept) |
 | checkout.RSK002 (Risk) | risk_affects | checkout.CN004 (Concept) |
+| checkout.RSK002 (Risk) | risk_affects | checkout.PRC002 (Process) |
 | checkout.RSK003 (Risk) | risk_affects | checkout.CMD014 (Operation) |
 | checkout.RSK003 (Risk) | risk_affects | checkout.CN003 (Concept) |
+| checkout.RSK003 (Risk) | risk_affects | checkout.PRC001 (Process) |
 | content.RSK001 (Risk) | risk_affects | content.CMD019 (Operation) |
 | content.RSK001 (Risk) | risk_affects | content.CMD020 (Operation) |
 | content.RSK001 (Risk) | risk_affects | content.CN005 (Concept) |
+| content.RSK001 (Risk) | risk_affects | content.PRC001 (Process) |
 | content.RSK002 (Risk) | risk_affects | content.CMD014 (Operation) |
 | content.RSK002 (Risk) | risk_affects | content.CMD016 (Operation) |
 | content.RSK002 (Risk) | risk_affects | content.CN003 (Concept) |
+| content.RSK002 (Risk) | risk_affects | content.PRC002 (Process) |
 | content.RSK003 (Risk) | risk_affects | content.CMD008 (Operation) |
 | content.RSK003 (Risk) | risk_affects | content.CMD009 (Operation) |
 | content.RSK003 (Risk) | risk_affects | content.CN002 (Concept) |
+| content.RSK003 (Risk) | risk_affects | content.PRC001 (Process) |
 | customers.RSK001 (Risk) | risk_affects | customers.CMD001 (Operation) |
 | customers.RSK001 (Risk) | risk_affects | customers.CN001 (Concept) |
+| customers.RSK001 (Risk) | risk_affects | customers.PRC001 (Process) |
 | customers.RSK002 (Risk) | risk_affects | customers.CMD012 (Operation) |
 | customers.RSK002 (Risk) | risk_affects | customers.CMD013 (Operation) |
 | customers.RSK002 (Risk) | risk_affects | customers.CN004 (Concept) |
+| customers.RSK002 (Risk) | risk_affects | customers.PRC001 (Process) |
 | customers.RSK003 (Risk) | risk_affects | customers.CMD003 (Operation) |
 | customers.RSK003 (Risk) | risk_affects | customers.QRY002 (Operation) |
 | customers.RSK003 (Risk) | risk_affects | customers.QRY003 (Operation) |
@@ -23667,46 +23805,60 @@ graph TD
 | international.RSK001 (Risk) | risk_affects | international.QRY002 (Operation) |
 | international.RSK001 (Risk) | risk_affects | international.CN001 (Concept) |
 | international.RSK001 (Risk) | risk_affects | international.CN003 (Concept) |
+| international.RSK001 (Risk) | risk_affects | international.PRC001 (Process) |
 | international.RSK002 (Risk) | risk_affects | international.CMD027 (Operation) |
 | international.RSK002 (Risk) | risk_affects | international.CMD034 (Operation) |
 | international.RSK002 (Risk) | risk_affects | international.CN008 (Concept) |
 | international.RSK002 (Risk) | risk_affects | international.CN009 (Concept) |
+| international.RSK002 (Risk) | risk_affects | international.PRC002 (Process) |
 | international.RSK003 (Risk) | risk_affects | international.CMD013 (Operation) |
 | international.RSK003 (Risk) | risk_affects | international.CMD021 (Operation) |
 | international.RSK003 (Risk) | risk_affects | international.CMD032 (Operation) |
 | international.RSK003 (Risk) | risk_affects | international.CN004 (Concept) |
 | international.RSK003 (Risk) | risk_affects | international.CN006 (Concept) |
+| international.RSK003 (Risk) | risk_affects | international.PRC001 (Process) |
 | modules.RSK001 (Risk) | risk_affects | modules.CMD001 (Operation) |
 | modules.RSK001 (Risk) | risk_affects | modules.CMD003 (Operation) |
 | modules.RSK001 (Risk) | risk_affects | modules.CMD007 (Operation) |
 | modules.RSK001 (Risk) | risk_affects | modules.CN001 (Concept) |
+| modules.RSK001 (Risk) | risk_affects | modules.PRC001 (Process) |
 | modules.RSK002 (Risk) | risk_affects | modules.CMD002 (Operation) |
 | modules.RSK002 (Risk) | risk_affects | modules.CMD008 (Operation) |
 | modules.RSK002 (Risk) | risk_affects | modules.CN001 (Concept) |
+| modules.RSK002 (Risk) | risk_affects | modules.PRC002 (Process) |
 | orders.RSK001 (Risk) | risk_affects | orders.CMD001 (Operation) |
 | orders.RSK001 (Risk) | risk_affects | orders.CN002 (Concept) |
+| orders.RSK001 (Risk) | risk_affects | orders.PRC001 (Process) |
 | orders.RSK002 (Risk) | risk_affects | orders.CMD007 (Operation) |
 | orders.RSK002 (Risk) | risk_affects | orders.CN002 (Concept) |
+| orders.RSK002 (Risk) | risk_affects | orders.PRC001 (Process) |
 | orders.RSK003 (Risk) | risk_affects | orders.CMD001 (Operation) |
 | orders.RSK003 (Risk) | risk_affects | orders.CN002 (Concept) |
+| orders.RSK003 (Risk) | risk_affects | orders.PRC001 (Process) |
 | orders.RSK004 (Risk) | risk_affects | orders.CMD004 (Operation) |
 | orders.RSK004 (Risk) | risk_affects | orders.CMD024 (Operation) |
 | orders.RSK004 (Risk) | risk_affects | orders.CN010 (Concept) |
+| orders.RSK004 (Risk) | risk_affects | orders.PRC001 (Process) |
 | shipping.RSK001 (Risk) | risk_affects | shipping.CMD009 (Operation) |
 | shipping.RSK001 (Risk) | risk_affects | shipping.QRY003 (Operation) |
 | shipping.RSK001 (Risk) | risk_affects | shipping.CN001 (Concept) |
+| shipping.RSK001 (Risk) | risk_affects | shipping.PRC001 (Process) |
 | shipping.RSK002 (Risk) | risk_affects | shipping.CMD008 (Operation) |
 | shipping.RSK002 (Risk) | risk_affects | shipping.QRY002 (Operation) |
 | shipping.RSK002 (Risk) | risk_affects | shipping.CN002 (Concept) |
+| shipping.RSK002 (Risk) | risk_affects | shipping.PRC001 (Process) |
 | shipping.RSK003 (Risk) | risk_affects | shipping.CMD012 (Operation) |
 | shipping.RSK003 (Risk) | risk_affects | shipping.CMD018 (Operation) |
 | shipping.RSK003 (Risk) | risk_affects | shipping.CN004 (Concept) |
+| shipping.RSK003 (Risk) | risk_affects | shipping.PRC002 (Process) |
 | shop.RSK001 (Risk) | risk_affects | shop.CMD014 (Operation) |
 | shop.RSK001 (Risk) | risk_affects | shop.CN005 (Concept) |
+| shop.RSK001 (Risk) | risk_affects | shop.PRC002 (Process) |
 | shop.RSK002 (Risk) | risk_affects | shop.CMD001 (Operation) |
 | shop.RSK002 (Risk) | risk_affects | shop.QRY002 (Operation) |
 | shop.RSK002 (Risk) | risk_affects | shop.CN001 (Concept) |
 | shop.RSK002 (Risk) | risk_affects | shop.CN002 (Concept) |
+| shop.RSK002 (Risk) | risk_affects | shop.PRC001 (Process) |
 | admin.RSK001 (Risk) | risk_goal | admin.GL001 (Goal) |
 | admin.RSK002 (Risk) | risk_goal | admin.GL004 (Goal) |
 | admin.RSK003 (Risk) | risk_goal | admin.GL002 (Goal) |
@@ -24776,14 +24928,14 @@ graph TD
 | initiated_by | 312 |
 | materializes | 284 |
 | validates | 239 |
+| goal_affects | 166 |
 | user_story_operation | 152 |
-| goal_affects | 137 |
+| risk_affects | 126 |
 | governed_by | 118 |
 | question_answered_by | 114 |
-| risk_affects | 99 |
 | payload_model | 96 |
 | concepts | 95 |
-| owned_by | 84 |
+| owned_by | 87 |
 | context_uses_concept | 81 |
 | use_case_operation | 77 |
 | process_orders_operation | 74 |
@@ -24792,10 +24944,10 @@ graph TD
 | question_about | 65 |
 | action_on_screen | 63 |
 | screen_uses_model | 53 |
+| inquiry_affects | 53 |
 | use_case_actor | 43 |
 | error_related_rule | 42 |
 | user_story_test_case | 39 |
-| inquiry_affects | 39 |
 | kpi_goal | 39 |
 | use_case_user_story | 38 |
 | scoped_to | 37 |
