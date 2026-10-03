@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 29 |
-| Additive (minor) | 210 |
+| Additive (minor) | 216 |
 | Clarification (patch) | 0 |
-| **Total changes** | 239 |
+| **Total changes** | 245 |
 
 ## ⚠ Breaking changes
 
@@ -221,7 +221,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (187)
+## Added (193)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -262,6 +262,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/channel_contract/properties/slice` — Property `slice` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract/properties/slice`_
 
+- [additive] `design/arch.schema.yaml#/$defs/cli_contract` — New definition `cli_contract` added to `design/arch.schema.yaml`.
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/cli_contract`_
+
 - [additive] `design/arch.schema.yaml#/$defs/context/properties/covers` — Property `covers` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/context/properties/covers`_
 
@@ -289,8 +292,14 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/contract_slice` — New definition `contract_slice` added to `design/arch.schema.yaml`.
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contract_slice`_
 
+- [additive] `design/arch.schema.yaml#/$defs/contracts/properties/cli` — Property `cli` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contracts/properties/cli`_
+
 - [additive] `design/arch.schema.yaml#/$defs/contracts/properties/inprocess` — Property `inprocess` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contracts/properties/inprocess`_
+
+- [additive] `design/arch.schema.yaml#/$defs/contracts/properties/mcp` — Property `mcp` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contracts/properties/mcp`_
 
 - [additive] `design/arch.schema.yaml#/$defs/contracts/properties/scheduledtransfer` — Property `scheduledtransfer` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contracts/properties/scheduledtransfer`_
@@ -334,6 +343,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/inprocess_contract` — New definition `inprocess_contract` added to `design/arch.schema.yaml`.
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/inprocess_contract`_
 
+- [additive] `design/arch.schema.yaml#/$defs/mcp_contract` — New definition `mcp_contract` added to `design/arch.schema.yaml`.
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/mcp_contract`_
+
 - **[breaking]** `design/arch.schema.yaml#/$defs/party/properties/id` — Property `id` added (required — breaking).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/party/properties/id`_
 
@@ -361,6 +373,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/implementation` — Property `implementation` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/implementation`_
 
+- [additive] `design/arch.schema.yaml#/$defs/service/properties/imports` — Property `imports` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/imports`_
+
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/needs` — Property `needs` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/needs`_
 
@@ -372,6 +387,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/system_ref` — Property `system_ref` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/system_ref`_
+
+- [additive] `design/arch.schema.yaml#/$defs/service/properties/uses` — Property `uses` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/uses`_
 
 - [additive] `design/arch.schema.yaml#/$defs/shared_data_contract` — New definition `shared_data_contract` added to `design/arch.schema.yaml`.
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/shared_data_contract`_

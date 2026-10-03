@@ -6,6 +6,10 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 ## Schema-native examples
 
+- `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/imports/examples/0`: `["platform.SVC012","platform.SVC014"]`
+
+- `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/uses/examples/0`: `["payments.SVC003"]`
+
 - `schema/v2.8/design/story.schema.yaml#/$defs/process_activity/properties/next/items/properties/condition/examples/0`: `"the order total is above the free-shipping threshold"`
 
 - `schema/v2.8/design/story.schema.yaml#/$defs/process_activity/properties/next/items/properties/condition/examples/1`: `"credit score >= 600"`
@@ -102,11 +106,7 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry/properties/author/examples/0`: `"adam"`
 
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry/properties/date/examples/0`: `"2026-09-16"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry/properties/variant_group/examples/0`: `"auth-rewrite"`
-
-_… and 1 more (listed first 50 for readability)._
+_… and 3 more (listed first 50 for readability)._
 
 ## Reference example models
 

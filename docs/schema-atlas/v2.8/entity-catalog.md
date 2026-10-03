@@ -372,7 +372,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `binding_ref` | `string` |  | Reference to a binding by its typed id (e.g. BND001 or prod.BND001). A binding resolves (resource-type x environment) -> a concrete platform / module + params… |
 | `deployment_scope_ref` | `string` |  | Reference to a deployment scope by its typed id (e.g. DSC001 or shared.DSC001). A DeploymentScope is a substrate-neutral management / lifecycle / ownership / b… |
 | `infra_relation` | `string` | `hosted_on`, `connects_to`, `depends_on`, `attaches_to`, `routes_to` | TOSCA-derived relation vocabulary for typed inter-resource edges in the infrastructure layer (snake_case, TOSCA-verbatim). `hosted_on` is the canonical placeme… |
-| `coupling` | `string` | `http`, `message`, `rpc`, `inprocess`, `shareddata`, `scheduledtransfer` | How two bounded contexts are connected: `http` for request and response over an API, `message` for events across a broker, `rpc` for a procedure call, `inproce… |
+| `coupling` | `string` | `http`, `message`, `rpc`, `mcp`, `cli`, `graphql` … (9) | How two bounded contexts are connected: `http` for request and response over an API, `message` for events across a broker, `rpc` for a remote procedure call, `… |
 | `context_relationship` | `string` | `shared-kernel`, `customer-supplier`, `conformist`, `anticorruption-layer`, `open-host-service`, `published-language` … (8) | DDD strategic relationship between bounded contexts. Captures architectural intent beyond technical integration. |
 | `context_direction` | `string` | `upstream`, `downstream`, `peer` | This context's role in a dependency: upstream=we provide, downstream=we consume, peer=bidirectional. |
 | `spec_path` | `string` |  | Addressable path to any blueprint element. Format: [context.]layer[.category].ID[.field]. Examples: rules.classification.CR003, billing.rules.classification.CR… |
@@ -1072,6 +1072,8 @@ A deployable service or component within a bounded context.
 | `name` | `string` | ✓ |  | Service name (e.g. order-api, payment-worker). |
 | `kind` | `ref → service_kind` | — |  | Architectural component type. Determines applicable contract patterns. |
 | `system_ref` | `ref → party_ref` | — |  | The system party (PRT###) this service is a component of. A service nested under a party is a component of that party and may omit it; naming a different party… |
+| `imports` | `array<ref → service_ref>` | — |  | The libraries this service is built on: a package it imports or a component it embeds, so that its build contains them. Each item names another service, normal… |
+| `uses` | `array<ref → service_ref>` | — |  | The services this one depends on while running, stated at the level of a container diagram ("orders uses payments"): the statement to make before the contracts… |
 | `summary` | `string` | — |  | Brief description of what this service does. |
 | `description` | `string` | — |  | Full description of this service's purpose, responsibilities, and domain role. |
 | `properties` | `ref → entity_properties` | — |  |  |
@@ -1107,7 +1109,7 @@ _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service_need`_
 
 #### `contracts`
 
-Integration contracts for this service: what it provides to, and consumes from, everything outside itself. Each contract kind names one coupling style. The wire kinds name a specification and carry the document generated from it; `inprocess`, `shareddata` and `scheduledtransfer` name couplings that are not protocols, and `inprocess` carries no document at all, because no notation describes what i…
+Integration contracts for this service: what it provides to, and consumes from, everything outside itself. Each contract kind names one coupling style. The wire kinds name a specification and carry the document generated from it; `mcp` and `cli` name a surface rather than a specification - the tools of a Model Context Protocol server, the commands of a command-line program - so they name their do…
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
@@ -1115,6 +1117,8 @@ Integration contracts for this service: what it provides to, and consumes from, 
 | `httpClient` | `ref → http_client_contract` | — |  | Outbound HTTP client contract - what endpoints this service calls. |
 | `asyncapi` | `ref → channel_contract` | — |  | Async messaging contract (AsyncAPI specification). |
 | `openrpc` | `ref → rpc_contract` | — |  | JSON-RPC contract (OpenRPC specification). |
+| `mcp` | `ref → mcp_contract` | — |  | Model Context Protocol contract - the tools an MCP server exposes or calls. |
+| `cli` | `ref → cli_contract` | — |  | Command-line contract - the commands a command-line program exposes or runs. |
 | `arazzo` | `ref → flow_contract` | — |  | Workflow contract (Arazzo specification). |
 | `cncfsw` | `ref → flow_contract` | — |  | Serverless workflow contract (CNCF Serverless Workflow specification). |
 | `inprocess` | `ref → inprocess_contract` | — |  | In-process coupling - operations provided to, or consumed from, the same process. |
@@ -1195,6 +1199,44 @@ OpenRPC contract: remote methods exposed or called.
 | `output_structures` | `ref → contract_structures` | — |  | Named output structures from RPC results. |
 
 _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/rpc_contract`_
+
+#### `mcp_contract`
+
+Model Context Protocol contract: the tools an MCP server exposes to its clients, and the tools this service calls on another MCP server. Each listed operation is one tool; its name and its transport come from the operation's `exchange` - for a server reached over standard input and output, protocol `stdio` with an `endpoint` whose `group` is `tool`, whose `path` is the tool name and whose `method…
+
+**Required:** `contract_name`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `file` | `string` | — |  | Path to the MCP tools document file. |
+| `contract_name` | `ref → contract_name` | ✓ |  |  |
+| `slice` | `ref → contract_slice` | — |  |  |
+| `cross_cutting` | `ref → contract_cross_cutting` | — |  |  |
+| `expose` | `array<ref → operation_ref>` | — |  | Operations this service exposes as MCP tools. |
+| `call` | `array<ref → operation_ref>` | — |  | Operations this service calls as tools of another MCP server. |
+| `input_structures` | `ref → contract_structures` | — |  | Named input structures for tool calls. |
+| `output_structures` | `ref → contract_structures` | — |  | Named output structures from tool results. |
+
+_Source: `schema/v2.8/design/arch.schema.yaml#/$defs/mcp_contract`_
+
+#### `cli_contract`
+
+Command-line contract: the commands a command-line program exposes to whoever runs it, and the commands of another program this service runs. Each listed operation is one command; the command line comes from the operation's `exchange`, with protocol `cli` and an `endpoint` whose `path` is the command line and whose `method` is `EXEC`. A program whose commands are also called in-process by a sibli…
+
+**Required:** `contract_name`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `file` | `string` | — |  | Path to the command-line description file. |
+| `contract_name` | `ref → contract_name` | ✓ |  |  |
+| `slice` | `ref → contract_slice` | — |  |  |
+| `cross_cutting` | `ref → contract_cross_cutting` | — |  |  |
+| `expose` | `array<ref → operation_ref>` | — |  | Operations this service exposes as commands. |
+| `call` | `array<ref → operation_ref>` | — |  | Operations this service runs as commands of another program. |
+| `input_structures` | `ref → contract_structures` | — |  | Named input structures for commands: arguments, options and standard input. |
+| `output_structures` | `ref → contract_structures` | — |  | Named output structures from commands: standard output and exit status. |
+
+_Source: `schema/v2.8/design/arch.schema.yaml#/$defs/cli_contract`_
 
 #### `flow_contract`
 
@@ -1330,7 +1372,7 @@ _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/blind_spot`_
 | `contract_name` | `string` |  | Name of the contract document this interface contributes to. Two services declaring the same name under the same contract kind contribute to ONE document - the… |
 | `contract_slice` | `string` |  | Slice the contract document belongs to, naming a slice declared at the blueprint root. Absent, the document belongs to the slice its declaring file sits in. A… |
 | `contract_cross_cutting` | `any` |  | The contract document spans the model rather than belonging to one slice. Written only as `true` - its absence is the negative - and never beside `slice`. |
-| `contract_identity` | `union` |  | The naming and placement rules every contract kind shares. A document is named once, by `contract_name` or by the superseded `output`, and placed once, by `sli… |
+| `contract_identity` | `union` |  | The naming and placement rules the contract kinds share. A document is named once, by `contract_name` or by the superseded `output`, and placed once, by `slice… |
 
 <a id="design-concepts"></a>
 
@@ -1631,7 +1673,7 @@ Communication protocol and binding. Protocol determines which sub-fields are req
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `protocol` | `union` | ✓ |  | Communication protocol. Standard protocols or x- prefixed custom. |
-| `endpoint` | `ref → endpoint` | — |  | Endpoint configuration (required for http, http-sse, and stdio protocols). |
+| `endpoint` | `ref → endpoint` | — |  | Endpoint configuration (required for http, http-sse, stdio and cli protocols). |
 | `topic` | `ref → topic` | — |  | Message topic configuration (for AMQP/MQTT protocols). |
 | `queue` | `ref → queue` | — |  | Message queue configuration (alternative to topic for AMQP/MQTT). |
 | `method` | `ref → method` | — |  | RPC method configuration (required for tcp/grpc/trpc/orpc/json-rpc/x-ws). |
@@ -1641,7 +1683,7 @@ _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/exchange`_
 
 #### `endpoint`
 
-Endpoint configuration. For http/http-sse: URL path + HTTP method. For stdio: tool/method path + CALL method.
+Endpoint configuration. For http/http-sse: URL path + HTTP method. For stdio: tool/method path + CALL method. For cli: the command line as the path + EXEC method.
 
 **Required:** `path`, `method`
 
