@@ -10,16 +10,16 @@ import { modelFiles } from '../model-files.js';
 //     - name: International                 - name: International
 //       type: api                 =>          coupling: http
 //
-// A RENAME WITH A VALUE MAP, ON ONE LINE. `type` was free text and `coupling` is an enum of six -
-// `http`, `message`, `rpc`, `inprocess`, `shareddata`, `scheduledtransfer` - the same six the
-// contract surface derives from a model's own contract refs. That is the whole point of the move: a
+// A RENAME WITH A VALUE MAP, ON ONE LINE. `type` was free text and `coupling` is an enum - `http`,
+// `message`, `rpc`, `mcp`, `cli`, `graphql`, `inprocess`, `shareddata`, `scheduledtransfer` - the
+// contract surface's own vocabulary. That is the whole point of the move: a
 // declared coupling and a derived one become comparable, where a free string was a second
 // vocabulary for one fact and could be compared with nothing.
 //
 // WHAT IT WILL NOT DECIDE. Three kinds of site are left exactly as they are and reported:
 //
-//   · a value naming a MEDIUM rather than a coupling - `file`, `integration`, `email`. Which of the
-//     six applies depends on whether a run moves the data or both ends address one store, and that
+//   · a value naming a MEDIUM rather than a coupling - `file`, `integration`, `email`. Which coupling
+//     applies depends on whether a run moves the data or both ends address one store, and that
 //     is a fact about the system, not about the string. Guessing would put a word in the model that
 //     no one chose.
 //   · an entry that already declares `coupling:`. Two statements of one fact, and which survives is
@@ -83,6 +83,9 @@ const COUPLING_FOR_TYPE: Readonly<Record<string, string>> = Object.freeze({
   message: 'message',
   grpc: 'rpc',
   rpc: 'rpc',
+  mcp: 'mcp',
+  cli: 'cli',
+  graphql: 'graphql',
   'shared-db': 'shareddata',
   shared_db: 'shareddata',
   shareddb: 'shareddata',
@@ -223,7 +226,7 @@ function planFile(lines: SourceLine[], relativePath: string): { rewrites: Rewrit
       const mapped = COUPLING_FOR_TYPE[authored.toLowerCase()];
       if (!mapped) {
         warnings.push(
-          `${relativePath}:${typeIndex + 1}: \`type: ${authored}\` names a medium rather than a coupling - which of the six applies is a decision only an author can make; the entry is left alone`,
+          `${relativePath}:${typeIndex + 1}: \`type: ${authored}\` names a medium rather than a coupling - which coupling applies is a decision only an author can make; the entry is left alone`,
         );
         continue;
       }
