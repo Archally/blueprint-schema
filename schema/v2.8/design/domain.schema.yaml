@@ -486,12 +486,12 @@ $defs:
         description: "Communication protocol. Standard protocols or x- prefixed custom."
         oneOf:
           - type: string
-            enum: [http, http-sse, tcp, tds/tcp, grpc, trpc, orpc, json-rpc, x-ws, amqp, amqp091, amqp1, mqtt, kafka, graphql, stdio]
+            enum: [http, http-sse, tcp, tds/tcp, grpc, trpc, orpc, json-rpc, x-ws, amqp, amqp091, amqp1, mqtt, kafka, graphql, stdio, cli]
           - type: string
             pattern: "^x-[a-z][a-z0-9-]*$"
       endpoint:
         $ref: "#/$defs/endpoint"
-        description: "Endpoint configuration (required for http, http-sse, and stdio protocols)."
+        description: "Endpoint configuration (required for http, http-sse, stdio and cli protocols)."
       topic:
         $ref: "#/$defs/topic"
         description: "Message topic configuration (for AMQP/MQTT protocols)."
@@ -533,14 +533,14 @@ $defs:
           required: [graphql]
       - if:
           properties:
-            protocol: { type: string, enum: [stdio] }
+            protocol: { type: string, enum: [stdio, cli] }
           required: [protocol]
         then:
           required: [endpoint]
 
   endpoint:
     type: object
-    description: "Endpoint configuration. For http/http-sse: URL path + HTTP method. For stdio: tool/method path + CALL method."
+    description: "Endpoint configuration. For http/http-sse: URL path + HTTP method. For stdio: tool/method path + CALL method. For cli: the command line as the path + EXEC method."
     additionalProperties: false
     required:
       - path

@@ -135,10 +135,11 @@ $defs:
 
   contract_identity:
     description: >-
-      The naming and placement rules every contract kind shares. A document is named once, by
+      The naming and placement rules the contract kinds share. A document is named once, by
       `contract_name` or by the superseded `output`, and placed once, by `slice` or by
       `cross_cutting`. Two names, or two placements, would be two answers to one question with
-      nothing to say which is current.
+      nothing to say which is current. `mcp` and `cli` never accepted `output`, so they require
+      `contract_name` and state the placement rule themselves.
     anyOf:
       - required: [contract_name]
       - required: [output]
@@ -398,10 +399,10 @@ $defs:
         description: >
           SOFT-DEPRECATED (v2.8.33). Technical integration type, as free text. Accepted for the
           whole 2.8 line and removed at the next major.
-          Write `coupling` instead. It takes the six values the contract surface computes - `http`,
-          `message`, `rpc`, `inprocess`, `shareddata`, `scheduledtransfer` - so a declared coupling
-          and a derived one are comparable, where a free string is a second vocabulary for the same
-          fact and cannot be compared with anything. `api` and `http` become `http`, `events`
+          Write `coupling` instead. Its values - `http`, `message`, `rpc`, `mcp`, `cli`, `graphql`,
+          `inprocess`, `shareddata`, `scheduledtransfer` - are the contract surface's own
+          vocabulary, so a declared coupling and a derived one are comparable, where a
+          free string is a second vocabulary for the same fact and cannot be compared with anything. `api` and `http` become `http`, `events`
           becomes `message`, a shared store becomes `shareddata`; a value naming a medium rather
           than a coupling has no mechanical successor and is a decision for an author.
           Where the contracts already reach the pair, declare neither: they carry the direction, the
@@ -475,6 +476,37 @@ $defs:
           the document's `system_ref` default, and one that does neither is reported by the
           semantic checker as a service without a system. Distinct from `owned_by`, which says who
           owns the service rather than what it is part of.
+      imports:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+        description: >
+          The libraries this service is built on: a package it imports or a component it embeds,
+          so that its build contains them. Each item names another service, normally one of
+          `kind: library`, by its exact declared id, scope prefix included; an item that names no
+          declared service is a cross-reference error. The model graph draws a `service_imports`
+          edge to each named service, so impact analysis reaches every service built on a changed
+          library. A call over an interface to a running service is not an import: state it in
+          `uses`, and in the contracts once they are written. Optional.
+        examples:
+          - ["platform.SVC012", "platform.SVC014"]
+      uses:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+        description: >
+          The services this one depends on while running, stated at the level of a container
+          diagram ("orders uses payments"): the statement to make before the contracts between the
+          two are written. Each item names another service by its exact declared id, scope prefix
+          included; an item that names no declared service is a cross-reference error. The model
+          graph draws a `service_uses` edge to each named service, so impact analysis reaches every
+          service that depends on a changed one. A library this service is built on belongs in
+          `imports`. Once contracts are written, they state the operations, direction and transport
+          of the dependency. Optional.
+        examples:
+          - ["payments.SVC003"]
       summary:
         type: string
         description: "Brief description of what this service does."
@@ -623,10 +655,12 @@ $defs:
     description: >-
       Integration contracts for this service: what it provides to, and consumes from, everything
       outside itself. Each contract kind names one coupling style. The wire kinds name a
-      specification and carry the document generated from it; `inprocess`, `shareddata` and
-      `scheduledtransfer` name couplings that are not protocols, and `inprocess` carries no document
-      at all, because no notation describes what it couples. `security_schemes` is not a kind - it
-      declares the authentication the wire kinds reference.
+      specification and carry the document generated from it; `mcp` and `cli` name a surface
+      rather than a specification - the tools of a Model Context Protocol server, the commands of a
+      command-line program - so they name their document without fixing its notation; `inprocess`,
+      `shareddata` and `scheduledtransfer` name couplings that are not protocols, and `inprocess`
+      carries no document at all, because no notation describes what it couples. `security_schemes`
+      is not a kind - it declares the authentication the wire kinds reference.
     additionalProperties: false
     properties:
       openapi:
@@ -641,6 +675,12 @@ $defs:
       openrpc:
         $ref: "#/$defs/rpc_contract"
         description: "JSON-RPC contract (OpenRPC specification)."
+      mcp:
+        $ref: "#/$defs/mcp_contract"
+        description: "Model Context Protocol contract - the tools an MCP server exposes or calls."
+      cli:
+        $ref: "#/$defs/cli_contract"
+        description: "Command-line contract - the commands a command-line program exposes or runs."
       arazzo:
         $ref: "#/$defs/flow_contract"
         description: "Workflow contract (Arazzo specification)."
@@ -849,6 +889,91 @@ $defs:
       output_structures:
         $ref: "#/$defs/contract_structures"
         description: "Named output structures from RPC results."
+
+  mcp_contract:
+    type: object
+    description: >-
+      Model Context Protocol contract: the tools an MCP server exposes to its clients, and the tools
+      this service calls on another MCP server. Each listed operation is one tool; its name and its
+      transport come from the operation's `exchange` - for a server reached over standard input and
+      output, protocol `stdio` with an `endpoint` whose `group` is `tool`, whose `path` is the tool
+      name and whose `method` is `CALL`. The document is named by `contract_name`, which is required,
+      and placed once, by `slice` or by `cross_cutting`.
+    additionalProperties: false
+    required: [contract_name]
+    dependentSchemas:
+      slice:
+        properties:
+          cross_cutting: false
+    properties:
+      file:
+        type: string
+        description: "Path to the MCP tools document file."
+      contract_name:
+        $ref: "#/$defs/contract_name"
+      slice:
+        $ref: "#/$defs/contract_slice"
+      cross_cutting:
+        $ref: "#/$defs/contract_cross_cutting"
+      expose:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations this service exposes as MCP tools."
+      call:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations this service calls as tools of another MCP server."
+      input_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named input structures for tool calls."
+      output_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named output structures from tool results."
+
+  cli_contract:
+    type: object
+    description: >-
+      Command-line contract: the commands a command-line program exposes to whoever runs it, and the
+      commands of another program this service runs. Each listed operation is one command; the
+      command line comes from the operation's `exchange`, with protocol `cli` and an `endpoint` whose
+      `path` is the command line and whose `method` is `EXEC`. A program whose commands are also
+      called in-process by a sibling module declares both couplings: `cli` for the command line and
+      `inprocess` for the call. The document is named by `contract_name`, which is required, and
+      placed once, by `slice` or by `cross_cutting`.
+    additionalProperties: false
+    required: [contract_name]
+    dependentSchemas:
+      slice:
+        properties:
+          cross_cutting: false
+    properties:
+      file:
+        type: string
+        description: "Path to the command-line description file."
+      contract_name:
+        $ref: "#/$defs/contract_name"
+      slice:
+        $ref: "#/$defs/contract_slice"
+      cross_cutting:
+        $ref: "#/$defs/contract_cross_cutting"
+      expose:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations this service exposes as commands."
+      call:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations this service runs as commands of another program."
+      input_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named input structures for commands: arguments, options and standard input."
+      output_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named output structures from commands: standard output and exit status."
 
   flow_contract:
     type: object
