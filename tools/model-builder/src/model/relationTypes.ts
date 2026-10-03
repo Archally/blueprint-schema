@@ -416,7 +416,7 @@ export const RELATION_TYPE = {
   LeverageValueStream: 'leverage_value_stream',
   // leverage.schema (v2.7.4): leverage point strengthens capability (capability_refs[])
   LeverageCapability: 'leverage_capability',
-  // leverage.schema (v2.7.4): leverage DAG — dependent LP → prerequisite LP (depends_on[] + inverse of enables[])
+  // leverage.schema (v2.7.4): leverage DAG - dependent LP → prerequisite LP (depends_on[])
   LeverageDependsOn: 'leverage_depends_on',
   // dynamics.schema: the runtime-behaviour layer's edges, all of them Dynamics → Operation.
   //

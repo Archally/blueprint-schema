@@ -14,7 +14,7 @@ const ORDERS_DOMAIN_DOC: ParsedBlueprintDocument = {
     name: 'Orders',
     operations: {
       'op.orders.submit': {
-        id: 'OP001',
+        id: 'orders.OP001',
         kind: 'command',
         name: 'Submit Order',
         description: 'Submit draft order for confirmation',
@@ -32,7 +32,7 @@ const INVENTORY_DOMAIN_DOC: ParsedBlueprintDocument = {
     name: 'Inventory',
     operations: {
       'op.inventory.reserve': {
-        id: 'OP001',
+        id: 'inventory.OP001',
         kind: 'command',
         name: 'Reserve Stock',
         description: 'Reserve quantity for an order line',
@@ -55,7 +55,7 @@ const ORDERS_STORY_DOC: ParsedBlueprintDocument = {
         storyId: 'ST-001',
         operations: [
           { name: 'Add to Cart', component: 'checkout-service' },
-          { name: 'Submit Order', operationRef: 'OP001', component: 'order-service' },
+          { name: 'Submit Order', operationRef: 'orders.OP001', component: 'order-service' },
           { name: 'Reserve Stock', operationRef: 'inventory.OP001', component: 'inventory-service' },
           { name: 'Send confirmation email', component: 'notification-service' },
         ],

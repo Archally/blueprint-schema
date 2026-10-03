@@ -2,7 +2,8 @@ import type { Entity, Relation } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 import { createPlaceholder } from './resolver.js';
-import { normalisePartyRef } from '../entities/partyIdentity.js';
+import { indexDeclarations, resolveReference, type RefDeclaration } from './refResolution.js';
+import { partyIdentityKey } from '../entities/partyIdentity.js';
 import { SYSTEM_REF_DEFAULT } from '../entities/systemDefaults.js';
 
 /**
@@ -38,7 +39,9 @@ export function extractSystemRelations(
   placeholders: Map<string, Entity>
 ): Relation[] {
   const relations: Relation[] = [];
-  const partiesByBareId = new Map<string, Entity>(); // first declaration wins; the fold remaps the rest
+  // Every row declaring one id is one party: the fold merges them, so any row is the party.
+  const partyDeclarations: RefDeclaration[] = [];
+  const partyRowByKey = new Map<string, Entity>();
   const partiesByFileAndName = new Map<string, Entity>();
   const contextsByPlacement = new Map<string, Entity>();
 
@@ -47,8 +50,8 @@ export function extractSystemRelations(
     if (entity.type === ENTITY_TYPE.Party) {
       const declaredId = data.id;
       if (typeof declaredId === 'string' && declaredId.length > 0) {
-        const bare = normalisePartyRef(declaredId);
-        if (!partiesByBareId.has(bare)) partiesByBareId.set(bare, entity);
+        partyDeclarations.push({ id: declaredId, handle: partyIdentityKey(entity) });
+        if (!partyRowByKey.has(partyIdentityKey(entity))) partyRowByKey.set(partyIdentityKey(entity), entity);
       }
       const name = typeof data.name === 'string' ? data.name : entity.displayId ?? '';
       partiesByFileAndName.set(`${entity.fileOrigin ?? ''}|${name}`, entity);
@@ -58,6 +61,8 @@ export function extractSystemRelations(
       if (key !== null) contextsByPlacement.set(key, entity);
     }
   }
+
+  const partyIndex = indexDeclarations(partyDeclarations);
 
   // Context id -> the party ids it spans, in first-seen order.
   const spans = new Map<string, Set<string>>();
@@ -91,14 +96,15 @@ export function extractSystemRelations(
       if (!envelope) continue; // the extractor emits a party before its contexts, so this is unreachable
       targetId = envelope.id;
       const envelopeId = dataOf(envelope).id;
-      if (declared && typeof envelopeId === 'string' && normalisePartyRef(declared) !== normalisePartyRef(envelopeId)) {
+      if (declared && typeof envelopeId === 'string' && declared !== envelopeId) {
         edgeData = { declared, conflict: true };
       }
     } else {
       const inherited = declared === null && typeof data[SYSTEM_REF_DEFAULT] === 'string';
       const ref = declared ?? (inherited ? (data[SYSTEM_REF_DEFAULT] as string) : null);
       if (!ref) continue; // silence, reported by the semantic checker rather than drawn
-      const party = partiesByBareId.get(normalisePartyRef(ref));
+      const resolution = resolveReference(partyIndex, ref);
+      const party = resolution.status === 'resolved' ? partyRowByKey.get(resolution.handle) : undefined;
       if (party) {
         targetId = party.id;
       } else {

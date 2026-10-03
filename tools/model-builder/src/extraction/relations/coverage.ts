@@ -1,4 +1,5 @@
 import type { Entity, Relation } from '../../model/types.js';
+import { indexDeclarations, resolveReference, type RefDeclaration } from './refResolution.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 
@@ -210,11 +211,12 @@ export function extractCoverageRelations(entities: Entity[], relations: Relation
  * second, softer report of the same fact reads as a different finding.
  */
 function resolveDomain(ref: string, entities: Entity[]): string | null {
-  const bare = ref.includes('.') ? ref.slice(ref.lastIndexOf('.') + 1) : ref;
+  const declarations: RefDeclaration[] = [];
   for (const entity of entities) {
     if (entity.type !== ENTITY_TYPE.Domain) continue;
     const authored = (entity.data as { id?: unknown } | undefined)?.id;
-    if (authored === ref || authored === bare) return entity.id;
+    if (typeof authored === 'string') declarations.push({ id: authored, handle: entity.id });
   }
-  return null;
+  const resolution = resolveReference(indexDeclarations(declarations), ref);
+  return resolution.status === 'resolved' ? resolution.handle : null;
 }

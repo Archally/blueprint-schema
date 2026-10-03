@@ -33,20 +33,24 @@ describe('resolveRef', () => {
     expect(resolveRef('CN001', 'orders', entities)).toBe('catalog-concepts.yaml-CN001');
   });
 
-  it('prefers same-domain entity when multiple domains have matching displayId', () => {
+  it('resolves no entity when several domains declare the same displayId, rather than picking one', () => {
     const entities = [
       { id: 'catalog-concepts.yaml-CN001', displayId: 'CN001', type: ENTITY_TYPE.Concept, layer: 'design.concepts', fileOrigin: 'catalog/concepts.yaml' },
       { id: 'orders-concepts.yaml-CN001', displayId: 'CN001', type: ENTITY_TYPE.Concept, layer: 'design.concepts', fileOrigin: 'orders/concepts.yaml' },
     ];
-    expect(resolveRef('CN001', 'orders', entities)).toBe('orders-concepts.yaml-CN001');
+    expect(resolveRef('CN001', 'orders', entities)).toBeNull();
   });
 
-  it('handles scoped ref (billing.CN001) by targeting the specified domain', () => {
-    const entities = [
+  it('resolves a scoped ref (billing.CN001) only to the entity declared with that exact id', () => {
+    const bare = [
       { id: 'billing-concepts.yaml-CN001', displayId: 'CN001', type: ENTITY_TYPE.Concept, layer: 'design.concepts', fileOrigin: 'billing/concepts.yaml' },
+    ];
+    expect(resolveRef('billing.CN001', 'orders', bare)).toBeNull();
+    const qualified = [
+      { id: 'billing-concepts.yaml-billing.CN001', displayId: 'billing.CN001', type: ENTITY_TYPE.Concept, layer: 'design.concepts', fileOrigin: 'billing/concepts.yaml' },
       { id: 'orders-concepts.yaml-CN001', displayId: 'CN001', type: ENTITY_TYPE.Concept, layer: 'design.concepts', fileOrigin: 'orders/concepts.yaml' },
     ];
-    expect(resolveRef('billing.CN001', 'orders', entities)).toBe('billing-concepts.yaml-CN001');
+    expect(resolveRef('billing.CN001', 'orders', qualified)).toBe('billing-concepts.yaml-billing.CN001');
   });
 });
 

@@ -1,4 +1,5 @@
 import type { Entity, Relation } from '../../model/types.js';
+import { indexDeclarations, resolveReference, type RefDeclaration, type RefIndex } from './refResolution.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 
@@ -63,45 +64,64 @@ const TOSCA_RELATION: Record<string, string> = {
   routes_to: RELATION_TYPE.RoutesTo,
 };
 
-/** Match a typed ref against an index by exact displayId, then by stripping one `scope.` prefix. */
-function resolveByRef(index: Map<string, Entity>, ref: string): Entity | undefined {
-  const exact = index.get(ref);
-  if (exact) return exact;
-  const dot = ref.indexOf('.');
-  if (dot > 0) return index.get(ref.slice(dot + 1));
-  return undefined;
+/** Entities of one type, indexed by the id string each was declared with. */
+class EntitiesById {
+  private readonly declarations: RefDeclaration[] = [];
+  private readonly byHandle = new Map<string, Entity>();
+  private index: RefIndex | null = null;
+
+  add(entity: Entity): void {
+    this.declarations.push({ id: entity.displayId, handle: entity.id });
+    this.byHandle.set(entity.id, entity);
+    this.index = null;
+  }
+
+  /** The one entity declared with exactly this string; none when no entity or several do. */
+  resolve(ref: string): Entity | undefined {
+    this.index ??= indexDeclarations(this.declarations);
+    const resolution = resolveReference(this.index, ref);
+    return resolution.status === 'resolved' ? this.byHandle.get(resolution.handle) : undefined;
+  }
+}
+
+/**
+ * Match a typed ref by the shared resolution function. A scope prefix is part of the id, so
+ * `platform.IR001` does not match an `IR001`, and a string several entities declare matches none.
+ */
+function resolveByRef(index: EntitiesById, ref: string): Entity | undefined {
+  return index.resolve(ref);
 }
 
 export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
   const relations: Relation[] = [];
 
-  const teamByDisplayId = new Map<string, Entity>();
-  const serviceByDisplayId = new Map<string, Entity>();
-  const infraByDisplayId = new Map<string, Entity>();
-  const envByDisplayId = new Map<string, Entity>();
-  const resourceTypeByDisplayId = new Map<string, Entity>();
-  const scopeByDisplayId = new Map<string, Entity>();
+  const teamByDisplayId = new EntitiesById();
+  const serviceByDisplayId = new EntitiesById();
+  const infraByDisplayId = new EntitiesById();
+  const envByDisplayId = new EntitiesById();
+  const resourceTypeByDisplayId = new EntitiesById();
+  const scopeByDisplayId = new EntitiesById();
   const infraByFileAndDisplayId = new Map<string, Map<string, Entity>>();
 
   for (const e of entities) {
     switch (e.type) {
       case ENTITY_TYPE.Team:
-        if (!teamByDisplayId.has(e.displayId)) teamByDisplayId.set(e.displayId, e);
+        teamByDisplayId.add(e);
         break;
       case ENTITY_TYPE.Service:
-        if (!serviceByDisplayId.has(e.displayId)) serviceByDisplayId.set(e.displayId, e);
+        serviceByDisplayId.add(e);
         break;
       case ENTITY_TYPE.Environment:
-        if (!envByDisplayId.has(e.displayId)) envByDisplayId.set(e.displayId, e);
+        envByDisplayId.add(e);
         break;
       case ENTITY_TYPE.ResourceType:
-        if (!resourceTypeByDisplayId.has(e.displayId)) resourceTypeByDisplayId.set(e.displayId, e);
+        resourceTypeByDisplayId.add(e);
         break;
       case ENTITY_TYPE.DeploymentScope:
-        if (!scopeByDisplayId.has(e.displayId)) scopeByDisplayId.set(e.displayId, e);
+        scopeByDisplayId.add(e);
         break;
       case ENTITY_TYPE.InfraResource: {
-        if (!infraByDisplayId.has(e.displayId)) infraByDisplayId.set(e.displayId, e);
+        infraByDisplayId.add(e);
         const file = e.fileOrigin ?? '';
         if (!infraByFileAndDisplayId.has(file)) infraByFileAndDisplayId.set(file, new Map());
         infraByFileAndDisplayId.get(file)!.set(e.displayId, e);
@@ -128,7 +148,7 @@ export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
       const owner = data.owner as Record<string, unknown> | undefined;
       const teamRef = owner?.team as string | undefined;
       if (teamRef) {
-        const team = teamByDisplayId.get(teamRef);
+        const team = teamByDisplayId.resolve(teamRef);
         if (team) push(e, RELATION_TYPE.ResourceOwnerTeam, team);
       }
 
@@ -256,7 +276,7 @@ export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
             push(e, RELATION_TYPE.Contains, resource);
             continue;
           }
-          const service = serviceByDisplayId.get(ref);
+          const service = serviceByDisplayId.resolve(ref);
           if (service) {
             relations.push({
               id: `${service.id}--${RELATION_TYPE.DeployedInTier}--${e.id}`,

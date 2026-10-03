@@ -1,4 +1,5 @@
 import type { Entity, Relation } from '../../model/types.js';
+import { slicePrefixOf } from './refResolution.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 
@@ -79,13 +80,10 @@ export function extractCodeRefRelations(
  * Mirrors the frontend getEntityDomain logic but kept minimal to avoid cross-deps.
  */
 function deriveEntityDomain(entity: Entity): string {
-  // displayId prefix: "content.CN001" → "content"
-  const displayId = entity.displayId ?? '';
-  const dotIdx = displayId.indexOf('.');
-  if (dotIdx > 0) {
-    const prefix = displayId.substring(0, dotIdx);
-    if (/^[a-z][a-z0-9-]*$/.test(prefix)) return prefix;
-  }
+  // displayId prefix: "content.CN001" → "content" (slice information, read by the one function
+  // that reads it; nothing resolves through it)
+  const prefix = slicePrefixOf(entity.displayId ?? '');
+  if (prefix) return prefix;
   // fileOrigin first segment: "content/concepts.yaml" → "content"
   const fo = entity.fileOrigin ?? '';
   if (fo) {

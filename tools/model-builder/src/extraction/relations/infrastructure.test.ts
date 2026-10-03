@@ -57,12 +57,15 @@ describe('extractInfrastructureRelations', () => {
     expect(connects?.data).toEqual({ outputs: ['host', 'port'] });
   });
 
-  it('resolves a TOSCA target across a scope prefix (prod.IR030 → IR030)', () => {
+  it('resolves a TOSCA target by its exact id, and not across a scope prefix (prod.IR030 is not IR030)', () => {
     const rels = extractInfrastructureRelations([
       infra('IR050', { hosting_model: 'network-link', relations: [{ type: 'routes_to', target: 'prod.IR030' }] }),
+      infra('IR051', { hosting_model: 'network-link', relations: [{ type: 'routes_to', target: 'IR030' }] }),
       infra('IR030'),
     ]);
-    expect(rels.filter((r) => r.type === RELATION_TYPE.RoutesTo)).toHaveLength(1);
+    const routes = rels.filter((r) => r.type === RELATION_TYPE.RoutesTo);
+    expect(routes).toHaveLength(1);
+    expect(routes[0]!.source_entity_id).toContain('IR051');
   });
 
   it('emits Binding --binds--> Environment and InfraResource; realizes_type to RT', () => {
@@ -145,12 +148,15 @@ describe('extractInfrastructureRelations', () => {
     expect(hosted).toHaveLength(1); // management grouping and runtime placement coexist
   });
 
-  it('resolves a scope_ref across a scope prefix (shared.DSC001 → DSC001)', () => {
+  it('resolves a scope_ref by its exact id, and not across a scope prefix (shared.DSC001 is not DSC001)', () => {
     const rels = extractInfrastructureRelations([
       infra('IR001', { scope_ref: 'shared.DSC001' }),
+      infra('IR002', { scope_ref: 'DSC001' }),
       scope('DSC001'),
     ]);
-    expect(rels.filter((r) => r.type === RELATION_TYPE.GroupedIn)).toHaveLength(1);
+    const grouped = rels.filter((r) => r.type === RELATION_TYPE.GroupedIn);
+    expect(grouped).toHaveLength(1);
+    expect(grouped[0]!.source_entity_id).toContain('IR002');
   });
 
   it('emits nested_in from scope.parent (subscription→resource-group hierarchy)', () => {

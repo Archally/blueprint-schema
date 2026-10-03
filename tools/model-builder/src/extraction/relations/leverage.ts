@@ -52,13 +52,12 @@ function pushListRefs(
  *   Address (AS-IS)  : finding_refs / risk_refs / decision_refs / fitness_function_refs
  *   Deliver (TO-BE)  : migration_refs / realized_by (WI###)
  *   Strategic intent : advances_goals / advances_value_streams / capability_refs
- *   Leverage DAG     : depends_on[] + enables[] → a single LeverageDependsOn edge
+ *   Leverage DAG     : depends_on[] → one LeverageDependsOn edge per prerequisite
  *                      (dependent → prerequisite).
  *
- * `enables` is the authored inverse of `depends_on`, so it is folded into the SAME edge
- * type with its direction flipped ("A enables B" ⇒ "B depends_on A"). Dedup-by-id in
- * buildRelations() then collapses the case where both sides declare the same edge, leaving
- * a clean single-direction DAG for the interactive leverage view (no double edges).
+ * A leverage dependency is stated once, on the dependent. What a leverage point unblocks is the
+ * same relation read in the other direction, so it is answered from these edges and never read
+ * from the point that is depended on.
  */
 export function extractLeverageRelations(
   entities: Entity[],
@@ -88,22 +87,6 @@ export function extractLeverageRelations(
       entities,
       placeholders
     );
-
-    // Leverage DAG — enables (inverse edge): "this LP enables X" ⇒ "X depends_on this LP",
-    // so emit (X → this LP). Dedup collapses it when X also declares depends_on.
-    const enables = data.enables;
-    if (Array.isArray(enables)) {
-      for (const ref of enables) {
-        if (typeof ref !== 'string' || !ref) continue;
-        const enabledId = resolveOrPlaceholder(ref, domain, entities, placeholders);
-        relations.push({
-          id: `${enabledId}--${RELATION_TYPE.LeverageDependsOn}--${entity.id}`,
-          source_entity_id: enabledId,
-          target_entity_id: entity.id,
-          type: RELATION_TYPE.LeverageDependsOn,
-        });
-      }
-    }
   }
 
   return relations;

@@ -37,7 +37,8 @@ export function extractOrgRelations(entities: Entity[]): Relation[] {
     if (!Array.isArray(teamRefs)) continue;
     for (const ref of teamRefs) {
       if (typeof ref !== 'string') continue;
-      const team = teams.find((t) => t.displayId === ref);
+      const teamId = resolveRef(ref, '', teams);
+      const team = teamId ? teams.find((t) => t.id === teamId) : undefined;
       if (!team) continue;
       relations.push({
         id: `${dept.id}--${RELATION_TYPE.DeptHasTeam}--${team.id}`,

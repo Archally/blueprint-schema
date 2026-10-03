@@ -23,20 +23,11 @@ import { getSchemaForFile } from '../../schemaTypes.js';
  * assembles its own model and decides when to call `mergeParties`.
  */
 
-/**
- * `metamodel.schema.yaml#/$defs/party_ref` permits an optional context prefix, so `billing.PRT001`
- * and `PRT001` denote one party.
- */
-export function normalisePartyRef(ref: string): string {
-  const segments = String(ref).split('.');
-  return segments[segments.length - 1]!;
-}
-
-/** `id:<PRT###>` when the row declares one, else `name:<scope>::<name>`. */
+/** `id:<the declared id, exactly>` when the row declares one, else `name:<scope>::<name>`. */
 export function partyIdentityKey(entity: Entity): string {
   const declared = (entity.data as Record<string, unknown> | undefined)?.id;
   if (typeof declared === 'string' && declared.length > 0) {
-    return `id:${normalisePartyRef(declared)}`;
+    return `id:${declared}`;
   }
   const scope = (entity.data as Record<string, unknown> | undefined)?._scope;
   return `name:${typeof scope === 'string' ? scope : ''}::${entity.displayId ?? ''}`;
