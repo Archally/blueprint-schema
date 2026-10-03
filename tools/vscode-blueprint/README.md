@@ -67,10 +67,16 @@ tree is copied in at packaging time (`sync-schema.mjs`, run by `vscode:prepublis
 per release rather than read from wherever the workspace happens to be.
 
 - **Schema line carried by this build: v2.8.**
-- 20 blueprint document kinds are contributed: `arch`, `blueprint`, `capability`, `concepts`,
+- 21 blueprint document kinds are contributed: `arch`, `blueprint`, `capability`, `concepts`,
   `decisions`, `domain`, `dynamics`, `infrastructure`, `interactions`, `leverage`, `migration`,
-  `models`, `motivation`, `organization`, `quality`, `roadmap`, `rules`, `story`, `test-cases`,
-  `value-stream`.
+  `migrations`, `models`, `motivation`, `organization`, `quality`, `roadmap`, `rules`, `story`,
+  `test-cases`, `value-stream`.
+- A schema is bound to exactly the files that form a model: `<layer>.yaml` and
+  `<topic>.<layer>.yaml` (and `.yml`), the root document `blueprint.yaml` by that name only, and
+  `migration.yaml`, `<name>.migration.yaml` and `migrations.yaml`. The narrative file is
+  `story.yaml`; `process.yaml` is not a model file name and gets no schema. A file outside the model
+  (`orders.blueprint.yaml`, `orders-domain.yaml`) gets no schema here, and validating the model
+  reports it.
 - `metamodel.schema.yaml` is deliberately not contributed. It is the shared type-definition file
   the other schemas reference (`$ref: "../metamodel.schema.yaml#/..."`), not a document a project
   authors - a workspace never contains a file that should validate against it, so there is no glob

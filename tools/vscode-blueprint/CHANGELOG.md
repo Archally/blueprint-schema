@@ -3,6 +3,13 @@
 All notable changes to this extension. Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this extension versions independently of `@archally/blueprint-schema`.
 
+## Unreleased
+
+- `yamlValidation` binds a schema to exactly the files that form a model. `*.blueprint.yaml` and
+  `*.blueprint.yml` are no longer bound: the root document is `blueprint.yaml` (or `.yml`) by that
+  name only. `migrations.yaml` gained a `yamlValidation` entry (`./schema/migrations.schema.yaml`).
+  No binding names `process.yaml`; the narrative file is `story.yaml`.
+
 ## 0.5.0
 
 Carries schema v2.8; completion and validation work in any workspace, with no per-repository

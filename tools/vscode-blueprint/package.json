@@ -157,9 +157,7 @@
       {
         "fileMatch": [
           "**/.blueprint/**/blueprint.yaml",
-          "**/.blueprint/**/*.blueprint.yaml",
-          "**/.blueprint/**/blueprint.yml",
-          "**/.blueprint/**/*.blueprint.yml"
+          "**/.blueprint/**/blueprint.yml"
         ],
         "url": "./schema/blueprint.schema.yaml"
       },
@@ -243,6 +241,13 @@
           "**/.blueprint/**/*.migration.yml"
         ],
         "url": "./schema/migration.schema.yaml"
+      },
+      {
+        "fileMatch": [
+          "**/.blueprint/**/migrations.yaml",
+          "**/.blueprint/**/migrations.yml"
+        ],
+        "url": "./schema/migrations.schema.yaml"
       },
       {
         "fileMatch": [
