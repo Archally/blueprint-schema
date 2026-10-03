@@ -5,6 +5,47 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.50"
+    date: "2026-09-30"
+    step: "a reference names its id exactly"
+    summary: |
+      Breaking for a model whose references rely on a scope being added or dropped: a reference resolves only to the declaration whose id is the same string. A scope prefix and its dot are part of the id, so `orders.KPI001` and `KPI001` are two ids and neither resolves to the other:
+      - a bare id declared in a document that says `scope: orders` is that bare id, and a reference written `orders.KPI001` no longer reaches it;
+      - a bare reference written in a document that says `scope: orders` names the bare id, and no longer reaches a declaration written `orders.KPI001`.
+      Either reference is now a missing reference, a cross-reference error. A service nested under a party whose `system_ref` spells that party with a different prefix (`billing.PRT001` under `PRT001`) is a contradiction, because the two are different parties. The keyed `scope:key` form is unchanged: its key is composed from the declaring document's scope, or else its folder.
+      What to do: write each reference exactly as its target is declared, or qualify the declaration and every reference to it with the same scope.
+      A model whose reference relied on either spelling validated under 2.8.49 and is rejected now. No schema file changes.
+  - version: "2.8.49"
+    date: "2026-09-30"
+    step: "a duplicate id is an error"
+    summary: |
+      Breaking for a model that declares one id twice: the validator reports a duplicate id as a cross-reference error, so the model fails validation. The message names every place the id is declared, and `--compat` does not relax it.
+      An id is unique in the space its schema line resolves it in:
+      - a top-level id is unique across the model, compared as written. A scope prefix partitions it (`sales.MDL001` and `catalog.MDL001` are two ids), and a bare id shares one space with every other bare id;
+      - a process activity (`PA###`, and `SA###` on the lines before 2.8) is unique within its process or story, so every process may number its activities from `PA001`. Every reference the schema admits to an activity is written on an activity of the same process;
+      - a concept attribute (`CAT###`) is unique across the model on this line, whose `attribute_ref` admits a scope prefix. On a line whose `attribute_ref` admits none (2.2 to 2.5) it is unique within its bounded context: the declaring document's `scope:`, or else its folder;
+      - every other id, nested or not, is unique across the model.
+      What to do: give one of the two declarations a new id, or qualify both with the scope of the document that declares them when they sit in different slices, and point every reference at the declaration it means.
+      A model that declares one id twice validated under 2.8.48 and is rejected now. No schema file changes.
+      The model builder also resolves a reference by its exact string. An id is the whole string, scope prefix and dot included, so `orders.RSK001` resolves only to a declaration written `orders.RSK001`, and `RSK001` only to one written `RSK001`. The builder no longer matches a qualified reference by its local part, prefers a declaration in the referring folder, or falls back to the first of several candidates. A reference that names no declaration, or a string several declarations share, becomes a Missing placeholder instead of an edge, and the placeholder of a shared string lists every candidate. Parties fold on the exact id: `billing.PRT001` and `PRT001` are two parties. What validates is unchanged by this part.
+      What to do: write every reference exactly as its target is declared.
+  - version: "2.8.48"
+    date: "2026-09-30"
+    step: "a leverage edge is stated once, in depends_on"
+    summary: |
+      Breaking: `enables` is removed from `leverage_point`. A leverage document that still carries it is rejected with `must NOT have additional properties: enables`. This is a removal in a patch version of a published line, made deliberately and stated here so that nobody reads this release as additive.
+      `enables` restated, from the prerequisite's side, the edge the dependent already states in `depends_on`: `A.enables: [B]` and `B.depends_on: [A]` were one fact written twice. A model could write one end, the other, or two ends that disagreed, and a card printing the authored list could contradict the dependency drawn beside it. A leverage dependency is now stated once, on the dependent, and what a leverage point unblocks is `depends_on` read backwards.
+      What to do: for every `A.enables: [B]`, check that `B.depends_on` lists `A`, then delete the `enables` key. Where `B` declares a `depends_on` that omits `A`, the two ends disagree, so decide before deleting: if B cannot start or finish until A lands, add `A` to `B.depends_on`; if landing A only makes B cheaper, faster or safer, the claim is a benefit and belongs in A's `consequences_if_done`. Nothing else in the document changes.
+  - version: "2.8.47"
+    date: "2026-09-29"
+    step: "a tracked register accepts what an apply records"
+    summary: |
+      A tracked migration register now declares everything applying and rolling back a migration write into it, so a register the migration tooling (Archally Pro) wrote validates.
+      Applying a migration records, on its entry, `edit_sites`: one site per operation per file it changed, each carrying the runs of text replaced (`windows[]` of `start`, `end` and `prior`) and a `sha256:` digest of the whole file before and after. Rolling the migration back restores those sites and removes them. When at least one operation has no faithful inverse, the entry's `inverse_change_set` is empty and `inverse_unavailable` says why, one line per operation; it is kept after a rollback. The register's entry is closed (`additionalProperties: false`), and under 2.8.46 it declared neither field, so a register written by a successful apply was rejected with `must NOT have additional properties: edit_sites`.
+      Both fields are optional on `tracked_entry`, and `edit_site` and `edit_window` are closed shapes. `inverse_change_set` keeps its type; its description says it describes a rollback rather than performing one, and when it is empty.
+      Additive: a register carrying either field was rejected by 2.8.46 and is accepted now. A register without them validates as it did, and no model file is affected.
+      The validator's duplicate-id check reads a change program (`<name>.migration.yaml`) for the one id it declares, its own under `migration:`. The `changes` block describes entities before and after the change and declares none of them, so an id named there is not reported as a duplicate of the entity it describes. Two change programs declaring the same migration id are still reported. An id named in `changes` still resolves a reference, so a program can name the entity its own payload introduces. Only warnings change: a model that carried such a report loses it, and no verdict moves.
+      The `x-gdsm.modeling_guidance` ledger on the metamodel gains four entries: a leverage dependency means blocks and is stated once, in the dependent's `depends_on`, and a benefit belongs in `consequences_if_done`; an evidence `source` cites a file relative to the model root, without the version directory; a relayed spoken account and an assumption built on it are two provenances at two certainties; and a user story reaches the concept it shows through its query and its test case. Annotation only.
   - version: "2.8.46"
     date: "2026-09-21"
     step: "a use-case step names the UI action"
