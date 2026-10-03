@@ -86,7 +86,7 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub â€
 
 | Schema file | Inbound refs |
 | --- | --- |
-| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 755 |
+| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 763 |
 | [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | 1 |
 | [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | 1 |
 | [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | 1 |
@@ -119,7 +119,7 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub â€
 | `blueprint.schema.yaml` | `governance/value-stream.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `metamodel.schema.yaml` | 19 |
 | `blueprint.schema.yaml` | `migration.schema.yaml` | 1 |
-| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 64 |
+| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 67 |
 | `design/concepts.schema.yaml` | `metamodel.schema.yaml` | 44 |
 | `design/domain.schema.yaml` | `metamodel.schema.yaml` | 53 |
 | `design/dynamics.schema.yaml` | `metamodel.schema.yaml` | 29 |
@@ -132,7 +132,7 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub â€
 | `governance/capability.schema.yaml` | `metamodel.schema.yaml` | 21 |
 | `governance/decisions.schema.yaml` | `metamodel.schema.yaml` | 47 |
 | `governance/leverage.schema.yaml` | `metamodel.schema.yaml` | 29 |
-| `governance/motivation.schema.yaml` | `metamodel.schema.yaml` | 87 |
+| `governance/motivation.schema.yaml` | `metamodel.schema.yaml` | 92 |
 | `governance/organization.schema.yaml` | `metamodel.schema.yaml` | 21 |
 | `governance/roadmap.schema.yaml` | `metamodel.schema.yaml` | 37 |
 | `governance/test-cases.schema.yaml` | `metamodel.schema.yaml` | 30 |

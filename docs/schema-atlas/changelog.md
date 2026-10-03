@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 29 |
-| Additive (minor) | 216 |
+| Additive (minor) | 221 |
 | Clarification (patch) | 0 |
-| **Total changes** | 245 |
+| **Total changes** | 250 |
 
 ## ⚠ Breaking changes
 
@@ -221,7 +221,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (193)
+## Added (198)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -265,6 +265,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/cli_contract` — New definition `cli_contract` added to `design/arch.schema.yaml`.
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/cli_contract`_
 
+- [additive] `design/arch.schema.yaml#/$defs/context/properties/code_refs` — Property `code_refs` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/context/properties/code_refs`_
+
 - [additive] `design/arch.schema.yaml#/$defs/context/properties/covers` — Property `covers` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/context/properties/covers`_
 
@@ -273,6 +276,12 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - **[breaking]** `design/arch.schema.yaml#/$defs/context/properties/id` — Property `id` added (required — breaking).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/context/properties/id`_
+
+- [additive] `design/arch.schema.yaml#/$defs/context/properties/implementation` — Property `implementation` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/context/properties/implementation`_
+
+- [additive] `design/arch.schema.yaml#/$defs/context/properties/provenance` — Property `provenance` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/context/properties/provenance`_
 
 - [additive] `design/arch.schema.yaml#/$defs/context/properties/value_stream_ref` — Property `value_stream_ref` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/context/properties/value_stream_ref`_
@@ -559,8 +568,14 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `governance/leverage.schema.yaml` — New schema file `governance/leverage.schema.yaml` added.
   - _Source: `schema/v2.8/governance/leverage.schema.yaml`_
 
+- [additive] `governance/motivation.schema.yaml#/$defs/assumption/properties/affects` — Property `affects` added (optional).
+  - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/assumption/properties/affects`_
+
 - [additive] `governance/motivation.schema.yaml#/$defs/assumption/properties/domain_scope` — Property `domain_scope` added (optional).
   - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/assumption/properties/domain_scope`_
+
+- [additive] `governance/motivation.schema.yaml#/$defs/assumption/properties/owned_by` — Property `owned_by` added (optional).
+  - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/assumption/properties/owned_by`_
 
 - [additive] `governance/motivation.schema.yaml#/$defs/concern` — New definition `concern` added to `governance/motivation.schema.yaml`.
   - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/concern`_

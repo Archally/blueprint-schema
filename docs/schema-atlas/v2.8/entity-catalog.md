@@ -238,7 +238,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/logic_tuple`_
 
 #### `code_ref_entry`
 
-Reference to a source code file implementing or reflecting this entity. Path is relative to repository root for same-repo files. For cross-repo files, use URI-style prefix: org/repo#path/to/file. In the viewer, paths render as clickable links to the file in the configured repository provider (GitHub, GitLab, Bitbucket).
+Reference to a source code file implementing or reflecting this entity: a file or, for an entity larger than one file, the directory that holds it. Path is relative to repository root for same-repo files. For cross-repo files, use URI-style prefix: org/repo#path/to/file. In the viewer, paths render as clickable links to the file in the configured repository provider (GitHub, GitLab, Bitbucket).
 
 **Required:** `path`
 
@@ -1004,6 +1004,9 @@ A bounded context with its domain model, services, and dependencies.
 | `description` | `string` | — |  | Human-readable description. |
 | `properties` | `ref → entity_properties` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | Context-level ownership override. |
+| `code_refs` | `ref → code_refs` | — |  | Source files or module directories that implement this bounded context as a whole: a module root, a namespace folder, an integration package. A file that belon… |
+| `implementation` | `ref → implementation` | — |  | Whether this bounded context exists in the system yet. Absent means unclear. |
+| `provenance` | `ref → provenance` | — |  | How sure the model is that this bounded context exists as drawn, and on what evidence. A context known from a conversation rather than from code records it as… |
 | `responsibilities` | `array<string>` | — |  | What this context is accountable for. |
 | `dependencies` | `array<ref → dependency>` | — |  | Other contexts or external systems this context depends on. Enriched for context-map inference. |
 | `entities` | `array<ref → entity>` | — |  | Core domain entities in this context. |
@@ -3347,7 +3350,7 @@ An Architecture Decision Record (ADR). Minimum: id, title, summary, date, status
 | `status` | `ref → decision_status` | ✓ |  | Lifecycle status: proposed→accepted→landed; rejected or deprecated at any stage. |
 | `rationale` | `ref → rationale` | ✓ |  | The reasoning behind this decision. Answers 'why' for future readers. |
 | `version` | `ref → entity_version` | — |  | Decision version for individual lifecycle tracking. |
-| `decision_scope` | `string` | — |  | Context, component, or SpecPath prefix this decision applies to (e.g. billing, billing.rules, order-api). |
+| `decision_scope` | `string` | — |  | The named scope this decision applies to: a slice (e.g. billing), a cross-cutting area that spans slices (e.g. integrations), or the whole system, named by the… |
 | `motivation_refs` | `ref → motivation_links` | — |  | Motivation entities driving this decision: goals served, risks mitigated, assumptions, trade-offs accepted. |
 | `capability_refs` | `array<ref → capability_ref>` | — |  | Business capabilities this decision supports or enables. |
 | `change_set` | `array<ref → change_item>` | — |  | Machine-readable manifest of changes introduced. Each entry describes one blueprint element change. |
@@ -3719,6 +3722,8 @@ Something believed to be true but not yet verified. Carries risk if wrong; conse
 | `consequence` | `string` | ✓ |  | What happens if this assumption is wrong - the risk carried by the assumption. |
 | `domain_scope` | `ref → scope_prefix` | — |  | Optional problem-space scope this assumption applies to, as a kebab-case scope slug (e.g. billing, order-mgmt). Matched by name, not resolved as a typed refere… |
 | `risk_refs` | `array<ref → risk_ref>` | — |  | Risks associated with this assumption being wrong. |
+| `affects` | `object` | — |  | Blueprint entities this assumption bears on: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept or proces… |
+| `owned_by` | `ref → owned_by` | — |  | Assumption-level ownership override: the unit accountable for confirming or retiring this assumption. |
 | `version` | `ref → entity_version` | — |  | Assumption version for lifecycle tracking. |
 | `discovery_stage` | `ref → discovery_stage` | — |  | Epistemic maturity of this assumption. |
 | `certainty` | `ref → certainty` | — |  | Confidence level of this assumption. |

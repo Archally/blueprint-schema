@@ -107,7 +107,7 @@ graph LR
         design_story_schema_yaml["story"]
     end
     metamodel_schema_yaml(["metamodel"])
-    design_arch_schema_yaml -->|64| metamodel_schema_yaml
+    design_arch_schema_yaml -->|67| metamodel_schema_yaml
     design_concepts_schema_yaml -->|44| metamodel_schema_yaml
     design_domain_schema_yaml -->|53| metamodel_schema_yaml
     design_dynamics_schema_yaml -->|29| metamodel_schema_yaml
@@ -152,7 +152,7 @@ graph LR
     governance_capability_schema_yaml -->|21| metamodel_schema_yaml
     governance_decisions_schema_yaml -->|47| metamodel_schema_yaml
     governance_leverage_schema_yaml -->|29| metamodel_schema_yaml
-    governance_motivation_schema_yaml -->|87| metamodel_schema_yaml
+    governance_motivation_schema_yaml -->|92| metamodel_schema_yaml
     governance_organization_schema_yaml -->|21| metamodel_schema_yaml
     governance_roadmap_schema_yaml -->|37| metamodel_schema_yaml
     governance_test_cases_schema_yaml -->|30| metamodel_schema_yaml
