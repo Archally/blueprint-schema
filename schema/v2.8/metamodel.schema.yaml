@@ -959,7 +959,8 @@ $defs:
   code_ref_entry:
     type: object
     description: >
-      Reference to a source code file implementing or reflecting this entity.
+      Reference to a source code file implementing or reflecting this entity: a file or, for an
+      entity larger than one file, the directory that holds it.
       Path is relative to repository root for same-repo files.
       For cross-repo files, use URI-style prefix: org/repo#path/to/file.
       In the viewer, paths render as clickable links to the file in the

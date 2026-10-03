@@ -79,7 +79,7 @@ $defs:
         description: "Decision version for individual lifecycle tracking."
       decision_scope:
         type: string
-        description: "Context, component, or SpecPath prefix this decision applies to (e.g. billing, billing.rules, order-api)."
+        description: "The named scope this decision applies to: a slice (e.g. billing), a cross-cutting area that spans slices (e.g. integrations), or the whole system, named by the project's name. Unlike a file's `scope:`, it need not name a slice, so a decision in a file at the model root states its subject here."
       motivation_refs:
         $ref: "#/$defs/motivation_links"
         description: "Motivation entities driving this decision: goals served, risks mitigated, assumptions, trade-offs accepted."

@@ -339,6 +339,22 @@ $defs:
       owned_by:
         $ref: "../metamodel.schema.yaml#/$defs/owned_by"
         description: "Context-level ownership override."
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+        description: >
+          Source files or module directories that implement this bounded context as a whole: a
+          module root, a namespace folder, an integration package. A file that belongs to one of
+          the context's services is named on that service instead. A path naming a directory covers
+          every file beneath it when changed files are traced back to the model.
+      implementation:
+        $ref: "../metamodel.schema.yaml#/$defs/implementation"
+        description: "Whether this bounded context exists in the system yet. Absent means unclear."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          How sure the model is that this bounded context exists as drawn, and on what evidence. A
+          context known from a conversation rather than from code records it as an `interview` or
+          `stakeholder-signoff` evidence entry with its source and date.
       responsibilities:
         type: array
         items:

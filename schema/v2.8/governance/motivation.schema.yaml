@@ -363,6 +363,34 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/risk_ref"
         description: "Risks associated with this assumption being wrong."
+      affects:
+        type: object
+        description: "Blueprint entities this assumption bears on: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept or process that depends on it holding."
+        additionalProperties: false
+        properties:
+          operation_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            description: "Operations that depend on this assumption holding."
+          concept_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+            description: "Concepts that depend on this assumption holding."
+          context_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
+            description: "Bounded contexts / slices this assumption bears on, by scope name. A name, not a reference: it builds no edge."
+          process_refs:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/process_ref"
+            description: "Business processes that depend on this assumption holding, for an assumption about a flow as a whole rather than one of its operations."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "Assumption-level ownership override: the unit accountable for confirming or retiring this assumption."
       version:
         $ref: "../metamodel.schema.yaml#/$defs/entity_version"
         description: "Assumption version for lifecycle tracking."

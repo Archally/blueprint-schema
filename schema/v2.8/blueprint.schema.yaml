@@ -100,7 +100,7 @@ properties:
               rules: { type: string, description: "Path to rules.yaml." }
               domain: { type: string, description: "Path to domain.yaml." }
               models: { type: string, description: "Path to models.yaml." }
-              process: { type: string, description: "Path to process.yaml." }
+              process: { type: string, description: "Path to the narrative file, story.yaml, which holds the processes." }
               dynamics: { type: string, description: "Path to dynamics.yaml." }
               quality: { type: string, description: "Path to quality.yaml." }
               infrastructure: { type: string, description: "Path to infrastructure.yaml." }
