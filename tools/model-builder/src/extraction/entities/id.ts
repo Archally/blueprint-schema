@@ -1,3 +1,5 @@
+import { getSchemaForFile } from '../../schemaTypes.js';
+
 /**
  * Deterministic internal id: {domain}-{file}-{displayId}
  * Domain from doc.scope or first path segment; file = basename of filePath.
@@ -18,77 +20,13 @@ function domainFromPath(filePath: string | undefined): string {
   return segments.length > 1 ? segments[0]! : 'default';
 }
 
-const FILENAME_TO_SCHEMA: Record<string, string> = {
-  'concepts.yaml': 'concepts',
-  'concepts.yml': 'concepts',
-  'rules.yaml': 'rules',
-  'rules.yml': 'rules',
-  'domain.yaml': 'domain',
-  'domain.yml': 'domain',
-  'arch.yaml': 'arch',
-  'arch.yml': 'arch',
-  'motivation.yaml': 'motivation',
-  'motivation.yml': 'motivation',
-  'decisions.yaml': 'decisions',
-  'decisions.yml': 'decisions',
-  'test-cases.yaml': 'test-cases',
-  'test-cases.yml': 'test-cases',
-  'dynamics.yaml': 'dynamics',
-  'dynamics.yml': 'dynamics',
-  'quality.yaml': 'quality',
-  'quality.yml': 'quality',
-  'capability.yaml': 'capability',
-  'capability.yml': 'capability',
-  'story.yaml': 'story',
-  'story.yml': 'story',
-  'process.yaml': 'process',
-  'process.yml': 'process',
-  'models.yaml': 'models',
-  'models.yml': 'models',
-  'rg.yaml': 'rg',
-  'rg.yml': 'rg',
-  'infrastructure.yaml': 'infrastructure',
-  'infrastructure.yml': 'infrastructure',
-  'org.yaml': 'org',
-  'org.yml': 'org',
-  'organization.yaml': 'organization',
-  'organization.yml': 'organization',
-  'ui.yaml': 'ui',
-  'ui.yml': 'ui',
-  'interactions.yaml': 'interactions',
-  'interactions.yml': 'interactions',
-  'roadmap.yaml': 'roadmap',
-  'roadmap.yml': 'roadmap',
-  'value-stream.yaml': 'value-stream',
-  'value-stream.yml': 'value-stream',
-  'leverage.yaml': 'leverage',
-  'leverage.yml': 'leverage',
-  'blueprint.yaml': 'blueprint',
-  'migration.yaml': 'migration',
-  'migration.yml': 'migration',
-  'migrations.yaml': 'migrations',
-  'migrations.yml': 'migrations',
-  'blueprint.yml': 'blueprint',
-};
-
-/** Multi-file pattern: {name}.{schema-type}.yaml (e.g. consumer.domain.yaml, payment.concepts.yaml). */
-const MULTI_FILE_PATTERN =
-  /^[^/\\]+\.(concepts|rules|domain|arch|motivation|decisions|test-cases|dynamics|quality|capability|story|process|models|rg|infrastructure|org|organization|ui|interactions|roadmap|value-stream|leverage)\.(yaml|yml)$/i;
-
+/**
+ * The schema type a file's name routes to, or null for a file outside the model.
+ *
+ * The answer is the builder's routing table, `getSchemaForFile`; this wrapper only accepts an
+ * absent path, because an entity may carry none.
+ */
 export function getSchemaTypeFromPath(filePath: string | undefined): string | null {
   if (!filePath) return null;
-  const fileName = filePath.replace(/\\/g, '/').split('/').pop() ?? '';
-  // Migration files: `*.migration.yaml` / `*.migration.yml`.
-  // Keep this branch in lockstep with `getSchemaForFile` in `../../schemaTypes.ts`
-  // (single source of truth; this duplication exists for layering reasons —
-  // schemaTypes.ts can't import from this file because of the dependency direction).
-  if (/\.migration\.(yaml|yml)$/i.test(fileName)) return 'migration';
-  const exact = FILENAME_TO_SCHEMA[fileName];
-  if (exact) return exact;
-  const multiMatch = fileName.match(MULTI_FILE_PATTERN);
-  if (multiMatch) {
-    const schemaType = multiMatch[1]!.toLowerCase();
-    return schemaType === 'test-cases' ? 'test-cases' : schemaType;
-  }
-  return null;
+  return getSchemaForFile(filePath);
 }

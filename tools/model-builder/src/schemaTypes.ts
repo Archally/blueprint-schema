@@ -1,12 +1,13 @@
 /**
- * Blueprint v2 schema types — single source of truth for schema-type → filename mapping.
+ * Blueprint file routing: which schema type a model file holds, read from its file name.
  *
- * Browser-safe (no Node.js imports). Used by:
- *   - viewer/v2/backend/src/blueprint/yamlService.ts (re-exported from here)
- *   - viewer/v2/core/src/loader-map.ts (browser loader)
- *   - any consumer of @blueprint-viewer/core/browser
+ * This is the one answer to "is this file part of the model, and which schema checks it?". The
+ * model builder loads exactly the files `getSchemaForFile` routes and ignores every other file, so
+ * a program that needs the answer reads this module instead of keeping a table of its own.
  *
- * Adding a new schema type: extend V2_SCHEMA_TYPES, FILENAME_TO_SCHEMA, and MULTI_FILE_PATTERN.
+ * Browser-safe: no Node.js imports, and no imports at all.
+ *
+ * Adding a schema type: extend V2_SCHEMA_TYPES, FILENAME_TO_SCHEMA and MULTI_FILE_PATTERN.
  */
 
 export const V2_SCHEMA_TYPES = [

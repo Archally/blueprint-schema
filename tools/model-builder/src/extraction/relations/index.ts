@@ -5,7 +5,7 @@ import { extractDomainRelations } from './domain.js';
 import { extractPayloadModelRelations } from './payloadModel.js';
 import { extractDecisionRelations } from './decisions.js';
 import { extractTestCaseRelations } from './testCases.js';
-import { extractArchRelations } from './arch.js';
+import { extractArchRelations, extractServiceDependencyRelations } from './arch.js';
 import { extractArchContractRelations } from './archContracts.js';
 import { extractArchDependencyRelations } from './archDependencies.js';
 import { extractSystemRelations } from './systemRef.js';
@@ -76,6 +76,7 @@ export function buildRelations(
     ...extractDecisionRelations(entities, placeholders),
     ...extractTestCaseRelations(entities, placeholders),
     ...extractArchRelations(entities),
+    ...extractServiceDependencyRelations(entities),
     ...extractArchContractRelations(entities, placeholders),
     ...extractArchDependencyRelations(entities, placeholders),
     ...extractSystemRelations(entities, placeholders),

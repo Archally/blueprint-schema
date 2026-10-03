@@ -45,6 +45,16 @@ const PROTOCOL_BY_CONTRACT_TYPE: Readonly<Record<string, string>> = Object.freez
   asyncapi: 'message',
   channel: 'message',
   openrpc: 'rpc',
+  // MCP runs over JSON-RPC and a command line is a procedure call too, but each is a coupling of
+  // its own and says so: an `mcp.call` and a `cli.expose` of one operation are two surfaces, and
+  // the protocol mismatch below is what keeps them from joining. `graphql` names root fields
+  // rather than operation refs, so no provider or consumer edge reaches a GraphQL contract and
+  // its entry joins nothing; it states the protocol that contract speaks.
+  mcp: 'mcp',
+  cli: 'cli',
+  graphql: 'graphql',
+  // `arazzo` and `cncfsw` are absent on purpose: a workflow runs over other contracts and is not
+  // itself a link between two contexts.
   // The three that cross no wire speak themselves: the kind IS the protocol, because there is no
   // wire whose name could stand in for it.
   inprocess: 'inprocess',

@@ -12,7 +12,7 @@
  * build step and no node_modules, so it can depend on nothing.
  *
  * The four forms, from `metamodel.schema.yaml` `$defs.model_ref`:
- *   (1) typed id                    `MDL013`, `billing.MDL013`
+ *   (1) typed id, as declared       `MDL013`, `billing.MDL013`
  *   (2) component name              `OrderSchema`
  *   (3) JSON Pointer                `#/components/schemas/OrderSchema`
  *   (4) file-relative JSON Pointer  `./models.yaml#/components/schemas/OrderSchema`
@@ -78,15 +78,16 @@ export function fileMatches(componentFile: string | undefined, refFile: string):
 /**
  * Whether a reference addresses this component, in any of the four documented forms.
  *
+ * Form 1 matches only the same string as the component's `x-model-id`: a prefix and its dot are part
+ * of the id, so `billing.MDL013` and `MDL013` are two ids and neither matches the other.
+ *
  * Form 4's file part is checked only when the reference carries one: it exists to disambiguate two
  * files declaring the same component name, and a reference without it addresses the name wherever
  * it lives.
  */
 export function matchesModelRef(ref: string, component: ModelComponentRef): boolean {
-  // Form 1 - typed id, with or without a context prefix.
-  if (component.modelId && (ref === component.modelId || ref.endsWith(`.${component.modelId}`))) {
-    return true;
-  }
+  // Form 1 - typed id, exactly as declared.
+  if (component.modelId && ref === component.modelId) return true;
   // Form 2 - bare component name.
   if (ref === component.name) return true;
 

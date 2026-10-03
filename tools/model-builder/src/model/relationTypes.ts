@@ -316,6 +316,20 @@ export const RELATION_TYPE = {
   // context that several systems provide services to has several, which the nested form could only
   // state by declaring the context once per system.
   Spans: 'spans',
+  // A build dependency: Service -> Service, one edge per resolved item of `service.imports`. The
+  // source is built on the target - a package it imports, a component it embeds - so a change to
+  // the target reaches every service built on it. The target is normally a `kind: library` service.
+  //
+  // PREFIXED with the source type, as `ContextDependsOn` is above: `uses` and `imports` alone are
+  // substrings or near-homonyms of existing names (`uses_resource`, `screen_uses_model`,
+  // `context_uses_concept`), and a consumer filtering on the bare string would match those too.
+  ServiceImports: 'service_imports',
+  // A runtime dependency: Service -> Service, one edge per resolved item of `service.uses`. The
+  // source needs the target running to work, stated at container-diagram level before (or beside)
+  // the contracts that name the operations. Distinct from `ServiceImports`: one service may both
+  // import a target and use it, and those are two edges of two types, never merged. Prefixed for
+  // the reason given on `ServiceImports`.
+  ServiceUses: 'service_uses',
   // The organizational ownership edge: any unit that declares `owned_by` → the Team, Department or
   // Party named by the one arm it sets. ONE type serves all three arms, because the arm is
   // recoverable from the target entity's type; `data.arm` carries it as well, so the edge is

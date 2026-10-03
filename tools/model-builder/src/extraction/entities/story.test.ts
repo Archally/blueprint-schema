@@ -82,27 +82,27 @@ describe('extractStory', () => {
     ]);
   });
 
-  it('TC-SE3: in-scope operationRef OP001 resolves to orders-domain.yaml-OP001', () => {
+  it('TC-SE3: an in-scope operationRef is carried as written, unresolved until the relation pass', () => {
     const entities = extractStory(ORDERS_STORY_DOC);
-    const details = (entities[0]!.data as { operationsDetail?: { name: string; resolved: boolean; resolvedEntityId?: string }[] })
+    const details = (entities[0]!.data as { operationsDetail?: { name: string; operationRef?: string; resolved: boolean; resolvedEntityId?: string }[] })
       .operationsDetail ?? [];
     const submitOrder = details.find((d) => d.name === 'Submit Order');
     expect(submitOrder).toBeDefined();
-    expect(submitOrder!.resolved).toBe(true);
-    expect(submitOrder!.resolvedEntityId).toBe('orders-domain.yaml-OP001');
+    expect(submitOrder!.operationRef).toBe('OP001');
+    expect(submitOrder!.resolved).toBe(false);
+    expect(submitOrder!.resolvedEntityId).toBeUndefined();
   });
 
-  it('TC-SE4: cross-scope operationRef inventory.OP001 resolves with full ref as primary, opId as fallback', () => {
+  it('TC-SE4: a cross-scope operationRef is carried whole, with no id built from its parts', () => {
     const entities = extractStory(ORDERS_STORY_DOC);
-    const details = (entities[0]!.data as { operationsDetail?: { name: string; resolved: boolean; resolvedEntityId?: string; fallbackEntityId?: string }[] })
+    const details = (entities[0]!.data as { operationsDetail?: Array<Record<string, unknown>> })
       .operationsDetail ?? [];
     const reserveStock = details.find((d) => d.name === 'Reserve Stock');
     expect(reserveStock).toBeDefined();
-    expect(reserveStock!.resolved).toBe(true);
-    // Primary: new scoped-id format
-    expect(reserveStock!.resolvedEntityId).toBe('inventory-domain.yaml-inventory.OP001');
-    // Fallback: old format (opId only)
-    expect(reserveStock!.fallbackEntityId).toBe('inventory-domain.yaml-OP001');
+    expect(reserveStock!.operationRef).toBe('inventory.OP001');
+    expect(reserveStock!.resolved).toBe(false);
+    expect(reserveStock!.resolvedEntityId).toBeUndefined();
+    expect(reserveStock!.fallbackEntityId).toBeUndefined();
   });
 
   it('TC-SE5: steps without operationRef have resolved false', () => {
@@ -290,14 +290,14 @@ describe('extractStory', () => {
     expect(details).toHaveLength(3);
     expect(details[0]!.name).toBe('Validate order');
     expect(details[0]!.operationRef).toBe('orders.CMD001');
-    expect(details[0]!.resolved).toBe(true);
-    // Cross-scope ref: primary uses full ref as displayId, fallback uses opId only
-    expect((details[0] as { resolvedEntityId?: string }).resolvedEntityId).toBe('orders-domain.yaml-orders.CMD001');
-    expect((details[0] as { fallbackEntityId?: string }).fallbackEntityId).toBe('orders-domain.yaml-CMD001');
+    // Resolved by the relation pass, never here.
+    expect(details[0]!.resolved).toBe(false);
+    expect((details[0] as { resolvedEntityId?: string }).resolvedEntityId).toBeUndefined();
+    expect((details[0] as { fallbackEntityId?: string }).fallbackEntityId).toBeUndefined();
     expect(details[1]!.name).toBe('Emit event');
     expect(details[1]!.operationRef).toBe('orders.EVT002');
     expect(details[2]!.name).toBe('Reserve Stock');
     expect(details[2]!.operationRef).toBe('inventory.CMD001');
-    expect(details[2]!.resolved).toBe(true);
+    expect(details[2]!.resolved).toBe(false);
   });
 });

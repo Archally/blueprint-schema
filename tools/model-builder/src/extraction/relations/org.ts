@@ -2,18 +2,51 @@ import type { Entity, Relation } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 import { createPlaceholder, entityDomain, resolveRef } from './resolver.js';
+import { indexDeclarations, resolveReference, type RefDeclaration } from './refResolution.js';
 import { OWNED_BY_DEFAULT } from '../entities/ownershipDefaults.js';
+import { partyIdentityKey } from '../entities/partyIdentity.js';
+
+/**
+ * The party row a `_party` id names, found by the shared resolution function over the ids party
+ * rows declare.
+ *
+ * Every row declaring one id is one party, because the party fold merges them, so the rows share a
+ * handle and the id resolves to that party however many files declare it. Of that party's rows, the
+ * one declared in the unit's own file is returned - the row the unit is written under - else the
+ * first; the fold moves the edge to the surviving node either way. A row's `displayId` is not read:
+ * on an architecture row it is the party's name, and a name is not an id.
+ */
+function partyLookup(parties: Entity[]): (id: string, unit: Entity) => Entity | undefined {
+  const declarations: RefDeclaration[] = [];
+  const rowsByHandle = new Map<string, Entity[]>();
+  for (const party of parties) {
+    const declared = (party.data as Record<string, unknown> | undefined)?.id;
+    if (typeof declared !== 'string' || declared.length === 0) continue;
+    const handle = partyIdentityKey(party);
+    declarations.push({ id: declared, handle });
+    const rows = rowsByHandle.get(handle);
+    if (rows) rows.push(party);
+    else rowsByHandle.set(handle, [party]);
+  }
+  const index = indexDeclarations(declarations);
+  return (id, unit) => {
+    const resolution = resolveReference(index, id);
+    if (resolution.status !== 'resolved') return undefined;
+    const rows = rowsByHandle.get(resolution.handle) ?? [];
+    return rows.find((row) => row.fileOrigin === unit.fileOrigin) ?? rows[0];
+  };
+}
 
 /**
  * Extract structural relations from org entities:
- * - Party → Department (containment, via department._party matching party.displayId)
+ * - Party → Department (containment, via department._party, the id of the party it is declared under)
  * - Department → Team (has, via department.teams[] refs)
- * - Party → Team (containment, via team._party matching party.displayId)
+ * - Party → Team (containment, via team._party, likewise)
  */
 export function extractOrgRelations(entities: Entity[]): Relation[] {
   const relations: Relation[] = [];
 
-  const parties = entities.filter((e) => e.type === ENTITY_TYPE.Party);
+  const partyOf = partyLookup(entities.filter((e) => e.type === ENTITY_TYPE.Party));
   const departments = entities.filter((e) => e.type === ENTITY_TYPE.Department);
   const teams = entities.filter((e) => e.type === ENTITY_TYPE.Team);
 
@@ -21,7 +54,7 @@ export function extractOrgRelations(entities: Entity[]): Relation[] {
   for (const dept of departments) {
     const parentPartyId = (dept.data as Record<string, unknown>)?._party as string | undefined;
     if (!parentPartyId) continue;
-    const party = parties.find((p) => p.displayId === parentPartyId);
+    const party = partyOf(parentPartyId, dept);
     if (!party) continue;
     relations.push({
       id: `${party.id}--${RELATION_TYPE.OrgContainsDept}--${dept.id}`,
@@ -53,7 +86,7 @@ export function extractOrgRelations(entities: Entity[]): Relation[] {
   for (const team of teams) {
     const parentPartyId = (team.data as Record<string, unknown>)?._party as string | undefined;
     if (!parentPartyId) continue;
-    const party = parties.find((p) => p.displayId === parentPartyId);
+    const party = partyOf(parentPartyId, team);
     if (!party) continue;
     relations.push({
       id: `${party.id}--${RELATION_TYPE.OrgContainsTeam}--${team.id}`,

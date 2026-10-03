@@ -16,6 +16,10 @@
  * surface words it: the validator reports a missing reference exactly when the answer is
  * `unresolved`; the model builder draws an edge only for `resolved`.
  *
+ * When the answer is `unresolved`, `suggestDeclaredIds` names the declared ids that differ from the
+ * reference only by a prefix, so a surface that refuses the reference can say which ids the author
+ * may have meant. That is a hint for the refusal and never an answer: nothing resolves through it.
+ *
  * The model builder imports this module as TypeScript; the validator runs a generated plain-ESM
  * copy of it, so the two cannot answer the same reference differently.
  */
@@ -102,4 +106,27 @@ const SLICE_PREFIX = /^([a-z][a-z0-9-]*)\./;
 export function slicePrefixOf(id: string): string | null {
   const match = typeof id === 'string' ? SLICE_PREFIX.exec(id) : null;
   return match ? match[1]! : null;
+}
+
+/**
+ * "Did you mean ...?" for an id nothing declares: every declared id that differs from the input only
+ * by a slice prefix, sorted, each once.
+ *
+ * This is a HINT and never an answer. An id is its whole string, so `CN001` and `orders.CN001` are
+ * two ids, and no lookup resolves one to the other; this function only tells the person which ids
+ * they may have meant. A caller that prints a suggestion has refused the input (it exits non-zero,
+ * reports a missing reference or raises an input error) - a suggestion is never a result.
+ */
+export function suggestDeclaredIds(declaredIds: Iterable<string>, input: string): string[] {
+  const wanted = localPartForHint(input);
+  const suggestions = new Set<string>();
+  for (const declared of declaredIds) {
+    if (declared !== input && localPartForHint(declared) === wanted) suggestions.add(declared);
+  }
+  return [...suggestions].sort();
+}
+
+/** An id without its slice prefix - read for a hint only, never to identify anything. */
+function localPartForHint(id: string): string {
+  return slicePrefixOf(id) === null ? id : id.slice(id.indexOf('.') + 1);
 }

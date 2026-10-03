@@ -6,10 +6,10 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
 /**
  * Where a governance statement sticks on the domain model.
  *
- *   Risk     --risk_affects-->     Operation | Concept | Story  (risk.affects.*_refs[])
- *   Inquiry  --inquiry_affects-->  Operation | Concept | Story  (inquiry.affects.*_refs[])
- *   Finding  --finding_affects-->  Operation | Concept | Story  (finding.affects.*_refs[])
- *   Goal     --goal_affects-->     Operation | Concept | Story  (goal.affects.*_refs[])
+ *   Risk     --risk_affects-->     Operation | Concept | Process  (risk.affects.*_refs[])
+ *   Inquiry  --inquiry_affects-->  Operation | Concept | Process  (inquiry.affects.*_refs[])
+ *   Finding  --finding_affects-->  Operation | Concept | Process  (finding.affects.*_refs[])
+ *   Goal     --goal_affects-->     Operation | Concept | Process  (goal.affects.*_refs[])
  *
  * `affects.context_refs[]` is a context PREFIX (`orders`), a name rather than an entity id, so it
  * builds no edge here; the slice it names is the folder the concern's artifacts already land in.
@@ -30,7 +30,9 @@ const AFFECTS_TYPE: Partial<Record<string, string>> = {
   [ENTITY_TYPE.Goal]: RELATION_TYPE.GoalAffects,
 };
 
-const REF_LISTS = ['operation_refs', 'concept_refs', 'story_refs'] as const;
+// `process_refs` is the current spelling; `story_refs` is read too, so a model on an earlier schema line
+// still gets its edges.
+const REF_LISTS = ['operation_refs', 'concept_refs', 'process_refs', 'story_refs'] as const;
 
 export function extractAffectsRelations(entities: Entity[], placeholders: Map<string, Entity>): Relation[] {
   const relations: Relation[] = [];

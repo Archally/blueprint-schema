@@ -1,28 +1,21 @@
 import type { Entity, Relation } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
-import { createPlaceholder, entityDomain, resolveRef } from './resolver.js';
+import { createPlaceholder, entityDomain, resolveRef, resolveRefDetailed } from './resolver.js';
 import type { OperationDetail } from '../entities/story.js';
 
 /**
  * Build Story → Operation relations from Story entities' operationsDetail.
  *
- * Resolution uses the shared displayId-based resolver (`resolveRef`) rather than a
- * reconstructed file-based internal id. This is required by the multi-file convention:
- * operations live in `*.domain.yaml` files (e.g. `product-core.domain.yaml`), so the internal
- * id (which bakes in the file basename) cannot be reconstructed from the ref alone. Matching by
- * displayId (e.g. `catalog.CMD001`) resolves the operation regardless of which file holds it.
+ * Each step's `operationRef` is resolved by the shared resolution function: it names the operation
+ * whose declared id is the same string, wherever that operation's file sits and whatever the file is
+ * called. A ref that names nothing, or names a string several operations declare, gets a Missing
+ * placeholder; an ambiguous one's placeholder lists every operation that declares the string, so the
+ * edge never goes to one of them.
  *
- * Before 2026-07-25 this matched on the guessed internal id and fabricated a Missing placeholder
- * whenever the guess missed — 57 phantom "missing" operations on the prestashop model, every one of
- * which was present in the model. The public builder had already been fixed; this is that fix
- * ported back. Keep the two in lockstep.
- *
- * When the ref genuinely does not resolve, a Missing placeholder is created and the step is marked
- * resolved: false on the Story.
- *
- * Either way the outcome is written back onto the Story's `operationsDetail[]`, so the field and the
- * edge always name the same entity: `resolvedEntityId` on success, `resolved: false` on failure.
+ * The outcome is written back onto the step, which makes this pass the only writer of `resolved`
+ * and `resolvedEntityId`: `true` and the operation's internal id when the ref resolves, `false` and
+ * no id otherwise. The step and the edge therefore always name the same entity.
  */
 export function buildStoryRelations(
   entities: Entity[],
@@ -34,43 +27,34 @@ export function buildStoryRelations(
 
   for (const story of storyEntities) {
     const details = (story.data as { operationsDetail?: OperationDetail[] })?.operationsDetail ?? [];
-    const sourceDomain = entityDomain(story);
 
     for (const op of details) {
       const ref = op.operationRef;
       // Absent ref → informational step (e.g. a narrative activity with no operation). Skip.
       if (!ref) continue;
 
-      let targetId = resolveRef(ref, sourceDomain, entities);
-
-      if (!targetId) {
-        const placeholder = createPlaceholder(ref);
+      // `op` is the element of `story.data.operationsDetail`, so the writes below reach the model.
+      const resolution = resolveRefDetailed(ref, entities);
+      let targetId: string;
+      if (resolution.status === 'resolved') {
+        targetId = resolution.handle;
+        op.resolved = true;
+        op.resolvedEntityId = targetId;
+      } else {
+        const placeholder = createPlaceholder(ref, resolution.status === 'ambiguous' ? resolution.handles : undefined);
         if (!placeholders.has(placeholder.id)) {
           placeholders.set(placeholder.id, placeholder);
         }
         targetId = placeholder.id;
-
-        const opsDetail = (story.data as { operationsDetail?: OperationDetail[] })?.operationsDetail;
-        if (opsDetail && opsDetail[op.position] !== undefined) {
-          opsDetail[op.position]!.resolved = false;
-        }
+        op.resolved = false;
+        delete op.resolvedEntityId;
         // Log warning per step: optional in Node (no console in tests is fine)
         if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'test') {
           // eslint-disable-next-line no-console
           console.warn(
-            `Story operation '${op.name}' (ref: ${ref}) resolved to entity not found in model; created placeholder.`
+            `Story operation '${op.name}' (ref: ${ref}) resolved to ${resolution.status === 'ambiguous' ? 'several entities' : 'no entity'} in the model; created placeholder.`
           );
         }
-      } else {
-        // The relation and the Story's own `operationsDetail[].resolvedEntityId` name the SAME
-        // operation, so they are resolved once, here, by the resolver above. The entity extractor
-        // can only guess that id: it runs before the entity list exists, so it reconstructs
-        // `{domain}-domain.yaml-{ref}` from the ref alone, which holds only where a scope keeps its
-        // operations in a file literally named `domain.yaml`. Under the multi-file convention
-        // (`product-core.domain.yaml`, `api.domain.yaml`) the guess names no entity, and a consumer
-        // reading the field walks off the graph while the edge beside it is correct. `op` is the
-        // element of `story.data.operationsDetail`, so this writes through to the model.
-        op.resolvedEntityId = targetId;
       }
 
       relations.push({

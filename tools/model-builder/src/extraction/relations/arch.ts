@@ -1,6 +1,7 @@
 import type { Entity, Relation } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
+import { indexDeclarations, resolveReference, type RefDeclaration } from './refResolution.js';
 
 /**
  * Extract structural containment relations from arch entities.
@@ -74,6 +75,66 @@ export function extractArchRelations(entities: Entity[]): Relation[] {
         target_entity_id: entity.id,
         type: RELATION_TYPE.Provides,
       });
+    }
+  }
+
+  return relations;
+}
+
+/**
+ * The services a service is built on (`imports`) and the services it depends on while running
+ * (`uses`), as edges: Service -> Service, `service_imports` and `service_uses`.
+ *
+ * Each item is a `service_ref` and resolves by the shared resolution function against the id each
+ * service DECLARES (`id: SVC###`), never against its name, which is what a service's `displayId`
+ * holds. A reference resolves to the same string and nothing else, so `SVC001` does not reach a
+ * service declared `shop.SVC001`. An item that resolves to no service, or to several, draws nothing:
+ * the validator reports it, and a placeholder would show a dependency on something nobody declared.
+ *
+ * One edge per (relation, pair): a target named twice in one list is one edge. A target named in
+ * both lists is two edges of two types, never merged - building on a library and calling a running
+ * service are two statements. A service naming itself draws a self-loop, unlike the context
+ * dependencies, which drop one: a self-import is a statement a cycle check must be able to see.
+ */
+export function extractServiceDependencyRelations(entities: Entity[]): Relation[] {
+  const declarations: RefDeclaration[] = [];
+  for (const entity of entities) {
+    if (entity.type !== ENTITY_TYPE.Service) continue;
+    const declaredId = (entity.data as Record<string, unknown> | undefined)?.id;
+    if (typeof declaredId === 'string' && declaredId.length > 0) {
+      declarations.push({ id: declaredId, handle: entity.id });
+    }
+  }
+  if (declarations.length === 0) return [];
+  const index = indexDeclarations(declarations);
+
+  const relations: Relation[] = [];
+  const emitted = new Set<string>();
+  const fields: ReadonlyArray<[string, string]> = [
+    ['imports', RELATION_TYPE.ServiceImports],
+    ['uses', RELATION_TYPE.ServiceUses],
+  ];
+
+  for (const entity of entities) {
+    if (entity.type !== ENTITY_TYPE.Service) continue;
+    const data = (entity.data as Record<string, unknown> | undefined) ?? {};
+    for (const [field, type] of fields) {
+      const items = data[field];
+      if (!Array.isArray(items)) continue;
+      for (const item of items) {
+        if (typeof item !== 'string' || item.length === 0) continue;
+        const resolution = resolveReference(index, item);
+        if (resolution.status !== 'resolved') continue;
+        const id = `${entity.id}--${type}--${resolution.handle}`;
+        if (emitted.has(id)) continue;
+        emitted.add(id);
+        relations.push({
+          id,
+          source_entity_id: entity.id,
+          target_entity_id: resolution.handle,
+          type,
+        });
+      }
     }
   }
 

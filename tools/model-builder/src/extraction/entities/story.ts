@@ -6,9 +6,6 @@ import { makeInternalId } from './id.js';
 
 const LAYER = SCHEMA_TYPE_TO_LAYER['process']!;
 
-/** Domain operation file basename used when resolving operationRef to entity ID. */
-const DOMAIN_FILE_BASENAME = 'domain.yaml';
-
 interface StoryOperationInput {
   name?: string;
   ref?: string;
@@ -26,64 +23,26 @@ interface StoryActivityInput {
   steps?: Array<{ operation_ref?: string; note?: string }>;
 }
 
+/**
+ * One step of a process, as the model states it.
+ *
+ * `operationRef` is the ref exactly as written. `resolved` and `resolvedEntityId` are written by the
+ * relation pass (`relations/story.ts`), which resolves the ref against the model's entities: `true`
+ * and the internal id of the one operation whose declared id is the same string, or `false` and no
+ * id when the ref names nothing or names a string several operations declare. The extractor runs
+ * before the entity list exists, so it records `resolved: false` and no id.
+ */
 export interface OperationDetail {
   name: string;
   operationRef?: string;
   resolvedEntityId?: string;
-  /** Fallback entity ID for old id format (without scope prefix). */
-  fallbackEntityId?: string;
   component?: string;
   resolved: boolean;
   position: number;
 }
 
-/**
- * Resolve operationRef to the internal entity ID for a domain operation.
- * In-scope: "OP001" or "CMD001" → makeInternalId(docScope, domain.yaml, ref).
- * Cross-scope: "orders.CMD001" → tries full ref as displayId first (new scoped-id format),
- *   with fallbackId using opId only (old format).
- * Absent ref → unresolved (informational step).
- *
- * The id here is provisional: entity extraction runs before the entity list exists, so it can only
- * reconstruct one from the ref, and the reconstruction assumes a scope keeps its operations in a
- * file named `domain.yaml`. Relation building resolves the same ref against the real entities and
- * writes the answer back over this field, so a consumer reads the resolved id, not the guess.
- */
-function resolveOperationRef(
-  operationRef: string | undefined,
-  docScope: string | undefined
-): { resolvedEntityId?: string; fallbackEntityId?: string; resolved: boolean } {
-  if (!operationRef || typeof operationRef !== 'string' || !operationRef.trim()) {
-    return { resolved: false };
-  }
-
-  const dotIndex = operationRef.indexOf('.');
-  if (dotIndex === -1) {
-    const scope = docScope ?? 'default';
-    return {
-      resolvedEntityId: makeInternalId(scope, DOMAIN_FILE_BASENAME, operationRef),
-      resolved: true,
-    };
-  }
-
-  const targetScope = operationRef.substring(0, dotIndex);
-  const opId = operationRef.substring(dotIndex + 1);
-  if (!opId) return { resolved: false };
-
-  // New format: operation id includes scope prefix (e.g. "orders.CMD001" → displayId "orders.CMD001")
-  // Old format: operation id is just the local part (e.g. "CMD001" → displayId "CMD001")
-  return {
-    resolvedEntityId: makeInternalId(targetScope, DOMAIN_FILE_BASENAME, operationRef),
-    fallbackEntityId: makeInternalId(targetScope, DOMAIN_FILE_BASENAME, opId),
-    resolved: true,
-  };
-}
-
 /** Build operationsDetail from v2.1 activities (activities[].steps or [entry_operation]). */
-function buildOperationsDetailFromActivities(
-  activities: StoryActivityInput[],
-  docScope: string | undefined
-): OperationDetail[] {
+function buildOperationsDetailFromActivities(activities: StoryActivityInput[]): OperationDetail[] {
   const result: OperationDetail[] = [];
   let position = 0;
   for (const activity of activities) {
@@ -91,25 +50,18 @@ function buildOperationsDetailFromActivities(
     if (activity.steps && activity.steps.length > 0) {
       for (const step of activity.steps) {
         const opRef = step.operation_ref ?? activity.entry_operation;
-        const { resolvedEntityId, fallbackEntityId, resolved } = resolveOperationRef(opRef, docScope);
         result.push({
           name: (step as { note?: string }).note ?? activityName,
           operationRef: opRef,
-          resolvedEntityId,
-          fallbackEntityId,
-          resolved,
+          resolved: false,
           position: position++,
         });
       }
     } else {
-      const opRef = activity.entry_operation;
-      const { resolvedEntityId, fallbackEntityId, resolved } = resolveOperationRef(opRef, docScope);
       result.push({
         name: activityName,
-        operationRef: opRef,
-        resolvedEntityId,
-        fallbackEntityId,
-        resolved,
+        operationRef: activity.entry_operation,
+        resolved: false,
         position: position++,
       });
     }
@@ -138,19 +90,17 @@ interface StoryInput {
 /**
  * Extract Story entities from a parsed story document.
  * Supports v2.0 (operations[]) and v2.1 (activities[]).
- * Each stories[] item becomes one Story entity with operationsDetail[] (ordered,
- * with operationRef resolution and scope/component for swimlane inference).
+ * Each stories[] item becomes one Story entity with operationsDetail[] (ordered, with the
+ * operationRef as written and scope/component for swimlane inference; the relation pass resolves
+ * each ref).
  */
 export function extractStory(doc: ParsedBlueprintDocument): Entity[] {
   const entities: Entity[] = [];
   const data = doc.data ?? {};
   const docScope = (doc.scope ?? data.scope) as string | undefined;
   // `stories`, `user_stories` and `use_cases` are INDEPENDENT top-level collections in
-  // story.schema. This used to early-return when `stories` was absent, which silently dropped
-  // every UserStory and UseCase in a file that authored only those — the exact shape a modeller
-  // writes first, since user stories precede process stories in the authoring flow. Found by the
-  // step-04b rule fixture (plan D44); the same defect existed at the same line in the public
-  // model-builder and was fixed there in lockstep (D34).
+  // story.schema, so a file that declares only user stories or use cases still yields them when it
+  // has no `stories` at all.
   // `processes` is the collection's name from v2.8.10; `stories` is what it was called before,
   // and every model on an earlier schema line still uses it.
   const collection = data.processes ?? data.stories;
@@ -163,19 +113,16 @@ export function extractStory(doc: ParsedBlueprintDocument): Entity[] {
 
     let operationsDetail: OperationDetail[];
     if (s.activities != null && Array.isArray(s.activities) && s.activities.length > 0) {
-      operationsDetail = buildOperationsDetailFromActivities(s.activities, docScope);
+      operationsDetail = buildOperationsDetailFromActivities(s.activities);
     } else {
       const ops = s.operations ?? [];
       operationsDetail = ops.map((op, idx) => {
         const name = op.name ?? op.ref ?? `unnamed-${idx}`;
-        const { resolvedEntityId, fallbackEntityId, resolved } = resolveOperationRef(op.operationRef, docScope);
         return {
           name: String(name),
           operationRef: op.operationRef,
-          resolvedEntityId,
-          fallbackEntityId,
           component: op.component,
-          resolved,
+          resolved: false,
           position: idx,
         };
       });
