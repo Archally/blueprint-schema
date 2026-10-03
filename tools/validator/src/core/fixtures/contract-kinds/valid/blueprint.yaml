@@ -1,0 +1,6 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Model Tools
+description: >-
+  A model server that exposes its operations as MCP tools and as commands of a command-line
+  program, and an assistant that calls both.

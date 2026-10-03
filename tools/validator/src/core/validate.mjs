@@ -191,6 +191,31 @@ export function declaredContractOutputs(parsedFiles) {
  * surprise - it names the replacement and the line the field goes away in, so the reader can act
  * before then rather than after.
  */
+/**
+ * The contract kinds whose schema still declares the superseded `output:`, read off the arch schema
+ * a run validates against rather than listed here.
+ *
+ * A kind whose schema never offered the key rejects it outright, and the schema error is the whole
+ * finding: the two `output:` warnings below would say beside that error that the key is accepted,
+ * which is the opposite of the verdict. Null when the tree declares no `contracts` block, and then
+ * every kind is treated as accepting it.
+ *
+ * @param {Map<string, any>} registry schema documents keyed by path relative to the schema root
+ * @returns {Set<string> | null}
+ */
+export function contractKindsAcceptingOutput(registry) {
+  const arch = registry.get("design/arch.schema.yaml");
+  const kinds = arch?.$defs?.contracts?.properties;
+  if (!kinds || typeof kinds !== "object") return null;
+  const accepting = new Set();
+  for (const [kind, declared] of Object.entries(kinds)) {
+    const local = typeof declared?.$ref === "string" ? /^#\/\$defs\/(.+)$/.exec(declared.$ref) : null;
+    const definition = local ? arch.$defs?.[local[1]] : declared;
+    if (definition?.properties && Object.hasOwn(definition.properties, "output")) accepting.add(kind);
+  }
+  return accepting;
+}
+
 export function checkDeprecatedContractOutput(relFile, serviceName, kind, contract) {
   if (!contract || typeof contract.output !== "string" || contract.output.trim() === "") return null;
   return (
@@ -262,7 +287,7 @@ export function checkDeprecatedNextActivities(relFile, processId, activity) {
  * A context dependency still naming its integration with the superseded free-string `type:`.
  *
  * Warning rather than error, like the two above: the key is accepted for the whole 2.8 line and
- * means what it always meant. What `coupling` adds is comparability - it takes the same six values
+ * means what it always meant. What `coupling` adds is comparability - it takes the same values
  * the contract surface computes, so a declared coupling and a derived one can be set against each
  * other, which a free string never could.
  *
@@ -283,6 +308,9 @@ const COUPLING_FOR_TYPE = Object.freeze({
   messaging: "message",
   grpc: "rpc",
   rpc: "rpc",
+  mcp: "mcp",
+  cli: "cli",
+  graphql: "graphql",
   "shared-db": "shareddata",
   shared_db: "shareddata",
   database: "shareddata",
@@ -295,7 +323,7 @@ export function checkDeprecatedDependencyType(relFile, contextName, dependency) 
   const advice = mapped
     ? `Write \`coupling: ${mapped}\` instead.`
     : `\`coupling\` has no value for it - "${authored}" names a medium rather than a coupling, so ` +
-      `which of the six applies is a decision only an author can make.`;
+      `which coupling applies is a decision only an author can make.`;
   return (
     `[${relFile}] Context "${contextName}" states its dependency on "${dependency.name}" with ` +
     `\`type: ${authored}\`, which is superseded by \`coupling\`. ${advice} Where the contracts ` +
@@ -547,6 +575,7 @@ export function validateModel(args) {
   // Which keys hold a reference is read off THIS schema tree, so the walk below resolves exactly
   // the references the declared version types - see reference-keys.mjs for why it is not a list.
   const refKeys = deriveReferenceKeys(registry);
+  const outputKinds = contractKindsAcceptingOutput(registry);
 
   // Rules are not uniform across schema versions, so behaviour follows the version the model
   // DECLARES rather than the newest one this validator knows. From v2.7, only invocable
@@ -674,8 +703,18 @@ export function validateModel(args) {
   for (const finding of references.outOfBand) {
     warnings.push(outOfBandMessage(finding, finding.file));
   }
-  for (const { value, loc } of references.missing) {
+  // A missing reference that differs from declared ids only by a prefix gets a suggestion, in its
+  // own list rather than in the error: the error then reads the same whatever else the model
+  // declares, so a finding keeps one identity for every comparison of two runs, and a suggestion
+  // can never be read as a match.
+  const referenceSuggestions = [];
+  for (const { value, loc, suggestions } of references.missing) {
     crossErrors.push(`Missing reference '${value}' at ${loc}`);
+    if (suggestions.length > 0) {
+      referenceSuggestions.push(
+        `'${value}' at ${loc}: did you mean ${suggestions.join(", ")}? An id is its whole string, so address it as declared.`,
+      );
+    }
   }
   // A `domain_ref` that resolves to nothing is a dangling reference like any other, and it is the
   // one membership statement that CAN be wrong: an omitted or folder-inferred context is correct
@@ -766,15 +805,19 @@ export function validateModel(args) {
             continue;
           }
           for (const [kind, contract] of Object.entries(service.contracts)) {
-            const finding = checkContractOutputSlice(
-              relFile, service.name, kind, contract?.output, sliceNames,
-            );
+            // A kind that rejects `output:` has already been reported by the schema.
+            const offersOutput = !outputKinds || outputKinds.has(kind);
+            const finding = offersOutput
+              ? checkContractOutputSlice(relFile, service.name, kind, contract?.output, sliceNames)
+              : null;
             if (finding) warnings.push(finding);
             const sliceFinding = checkContractSlice(
               relFile, service.name, kind, contract?.slice, sliceNames,
             );
             if (sliceFinding) warnings.push(sliceFinding);
-            const deprecated = checkDeprecatedContractOutput(relFile, service.name, kind, contract);
+            const deprecated = offersOutput
+              ? checkDeprecatedContractOutput(relFile, service.name, kind, contract)
+              : null;
             if (deprecated) warnings.push(deprecated);
           }
         }
@@ -846,6 +889,7 @@ export function validateModel(args) {
   return {
     schemaErrors,
     crossErrors,
+    referenceSuggestions,
     warnings,
     modelPath: modelDir,
     filesValidated,

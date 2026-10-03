@@ -1,0 +1,6 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Model Tools Couplings
+description: >-
+  A model server reached over MCP and a command line, one context that calls it through contracts
+  and declares no coupling, and two that have no contracts and declare `cli`, `graphql` and `mcp`.

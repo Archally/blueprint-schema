@@ -1,0 +1,27 @@
+version: "1.0.0"
+name: Tools
+scope: tools
+operations:
+  validateModel:
+    id: tools.CMD001
+    kind: command
+    name: Validate Model
+    exchange:
+      - protocol: stdio
+        endpoint: { group: tool, path: validate_model, method: CALL }
+      - protocol: cli
+        endpoint: { path: "tool validate <model>", method: EXEC }
+  listProjects:
+    id: tools.QRY001
+    kind: query
+    name: List Projects
+    exchange:
+      protocol: stdio
+      endpoint: { group: tool, path: list_projects, method: CALL }
+  renderModel:
+    id: tools.CMD002
+    kind: command
+    name: Render Model
+    exchange:
+      protocol: x-cli
+      endpoint: { path: "tool render <model>", method: EXEC }

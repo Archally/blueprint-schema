@@ -1,0 +1,5 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Model Tools
+description: >-
+  An MCP contract exposes an operation key no domain file declares.

@@ -1,0 +1,19 @@
+version: "1.0.0"
+name: Tools architecture
+scope: tools
+parties:
+  - id: tools.PRT001
+    name: Toolsmith
+    kind: system
+    contexts:
+      - id: tools.BC001
+        name: Model Tools
+        kind: core
+        services:
+          - id: tools.SVC001
+            name: Model Server
+            kind: service
+            contracts:
+              mcp:
+                contract_name: model-tools
+                expose: [tools.CMD001, tools.CMD999]

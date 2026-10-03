@@ -1,0 +1,23 @@
+version: "1.0.0"
+name: Shop architecture
+scope: shop
+parties:
+  - id: shop.PRT001
+    name: Shop
+    kind: system
+    contexts:
+      - id: shop.BC001
+        name: Ordering
+        kind: core
+        services:
+          - id: shop.SVC001
+            name: Order Service
+            kind: service
+            imports: [platform.SVC010, platform.SVC099]
+            uses: [shop.SVC098]
+          - id: shop.SVC002
+            name: Payment Service
+            kind: service
+          - id: shop.SVC003
+            name: Order Rules
+            kind: library

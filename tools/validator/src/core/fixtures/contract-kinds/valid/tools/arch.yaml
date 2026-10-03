@@ -1,0 +1,49 @@
+version: "1.0.0"
+name: Tools architecture
+scope: tools
+parties:
+  - id: tools.PRT001
+    name: Toolsmith
+    kind: system
+    contexts:
+      - id: tools.BC001
+        name: Model Tools
+        kind: core
+        services:
+          # Two services naming one MCP contract contribute to one document.
+          - id: tools.SVC001
+            name: Model Server
+            kind: service
+            contracts:
+              mcp:
+                contract_name: model-tools
+                expose: [tools.CMD001]
+          - id: tools.SVC002
+            name: Project Server
+            kind: service
+            contracts:
+              mcp:
+                contract_name: model-tools
+                expose: [tools.QRY001]
+          # Both reference forms: the id and the `scope:key` of the operation.
+          - id: tools.SVC003
+            name: Tool Command
+            kind: cli
+            contracts:
+              cli:
+                contract_name: tool-cli
+                expose: [tools.CMD001, "tools:renderModel"]
+      - id: tools.BC002
+        name: Automation
+        kind: support
+        services:
+          - id: tools.SVC004
+            name: Assistant
+            kind: service
+            contracts:
+              mcp:
+                contract_name: assistant-tools
+                call: [tools.CMD001, tools.QRY001]
+              cli:
+                contract_name: assistant-scripts
+                call: [tools.CMD002]

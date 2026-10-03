@@ -367,6 +367,12 @@ function main() {
 
   section("Schema Errors", result.schemaErrors, red, redBold);
   section("Cross-Reference Errors", result.crossErrors, red, redBold);
+  // Printed only when a missing reference has a suggestion. The heading of its own ends the error
+  // section for every reader that collects findings under one, so a suggestion is never counted as
+  // an error.
+  if (result.referenceSuggestions?.length) {
+    section("Reference Suggestions", result.referenceSuggestions, cyan, bold);
+  }
   section("Gap Warnings", result.warnings, yellow, yellowBold);
 
   // A run that recognised NO file shape has checked nothing, and "PASSED with 0 warnings" is the

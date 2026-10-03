@@ -20,7 +20,7 @@
  */
 
 import { retiredBandOf, rebanded, outOfBandFinding } from "./id-bands.mjs";
-import { indexDeclarations, resolveReference } from "./ref-resolve.mjs";
+import { indexDeclarations, resolveReference, suggestDeclaredIds } from "./ref-resolve.mjs";
 import { detectSchemaType } from "./schema-types.mjs";
 import {
   collectIds,
@@ -134,7 +134,9 @@ export const CATALOG_REF_RE = /^([a-z][a-z0-9-]*\.)?RT\d{3,}$/;
 
 /**
  * @typedef {object} ReferenceFindings
- * @property {Array<{ value: string, loc: string, file: string }>} missing
+ * @property {Array<{ value: string, loc: string, file: string, suggestions: string[] }>} missing
+ *   `suggestions` are the declared ids that differ from `value` only by a prefix (the shared
+ *   did-you-mean rule): a hint for the refusal, never a resolution
  * @property {Array<{ id: string, locations: string[] }>} duplicates
  * @property {string[][]} parentCycles each ring in walk order, rotated to its lowest member
  * @property {Array<{ id: string, key: string, arm: string, loc: string, file: string }>} selfEdges
@@ -309,7 +311,7 @@ export function resolveModelReferences(documents, refKeys, bandTable, declaredBa
   for (const ref of allRefs) {
     if (CATALOG_REF_RE.test(ref.value)) continue;
     if (resolveReference(index, ref.value).status !== "unresolved") continue;
-    missing.push({ value: ref.value, loc: ref.loc, file: ref.file });
+    missing.push({ value: ref.value, loc: ref.loc, file: ref.file, suggestions: suggestDeclaredIds(index.byId.keys(), ref.value) });
   }
 
   const duplicates = [];

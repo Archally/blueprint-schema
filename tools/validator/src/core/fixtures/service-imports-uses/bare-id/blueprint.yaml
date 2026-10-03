@@ -1,0 +1,6 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Shop
+description: >-
+  A shop whose order service is built on a pricing library from another slice and depends on a
+  payment service while running.

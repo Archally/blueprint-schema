@@ -1,0 +1,15 @@
+version: "1.0.0"
+name: Platform architecture
+scope: platform
+parties:
+  - id: platform.PRT001
+    name: Platform
+    kind: system
+    contexts:
+      - id: platform.BC001
+        name: Pricing
+        kind: generic
+        services:
+          - id: platform.SVC010
+            name: Pricing Library
+            kind: library
