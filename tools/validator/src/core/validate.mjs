@@ -13,6 +13,8 @@ import {
 } from "./id-bands.mjs";
 import { archContextsOf, servicesOf } from "./arch-shape.mjs";
 import { FILENAME_TO_SCHEMA, detectSchemaType } from "./schema-types.mjs";
+import { classifyModelFiles } from "./file-membership.mjs";
+import { rootScopeFindings, rootScopeMessage } from "./root-scope.mjs";
 import { isIdentityOrReferenceViolation } from "./references.mjs";
 import { SECTION_TO_CATEGORY, resolvesAgainst } from "./model-ref-match.mjs";
 
@@ -619,42 +621,45 @@ export function validateModel(args) {
   let filesValidated = 0;
   /**
    * Every file the run did not schema-check, by name. A count alone says how many documents went
-   * unchecked but not which, and the two readings differ: a skipped deployment manifest is routine,
-   * a skipped model file is a gap. The count reported to callers is this list's length, so the two
-   * cannot disagree.
+   * unchecked but not which, and the two readings differ: a deployment manifest beside the model is
+   * routine, a model file under a name nothing reads is a gap. The count reported to callers is this
+   * list's length, so the two cannot disagree.
    */
   const skippedFiles = [];
 
+  // The model is the set of files the model builder loads, so that is the set this run checks. A
+  // file outside it is neither schema-checked nor a source of declarations or references: a verdict
+  // about content no reader sees would describe a different model from the one every reader gets.
+  // A file outside the model whose name says it was meant to be inside is reported, never ignored.
+  const relFileOf = (filePath) =>
+    isDir ? toPosixPath(path.relative(modelDir, filePath)) : path.basename(filePath);
+  const membership = classifyModelFiles(yamlFiles.map(relFileOf), { singleFile: !isDir });
+  const modelFiles = new Set(membership.modelFiles);
+  for (const finding of membership.findings) crossErrors.push(finding.message);
+
   for (const filePath of yamlFiles) {
-    const relFile = toPosixPath(path.relative(modelDir, filePath));
-    const schemaType = detectSchemaType(filePath);
+    const relFile = relFileOf(filePath);
+    if (!modelFiles.has(relFile)) { skippedFiles.push(relFile); continue; }
+    const schemaType = detectSchemaType(relFile);
     const schemaRelPath = schemaType ? FILENAME_TO_SCHEMA[schemaType] : undefined;
 
     let data;
     try {
       data = loadYaml(filePath);
     } catch (err) {
-      // A model directory may hold YAML that is not blueprint content at all (deployment
-      // manifests, integration contracts, multi-document files). Failing to parse one of those
-      // is not a finding about the model — only a file the schema map RECOGNISES is expected to
-      // parse as a blueprint document.
-      if (schemaRelPath) {
-        schemaErrors.push(`[${relFile}] Parse error: ${err.message}`);
-      } else {
-        skippedFiles.push(relFile);
-      }
+      // Only files of the model reach this point, and a model file that does not parse is a model
+      // file nobody can read.
+      schemaErrors.push(`[${relFile}] Parse error: ${err.message}`);
       continue;
     }
     if (!data || typeof data !== "object") continue;
 
-    // Every readable YAML document takes part in reference integrity, whether or not a schema
-    // recognises its filename. A file the schema map does not cover still declares ids and still
-    // points at other entities — skipping it would silently narrow the graph and let dangling
-    // references through unreported.
+    // Every file of the model takes part in reference integrity: its declarations satisfy
+    // references and its references must resolve.
     parsedFiles.push({ relFile, schemaType, data });
 
-    // Schema validation, on the other hand, needs a schema. Unrecognised files are counted as
-    // skipped and reported as such, never validated against an unrelated schema.
+    // A layer this validator has no schema path for is counted as skipped and named, never
+    // validated against an unrelated schema.
     if (!schemaRelPath) { skippedFiles.push(relFile); continue; }
 
     const schemaUri = SCHEMA_BASE_URI + schemaRelPath;
@@ -680,7 +685,7 @@ export function validateModel(args) {
     filesValidated += 1;
   }
 
-  // Every readable document takes part, and the findings are structured so the model server can
+  // Every model file takes part, and the findings are structured so the model server can
   // render the same ones - one implementation of "does this reference resolve", two surfaces.
   // A cycle and a self edge are cross-reference errors rather than schema errors, so `--compat`
   // cannot demote them: a chain that does not terminate is not a version-compatibility question.
@@ -702,6 +707,11 @@ export function validateModel(args) {
   for (const message of bandDeclarationMessages(declaredBands)) warnings.push(message);
   for (const finding of references.outOfBand) {
     warnings.push(outOfBandMessage(finding, finding.file));
+  }
+  // A single file has no model root and no slices to compare its `scope:` with, so only a model
+  // directory is asked this.
+  if (isDir) {
+    for (const finding of rootScopeFindings(parsedFiles)) warnings.push(rootScopeMessage(finding));
   }
   // A missing reference that differs from declared ids only by a prefix gets a suggestion, in its
   // own list rather than in the error: the error then reads the same whatever else the model

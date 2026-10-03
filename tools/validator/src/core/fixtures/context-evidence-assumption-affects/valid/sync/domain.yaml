@@ -1,0 +1,8 @@
+version: "1.0.0"
+name: Directory sync domain
+scope: sync
+operations:
+  importUsers:
+    id: sync.CMD001
+    kind: command
+    name: Import Users

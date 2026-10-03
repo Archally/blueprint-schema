@@ -1,0 +1,13 @@
+version: "1.0.0"
+name: Directory sync architecture
+scope: sync
+parties:
+  - id: sync.PRT001
+    name: Product
+    kind: system
+    contexts:
+      - id: sync.BC001
+        name: Directory Sync
+        kind: support
+        code_refs: src/Integration/DirectorySync/
+        implementation: existing

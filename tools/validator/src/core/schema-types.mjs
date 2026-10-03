@@ -1,5 +1,9 @@
-import path from "node:path";
+import { getSchemaForFile } from "./schema-routing.mjs";
 
+/**
+ * The schema file each layer is checked against, relative to a schema line's root. Every layer the
+ * model builder loads has an entry; a line that lacks the schema file compiles no validator for it.
+ */
 export const FILENAME_TO_SCHEMA = {
   blueprint: "blueprint.schema.yaml",
   migration: "migration.schema.yaml",
@@ -17,7 +21,7 @@ export const FILENAME_TO_SCHEMA = {
   // `001-rename-acronym-schemas`). Both spellings are mapped so that a model declaring v2.4–v2.6
   // validates against the schemas it was authored for: behaviour follows the model's DECLARED
   // schema version, and an unrecognised layer is never skipped in silence. Retiring a schema
-  // version is a deliberate, dated act — not the side effect of dropping a mapping here.
+  // version is a deliberate, dated act - not the side effect of dropping a mapping here.
   rg: "design/rg.schema.yaml", // pre-v2.7 name for `infrastructure`
   infrastructure: "design/infrastructure.schema.yaml",
   ui: "design/ui.schema.yaml", // pre-v2.7 name for `interactions`
@@ -33,26 +37,15 @@ export const FILENAME_TO_SCHEMA = {
   leverage: "governance/leverage.schema.yaml",
 };
 
+/**
+ * The layer a model file holds, read from its file name; null for a file that is not part of the
+ * model. This is the model builder's own answer (`getSchemaForFile`), so the validator checks
+ * exactly the files the builder loads. Files the builder does not load are described by
+ * `file-membership.mjs`.
+ *
+ * @param {string} filePath
+ * @returns {string | null}
+ */
 export function detectSchemaType(filePath) {
-  const basename = path.basename(filePath, path.extname(filePath));
-
-  // Dotfiles are TOOL CONFIGURATION colocated with the model, never model content — a blueprint
-  // layer file is `{layer}.yaml` or `{name}.{layer}.yaml`, never `.{something}.yaml`. Without this
-  // guard the quality gate's own `.blueprint-quality.yaml` matched the `-${key}` branch below
-  // (`.blueprint-quality`.endsWith('-quality')) and was validated against the quality LAYER schema,
-  // producing 3 spurious schema errors on an otherwise-clean model. The monorepo stack never saw
-  // this: its rule is dot-only (`^[^/\\]+\.(<types>)\.(yaml|yml)$`), so the same file is skipped
-  // there and the two stacks disagreed on identical input.
-  if (basename.startsWith(".")) return null;
-
-  if (FILENAME_TO_SCHEMA[basename]) return basename;
-  for (const key of Object.keys(FILENAME_TO_SCHEMA)) {
-    // NOTE: the `-${key}` form is a divergence from the monorepo's dot-only pattern, kept because
-    // a downstream model may already rely on it. It matches nothing in this repo's 182 example
-    // YAMLs. If it is ever retired, retire it in both stacks at once.
-    if (basename.endsWith(`-${key}`) || basename.endsWith(`.${key}`)) {
-      return key;
-    }
-  }
-  return null;
+  return getSchemaForFile(filePath);
 }

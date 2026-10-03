@@ -1,0 +1,23 @@
+version: "1.0.0"
+name: Directory sync architecture
+scope: sync
+parties:
+  - id: sync.PRT001
+    name: Product
+    kind: system
+    contexts:
+      - id: sync.BC001
+        name: Directory Sync
+        kind: support
+        code_refs:
+          - path: src/Integration/DirectorySync/
+            role: implementation
+        implementation: as-is
+        provenance:
+          discovery_stage: hypothesis
+          certainty: probable
+          evidence:
+            - kind: interview
+              source: "Product owner"
+              date: "2026-10-01"
+              summary: "The directory sync runs nightly and owns the user import."

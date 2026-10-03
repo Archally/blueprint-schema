@@ -335,12 +335,10 @@ function main() {
   );
   console.log(`${cyan("Mode:")}      ${args.compat ? yellow("compat") : "strict"}`);
   console.log(`${cyan("Files:")}     ${green(result.filesValidated)} validated, ${result.filesSkipped} skipped`);
-  // A skipped file is NAMED, not only counted. Whether a skip is routine or a gap depends on which
-  // file it was: a deployment manifest sitting beside the model is expected, a model document under
-  // a filename no schema claims is not. A number cannot tell those apart, and every run that
-  // reports one is asking its reader to guess.
+  // A skipped file is NAMED, not only counted. A file outside the model is listed here; one whose
+  // name says it was meant to be a model file is also reported as an error, naming the fix.
   if (result.skippedFiles?.length) {
-    console.log(yellow(`           no schema matches these filenames, so they were not checked:`));
+    console.log(yellow(`           these files are not part of the model, so they were not checked:`));
     result.skippedFiles.forEach((relFile) => console.log(yellow(`             - ${relFile}`)));
   }
   // The register is named whenever one was offered, checked or not. A line that appears only on
@@ -383,8 +381,8 @@ function main() {
     console.log(
       redBold(
         result.filesSkipped > 0
-          ? `NO FILE VALIDATED. ${result.filesSkipped} file(s) were skipped because no schema in ` +
-            `${args.schemas} matches their shape. This is not a pass - nothing was checked.`
+          ? `NO FILE VALIDATED. ${result.filesSkipped} file(s) were skipped because none of them is ` +
+            `part of the model, or no schema in ${args.schemas} checks it. This is not a pass - nothing was checked.`
           : `NO FILE VALIDATED. The model directory holds no file this validator recognises. ` +
             `This is not a pass - nothing was checked.`,
       ),

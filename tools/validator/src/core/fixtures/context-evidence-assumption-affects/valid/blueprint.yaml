@@ -1,0 +1,6 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Directory Sync
+description: >-
+  A product whose identity-provider sync is a bounded context known from a conversation before its
+  services are, and an assumption about the provider that bears on the sync's operation.

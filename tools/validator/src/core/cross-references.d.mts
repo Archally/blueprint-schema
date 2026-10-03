@@ -11,7 +11,11 @@ export interface ModelDocument {
 }
 
 export interface ReferenceFindings {
-  missing: Array<{ value: string; loc: string; file: string }>;
+  /**
+   * `suggestions` are the declared ids that differ from `value` only by a prefix (the shared
+   * did-you-mean rule): a hint for the refusal, never a resolution. Empty when there is none.
+   */
+  missing: Array<{ value: string; loc: string; file: string; suggestions: string[] }>;
   duplicates: Array<{ id: string; locations: string[] }>;
   /** Each ring in walk order, rotated to its lowest member. */
   parentCycles: string[][];
