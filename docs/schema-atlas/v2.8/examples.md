@@ -94,6 +94,8 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/tracked-migrations.schema.yaml#/$defs/json_patch_op/properties/from/examples/0`: `"/description"`
 
+- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/edit_site/properties/file/examples/0`: `"catalog/supply-chain.concepts.yaml"`
+
 - `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry/properties/name/examples/0`: `"reserve-stock-at-checkout"`
 
 - `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry/properties/name/examples/1`: `"refactor-orders"`
@@ -103,6 +105,8 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 - `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry/properties/date/examples/0`: `"2026-09-16"`
 
 - `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry/properties/variant_group/examples/0`: `"auth-rewrite"`
+
+_… and 1 more (listed first 50 for readability)._
 
 ## Reference example models
 

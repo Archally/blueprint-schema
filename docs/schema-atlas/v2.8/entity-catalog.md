@@ -866,9 +866,38 @@ What applying this migration did to the model's validity, measured before and af
 
 _Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/validation_delta`_
 
+#### `edit_site`
+
+What one operation of an applied migration did to one file: the runs of text it replaced, what stood there before, and a digest of the whole file on each side of the change. Offsets count UTF-16 code units of the file's text, as read in UTF-8.
+
+**Required:** `file`, `windows`, `before_sha`, `after_sha`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `file` | `string` | ✓ |  | The file, relative to the model directory, with forward slashes. |
+| `windows` | `array<ref → edit_window>` | ✓ |  | The runs of text the operation changed in this file, ascending by `start` and not overlapping. |
+| `before_sha` | `string` | ✓ |  | Digest of the whole file before the operation ran. A rollback checks that the file it restores has this digest. |
+| `after_sha` | `string` | ✓ |  | Digest of the whole file after the operation ran. A rollback proceeds only while the file still has this digest. |
+
+_Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/edit_site`_
+
+#### `edit_window`
+
+One contiguous run of text an operation replaced, and the text that stood there before.
+
+**Required:** `start`, `end`, `prior`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `start` | `integer` | ✓ |  | Where the run starts in the file as the operation left it. |
+| `end` | `integer` | ✓ |  | Where the run ends in the file as the operation left it, exclusive. Equal to `start` when the operation removed text without adding any. |
+| `prior` | `string` | ✓ |  | The text that stood in the run before the operation. Empty when the operation only inserted text. |
+
+_Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/edit_window`_
+
 #### `tracked_entry`
 
-One migration: a named set of changes with a status, and once applied, the changes that would undo it.
+One migration: a named set of changes with a status, and once applied, a record of what it changed and the changes that would undo it.
 
 **Required:** `id`, `name`, `status`, `change_set`
 
@@ -884,7 +913,9 @@ One migration: a named set of changes with a status, and once applied, the chang
 | `depends_on` | `array<ref → tracked_migration_ref>` | — |  | Migrations that must apply before this one. |
 | `variant_group` | `string` | — |  | Names a set of mutually exclusive alternatives. Migrations sharing a group are competing answers to the same question: accepting one rejects its siblings, and… |
 | `change_set` | `array<ref → patch_op>` | ✓ |  | The changes this migration makes, in the order they apply. Empty while the migration is still collecting them. |
-| `inverse_change_set` | `array<ref → patch_op>` | — |  | The changes that undo this migration, recorded when it was applied. Absent until then, and removed again once the migration is rolled back. |
+| `inverse_change_set` | `array<ref → patch_op>` | — |  | The changes that undo this migration, recorded when it was applied. It describes the rollback rather than performing it: rolling back restores the recorded `ed… |
+| `inverse_unavailable` | `array<string>` | — |  | Why no inverse could be described, one line per operation that has none. Recorded when the migration is applied, and only when `inverse_change_set` is empty fo… |
+| `edit_sites` | `array<ref → edit_site>` | — |  | What this migration changed, file by file, recorded when it was applied: one site per operation per file it touched, in the order the operations ran. Rolling t… |
 | `validation_delta` | `ref → validation_delta` | — |  |  |
 
 _Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry`_
@@ -3468,8 +3499,7 @@ A prioritized cross-cutting intervention - "the one thing to do for X". Synthesi
 | `advances_goals` | `array<ref → goal_ref>` | — |  | Motivation goals (GL###) this intervention advances. |
 | `advances_value_streams` | `array<ref → value_stream_ref>` | — |  | Value streams (VS###) / initiatives this intervention unblocks or accelerates. |
 | `capability_refs` | `array<ref → capability_ref>` | — |  | Business capabilities (CAP###) this intervention strengthens. Optional. |
-| `depends_on` | `array<ref → leverage_ref>` | — |  | Leverage points that must land first (prerequisites). Forms the leverage DAG. |
-| `enables` | `array<ref → leverage_ref>` | — |  | Leverage points this one unblocks once done. Inverse edge of `depends_on`. |
+| `depends_on` | `array<ref → leverage_ref>` | — |  | Leverage points that must land first (prerequisites). Forms the leverage DAG. Each edge is stated once, here on the dependent; what a leverage point unblocks i… |
 | `consequences_if_done` | `array<string>` | — |  | What improves if this intervention is executed. |
 | `consequences_if_not_done` | `array<string>` | — |  | What persists / degrades if it is NOT executed (the cost of inaction). |
 | `discovery_stage` | `ref → discovery_stage` | — |  | Epistemic maturity of this leverage recommendation. |

@@ -16,7 +16,7 @@ Version-root schemas that belong to neither plane and apply across every layer: 
 | [`migrations.schema.yaml`](./entity-catalog.md#migrations) | Blueprint Migration Register | 4 | 2 | An ordered record of the changes a blueprint model has been through and the ones it is planned to go through, written f… |
 | [`profiles/infrastructure/profiles.schema.yaml`](./entity-catalog.md#profiles-infrastructure-profiles) | Blueprint Infrastructure Resource-Type Profile | 6 | 4 | Validates a resource-type catalog profile file (v2.7.7). A profile is DATA, not schema: the resource-type catalog is sh… |
 | [`render.manifest.schema.yaml`](./entity-catalog.md#render-manifest) | Blueprint Render Manifest | 12 | 1 | Declares one project's full artifact set for the `bp render` command: which renderer targets to produce, where their ou… |
-| [`tracked-migrations.schema.yaml`](./entity-catalog.md#tracked-migrations) | Blueprint Tracked Migration Register | 0 | 10 | The staged changes a blueprint model is carrying, each one replayable and each one reversible. A project in tracked mod… |
+| [`tracked-migrations.schema.yaml`](./entity-catalog.md#tracked-migrations) | Blueprint Tracked Migration Register | 0 | 12 | The staged changes a blueprint model is carrying, each one replayable and each one reversible. A project in tracked mod… |
 
 ### Cross-cutting — reference dependencies
 
@@ -151,7 +151,7 @@ graph LR
     metamodel_schema_yaml(["metamodel"])
     governance_capability_schema_yaml -->|21| metamodel_schema_yaml
     governance_decisions_schema_yaml -->|47| metamodel_schema_yaml
-    governance_leverage_schema_yaml -->|30| metamodel_schema_yaml
+    governance_leverage_schema_yaml -->|29| metamodel_schema_yaml
     governance_motivation_schema_yaml -->|87| metamodel_schema_yaml
     governance_organization_schema_yaml -->|21| metamodel_schema_yaml
     governance_roadmap_schema_yaml -->|37| metamodel_schema_yaml
