@@ -8,6 +8,8 @@
  * Browser-safe: no Node.js imports, and no imports at all.
  *
  * Adding a schema type: extend V2_SCHEMA_TYPES, FILENAME_TO_SCHEMA and MULTI_FILE_PATTERN.
+ * Retiring a file name: remove its type from those three and add it to RETIRED_FILE_TYPES, so a
+ * file still carrying the old name is reported with the name that replaced it rather than ignored.
  */
 
 export const V2_SCHEMA_TYPES = [
@@ -24,7 +26,6 @@ export const V2_SCHEMA_TYPES = [
   'quality',
   'capability',
   'story',
-  'process',
   'models',
   'rg',
   'infrastructure',
@@ -63,8 +64,6 @@ export const FILENAME_TO_SCHEMA: Record<string, V2SchemaType> = {
   'capability.yml': 'capability',
   'story.yaml': 'story',
   'story.yml': 'story',
-  'process.yaml': 'process',
-  'process.yml': 'process',
   'models.yaml': 'models',
   'models.yml': 'models',
   'rg.yaml': 'rg',
@@ -100,7 +99,7 @@ export const FILENAME_TO_SCHEMA: Record<string, V2SchemaType> = {
 
 /** Multi-file pattern: {name}.{schema-type}.yaml (e.g. consumer.domain.yaml, payment.concepts.yaml). */
 export const MULTI_FILE_PATTERN =
-  /^[^/\\]+\.(concepts|rules|domain|arch|motivation|decisions|test-cases|dynamics|quality|capability|story|process|models|rg|infrastructure|org|organization|ui|interactions|roadmap|value-stream|leverage)\.(yaml|yml)$/i;
+  /^[^/\\]+\.(concepts|rules|domain|arch|motivation|decisions|test-cases|dynamics|quality|capability|story|models|rg|infrastructure|org|organization|ui|interactions|roadmap|value-stream|leverage)\.(yaml|yml)$/i;
 
 /**
  * Map file path to v2 schema type. Returns null for files outside the blueprint convention.
@@ -122,4 +121,54 @@ export function getSchemaForFile(filePath: string): V2SchemaType | null {
     return (schemaType === 'test-cases' ? 'test-cases' : schemaType) as V2SchemaType;
   }
   return null;
+}
+
+/**
+ * File types the model builder no longer loads, each with the type that replaced it.
+ *
+ * A retired name is not in the routing table above, so nothing derived from that table can say the
+ * name ever existed; this table is what lets a validator name the replacement instead of passing the
+ * file over as unknown. Every form the builder loaded before the retirement is covered: the bare
+ * name, `<name>.<type>`, a dot-prefixed name, either extension, and any case of the type.
+ *
+ * `process` was a second name for the narrative file kind; the narrative file is `story.yaml`. Only
+ * the file name is retired: a narrative file is still read under both collection keys, `processes:`
+ * and `stories:`.
+ */
+export const RETIRED_FILE_TYPES: Readonly<Record<string, V2SchemaType>> = {
+  process: 'story',
+};
+
+/** A file name the builder no longer loads, and the name that replaced it. */
+export interface RetiredFileName {
+  /** The retired file type the name carries, e.g. `process`. */
+  retiredType: string;
+  /** The file type that replaced it, e.g. `story`. */
+  replacementType: V2SchemaType;
+  /** The file name to rename it to, with its prefix and extension kept, e.g. `orders.story.yaml`. */
+  replacementName: string;
+}
+
+/**
+ * The retired file type a file name carries, with the name to rename it to; null for any other name.
+ *
+ *   - `process.yaml` -> `story.yaml`
+ *   - `orders/checkout.process.yml` -> `checkout.story.yml`
+ */
+export function getRetiredFileName(filePath: string): RetiredFileName | null {
+  const segments = filePath.replace(/\\/g, '/').split('/');
+  const fileName = segments[segments.length - 1] ?? '';
+  const match = /^(?:(.+)\.)?([^./\\]+)\.(yaml|yml)$/i.exec(fileName);
+  if (!match) return null;
+  const [, prefix, type, extension] = match;
+  const retiredType = type!.toLowerCase();
+  const replacementType = RETIRED_FILE_TYPES[retiredType];
+  if (!replacementType) return null;
+  // A bare name was loaded only when written in lower case, as every exact name is.
+  if (prefix === undefined && fileName !== fileName.toLowerCase()) return null;
+  return {
+    retiredType,
+    replacementType,
+    replacementName: `${prefix === undefined ? '' : `${prefix}.`}${replacementType}.${extension}`,
+  };
 }

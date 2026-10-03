@@ -107,11 +107,9 @@ export const SCHEMA_TYPE_TO_LAYER: Record<string, string> = {
   domain: 'design.domain',
   arch: 'design.arch',
   models: 'design.models',
-  // `story` is the file kind's name before v2.8.10 and `process` its name now. Both resolve to
-  // the same layer: the vocabulary is the code's, and a model on an earlier schema line describes
-  // the same thing under the older word.
+  // The narrative file kind is `story`; the entities it holds are processes, so its layer is named
+  // after them.
   story: 'design.process',
-  process: 'design.process',
   dynamics: 'design.dynamics',
   quality: 'design.quality',
   rg: 'design.rg',

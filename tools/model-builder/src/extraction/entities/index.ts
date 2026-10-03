@@ -1,7 +1,7 @@
 import type { Entity } from '../../model/types.js';
 import type { ParsedBlueprintDocument, DocumentsBySchemaType } from '../../model/types.js';
 import { getSchemaTypeFromPath } from './id.js';
-import { annotateOwnershipDefaults } from './ownershipDefaults.js';
+import { annotateOwnershipDefaults, resolveSchemaLine } from './ownershipDefaults.js';
 import { annotateDomainDefaults } from './domainDefaults.js';
 import { annotateSystemDefaults } from './systemDefaults.js';
 import { extractConcepts } from './concepts.js';
@@ -38,9 +38,6 @@ const EXTRACTORS: Record<string, (doc: ParsedBlueprintDocument) => Entity[]> = {
   capability: extractCapability,
   quality: extractQuality,
   story: extractStory,
-  // The same extractor serves both names of one file kind: `story` before v2.8.10, `process`
-  // now. Which one a model uses is decided by its own version's schema-type map.
-  process: extractStory,
   dynamics: extractDynamics,
   models: extractModels,
   rg: extractRg,
@@ -66,14 +63,18 @@ const EXTRACTORS: Record<string, (doc: ParsedBlueprintDocument) => Entity[]> = {
  * entity that inherits one carries it the way an entity that declares one does. The annotation runs here rather
  * than at each stack's call site because a per-stack call site is how two stacks come to disagree
  * about what a model states.
+ *
+ * The model's schema line is read once, from the `schemaVersion` of the root `blueprint.yaml`, and
+ * decides which containers a file-level `owned_by` reaches (see `resolveSchemaLine`).
  */
 export function extractAllEntities(documentsByType: DocumentsBySchemaType): Entity[] {
+  const line = resolveSchemaLine(declaredSchemaVersion(documentsByType));
   const entities: Entity[] = [];
   for (const [schemaType, docs] of Object.entries(documentsByType)) {
     const extract = EXTRACTORS[schemaType];
     if (!extract) continue;
     for (const doc of docs) {
-      annotateOwnershipDefaults(doc);
+      annotateOwnershipDefaults(doc, line);
       annotateSystemDefaults(doc);
       annotateDomainDefaults(doc);
       entities.push(...extract(doc));
@@ -82,16 +83,32 @@ export function extractAllEntities(documentsByType: DocumentsBySchemaType): Enti
   return entities;
 }
 
+/** The first non-empty `schemaVersion` a root `blueprint.yaml` declares, if any. */
+function declaredSchemaVersion(documentsByType: DocumentsBySchemaType): string | undefined {
+  for (const document of documentsByType.blueprint ?? []) {
+    const value = (document.data as { schemaVersion?: unknown } | undefined)?.schemaVersion;
+    if (typeof value === 'string' && value.trim() !== '') return value.trim();
+  }
+  return undefined;
+}
+
 /**
  * Extract entities from a single document based on its schema type (from file path).
  * Convenience wrapper; prefer extractAllEntities for grouped processing.
+ *
+ * A single document carries no root `blueprint.yaml`, so its model's `schemaVersion` may be passed
+ * in; without one the document is read under the newest served line, as an omitted `schemaVersion`
+ * is.
  */
-export function extractEntitiesFromDocument(doc: ParsedBlueprintDocument): Entity[] {
+export function extractEntitiesFromDocument(
+  doc: ParsedBlueprintDocument,
+  schemaVersion?: string,
+): Entity[] {
   const schemaType = getSchemaTypeFromPath(doc.filePath);
   if (!schemaType || schemaType === 'blueprint') return [];
   const extract = EXTRACTORS[schemaType];
   if (!extract) return [];
-  annotateOwnershipDefaults(doc);
+  annotateOwnershipDefaults(doc, resolveSchemaLine(schemaVersion));
   annotateSystemDefaults(doc);
   annotateDomainDefaults(doc);
   return extract(doc);

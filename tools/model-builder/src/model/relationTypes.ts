@@ -232,6 +232,8 @@ export const RELATION_TYPE = {
   InquiryAffects: 'inquiry_affects',
   FindingAffects: 'finding_affects',
   GoalAffects: 'goal_affects',
+  // v2.8: assumption.affects.*_refs[] - what depends on the assumption holding.
+  AssumptionAffects: 'assumption_affects',
   // quality.schema: the AS-IS remediation chain's first hop, from the finding that observed the
   // problem to what the model decided about it - finding.risk_refs[], finding.decision_refs[],
   // finding.migration_ref. The schema states the chain finding -> risk -> decision -> migration in

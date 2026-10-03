@@ -6,28 +6,33 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
 /**
  * Where a governance statement sticks on the domain model.
  *
- *   Risk     --risk_affects-->     Operation | Concept | Process  (risk.affects.*_refs[])
- *   Inquiry  --inquiry_affects-->  Operation | Concept | Process  (inquiry.affects.*_refs[])
- *   Finding  --finding_affects-->  Operation | Concept | Process  (finding.affects.*_refs[])
- *   Goal     --goal_affects-->     Operation | Concept | Process  (goal.affects.*_refs[])
+ *   Risk       --risk_affects-->       Operation | Concept | Process  (risk.affects.*_refs[])
+ *   Inquiry    --inquiry_affects-->    Operation | Concept | Process  (inquiry.affects.*_refs[])
+ *   Finding    --finding_affects-->    Operation | Concept | Process  (finding.affects.*_refs[])
+ *   Goal       --goal_affects-->       Operation | Concept | Process  (goal.affects.*_refs[])
+ *   Assumption --assumption_affects--> Operation | Concept | Process  (assumption.affects.*_refs[])
  *
  * `affects.context_refs[]` is a context PREFIX (`orders`), a name rather than an entity id, so it
  * builds no edge here; the slice it names is the folder the concern's artifacts already land in.
  *
  * Finding carried `affects` from v2.7 and nothing read it: the reference walk checked the ids and
  * no relation was ever built, so a finding about an operation was invisible to every graph query
- * and every drawing. One extractor for the four, so the shape cannot drift between them.
+ * and every drawing. One extractor for all of them, so the shape cannot drift between them.
  *
  * A GOAL is the odd one and belongs here anyway. It is not a concern but an intention, and an
  * Event Storming wall draws it as an opportunity rather than a hotspot - yet "where it sticks" is
  * the same question and the same four ref lists answer it, so a second spelling would be a second
  * place for the shape to drift.
+ *
+ * An ASSUMPTION carries `affects` from v2.8 for the same reason: it names the operation, concept or
+ * process that depends on it holding, which is where a board pins it.
  */
 const AFFECTS_TYPE: Partial<Record<string, string>> = {
   [ENTITY_TYPE.Risk]: RELATION_TYPE.RiskAffects,
   [ENTITY_TYPE.Inquiry]: RELATION_TYPE.InquiryAffects,
   [ENTITY_TYPE.Finding]: RELATION_TYPE.FindingAffects,
   [ENTITY_TYPE.Goal]: RELATION_TYPE.GoalAffects,
+  [ENTITY_TYPE.Assumption]: RELATION_TYPE.AssumptionAffects,
 };
 
 // `process_refs` is the current spelling; `story_refs` is read too, so a model on an earlier schema line

@@ -4,7 +4,7 @@ import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { SCHEMA_TYPE_TO_LAYER } from '../../model/entityTypes.js';
 import { makeInternalId } from './id.js';
 
-const LAYER = SCHEMA_TYPE_TO_LAYER['process']!;
+const LAYER = SCHEMA_TYPE_TO_LAYER['story']!;
 
 interface StoryOperationInput {
   name?: string;

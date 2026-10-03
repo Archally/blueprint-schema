@@ -55,7 +55,11 @@ export interface BlueprintFileMetadata {
  */
 export interface ValidationResult {
   valid: boolean;
-  errors: Array<{ path: string; message: string }>;
+  /**
+   * `suggestions` appears on a missing reference only: the declared ids that differ from it by a
+   * slice prefix alone. A hint, never a match; absent when there is no candidate.
+   */
+  errors: Array<{ path: string; message: string; suggestions?: string[] }>;
   warnings?: Array<{ path: string; message: string; filePath?: string }>;
 }
 
