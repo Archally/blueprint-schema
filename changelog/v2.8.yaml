@@ -5,6 +5,39 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.53"
+    date: "2026-10-02"
+    step: "a service can say which libraries it is built on and which services it uses"
+    summary: |
+      A service accepts two lists of other services. `imports` names the libraries it is built on: a package it imports, a component it embeds. `uses` names the services it depends on while running, at the level of a container diagram ("orders uses payments"), and is the statement to make before the contracts between the two are written. The model graph draws a `service_imports` or a `service_uses` edge to each named service, so impact analysis reaches the services built on a changed library and the services that depend on a changed service. The contracts still state the operations, direction and transport of a runtime dependency, and a context's `dependencies` still state how two contexts relate. An item names a service by its exact id; one that names no declared service is a cross-reference error.
+      The semantic checker reports an `imports` item whose service states a kind other than library (warn), a `uses` item whose service is a library (warn), a `uses` item the contracts already state (info), and a cycle among `imports` edges (warn). Two running services may depend on each other, so a cycle among `uses` edges is not reported.
+      Additive: a service declaring `imports` or `uses` was rejected under 2.8.52. Nothing that validated under 2.8.52 is rejected.
+  - version: "2.8.52"
+    date: "2026-10-01"
+    step: "an MCP server, a CLI and a GraphQL API are couplings of their own"
+    summary: |
+      A context dependency's `coupling` accepts three more values, taking it from six to nine:
+      - `mcp` for a tool call to a Model Context Protocol server;
+      - `cli` for running a command of a command-line program;
+      - `graphql` for a query or mutation against a GraphQL API.
+      No existing value changes meaning; `rpc` stays the coupling of a remote procedure call such as JSON-RPC or gRPC.
+      The contract traffic the model graph derives between two contexts names the same values: an `mcp` contract's `expose` and another context's `mcp` `call` of one operation yield a `contract_traffic` edge carrying `mcp`, and likewise for `cli`. An `openrpc`, `mcp` or `cli` caller joins only a provider of its own kind, so a command-line caller and an MCP server exposing the same operation are two surfaces, not one exchange. A `graphql` contract lists root field names rather than operation refs, so `graphql` is never derived; a GraphQL link between two contexts is stated with `coupling: graphql`. `arazzo` and `cncfsw` describe workflows over other contracts and derive no coupling.
+      What to do: a dependency on an MCP server or a command-line program that has no contracts yet takes `coupling: mcp` or `coupling: cli`, not `rpc`. Where `mcp` or `cli` contracts already reach the pair, declare neither: the contracts carry the coupling, the direction and the operations. A superseded `type: mcp`, `type: cli` or `type: graphql` is now told to write the same value as `coupling`.
+      Additive: a dependency declaring any of the three values was rejected under 2.8.51 and is accepted now. Nothing that validated under 2.8.51 is rejected.
+      The model builder and the validator also change, with the accepted set unchanged: a `model_ref` written as a typed id matches a model component only when it is the same string as the component's `x-model-id`, prefix included. `billing.MDL013` does not match a component declaring `x-model-id: MDL013`: the model graph draws a placeholder rather than an edge, and the validator's warning that no component answers the reference joins the missing-reference error it already reports for that value.
+      The validator's report also gains suggestions, with the accepted set unchanged: when a missing reference differs from declared ids only by a scope prefix, a `Reference Suggestions` section after the errors names them (`'KPI001' at <location>: did you mean orders.KPI001?`). A suggestion is never a match: the reference is still missing, its error line does not carry the suggestion, and a report with no suggestion prints no such section. The model builder exports the rule as `suggestDeclaredIds`, beside the resolution function the validator runs a generated copy of.
+  - version: "2.8.51"
+    date: "2026-09-30"
+    step: "an MCP server and a CLI are contract kinds"
+    summary: |
+      A service's `contracts` block accepts two more kinds, taking it from ten to twelve, and the exchange protocol accepts `cli`:
+      - `mcp` states the tools a Model Context Protocol server exposes to its clients (`expose`) and the tools a service calls on another MCP server (`call`). Each listed operation is one tool; its name and transport come from the operation's `exchange` - over standard input and output, protocol `stdio` with an `endpoint` whose `group` is `tool`, whose `path` is the tool name and whose `method` is `CALL`.
+      - `cli` states the commands a command-line program exposes to whoever runs it (`expose`) and the commands of another program a service runs (`call`). Each listed operation is one command.
+      - `cli` is a new exchange protocol value. It requires an `endpoint` whose `path` is the command line and whose `method` is `EXEC`. A custom `x-cli` protocol stays valid, as every `x-` value does.
+      Both kinds name their document with `contract_name`, which they require, and place it with `slice` or `cross_cutting`. Neither accepts the superseded `output`. Their operation refs take both reference forms and resolve like every other contract's: an unresolved one is a cross-reference error, and the model graph carries a `contract_exposes` or `contract_calls` edge for each resolved one.
+      What to do: declare an MCP server's tools under `mcp`, not `openrpc` - an OpenRPC document of an MCP server names the two JSON-RPC methods every MCP server speaks, not its tools. Declare a command-line program's commands under `cli`, not `openrpc` or `inprocess` alone. A program whose commands are also called in-process by a sibling module declares both: `cli` for the command line and `inprocess` for the call.
+      The model builder also changes, with the accepted set unchanged: it resolves a process step's operation once, when relations are built, so a step carries `resolved` and `resolvedEntityId` only for a ref naming exactly one operation, and no id otherwise. A department's and a team's party is the party that declares the id, and a `model_ref` by name or pointer that several components satisfy is ambiguous rather than matched to the first.
+      Additive: a document declaring either kind, or a `cli` exchange, was rejected under 2.8.50 and is accepted now. Nothing that validated under 2.8.50 is rejected.
   - version: "2.8.50"
     date: "2026-09-30"
     step: "a reference names its id exactly"
