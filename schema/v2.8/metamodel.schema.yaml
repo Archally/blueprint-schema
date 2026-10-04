@@ -1894,3 +1894,20 @@ x-gdsm:
         reference that extraction turns into a relation. In one v2.8 modelling pass the concept a
         story showed was linked through its test cases and named in its acceptance criteria.
       schema_version: "2.8.47"
+    - lesson: >
+        A test case answers three questions in three places, and a reader reads each place as its
+        answer. `given.description` is the precondition: the state before the act, in a sentence or
+        two. `when` is the act: the operation invoked, the input passed and a sentence a tester can
+        follow. `expected_result` is the outcome, with `behavior` for what a status or a code cannot
+        say. Everything else - the handler or class a case was checked against, a file path, a
+        review remark, a correction and its date - goes in `note`. Written into the precondition it
+        is read as the precondition, and a reader cannot tell which sentence to set up.
+      category: structure
+      date: "2026-10-04"
+      evidence: >
+        In the curated example 24 of 92 preconditions named code (handler classes, `::`, a source
+        file) or carried a review remark such as a dated correction, and 25 ran past 250 characters,
+        while `when` and `expected_result.behavior` were used by none; a reader of the generated test
+        report took the remarks for setup steps. The semantic checker reports such a precondition
+        as `test-case-given-carries-notes`.
+      schema_version: "2.8.57"
