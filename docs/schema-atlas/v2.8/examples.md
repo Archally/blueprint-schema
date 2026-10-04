@@ -40,6 +40,16 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/governance/roadmap.schema.yaml#/$defs/work_item/properties/executor/examples/1`: `["Backend Team"]`
 
+- `schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_act/properties/operation/examples/0`: `"CMD001"`
+
+- `schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_act/properties/operation/examples/1`: `"orders.CMD001"`
+
+- `schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_act/properties/operation/examples/2`: `"orders:placeOrder"`
+
+- `schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_act/properties/input/examples/0`: `{"cartId":"cart-42","paymentMethod":"card","voucherCode":"SPRING20"}`
+
+- `schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_act/properties/description/examples/0`: `"The customer submits the cart for checkout with voucher SPRING20."`
+
 - `schema/v2.8/metamodel.schema.yaml#/$defs/domain_coverage/properties/extent/examples/0`: `"partial"`
 
 - `schema/v2.8/metamodel.schema.yaml#/$defs/domain_coverage/properties/reason/examples/0`: `"Batch reconciliation runs against the ledger directly, outside any declared contract."`
@@ -96,17 +106,7 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/tracked-migrations.schema.yaml#/$defs/json_patch_op/properties/path/examples/1`: `"/tags/0"`
 
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/json_patch_op/properties/from/examples/0`: `"/description"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/edit_site/properties/file/examples/0`: `"catalog/supply-chain.concepts.yaml"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry/properties/name/examples/0`: `"reserve-stock-at-checkout"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry/properties/name/examples/1`: `"refactor-orders"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry/properties/author/examples/0`: `"adam"`
-
-_… and 3 more (listed first 50 for readability)._
+_… and 8 more (listed first 50 for readability)._
 
 ## Reference example models
 

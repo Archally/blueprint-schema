@@ -4104,8 +4104,9 @@ A single test case. Minimum: id, name, summary, validates.
 | `validates` | `ref → validates_refs` | ✓ |  | What this test proves. Authoritative source for test-to-blueprint traceability. |
 | `version` | `ref → entity_version` | — |  | Test version for lifecycle tracking. |
 | `given` | `ref → test_setup` | — |  | Initial state and preconditions (Arrange phase). |
+| `when` | `ref → test_act` | — |  | The one action the test performs (Act phase): the operation it invokes, the input it passes, and a sentence a reader can follow. |
 | `expected_result` | `ref → expected_result` | — |  | Expected outcome (Assert phase). All fields optional - use what's relevant. |
-| `note` | `string` | — |  | Additional context for test reviewers. Useful for non-obvious logic. |
+| `note` | `string` | — |  | Additional context for test reviewers: how the implementation behaves, which code a case was checked against, and review remarks. Text that is not the precondi… |
 | `golden_output` | `string` | — |  | Expected output as inline multiline content or a file path (e.g. ./golden/TC001.txt). Tooling determines interpretation. |
 | `counter_example` | `object` | — |  | Documents what WRONG behavior looks like. Helps prevent future regressions from being mistaken for correct behavior. |
 | `contract` | `object` | — |  | Contract evidence linking this test to a formal API contract. |
@@ -4143,13 +4144,25 @@ Initial state and preconditions for the test (Arrange phase of Arrange-Act-Asser
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
-| `description` | `string` | — |  | Human-readable description of the initial state. |
+| `description` | `string` | — |  | The state the system is in before the act, in a sentence or two a reader takes as the precondition. Class names, file paths and review remarks belong in the te… |
 | `source` | `string` | — |  | Source data or fixture path (e.g. ./fixtures/orders.json). |
 | `args` | `array<string>` | — |  | Command-line arguments or operation parameters. |
 | `state` | `object` | — |  | Named state conditions that must be true before the test. Free-form for flexibility. |
 | `fixtures` | `array<object>` | — |  | Data fixtures required for this test. |
 
 _Source: `schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_setup`_
+
+#### `test_act`
+
+The action a test performs, between its `given` and its `expected_result` (Act phase of Arrange-Act-Assert). One act per test case: a scenario that needs two actions is two test cases, or a process the test validates through `validates.processes`. Name the act by `operation`, by `description`, or by both; `input` alone does not say what is done. `operation` names the act and `validates.operations…
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `operation` | `ref → operation_ref` | — |  | The operation the test invokes. A reference to an operation the model does not declare is a cross-reference error. |
+| `input` | `object` | — |  | The values the act passes to the operation, as named values (parameter or field name to value). State of the system before the act belongs in `given`, not here. |
+| `description` | `string` | — |  | The act in one sentence, as a tester would perform it (e.g. 'The customer submits the cart for checkout'). Implementation notes belong in the test case's `note… |
+
+_Source: `schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_act`_
 
 #### `expected_result`
 

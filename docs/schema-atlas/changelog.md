@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 29 |
-| Additive (minor) | 221 |
+| Additive (minor) | 223 |
 | Clarification (patch) | 0 |
-| **Total changes** | 250 |
+| **Total changes** | 252 |
 
 ## ⚠ Breaking changes
 
@@ -221,7 +221,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (198)
+## Added (200)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -649,8 +649,14 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `governance/test-cases.schema.yaml#/$defs/fitness_function/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.8/governance/test-cases.schema.yaml#/$defs/fitness_function/properties/provenance`_
 
+- [additive] `governance/test-cases.schema.yaml#/$defs/test_act` — New definition `test_act` added to `governance/test-cases.schema.yaml`.
+  - _Source: `schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_act`_
+
 - [additive] `governance/test-cases.schema.yaml#/$defs/test_case/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_case/properties/provenance`_
+
+- [additive] `governance/test-cases.schema.yaml#/$defs/test_case/properties/when` — Property `when` added (optional).
+  - _Source: `schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_case/properties/when`_
 
 - [additive] `governance/test-cases.schema.yaml#/$defs/validates_refs/properties/infrastructure` — Property `infrastructure` added (optional).
   - _Source: `schema/v2.8/governance/test-cases.schema.yaml#/$defs/validates_refs/properties/infrastructure`_
