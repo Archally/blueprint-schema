@@ -1,0 +1,22 @@
+engineVersion: "0.1"
+rules:
+  - id: test-case-given-carries-notes
+    severity: warn
+    description: >-
+      A test case whose `given.description` carries more than the precondition. A reader of a test
+      plan takes that sentence as the state to set up before the act, so code named in it (a scope
+      operator such as `::`, a source file, a call, a class whose name ends in a code role such as
+      `Handler` or `Exception`), a review remark (a dated correction, a sentence opening with `Note`,
+      a TODO marker) or a text longer than 250 characters reads as setup. 250 is a quarter more than
+      the 200 characters the schema allows a test case's one-line `summary`: two ordinary sentences,
+      enough to state a state. Move the rest into the test case's `note`. Dates, capitalised
+      configuration keys, typed model ids and CamelCase names without a code suffix are not reported,
+      because they are ordinary test data. Override per project via .blueprint-lint.yaml (e.g.
+      `test-case-given-carries-notes: off`).
+    find:
+      entity_type: TestCase
+    check:
+      custom:
+        module: ./test-case-given-notes.mjs
+        export: testCaseGivenCarriesNotes
+    message: 'Test case {subject} "{subject_name}": its given.description {reasons}. A reader takes it as the precondition; state the starting state there and move the rest into note.'
