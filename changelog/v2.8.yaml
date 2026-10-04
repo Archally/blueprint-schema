@@ -5,6 +5,14 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.57"
+    date: "2026-10-04"
+    step: "a test case states the act it performs, and a precondition that carries notes is reported"
+    summary: |
+      A test case accepts `when`, the act it performs between its `given` and its `expected_result`. `when.operation` names the operation the test invokes, by typed id or by `domain:key`, and is resolved like every other operation reference, so an act naming an operation the model does not declare is a cross-reference error. `when.input` holds the values the act passes, as named values, and `when.description` states the act in a sentence a tester can follow. An act names an operation, a description or both; `input` alone is rejected, and so is any other key. One act per test case: a scenario that needs two actions is two test cases. The model graph draws a `test_case_act` edge from the test case to the operation. It is not a `validates` edge and does not count towards test coverage, which stays with `validates`.
+      The descriptions of `given.description` and `note` say where each kind of text belongs: the precondition is the state before the act, and how the implementation behaves, the code a case was checked against and review remarks belong in `note`. The metamodel's modelling guidance carries the same lesson.
+      The semantic checker adds `test-case-given-carries-notes` (warn): a test case whose `given.description` names code (a scope operator such as `::`, a file with a source-code extension, a call with empty parentheses, or a CamelCase name ending in a code role such as `Handler` or `Exception`), carries a review remark (a dated correction, a sentence opening with `Note`, a TODO marker), or runs past 250 characters. The message names which and says to move the rest into `note`. 250 is a quarter more than the 200 characters a test case's one-line `summary` may hold. Dates, capitalised configuration keys, typed model ids and CamelCase domain terms are not reported.
+      Additive: a test case declaring `when` was rejected under 2.8.56. Nothing that validated under 2.8.56 is rejected.
   - version: "2.8.56"
     date: "2026-10-03"
     step: "a bounded context carries its code and its evidence, and an assumption names what it affects"
