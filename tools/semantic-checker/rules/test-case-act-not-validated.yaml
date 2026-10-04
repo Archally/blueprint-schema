@@ -1,0 +1,21 @@
+engineVersion: "0.1"
+rules:
+  - id: test-case-act-not-validated
+    severity: warn
+    description: >-
+      A test case whose act, `when.operation`, invokes an operation the case does not list under
+      `validates.operations`. The act is not coverage: an operation counts as tested only through
+      `validates.operations`, so the case exercises the operation while coverage reports it untested
+      by this case. The two references are compared after resolution, so a typed id and a
+      `domain:key` naming the same operation agree. Only a direct entry counts; an operation reached
+      through the steps of a use case or process the case validates is still reported, because
+      coverage does not count it either. A case without `when.operation` is not reported, nor is an
+      act naming an undeclared operation, which validation reports as a cross-reference error.
+      Override per project via .blueprint-lint.yaml (e.g. `test-case-act-not-validated: off`).
+    find:
+      entity_type: TestCase
+    check:
+      custom:
+        module: ./test-case-act-not-validated.mjs
+        export: testCaseActNotValidated
+    message: 'Test case {subject} "{subject_name}": its act invokes {operation}, which is not among its validates.operations, so coverage does not count this case for it. Add {operation} to validates.operations, or correct when.operation if the act is a different operation.'
