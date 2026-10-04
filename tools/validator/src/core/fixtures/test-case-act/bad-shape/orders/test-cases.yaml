@@ -1,0 +1,18 @@
+version: "1.0.0"
+scope: orders
+happy_path:
+  - id: TC001
+    name: Input alone
+    summary: An act that only passes values says nothing about what is done.
+    validates:
+      operations: [orders.CMD001]
+    when:
+      input: { cartId: cart-42 }
+  - id: TC002
+    name: Steps list
+    summary: A list of steps is not an act.
+    validates:
+      operations: [orders.CMD001]
+    when:
+      operation: orders.CMD001
+      steps: [open cart, submit]

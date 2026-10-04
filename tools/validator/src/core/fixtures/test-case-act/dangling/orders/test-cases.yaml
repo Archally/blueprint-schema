@@ -1,0 +1,18 @@
+version: "1.0.0"
+scope: orders
+happy_path:
+  - id: TC001
+    name: Place an order
+    summary: The act names, by id, an operation nobody declares.
+    validates:
+      operations: [orders.CMD001]
+    when:
+      operation: CMD099
+      description: The customer submits the cart for checkout.
+  - id: TC002
+    name: Cancel an order
+    summary: The act names, by domain key, an operation nobody declares.
+    validates:
+      operations: [orders.CMD001]
+    when:
+      operation: "orders:cancelOrder"

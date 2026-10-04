@@ -1,0 +1,30 @@
+version: "1.0.0"
+scope: orders
+happy_path:
+  - id: TC001
+    name: Place an order
+    summary: A customer with a filled cart places an order.
+    validates:
+      operations: [orders.CMD001]
+    given:
+      description: A customer has a cart holding two items.
+    when:
+      operation: orders.CMD001
+      input: { cartId: cart-42, paymentMethod: card }
+      description: The customer submits the cart for checkout.
+    expected_result:
+      status: success
+  - id: TC002
+    name: Place an order by key
+    summary: The act names the operation by its domain key.
+    validates:
+      operations: [orders.CMD001]
+    when:
+      operation: "orders:placeOrder"
+  - id: TC003
+    name: Place an order described only
+    summary: The act is a sentence and names no operation.
+    validates:
+      operations: [orders.CMD001]
+    when:
+      description: The customer submits the cart for checkout.

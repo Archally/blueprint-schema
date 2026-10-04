@@ -1,0 +1,6 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Order Desk
+description: >-
+  A shop that takes orders, and test cases that state the act each one performs between its
+  precondition and its expected result.
