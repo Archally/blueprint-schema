@@ -3,6 +3,7 @@ import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 import { entityDomain, resolveOrPlaceholder } from './resolver.js';
 import { resolveModelRefOrPlaceholder } from './modelRef.js';
+import { buildOperationKeyIndex, resolveOperationRefOrPlaceholder } from './operationRef.js';
 
 /**
  * The axes of `validates`. `models` carries `modelRef`, because `validates.models[]` is a
@@ -41,6 +42,10 @@ export const VALIDATES_UI_GROUPS: ReadonlyArray<{ key: string; predicate: string
  * - TestCase.validates.<axis>[] → validates, one relation per ref, for every axis in
  *   VALIDATES_GROUPS
  * - TestCase.validates.ui.{screens,actions,navigation}[] → validates (nested UI)
+ * - TestCase.when.operation → test_case_act, the operation the test invokes. `when.operation` is an
+ *   `operation_ref`, so both of its forms resolve, the typed id and `domain:key`. It is a separate
+ *   relation type rather than one more `validates` edge: coverage counts `validates`, and an act
+ *   names what a test does, not what it proves.
  *
  * The two group tables are the complete set of axes this extractor reads. Every property the
  * schema's `validates_refs` declares must appear in one of them, or the edges a model states on
@@ -52,6 +57,7 @@ export function extractTestCaseRelations(
   placeholders: Map<string, Entity>
 ): Relation[] {
   const relations: Relation[] = [];
+  let keyIndex: Map<string, string | null> | undefined;
 
   for (const entity of entities) {
     if (entity.type !== ENTITY_TYPE.TestCase) continue;
@@ -59,6 +65,19 @@ export function extractTestCaseRelations(
     const domain = entityDomain(entity);
     const data = entity.data as Record<string, unknown> | undefined;
     if (!data) continue;
+
+    const act = data.when as Record<string, unknown> | undefined;
+    const actOperation = act && typeof act === 'object' ? act.operation : undefined;
+    if (typeof actOperation === 'string' && actOperation) {
+      keyIndex ??= buildOperationKeyIndex(entities);
+      const targetId = resolveOperationRefOrPlaceholder(actOperation, domain, entities, placeholders, keyIndex);
+      relations.push({
+        id: `${entity.id}--${RELATION_TYPE.TestCaseAct}--${targetId}`,
+        source_entity_id: entity.id,
+        target_entity_id: targetId,
+        type: RELATION_TYPE.TestCaseAct,
+      });
+    }
 
     const validates = data.validates as Record<string, unknown> | undefined;
     if (!validates || typeof validates !== 'object') continue;

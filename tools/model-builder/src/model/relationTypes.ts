@@ -63,6 +63,10 @@ export const RELATION_TYPE = {
   DeclaredImpact: 'declared_impact',
   // test-cases.schema: test case validates rule/operation/concept
   Validates: 'validates',
+  // test-cases.schema: the operation a test case invokes in its act (test_case.when.operation).
+  // Separate from `validates`: the act names what the test does, `validates` what it proves, and
+  // only `validates` counts towards test coverage.
+  TestCaseAct: 'test_case_act',
   // arch.schema: context structurally contains service (hierarchy from YAML nesting)
   Contains: 'contains',
   // arch.schema: service structurally provides contract (hierarchy from YAML nesting)
