@@ -5,6 +5,13 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.58"
+    date: "2026-10-04"
+    step: "a test case whose act invokes an operation it does not validate is reported"
+    summary: |
+      The semantic checker adds `test-case-act-not-validated` (warn): a test case whose `when.operation` invokes an operation the case does not list under `validates.operations`. The act is not coverage, so such a case exercises the operation while coverage reports it untested by the case. The message names the operation and both fixes: add it to `validates.operations`, or correct `when.operation` if the act is a different operation.
+      The two references are compared after resolution, so a typed id and a `domain:key` naming the same operation agree. Only a direct entry counts: an operation reached through the steps of a use case or process the case validates is still reported, because coverage does not count it either. A case without `when.operation` is not reported, nor is an act naming an undeclared operation, which validation reports as a cross-reference error.
+      The schema is unchanged: every document valid under 2.8.57 is valid under 2.8.58.
   - version: "2.8.57"
     date: "2026-10-04"
     step: "a test case states the act it performs, and a precondition that carries notes is reported"
