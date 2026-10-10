@@ -4095,7 +4095,7 @@ _Source: `schema/v2.8/governance/test-cases.schema.yaml` · root type `object`_
 
 #### `fitness_function`
 
-One constraint on the architecture, stated for a reader. Some are settled by reading the model, others describe the code, the running system or the way the team works, so this is a statement rather than a check that runs.
+One constraint on the architecture, stated for a reader. Some are settled by reading the model, others describe the code, the running system or the way the team works, so this is a statement rather than a check that runs. `verifies` names the requirements and goals it protects, and `metric` names the one measure its assertion is evaluated on; the two are different questions. A fitness function th…
 
 **Required:** `id`, `name`, `assertion`
 
@@ -4111,6 +4111,10 @@ One constraint on the architecture, stated for a reader. Some are settled by rea
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
 | `provenance` | `ref → provenance` | — |  | Epistemic provenance for this fitness function: the evidence and confidence behind the constraint (e.g. codebase-analysis that motivated the guardrail, an ADR… |
+| `verifies` | `object` | — |  | The requirements and goals this fitness function protects: what it guards, one typed list per kind. It names no metric: the measure the assertion is evaluated… |
+| `metric` | `ref → metric_ref` | — |  | The one measure the assertion is evaluated on, such as the count a ratchet keeps from rising. The metric says how that number is gathered and where its results… |
+| `quality_characteristic` | `ref → quality_characteristic` | — |  | ISO/IEC 25010 top-level product-quality characteristic of the constraint, such as `maintainability`. A fitness function that carries one states a quality const… |
+| `quality_subcharacteristic` | `ref → quality_subcharacteristic` | — |  | ISO/IEC 25010 sub-characteristic under `quality_characteristic`, such as `modifiability` under `maintainability`. Consistency with the named top-level is by co… |
 
 _Source: `schema/v2.8/governance/test-cases.schema.yaml#/$defs/fitness_function`_
 
