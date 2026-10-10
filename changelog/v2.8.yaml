@@ -5,6 +5,14 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.60"
+    date: "2026-10-04"
+    step: "an SLO and a KPI state their target as an objective a reader compares"
+    summary: |
+      An SLO and a KPI accept an optional `objective`: the level the requirement sets for its metric, in a form a reader compares with a result. It has a required `comparator` (`lt`, `le`, `gt`, `ge` or `eq`), a required numeric `value` and an optional free-text `statistic`, such as `p95`. A result of that statistic for the requirement's metric meets the objective or does not; a result of another statistic is not comparable. The objective has no unit of its own: `value` is in the unit of the requirement's metric, so on a requirement that names no `metric` it cannot be compared. `objective` rejects any key it does not declare, `unit` included.
+      `target` stays required and unchanged in type: it is the sentence a person agrees to and what generated documents carry, and its description now says so. On a KPI the objective is the level to reach; `thresholds` remain the alert levels. The results stay outside the model, where the metric's `collection.results_location` points.
+      The metamodel's modelling guidance gains a lesson on stating a target twice, and the 2.8.59 lesson now says the target lives in the KPI's or SLO's `target` and `objective`.
+      Additive: every document that validated under 2.8.59 still validates. Not forward-compatible: a model using `objective` is rejected by a 2.8.59 tree, because `slo` and `kpi` reject keys they do not declare.
   - version: "2.8.59"
     date: "2026-10-04"
     step: "a metric says whether it is measured, by which instrument and where its results are kept"
