@@ -1,0 +1,17 @@
+version: "1.0.0"
+scope: orders
+milestones:
+  - id: MS001
+    name: Checkout MVP
+    target_date: "2026-06-30"
+    tracker_ref: ABC-1200
+  - id: MS002
+    name: Checkout GA
+    target_date: "2026-09-30"
+    tracker_ref: "jira:ABC-1300"
+work_items:
+  - id: WI001
+    kind: epic
+    name: Rebuild the checkout
+    milestone: MS001
+    tracker_ref: ABC-1201

@@ -1,0 +1,9 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Order Desk
+description: >-
+  A shop that takes orders, with a roadmap whose milestones and work items name their items in an
+  issue tracker.
+trackers:
+  jira: { url: "https://tracker.example.com/browse/{key}" }
+default_tracker: jira
