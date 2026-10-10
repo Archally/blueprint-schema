@@ -2788,7 +2788,8 @@ A Key Performance Indicator - metric with business target. Links operational mea
 | `id` | `ref → kpi_ref` | ✓ |  | Unique KPI identifier (KPI + NNN). |
 | `name` | `string` | ✓ |  | Human-readable KPI name. |
 | `metric` | `ref → metric_ref` | — |  | Metric this KPI is based on. Omit if metric not yet formally defined. |
-| `target` | `string` | ✓ |  | Target value (e.g. '99.5%', '< 200ms p95', '> 1000 orders/hour'). |
+| `target` | `string` | ✓ |  | The target as the sentence a person agrees to (e.g. '99.5%', '< 200ms p95', '> 1000 orders/hour'). It is what is signed off and what generated documents carry.… |
+| `objective` | `ref → objective` | — |  | The goal level this KPI sets for its metric, as a comparator and a number a reader compares with a result of the same statistic: met, not met, or not comparabl… |
 | `window` | `string` | — |  | Measurement window (e.g. '30d rolling', 'calendar month', 'per release'). |
 | `goal` | `ref → goal_ref` | — |  | Motivation goal this KPI tracks. Closes the goal→KPI→metric traceability chain. |
 | `domain_scope` | `ref → scope_prefix` | — |  | Optional problem-space scope this KPI verifies, as a kebab-case scope slug (e.g. billing, order-mgmt). Matched by name, not resolved as a typed reference: the… |
@@ -2814,7 +2815,8 @@ Service Level Objective - an internal reliability target the team commits to. Op
 | `id` | `ref → slo_ref` | ✓ |  | Unique SLO identifier (SLO + NNN). |
 | `name` | `string` | ✓ |  | Human-readable SLO name. |
 | `metric` | `ref → metric_ref` | — |  | Metric this SLO targets. |
-| `target` | `string` | ✓ |  | Target value (e.g. '99.9%'). |
+| `target` | `string` | ✓ |  | The target as the sentence a person agrees to (e.g. '99.9%', 'p95 under 800 ms'). It is what is signed off and what generated documents carry. A reader compare… |
+| `objective` | `ref → objective` | — |  | The level this SLO commits its metric to, as a comparator and a number a reader compares with a result of the same statistic: met, not met, or not comparable.… |
 | `window` | `string` | — |  | Measurement window (e.g. '30d rolling'). |
 | `operations` | `array<ref → operation_ref>` | — |  | Operations this SLO constrains. |
 | `resource_refs` | `array<ref → infra_resource_ref>` | — |  | Infrastructure resources (IR###) this SLO targets - an availability/latency objective can bind to a concrete host, store, or estate, not only to operations. Ad… |
@@ -2957,6 +2959,20 @@ An AS-IS internal-quality defect discovered in the codebase (maintainability / m
 | `code_refs` | `ref → code_refs` | — |  |  |
 
 _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/finding`_
+
+#### `objective`
+
+The level a KPI or SLO sets for its metric, stated so that a reader can compare a result with it. A result of `statistic` for the requirement's metric, over the requirement's `window` where one is stated, meets the objective when it stands to `value` as `comparator` says, and does not meet it otherwise. A result of another statistic or another metric is not comparable. `value` is in the `unit` of…
+
+**Required:** `comparator`, `value`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `comparator` | `string` | ✓ | `lt`, `le`, `gt`, `ge`, `eq` | How a result must stand to `value` to meet the objective: lt=less than, le=less than or equal to, gt=greater than, ge=greater than or equal to, eq=equal to. |
+| `value` | `number` | ✓ |  | The level, as a number in the unit of the requirement's metric (e.g. 800 for a latency metric in 'ms', 99.9 for an availability metric in '%'). |
+| `statistic` | `string` | — |  | Which statistic of the metric is compared, as free text (e.g. 'p95', 'p99', 'mean', 'max'). A result of a different statistic is not comparable. Absent when th… |
+
+_Source: `schema/v2.8/design/quality.schema.yaml#/$defs/objective`_
 
 #### `observability_pillar`
 

@@ -86,7 +86,7 @@ What & how: domain model, behavior, contracts, and quality attributes.
 | [`design/infrastructure.schema.yaml`](./entity-catalog.md#design-infrastructure) | Blueprint Infrastructure Resources | 12 | 22 | Design Plane: Infrastructure resource definitions and deployment topology. Declares platform resources (databases, queu… |
 | [`design/interactions.schema.yaml`](./entity-catalog.md#design-interactions) | Blueprint UI | 9 | 3 | Design Plane: User interface screens, actions, and navigation. Cross-links to models, operations, goals, decisions, tes… |
 | [`design/models.schema.yaml`](./entity-catalog.md#design-models) | Blueprint Models | 6 | 6 | Design Plane: Reusable data model definitions (schemas, fields, parameters) with optional concept back-references. Foll… |
-| [`design/quality.schema.yaml`](./entity-catalog.md#design-quality) | Blueprint Quality | 14 | 10 | Design Plane: Non-functional requirements as first-class entities. Covers metrics, KPIs, SLOs, SLAs, security, complian… |
+| [`design/quality.schema.yaml`](./entity-catalog.md#design-quality) | Blueprint Quality | 14 | 11 | Design Plane: Non-functional requirements as first-class entities. Covers metrics, KPIs, SLOs, SLAs, security, complian… |
 | [`design/rules.schema.yaml`](./entity-catalog.md#design-rules) | Blueprint Rules | 11 | 3 | Design Plane - Layer 2: Business rules. Structural invariants, classification, derivation, equivalence, validation, and… |
 | [`design/story.schema.yaml`](./entity-catalog.md#design-story) | Blueprint Process | 11 | 5 | Design Plane - Layer 4: Business processes expressing logical operation sequences, actor interactions, and side effects… |
 
