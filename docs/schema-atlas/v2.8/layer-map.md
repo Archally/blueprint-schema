@@ -130,7 +130,7 @@ Why & proof: strategic intent, decisions, capabilities, and quality evidence.
 | [`governance/leverage.schema.yaml`](./entity-catalog.md#governance-leverage) | Blueprint Leverage Map | 10 | 2 | Governance Plane: Leverage Map - the prioritization tier that sits ABOVE the AS-IS remediation chain (finding → risk →… |
 | [`governance/motivation.schema.yaml`](./entity-catalog.md#governance-motivation) | Blueprint Motivation | 13 | 8 | Governance Plane: Strategic intent - goals, non-goals, risks, assumptions, and trade-offs. Decisions reference motivati… |
 | [`governance/organization.schema.yaml`](./entity-catalog.md#governance-organization) | Blueprint Organization | 7 | 5 | Governance Plane: Organizational hierarchy - Party > Department > Team. Defines who owns what in the blueprint. Teams a… |
-| [`governance/roadmap.schema.yaml`](./entity-catalog.md#governance-roadmap) | Blueprint Roadmap | 8 | 2 | Governance Plane: Product roadmap milestones with deliverables, success criteria, and dependencies. Used for PRD timeli… |
+| [`governance/roadmap.schema.yaml`](./entity-catalog.md#governance-roadmap) | Blueprint Roadmap | 10 | 2 | Governance Plane: Product roadmap milestones with deliverables, success criteria, and dependencies. Used for PRD timeli… |
 | [`governance/test-cases.schema.yaml`](./entity-catalog.md#governance-test-cases) | Blueprint Test Cases | 9 | 6 | Governance Plane: Test cases organized as happy-path, edge-case, and error-case suites. Owns validates references as th… |
 | [`governance/value-stream.schema.yaml`](./entity-catalog.md#governance-value-stream) | Blueprint Value Streams | 6 | 2 | Governance Plane: Value Stream Map - end-to-end flows of value delivery that cross-cut bounded contexts and capabilitie… |
 

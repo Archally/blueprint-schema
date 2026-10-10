@@ -14,6 +14,10 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/design/story.schema.yaml#/$defs/process_activity/properties/next/items/properties/condition/examples/1`: `"credit score >= 600"`
 
+- `schema/v2.8/governance/roadmap.schema.yaml#/properties/name/examples/0`: `"Checkout platform roadmap 2026"`
+
+- `schema/v2.8/governance/roadmap.schema.yaml#/properties/description/examples/0`: `"Delivery plan for the checkout rebuild; agreed with the product owner through Q2, a proposal after it."`
+
 - `schema/v2.8/governance/roadmap.schema.yaml#/properties/cadence/properties/anchor_sprint/examples/0`: `30`
 
 - `schema/v2.8/governance/roadmap.schema.yaml#/properties/cadence/properties/anchor_start/examples/0`: `"2026-07-01"`
@@ -102,11 +106,7 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_delete/properties/target/examples/0`: `"catalog.CN001"`
 
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/json_patch_op/properties/path/examples/0`: `"/name"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/json_patch_op/properties/path/examples/1`: `"/tags/0"`
-
-_… and 8 more (listed first 50 for readability)._
+_… and 10 more (listed first 50 for readability)._
 
 ## Reference example models
 

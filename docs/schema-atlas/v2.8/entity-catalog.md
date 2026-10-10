@@ -3975,6 +3975,8 @@ _Source: `schema/v2.8/governance/roadmap.schema.yaml` · root type `object`_
 | `version` | `ref → semver` | ✓ |  | Content version of this roadmap document. |
 | `schemaVersion` | `ref → schema_version` | — |  | Schema version this document conforms to. Omit to assume latest. |
 | `scope` | `ref → scope_prefix` | — |  | Bounded context this roadmap covers. |
+| `name` | `string` | — |  | Title of this roadmap. A rendered roadmap shows it as its heading; a view of the roadmap may name a heading of its own, which then takes its place. |
+| `description` | `string` | — |  | What this roadmap covers and how settled it is, in one or two sentences. A rendered roadmap shows it under its heading; a view of the roadmap may name a subtit… |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | File-level ownership default. Milestones inherit unless overridden. |
 | `milestones` | `array<ref → milestone>` | ✓ |  | Product milestones ordered by target date. |

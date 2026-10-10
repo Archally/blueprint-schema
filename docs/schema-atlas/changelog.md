@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 29 |
-| Additive (minor) | 239 |
+| Additive (minor) | 241 |
 | Clarification (patch) | 0 |
-| **Total changes** | 268 |
+| **Total changes** | 270 |
 
 ## ⚠ Breaking changes
 
@@ -221,7 +221,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (216)
+## Added (218)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -678,6 +678,12 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `governance/roadmap.schema.yaml#/properties/cadence` — Property `cadence` added (optional).
   - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/properties/cadence`_
+
+- [additive] `governance/roadmap.schema.yaml#/properties/description` — Property `description` added (optional).
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/properties/description`_
+
+- [additive] `governance/roadmap.schema.yaml#/properties/name` — Property `name` added (optional).
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/properties/name`_
 
 - [additive] `governance/roadmap.schema.yaml#/properties/work_items` — Property `work_items` added (optional).
   - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/properties/work_items`_
