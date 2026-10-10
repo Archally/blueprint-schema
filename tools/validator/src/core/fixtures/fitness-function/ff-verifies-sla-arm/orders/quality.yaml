@@ -1,0 +1,38 @@
+version: "1.0.0"
+scope: orders
+metrics:
+  - id: orders.MT001
+    name: Order placement latency
+    type: latency
+    unit: ms
+    measures:
+      operations: [orders.CMD001]
+  - id: orders.MT002
+    name: Calls from new code into the legacy order module
+    type: custom
+    unit: count
+    collection: { method: automated, frequency: weekly }
+kpis:
+  - id: orders.KPI001
+    name: Orders placed per hour
+    target: "more than 1000 per hour at peak"
+slos:
+  - id: orders.SLO001
+    name: Order placement p95 under 800 ms
+    metric: orders.MT001
+    target: "p95 under 800 ms"
+    objective: { comparator: le, value: 800, statistic: p95 }
+security:
+  - id: orders.SEC001
+    name: Only signed-in customers place orders
+    type: authentication
+    requirement: "Placing an order requires a signed-in customer."
+compliance:
+  - id: orders.CMP001
+    name: Order records are kept for audit
+    regulation: Commercial record keeping
+    requirement: "Every placed order stays retrievable for the retention period."
+resilience:
+  - id: orders.RES001
+    name: Order placement survives one node loss
+    type: failover

@@ -1,0 +1,6 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Order Desk
+description: >-
+  A shop that takes orders, with fitness functions that name what they protect and the measure
+  their assertion is evaluated on.

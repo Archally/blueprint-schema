@@ -1,0 +1,9 @@
+version: "1.0.0"
+scope: orders
+goals:
+  - id: orders.GL001
+    statement: "A release reaches selected customers without reaching the others"
+    priority: high
+  - id: orders.GL002
+    statement: "Retire the legacy order module"
+    priority: medium

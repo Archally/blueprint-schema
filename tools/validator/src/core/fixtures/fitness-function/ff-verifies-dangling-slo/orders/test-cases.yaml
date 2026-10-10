@@ -1,0 +1,10 @@
+version: "1.0.0"
+scope: orders
+fitness_functions:
+  - id: orders.FF001
+    name: Order placement stays fast
+    scope: operation
+    assertion: "Order placement stays within its latency objective in every release."
+    severity: warning
+    verifies:
+      slos: [SLO999]

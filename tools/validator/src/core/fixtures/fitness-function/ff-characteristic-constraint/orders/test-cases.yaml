@@ -1,0 +1,12 @@
+version: "1.0.0"
+scope: orders
+fitness_functions:
+  - id: orders.FF002
+    name: Updates reach selected customers only
+    scope: cross-cutting
+    assertion: "The product can be updated for selected customers only."
+    severity: error
+    quality_characteristic: maintainability
+    quality_subcharacteristic: modifiability
+    verifies:
+      goals: [orders.GL001]

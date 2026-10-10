@@ -1,0 +1,11 @@
+version: "1.0.0"
+scope: orders
+fitness_functions:
+  - id: orders.FF001
+    name: Calls into the legacy order module never rise
+    scope: dependency
+    assertion: "The number of calls from new code into the legacy order module never rises above 42."
+    severity: error
+    verifies:
+      goals: [orders.GL002]
+    metric: orders.MT002
