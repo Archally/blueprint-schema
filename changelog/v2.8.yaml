@@ -5,6 +5,16 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.59"
+    date: "2026-10-04"
+    step: "a metric says whether it is measured, by which instrument and where its results are kept"
+    summary: |
+      A metric's `collection` accepts four new optional members. `status` says whether the metric is measured: `measured` (results exist), `not-measured` (a measure exists and nobody runs it, a gap in the model) or `no-instrument` (nothing can measure it yet, so an instrument is needed). An absent `status` means not stated, a gap in the model, and is never read as `measured`. `probe_ref` names the probe (PRB###) that measures the metric, which may be one still to be built; `work_item_ref` names the roadmap work item (WI###) that builds or acquires the instrument. `results_location` says where the results are kept: a URL, a repository path, or the tool and query that produce them. It is distinct from `source`, which is where the data comes from. When `status` is `measured`, `results_location` is required; no other member of `collection` is required. Both references are resolved like every other typed reference, so one naming an undeclared probe or work item is a cross-reference error.
+      `collection.frequency` accepts `one-off`, for a single measurement that is not repeated, such as a code analysis recorded in a file: `frequency: one-off`, `status: measured`, and the file as the `results_location`.
+      The model holds no measured value: `collection` still rejects any key it does not declare, and no member holds a value, a date or a series. A metric names where its results are.
+      A metric accepts `quality_characteristic` and `quality_subcharacteristic`, the ISO/IEC 25010 characteristic it serves, from the vocabularies a finding already uses. `quality_subcharacteristic` accepts `scalability`, listed under `portability`. The descriptions of both vocabularies state the ISO/IEC 25010:2023 names of two characteristics: `usability` is interaction capability and `portability` is flexibility, where `scalability` sits. No value is renamed.
+      `provenance` is accepted on the metric, the KPI, the SLO, the SLA and the security, compliance and resilience requirements, so a requirement can say whether it is a hypothesis or agreed: an agreed one carries `certainty: confirmed` with its evidence, and `discovery_stage` says where it stands. The metamodel's modelling guidance gains the matching lesson.
+      Additive: every document that validated under 2.8.58 still validates. Not forward-compatible: a model using any of the new members, `one-off` or `scalability` is rejected by a 2.8.58 tree, because `collection` and each of these entities reject keys they do not declare.
   - version: "2.8.58"
     date: "2026-10-04"
     step: "a test case whose act invokes an operation it does not validate is reported"
