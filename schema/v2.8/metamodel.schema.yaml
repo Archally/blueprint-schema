@@ -616,7 +616,8 @@ $defs:
       finding degrades or a requirement targets; finer grain goes in `quality_subcharacteristic`.
       Added v2.7.4 - supersedes the former maintainability-family-only enum (the removed values
       modularity/analysability/reusability/testability are now sub-characteristics; see schema-update
-      module 002).
+      module 002). Values keep their ISO/IEC 25010:2011 names. The 2023 revision renames two of them:
+      `usability` is interaction capability and `portability` is flexibility.
 
   quality_subcharacteristic:
     type: string
@@ -658,6 +659,7 @@ $defs:
       - recoverability
       # portability
       - adaptability
+      - scalability
       - installability
       - replaceability
       # safety (ISO/IEC 25010:2023)
@@ -670,6 +672,9 @@ $defs:
       ISO/IEC 25010 sub-characteristic - the finer grain under a `quality_characteristic`. The pairing
       of a sub-characteristic to its top-level is a CONVENTION the author keeps, not a schema-enforced
       constraint (a flat enum). Safety sub-characteristics are from the 2023 revision. Added v2.7.4.
+      `scalability` is also from the 2023 revision, where it sits under flexibility, the 2023 name for
+      portability; here it sits under `portability`. Every other value keeps its ISO/IEC 25010:2011
+      name.
 
   complexity_pattern:
     type: string
@@ -1911,3 +1916,26 @@ x-gdsm:
         report took the remarks for setup steps. The semantic checker reports such a precondition
         as `test-case-given-carries-notes`.
       schema_version: "2.8.57"
+    - lesson: >
+        A metric says what is measured and how, not what the measurement found. Its `collection`
+        states whether it is measured (`status`), by which instrument (`probe_ref`, or
+        `work_item_ref` for the work that builds one) and where the results are kept
+        (`results_location`); the results stay where they are, and no measured value is written
+        into the model. Keep `results_location` apart from `source`: `source` is where the data
+        comes from ("APM", "the order table"), `results_location` is where the results are
+        ("https://grafana.example.com/d/orders-latency", "reports/2026-q3-coupling.md"). Record
+        `no-instrument` when nothing can measure the metric yet, and `not-measured` when something
+        could and nobody runs it; leave `status` out only when it is unknown, and read that as a
+        gap rather than as measured. A one-off analysis kept in a file is `frequency: one-off`,
+        `status: measured`, with the file as its `results_location`. The target a requirement sets
+        lives on the requirement, not on the metric. A requirement that is agreed carries
+        `provenance.certainty: confirmed` with the evidence of the agreement, and
+        `provenance.discovery_stage` says where it stands in the workflow.
+      category: semantics
+      date: "2026-10-04"
+      evidence: >
+        `metric.collection` carries `method`, `source`, `frequency`, `status`, `probe_ref`,
+        `work_item_ref` and `results_location`, and has no member that holds a value; a `measured`
+        status without a `results_location` is a schema error. `provenance` is accepted on the
+        metric, the KPI, the SLO, the SLA and the security, compliance and resilience requirements.
+      schema_version: "2.8.59"

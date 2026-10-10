@@ -135,9 +135,27 @@ $defs:
             items:
               $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
             description: "Concepts this metric measures."
+      quality_characteristic:
+        $ref: "../metamodel.schema.yaml#/$defs/quality_characteristic"
+        description: >
+          ISO/IEC 25010 top-level product-quality characteristic this metric serves, such as
+          `performance-efficiency` for a latency metric. Finer grain goes in
+          `quality_subcharacteristic`. Optional.
+      quality_subcharacteristic:
+        $ref: "../metamodel.schema.yaml#/$defs/quality_subcharacteristic"
+        description: >
+          ISO/IEC 25010 sub-characteristic under `quality_characteristic` that this metric serves,
+          such as `time-behaviour` under `performance-efficiency`. Consistency with the named
+          top-level is by convention. Optional.
       collection:
         type: object
-        description: "How this metric is gathered. Optional - useful for implementation planning."
+        description: >
+          How this metric is gathered: by what method, from which source and how often; whether it is
+          measured at all (`status`); by which instrument (`probe_ref`, or `work_item_ref` for the
+          work that builds or acquires one); and where its results are kept (`results_location`).
+          The results themselves are not part of the model: a metric names where they are and
+          carries no measured value. Every member is optional, except that a `measured` status
+          names its `results_location`.
         additionalProperties: false
         properties:
           method:
@@ -146,11 +164,51 @@ $defs:
             description: "How data is collected."
           source:
             type: string
-            description: "Where data comes from (e.g. 'APM', 'database query', 'user survey')."
+            description: >
+              Where the data comes from (e.g. 'APM', 'database query', 'user survey'). Not where the
+              results are kept, which is `results_location`.
           frequency:
             type: string
-            enum: [continuous, hourly, daily, weekly, monthly]
-            description: "How often the metric is updated."
+            enum: [continuous, hourly, daily, weekly, monthly, one-off]
+            description: >
+              How often the metric is updated. `one-off` is a single measurement that is not
+              repeated, such as a code analysis recorded in a file; `method` still says how it was
+              gathered.
+          status:
+            type: string
+            enum: [measured, not-measured, no-instrument]
+            description: >
+              Whether this metric is measured. measured=results exist and `results_location` names
+              where they are kept; not-measured=a measure exists and nobody runs it, a gap in the
+              model; no-instrument=nothing can measure it yet, so an instrument is needed, named by
+              `probe_ref` (a probe still to be built) or `work_item_ref` (the work that builds or
+              acquires one). An absent `status` means not stated, which is itself a gap in the
+              model, and is never read as `measured`.
+          probe_ref:
+            $ref: "../metamodel.schema.yaml#/$defs/probe_ref"
+            description: >
+              The probe that measures this metric (PRB###), declared under the architecture's
+              `probes`. It may be an instrument that exists or one still to be built, as its own
+              `implementation` and `status` say.
+          work_item_ref:
+            $ref: "../metamodel.schema.yaml#/$defs/work_item_ref"
+            description: >
+              The roadmap work item (WI###) that builds or acquires the instrument for this metric.
+              Used when the instrument does not exist yet, typically with `status: no-instrument`.
+          results_location:
+            type: string
+            minLength: 1
+            description: >
+              Where the results of this metric are kept: a URL, a repository path, or the tool and
+              query that produce them. It points at the results and does not copy them. Not where
+              the data comes from, which is `source`. Required when `status` is `measured`.
+        if:
+          required: [status]
+          properties:
+            status:
+              const: measured
+        then:
+          required: [results_location]
       version:
         $ref: "../metamodel.schema.yaml#/$defs/entity_version"
         description: "Metric version for lifecycle tracking."
@@ -166,6 +224,11 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          How settled this metric is and on what evidence. `discovery_stage` says where it stands in the
+          workflow, from `hypothesis` to `committed`; `certainty` says how sure the model is of it. Optional.
 
   kpi:
     type: object
@@ -228,6 +291,13 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          Whether this KPI is a hypothesis or agreed, and on what evidence. An agreed
+          requirement carries `certainty: confirmed` with the evidence of the agreement;
+          `discovery_stage` says where it stands in the workflow, from `hypothesis` to
+          `committed`. Optional.
 
   slo:
     type: object
@@ -292,6 +362,13 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          Whether this SLO is a hypothesis or agreed, and on what evidence. An agreed
+          requirement carries `certainty: confirmed` with the evidence of the agreement;
+          `discovery_stage` says where it stands in the workflow, from `hypothesis` to
+          `committed`. Optional.
 
   sla:
     type: object
@@ -355,6 +432,13 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          Whether this SLA is a hypothesis or agreed, and on what evidence. An agreed
+          requirement carries `certainty: confirmed` with the evidence of the agreement;
+          `discovery_stage` says where it stands in the workflow, from `hypothesis` to
+          `committed`. Optional.
 
   security_requirement:
     type: object
@@ -410,6 +494,13 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          Whether this security requirement is a hypothesis or agreed, and on what evidence. An agreed
+          requirement carries `certainty: confirmed` with the evidence of the agreement;
+          `discovery_stage` says where it stands in the workflow, from `hypothesis` to
+          `committed`. Optional.
 
   compliance_requirement:
     type: object
@@ -462,6 +553,13 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          Whether this compliance requirement is a hypothesis or agreed, and on what evidence. An agreed
+          requirement carries `certainty: confirmed` with the evidence of the agreement;
+          `discovery_stage` says where it stands in the workflow, from `hypothesis` to
+          `committed`. Optional.
 
   resilience_requirement:
     type: object
@@ -520,6 +618,13 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          Whether this resilience requirement is a hypothesis or agreed, and on what evidence. An agreed
+          requirement carries `certainty: confirmed` with the evidence of the agreement;
+          `discovery_stage` says where it stands in the workflow, from `hypothesis` to
+          `committed`. Optional.
 
   finding:
     type: object
