@@ -114,7 +114,7 @@ graph LR
     design_infrastructure_schema_yaml -->|28| metamodel_schema_yaml
     design_interactions_schema_yaml -->|33| metamodel_schema_yaml
     design_models_schema_yaml -->|14| metamodel_schema_yaml
-    design_quality_schema_yaml -->|74| metamodel_schema_yaml
+    design_quality_schema_yaml -->|85| metamodel_schema_yaml
     design_rules_schema_yaml -->|26| metamodel_schema_yaml
     design_story_schema_yaml -->|65| metamodel_schema_yaml
 ```

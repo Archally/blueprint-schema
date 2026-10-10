@@ -357,7 +357,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `leverage_ref` | `string` |  | Reference to a leverage point - a prioritized cross-cutting intervention that bundles findings / risks / decisions / fitness-functions and is delivered via mig… |
 | `probe_ref` | `string` |  | Reference to a probe - an instrument that reads an artifact the model does not author and reports an observation about it (e.g. PRB001 or integration.PRB001).… |
 | `quality_characteristic` | `string` | `functional-suitability`, `performance-efficiency`, `compatibility`, `usability`, `reliability`, `security` … (9) | ISO/IEC 25010:2011 top-level product-quality characteristic - the eight 2011 characteristics plus `safety` (the one clearly-useful 2023 addition). Names the to… |
-| `quality_subcharacteristic` | `string` | `modularity`, `reusability`, `analysability`, `modifiability`, `testability`, `confidentiality` … (36) | ISO/IEC 25010 sub-characteristic - the finer grain under a `quality_characteristic`. The pairing of a sub-characteristic to its top-level is a CONVENTION the a… |
+| `quality_subcharacteristic` | `string` | `modularity`, `reusability`, `analysability`, `modifiability`, `testability`, `confidentiality` … (37) | ISO/IEC 25010 sub-characteristic - the finer grain under a `quality_characteristic`. The pairing of a sub-characteristic to its top-level is a CONVENTION the a… |
 | `complexity_pattern` | `string` | `crud`, `presentation`, `transformation`, `integration`, `cdc`, `concurrency` … (7) | Dominant implementation-complexity / problem-type pattern of a context or subdomain: crud=record management; presentation=UI-heavy; transformation=translation/… |
 | `model_traits_item` | `string` | `analyser`, `executor`, `drafter`, `auditor`, `controller`, `service-provider` … (10) | A behavioural archetype (Wirfs-Brock role stereotype) of a context or subdomain - e.g. controller/coordinator drives a process/state-machine, information-holde… |
 | `kpi_ref` | `string` |  | Reference to a quality KPI (e.g. KPI001 or billing.KPI001). |
@@ -2764,13 +2764,16 @@ A quantitative measurement of system behavior. Metrics are the foundation of all
 | `type` | `string` | ✓ | `latency`, `throughput`, `availability`, `error-rate`, `saturation`, `business` … (7) | Metric category: latency=time-to-complete, throughput=processing rate, availability=uptime, error-rate=failure rate, saturation=resource utilization, business=… |
 | `unit` | `string` | ✓ |  | Unit of measurement (e.g. 'ms', 'req/s', '%', 'orders/hour'). |
 | `measures` | `object` | — |  | Blueprint entities this metric observes. Links measurement to domain model. |
-| `collection` | `object` | — |  | How this metric is gathered. Optional - useful for implementation planning. |
+| `quality_characteristic` | `ref → quality_characteristic` | — |  | ISO/IEC 25010 top-level product-quality characteristic this metric serves, such as `performance-efficiency` for a latency metric. Finer grain goes in `quality_… |
+| `quality_subcharacteristic` | `ref → quality_subcharacteristic` | — |  | ISO/IEC 25010 sub-characteristic under `quality_characteristic` that this metric serves, such as `time-behaviour` under `performance-efficiency`. Consistency w… |
+| `collection` | `object` | — |  | How this metric is gathered: by what method, from which source and how often; whether it is measured at all (`status`); by which instrument (`probe_ref`, or `w… |
 | `version` | `ref → entity_version` | — |  | Metric version for lifecycle tracking. |
 | `owned_by` | `ref → owned_by` | — |  | Metric-level ownership override. |
 | `description` | `string` | — |  | Human-readable description. |
 | `properties` | `ref → entity_properties` | — |  |  |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `provenance` | `ref → provenance` | — |  | How settled this metric is and on what evidence. `discovery_stage` says where it stands in the workflow, from `hypothesis` to `committed`; `certainty` says how… |
 
 _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/metric`_
 
@@ -2796,6 +2799,7 @@ A Key Performance Indicator - metric with business target. Links operational mea
 | `version` | `ref → entity_version` | — |  | KPI version for lifecycle tracking. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `provenance` | `ref → provenance` | — |  | Whether this KPI is a hypothesis or agreed, and on what evidence. An agreed requirement carries `certainty: confirmed` with the evidence of the agreement; `dis… |
 
 _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/kpi`_
 
@@ -2821,6 +2825,7 @@ Service Level Objective - an internal reliability target the team commits to. Op
 | `version` | `ref → entity_version` | — |  | SLO version for lifecycle tracking. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `provenance` | `ref → provenance` | — |  | Whether this SLO is a hypothesis or agreed, and on what evidence. An agreed requirement carries `certainty: confirmed` with the evidence of the agreement; `dis… |
 
 _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/slo`_
 
@@ -2843,6 +2848,7 @@ Service Level Agreement - external contractual commitment built on SLOs. Carries
 | `version` | `ref → entity_version` | — |  | SLA version for lifecycle tracking. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `provenance` | `ref → provenance` | — |  | Whether this SLA is a hypothesis or agreed, and on what evidence. An agreed requirement carries `certainty: confirmed` with the evidence of the agreement; `dis… |
 
 _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/sla`_
 
@@ -2866,6 +2872,7 @@ A security requirement governing operations or data protection.
 | `version` | `ref → entity_version` | — |  | Security requirement version for lifecycle tracking. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `provenance` | `ref → provenance` | — |  | Whether this security requirement is a hypothesis or agreed, and on what evidence. An agreed requirement carries `certainty: confirmed` with the evidence of th… |
 
 _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/security_requirement`_
 
@@ -2888,6 +2895,7 @@ A regulatory, privacy, or data governance requirement.
 | `version` | `ref → entity_version` | — |  | Compliance requirement version for lifecycle tracking. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `provenance` | `ref → provenance` | — |  | Whether this compliance requirement is a hypothesis or agreed, and on what evidence. An agreed requirement carries `certainty: confirmed` with the evidence of… |
 
 _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/compliance_requirement`_
 
@@ -2912,6 +2920,7 @@ An availability, disaster recovery, or continuity requirement.
 | `version` | `ref → entity_version` | — |  | Resilience requirement version for lifecycle tracking. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
+| `provenance` | `ref → provenance` | — |  | Whether this resilience requirement is a hypothesis or agreed, and on what evidence. An agreed requirement carries `certainty: confirmed` with the evidence of… |
 
 _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/resilience_requirement`_
 

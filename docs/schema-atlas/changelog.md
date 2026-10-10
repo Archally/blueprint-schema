@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 29 |
-| Additive (minor) | 223 |
+| Additive (minor) | 232 |
 | Clarification (patch) | 0 |
-| **Total changes** | 252 |
+| **Total changes** | 261 |
 
 ## ⚠ Breaking changes
 
@@ -221,7 +221,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (200)
+## Added (209)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -496,14 +496,41 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/models.schema.yaml#/$defs/model_schema/properties/provenance` — Property `provenance` added (optional).
   - _Source: `schema/v2.8/design/models.schema.yaml#/$defs/model_schema/properties/provenance`_
 
+- [additive] `design/quality.schema.yaml#/$defs/compliance_requirement/properties/provenance` — Property `provenance` added (optional).
+  - _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/compliance_requirement/properties/provenance`_
+
 - [additive] `design/quality.schema.yaml#/$defs/finding` — New definition `finding` added to `design/quality.schema.yaml`.
   - _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/finding`_
 
 - [additive] `design/quality.schema.yaml#/$defs/kpi/properties/domain_scope` — Property `domain_scope` added (optional).
   - _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/kpi/properties/domain_scope`_
 
+- [additive] `design/quality.schema.yaml#/$defs/kpi/properties/provenance` — Property `provenance` added (optional).
+  - _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/kpi/properties/provenance`_
+
+- [additive] `design/quality.schema.yaml#/$defs/metric/properties/provenance` — Property `provenance` added (optional).
+  - _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/metric/properties/provenance`_
+
+- [additive] `design/quality.schema.yaml#/$defs/metric/properties/quality_characteristic` — Property `quality_characteristic` added (optional).
+  - _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/metric/properties/quality_characteristic`_
+
+- [additive] `design/quality.schema.yaml#/$defs/metric/properties/quality_subcharacteristic` — Property `quality_subcharacteristic` added (optional).
+  - _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/metric/properties/quality_subcharacteristic`_
+
+- [additive] `design/quality.schema.yaml#/$defs/resilience_requirement/properties/provenance` — Property `provenance` added (optional).
+  - _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/resilience_requirement/properties/provenance`_
+
 - [additive] `design/quality.schema.yaml#/$defs/resilience_requirement/properties/resource_refs` — Property `resource_refs` added (optional).
   - _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/resilience_requirement/properties/resource_refs`_
+
+- [additive] `design/quality.schema.yaml#/$defs/security_requirement/properties/provenance` — Property `provenance` added (optional).
+  - _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/security_requirement/properties/provenance`_
+
+- [additive] `design/quality.schema.yaml#/$defs/sla/properties/provenance` — Property `provenance` added (optional).
+  - _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/sla/properties/provenance`_
+
+- [additive] `design/quality.schema.yaml#/$defs/slo/properties/provenance` — Property `provenance` added (optional).
+  - _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/slo/properties/provenance`_
 
 - [additive] `design/quality.schema.yaml#/$defs/slo/properties/resource_refs` — Property `resource_refs` added (optional).
   - _Source: `schema/v2.8/design/quality.schema.yaml#/$defs/slo/properties/resource_refs`_
