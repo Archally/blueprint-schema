@@ -67,6 +67,15 @@ export const RELATION_TYPE = {
   // Separate from `validates`: the act names what the test does, `validates` what it proves, and
   // only `validates` counts towards test coverage.
   TestCaseAct: 'test_case_act',
+  // test-cases.schema: what a fitness function protects (fitness_function.verifies.slos[], .kpis[],
+  // .security[], .compliance[], .resilience[], .goals[]). One type for all six arms, as
+  // `metric_measures` is one type for its two: every arm states the same thing, "this check guards
+  // that", and the target's own entity type says which kind of requirement or goal it guards.
+  FitnessFunctionVerifies: 'fitness_function_verifies',
+  // test-cases.schema: the one measure a fitness function's assertion is evaluated on
+  // (fitness_function.metric). Separate from `fitness_function_verifies`: a metric is what the check
+  // reads, not what it protects, and a requirement stated on the same metric goes in `verifies`.
+  FitnessFunctionMetric: 'fitness_function_metric',
   // arch.schema: context structurally contains service (hierarchy from YAML nesting)
   Contains: 'contains',
   // arch.schema: service structurally provides contract (hierarchy from YAML nesting)
@@ -104,6 +113,13 @@ export const RELATION_TYPE = {
   // metric.measures.operations[] / metric.measures.concepts[]. One type for both arms: the
   // target's own type says which produced it, as `owned_by` does for its three.
   MetricMeasures: 'metric_measures',
+  // metric.collection.probe_ref -> Probe: the instrument that gathers the metric, whether it exists
+  // or is still to be built.
+  MetricProbe: 'metric_probe',
+  // metric.collection.work_item_ref -> WorkItem: the work that builds or acquires the instrument the
+  // metric still lacks, so an impact query on that work item reaches the metric and, through it, the
+  // requirements stated on it.
+  MetricWorkItem: 'metric_work_item',
   // kpi.metric -> Metric: the measurement a business target is read from.
   KpiMetric: 'kpi_metric',
   // kpi.goal -> Goal. `goal.kpi` above is the same join written from the other side; a model may

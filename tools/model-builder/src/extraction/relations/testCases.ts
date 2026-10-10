@@ -38,7 +38,72 @@ export const VALIDATES_UI_GROUPS: ReadonlyArray<{ key: string; predicate: string
 ];
 
 /**
- * Extract relations from test case entities:
+ * The arms of a fitness function's `verifies`, each a list of typed ids of one kind. They all build
+ * one relation type, `fitness_function_verifies`: the target's own entity type says which kind of
+ * requirement or goal is guarded, so the arm needs no second name on the edge.
+ */
+export const FITNESS_FUNCTION_VERIFIES_ARMS: ReadonlyArray<string> = [
+  'slos',
+  'kpis',
+  'security',
+  'compliance',
+  'resilience',
+  'goals',
+];
+
+/**
+ * A fitness function's outbound references:
+ * - FitnessFunction.verifies.<arm>[] -> fitness_function_verifies, one relation per ref, for every
+ *   arm in FITNESS_FUNCTION_VERIFIES_ARMS
+ * - FitnessFunction.metric -> fitness_function_metric, the one measure its assertion is evaluated on
+ *
+ * `quality_characteristic` and `quality_subcharacteristic` hold vocabulary values, not references,
+ * and build no edge.
+ */
+function extractFitnessFunctionRelations(
+  entity: Entity,
+  entities: Entity[],
+  placeholders: Map<string, Entity>
+): Relation[] {
+  const relations: Relation[] = [];
+  const data = entity.data as Record<string, unknown> | undefined;
+  if (!data) return relations;
+  const domain = entityDomain(entity);
+
+  const verifies = data.verifies as Record<string, unknown> | undefined;
+  if (verifies && typeof verifies === 'object' && !Array.isArray(verifies)) {
+    for (const arm of FITNESS_FUNCTION_VERIFIES_ARMS) {
+      const refs = verifies[arm];
+      if (!Array.isArray(refs)) continue;
+      for (const ref of refs) {
+        if (typeof ref !== 'string' || !ref) continue;
+        const targetId = resolveOrPlaceholder(ref, domain, entities, placeholders);
+        relations.push({
+          id: `${entity.id}--${RELATION_TYPE.FitnessFunctionVerifies}--${targetId}`,
+          source_entity_id: entity.id,
+          target_entity_id: targetId,
+          type: RELATION_TYPE.FitnessFunctionVerifies,
+        });
+      }
+    }
+  }
+
+  const metric = data.metric;
+  if (typeof metric === 'string' && metric) {
+    const targetId = resolveOrPlaceholder(metric, domain, entities, placeholders);
+    relations.push({
+      id: `${entity.id}--${RELATION_TYPE.FitnessFunctionMetric}--${targetId}`,
+      source_entity_id: entity.id,
+      target_entity_id: targetId,
+      type: RELATION_TYPE.FitnessFunctionMetric,
+    });
+  }
+
+  return relations;
+}
+
+/**
+ * Extract relations from test case and fitness function entities:
  * - TestCase.validates.<axis>[] → validates, one relation per ref, for every axis in
  *   VALIDATES_GROUPS
  * - TestCase.validates.ui.{screens,actions,navigation}[] → validates (nested UI)
@@ -46,6 +111,7 @@ export const VALIDATES_UI_GROUPS: ReadonlyArray<{ key: string; predicate: string
  *   `operation_ref`, so both of its forms resolve, the typed id and `domain:key`. It is a separate
  *   relation type rather than one more `validates` edge: coverage counts `validates`, and an act
  *   names what a test does, not what it proves.
+ * - FitnessFunction.verifies and .metric, by extractFitnessFunctionRelations above
  *
  * The two group tables are the complete set of axes this extractor reads. Every property the
  * schema's `validates_refs` declares must appear in one of them, or the edges a model states on
@@ -60,6 +126,10 @@ export function extractTestCaseRelations(
   let keyIndex: Map<string, string | null> | undefined;
 
   for (const entity of entities) {
+    if (entity.type === ENTITY_TYPE.FitnessFunction) {
+      relations.push(...extractFitnessFunctionRelations(entity, entities, placeholders));
+      continue;
+    }
     if (entity.type !== ENTITY_TYPE.TestCase) continue;
 
     const domain = entityDomain(entity);

@@ -7,6 +7,8 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  * The quality plane's outbound references.
  *
  *   Metric      --metric_measures-->      Operation | Concept  (measures.operations[] / .concepts[])
+ *   Metric      --metric_probe-->         Probe                (collection.probe_ref)
+ *   Metric      --metric_work_item-->     WorkItem             (collection.work_item_ref)
  *   KPI         --kpi_metric-->           Metric               (metric)
  *   KPI         --kpi_goal-->             Goal                 (goal)
  *   KPI         --kpi_owner-->            Actor                (owner)
@@ -33,9 +35,11 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  * and is extracted with the other three concern planes, so a finding's edges are split by what
  * they mean rather than by which file declares them.
  *
- * Two fields on these entities deliberately build no edge. `kpi.domain_scope` names a
+ * Some fields on these entities deliberately build no edge. `kpi.domain_scope` names a
  * problem-space scope and is extracted with the other context associations. `sla.parties.provider` and
  * `sla.parties.consumer` hold a name rather than a reference, and a name resolves to nothing.
+ * Likewise `metric.collection.source` and `metric.collection.results_location`: each says where
+ * data or results are kept, as a URL, a path or a description, and names no entity.
  *
  * Unresolvable refs degrade to Missing placeholders, as in every other relation extractor.
  */
@@ -52,6 +56,8 @@ const QUALITY_REF_FIELDS: Partial<Record<string, QualityRefField[]>> = {
   [ENTITY_TYPE.Metric]: [
     { path: 'measures.operations', type: RELATION_TYPE.MetricMeasures, list: true },
     { path: 'measures.concepts', type: RELATION_TYPE.MetricMeasures, list: true },
+    { path: 'collection.probe_ref', type: RELATION_TYPE.MetricProbe, list: false },
+    { path: 'collection.work_item_ref', type: RELATION_TYPE.MetricWorkItem, list: false },
   ],
   [ENTITY_TYPE.KPI]: [
     { path: 'metric', type: RELATION_TYPE.KpiMetric, list: false },
