@@ -342,6 +342,7 @@ $defs:
           - risk_goal
           - capability_goal
           - assumption_risk
+          - goal_assumption
           - value_stream_capability
           - value_stream_goal
           - value_stream_kpi

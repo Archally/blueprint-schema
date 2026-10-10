@@ -138,6 +138,11 @@ $defs:
       kpi:
         $ref: "../metamodel.schema.yaml#/$defs/kpi_ref"
         description: "KPI in quality.schema.yaml that formally tracks this goal. Closes the goal→KPI→metric traceability chain."
+      assumption_refs:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/assumption_ref"
+        description: "Assumptions this goal rests on: if one of them proves wrong, the goal is at risk. The goal names its assumptions and an assumption names none of the goals that rest on it, so an assumption several goals rest on is listed on each of them."
       examples:
         type: array
         description: "Concrete examples illustrating this goal."
