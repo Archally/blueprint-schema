@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 29 |
-| Additive (minor) | 241 |
+| Additive (minor) | 242 |
 | Clarification (patch) | 0 |
-| **Total changes** | 270 |
+| **Total changes** | 271 |
 
 ## ⚠ Breaking changes
 
@@ -221,7 +221,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (218)
+## Added (219)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -651,6 +651,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/milestone/properties/realizes_decisions` — Property `realizes_decisions` added (optional).
   - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/milestone/properties/realizes_decisions`_
+
+- [additive] `governance/roadmap.schema.yaml#/$defs/milestone/properties/tracker_ref` — Property `tracker_ref` added (optional).
+  - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/milestone/properties/tracker_ref`_
 
 - [additive] `governance/roadmap.schema.yaml#/$defs/milestone/properties/use_cases` — Property `use_cases` added (optional).
   - _Source: `schema/v2.8/governance/roadmap.schema.yaml#/$defs/milestone/properties/use_cases`_

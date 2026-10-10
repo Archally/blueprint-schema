@@ -24,6 +24,10 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/governance/roadmap.schema.yaml#/properties/cadence/properties/sprint_length_days/examples/0`: `14`
 
+- `schema/v2.8/governance/roadmap.schema.yaml#/$defs/milestone/properties/tracker_ref/examples/0`: `"ABC-1200"`
+
+- `schema/v2.8/governance/roadmap.schema.yaml#/$defs/milestone/properties/tracker_ref/examples/1`: `"jira:ABC-1200"`
+
 - `schema/v2.8/governance/roadmap.schema.yaml#/$defs/work_item/properties/id/examples/0`: `"WI001"`
 
 - `schema/v2.8/governance/roadmap.schema.yaml#/$defs/work_item/properties/id/examples/1`: `"WI010"`
@@ -102,11 +106,7 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/under/examples/0`: `"Catalog"`
 
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/under/examples/1`: `"BC002"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_delete/properties/target/examples/0`: `"catalog.CN001"`
-
-_… and 10 more (listed first 50 for readability)._
+_… and 12 more (listed first 50 for readability)._
 
 ## Reference example models
 

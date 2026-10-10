@@ -4008,6 +4008,7 @@ Product roadmap milestone - a dated target with deliverables and success criteri
 | `user_stories` | `ref → user_story_ref_list` | — |  |  |
 | `use_cases` | `ref → use_case_ref_list` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | Team or department responsible for this milestone. |
+| `tracker_ref` | `ref → tracker_ref` | — |  | The item that stands for this milestone in an external issue tracker, such as an initiative or a release epic, while each work item that rolls up to the milest… |
 | `version` | `ref → entity_version` | — |  |  |
 | `properties` | `ref → entity_properties` | — |  |  |
 | `tags` | `ref → tags` | — |  |  |
