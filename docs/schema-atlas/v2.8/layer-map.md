@@ -152,7 +152,7 @@ graph LR
     governance_capability_schema_yaml -->|21| metamodel_schema_yaml
     governance_decisions_schema_yaml -->|47| metamodel_schema_yaml
     governance_leverage_schema_yaml -->|29| metamodel_schema_yaml
-    governance_motivation_schema_yaml -->|92| metamodel_schema_yaml
+    governance_motivation_schema_yaml -->|93| metamodel_schema_yaml
     governance_organization_schema_yaml -->|21| metamodel_schema_yaml
     governance_roadmap_schema_yaml -->|38| metamodel_schema_yaml
     governance_test_cases_schema_yaml -->|40| metamodel_schema_yaml

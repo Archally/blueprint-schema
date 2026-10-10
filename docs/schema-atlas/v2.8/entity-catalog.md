@@ -475,7 +475,7 @@ A change to a relationship (edge) between two entities.
 | --- | --- | --- | --- | --- |
 | `kind` | `string` | ✓ | `add`, `remove`, `redirect`, `modify` | Edge operation: add=create, remove=delete, redirect=change target, modify=change edge properties. |
 | `subject` | `string` | ✓ |  | Source entity typed ref (e.g., CMD005). The entity this relationship originates from. |
-| `predicate` | `string` | ✓ | `relationship`, `transition_rules`, `interaction`, `association`, `produces`, `reacts_to` … (87) | Relationship type. Maps to graph edge label. |
+| `predicate` | `string` | ✓ | `relationship`, `transition_rules`, `interaction`, `association`, `produces`, `reacts_to` … (88) | Relationship type. Maps to graph edge label. |
 | `object` | `string` | ✓ |  | Target entity typed ref (e.g., EVT006). For redirect: current target. |
 | `new_object` | `string` | — |  | For redirect: the new target entity ref. |
 | `edge_properties` | `object` | — |  | Properties on the edge itself (policy, condition, mode for produces/reacts_to). |
@@ -3670,6 +3670,7 @@ A strategic objective the system aims to achieve. Measurable goals link to KPIs;
 | `priority` | `ref → priority_scale` | ✓ |  | Goal priority: critical=must have at launch, high=must have, medium=should have, low=nice to have. |
 | `measure` | `string` | — |  | How achievement is measured (e.g. 'p95 latency < 200ms'). Link to kpi for formal tracking. |
 | `kpi` | `ref → kpi_ref` | — |  | KPI in quality.schema.yaml that formally tracks this goal. Closes the goal→KPI→metric traceability chain. |
+| `assumption_refs` | `array<ref → assumption_ref>` | — |  | Assumptions this goal rests on: if one of them proves wrong, the goal is at risk. The goal names its assumptions and an assumption names none of the goals that… |
 | `examples` | `array<object>` | — |  | Concrete examples illustrating this goal. |
 | `affects` | `object` | — |  | Blueprint entities this goal touches: where it sticks on the domain model, so a story board or a wall can pin the opportunity beside the operation, concept, co… |
 | `version` | `ref → entity_version` | — |  | Goal version for lifecycle tracking. |

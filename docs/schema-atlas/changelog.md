@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 29 |
-| Additive (minor) | 242 |
+| Additive (minor) | 243 |
 | Clarification (patch) | 0 |
-| **Total changes** | 271 |
+| **Total changes** | 272 |
 
 ## ⚠ Breaking changes
 
@@ -215,13 +215,13 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/$defs/entity_change/properties/kind` — Property `kind` enum values added: `rename`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/$defs/entity_change/properties/kind`, `schema/v2.6/migration.schema.yaml#/$defs/entity_change/properties/kind`_
 
-- [additive] `migration.schema.yaml#/$defs/relationship_change/properties/predicate` — Property `predicate` enum values added: `context_depends_on`.
+- [additive] `migration.schema.yaml#/$defs/relationship_change/properties/predicate` — Property `predicate` enum values added: `context_depends_on`, `goal_assumption`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/$defs/relationship_change/properties/predicate`, `schema/v2.6/migration.schema.yaml#/$defs/relationship_change/properties/predicate`_
 
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (219)
+## Added (220)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -618,6 +618,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `governance/motivation.schema.yaml#/$defs/goal/properties/affects` — Property `affects` added (optional).
   - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/goal/properties/affects`_
+
+- [additive] `governance/motivation.schema.yaml#/$defs/goal/properties/assumption_refs` — Property `assumption_refs` added (optional).
+  - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/goal/properties/assumption_refs`_
 
 - [additive] `governance/motivation.schema.yaml#/$defs/inquiry/properties/affects` — Property `affects` added (optional).
   - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects`_
