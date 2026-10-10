@@ -5,6 +5,15 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.61"
+    date: "2026-10-04"
+    step: "a fitness function names what it verifies and the metric it reads"
+    summary: |
+      A fitness function accepts four new optional members. `verifies` names what it protects, one typed list per kind: `slos`, `kpis`, `security`, `compliance`, `resilience` and `goals`. It has no `metrics` list, because a fitness function is evaluated on a measure rather than protecting one, and no `slas` list, because an SLA is guarded through its SLOs. `metric` names the one measure the assertion is evaluated on, such as the count a ratchet keeps from rising; the limit stays in `assertion`, and a verdict that depends on two measures is two fitness functions. `quality_characteristic` and `quality_subcharacteristic` take the metamodel's ISO/IEC 25010 vocabularies.
+      A fitness function that carries a quality characteristic states a quality constraint in its own right: a requirement that holds or does not, rather than a level on a metric, and its own verification. It may name the goal it serves in `verifies.goals`. The `fitness_function` description now says so, with "the product can be updated for selected customers only" under `maintainability` / `modifiability` as its example.
+      Every id under `verifies` and `metric` is a typed reference: an id nobody declares is a cross-reference error on every validator surface. The metamodel's modelling guidance gains a lesson on keeping `verifies` and `metric` apart and on stating a constraint as a check.
+      Additive: every document that validated under 2.8.60 still validates. Not forward-compatible: a model using any of the four members is rejected by a 2.8.60 tree, because `fitness_function` rejects keys it does not declare.
+      This release also changes the model builder and the semantic checker, with the accepted set unchanged: the references 2.8.59 and 2.8.61 add become graph edges. `fitness_function_verifies` runs from a fitness function to every SLO, KPI, security, compliance and resilience requirement and goal its `verifies` names, one relation type for all six lists, the target's entity type saying which kind is guarded; `fitness_function_metric` runs to its `metric`; `metric_probe` and `metric_work_item` run from a metric to the probe and the work item its `collection` names. An id nobody declares lands on a placeholder. Neighbour and impact queries reach a fitness function from what it protects and from the metric it reads, and a metric from the work that builds its instrument. `fitness-function-unattached` counts these edges, so a fitness function attached only through `verifies` or `metric` is not reported; its description and message name `verifies` first.
   - version: "2.8.60"
     date: "2026-10-04"
     step: "an SLO and a KPI state their target as an objective a reader compares"
