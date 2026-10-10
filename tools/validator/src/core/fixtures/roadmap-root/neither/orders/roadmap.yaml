@@ -1,0 +1,11 @@
+version: "1.0.0"
+scope: orders
+milestones:
+  - id: MS001
+    name: Checkout MVP
+    target_date: "2026-06-30"
+work_items:
+  - id: WI001
+    kind: epic
+    name: Rebuild the checkout
+    milestone: MS001

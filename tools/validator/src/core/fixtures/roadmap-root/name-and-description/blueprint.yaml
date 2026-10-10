@@ -1,0 +1,6 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Order Desk
+description: >-
+  A shop that takes orders, with a roadmap that names itself: a title and a sentence on what it
+  covers and how settled it is.
