@@ -4,7 +4,8 @@ rules:
     severity: info
     description: >-
       An assumption that names nothing it bears on: no operation, concept or process through
-      `affects`, no risk through `risk_refs`, and no decision cites it through `motivation_refs`.
+      `affects`, no risk through `risk_refs`, no decision cites it through `motivation_refs`, and no
+      goal names it in `assumption_refs` as an assumption the goal rests on.
       Ownership does not place it. An owner, stated on the assumption or inherited from its file's
       `owned_by`, says who confirms or retires the assumption, not what depends on it holding, so
       an owned assumption can still be placed nowhere, and `orphan-entities` stops reporting it once
@@ -14,7 +15,8 @@ rules:
     find:
       entity_type: Assumption
     # Satisfied by an outgoing `assumption_affects` (affects.*_refs) or `assumption_risk`
-    # (risk_refs), or by an incoming `motivation_refs` (a decision citing the assumption).
+    # (risk_refs), or by an incoming `motivation_refs` (a decision citing the assumption) or
+    # `goal_assumption` (a goal resting on it, goal.assumption_refs).
     check:
       any_of:
         - has_relation:
@@ -23,6 +25,6 @@ rules:
             exists: true
         - has_relation:
             direction: in
-            type: motivation_refs
+            type: [motivation_refs, goal_assumption]
             exists: true
-    message: 'Assumption "{displayId}" names nothing it bears on: no affects, no risk_refs, and no decision cites it. Name the operation, concept or process that depends on it holding under affects, or the risk it carries under risk_refs.'
+    message: 'Assumption "{displayId}" names nothing it bears on: no affects, no risk_refs, and no decision or goal cites it. Name the operation, concept or process that depends on it holding under affects, the risk it carries under risk_refs, or the assumption under the assumption_refs of a goal that rests on it.'
