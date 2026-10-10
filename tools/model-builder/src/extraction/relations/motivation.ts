@@ -9,6 +9,7 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  * - risk.goal_refs[] → RiskGoal      (risk → goal)
  * - assumption.risk_refs[] → AssumptionRisk (assumption → risk)
  * - goal.kpi        → GoalKpi       (goal → KPI)
+ * - goal.assumption_refs[] → GoalAssumption (goal → assumption it rests on)
  *
  * `goal.kpi` and `kpi.goal` are the same join written from either side; the KPI's own field is
  * extracted with the quality plane, and the two stay distinct edges because which side stated the
@@ -65,6 +66,21 @@ export function extractMotivationRelations(
           target_entity_id: targetId,
           type: RELATION_TYPE.GoalKpi,
         });
+      }
+
+      // v2.8.64: assumption_refs[] - the assumptions this goal rests on
+      const assumptionRefs = data.assumption_refs as string[] | undefined;
+      if (Array.isArray(assumptionRefs)) {
+        for (const ref of assumptionRefs) {
+          if (typeof ref !== 'string' || !ref) continue;
+          const targetId = resolveOrPlaceholder(ref, domain, entities, placeholders);
+          relations.push({
+            id: `${entity.id}--${RELATION_TYPE.GoalAssumption}--${targetId}`,
+            source_entity_id: entity.id,
+            target_entity_id: targetId,
+            type: RELATION_TYPE.GoalAssumption,
+          });
+        }
       }
     }
 

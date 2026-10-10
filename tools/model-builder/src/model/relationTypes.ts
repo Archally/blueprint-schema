@@ -101,6 +101,10 @@ export const RELATION_TYPE = {
   ContractReads: 'contract_reads',
   // motivation.schema: goal tracked by KPI (goal.kpi)
   GoalKpi: 'goal.kpi',
+  // motivation.schema (v2.8.64): goal rests on assumption (goal.assumption_refs[]). The goal names
+  // its premises, as a decision names them in motivation_refs.assumptions; the assumption names none
+  // of the goals that rest on it, so impact from an assumption follows this edge backwards.
+  GoalAssumption: 'goal_assumption',
   // --- quality.schema: the measurement chain and the requirement planes ------
   // goal -> KPI -> metric -> operation/concept -> SLO -> SLA, plus the security, compliance and
   // resilience requirements that bind to what they govern.
