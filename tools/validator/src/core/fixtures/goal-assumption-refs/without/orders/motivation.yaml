@@ -1,0 +1,10 @@
+version: "1.0.0"
+scope: orders
+goals:
+  - id: orders.GL001
+    statement: "Every paid order ships within a day."
+    priority: high
+assumptions:
+  - id: orders.ASM001
+    statement: "Card payments are authorised within a minute."
+    consequence: "Orders wait for payment and miss the day's dispatch."

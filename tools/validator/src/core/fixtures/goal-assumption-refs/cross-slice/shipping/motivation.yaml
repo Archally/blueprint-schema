@@ -1,0 +1,6 @@
+version: "1.0.0"
+scope: shipping
+assumptions:
+  - id: shipping.ASM001
+    statement: "The carrier collects parcels every working day."
+    consequence: "Parcels packed on a collection-free day wait until the next one."

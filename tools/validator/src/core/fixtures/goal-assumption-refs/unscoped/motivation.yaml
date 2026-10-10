@@ -1,0 +1,10 @@
+version: "1.0.0"
+goals:
+  - id: GL001
+    statement: "Every paid order ships within a day."
+    priority: high
+    assumption_refs: [ASM001]
+assumptions:
+  - id: ASM001
+    statement: "Card payments are authorised within a minute."
+    consequence: "Orders wait for payment and miss the day's dispatch."
