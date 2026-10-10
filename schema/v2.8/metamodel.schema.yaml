@@ -1813,12 +1813,13 @@ x-gdsm:
         declines the prefix.
       schema_version: "2.8.43"
     - lesson: >
-        `tracker_ref` is declared on `process`, `user_story` and `use_case` and on nothing else. That
-        is the schema saying which constructs correspond to a unit of delivered WORK: a tracker item
-        describes something a team agreed to build, and an operation is a piece of the domain that
-        several such items may touch. Do not reach for a nested `properties.tracker_ref` on an
-        operation to close the gap - a consumer reading the field reads those three places, and a
-        fourth spelling is a value nothing will find.
+        `tracker_ref` is declared on `process`, `user_story` and `use_case`, on a roadmap's
+        `milestone`, `work_item` and blocker, and on nothing else. That is the schema saying which
+        constructs correspond to a unit of delivered or planned WORK: a tracker item describes
+        something a team agreed to build, and an operation is a piece of the domain that several
+        such items may touch. Do not reach for a nested `properties.tracker_ref` on an operation to
+        close the gap - a consumer reading the field reads those places, and another spelling is a
+        value nothing will find.
       category: structure
       date: "2026-09-17"
       evidence: >
