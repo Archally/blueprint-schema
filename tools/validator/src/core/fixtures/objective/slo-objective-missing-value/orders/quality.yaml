@@ -1,0 +1,23 @@
+version: "1.0.0"
+scope: orders
+metrics:
+  - id: orders.MT001
+    name: Order placement latency
+    type: latency
+    unit: ms
+    measures:
+      operations: [orders.CMD001]
+  - id: orders.MT002
+    name: Orders placed per hour
+    type: business
+    unit: orders/hour
+slos:
+  - id: orders.SLO001
+    name: Order placement p95 under 800 ms
+    metric: orders.MT001
+    target: "p95 under 800 ms"
+    objective:
+      comparator: le
+      statistic: p95
+    window: 30d rolling
+    operations: [orders.CMD001]

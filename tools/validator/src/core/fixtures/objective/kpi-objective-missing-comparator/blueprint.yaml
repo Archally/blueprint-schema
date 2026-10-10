@@ -1,0 +1,6 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Order Desk
+description: >-
+  A shop that takes orders, with an SLO and a KPI that state their target as a sentence and as an
+  objective a reader compares with a result.

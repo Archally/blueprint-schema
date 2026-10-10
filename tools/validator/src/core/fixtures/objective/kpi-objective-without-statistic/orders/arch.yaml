@@ -1,0 +1,7 @@
+version: "1.0.0"
+name: Orders architecture
+scope: orders
+contexts:
+  - id: orders.BC001
+    name: Orders
+    kind: core
