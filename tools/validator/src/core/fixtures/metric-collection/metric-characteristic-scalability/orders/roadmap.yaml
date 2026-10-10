@@ -1,0 +1,7 @@
+version: "1.0.0"
+scope: orders
+milestones: []
+work_items:
+  - id: WI001
+    kind: task
+    name: Build the checkout load test

@@ -1,0 +1,16 @@
+version: "1.0.0"
+scope: orders
+metrics:
+  - id: orders.MT001
+    name: Order placement latency
+    type: latency
+    unit: ms
+    measures:
+      operations: [orders.CMD001]
+    collection:
+      method: automated
+      source: APM
+      frequency: continuous
+      status: measured
+      probe_ref: PRB001
+      results_location: "https://grafana.example.com/d/orders-latency"

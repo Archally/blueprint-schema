@@ -1,0 +1,12 @@
+version: "1.0.0"
+name: Orders architecture
+scope: orders
+contexts:
+  - id: orders.BC001
+    name: Orders
+    kind: core
+probes:
+  - id: PRB001
+    name: k6 checkout run
+    question: How long does placing an order take at the 95th percentile?
+    implementation: to-be

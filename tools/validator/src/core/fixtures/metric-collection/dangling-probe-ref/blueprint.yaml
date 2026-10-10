@@ -1,0 +1,6 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Order Desk
+description: >-
+  A shop that takes orders, with metrics that say whether they are measured, by which instrument
+  and where their results are kept.

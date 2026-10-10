@@ -1,0 +1,12 @@
+version: "1.0.0"
+scope: orders
+metrics:
+  - id: orders.MT001
+    name: Order placement latency
+    type: latency
+    unit: ms
+    measures:
+      operations: [orders.CMD001]
+    collection:
+      method: manual
+      value: 120

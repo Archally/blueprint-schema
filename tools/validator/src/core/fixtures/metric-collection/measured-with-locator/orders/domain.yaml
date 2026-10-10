@@ -1,0 +1,8 @@
+version: "1.0.0"
+name: Orders domain
+scope: orders
+operations:
+  placeOrder:
+    id: orders.CMD001
+    kind: command
+    name: Place Order
