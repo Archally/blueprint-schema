@@ -46,7 +46,15 @@ $defs:
 
   fitness_function:
     type: object
-    description: "One constraint on the architecture, stated for a reader. Some are settled by reading the model, others describe the code, the running system or the way the team works, so this is a statement rather than a check that runs."
+    description: >
+      One constraint on the architecture, stated for a reader. Some are settled by reading the model,
+      others describe the code, the running system or the way the team works, so this is a statement
+      rather than a check that runs. `verifies` names the requirements and goals it protects, and
+      `metric` names the one measure its assertion is evaluated on; the two are different questions.
+      A fitness function that carries a `quality_characteristic` states a quality constraint in its
+      own right: a requirement that holds or does not, rather than a level on a metric, and its own
+      verification. It may name the goal it serves in `verifies.goals`, for example "the product can
+      be updated for selected customers only" under `maintainability` / `modifiability`.
     additionalProperties: false
     required: [id, name, assertion]
     properties:
@@ -83,6 +91,66 @@ $defs:
           Epistemic provenance for this fitness function: the evidence and confidence behind the
           constraint (e.g. codebase-analysis that motivated the guardrail, an ADR sign-off).
           Complements `code_refs`. Optional; additive (v2.7.4).
+      verifies:
+        type: object
+        additionalProperties: false
+        description: >
+          The requirements and goals this fitness function protects: what it guards, one typed list
+          per kind. It names no metric: the measure the assertion is evaluated on is `metric`, a
+          different question. An SLA is guarded through its SLOs. Optional.
+        properties:
+          slos:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/slo_ref"
+            description: "Service level objectives this fitness function protects."
+          kpis:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/kpi_ref"
+            description: "Key performance indicators this fitness function protects."
+          security:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/security_ref"
+            description: "Security requirements this fitness function protects."
+          compliance:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/compliance_ref"
+            description: "Compliance requirements this fitness function protects."
+          resilience:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/resilience_ref"
+            description: "Resilience requirements this fitness function protects."
+          goals:
+            type: array
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
+            description: >
+              Goals this fitness function protects: a goal no quality requirement states yet, such
+              as a modernization goal guarded by "no new code depends on the legacy module", or the
+              goal a quality constraint stated by this fitness function serves.
+      metric:
+        $ref: "../metamodel.schema.yaml#/$defs/metric_ref"
+        description: >
+          The one measure the assertion is evaluated on, such as the count a ratchet keeps from
+          rising. The metric says how that number is gathered and where its results are kept; the
+          limit itself stays in `assertion`. One metric only: a verdict that depends on two measures
+          is two fitness functions. A requirement on the same metric is something this fitness
+          function protects and goes in `verifies`. Optional.
+      quality_characteristic:
+        $ref: "../metamodel.schema.yaml#/$defs/quality_characteristic"
+        description: >
+          ISO/IEC 25010 top-level product-quality characteristic of the constraint, such as
+          `maintainability`. A fitness function that carries one states a quality constraint and is
+          its own verification. Finer grain goes in `quality_subcharacteristic`. Optional.
+      quality_subcharacteristic:
+        $ref: "../metamodel.schema.yaml#/$defs/quality_subcharacteristic"
+        description: >
+          ISO/IEC 25010 sub-characteristic under `quality_characteristic`, such as `modifiability`
+          under `maintainability`. Consistency with the named top-level is by convention. Optional.
 
   test_case:
     type: object

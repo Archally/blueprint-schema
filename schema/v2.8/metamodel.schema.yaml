@@ -1961,3 +1961,27 @@ x-gdsm:
         comparator, `ne`, a value in words, a missing member or a `unit` is a schema error. `target`
         stays a required string.
       schema_version: "2.8.60"
+    - lesson: >
+        A fitness function answers two questions with two fields, and they are not interchangeable.
+        `verifies` names what it protects: the SLOs, KPIs and security, compliance and resilience
+        requirements it guards, and the goals it serves. `metric` names the one number its assertion
+        is evaluated on, such as the count a ratchet keeps from rising; the limit stays in
+        `assertion`. A metric is never something a fitness function verifies, so `verifies` has no
+        metrics list; a requirement on that metric is what goes in `verifies`. An SLA is guarded
+        through its SLOs. A requirement that holds or does not, rather than reaching a level on a
+        metric ("the product can be updated for selected customers only"), is not an SLO or a KPI:
+        state it as a fitness function that carries the `quality_characteristic` and
+        `quality_subcharacteristic` the product owner decided (here `maintainability` /
+        `modifiability`), with the goal it serves in `verifies.goals` and no `metric`. That fitness
+        function is the quality requirement and its own verification. A security, compliance or
+        resilience requirement has no level of its own to compare; what shows it is enforced is a
+        fitness function that `verifies` it.
+      category: semantics
+      date: "2026-10-04"
+      evidence: >
+        `fitness_function` carries an optional `verifies` object with the lists `slos`, `kpis`,
+        `security`, `compliance`, `resilience` and `goals` and no other member, an optional single
+        `metric`, and the optional `quality_characteristic` / `quality_subcharacteristic` pair from
+        the metamodel vocabularies; a `metrics` or `slas` list under `verifies`, or a list of metrics,
+        is a schema error, and an id nobody declares under any of them is a cross-reference error.
+      schema_version: "2.8.61"
