@@ -17,6 +17,19 @@ properties:
   scope:
     $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
     description: "Bounded context this roadmap covers."
+  name:
+    type: string
+    description: >
+      Title of this roadmap. A rendered roadmap shows it as its heading; a view of the roadmap
+      may name a heading of its own, which then takes its place.
+    examples: ["Checkout platform roadmap 2026"]
+  description:
+    type: string
+    description: >
+      What this roadmap covers and how settled it is, in one or two sentences. A rendered
+      roadmap shows it under its heading; a view of the roadmap may name a subtitle of its own,
+      which then takes its place.
+    examples: ["Delivery plan for the checkout rebuild; agreed with the product owner through Q2, a proposal after it."]
   tags:
     $ref: "../metamodel.schema.yaml#/$defs/tags"
   owned_by:
