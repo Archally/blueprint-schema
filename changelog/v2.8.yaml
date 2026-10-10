@@ -5,6 +5,13 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.64"
+    date: "2026-10-06"
+    step: "a goal names the assumptions it rests on"
+    summary: |
+      A goal accepts a new optional member, `assumption_refs`: the assumptions the goal rests on, so that if one of them proves wrong the goal is at risk. Each item is an assumption id, a typed reference: an id nobody declares is a cross-reference error on every validator surface, and an id of another kind fails the item's pattern. The link is stated by the goal only, as a decision names the assumptions it depends on in `motivation_refs.assumptions`; an assumption names none of the goals that rest on it, so an assumption several goals rest on is listed on each of them.
+      The model builder draws a `goal_assumption` edge from the goal to every assumption it names; an id nobody declares lands on a placeholder. Neighbour and impact queries reach a goal, and through `advances_goals` the roadmap items advancing it, from an assumption. The relation type joins the list a migration's relationship change may name. `assumption-unplaced` counts an incoming `goal_assumption`, so an assumption a goal rests on is no longer reported as placed nowhere.
+      Additive: every document that validated under 2.8.63 still validates. Not forward-compatible: a model whose goal carries `assumption_refs` is rejected by a 2.8.63 tree, because a goal rejects keys it does not declare.
   - version: "2.8.63"
     date: "2026-10-05"
     step: "a roadmap milestone names its item in an issue tracker"
