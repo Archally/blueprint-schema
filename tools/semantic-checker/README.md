@@ -17,10 +17,11 @@ rule validation come from the package. See its
 ## Usage
 
 ```bash
-npx @archally/blueprint-schema blueprint-check .blueprint/v2.8
+npm run build                           # once per clone: the checker runs from dist/
+npm run check -- <blueprint-dir>
 npm run check:examples                  # ecommerce example
-npx @archally/blueprint-schema blueprint-check --list
-npx @archally/blueprint-schema blueprint-check <dir> --config .blueprint-lint.yaml
+npm run check -- --list
+npm run check -- <blueprint-dir> --config .blueprint-lint.yaml
 ```
 
 ## Rules (`rules/*.yaml`)

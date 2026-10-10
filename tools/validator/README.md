@@ -5,14 +5,14 @@ Standalone validator for Archally Blueprint YAML files. Performs schema validati
 ## Usage
 
 ```bash
-# From repo root
-node tools/validator/src/validate-blueprint.mjs <blueprint-dir>
+# From the root of a clone of this repository, after `npm install`
+npm run validate -- <blueprint-dir>
 
-# Via npm script
+# The same, without npm
+node tools/validator/src/cli.mjs <blueprint-dir>
+
+# The bundled example
 npm run validate:examples
-
-# Via npx (after npm install)
-npx @archally/blueprint-schema validate .blueprint/v2.8
 ```
 
 ## Options

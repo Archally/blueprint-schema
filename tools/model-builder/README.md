@@ -105,8 +105,8 @@ src/
 ## CLI — Produce model.json
 
 ```bash
-# Build a model.json from a blueprint directory
-npx @archally/blueprint-schema blueprint-model .blueprint/v2.8 --output model.json --pretty
+# Build a model.json from a blueprint directory (after `npm run build`)
+node tools/model-builder/dist/cli.js .blueprint/v2.8 --output model.json --pretty
 
 # Or pipe to stdout
 node tools/model-builder/dist/cli.js .blueprint/v2.8 > model.json

@@ -4,7 +4,7 @@ Reference tooling that ships with the schema. All are **version-agnostic** — p
 
 | Tool | What it does | Command |
 | --- | --- | --- |
-| [**validator**](./validator/) | Schema validation (Ajv, draft 2020-12) + cross-file reference integrity + gap-analysis warnings. Zero build — runs directly with Node. | `npx @archally/blueprint-schema validate <dir>` · bin `blueprint-validate` |
+| [**validator**](./validator/) | Schema validation (Ajv, draft 2020-12) + cross-file reference integrity + gap-analysis warnings. Zero build — runs directly with Node. | `npm run validate -- <dir>` · bin `blueprint-validate` |
 | [**model-builder**](./model-builder/) | Loads the YAML files and builds a typed in-memory graph of entities and relations — the foundation other tools consume. Library + CLI (`model.json`). | `blueprint-model <dir> --output model.json` |
 | [**semantic-checker**](./semantic-checker/) | Catches modeling issues schema validation can't — orphan entities, missing causal links, untested rules. Configurable rule engine (`.blueprint-lint.yaml`). | `blueprint-check <dir>` |
 | [**renderer**](./renderer/) | Example blueprint projection viewer. Generates a markdown report with embedded Mermaid diagrams from a model (the `.specs/overview.md` in each example). | `blueprint-render <dir> -o overview.md` |
