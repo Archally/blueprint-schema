@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 29 |
-| Additive (minor) | 243 |
+| Additive (minor) | 244 |
 | Clarification (patch) | 0 |
-| **Total changes** | 272 |
+| **Total changes** | 273 |
 
 ## ⚠ Breaking changes
 
@@ -221,7 +221,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (220)
+## Added (221)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -252,6 +252,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/arch.schema.yaml#/$defs/blind_spot` — New definition `blind_spot` added to `design/arch.schema.yaml`.
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/blind_spot`_
+
+- [additive] `design/arch.schema.yaml#/$defs/channel_contract/properties/broker_ref` — Property `broker_ref` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract/properties/broker_ref`_
 
 - [additive] `design/arch.schema.yaml#/$defs/channel_contract/properties/contract_name` — Property `contract_name` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract/properties/contract_name`_

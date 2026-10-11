@@ -107,7 +107,7 @@ graph LR
         design_story_schema_yaml["story"]
     end
     metamodel_schema_yaml(["metamodel"])
-    design_arch_schema_yaml -->|67| metamodel_schema_yaml
+    design_arch_schema_yaml -->|68| metamodel_schema_yaml
     design_concepts_schema_yaml -->|44| metamodel_schema_yaml
     design_domain_schema_yaml -->|53| metamodel_schema_yaml
     design_dynamics_schema_yaml -->|29| metamodel_schema_yaml

@@ -1179,7 +1179,8 @@ AsyncAPI messaging contract: topics and channels this service publishes to or co
 | `output` | `ref → contract_output` | — |  |  |
 | `send` | `array<ref → operation_ref>` | — |  | Operations this service publishes via messaging. |
 | `receive` | `array<ref → operation_ref>` | — |  | Operations this service consumes via messaging. |
-| `brokerId` | `string` | — |  | Message broker identifier (e.g. rabbitmq-prod, kafka-main). |
+| `broker_ref` | `ref → infra_resource_ref` | — |  | The message broker this contract publishes to and receives from: the infrastructure resource (IR###) that declares it, conventionally with `kind: broker`. One… |
+| `brokerId` | `string` | — |  | SUPERSEDED by `broker_ref`. A free-string broker name (e.g. rabbitmq-prod), which resolves to nothing in the model. Still accepted on this line, and never besi… |
 | `input_structures` | `ref → contract_structures` | — |  | Named message structures received (consumed). |
 | `output_structures` | `ref → contract_structures` | — |  | Named message structures sent (published). |
 
@@ -2135,7 +2136,7 @@ An infrastructure resource with platform identity and per-environment configurat
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `id` | `ref → infra_resource_ref` | ✓ |  | Typed resource identifier (IR###). Used in topology tier references and as a relation target. |
-| `kind` | `string` | ✓ |  | Resource type (e.g. database, queue, storage, cache, api, function, service). |
+| `kind` | `string` | ✓ |  | Resource type (e.g. database, queue, storage, cache, api, function, service). A message broker - a RabbitMQ server, a Kafka cluster, a Service Bus namespace -… |
 | `name` | `string` | ✓ |  | Human-readable resource name. |
 | `summary` | `string` | — |  | One-line summary for listings. |
 | `description` | `string` | — |  | Detailed description of this resource's purpose and usage context. |
