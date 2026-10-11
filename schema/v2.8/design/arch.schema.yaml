@@ -213,8 +213,8 @@ $defs:
       The naming and placement rules the contract kinds share. A document is named once, by
       `contract_name` or by the superseded `output`, and placed once, by `slice` or by
       `cross_cutting`. Two names, or two placements, would be two answers to one question with
-      nothing to say which is current. `mcp` and `cli` never accepted `output`, so they require
-      `contract_name` and state the placement rule themselves.
+      nothing to say which is current. `mcp`, `cli` and `protobuf` never accepted `output`, so they
+      require `contract_name` and state the placement rule themselves.
     anyOf:
       - required: [contract_name]
       - required: [output]
@@ -746,7 +746,8 @@ $defs:
     description: >-
       Integration contracts for this service: what it provides to, and consumes from, everything
       outside itself. Each contract kind names one coupling style. The wire kinds name a
-      specification and carry the document generated from it; `mcp` and `cli` name a surface
+      specification and carry the document generated from it, except `protobuf`, whose `.proto`
+      file is written by hand and is itself the contract; `mcp` and `cli` name a surface
       rather than a specification - the tools of a Model Context Protocol server, the commands of a
       command-line program - so they name their document without fixing its notation; `inprocess`,
       `shareddata` and `scheduledtransfer` name couplings that are not protocols, and `inprocess`
@@ -766,6 +767,9 @@ $defs:
       openrpc:
         $ref: "#/$defs/rpc_contract"
         description: "JSON-RPC contract (OpenRPC specification)."
+      protobuf:
+        $ref: "#/$defs/protobuf_contract"
+        description: "Remote procedure contract defined by a Protocol Buffers service (`.proto` file), served over gRPC or a compatible wire."
       mcp:
         $ref: "#/$defs/mcp_contract"
         description: "Model Context Protocol contract - the tools an MCP server exposes or calls."
@@ -1018,6 +1022,53 @@ $defs:
       output_structures:
         $ref: "#/$defs/contract_structures"
         description: "Named output structures from RPC results."
+
+  protobuf_contract:
+    type: object
+    description: >-
+      Protocol Buffers contract: the remote procedures of a service defined in a `.proto` file,
+      served by this service or called on another. The `.proto` file is the contract - client and
+      server code is compiled from it, and it alone carries the field numbers, the message types and
+      each method's streaming mode - so `file` is required and names it. Each listed operation is one
+      method of that service; its fully qualified name (`package.Service/Method`) and its streaming
+      mode come from the operation's `exchange.method`, and the wire from `exchange.protocol`
+      (`grpc`). A JSON view of the service, such as an OpenRPC document, is derived from the `.proto`
+      and is never the contract. A `.proto` file holding only messages, used as a payload format,
+      exposes and calls nothing and is not a contract of this kind. The document is named by
+      `contract_name`, which is required, and placed once, by `slice` or by `cross_cutting`.
+    additionalProperties: false
+    required: [file, contract_name]
+    dependentSchemas:
+      slice:
+        properties:
+          cross_cutting: false
+    properties:
+      file:
+        type: string
+        pattern: "\\.proto$"
+        description: "Path of the `.proto` file that defines the service, relative to the root of the repository the model's code lives in."
+      contract_name:
+        $ref: "#/$defs/contract_name"
+      slice:
+        $ref: "#/$defs/contract_slice"
+      cross_cutting:
+        $ref: "#/$defs/contract_cross_cutting"
+      expose:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations this service serves as methods of the Protocol Buffers service."
+      call:
+        type: array
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Operations this service calls as methods of another service's Protocol Buffers definition."
+      input_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named request messages."
+      output_structures:
+        $ref: "#/$defs/contract_structures"
+        description: "Named response messages."
 
   mcp_contract:
     type: object

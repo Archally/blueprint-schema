@@ -637,14 +637,22 @@ $defs:
 
   method:
     type: object
-    description: "RPC method configuration for gRPC/TCP/JSON-RPC and similar RPC protocols (method name + params + result; OpenRPC-compatible)."
+    description: "RPC method configuration for gRPC/TCP/JSON-RPC and similar RPC protocols (method name + params + result + streaming mode)."
     additionalProperties: false
     required:
       - name
     properties:
       name:
         type: string
-        description: "RPC method name."
+        description: "RPC method name, as a client calls it. For gRPC, the fully qualified `package.Service/Method`."
+      streaming:
+        type: string
+        enum: [unary, server, client, bidi]
+        description: >-
+          Which side sends a stream of messages rather than a single one, as a gRPC method declares it:
+          `unary` (one request, one response), `server` (one request, a stream of responses), `client`
+          (a stream of requests, one response) or `bidi` (a stream each way). Absent means `unary`. A
+          JSON-RPC method is always `unary`.
       description:
         type: string
         description: "What this method does."

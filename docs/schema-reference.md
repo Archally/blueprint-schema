@@ -770,6 +770,7 @@ which end this service is.
 | `httpClient` | - | `call:` | the same, seen from the caller |
 | `asyncapi` | `send:` | `receive:` | a broker or queue, described by an AsyncAPI document |
 | `openrpc` | `expose:` | `call:` | JSON-RPC |
+| `protobuf` | `expose:` | `call:` | a remote procedure call, usually gRPC, defined by the `.proto` file `file:` names - that file is the contract |
 | `inprocess` | `provide:` | `consume:` | none - a call inside one process and one deployment unit |
 | `shareddata` | `write:` | `read:` | a store one service writes and another reads |
 | `scheduledtransfer` | `write:` | `read:` | a run on a schedule that moves data between the two |
