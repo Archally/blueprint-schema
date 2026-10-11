@@ -11,6 +11,7 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  * - Operation.requires[] → requires (operation → operation)
  * - Operation.produces.operations[] → produces (command → event)
  * - Operation.reacts_to[].operation → reacts_to (operation → triggering operation)
+ * - Operation.translates[] → translates (integration event → domain event it publishes)
  * - Operation.initiated_by[] → initiated_by (operation → actor)
  * - Operation.materializes[].concept → materializes (operation → concept)
  * - Operation.responses[].error → raises_error (operation → error)
@@ -128,6 +129,21 @@ export function extractDomainRelations(
           target_entity_id: targetId,
           type: RELATION_TYPE.ReactsTo,
           data: entry.policy != null ? { policy: entry.policy } : undefined,
+        });
+      }
+    }
+
+    // translates[]: plain operation ref strings, written on the integration event
+    const translates = data.translates as string[] | undefined;
+    if (Array.isArray(translates)) {
+      for (const ref of translates) {
+        if (typeof ref !== 'string' || !ref) continue;
+        const targetId = resolveOrPlaceholder(ref, domain, entities, placeholders);
+        relations.push({
+          id: `${entity.id}--${RELATION_TYPE.Translates}--${targetId}`,
+          source_entity_id: entity.id,
+          target_entity_id: targetId,
+          type: RELATION_TYPE.Translates,
         });
       }
     }

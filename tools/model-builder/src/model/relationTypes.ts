@@ -44,6 +44,11 @@ export const RELATION_TYPE = {
   Produces: 'produces',
   // domain.schema: operation reacts to a triggering operation (operation.reacts_to[].operation)
   ReactsTo: 'reacts_to',
+  // domain.schema: an integration event names the domain events of its own context it is the
+  // published form of (operation.translates[]), integration event -> domain event. Not causal: it
+  // is drawn by the event-storming boards and checked by `translation-target-not-internal`, and it
+  // never changes an event's `_event_reach`.
+  Translates: 'translates',
   // domain.schema: actors that can trigger this operation (operation.initiated_by[])
   InitiatedBy: 'initiated_by',
   // domain.schema: operation's lifecycle effect on a concept (operation.materializes[].concept)
