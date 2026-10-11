@@ -5,6 +5,15 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.69"
+    date: "2026-10-11"
+    step: "an integration event states the domain events it is the published form of"
+    summary: |
+      An operation of `kind: event` accepts a new optional `translates`: a list of operation references, written on an integration event, naming the domain events of its own context that it is the published form of. A context that raises a domain event inside its aggregate and publishes a different integration event for other contexts can now state that the two are one business fact. The reference is stated once, on the integration event; the domain event carries no field for it. The list is never empty and never repeats an entry, and every entry resolves to a declared operation or is a cross-reference error.
+      `translates` changes no event's reach: an event is still published because a contract sends or receives it or its exchange names a messaging channel. The model builder derives a `translates` relation from each entry, integration event to domain event, and a migration may add or remove that relationship. The semantic checker adds `translation-target-not-internal` (warn): an entry that names an operation that is not an event, an event of another context or an event that is itself published, and a `translates` written on an operation that is not a published event, which is how a pair stated the wrong way round shows.
+      `aggregate-root-signals` (info) now reports an aggregate root that no command reaches, once per root: no operation of `kind: command` names the root in `materializes`, and none names a rule about it (a rule whose `concepts` or `concept` names the root) in `governed_by`, `preconditions` or `postconditions`. A query or an event does not reach a root. The message opens with the concept and says whether the root declares `states` and owns a `contains` relationship; neither decides the finding. The rule is a custom module now, and the `aggregate-root` stereotype's description says the same. The default severity stays `info`; a project raises it to `warn` in its `.blueprint-lint.yaml`.
+      The four generated modules the zero-build tools run - the identifier allocator of `next-id`, the analysis of `coverage-check`, the search of `entity-query` and the validator's model-reference matcher - open with a header that says the file is generated, names the TypeScript module it is generated from, and says to change that module and regenerate the copy. Their documentation comments describe what each module does. No code in the four modules changes.
+      Widened: a document carrying `translates` was rejected by 2.8.68 and is accepted now, so the version is minted rather than folded into the tagged 2.8.68. Every document 2.8.68 accepted is still accepted.
   - version: "2.8.68"
     date: "2026-10-11"
     step: "a Protocol Buffers service definition becomes a contract kind, an RPC method states its streaming mode, and every OpenRPC method carries a result"
