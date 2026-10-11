@@ -1,6 +1,6 @@
 engineVersion: "0.1"
-# A coupling that crosses no wire has both of its ends inside the model. These four rules hold it
-# to that, and they are deliberately scoped to the three kinds where the claim is true.
+# A coupling that crosses no wire has both of its ends inside the model. These rules hold it to
+# that, and they are deliberately scoped to the three kinds where the claim is true.
 #
 # WHY NOT THE WIRE KINDS. An HTTP API can have a caller nobody modelled - a browser, a partner, a
 # script - so an `expose:` with no matching `call:` is the normal state of a public surface rather
@@ -13,7 +13,12 @@ engineVersion: "0.1"
 # The one legitimate firing is an entry point that was never modelled as a service - a scheduler, a
 # console command, a test harness. The fix is to model it, or to stop declaring the half that is
 # there; a contract stating one end of a two-ended fact is a claim the model cannot support.
-# Warnings, all four, for the whole line. Override per-project via .blueprint-lint.yaml.
+#
+# An in-process operation has a second kind of caller beside a consuming service: the service that
+# provides it may start it itself, from a message it hears or on an actor's initiative. The two
+# in-process provider rules read that through `inprocess-reach.mjs`, because whether a trigger
+# reaches a service is a path through the contracts, and a declarative check tests one relation.
+# Warnings, all of them, for the whole line. Override per-project via .blueprint-lint.yaml.
 rules:
   - id: inprocess-consume-without-provide
     severity: warn
@@ -39,24 +44,42 @@ rules:
   - id: inprocess-provide-without-consume
     severity: warn
     description: >-
-      An operation provided in-process that no service consumes in-process. Either a caller exists
-      and is not modelled, or the operation is reached some other way and the in-process contract
-      states a coupling that is not there. Both are answered by the same principle: model both ends
-      or declare neither. An operation genuinely reachable only from outside belongs under the
-      contract kind that names how it is reached.
+      An operation provided in-process that nothing in the model starts. Three things start one:
+      another service consumes it (`contracts.inprocess.consume`); it reacts to an operation that
+      reaches its providing service, which the service receives in a contract's `receive:` or raises
+      by providing it or providing an operation that `produces` it; or an actor initiates it
+      (`initiated_by`). A service that lists its own operation under `consume:` states nothing, so
+      that entry starts nothing and is never reported. An operation that reacts only to triggers its
+      service does not hear is reported once, by `inprocess-reaction-unreached`, which names the
+      trigger. Where nothing starts the operation, either a caller exists and is not modelled, or
+      the operation is reached some other way and the in-process contract states a coupling that is
+      not there. An operation genuinely reachable only from outside belongs under the contract kind
+      that names how it is reached.
     find:
       entity_type: Operation
     check:
-      any_of:
-        - has_relation:
-            direction: in
-            type: contract_provides
-            exists: false
-        - has_relation:
-            direction: in
-            type: contract_consumes
-            exists: true
-    message: 'Operation "{displayId}" ({name|''unnamed''}) is provided in-process and consumed by nobody. Model the caller, or drop the `provide:` entry.'
+      custom:
+        module: ./inprocess-reach.mjs
+        export: inprocessProvideWithoutConsume
+    message: 'Operation "{displayId}" ({name|''unnamed''}) is provided in-process and nothing in the model starts it: no other service consumes it, it reacts to nothing its service receives or raises, and no actor initiates it. Model the caller, or drop the `provide:` entry.'
+
+  - id: inprocess-reaction-unreached
+    severity: warn
+    description: >-
+      An operation provided in-process that reacts to an operation none of its providing services
+      hears. A service hears what it receives in a contract's `receive:` and what it raises: an
+      operation it provides under `expose:`, `send:` or `provide:`, or one that such an operation
+      `produces`. The reaction is modelled on a service that never learns its trigger happened, so
+      either the service's `receive:` list is missing the trigger, or the operation is provided by
+      the wrong service. One finding per operation, naming every trigger that does not reach it. A
+      trigger that resolves to no declaration is left to the cross-reference error.
+    find:
+      entity_type: Operation
+    check:
+      custom:
+        module: ./inprocess-reach.mjs
+        export: inprocessReactionUnreached
+    message: 'Operation "{displayId}" ({name|''unnamed''}) reacts to "{trigger}", which its providing service {service} neither receives nor raises. Add "{trigger}" to that service''s `receive:` list, or provide the operation from the service that hears it.'
 
   - id: shared-document-read-without-writer
     severity: warn
