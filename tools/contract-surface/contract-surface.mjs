@@ -15,6 +15,15 @@
 //   · HTTP     `openapi.expose` (provider)  <-> `httpClient.call` (consumer)
 //   · Message  `asyncapi.send` (producer)   <-> `asyncapi.receive` (consumer)
 //   · RPC      `openrpc.expose`             <-> `openrpc.call`
+//   · RPC      `protobuf.expose`            <-> `protobuf.call`
+//   · MCP      `mcp.expose`                 <-> `mcp.call`
+//   · CLI      `cli.expose`                 <-> `cli.call`
+//
+// Each of the last four joins only within its own kind, and its edge carries that kind's protocol:
+// an `mcp.call` meets an `mcp.expose` of the same operation, never an `openrpc.expose` or a
+// `cli.expose`, because a pairing across two kinds is a coupling the model does not state. The two
+// RPC kinds share the `rpc` protocol and still join apart: a gRPC client of a Protocol Buffers
+// service does not call a JSON-RPC server of the same operation.
 //
 // Three more pairings cross no wire, and they join on exactly the same terms - a provider verb and
 // a consumer verb naming one operation ref - which is why they can be read by the same code:
@@ -28,7 +37,8 @@
 //   · Matching is EXACT STRING EQUALITY on the ref. No scope stripping, no normalisation — a
 //     `contracts.DOC001` is not a `customers.DOC001`, and loosening that would silently invent
 //     edges between unrelated contexts.
-//   · `brokerId` comes from the PROVIDER's asyncapi contract, never synthesised.
+//   · `brokerId` comes from the PROVIDER's asyncapi contract, never synthesised: its typed
+//     `broker_ref` (an infrastructure resource id), else the superseded free-string `brokerId`.
 //   · Edges dedupe on `(consumer, provider, protocol)` with operations accumulated.
 //
 // Re-pointing the generator at this module is the remaining half of its own step; the semantics
@@ -49,7 +59,7 @@
 // they do today.
 
 /**
- * @typedef {'http'|'message'|'rpc'|'inprocess'|'shareddata'|'scheduledtransfer'} EdgeProtocol
+ * @typedef {'http'|'message'|'rpc'|'mcp'|'cli'|'inprocess'|'shareddata'|'scheduledtransfer'} EdgeProtocol
  *
  * The accepted input. `contracts` is deliberately `unknown` rather than a union of the two shapes:
  * the generator's `ServiceContracts` is an INTERFACE, and TypeScript gives interfaces no implicit
@@ -71,13 +81,19 @@
  * @property {string[]} receive     asyncapi.receive
  * @property {string[]} rpcExpose   openrpc.expose
  * @property {string[]} rpcCall     openrpc.call
+ * @property {string[]} protobufExpose protobuf.expose
+ * @property {string[]} protobufCall   protobuf.call
+ * @property {string[]} mcpExpose   mcp.expose
+ * @property {string[]} mcpCall     mcp.call
+ * @property {string[]} cliExpose   cli.expose
+ * @property {string[]} cliCall     cli.call
  * @property {string[]} provide       inprocess.provide
  * @property {string[]} consume       inprocess.consume
  * @property {string[]} sharedWrite   shareddata.write
  * @property {string[]} sharedRead    shareddata.read
  * @property {string[]} transferWrite scheduledtransfer.write
  * @property {string[]} transferRead  scheduledtransfer.read
- * @property {string|null} brokerId asyncapi.brokerId
+ * @property {string|null} brokerId asyncapi.broker_ref, else the superseded asyncapi.brokerId
  * @property {SurfaceInput} source  the originating service, handed straight back to the caller
  *
  * @typedef {Object} ServiceEdge
@@ -92,6 +108,20 @@
 const PLACEHOLDER_NAMES = new Set(['UnknownConsumer', 'UnknownProducer']);
 
 const asArray = (/** @type {any} */ value) => (Array.isArray(value) ? value.filter((v) => typeof v === 'string') : []);
+
+/**
+ * The broker one contract entry names: `broker_ref` first, then the superseded `brokerId`, which the
+ * schema never accepts beside it. An arch projection that already folded the two into `brokerId`
+ * reads the same.
+ * @param {any} entry
+ * @returns {string|null}
+ */
+const brokerOf = (entry) => {
+  for (const value of [entry?.broker_ref, entry?.brokerId]) {
+    if (typeof value === 'string' && value.length > 0) return value;
+  }
+  return null;
+};
 
 /**
  * Normalise one service from EITHER input shape.
@@ -121,7 +151,7 @@ export function normaliseService(service) {
       slot.consume.push(...asArray(entry.consume));
       slot.write.push(...asArray(entry.write));
       slot.read.push(...asArray(entry.read));
-      slot.brokerId = slot.brokerId ?? entry.brokerId ?? null;
+      slot.brokerId = slot.brokerId ?? brokerOf(entry);
     }
   } else if (contracts && typeof contracts === 'object') {
     byKind = contracts;
@@ -136,13 +166,19 @@ export function normaliseService(service) {
     receive: pick('asyncapi', 'receive'),
     rpcExpose: pick('openrpc', 'expose'),
     rpcCall: pick('openrpc', 'call'),
+    protobufExpose: pick('protobuf', 'expose'),
+    protobufCall: pick('protobuf', 'call'),
+    mcpExpose: pick('mcp', 'expose'),
+    mcpCall: pick('mcp', 'call'),
+    cliExpose: pick('cli', 'expose'),
+    cliCall: pick('cli', 'call'),
     provide: pick('inprocess', 'provide'),
     consume: pick('inprocess', 'consume'),
     sharedWrite: pick('shareddata', 'write'),
     sharedRead: pick('shareddata', 'read'),
     transferWrite: pick('scheduledtransfer', 'write'),
     transferRead: pick('scheduledtransfer', 'read'),
-    brokerId: byKind.asyncapi?.brokerId ?? null,
+    brokerId: brokerOf(byKind.asyncapi),
     source: service,
   };
 }
@@ -164,6 +200,12 @@ export function normaliseService(service) {
  *   receiversByOp: Map<string, SurfaceService[]>,
  *   rpcProvidersByOp: Map<string, SurfaceService[]>,
  *   rpcConsumersByOp: Map<string, SurfaceService[]>,
+ *   protobufProvidersByOp: Map<string, SurfaceService[]>,
+ *   protobufConsumersByOp: Map<string, SurfaceService[]>,
+ *   mcpProvidersByOp: Map<string, SurfaceService[]>,
+ *   mcpConsumersByOp: Map<string, SurfaceService[]>,
+ *   cliProvidersByOp: Map<string, SurfaceService[]>,
+ *   cliConsumersByOp: Map<string, SurfaceService[]>,
  *   inProcessProvidersByOp: Map<string, SurfaceService[]>,
  *   inProcessConsumersByOp: Map<string, SurfaceService[]>,
  *   sharedWritersByOp: Map<string, SurfaceService[]>,
@@ -185,6 +227,12 @@ export function buildContractSurface(services) {
   const receiversByOp = index();
   const rpcProvidersByOp = index();
   const rpcConsumersByOp = index();
+  const protobufProvidersByOp = index();
+  const protobufConsumersByOp = index();
+  const mcpProvidersByOp = index();
+  const mcpConsumersByOp = index();
+  const cliProvidersByOp = index();
+  const cliConsumersByOp = index();
   const inProcessProvidersByOp = index();
   const inProcessConsumersByOp = index();
   const sharedWritersByOp = index();
@@ -207,6 +255,12 @@ export function buildContractSurface(services) {
     add(receiversByOp, service.receive, service);
     add(rpcProvidersByOp, service.rpcExpose, service);
     add(rpcConsumersByOp, service.rpcCall, service);
+    add(protobufProvidersByOp, service.protobufExpose, service);
+    add(protobufConsumersByOp, service.protobufCall, service);
+    add(mcpProvidersByOp, service.mcpExpose, service);
+    add(mcpConsumersByOp, service.mcpCall, service);
+    add(cliProvidersByOp, service.cliExpose, service);
+    add(cliConsumersByOp, service.cliCall, service);
     add(inProcessProvidersByOp, service.provide, service);
     add(inProcessConsumersByOp, service.consume, service);
     add(sharedWritersByOp, service.sharedWrite, service);
@@ -218,6 +272,8 @@ export function buildContractSurface(services) {
   return {
     services: normalised, byId,
     providersByOp, consumersByOp, producersByOp, receiversByOp, rpcProvidersByOp, rpcConsumersByOp,
+    protobufProvidersByOp, protobufConsumersByOp,
+    mcpProvidersByOp, mcpConsumersByOp, cliProvidersByOp, cliConsumersByOp,
     inProcessProvidersByOp, inProcessConsumersByOp,
     sharedWritersByOp, sharedReadersByOp,
     transferWritersByOp, transferReadersByOp,
@@ -278,6 +334,9 @@ export function deriveServiceEdges(surface) {
   join(surface.consumersByOp, surface.providersByOp, 'http', 'HTTP call');
   join(surface.receiversByOp, surface.producersByOp, 'message', 'Received event');
   join(surface.rpcConsumersByOp, surface.rpcProvidersByOp, 'rpc', 'OpenRPC call');
+  join(surface.protobufConsumersByOp, surface.protobufProvidersByOp, 'rpc', 'Protocol Buffers call');
+  join(surface.mcpConsumersByOp, surface.mcpProvidersByOp, 'mcp', 'MCP call');
+  join(surface.cliConsumersByOp, surface.cliProvidersByOp, 'cli', 'Command-line call');
   // The three that cross no wire. Same join, same dedupe key, same warning when one end is
   // declared and the other is not - the pairings differ only in which verbs name them.
   join(surface.inProcessConsumersByOp, surface.inProcessProvidersByOp, 'inprocess', 'In-process call');
@@ -325,6 +384,22 @@ export function deriveSurfaceGaps(surface, declared = {}) {
       services: providers.map((s) => s.name),
     });
   }
+  // An MCP tool or a command with no modelled caller is usually the point of the service: an agent
+  // or a person outside the model runs it. Reported on the same terms as an OpenRPC method, and so is
+  // a Protocol Buffers method, whose callers are often clients outside the model.
+  for (const [kind, providerSide, consumerSide] of /** @type {const} */ ([
+    ['protobuf', surface.protobufProvidersByOp, surface.protobufConsumersByOp],
+    ['mcp', surface.mcpProvidersByOp, surface.mcpConsumersByOp],
+    ['cli', surface.cliProvidersByOp, surface.cliConsumersByOp],
+  ])) {
+    for (const [ref, providers] of sortedEntries(providerSide)) {
+      if ((consumerSide.get(ref) ?? []).length) continue;
+      exposedUnconsumed.push({
+        ref, kind, externalDeclared: externalConsumers.has(ref),
+        services: providers.map((s) => s.name),
+      });
+    }
+  }
 
   const calledUnprovided = [];
   for (const [ref, consumers] of sortedEntries(surface.consumersByOp)) {
@@ -334,6 +409,16 @@ export function deriveSurfaceGaps(surface, declared = {}) {
   for (const [ref, consumers] of sortedEntries(surface.rpcConsumersByOp)) {
     if ((surface.rpcProvidersByOp.get(ref) ?? []).length) continue;
     calledUnprovided.push({ ref, kind: 'openrpc', services: consumers.map((s) => s.name) });
+  }
+  for (const [kind, consumerSide, providerSide] of /** @type {const} */ ([
+    ['protobuf', surface.protobufConsumersByOp, surface.protobufProvidersByOp],
+    ['mcp', surface.mcpConsumersByOp, surface.mcpProvidersByOp],
+    ['cli', surface.cliConsumersByOp, surface.cliProvidersByOp],
+  ])) {
+    for (const [ref, consumers] of sortedEntries(consumerSide)) {
+      if ((providerSide.get(ref) ?? []).length) continue;
+      calledUnprovided.push({ ref, kind, services: consumers.map((s) => s.name) });
+    }
   }
 
   const sentUnreceived = [];
@@ -380,17 +465,17 @@ export function aggregateEdges(edges, groupOf) {
 }
 
 /**
- * Protocol order for display. The three that cross a wire come first, then the three that cross
- * none, so a reader meets the transports before the couplings that have none. Stable across
- * renderers: a protocol missing from this list is one no legend, plate or filter can show, whatever
- * the derivation produced.
+ * Protocol order for display. The five that cross a process boundary come first, then the three
+ * that cross none, so a reader meets the transports before the couplings that have none. Stable
+ * across renderers: a protocol missing from this list is one no legend, plate or filter can show,
+ * whatever the derivation produced.
  */
 export const PROTOCOL_ORDER = Object.freeze([
-  'http', 'message', 'rpc', 'inprocess', 'shareddata', 'scheduledtransfer',
+  'http', 'message', 'rpc', 'mcp', 'cli', 'inprocess', 'shareddata', 'scheduledtransfer',
 ]);
 
 /** Short display glyph per protocol. Text, not colour — it has to survive a greyscale print. */
 export const PROTOCOL_LABEL = Object.freeze({
-  http: 'HTTP', message: 'MSG', rpc: 'RPC',
+  http: 'HTTP', message: 'MSG', rpc: 'RPC', mcp: 'MCP', cli: 'CLI',
   inprocess: 'IN-PROC', shareddata: 'STORE', scheduledtransfer: 'XFER',
 });
