@@ -1,0 +1,40 @@
+version: "1.0.0"
+name: Shop architecture
+channels:
+  - id: MCH001
+    name: order_event_bus
+    kind: topic
+    broker_ref: IR001
+    bindings:
+      amqp:
+        exchange_type: direct
+  - id: MCH002
+    name: Stock
+    kind: queue
+    broker_ref: IR001
+contexts:
+  - id: BC001
+    name: Orders
+    kind: core
+    services:
+      - id: SVC001
+        name: order-service
+        kind: service
+        contracts:
+          asyncapi:
+            contract_name: order-events
+            broker_ref: IR001
+            send: [orders.EVT001]
+  - id: BC002
+    name: Stock
+    kind: support
+    services:
+      - id: SVC002
+        name: stock-service
+        kind: worker
+        contracts:
+          asyncapi:
+            contract_name: stock-events
+            broker_ref: IR001
+            subscription: {}
+            receive: [orders.EVT001]

@@ -1,0 +1,6 @@
+version: "1.0.0"
+name: Order infrastructure
+resources:
+  - id: IR001
+    kind: broker
+    name: Order Event Bus

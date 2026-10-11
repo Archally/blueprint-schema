@@ -1,0 +1,13 @@
+version: "1.0.0"
+name: Orders domain
+scope: orders
+operations:
+  orderPlaced:
+    id: orders.EVT001
+    kind: event
+    name: Order Placed
+    exchange:
+      protocol: amqp
+      topic:
+        name: OrderPlaced
+        channel_ref: order_event_bus
