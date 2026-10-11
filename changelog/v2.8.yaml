@@ -5,6 +5,16 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.68"
+    date: "2026-10-11"
+    step: "a Protocol Buffers service definition becomes a contract kind, an RPC method states its streaming mode, and every OpenRPC method carries a result"
+    summary: |
+      A service's `contracts` block accepts a new kind, `protobuf`: the remote procedures of a service defined in a `.proto` file, served by the service (`expose`) or called on another (`call`). The `.proto` file is the contract, so `file` is required, names it relative to the repository root and must end in `.proto`. The contract is named by `contract_name`, which is required, placed once by `slice` or `cross_cutting`, and, like `mcp` and `cli`, never accepted the superseded `output`. `input_structures` and `output_structures` name request and response messages. Each listed operation's wire stays its `exchange.protocol`, `grpc`, with the method's fully qualified `package.Service/Method` as `exchange.method.name`. A `.proto` file holding only messages, used as a payload format, is not a contract of this kind.
+      An RPC method accepts a new optional `streaming`: `unary`, `server`, `client` or `bidi`, as a gRPC method declares it. Absent means `unary`.
+      A `protobuf` contract computes the `rpc` coupling, as an `openrpc` contract does, and joins only a contract of its own kind: a `protobuf` caller and an `openrpc` provider of one operation are no traffic between their contexts. The contract surface joins `protobuf.expose` and `protobuf.call` as an `rpc` edge of their own, and an unanswered half is a surface gap of kind `protobuf`. The architecture map (Archally Pro) reads the kind and draws it as RPC.
+      Contract generators (Archally Pro) write an OpenRPC document for a `protobuf` contract only when a run asks for OpenRPC, and label it as a JSON view: its description names the `.proto` file as the contract, `x-protobuf-file` names the file, each method takes one by-position param, the request message, and returns the response message, and `x-grpc-service` and `x-grpc-streaming` carry what OpenRPC cannot express. Every OpenRPC method now carries a `result`, which OpenRPC 1.2.6 requires: a stub where the model states none. The document's validation fails an OpenRPC 1.0 to 1.2 method without a result. The C4 container view calls an edge of Protocol Buffers operations a gRPC call.
+      A migration replay now derives every relation the model builder derives from entity data again after each migration, from the migrated entities, as a model written in the migrated shape would be built. An operation a migration adds or moves is drawn on its context, a context a migration adds shows its concepts and questions, and a migration no longer needs to state a derived edge itself. A context or service a migration adds is found under its name, with its declared id kept as its id.
+      Widened: a document carrying `protobuf` or `method.streaming` was rejected by 2.8.67 and is accepted now, so the version is minted rather than folded into the tagged 2.8.67. Every document 2.8.67 accepted is still accepted.
   - version: "2.8.67"
     date: "2026-10-11"
     step: "queues and topics become message channels placed on a broker, an exchange names its channel and a consuming contract names its subscription"
