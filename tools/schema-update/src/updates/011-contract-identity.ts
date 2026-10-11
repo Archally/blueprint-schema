@@ -26,7 +26,10 @@ import { modelYamlFiles } from '../model-files.js';
 // IDEMPOTENT BY CONSTRUCTION. A contract already carrying `contract_name` has no `output:` line to
 // match, so a second run plans nothing.
 
-/** The kind keys a service declares contracts under. */
+/**
+ * The kind keys whose contracts could carry `output:`. `mcp` and `cli` are absent on purpose: they
+ * never accepted `output:`, so a declaration of either has nothing for this update to rewrite.
+ */
 const CONTRACT_KINDS = new Set([
   'openapi', 'httpClient', 'asyncapi', 'openrpc', 'arazzo', 'cncfsw', 'graphql',
 ]);
