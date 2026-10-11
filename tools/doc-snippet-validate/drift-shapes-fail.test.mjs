@@ -1,19 +1,18 @@
 // @ts-check
-// End-to-end regression: the historical RC5 drift shapes must FAIL, and their corrected forms must
+// End-to-end regression: two known drift shapes must FAIL, and their corrected forms must
 // PASS. This is the test that makes the tool worth having — the extractor being right is necessary
 // but not sufficient, since a tool that extracts perfectly and then validates nothing still ships
-// a green build over broken docs (learned rule LR011: ship the heuristic with the input built to
-// beat it).
+// a green build over broken docs (ship the heuristic together with the input built to beat it).
 //
 // The shapes below are verbatim from the drift found in this project's own modeling prompt
-// (plan RC5 / step-03 §7a, 16 schema errors across 5 files):
+// (16 schema errors across 5 files):
 //
 //   1. `layout.slices` as a map of layer→file — the pre-v2.6 shape. Must be an array.
 //   2. `goal` with `name` + `description` — must be `id` + `statement` + `priority`, and the
 //      schema is `additionalProperties: false`, so the old keys are hard errors.
 //
-// This file is ported verbatim to the public repo, where the validator lives at a different path
-// under a different schema root — so it LOCATES the stack rather than being told about it. Env
+// The validator lives at a different path under a different schema root in each layout this file
+// runs in, so it LOCATES the stack rather than being told about it. Env
 // vars BLUEPRINT_SCHEMAS / BLUEPRINT_VALIDATOR override; absent both, it probes the two known
 // layouts and skips loudly if neither is present.
 
@@ -40,7 +39,7 @@ function repoRoot() {
   return HERE;
 }
 
-/** The two known validator stacks — public repo first, monorepo second. */
+/** The two known validator stacks: the published tool layout first, the source layout second. */
 function detectStack() {
   const root = repoRoot();
   const candidates = [
@@ -100,17 +99,17 @@ const GOOD = [
   "```",
 ].join("\n");
 
-/** RC5 shape 1: `slices` as a map of layer→file. */
+/** Drift shape 1: `slices` as a map of layer→file. */
 const BAD_SLICES = GOOD.replace("  slices: [shop]", "  slices:\n    shop:\n      concepts: concepts.yaml");
 
-/** RC5 shape 2: a goal carrying `name` + `description` instead of `statement` + `priority`. */
+/** Drift shape 2: a goal carrying `name` + `description` instead of `statement` + `priority`. */
 const BAD_GOAL = GOOD.replace(
   '  - id: G001\n    statement: "Cut repair turnaround to under five working days."\n    priority: high',
   '  - name: "Faster repairs"\n    description: "Cut repair turnaround to under five working days."',
 );
 
 function runOn(markdown) {
-  const dir = mkdtempSync(join(tmpdir(), "rc5-"));
+  const dir = mkdtempSync(join(tmpdir(), "drift-shapes-"));
   const doc = join(dir, "example.md");
   writeFileSync(doc, markdown, "utf8");
   try {
@@ -126,17 +125,17 @@ function runOn(markdown) {
   }
 }
 
-test("the corrected example passes", { skip: READY ? false : "no validator stack found — set BLUEPRINT_SCHEMAS + BLUEPRINT_VALIDATOR" }, () => {
+test("the corrected example passes", { skip: READY ? false : "no validator stack found: set BLUEPRINT_SCHEMAS + BLUEPRINT_VALIDATOR" }, () => {
   const { code, out } = runOn(GOOD);
   assert.equal(code, 0, out);
 });
 
-test("RC5 shape 1 — layout.slices as a map — fails", { skip: READY ? false : "no validator stack found — set BLUEPRINT_SCHEMAS + BLUEPRINT_VALIDATOR" }, () => {
+test("drift shape 1, layout.slices as a map, fails", { skip: READY ? false : "no validator stack found: set BLUEPRINT_SCHEMAS + BLUEPRINT_VALIDATOR" }, () => {
   const { code, out } = runOn(BAD_SLICES);
   assert.equal(code, 1, `expected a failure, got:\n${out}`);
 });
 
-test("RC5 shape 2 — goal with name+description — fails", { skip: READY ? false : "no validator stack found — set BLUEPRINT_SCHEMAS + BLUEPRINT_VALIDATOR" }, () => {
+test("drift shape 2, a goal with name+description, fails", { skip: READY ? false : "no validator stack found: set BLUEPRINT_SCHEMAS + BLUEPRINT_VALIDATOR" }, () => {
   const { code, out } = runOn(BAD_GOAL);
   assert.equal(code, 1, `expected a failure, got:\n${out}`);
 });

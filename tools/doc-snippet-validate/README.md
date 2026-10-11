@@ -80,7 +80,7 @@ checking a snippet against something other than the schema the guide documents.
 `extract.test.mjs` covers the association rules — what claims a fence and what does not, since a
 block that is silently skipped is an unvalidated example that still teaches.
 
-`rc5-regression.test.mjs` runs two known-bad snippet shapes end to end and asserts they **fail**,
+`drift-shapes-fail.test.mjs` runs two known-bad snippet shapes end to end and asserts they **fail**,
 with the corrected forms passing. It needs a schema tree:
 
 ```bash

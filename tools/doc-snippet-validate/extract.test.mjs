@@ -5,13 +5,15 @@
 // is skipped, and a skipped block is an unvalidated example that still teaches whoever reads it.
 // So these cases are mostly about association — what counts as a declaration and what does not.
 //
-// End-to-end validation of the two historical RC5 shapes lives in `rc5-regression.test.mjs`, which
+// End-to-end validation of the two known drift shapes lives in `drift-shapes-fail.test.mjs`, which
 // needs a real schema tree.
 
-import { test, describe, it } from "node:test";
+import { test, describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { dirname, join, resolve } from "node:path";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { extractBlocks, modelRelativePath } from "./extract.mjs";
 
@@ -99,32 +101,52 @@ test("strips the .blueprint/ prefix so the temp dir is the model root", () => {
 // kit) rather than in this repository, so they are absent in every fresh checkout and in CI.
 //
 // The distinction it draws is the whole point. A blanket "missing means skip" would let a typo in
-// the flagship document — the one this gate exists for — pass as a skip, which is precisely the
+// the flagship document - the one this gate exists for - pass as a skip, which is precisely the
 // silent-omission failure the gate prevents. So an absent TREE is forgiven and an absent FILE
 // inside a tree that exists is not.
+//
+// Each case runs the CLI in a working directory the suite builds for itself, holding one tree
+// that exists and one schema directory, so the outcome depends neither on where the tool is
+// installed nor on the directory the tests are started from. The CLI checks `--schemas` before it
+// reads any document and exits 2 when that directory is missing, so every assertion names the
+// message of its own case: an exit 2 for a missing schema directory satisfies none of them.
 describe("--optional forgives an absent tree, never a mistyped path", () => {
   const CLI = join(dirname(fileURLToPath(import.meta.url)), "cli.mjs");
-  const SCHEMAS = resolve(dirname(fileURLToPath(import.meta.url)), "../../v2.7");
+  /** @type {string} */
+  let workdir;
+  /** @type {string} */
+  let schemas;
 
+  before(() => {
+    workdir = mkdtempSync(join(tmpdir(), "doc-snippet-optional-"));
+    mkdirSync(join(workdir, "existing-tree"));
+    schemas = join(workdir, "schema");
+    mkdirSync(schemas);
+  });
+
+  after(() => rmSync(workdir, { recursive: true, force: true }));
+
+  /** @param {string[]} args */
   function run(args) {
-    const result = spawnSync(process.execPath, [CLI, ...args, "--schemas", SCHEMAS], { encoding: "utf8" });
+    const result = spawnSync(process.execPath, [CLI, ...args, "--schemas", schemas], { cwd: workdir, encoding: "utf8" });
     return { code: result.status, out: (result.stdout ?? "") + (result.stderr ?? "") };
   }
 
   it("skips a document whose top-level tree is not checked out", () => {
     const result = run(["no-such-tree-here/claude-code/agent.md", "--optional"]);
-    assert.equal(result.code, 0);
-    assert.match(result.out, /no-such-tree-here\/ in this checkout/);
+    assert.equal(result.code, 0, result.out);
+    assert.match(result.out, /no-such-tree-here\/ in this checkout \(--optional\)/);
   });
 
   it("STILL fails on a missing file inside a tree that exists, even with --optional", () => {
-    const result = run([".agents/agents/blueprint/does-not-exist.md", "--optional"]);
-    assert.equal(result.code, 2);
-    assert.match(result.out, /not found/);
+    const result = run(["existing-tree/does-not-exist.md", "--optional"]);
+    assert.equal(result.code, 2, result.out);
+    assert.match(result.out, /^doc-snippet-validate: not found: existing-tree\/does-not-exist\.md$/m);
   });
 
   it("without --optional an absent tree is fatal too", () => {
     const result = run(["no-such-tree-here/claude-code/agent.md"]);
-    assert.equal(result.code, 2);
+    assert.equal(result.code, 2, result.out);
+    assert.match(result.out, /^doc-snippet-validate: not found: no-such-tree-here\/claude-code\/agent\.md$/m);
   });
 });

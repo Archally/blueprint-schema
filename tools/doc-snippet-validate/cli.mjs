@@ -9,7 +9,7 @@
 // markdown file.
 //
 // This is not hypothetical. The flagship example in this project's own modeling prompt drifted to
-// **16 schema errors across 5 files** (plan RC5): `layout.slices` as a map instead of an array,
+// **16 schema errors across 5 files**: `layout.slices` as a map instead of an array,
 // `operations` as a list instead of a map, `goal` using `name`+`description` instead of
 // `id`+`statement`+`priority`, an `enforcement` key on a `governed_by` reference. Every one of
 // those cost a capacity-limited harness a wasted validation round, and every one is caught here.
