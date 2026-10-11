@@ -839,6 +839,13 @@ $defs:
     additionalProperties: false
     allOf:
       - $ref: "#/$defs/contract_identity"
+    # A contract names its broker once: by `broker_ref`, or by the superseded `brokerId`. Written as
+    # `dependentSchemas` so the error lands on the superseded key, the one to take out, as
+    # `contract_identity` does for `output`.
+    dependentSchemas:
+      broker_ref:
+        properties:
+          brokerId: false
     properties:
       file:
         type: string
@@ -861,9 +868,20 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
         description: "Operations this service consumes via messaging."
+      broker_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+        description: >-
+          The message broker this contract publishes to and receives from: the infrastructure
+          resource (IR###) that declares it, conventionally with `kind: broker`. One broker per
+          contract. Contract generators take the AsyncAPI servers from that resource, one per
+          environment that declares a host, and the reference resolves like every other typed id,
+          so a broker nothing declares is a cross-reference error.
       brokerId:
         type: string
-        description: "Message broker identifier (e.g. rabbitmq-prod, kafka-main)."
+        description: >-
+          SUPERSEDED by `broker_ref`. A free-string broker name (e.g. rabbitmq-prod), which resolves
+          to nothing in the model. Still accepted on this line, and never beside `broker_ref`; the
+          semantic checker advises the typed reference wherever it appears.
       input_structures:
         $ref: "#/$defs/contract_structures"
         description: "Named message structures received (consumed)."

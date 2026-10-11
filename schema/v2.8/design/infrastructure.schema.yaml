@@ -99,7 +99,11 @@ $defs:
         description: "Typed resource identifier (IR###). Used in topology tier references and as a relation target."
       kind:
         type: string
-        description: "Resource type (e.g. database, queue, storage, cache, api, function, service)."
+        description: >-
+          Resource type (e.g. database, queue, storage, cache, api, function, service). A message
+          broker - a RabbitMQ server, a Kafka cluster, a Service Bus namespace - is `broker`, the
+          kind a messaging contract's `broker_ref` is expected to name; a queue or topic it hosts is
+          `queue`.
       name:
         type: string
         description: "Human-readable resource name."
