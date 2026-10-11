@@ -1,0 +1,144 @@
+version: "1.0.0"
+name: Ordering domain
+scope: ordering
+operations:
+  createOrder:
+    id: ordering.CMD001
+    kind: command
+    dispatch: inprocess
+    name: Create Order
+    produces:
+      operations: [ordering.EVT102, ordering.EVT001]
+      mode: all
+  confirmGracePeriod:
+    id: ordering.CMD002
+    kind: command
+    dispatch: inprocess
+    name: Confirm Grace Period
+    produces:
+      operations: [ordering.EVT003]
+  setAwaitingValidation:
+    id: ordering.CMD003
+    kind: command
+    dispatch: inprocess
+    name: Set Awaiting Validation
+    produces:
+      operations: [ordering.EVT104]
+  setStockConfirmed:
+    id: ordering.CMD004
+    kind: command
+    dispatch: inprocess
+    name: Set Stock Confirmed
+    produces:
+      operations: [ordering.EVT105]
+  setPaid:
+    id: ordering.CMD006
+    kind: command
+    dispatch: inprocess
+    name: Set Paid
+    produces:
+      operations: [ordering.EVT106]
+  cancelOrder:
+    id: ordering.CMD007
+    kind: command
+    dispatch: inprocess
+    name: Cancel Order
+    produces:
+      operations: [ordering.EVT107]
+  shipOrder:
+    id: ordering.CMD008
+    kind: command
+    dispatch: inprocess
+    name: Ship Order
+    produces:
+      operations: [ordering.EVT108]
+
+  # Domain events: raised by the aggregate, never published.
+  orderStartedDomain:
+    id: ordering.EVT102
+    kind: event
+    name: Order Started
+  orderAwaitingValidationDomain:
+    id: ordering.EVT104
+    kind: event
+    name: Order Awaiting Validation
+  orderStockConfirmedDomain:
+    id: ordering.EVT105
+    kind: event
+    name: Order Stock Confirmed
+  orderPaidDomain:
+    id: ordering.EVT106
+    kind: event
+    name: Order Paid
+  orderCancelledDomain:
+    id: ordering.EVT107
+    kind: event
+    name: Order Cancelled
+  orderShippedDomain:
+    id: ordering.EVT108
+    kind: event
+    name: Order Shipped
+
+  # Integration events: published on the event bus. Six translate a domain event.
+  orderStarted:
+    id: ordering.EVT001
+    kind: event
+    name: Order Started Published
+    exchange:
+      protocol: amqp
+      topic: {name: OrderStartedIntegrationEvent}
+  orderSubmitted:
+    id: ordering.EVT002
+    kind: event
+    name: Order Status Changed To Submitted
+    translates: [ordering.EVT102]
+    exchange:
+      protocol: amqp
+      topic: {name: OrderStatusChangedToSubmittedIntegrationEvent}
+  gracePeriodConfirmed:
+    id: ordering.EVT003
+    kind: event
+    name: Grace Period Confirmed
+    exchange:
+      protocol: amqp
+      topic: {name: GracePeriodConfirmedIntegrationEvent}
+  orderAwaitingValidation:
+    id: ordering.EVT004
+    kind: event
+    name: Order Status Changed To Awaiting Validation
+    translates: [ordering.EVT104]
+    exchange:
+      protocol: amqp
+      topic: {name: OrderStatusChangedToAwaitingValidationIntegrationEvent}
+  orderStockConfirmed:
+    id: ordering.EVT005
+    kind: event
+    name: Order Status Changed To Stock Confirmed
+    translates: [ordering.EVT105]
+    exchange:
+      protocol: amqp
+      topic: {name: OrderStatusChangedToStockConfirmedIntegrationEvent}
+  orderPaid:
+    id: ordering.EVT006
+    kind: event
+    name: Order Status Changed To Paid
+    translates: [ordering.EVT106]
+    exchange:
+      protocol: amqp
+      topic: {name: OrderStatusChangedToPaidIntegrationEvent}
+  orderCancelled:
+    id: ordering.EVT007
+    kind: event
+    name: Order Status Changed To Cancelled
+    translates: [ordering.EVT107]
+    exchange:
+      protocol: amqp
+      topic: {name: OrderStatusChangedToCancelledIntegrationEvent}
+  orderShipped:
+    id: ordering.EVT008
+    kind: event
+    name: Order Status Changed To Shipped
+    translates: [ordering.EVT108]
+    exchange:
+      protocol: amqp
+      topic: {name: OrderStatusChangedToShippedIntegrationEvent}

@@ -1,0 +1,23 @@
+version: "1.0.0"
+name: Ordering architecture
+scope: ordering
+contexts:
+  - id: ordering.BC001
+    name: Ordering
+    kind: core
+    services:
+      - id: ordering.SVC001
+        name: Ordering API
+        kind: service
+        contracts:
+          asyncapi:
+            contract_name: ordering-events
+            send:
+              - ordering.EVT001
+              - ordering.EVT002
+              - ordering.EVT003
+              - ordering.EVT004
+              - ordering.EVT005
+              - ordering.EVT006
+              - ordering.EVT007
+              - ordering.EVT008

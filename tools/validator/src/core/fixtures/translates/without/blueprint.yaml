@@ -1,0 +1,5 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Order Events
+description: >-
+  An order context whose published event states the domain event it is the published form of.

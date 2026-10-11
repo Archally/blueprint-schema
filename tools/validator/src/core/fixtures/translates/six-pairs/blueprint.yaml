@@ -1,0 +1,7 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Ordering Events
+description: >-
+  An ordering context whose commands raise domain events that stay inside it, and whose integration
+  events state the domain events they are the published form of. Six integration events translate
+  a domain event; two are published with no domain event behind them.

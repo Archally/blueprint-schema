@@ -1,0 +1,12 @@
+version: "1.0.0"
+name: Catalog domain
+scope: catalog
+operations:
+  removeStock:
+    id: catalog.CMD001
+    kind: command
+    dispatch: inprocess
+    name: Remove Stock
+    reacts_to:
+      - operation: ordering.EVT006
+        policy: A paid order takes its items out of stock

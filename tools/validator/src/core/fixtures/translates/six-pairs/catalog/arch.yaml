@@ -1,0 +1,15 @@
+version: "1.0.0"
+name: Catalog architecture
+scope: catalog
+contexts:
+  - id: catalog.BC001
+    name: Catalog
+    kind: support
+    services:
+      - id: catalog.SVC001
+        name: Catalog API
+        kind: service
+        contracts:
+          asyncapi:
+            contract_name: catalog-events
+            receive: [ordering.EVT006]

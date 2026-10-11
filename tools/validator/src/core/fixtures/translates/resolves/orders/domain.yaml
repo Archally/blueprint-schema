@@ -1,0 +1,17 @@
+version: "1.0.0"
+name: Orders domain
+scope: orders
+operations:
+  orderPlacedDomain:
+    id: orders.EVT101
+    kind: event
+    name: Order Placed
+  orderPlaced:
+    id: orders.EVT001
+    kind: event
+    name: Order Placed Published
+    translates: [orders.EVT101]
+    exchange:
+      protocol: amqp
+      topic:
+        name: order.placed
