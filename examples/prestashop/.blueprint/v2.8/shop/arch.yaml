@@ -27,10 +27,16 @@ contexts:
       - Showcase card and notification management
     dependencies:
       - name: International
-        coupling: http
-        relationship: customer-supplier
-        direction: downstream
-        description: Reads country and language data for multi-store locale assignment.
+        coupling: shareddata
+        relationship: shared-kernel
+        direction: peer
+        description: >-
+          Shop and International write and read the same store-association tables:
+          Shop::copyShopData copies lang_shop, currency_shop and country_shop rows when a store is
+          created (classes/shop/Shop.php:1259, tables listed at classes/shop/Shop.php:153-160), and
+          International's own reads join them, as Language::loadLanguages does with lang_shop
+          (classes/Language.php:1048). Shared-kernel because both contexts depend on those tables
+          and neither owns them alone.
         bounded_context_ref: prestashop.BC006
     services:
       - id: prestashop.SVC011

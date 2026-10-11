@@ -25,10 +25,16 @@ contexts:
       - Module configuration management
     dependencies:
       - name: Admin
-        coupling: http
+        coupling: inprocess
         relationship: customer-supplier
         direction: downstream
-        description: Reads employee permissions for module management authorization.
+        description: >-
+          Asks Admin's access control whether an employee may manage a module, in the same process:
+          Module::getPermissionStatic calls Access::isGranted with the employee's profile
+          (classes/module/Module.php:2808). Module::install also writes the module's permission rows
+          into Admin's authorization_role and module_access tables directly
+          (classes/module/Module.php:474-482). Customer-supplier because Modules consumes Admin's
+          profile model and adds rows to it in Admin's own shape.
         bounded_context_ref: prestashop.BC001
     services:
       - id: prestashop.SVC007

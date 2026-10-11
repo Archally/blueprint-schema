@@ -1,6 +1,6 @@
 # PrestaShop-v9
 
-> Generated from blueprint model. 3714 entities, 8020 relations.
+> Generated from blueprint model. 3714 entities, 8019 relations.
 
 ## Context Map
 
@@ -28,7 +28,6 @@ graph LR
     Content -->|"depends on"| International
     Customers -->|"depends on"| International
     Modules -->|"depends on"| Admin
-    Orders -->|"depends on"| Checkout
     Orders -->|"depends on"| Catalog
     Orders -->|"depends on"| Customers
     Orders -->|"depends on"| Shipping
@@ -7116,7 +7115,6 @@ graph TD
     Content -.->|"context_depends_on"| International
     Customers -.->|"context_depends_on"| International
     Modules -.->|"context_depends_on"| Admin
-    Orders -.->|"context_depends_on"| Checkout
     Orders -.->|"context_depends_on"| Catalog
     Orders -.->|"context_depends_on"| Customers
     Orders -.->|"context_depends_on"| Shipping
@@ -16891,7 +16889,7 @@ graph TD
 
 ## Relations
 
-**8020 relations** discovered.
+**8019 relations** discovered.
 
 | Source | Type | Target |
 |--------|------|--------|
@@ -19700,7 +19698,6 @@ graph TD
 | Content (Context) | context_depends_on | International (Context) |
 | Customers (Context) | context_depends_on | International (Context) |
 | Modules (Context) | context_depends_on | Admin (Context) |
-| Orders (Context) | context_depends_on | Checkout (Context) |
 | Orders (Context) | context_depends_on | Catalog (Context) |
 | Orders (Context) | context_depends_on | Customers (Context) |
 | Orders (Context) | context_depends_on | Shipping (Context) |
@@ -24969,7 +24966,7 @@ graph TD
 | inquiry_goal | 18 |
 | binds | 18 |
 | contains | 17 |
-| context_depends_on | 17 |
+| context_depends_on | 16 |
 | use_case_screen | 16 |
 | capability_refs | 15 |
 | dept_has_team | 15 |

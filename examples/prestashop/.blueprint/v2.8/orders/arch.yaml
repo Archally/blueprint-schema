@@ -28,34 +28,51 @@ contexts:
       - Order messaging between merchant and customer
       - Payment record tracking
     dependencies:
-      - name: Checkout
-        relationship: shared-kernel
-        direction: downstream
-        description: Receives cart-to-order transition. Shared cart calculation kernel.
-        language_boundary: false
-        bounded_context_ref: prestashop.BC003
+      # The shared kernel with Checkout is declared once, from the Checkout side
+      # (checkout/arch.yaml), with direction peer: a shared kernel is one fact about a pair.
       - name: Catalog
-        coupling: http
+        coupling: inprocess
         relationship: customer-supplier
         direction: downstream
-        description: Reads product data for order line items.
+        description: >-
+          Prices order lines and takes their stock inside the placing request:
+          PaymentModule::validateOrder calls Product::getPriceStatic for each line
+          (classes/PaymentModule.php:472), and OrderDetail::updateProductQuantityInStock calls
+          StockAvailable::updateQuantity (classes/order/OrderDetail.php:532). Customer-supplier
+          because the order consumes Catalog's prices and decrements its stock through Catalog's
+          own class.
         bounded_context_ref: prestashop.BC002
       - name: Customers
-        coupling: http
+        coupling: inprocess
         relationship: customer-supplier
         direction: downstream
-        description: Reads customer and address data for order placement.
+        description: >-
+          Loads the customer and addresses and writes the order's customer message inside the
+          placing request: PaymentModule::validateOrder builds a Customer
+          (classes/PaymentModule.php:221), an Address (classes/PaymentModule.php:654) and a
+          CustomerThread (classes/PaymentModule.php:581). Customer-supplier because the order
+          consumes the customer model and adds to the thread in Customers' shape.
         bounded_context_ref: prestashop.BC005
       - name: Shipping
-        coupling: http
+        coupling: inprocess
         relationship: customer-supplier
         direction: downstream
-        description: Reads carrier and shipping cost data for fulfillment.
+        description: >-
+          Takes the delivery option and carrier inside the placing request:
+          PaymentModule::validateOrder reads Cart::getDeliveryOptionList
+          (classes/PaymentModule.php:260) and builds the order's Carrier
+          (classes/PaymentModule.php:658). Customer-supplier because the order consumes the
+          carrier and its cost and changes neither.
         bounded_context_ref: prestashop.BC010
       - name: International
         relationship: customer-supplier
         direction: downstream
-        description: Reads currency and tax rules for order totals.
+        description: >-
+          Fixes the order's currency and conversion rate at placement:
+          PaymentModule::validateOrder builds a Currency for the cart's currency
+          (classes/PaymentModule.php:229). Customer-supplier because the order consumes the rate
+          and stores a copy. The coupling is the exchange-rates contract below, so none is
+          declared here.
         bounded_context_ref: prestashop.BC006
     services:
       - id: prestashop.SVC008

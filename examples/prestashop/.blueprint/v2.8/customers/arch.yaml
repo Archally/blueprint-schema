@@ -26,10 +26,15 @@ contexts:
       - Customer group and title management
     dependencies:
       - name: International
-        coupling: http
+        coupling: inprocess
         relationship: customer-supplier
         direction: downstream
-        description: Reads country and state data for address validation.
+        description: >-
+          Validates and labels addresses with International's country model in the same process:
+          EditCustomerAddressHandler builds a Country from the command
+          (src/Adapter/Address/CommandHandler/EditCustomerAddressHandler.php:107), and
+          Address::__construct calls Country::getNameById (classes/Address.php:157).
+          Customer-supplier because addresses consume countries and states and define none.
         bounded_context_ref: prestashop.BC006
     services:
       - id: prestashop.SVC005

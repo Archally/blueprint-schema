@@ -30,22 +30,33 @@ contexts:
       - Search index synchronization
     dependencies:
       - name: International
-        coupling: http
+        coupling: inprocess
         relationship: customer-supplier
         direction: downstream
-        description: Consumes currency, tax, and language data for product pricing and localization.
+        description: >-
+          Prices every product through International's tax model in the same process:
+          Product::priceCalculation asks TaxManagerFactory::getManager for the product's tax rules
+          group (classes/Product.php:3727). Customer-supplier because Catalog consumes the tax and
+          currency classes International publishes and changes nothing in them.
         bounded_context_ref: prestashop.BC006
       - name: Modules
         relationship: open-host-service
         direction: upstream
-        description: Exposes hooks for module-driven catalog extensions.
+        description: >-
+          Publishes its hook names for any module to subscribe to: Product::update fires
+          actionProductSave and actionProductUpdate through Hook::exec (classes/Product.php:811-812).
+          Open-host-service because the hook name is a published protocol that Catalog fires for
+          every module alike and negotiates with none. The coupling is the in-process contract
+          below, so none is declared here.
         bounded_context_ref: prestashop.BC007
       - name: Shop
         relationship: conformist
         direction: downstream
         description: >-
-          Reads the multi-store context straight out of the shared database. Shop owns the schema
-          and is never asked, so Catalog conforms to whatever shape it is in.
+          Scopes its own queries by the store context Shop decides: Product::getProducts joins
+          product_shop through Shop::addSqlAssociation('product', 'p') (classes/Product.php:1634).
+          Conformist because Shop owns the multi-store association and is never asked, so Catalog
+          takes it in whatever shape it is in. The coupling is the shared-data contract below.
         bounded_context_ref: prestashop.BC011
     services:
       - id: prestashop.SVC002

@@ -22,7 +22,10 @@ tags: [roadmap, release-train]
 #     changes THIS MODEL proposes, not work PrestaShop has announced. Each one is staged
 #     as a draft migration in `.blueprint/migrations.yaml` or named by a leverage point in
 #     `leverage.yaml`. They are placed on the development phase of the next minor line,
-#     which is a derivation and not a schedule, and each says so.
+#     which is a derivation and not a schedule, and each says so. A draft is cited by its
+#     name, never by its MIG id: the draft register numbers its entries apart from this
+#     model's own `migrations.yaml`, so a bare MIG001 in prose resolves to the change that
+#     landed, not to the draft.
 #
 #  What is deliberately absent: this model's own construction. Phase 1 of the modeling
 #  plan added roughly 190 classes' worth of operations and regrounded the event layer.
@@ -187,7 +190,7 @@ milestones:
     name: "Proposed: faceted product search"
     description: >
       A proposal of this model, staged as the draft migration `facet-product-search`
-      (MIG002) in `.blueprint/migrations.yaml`, which adds a SearchFacet value object and
+      in `.blueprint/migrations.yaml`, which adds a SearchFacet value object and
       a SearchProductsByFacet query that returns products narrowed by facet selections
       together with the remaining facet counts. PrestaShop has announced no such work and
       the codebase contains no facet query today, so this is a statement of what the model
@@ -218,7 +221,7 @@ milestones:
     name: "Proposed: stock reservation at checkout and asynchronous order side effects"
     description: >
       Two proposals of this model that share a cause. The first is staged as the draft
-      migration `reserve-stock-at-checkout` (MIG001) in `.blueprint/migrations.yaml`: a
+      migration `reserve-stock-at-checkout` in `.blueprint/migrations.yaml`: a
       cart asks the catalog to hold the quantities its lines depend on, the hold is
       consumed when the order is placed and released when the cart is abandoned, so two
       shoppers cannot both buy the last unit during a flash sale. The second is leverage
@@ -550,7 +553,7 @@ work_items:
     advances_goals: [catalog.GL002]
     user_stories: [catalog.US003]
     note: >
-      Carries the draft migration `facet-product-search` (MIG002) in
+      Carries the draft migration `facet-product-search` in
       `.blueprint/migrations.yaml`. The window is the next minor line's development phase,
       derived and not scheduled; PrestaShop has announced no such work.
     tags: [proposal, not-announced]
@@ -598,7 +601,7 @@ work_items:
     value_streams: [VS001]
     mitigates_risks: [orders.RSK003]
     note: >
-      Carries the draft migration `reserve-stock-at-checkout` (MIG001) in
+      Carries the draft migration `reserve-stock-at-checkout` in
       `.blueprint/migrations.yaml`, which stages a StockReservation entity, the reserve,
       release and consume commands and the four events between them. PrestaShop decrements
       stock at order placement today and has announced no reservation work. The window is

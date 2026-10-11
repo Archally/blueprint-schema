@@ -26,10 +26,15 @@ contexts:
       - SEO meta (URL rewriting, page titles, descriptions)
     dependencies:
       - name: International
-        coupling: http
+        coupling: inprocess
         relationship: customer-supplier
         direction: downstream
-        description: Reads language data for multilingual CMS content.
+        description: >-
+          Renders mail templates per installed language through International's language
+          repository in the same process: GenerateThemeMailTemplatesHandler takes a
+          LanguageRepositoryInterface (src/Core/Domain/MailTemplate/CommandHandler/GenerateThemeMailTemplatesHandler.php:48),
+          and CMS pages store their text per language id in cms_lang (classes/CMS.php:124).
+          Customer-supplier because Content consumes the language list and adds no language.
         bounded_context_ref: prestashop.BC006
     services:
       - id: prestashop.SVC004

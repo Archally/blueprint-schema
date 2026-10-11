@@ -28,27 +28,48 @@ contexts:
       - Cart total calculation (products, discounts, tax, shipping)
     dependencies:
       - name: Catalog
-        coupling: http
+        coupling: shareddata
         relationship: customer-supplier
         direction: downstream
-        description: Reads product prices, stock, and availability for cart items.
+        description: >-
+          Reads its cart lines straight out of Catalog's tables: Cart::getProducts joins product,
+          product_shop and product_attribute in its own SQL (classes/Cart.php:735-794), and prices
+          each line by calling Product::getPriceStatic in-process (Cart::getCartPriceFromCatalog,
+          classes/Cart.php:1176). Customer-supplier because the cart consumes the catalog's data
+          and pricing and writes nothing back.
         bounded_context_ref: prestashop.BC002
       - name: Customers
-        coupling: http
+        coupling: inprocess
         relationship: customer-supplier
         direction: downstream
-        description: Reads customer data for cart rules and guest checkout.
+        description: >-
+          Loads the cart's customer and their groups in the same process: Cart::__construct builds
+          a Customer (classes/Cart.php:215) and CartRule::getCustomerCartRules calls
+          Customer::getGroupsStatic (classes/CartRule.php:469). Customer-supplier because cart
+          rules consume the customer's groups and never change them.
         bounded_context_ref: prestashop.BC005
       - name: International
-        coupling: http
+        coupling: inprocess
         relationship: customer-supplier
         direction: downstream
-        description: Reads currency and tax data for cart totals.
+        description: >-
+          Computes cart totals with International's tax and currency classes in the same process:
+          Cart::findTaxRulesGroupId calls TaxManagerFactory::getManager (classes/Cart.php:2546) and
+          Cart::calculateWrappingFees calls Currency::getCurrencyInstance (classes/Cart.php:2619).
+          Customer-supplier because the cart consumes the rates and converts nothing back.
         bounded_context_ref: prestashop.BC006
       - name: Orders
         relationship: shared-kernel
-        direction: upstream
-        description: Publishes cart-to-order transition event.
+        direction: peer
+        description: >-
+          Cart and order share one calculation and one pair of tables, and each side calls the
+          other. Placement reads the cart: PaymentModule::validateOrder takes its totals from
+          Cart::getOrderTotal (classes/PaymentModule.php:289), and an edited order recomputes its
+          totals through the same method (OrderAmountUpdater::updateOrderTotals,
+          src/Adapter/Order/OrderAmountUpdater.php:259). The cart reads the orders table:
+          Cart::orderExists counts orders by id_cart (classes/Cart.php:1924). Shared-kernel because
+          both contexts depend on the cart total calculation and the cart-to-order key, stated
+          once here for the pair rather than from both ends.
         language_boundary: false
         bounded_context_ref: prestashop.BC008
     services:

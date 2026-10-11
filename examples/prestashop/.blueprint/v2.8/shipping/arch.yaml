@@ -25,10 +25,14 @@ contexts:
       - Shipment creation and tracking number assignment
     dependencies:
       - name: International
-        coupling: http
+        coupling: shareddata
         relationship: customer-supplier
         direction: downstream
-        description: Reads zone and country data for carrier shipping rules.
+        description: >-
+          Selects carriers and their prices by International's zones in its own SQL:
+          Carrier::getCarriers joins the zone table (classes/Carrier.php:567) and Carrier::getZones
+          joins carrier_zone to zone (classes/Carrier.php:866). Customer-supplier because Shipping
+          consumes the zone hierarchy and defines no zone.
         bounded_context_ref: prestashop.BC006
     services:
       - id: prestashop.SVC010
