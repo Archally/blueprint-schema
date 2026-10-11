@@ -1038,18 +1038,24 @@ $defs:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
         description: >-
           Operations this service owns and makes callable in-process. The transport-free counterpart
-          of a contract's `expose:` or `send:`, and it materializes the same `handled_by` binding.
+          of a contract's `expose:` or `send:`, and it materializes the same `handled_by` binding. An
+          operation this service starts itself - in reaction to an operation it receives or raises,
+          or on the initiative of an actor such as a timer - needs nothing more: its `reacts_to` or
+          `initiated_by` names the caller, and the service does not list the operation under
+          `consume:` as well.
       consume:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
         description: >-
-          Operations this service depends on and calls in-process, owned by another service. The
-          transport-free counterpart of `call:` and `receive:`. Listing an operation here says how
-          THIS coupling reaches it and nothing about the operation itself: one operation may be
-          reached in-process from a sibling module and over a wire from outside, which is two
-          contracts over one operation. What the operation's own invocation model is, `dispatch:`
-          says.
+          Operations another service owns that this service calls in-process - a sibling module of a
+          modular monolith, a library service, an injected dependency. Each entry is the dependency
+          of this service on the other one, which is what the context map and the service diagrams
+          draw. Listing an operation here says how THIS coupling reaches it and nothing about the
+          operation itself: one operation may be reached in-process from a sibling module and over a
+          wire from outside, which is two contracts over one operation. What the operation's own
+          invocation model is, `dispatch:` says. A service listing an operation it provides itself
+          states nothing and is redundant.
 
   shared_data_contract:
     type: object
