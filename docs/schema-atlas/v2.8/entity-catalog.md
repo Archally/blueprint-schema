@@ -356,6 +356,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `finding_ref` | `string` |  | Reference to a quality finding - an AS-IS internal-quality defect (e.g. FN001 or ordering.FN001). |
 | `leverage_ref` | `string` |  | Reference to a leverage point - a prioritized cross-cutting intervention that bundles findings / risks / decisions / fitness-functions and is delivered via mig… |
 | `probe_ref` | `string` |  | Reference to a probe - an instrument that reads an artifact the model does not author and reports an observation about it (e.g. PRB001 or integration.PRB001).… |
+| `message_channel_ref` | `string` |  | Reference to a message channel by its typed id (e.g. MCH001 or orders.MCH001): a topic producers publish to, or a queue a consumer reads from, declared once in… |
 | `quality_characteristic` | `string` | `functional-suitability`, `performance-efficiency`, `compatibility`, `usability`, `reliability`, `security` … (9) | ISO/IEC 25010:2011 top-level product-quality characteristic - the eight 2011 characteristics plus `safety` (the one clearly-useful 2023 addition). Names the to… |
 | `quality_subcharacteristic` | `string` | `modularity`, `reusability`, `analysability`, `modifiability`, `testability`, `confidentiality` … (37) | ISO/IEC 25010 sub-characteristic - the finer grain under a `quality_characteristic`. The pairing of a sub-characteristic to its top-level is a CONVENTION the a… |
 | `complexity_pattern` | `string` | `crud`, `presentation`, `transformation`, `integration`, `cdc`, `concurrency` … (7) | Dominant implementation-complexity / problem-type pattern of a context or subdomain: crud=record management; presentation=UI-heavy; transformation=translation/… |
@@ -959,8 +960,27 @@ _Source: `schema/v2.8/design/arch.schema.yaml` · root type `object`_
 | `contexts` | `array<ref → context>` | — |  | Bounded contexts declared whole at the document root, each exactly once in the model. A service under a root-declared context names the system it is a componen… |
 | `system_ref` | `ref → party_ref` | — |  | File-level default for `service.system_ref`: the system party that every service under a root-declared context in this document is a component of, unless the s… |
 | `probes` | `array<ref → probe>` | — |  | Instruments this architecture is read with. A probe is declared here when what it cannot see has to be recorded somewhere other than the prose of whoever last… |
+| `channels` | `array<ref → message_channel>` | — |  | Message channels: the topics producers publish to and the queues consumers read from, each placed on a message broker. A channel is shared by producers and con… |
 
 #### Definitions
+
+#### `message_channel`
+
+A named destination on a message broker. A `topic` is where a producer publishes and every subscriber receives a copy: an AMQP exchange, a Kafka topic, a Service Bus topic. A `queue` is where messages wait for one reader: an AMQP queue, which on a broker with exchanges is also the private subscription of one consuming service. Which messages travel on a channel is stated by the operations that na…
+
+**Required:** `id`, `name`, `kind`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `id` | `ref → message_channel_ref` | ✓ |  | Stable channel id (MCH###). |
+| `name` | `string` | ✓ |  | Channel name, as the system's code and documentation call it. |
+| `kind` | `string` | ✓ | `topic`, `queue` | `topic`: published to by producers, each subscriber receives every message. `queue`: read by one consumer, its competing instances sharing the messages. |
+| `address` | `string` | — |  | The name the broker knows the channel by on the wire: the exchange name of an AMQP topic, the queue name, the Kafka topic name. Absent, it is the channel's `na… |
+| `broker_ref` | `ref → infra_resource_ref` | — |  | The message broker this channel lives on: the infrastructure resource (IR###) that declares it, conventionally with `kind: broker`. Absent, the channel lives o… |
+| `description` | `string` | — |  | What travels on this channel and why it exists. |
+| `bindings` | `object` | — |  | Protocol-specific details of the channel, keyed by protocol, after the AsyncAPI bindings. Each key describes the channel on that protocol only. |
+
+_Source: `schema/v2.8/design/arch.schema.yaml#/$defs/message_channel`_
 
 #### `party`
 
@@ -1181,6 +1201,7 @@ AsyncAPI messaging contract: topics and channels this service publishes to or co
 | `receive` | `array<ref → operation_ref>` | — |  | Operations this service consumes via messaging. |
 | `broker_ref` | `ref → infra_resource_ref` | — |  | The message broker this contract publishes to and receives from: the infrastructure resource (IR###) that declares it, conventionally with `kind: broker`. One… |
 | `brokerId` | `string` | — |  | SUPERSEDED by `broker_ref`. A free-string broker name (e.g. rabbitmq-prod), which resolves to nothing in the model. Still accepted on this line, and never besi… |
+| `subscription` | `object` | — |  | How this service receives the messages it consumes: its own durable subscription, which receives every message published to the channels its `receive:` operati… |
 | `input_structures` | `ref → contract_structures` | — |  | Named message structures received (consumed). |
 | `output_structures` | `ref → contract_structures` | — |  | Named message structures sent (published). |
 
@@ -1707,7 +1728,8 @@ Message topic for pub/sub protocols.
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
-| `name` | `string` | — |  | Topic name. |
+| `name` | `string` | — |  | Topic name. Where `channel_ref` names the channel, the routing key the message is published with on it. |
+| `channel_ref` | `ref → message_channel_ref` | — |  | The message channel (`kind: topic`) the message is published to, declared in an architecture document's `channels:` list. `name` keeps naming the topic, or the… |
 | `description` | `string` | — |  | What messages on this topic represent. |
 | `filters` | `array<ref → filter>` | — |  | Message filters for selective consumption. |
 
@@ -1720,6 +1742,7 @@ Message queue for point-to-point protocols.
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `name` | `string` | — |  | Queue name. |
+| `channel_ref` | `ref → message_channel_ref` | — |  | The message channel (`kind: queue`) the message is sent to, declared in an architecture document's `channels:` list. |
 | `description` | `string` | — |  | What messages in this queue represent. |
 
 _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/queue`_

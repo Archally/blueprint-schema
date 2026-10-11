@@ -39,6 +39,7 @@ Metamodel `*_ref` definitions turn a model into a navigable graph — each entit
 | `IR` | `infra_resource_ref` | Reference to an infrastructure resource by its typed id (e.g. IR001 or prod.IR001), optionally context/environment-prefixed - the concrete host / store / netwo… |
 | `KPI` | `kpi_ref` | Reference to a quality KPI (e.g. KPI001 or billing.KPI001). |
 | `LP` | `leverage_ref` | Reference to a leverage point - a prioritized cross-cutting intervention that bundles findings / risks / decisions / fitness-functions and is delivered via mig… |
+| `MCH` | `message_channel_ref` | Reference to a message channel by its typed id (e.g. MCH001 or orders.MCH001): a topic producers publish to, or a queue a consumer reads from, declared once in… |
 | `MDL` | `model_ref` | Reference to a model component. Four forms supported: (1) Typed ID: MDL + digits with optional context prefix (MDL001, billing.MDL003). (2) PascalCase name mat… |
 | `MIG` | `migration_ref` | Reference to a blueprint model migration (e.g. MIG001 or billing.MIG001). |
 | `MS` | `milestone_ref` | Reference to a roadmap milestone (MS + 3+ digits, optional context prefix). |
@@ -86,7 +87,7 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub �
 
 | Schema file | Inbound refs |
 | --- | --- |
-| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 787 |
+| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 792 |
 | [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | 1 |
 | [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | 1 |
 | [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | 1 |
@@ -119,9 +120,9 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub �
 | `blueprint.schema.yaml` | `governance/value-stream.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `metamodel.schema.yaml` | 19 |
 | `blueprint.schema.yaml` | `migration.schema.yaml` | 1 |
-| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 68 |
+| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 71 |
 | `design/concepts.schema.yaml` | `metamodel.schema.yaml` | 44 |
-| `design/domain.schema.yaml` | `metamodel.schema.yaml` | 53 |
+| `design/domain.schema.yaml` | `metamodel.schema.yaml` | 55 |
 | `design/dynamics.schema.yaml` | `metamodel.schema.yaml` | 29 |
 | `design/infrastructure.schema.yaml` | `metamodel.schema.yaml` | 28 |
 | `design/interactions.schema.yaml` | `metamodel.schema.yaml` | 33 |

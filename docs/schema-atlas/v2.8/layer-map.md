@@ -79,7 +79,7 @@ What & how: domain model, behavior, contracts, and quality attributes.
 
 | Schema file | Title | Root props | Object defs | Summary |
 | --- | --- | --- | --- | --- |
-| [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | Blueprint Architecture | 14 | 22 | Design Plane - L0: Bounded context topology. Parties, contexts, services with contracts (interfaces), enriched dependen… |
+| [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | Blueprint Architecture | 15 | 23 | Design Plane - L0: Bounded context topology. Parties, contexts, services with contracts (interfaces), enriched dependen… |
 | [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | Blueprint Concepts | 10 | 7 | Design Plane - Layer 2: Domain vocabulary. Defines concepts (entities, value objects, aggregates), actors, enumerations… |
 | [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | Blueprint Domain Operations | 11 | 18 | Design Plane - Layer 3: Domain operations with protocol bindings, rule governance, pre/postconditions, and side effects… |
 | [`design/dynamics.schema.yaml`](./entity-catalog.md#design-dynamics) | Blueprint Dynamics | 10 | 8 | Design Plane: Runtime concurrency and execution behavior. Covers execution model, parallelism, ordering constraints, ra… |
@@ -107,9 +107,9 @@ graph LR
         design_story_schema_yaml["story"]
     end
     metamodel_schema_yaml(["metamodel"])
-    design_arch_schema_yaml -->|68| metamodel_schema_yaml
+    design_arch_schema_yaml -->|71| metamodel_schema_yaml
     design_concepts_schema_yaml -->|44| metamodel_schema_yaml
-    design_domain_schema_yaml -->|53| metamodel_schema_yaml
+    design_domain_schema_yaml -->|55| metamodel_schema_yaml
     design_dynamics_schema_yaml -->|29| metamodel_schema_yaml
     design_infrastructure_schema_yaml -->|28| metamodel_schema_yaml
     design_interactions_schema_yaml -->|33| metamodel_schema_yaml

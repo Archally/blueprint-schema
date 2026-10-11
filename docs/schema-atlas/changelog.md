@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 29 |
-| Additive (minor) | 244 |
+| Additive (minor) | 250 |
 | Clarification (patch) | 0 |
-| **Total changes** | 273 |
+| **Total changes** | 279 |
 
 ## ⚠ Breaking changes
 
@@ -221,7 +221,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (221)
+## Added (227)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -264,6 +264,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/arch.schema.yaml#/$defs/channel_contract/properties/slice` — Property `slice` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract/properties/slice`_
+
+- [additive] `design/arch.schema.yaml#/$defs/channel_contract/properties/subscription` — Property `subscription` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract/properties/subscription`_
 
 - [additive] `design/arch.schema.yaml#/$defs/cli_contract` — New definition `cli_contract` added to `design/arch.schema.yaml`.
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/cli_contract`_
@@ -358,6 +361,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/mcp_contract` — New definition `mcp_contract` added to `design/arch.schema.yaml`.
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/mcp_contract`_
 
+- [additive] `design/arch.schema.yaml#/$defs/message_channel` — New definition `message_channel` added to `design/arch.schema.yaml`.
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/message_channel`_
+
 - **[breaking]** `design/arch.schema.yaml#/$defs/party/properties/id` — Property `id` added (required — breaking).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/party/properties/id`_
 
@@ -405,6 +411,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/arch.schema.yaml#/$defs/shared_data_contract` — New definition `shared_data_contract` added to `design/arch.schema.yaml`.
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/shared_data_contract`_
+
+- [additive] `design/arch.schema.yaml#/properties/channels` — Property `channels` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/properties/channels`_
 
 - [additive] `design/arch.schema.yaml#/properties/contexts` — Property `contexts` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/properties/contexts`_
@@ -477,6 +486,12 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/domain.schema.yaml#/$defs/question/properties/bounded_context_ref` — Property `bounded_context_ref` added (optional).
   - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/question/properties/bounded_context_ref`_
+
+- [additive] `design/domain.schema.yaml#/$defs/queue/properties/channel_ref` — Property `channel_ref` added (optional).
+  - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/queue/properties/channel_ref`_
+
+- [additive] `design/domain.schema.yaml#/$defs/topic/properties/channel_ref` — Property `channel_ref` added (optional).
+  - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/topic/properties/channel_ref`_
 
 - [additive] `design/domain.schema.yaml#/properties/domain_ref` — Property `domain_ref` added (optional).
   - _Source: `schema/v2.8/design/domain.schema.yaml#/properties/domain_ref`_
@@ -798,6 +813,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `metamodel.schema.yaml#/$defs/likelihood_scale` — New definition `likelihood_scale` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/likelihood_scale`_
+
+- [additive] `metamodel.schema.yaml#/$defs/message_channel_ref` — New definition `message_channel_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/message_channel_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/milestone_status` — New definition `milestone_status` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/milestone_status`_
