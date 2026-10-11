@@ -1265,7 +1265,7 @@ In-process coupling: operations this service provides to, or consumes from, code
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `provide` | `array<ref → operation_ref>` | — |  | Operations this service owns and makes callable in-process. The transport-free counterpart of a contract's `expose:` or `send:`, and it materializes the same `… |
-| `consume` | `array<ref → operation_ref>` | — |  | Operations this service depends on and calls in-process, owned by another service. The transport-free counterpart of `call:` and `receive:`. Listing an operati… |
+| `consume` | `array<ref → operation_ref>` | — |  | Operations another service owns that this service calls in-process - a sibling module of a modular monolith, a library service, an injected dependency. Each en… |
 
 _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/inprocess_contract`_
 
