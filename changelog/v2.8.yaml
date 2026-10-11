@@ -5,6 +5,14 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.65"
+    date: "2026-10-11"
+    step: "the checker counts a reaction or an initiating actor as the caller of an in-process operation"
+    summary: |
+      `inprocess-provide-without-consume` (warn) reports an operation provided in-process only when nothing in the model starts it. Three things start one: another service consumes it under `contracts.inprocess.consume`; it reacts to an operation that reaches its providing service; or an actor initiates it (`initiated_by`). A service hears an operation it receives in a contract's `receive:`, and one it raises: an operation it provides under `expose:`, `send:` or `provide:`, or one that such an operation `produces`. A service listing an operation it provides itself under `consume:` states nothing, so that entry starts nothing and is never reported. An operation its own service's message handler or a timer starts is no longer reported.
+      The semantic checker adds `inprocess-reaction-unreached` (warn): an operation provided in-process that reacts to an operation none of its providing services hears. The message names the triggers and the service, and both fixes: add the trigger to that service's `receive:` list, or provide the operation from the service that hears it. An operation whose reactions all miss its service is reported by this rule alone, not by both. A trigger that resolves to no declaration is left to the cross-reference error.
+      The descriptions of `inprocess.provide` and `inprocess.consume` say the same: an operation a service starts itself needs no `consume:` entry, and `consume:` names an operation another service owns.
+      Nothing validates differently: every document that validated under 2.8.64 validates, and every one it rejected is rejected. Minted rather than folded, because 2.8.64 is tagged.
   - version: "2.8.64"
     date: "2026-10-06"
     step: "a goal names the assumptions it rests on"
