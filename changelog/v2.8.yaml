@@ -5,6 +5,15 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.66"
+    date: "2026-10-11"
+    step: "a messaging contract names its broker by a typed reference to an infrastructure resource"
+    summary: |
+      An `asyncapi` contract accepts a new optional member, `broker_ref`: the infrastructure resource (IR###) that declares the message broker the contract publishes to and receives from. One broker per contract. The reference resolves like every other typed id, so a broker nothing declares is a cross-reference error; the model builder draws it as a `contract_broker` edge from the contract to the resource, and the context-to-context traffic the contracts compute carries it in `broker_ids`.
+      `brokerId`, the free string it supersedes, stays accepted on this line and resolves to nothing. A contract carrying both is rejected, at `brokerId`: two answers to one question leave nothing to say which is current.
+      The semantic checker adds two warnings. `contract-broker-id-superseded` names every contract that still writes `brokerId` and the typed field to write instead. `broker-ref-target-not-a-broker` names an infrastructure resource that contracts name as their broker while its `kind` is not `broker`, once per resource, with the contracts that point at it. The description of a resource's `kind` names `broker` for a message broker.
+      Contract generators (Archally Pro) resolve the broker the contract names - `broker_ref`, else `brokerId` - against the resources of the typed infrastructure layer, and take the AsyncAPI servers from it: one server per environment that declares a host, with the protocol the host's scheme states. A broker that resolves and declares no host, and a `brokerId` that names no resource, are each reported; the second names `broker_ref` as the field to set. The architecture map (Archally Pro) labels a broker named by `broker_ref` with the resource's name.
+      Widened: a document carrying `broker_ref` was rejected by 2.8.65 and is accepted now, so the version is minted rather than folded into the untagged 2.8.65. Every document 2.8.65 accepted is still accepted.
   - version: "2.8.65"
     date: "2026-10-11"
     step: "the checker counts a reaction or an initiating actor as the caller of an in-process operation"
