@@ -6,6 +6,7 @@ import { ENTITY_TYPE, SCHEMA_TYPE_TO_LAYER } from '../../model/entityTypes.js';
 import { makeInternalId } from '../../extraction/entities/id.js';
 import { MigrationError } from '../migrationError.js';
 import { findEntityByRef } from '../migrationApplyUtils.js';
+import { declaredKeyOf, keepDocumentKeys, placeAsWritten } from './placeAsWritten.js';
 
 // ---------------------------------------------------------------------------
 // Entity-type mapping: migration entity_type → core Entity type + layer
@@ -110,11 +111,13 @@ function entityFromAfter(
   after: Record<string, unknown>,
   entityType: string,
   migrationFilePath: string | undefined,
+  target: string,
+  entities: Entity[],
 ): Entity {
-  const displayId = String(after.id ?? '');
-  const mapping = resolveEntityType(entityType, displayId);
+  const displayId = declaredKeyOf(after, entityType, target);
+  const mapping = resolveEntityType(entityType, String(after.id ?? displayId));
   const id = makeInternalId(undefined, migrationFilePath, displayId);
-  return {
+  const entity: Entity = {
     id,
     displayId,
     type: mapping.type,
@@ -123,8 +126,12 @@ function entityFromAfter(
     term: strOrUndef(after.term) ?? strOrUndef(after.name),
     summary: strOrUndef(after.summary),
     description: strOrUndef(after.definition) ?? strOrUndef(after.description),
-    data: after,
+    // A copy: a later property change edits the entity, and must not edit the migration document
+    // the next replay of the same loaded set reads.
+    data: structuredClone(after),
   };
+  placeAsWritten(entity, entities);
+  return entity;
 }
 
 // ---------------------------------------------------------------------------
@@ -145,7 +152,7 @@ export function applyEntityChanges(
       case 'add': {
         const after = change.after as Record<string, unknown> | undefined;
         if (!after) throw new MigrationError(`Entity add: missing 'after' for target ${target}`);
-        const entity = entityFromAfter(after, entityType, migrationFilePath);
+        const entity = entityFromAfter(after, entityType, migrationFilePath, target, model.entities);
         model.entities.push(entity);
         break;
       }
@@ -154,7 +161,7 @@ export function applyEntityChanges(
         if (!entity) throw new MigrationError(`Entity modify: target not found: ${target}`);
         const after = change.after as Record<string, unknown> | undefined;
         if (!after) throw new MigrationError(`Entity modify: missing 'after' for target ${target}`);
-        entity.data = after;
+        entity.data = keepDocumentKeys(entity.data, structuredClone(after));
         if (after.term != null) entity.term = String(after.term);
         if (after.name != null && entity.term == null) entity.term = String(after.name);
         if (after.summary != null) entity.summary = String(after.summary);
@@ -187,7 +194,7 @@ export function applyEntityChanges(
           throw new MigrationError(`Entity split: 'after' must be an array of ≥2 entities for target ${target}`);
         }
         const first = afterArr[0] as Record<string, unknown>;
-        entity.data = first;
+        entity.data = keepDocumentKeys(entity.data, structuredClone(first));
         if (first.term != null) entity.term = String(first.term);
         if (first.name != null && entity.term == null) entity.term = String(first.name);
         if (first.summary != null) entity.summary = String(first.summary);
@@ -199,7 +206,7 @@ export function applyEntityChanges(
         }
         for (let i = 1; i < afterArr.length; i++) {
           const item = afterArr[i] as Record<string, unknown>;
-          const newEntity = entityFromAfter(item, entityType, migrationFilePath);
+          const newEntity = entityFromAfter(item, entityType, migrationFilePath, String(item.id ?? ''), model.entities);
           model.entities.push(newEntity);
         }
         break;
@@ -221,7 +228,7 @@ export function applyEntityChanges(
         model.relations = model.relations.filter(
           (r) => !sourceIds.includes(r.source_entity_id) && !sourceIds.includes(r.target_entity_id),
         );
-        const mergedEntity = entityFromAfter(after, entityType, migrationFilePath);
+        const mergedEntity = entityFromAfter(after, entityType, migrationFilePath, String(after.id ?? ''), model.entities);
         model.entities.push(mergedEntity);
         break;
       }

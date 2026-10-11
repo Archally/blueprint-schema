@@ -11,6 +11,7 @@ import { applyPropertyChanges } from './changes/applyPropertyChanges.js';
 import { applyRelationshipChanges } from './changes/applyRelationshipChanges.js';
 import { normalizeRelationshipPredicate } from './changes/applyRelationshipChanges.js';
 import { applyMetaChanges } from './changes/applyMetaChanges.js';
+import { deriveFrom, rederiveRelations } from './rederiveRelations.js';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -404,23 +405,37 @@ export function validateMigrations(
   migrationsToApply: MigrationToApply[],
   appliedIds: string[] = [],
 ): MigrationValidationResult {
+  return validateAndApply(baseModel, migrationsToApply, appliedIds).validation;
+}
+
+/**
+ * Validation applies every migration to a copy of the model to check the next one against it, so
+ * when they are all valid that copy IS the migrated model. Returning it saves `applyMigrations` a
+ * second pass, which matters since each migration re-derives the model's relations.
+ */
+function validateAndApply(
+  baseModel: BlueprintModel,
+  migrationsToApply: MigrationToApply[],
+  appliedIds: string[],
+): { validation: MigrationValidationResult; model: BlueprintModel | null } {
+  const fail = (validation: MigrationValidationResult) => ({ validation, model: null });
   const errors: Array<{ path: string; message: string }> = [];
   const warnings: Array<{ path: string; message: string }> = [];
   const appliedSet = new Set(appliedIds);
 
   if (migrationsToApply.length === 0) {
-    return { valid: true, errors: [], warnings: [] };
+    return { validation: { valid: true, errors: [], warnings: [] }, model: structuredClone(baseModel) };
   }
 
   errors.push(...validateDependsOn(migrationsToApply, appliedSet));
   const cycleErrors = validateNoCycle(migrationsToApply);
   errors.push(...cycleErrors);
   if (cycleErrors.length > 0) {
-    return { valid: false, errors, warnings };
+    return fail({ valid: false, errors, warnings });
   }
   errors.push(...detectConflicts(migrationsToApply));
   if (errors.length > 0) {
-    return { valid: false, errors, warnings };
+    return fail({ valid: false, errors, warnings });
   }
 
   let ordered: MigrationToApply[];
@@ -430,6 +445,7 @@ export function validateMigrations(
     ordered = migrationsToApply;
   }
   let workingModel = structuredClone(baseModel);
+  let derived = deriveFrom(workingModel);
   for (const migration of ordered) {
     const migErrors: Array<{ path: string; message: string }> = [];
     const migWarnings: Array<{ path: string; message: string }> = [];
@@ -438,21 +454,21 @@ export function validateMigrations(
     if (migErrors.length > 0) {
       const expanded = expandAtomicGroupErrors(migration, migErrors);
       errors.push(...expanded);
-      return { valid: false, errors, warnings };
+      return fail({ valid: false, errors, warnings });
     }
     try {
       applySingleMigration(workingModel, migration);
+      // After EACH migration, not once at the end, so the migration that follows validates against
+      // the edges the one before produced, and applying [A, B] in one call yields the model applying
+      // A and then B in two calls yields.
+      derived = rederiveRelations(workingModel, derived);
     } catch (err) {
       const msg = err instanceof MigrationError ? err.message : String(err);
       errors.push(pathFor(migration.id, `Apply failed: ${msg}`));
-      return { valid: false, errors, warnings };
+      return fail({ valid: false, errors, warnings });
     }
   }
-  return {
-    valid: errors.length === 0,
-    errors,
-    warnings,
-  };
+  return { validation: { valid: true, errors, warnings }, model: workingModel };
 }
 
 // ---------------------------------------------------------------------------
@@ -524,7 +540,9 @@ function applySingleMigration(
  * Migrations are topologically sorted by dependsOn before application.
  * Each migration's changes are applied in order: entities → properties →
  * relationships → meta, with explicit `order` fields respected within
- * each category.
+ * each category. Every relation the build derives from entity data is then
+ * re-derived from the migrated entities, as the build derives it (see
+ * `rederiveRelations.ts`).
  *
  * @param appliedIds - Migration IDs already applied to produce baseModel (for depends_on validation).
  */
@@ -537,19 +555,13 @@ export function applyMigrations(
     return structuredClone(baseModel);
   }
 
-  const validation = validateMigrations(baseModel, migrations, appliedIds);
-  if (!validation.valid) {
+  const { validation, model: migrated } = validateAndApply(baseModel, migrations, appliedIds);
+  if (!validation.valid || !migrated) {
     const copy = structuredClone(baseModel);
     copy.metadata.migrationValidation = validation;
     return copy;
   }
-
-  const model = structuredClone(baseModel);
-  const ordered = topoSort(migrations);
-
-  for (const migration of ordered) {
-    applySingleMigration(model, migration);
-  }
+  const model = migrated;
 
   // Update metadata counts and attach validation result (with warnings)
   model.metadata.total_entities = model.entities.length;

@@ -86,9 +86,12 @@ export function applyRelationshipChanges(
         if (matching.length === 0) {
           throw new MigrationError(`redirect targets non-existent edge: ${subject} --${predicate}--> ${object}`);
         }
+        // The edge after a redirect carries the properties the change states, as `modify` applies them.
+        const edgeProps = change.edge_properties as Record<string, unknown> | undefined;
         for (const r of matching) {
           r.target_entity_id = newTargetId;
           r.id = `${sourceId}--${predicate}--${newTargetId}`;
+          if (edgeProps) r.data = { ...(r.data ?? {}), ...edgeProps };
         }
         break;
       }
