@@ -1132,7 +1132,7 @@ _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service_need`_
 
 #### `contracts`
 
-Integration contracts for this service: what it provides to, and consumes from, everything outside itself. Each contract kind names one coupling style. The wire kinds name a specification and carry the document generated from it; `mcp` and `cli` name a surface rather than a specification - the tools of a Model Context Protocol server, the commands of a command-line program - so they name their do…
+Integration contracts for this service: what it provides to, and consumes from, everything outside itself. Each contract kind names one coupling style. The wire kinds name a specification and carry the document generated from it, except `protobuf`, whose `.proto` file is written by hand and is itself the contract; `mcp` and `cli` name a surface rather than a specification - the tools of a Model C…
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
@@ -1140,6 +1140,7 @@ Integration contracts for this service: what it provides to, and consumes from, 
 | `httpClient` | `ref → http_client_contract` | — |  | Outbound HTTP client contract - what endpoints this service calls. |
 | `asyncapi` | `ref → channel_contract` | — |  | Async messaging contract (AsyncAPI specification). |
 | `openrpc` | `ref → rpc_contract` | — |  | JSON-RPC contract (OpenRPC specification). |
+| `protobuf` | `ref → protobuf_contract` | — |  | Remote procedure contract defined by a Protocol Buffers service (`.proto` file), served over gRPC or a compatible wire. |
 | `mcp` | `ref → mcp_contract` | — |  | Model Context Protocol contract - the tools an MCP server exposes or calls. |
 | `cli` | `ref → cli_contract` | — |  | Command-line contract - the commands a command-line program exposes or runs. |
 | `arazzo` | `ref → flow_contract` | — |  | Workflow contract (Arazzo specification). |
@@ -1224,6 +1225,25 @@ OpenRPC contract: remote methods exposed or called.
 | `output_structures` | `ref → contract_structures` | — |  | Named output structures from RPC results. |
 
 _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/rpc_contract`_
+
+#### `protobuf_contract`
+
+Protocol Buffers contract: the remote procedures of a service defined in a `.proto` file, served by this service or called on another. The `.proto` file is the contract - client and server code is compiled from it, and it alone carries the field numbers, the message types and each method's streaming mode - so `file` is required and names it. Each listed operation is one method of that service; it…
+
+**Required:** `file`, `contract_name`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `file` | `string` | ✓ |  | Path of the `.proto` file that defines the service, relative to the root of the repository the model's code lives in. |
+| `contract_name` | `ref → contract_name` | ✓ |  |  |
+| `slice` | `ref → contract_slice` | — |  |  |
+| `cross_cutting` | `ref → contract_cross_cutting` | — |  |  |
+| `expose` | `array<ref → operation_ref>` | — |  | Operations this service serves as methods of the Protocol Buffers service. |
+| `call` | `array<ref → operation_ref>` | — |  | Operations this service calls as methods of another service's Protocol Buffers definition. |
+| `input_structures` | `ref → contract_structures` | — |  | Named request messages. |
+| `output_structures` | `ref → contract_structures` | — |  | Named response messages. |
+
+_Source: `schema/v2.8/design/arch.schema.yaml#/$defs/protobuf_contract`_
 
 #### `mcp_contract`
 
@@ -1775,13 +1795,14 @@ _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/graphql_binding`_
 
 #### `method`
 
-RPC method configuration for gRPC/TCP/JSON-RPC and similar RPC protocols (method name + params + result; OpenRPC-compatible).
+RPC method configuration for gRPC/TCP/JSON-RPC and similar RPC protocols (method name + params + result + streaming mode).
 
 **Required:** `name`
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
-| `name` | `string` | ✓ |  | RPC method name. |
+| `name` | `string` | ✓ |  | RPC method name, as a client calls it. For gRPC, the fully qualified `package.Service/Method`. |
+| `streaming` | `string` | — | `unary`, `server`, `client`, `bidi` | Which side sends a stream of messages rather than a single one, as a gRPC method declares it: `unary` (one request, one response), `server` (one request, a str… |
 | `description` | `string` | — |  | What this method does. |
 | `summary` | `string` | — |  | Brief one-line summary. |
 | `parameters` | `array<ref → rpc_parameter>` | — |  | Method input parameters. |

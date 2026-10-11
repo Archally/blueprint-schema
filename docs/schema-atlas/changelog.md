@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 29 |
-| Additive (minor) | 250 |
+| Additive (minor) | 253 |
 | Clarification (patch) | 0 |
-| **Total changes** | 279 |
+| **Total changes** | 282 |
 
 ## ⚠ Breaking changes
 
@@ -221,7 +221,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (227)
+## Added (230)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -316,6 +316,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/contracts/properties/mcp` — Property `mcp` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contracts/properties/mcp`_
 
+- [additive] `design/arch.schema.yaml#/$defs/contracts/properties/protobuf` — Property `protobuf` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contracts/properties/protobuf`_
+
 - [additive] `design/arch.schema.yaml#/$defs/contracts/properties/scheduledtransfer` — Property `scheduledtransfer` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/contracts/properties/scheduledtransfer`_
 
@@ -369,6 +372,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/arch.schema.yaml#/$defs/probe` — New definition `probe` added to `design/arch.schema.yaml`.
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/probe`_
+
+- [additive] `design/arch.schema.yaml#/$defs/protobuf_contract` — New definition `protobuf_contract` added to `design/arch.schema.yaml`.
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/protobuf_contract`_
 
 - [additive] `design/arch.schema.yaml#/$defs/rpc_contract/properties/contract_name` — Property `contract_name` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/rpc_contract/properties/contract_name`_
@@ -474,6 +480,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/domain.schema.yaml#/$defs/error_entry/properties/implementation` — Property `implementation` added (optional).
   - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/error_entry/properties/implementation`_
+
+- [additive] `design/domain.schema.yaml#/$defs/method/properties/streaming` — Property `streaming` added (optional).
+  - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/method/properties/streaming`_
 
 - [additive] `design/domain.schema.yaml#/$defs/operation/properties/dispatch` — Property `dispatch` added (optional).
   - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/operation/properties/dispatch`_
