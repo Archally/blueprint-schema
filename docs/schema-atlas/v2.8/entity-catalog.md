@@ -476,7 +476,7 @@ A change to a relationship (edge) between two entities.
 | --- | --- | --- | --- | --- |
 | `kind` | `string` | ✓ | `add`, `remove`, `redirect`, `modify` | Edge operation: add=create, remove=delete, redirect=change target, modify=change edge properties. |
 | `subject` | `string` | ✓ |  | Source entity typed ref (e.g., CMD005). The entity this relationship originates from. |
-| `predicate` | `string` | ✓ | `relationship`, `transition_rules`, `interaction`, `association`, `produces`, `reacts_to` … (88) | Relationship type. Maps to graph edge label. |
+| `predicate` | `string` | ✓ | `relationship`, `transition_rules`, `interaction`, `association`, `produces`, `reacts_to` … (89) | Relationship type. Maps to graph edge label. |
 | `object` | `string` | ✓ |  | Target entity typed ref (e.g., EVT006). For redirect: current target. |
 | `new_object` | `string` | — |  | For redirect: the new target entity ref. |
 | `edge_properties` | `object` | — |  | Properties on the edge itself (policy, condition, mode for produces/reacts_to). |
@@ -1676,6 +1676,7 @@ A domain operation with protocol binding, rule governance, and behavioral proper
 | `requires` | `array<ref → operation_ref>` | — |  | Operations that must be available for this operation to function. Capability dependency, not execution order. |
 | `produces` | `object` | — |  | Operations this operation emits upon execution. Commands typically produce events and/or documents. Events do not produce; they trigger reactions via reacts_to… |
 | `reacts_to` | `array<object>` | — |  | Events or signals this operation reacts to. Each entry is a reactive policy binding: a statement of CAUSALITY, true of the operation wherever it appears. A per… |
+| `translates` | `array<ref → operation_ref>` | — |  | Written on an integration event (an operation of `kind: event` that leaves its bounded context): the domain events of the same context that this event is the p… |
 | `task_type` | `string` | — | `automated`, `manual`, `user-decision`, `external` | Execution type: automated=system-executed, manual=human action outside system, user-decision=human choice within system (UI), external=third-party system. |
 | `tags` | `ref → tags` | — |  |  |
 | `owned_by` | `ref → owned_by` | — |  | Operation-level ownership override. |

@@ -109,7 +109,7 @@ graph LR
     metamodel_schema_yaml(["metamodel"])
     design_arch_schema_yaml -->|73| metamodel_schema_yaml
     design_concepts_schema_yaml -->|44| metamodel_schema_yaml
-    design_domain_schema_yaml -->|55| metamodel_schema_yaml
+    design_domain_schema_yaml -->|56| metamodel_schema_yaml
     design_dynamics_schema_yaml -->|29| metamodel_schema_yaml
     design_infrastructure_schema_yaml -->|28| metamodel_schema_yaml
     design_interactions_schema_yaml -->|33| metamodel_schema_yaml
