@@ -28,7 +28,10 @@ properties:
       Source code repository configuration for the primary repo. Used by the viewer to
       construct clickable links from code_refs to the actual files. For blueprints whose
       code_refs span multiple repositories use `repositories` (keyed by the code_ref org/repo
-      prefix); `repository` stays the fallback for unprefixed (same-repo) code_refs.
+      prefix); `repository` stays the fallback for unprefixed (same-repo) code_refs. Tools
+      that check code_refs against disk find the repository's local clone from this url: the
+      git repository holding the model when one of its remotes names it, else a directory a
+      per-machine mapping names for it.
   repositories:
     type: object
     additionalProperties:

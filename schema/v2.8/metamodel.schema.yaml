@@ -1702,8 +1702,9 @@ x-gdsm:
       schema_version: "2.8.20"
     - lesson: >
         A default declared once in a document header is implemented one way in this suite: annotate
-        the parsed document BEFORE extraction, write the inherited value under its own key, and let
-        the resulting edge record which source answered. Keeping the inherited value separate is
+        the builder's own copy of the parsed document BEFORE extraction, never the document the
+        caller passed in, write the inherited value under its own key, and let the resulting edge
+        record which source answered. Keeping the inherited value separate is
         what lets a consumer tell what the model SAID from what it INHERITED. Merging it into the
         declared field destroys that distinction permanently, and no later pass can restore it,
         which is why a field whose two levels describe different subjects is given no inheritance
