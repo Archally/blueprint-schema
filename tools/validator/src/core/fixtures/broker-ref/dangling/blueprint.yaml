@@ -1,0 +1,5 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Order Events
+description: >-
+  A shop whose order service publishes its events on a message broker the infrastructure declares.

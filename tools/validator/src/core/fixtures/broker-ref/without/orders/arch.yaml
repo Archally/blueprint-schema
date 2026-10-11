@@ -1,0 +1,15 @@
+version: "1.0.0"
+name: Orders architecture
+scope: orders
+contexts:
+  - id: orders.BC001
+    name: Orders
+    kind: core
+    services:
+      - id: orders.SVC001
+        name: Order Service
+        kind: service
+        contracts:
+          asyncapi:
+            contract_name: order-events
+            send: [orders.EVT001]
