@@ -1,0 +1,23 @@
+engineVersion: "0.1"
+rules:
+  - id: requirement-unverified
+    severity: info
+    description: >-
+      An SLO, KPI, security, compliance or resilience requirement that no fitness function lists
+      under `verifies`. The requirement says what the system must achieve; a fitness function that
+      verifies it is what checks it, and an impact query from the requirement reaches that check. One
+      nothing verifies says what is required and names nothing that guards it. For a security,
+      compliance or resilience requirement a guard is its only verification, since it has no level of
+      its own to compare a result with. Only a fitness function counts: a test case that validates
+      the requirement does not. A fitness function with a `quality_characteristic` states a
+      constraint and is its own verification, so it is never reported; an SLA is guarded through its
+      SLOs and is not reported either. INFO, not a defect: most requirements are stated before
+      anything checks them, and the finding names the list a guard would go in. Override per project
+      via .blueprint-lint.yaml (e.g. `requirement-unverified: off`).
+    find:
+      entity_type_in: [SLO, KPI, Security, Compliance, Resilience]
+    check:
+      custom:
+        module: ./requirement-unverified.mjs
+        export: requirementUnverified
+    message: '{kind} "{displayId}" ({name|''unnamed''}) is verified by no fitness function, so the model names nothing that checks it. Add a fitness function that lists it under verifies.{arm}, or name it in an existing one.'

@@ -1,0 +1,23 @@
+engineVersion: "0.1"
+rules:
+  - id: requirement-confirmed-without-evidence
+    severity: warn
+    description: >-
+      A quality requirement marked `provenance.certainty: confirmed` whose `provenance.evidence` is
+      empty. `confirmed` claims the requirement is established, which is a claim about evidence, so
+      one made without any is an epistemic defect rather than a coverage gap: the model asserts what
+      it never sourced, and a reader cannot tell an agreed requirement from an assumption that
+      hardened. Subjects are metrics, KPIs, SLOs, SLAs, security, compliance and resilience
+      requirements, and a fitness function that carries a `quality_characteristic`, which states a
+      quality constraint of its own; a fitness function without one guards other requirements and is
+      not judged here. Only `certainty` is read: `discovery_stage` is a workflow position, and a
+      `committed` requirement may honestly be an unsourced bet. A requirement that states no
+      provenance, or another certainty, is not reported. Override per project via
+      .blueprint-lint.yaml (e.g. `requirement-confirmed-without-evidence: off`).
+    find:
+      entity_type_in: [Metric, KPI, SLO, SLA, Security, Compliance, Resilience, FitnessFunction]
+    check:
+      custom:
+        module: ./requirement-confirmed-without-evidence.mjs
+        export: requirementConfirmedWithoutEvidence
+    message: '{kind} "{displayId}" ({name|''unnamed''}) is marked certainty: confirmed but cites no evidence. Add what establishes it under provenance.evidence, or lower certainty to probable or speculative.'

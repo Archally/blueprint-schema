@@ -1,0 +1,46 @@
+engineVersion: "0.1"
+rules:
+  - id: slo-without-metric
+    severity: info
+    description: >-
+      A service level objective (SLO###) that names no metric of the model. The metric says what is
+      measured to judge the SLO and its `objective` says which level is required, so an SLO without
+      one is stated without a measure: a prose target no result can be compared with. An SLO whose
+      `metric` names an id no entity declares, an id more than one entity declares, or an entity
+      that is not a metric, is reported too, and the message says which, because such a reference
+      links no metric. An id is its whole string, so an id more than one entity declares is resolved
+      by giving the metric an id of its own, not by adding a scope prefix to the reference alone.
+      INFO, not a defect: a target written in prose is a legitimate first statement, and this rule
+      says what would make it measurable, a metric in `metric` and an `objective` beside it. An SLO
+      that names a metric and states no `objective` is not reported here;
+      `requirement-without-objective` reports it. Override per project via .blueprint-lint.yaml
+      (e.g. `slo-without-metric: off`).
+    find:
+      entity_type: SLO
+    check:
+      custom:
+        module: ./requirement-without-metric.mjs
+        export: requirementWithoutMetric
+    message: 'SLO "{displayId}" ({name|''unnamed''}) {finding}'
+  - id: kpi-without-metric
+    severity: info
+    description: >-
+      A key performance indicator (KPI###) that names no metric of the model. The metric says what
+      is measured and the KPI's `objective` says which level is the goal, so a KPI without one is
+      stated without a measure: an indicator no result can be compared with. A KPI whose `metric`
+      names an id no entity declares, an id more than one entity declares, or an entity that is not
+      a metric, is reported too, and the message says which, because such a reference links no
+      metric. An id is its whole string, so an id more than one entity declares is resolved by
+      giving the metric an id of its own, not by adding a scope prefix to the reference alone.
+      INFO, not a defect: an indicator named before it is measured is a legitimate first statement,
+      and this rule says what would make it measurable, a metric in `metric` and an `objective`
+      beside it. A KPI that names a metric and states no `objective` is not reported here;
+      `requirement-without-objective` reports it. Override per project via .blueprint-lint.yaml
+      (e.g. `kpi-without-metric: off`).
+    find:
+      entity_type: KPI
+    check:
+      custom:
+        module: ./requirement-without-metric.mjs
+        export: requirementWithoutMetric
+    message: 'KPI "{displayId}" ({name|''unnamed''}) {finding}'

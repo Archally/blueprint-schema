@@ -1,0 +1,33 @@
+engineVersion: "0.1"
+rules:
+  - id: objective-without-measurement
+    severity: info
+    description: >-
+      An SLO or KPI that states an `objective` on a metric of the model, where the metric does not
+      say it is measured by an instrument. Whether a result exists is stated on the metric, in
+      `collection.status`, `collection.probe_ref` and `collection.work_item_ref`; this rule reads
+      those and never a result or a date, because the model holds no measured values. A `probe_ref`
+      counts only when it names one probe of the model; one that names no declared entity, more
+      than one, or an entity of another type is no instrument. A `work_item_ref` counts only when it
+      names one work item of the model, in the same way. Four findings, because they ask for
+      different work, and each message names the field that clears it. A metric that states no
+      status: a gap in the model, never read as measured. A metric stated as measured with no probe
+      of the model: results exist and nothing says what produces them, and the message says when a
+      `probe_ref` is stated and names no probe; a one-off analysis is measured too, and its probe is
+      the analysis. A metric stated as not measured: an instrument exists or could, and nobody
+      measures with it, a gap in the model. A metric stated as having no instrument: one has to be
+      built or acquired, an instrument need, and the message names the probe the metric plans when
+      it names one, and the work item that builds it, or says that none does or that the
+      `work_item_ref` stated names no single work item of the model. A metric stated as
+      measured with a probe of the model is not reported. An SLO or KPI with an objective and no
+      metric of the model is reported by `slo-without-metric` or `kpi-without-metric`, never here
+      as well; one with no comparable objective is not a subject, and `requirement-without-objective`
+      reports it when it names a metric of the model. INFO, not a defect. Override per project via
+      .blueprint-lint.yaml (e.g. `objective-without-measurement: off`).
+    find:
+      entity_type_in: [SLO, KPI]
+    check:
+      custom:
+        module: ./objective-without-measurement.mjs
+        export: objectiveWithoutMeasurement
+    message: '{kind} "{displayId}" ({name|''unnamed''}) {finding}'

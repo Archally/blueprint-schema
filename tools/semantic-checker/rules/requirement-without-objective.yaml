@@ -1,0 +1,26 @@
+engineVersion: "0.1"
+rules:
+  - id: requirement-without-objective
+    severity: info
+    description: >-
+      An SLO or KPI that names a metric of the model and states no comparable `objective`. The
+      metric says what is measured and the objective says which level of it is required, so a
+      requirement with a metric and no objective says what to measure and not what counts as
+      meeting it: no result of the metric can be compared with it. A prose `target` is not such a
+      level. Two findings, because the fixes differ, and each names the fields that clear it: no
+      objective stated, which is written as `objective` with a `comparator` (lt, le, gt, ge or eq),
+      a `value` in the unit of the metric and an optional `statistic`; and an objective stated that
+      is not a comparable level, a comparator outside those five or a value that is not a number,
+      which is corrected. An SLO or KPI that names no metric of the model is reported by
+      `slo-without-metric` or `kpi-without-metric`, never here as well; one with a metric and a
+      comparable objective is measurable, and `objective-without-measurement` reports it when its
+      metric does not say it is measured. INFO, not a defect: a requirement is often named, and its
+      metric chosen, before anyone has agreed the level. Override per project via
+      .blueprint-lint.yaml (e.g. `requirement-without-objective: off`).
+    find:
+      entity_type_in: [SLO, KPI]
+    check:
+      custom:
+        module: ./requirement-without-objective.mjs
+        export: requirementWithoutObjective
+    message: '{kind} "{displayId}" ({name|''unnamed''}) {finding}'
