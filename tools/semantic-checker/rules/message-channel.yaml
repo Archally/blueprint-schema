@@ -1,0 +1,50 @@
+engineVersion: "0.1"
+# A message channel (MCH###) is a topic producers publish to or a queue a consumer reads from,
+# declared once in an architecture document's `channels:` list. Operations name it through
+# `exchange.topic.channel_ref` / `exchange.queue.channel_ref`, a consuming contract through
+# `subscription.channel_ref`. The references themselves are checked by the validator: an id nothing
+# declares is a cross-reference error. These two rules judge what the validator accepts and cannot
+# see - a queue nothing reads, and a channel named in a way its own declaration contradicts.
+# Warnings, both, for the whole line. Override per-project via .blueprint-lint.yaml.
+rules:
+  - id: message-queue-unread
+    severity: warn
+    description: >-
+      A queue channel (`kind: queue`) from which nothing in the model receives a message. A queue is
+      read by a consuming service: a contract names it as its subscription and receives the
+      operations bound to it, or a contract receives an operation sent to the queue directly.
+      A queue no contract subscribes through, or whose subscribing contracts receive nothing, holds
+      messages no service is modelled as reading, so either the consumer is missing from the model
+      or the queue is. Fix by naming the queue in the consuming contract's
+      `subscription.channel_ref` and listing what it receives under `receive:`, or by removing the
+      queue.
+    find:
+      entity_type: MessageChannel
+    filter:
+      field_in:
+        data.kind: [queue]
+    check:
+      custom:
+        module: ./message-channel.mjs
+        export: messageQueueUnread
+    message: 'Queue channel {subject} "{subject_name}" {reason}. Name it in the consuming contract''s `subscription.channel_ref` and list what that contract receives under `receive:`, or remove the queue.'
+
+  - id: message-channel-mismatch
+    severity: warn
+    description: >-
+      A message channel that is named in a way its own declaration contradicts. Three shapes: an
+      operation names a `queue` channel through `exchange.topic.channel_ref`, or a `topic` channel
+      through `exchange.queue.channel_ref`; a contract names a `topic` channel as its subscription,
+      which is a queue the consuming service reads; or the channel declares protocol bindings, such
+      as `bindings.amqp`, and an operation travels on it over another protocol. The references
+      resolve, so the validator accepts every one of them; but a contract generator then describes
+      the channel one way and the operation another, and a reader cannot tell which is meant. Reported
+      once per channel, naming every disagreeing reference, because the fix is one decision about
+      what the channel is.
+    find:
+      entity_type: MessageChannel
+    check:
+      custom:
+        module: ./message-channel.mjs
+        export: messageChannelMismatch
+    message: 'Message channel {subject} "{subject_name}" is declared `kind: {kind}`{bindings}, and {disagreements}. Correct the channel''s declaration, or point the references at a channel that is what they say.'
