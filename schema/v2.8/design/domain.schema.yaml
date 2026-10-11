@@ -571,7 +571,15 @@ $defs:
     properties:
       name:
         type: string
-        description: "Topic name."
+        description: >-
+          Topic name. Where `channel_ref` names the channel, the routing key the message is
+          published with on it.
+      channel_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/message_channel_ref"
+        description: >-
+          The message channel (`kind: topic`) the message is published to, declared in an
+          architecture document's `channels:` list. `name` keeps naming the topic, or the routing
+          key on that channel.
       description:
         type: string
         description: "What messages on this topic represent."
@@ -589,6 +597,11 @@ $defs:
       name:
         type: string
         description: "Queue name."
+      channel_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/message_channel_ref"
+        description: >-
+          The message channel (`kind: queue`) the message is sent to, declared in an architecture
+          document's `channels:` list.
       description:
         type: string
         description: "What messages in this queue represent."

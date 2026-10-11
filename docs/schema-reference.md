@@ -168,6 +168,7 @@ Rule prefixes: `SR`=structural, `CR`=classification, `DR`=derivation, `EQ`=equiv
 |--------|---------|---------|
 | Bounded context | `BC\d{3,}` | `BC001` |
 | Service | `SVC\d{3,}` | `SVC001` |
+| Message channel | `MCH\d{3,}` | `MCH001` |
 | Domain | `DMN\d{3,}` | `DMN001` (no context prefix) |
 | Subdomain | `SDM\d{3,}` | `SDM001` (no context prefix) |
 | Probe | `PRB\d{3,}` | `PRB001` |

@@ -598,6 +598,15 @@ $defs:
       node so that what it does not see is recorded once against the instrument, rather than repeated
       on, or missing from, every observation drawn with it.
 
+  message_channel_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?MCH\\d{3,}$"
+    description: >
+      Reference to a message channel by its typed id (e.g. MCH001 or orders.MCH001): a topic
+      producers publish to, or a queue a consumer reads from, declared once in an architecture
+      document's `channels:` list and placed on a message broker. Operations name the channel they
+      travel on, and a consuming contract names the queue it reads, by this id.
+
   quality_characteristic:
     type: string
     enum:

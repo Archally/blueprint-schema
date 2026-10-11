@@ -89,7 +89,82 @@ properties:
       Instruments this architecture is read with. A probe is declared here when what it cannot see
       has to be recorded somewhere other than the prose of whoever last ran it.
 
+  channels:
+    type: array
+    items:
+      $ref: "#/$defs/message_channel"
+    description: >
+      Message channels: the topics producers publish to and the queues consumers read from, each
+      placed on a message broker. A channel is shared by producers and consumers in different
+      bounded contexts, so it is declared here, once, rather than under one context. Operations
+      name the channel they travel on through `exchange.topic.channel_ref` or
+      `exchange.queue.channel_ref`; a consuming contract names the queue it reads through
+      `subscription.channel_ref`.
+
 $defs:
+
+  message_channel:
+    type: object
+    description: >
+      A named destination on a message broker. A `topic` is where a producer publishes and every
+      subscriber receives a copy: an AMQP exchange, a Kafka topic, a Service Bus topic. A `queue` is
+      where messages wait for one reader: an AMQP queue, which on a broker with exchanges is also the
+      private subscription of one consuming service. Which messages travel on a channel is stated by
+      the operations that name it, never listed here.
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - kind
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/message_channel_ref"
+        description: "Stable channel id (MCH###)."
+      name:
+        type: string
+        description: "Channel name, as the system's code and documentation call it."
+      kind:
+        type: string
+        enum: [topic, queue]
+        description: >
+          `topic`: published to by producers, each subscriber receives every message. `queue`: read
+          by one consumer, its competing instances sharing the messages.
+      address:
+        type: string
+        description: >
+          The name the broker knows the channel by on the wire: the exchange name of an AMQP topic,
+          the queue name, the Kafka topic name. Absent, it is the channel's `name`.
+      broker_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+        description: >
+          The message broker this channel lives on: the infrastructure resource (IR###) that
+          declares it, conventionally with `kind: broker`. Absent, the channel lives on the broker of
+          the contracts whose operations name it.
+      description:
+        type: string
+        description: "What travels on this channel and why it exists."
+      bindings:
+        type: object
+        additionalProperties: false
+        description: >
+          Protocol-specific details of the channel, keyed by protocol, after the AsyncAPI bindings.
+          Each key describes the channel on that protocol only.
+        properties:
+          amqp:
+            type: object
+            additionalProperties: false
+            description: "The channel on an AMQP broker."
+            properties:
+              exchange_type:
+                type: string
+                enum: [direct, topic, fanout, headers, default]
+                description: >
+                  For a `topic` channel, the type of the AMQP exchange it is: `direct` routes a
+                  message to the queues bound with exactly its routing key, `topic` to the queues
+                  whose binding pattern matches it, `fanout` to every bound queue, `headers` by
+                  message headers, and `default` is the broker's nameless exchange, which routes by
+                  queue name. The routing key a message is published with is the operation's
+                  `exchange.topic.name`.
 
   contract_output:
     type: string
@@ -882,6 +957,26 @@ $defs:
           SUPERSEDED by `broker_ref`. A free-string broker name (e.g. rabbitmq-prod), which resolves
           to nothing in the model. Still accepted on this line, and never beside `broker_ref`; the
           semantic checker advises the typed reference wherever it appears.
+      subscription:
+        type: object
+        additionalProperties: false
+        minProperties: 1
+        description: >-
+          How this service receives the messages it consumes: its own durable subscription, which
+          receives every message published to the channels its `receive:` operations travel on,
+          while the service's competing instances share them. The messages bound to the
+          subscription are this contract's `receive:` list, so they are not repeated here.
+        properties:
+          channel_ref:
+            $ref: "../metamodel.schema.yaml#/$defs/message_channel_ref"
+            description: >-
+              The queue channel (`kind: queue`) this service reads, on a broker where a
+              subscription is a queue of its own, as on AMQP.
+          name:
+            type: string
+            description: >-
+              The subscription's name where it is not a channel of its own: the consumer group id on
+              Kafka, the subscription name on a Service Bus topic.
       input_structures:
         $ref: "#/$defs/contract_structures"
         description: "Named message structures received (consumed)."
