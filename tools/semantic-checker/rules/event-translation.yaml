@@ -1,0 +1,30 @@
+engineVersion: "0.1"
+# An integration event states the domain events it is the published form of with `translates`, a
+# list of operation references written on the integration event. The references themselves are
+# checked by the validator: an id nothing declares is a cross-reference error. This rule judges what
+# the validator accepts and cannot see - a translation stated the wrong way round, across a context
+# boundary, or on an event nobody publishes. A warning, for the whole line. Override per-project via
+# .blueprint-lint.yaml.
+rules:
+  - id: translation-target-not-internal
+    severity: warn
+    description: >-
+      An operation whose `translates` does not pair a published integration event with unpublished
+      domain events of its own context. Five shapes, each reported: an entry names an operation that
+      is not an event; an entry names an event of another context (the slice the event is declared
+      in, as event reach reads it); an entry names an event that is itself published, so two
+      integration events are paired rather than a domain event and its published form; the operation
+      carrying `translates` is not an event; or it is an event that is not published - no contract
+      sends or receives it and its exchange names no messaging channel - so the translation is one
+      nobody publishes. The last two are how a pair written on the domain event instead of the
+      integration event shows. Whether an event is published is read from the derived event reach,
+      which `translates` never changes. Reported once per operation, naming every disagreeing entry,
+      because the fix is one decision about which of the two events is published. An entry that
+      resolves to nothing is left to the cross-reference error.
+    find:
+      entity_type: Operation
+    check:
+      custom:
+        module: ./event-translation.mjs
+        export: translationTargetNotInternal
+    message: 'Operation {subject} "{subject_name}" states `translates`, and {problems}. Write `translates` on the published integration event, naming the unpublished domain events of its own context that it is the published form of.'

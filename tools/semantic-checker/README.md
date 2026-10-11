@@ -43,7 +43,7 @@ npm run check -- <blueprint-dir> --config .blueprint-lint.yaml
 | `activity-steps-reverse-causal-edge` | warn |
 | `activity-steps-without-causal-edge` | info |
 | `activity-without-entry-operation` | warn | every story activity names the `entry_operation` it begins with; an activity may omit it while the operation is not yet modelled, and this reports the gap |
-| `aggregate-root-signals` | info | aggregate-root Concepts have lifecycle states or relationships |
+| `aggregate-root-signals` | info | reports an aggregate root that no command reaches: no operation of `kind: command` names it in `materializes`, and none names a rule about it (one whose `concepts` or `concept` names the root) in `governed_by`, `preconditions` or `postconditions`. The message says whether the root declares `states` and owns a `contains` relationship; neither decides the finding |
 | `unanswered-questions` | info | every Question has an outgoing `answered-by` edge |
 | `dispatch-with-exchange` | warn | no Operation sets `dispatch: in-process` *and* an `exchange` — they are mutually exclusive |
 | `empty-context` | warn | a Context that declares services handles at least one operation (an incoming `handled_by`); a context with no services is a named boundary and is out of scope |
@@ -140,6 +140,7 @@ Severities: `error` (fails), `warn`, `info`, `off`.
 | `broker-ref-target-not-a-broker` | warn | reports an infrastructure resource that a messaging contract names as its broker (`broker_ref`) while its `kind` is not `broker`, once per resource, naming the contracts that point at it. Either the contracts name the wrong resource, such as a queue the broker hosts, or the resource is a broker described as something else; fix by setting `kind: broker` on it, or by pointing the contracts at the broker that hosts it |
 | `message-queue-unread` | warn | reports a queue channel (`kind: queue`) from which nothing in the model receives a message: no contract names it as its `subscription.channel_ref` and receives the operations bound to it, and no contract receives an operation sent to the queue directly. Fix by naming the queue in the consuming contract's subscription and listing what it receives under `receive:`, or by removing the queue |
 | `message-channel-mismatch` | warn | reports a message channel named in a way its own declaration contradicts: an operation names a `queue` channel through `exchange.topic.channel_ref` or a `topic` channel through `exchange.queue.channel_ref`, a contract names a `topic` channel as its subscription, or an operation travels on the channel over a protocol its `bindings` do not declare. Once per channel, naming every disagreeing reference |
+| `translation-target-not-internal` | warn | reports an operation whose `translates` does not pair a published integration event with unpublished domain events of its own context: an entry names an operation that is not an event, an event of another context, or an event that is itself published; or the operation carrying `translates` is not an event, or is an event nothing publishes, which is how a pair written on the domain event instead of the integration event shows. Once per operation, naming every disagreeing entry |
 
 ## Custom rules
 
