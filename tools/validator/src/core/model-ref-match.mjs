@@ -1,22 +1,19 @@
-// GENERATED — do not edit.
-// Emitted by tsc from schemas/blueprint/.shared/model-builder/src/extraction/relations/modelRefMatch.ts and copied here by scripts/port-parity.mjs.
-// The TypeScript module is the single implementation: the vertical CLIs (bp/bv/rl/cstd) and the
-// blueprint MCP import it directly, while this plain-ESM emission is what the zero-build public
-// tools run. Editing this file makes the two disagree; change the .ts and re-run:
-//     npm run build --workspace=@archally/blueprint-model-builder && npm run port-parity:port
+// GENERATED - do not edit.
+// Emitted by tsc from the TypeScript module modelRefMatch.ts, its single implementation.
+// This plain-ESM copy is what the zero-build tools run. Editing this file makes it disagree with
+// its source; change the TypeScript module and regenerate this copy.
 
 /**
  * The `model_ref` FORM rules, with no dependencies - the single definition of what each of the four
  * documented reference forms addresses.
  *
- * This module exists to be shared across the TS/zero-build boundary. The model-builder imports it
- * directly (`modelRef.ts`), and `scripts/port-parity.mjs` emits it as plain ESM into
- * `.shared/validator/core/model-ref-match.mjs`, so the zero-build validator answers "does this
- * reference resolve?" with the SAME rules the graph builder uses. Two hand-written copies would
- * eventually disagree, and the disagreement would look like a model defect to whoever hit it.
+ * This module is shared across the TypeScript/zero-build boundary. The model builder imports it
+ * directly, and the zero-build validator runs a plain-ESM copy of it, so the validator answers
+ * "does this reference resolve?" with the SAME rules the graph builder uses. Two hand-written copies
+ * would eventually disagree, and the disagreement would look like a model defect to whoever hit it.
  *
- * Deliberately free of `Entity` and of every other import: it is emitted into a package that has no
- * build step and no node_modules, so it can depend on nothing.
+ * Deliberately free of `Entity` and of every other import: its plain-ESM copy runs with no build
+ * step and no node_modules, so it can depend on nothing.
  *
  * The four forms, from `metamodel.schema.yaml` `$defs.model_ref`:
  *   (1) typed id, as declared       `MDL013`, `billing.MDL013`

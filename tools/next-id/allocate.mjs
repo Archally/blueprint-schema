@@ -1,17 +1,12 @@
-// GENERATED — do not edit.
-// Emitted by tsc from packages/cli-shared/src/id-allocator/allocator.ts and copied here by scripts/port-parity.mjs.
-// The TypeScript module is the single implementation: the vertical CLIs (bp/bv/rl/cstd) and the
-// blueprint MCP import it directly, while this plain-ESM emission is what the zero-build public
-// tools run. Editing this file makes the two disagree; change the .ts and re-run:
-//     npm run build --workspace=packages/cli-shared && npm run port-parity:port
+// GENERATED - do not edit.
+// Emitted by tsc from the TypeScript module allocator.ts, its single implementation.
+// This plain-ESM copy is what the zero-build tools run. Editing this file makes it disagree with
+// its source; change the TypeScript module and regenerate this copy.
 
 /**
  * Parametrized typed-ID allocator, shared across the vertical CLIs (bp/bv/rl/cstd) and the
  * blueprint MCP. "Next id" is a function of `(prefix, namespace, band, count)` over a set of
- * existing ids — NOT a global counter. Pure and domain-free.
- *
- * Generalizes the legacy bare-prefix `nextId` in
- * `servers/{brandvoice,realm}/cli/src/routing/id-allocator.ts`.
+ * existing ids - NOT a global counter. Pure and domain-free.
  */
 /** Thrown when a reserved band has no free slot left (allocation would spill past `band.max`). */
 export class BandExhaustedError extends Error {
@@ -32,7 +27,8 @@ function escapeRegExp(value) {
 }
 /**
  * Allocate the next free id (or a contiguous block of `count`) for `prefix` in `namespace`,
- * optionally constrained to a reserved `band`. Gap-unaware (`max + 1`), matching the legacy `nextId`.
+ * optionally constrained to a reserved `band`. Gap-unaware (`max + 1`): a free number below the
+ * highest one in use is never handed out.
  *
  * @returns a single id when `count` is 1 (default), else an array of `count` contiguous ids.
  * @throws {BandExhaustedError} when a band is given and the allocation would exceed `band.max`.
@@ -46,9 +42,9 @@ export function allocateNextId(options) {
     const nsPrefix = namespace ? `${escapeRegExp(namespace)}\\.` : '';
     // The optional trailing letter addresses one member of a family of related entities
     // (realm's `ECH009a`..`ECH009d`). A member occupies its family's number, so counting
-    // it is what stops the allocator handing that number to something unrelated - before
-    // this, `ECH049` was offered while `ECH049a`..`ECH049e` already existed. Domains
-    // without suffixed ids are unaffected: the branch simply never matches.
+    // it is what stops the allocator handing that number to something unrelated: while
+    // `ECH049a`..`ECH049e` exist, `ECH049` is taken. Domains without suffixed ids are
+    // unaffected: the branch simply never matches.
     const pattern = new RegExp(`^${nsPrefix}${escapeRegExp(prefix)}(\\d+)[a-z]?$`);
     // Banded requests start their counter at the band floor; bare requests at 0 (→ first id is 1).
     let maxNum = band ? band.min - 1 : 0;

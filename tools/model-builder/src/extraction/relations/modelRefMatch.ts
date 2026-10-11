@@ -2,14 +2,13 @@
  * The `model_ref` FORM rules, with no dependencies - the single definition of what each of the four
  * documented reference forms addresses.
  *
- * This module exists to be shared across the TS/zero-build boundary. The model-builder imports it
- * directly (`modelRef.ts`), and `scripts/port-parity.mjs` emits it as plain ESM into
- * `.shared/validator/core/model-ref-match.mjs`, so the zero-build validator answers "does this
- * reference resolve?" with the SAME rules the graph builder uses. Two hand-written copies would
- * eventually disagree, and the disagreement would look like a model defect to whoever hit it.
+ * This module is shared across the TypeScript/zero-build boundary. The model builder imports it
+ * directly, and the zero-build validator runs a plain-ESM copy of it, so the validator answers
+ * "does this reference resolve?" with the SAME rules the graph builder uses. Two hand-written copies
+ * would eventually disagree, and the disagreement would look like a model defect to whoever hit it.
  *
- * Deliberately free of `Entity` and of every other import: it is emitted into a package that has no
- * build step and no node_modules, so it can depend on nothing.
+ * Deliberately free of `Entity` and of every other import: its plain-ESM copy runs with no build
+ * step and no node_modules, so it can depend on nothing.
  *
  * The four forms, from `metamodel.schema.yaml` `$defs.model_ref`:
  *   (1) typed id, as declared       `MDL013`, `billing.MDL013`

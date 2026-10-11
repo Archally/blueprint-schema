@@ -1,30 +1,25 @@
-// GENERATED — do not edit.
-// Emitted by tsc from servers/blueprint/cli/src/verbs/code-refs-coverage.ts and copied here by scripts/port-parity.mjs.
-// The TypeScript module is the single implementation: the vertical CLIs (bp/bv/rl/cstd) and the
-// blueprint MCP import it directly, while this plain-ESM emission is what the zero-build public
-// tools run. Editing this file makes the two disagree; change the .ts and re-run:
-//     npm run build --workspace=servers/blueprint/cli && npm run port-parity:port
+// GENERATED - do not edit.
+// Emitted by tsc from the TypeScript module code-refs-coverage.ts, its single implementation.
+// This plain-ESM copy is what the zero-build tools run. Editing this file makes it disagree with
+// its source; change the TypeScript module and regenerate this copy.
 
 /**
- * Pure `code_refs` coverage analysis — the SINGLE implementation behind `bp coverage-check` and the
- * zero-build public `tools/coverage-check`. Deliberately import-free so `tsc` emits self-contained
- * ESM that the public tool can run with no build step (plan D38, the "generated port"); the DERIVED
- * phase of `scripts/port-parity.mjs` copies the emission to
- * `schemas/blueprint/.shared/coverage-check/analyze.mjs`.
+ * Pure `code_refs` coverage analysis - the SINGLE implementation behind `bp coverage-check` and the
+ * zero-build `tools/coverage-check`. Deliberately import-free, so its compiled form is
+ * self-contained ESM that the zero-build tool runs with no build step.
  *
  * Named `code-refs-coverage` rather than `code-coverage`: this is model↔source traceability, not
  * test coverage.
  *
  * ── What it answers ───────────────────────────────────────────────────────────────────────────
- * Two independent drift directions, which is the whole point — a tool that answers only the first
+ * Two independent drift directions, which is the whole point - a tool that answers only the first
  * reports "all good" for a blueprint that has stopped describing the code:
  *
  *   1. code → model   Given paths that changed, which entities reference them? Paths with NO
- *                     referencing entity are `uncoveredPaths` — code changed without a blueprint
- *                     update, which is precisely what `/sdlc.execute` and `/sdlc.review` invoke
- *                     this for.
+ *                     referencing entity are `uncoveredPaths` - code changed without a blueprint
+ *                     update, which is what a change review asks this for.
  *   2. model → code   Which `code_refs` point at files that no longer exist? Those are
- *                     `danglingRefs` — a blueprint describing code that has been moved or deleted.
+ *                     `danglingRefs` - a blueprint describing code that has been moved or deleted.
  *
  * ── Cross-repo refs ───────────────────────────────────────────────────────────────────────────
  * A `code_ref.path` may be `org/repo#path/to/file` (metamodel `code_ref_entry`). Such a file cannot
@@ -32,9 +27,9 @@
  * Calling an unreachable file "missing" would make the whole report untrustworthy on first run.
  *
  * ── Matching ──────────────────────────────────────────────────────────────────────────────────
- * Segment-aligned, never raw substring. `src/a` must not match `src/abc/x` — the pre-2026-07-26
- * verb used bidirectional `String.includes` and did exactly that. Every match carries the reason
- * it matched (`matchKind`) so a surprising row can be audited rather than trusted.
+ * Segment-aligned, never raw substring: `src/a` must not match `src/abc/x`, which a bidirectional
+ * `String.includes` would. Every match carries the reason it matched (`matchKind`) so a surprising
+ * row can be audited rather than trusted.
  */
 /** Split the metamodel's `org/repo#path` cross-repo form. Same-repo paths get `repo: null`. */
 export function splitRepoRef(rawPath) {

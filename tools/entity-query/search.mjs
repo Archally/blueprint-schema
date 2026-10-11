@@ -1,24 +1,21 @@
-// GENERATED — do not edit.
-// Emitted by tsc from servers/blueprint/cli/src/verbs/entity-search.ts and copied here by scripts/port-parity.mjs.
-// The TypeScript module is the single implementation: the vertical CLIs (bp/bv/rl/cstd) and the
-// blueprint MCP import it directly, while this plain-ESM emission is what the zero-build public
-// tools run. Editing this file makes the two disagree; change the .ts and re-run:
-//     npm run build --workspace=servers/blueprint/cli && npm run port-parity:port
+// GENERATED - do not edit.
+// Emitted by tsc from the TypeScript module entity-search.ts, its single implementation.
+// This plain-ESM copy is what the zero-build tools run. Editing this file makes it disagree with
+// its source; change the TypeScript module and regenerate this copy.
 
 /**
- * Pure entity search — the SINGLE implementation behind `bp query` and the zero-build public
- * `tools/entity-query`. Import-free so `tsc` emits self-contained ESM for the public side
- * (plan D38); the DERIVED phase of `scripts/port-parity.mjs` copies the emission to
- * `schemas/blueprint/.shared/entity-query/search.mjs`.
+ * Pure entity search - the SINGLE implementation behind `bp query` and the zero-build
+ * `tools/entity-query`. Import-free, so its compiled form is self-contained ESM that the zero-build
+ * tool runs with no build step.
  *
- * This is the deterministic form of "search before you mint" — the rule that stops an authoring
+ * This is the deterministic form of "search before you mint" - the rule that stops an authoring
  * agent creating a second entity for something the model already describes. The failure it guards
  * against is silent: a duplicate concept is valid YAML, passes every validator, and only shows up
  * later as two half-modelled versions of the same idea.
  *
  * Ranking is deliberately crude and explainable rather than clever: an id match beats a name match
  * beats a body match. A relevance score nobody can predict is worse than a coarse one everybody
- * can, because the caller is usually deciding "does this already exist?" — a question that needs
+ * can, because the caller is usually deciding "does this already exist?" - a question that needs
  * the exact-id hit at the top, not a plausible-looking paragraph.
  */
 const RANK = { exact: 0, id: 1, name: 2, tag: 3, body: 4 };
@@ -29,7 +26,7 @@ function lower(values) {
 /** Which field a text query hit, in precedence order, or null if it hit nothing. */
 export function matchTextField(entity, text) {
     const needle = text.toLowerCase();
-    // An exact id or name hit is the strongest possible "yes, this already exists" — without this
+    // An exact id or name hit is the strongest possible "yes, this already exists" - without this
     // tier, searching `order` on a scoped model ranks every `orders.*` entity as an id hit and buries
     // the `Order` concept itself behind `OrderState` and `OrderMessage`. Measured on PrestaShop.
     if (lower([entity.displayId, entity.id, entity.term]).some((value) => value === needle))
