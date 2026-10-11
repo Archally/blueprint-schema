@@ -1,0 +1,15 @@
+version: "1.0.0"
+name: Basket architecture
+scope: basket
+contexts:
+  - id: basket.BC001
+    name: Basket
+    kind: core
+    services:
+      - id: basket.SVC001
+        name: Basket Service
+        kind: service
+        contracts:
+          protobuf:
+            contract_name: basket-api
+            expose: [basket.QRY001]

@@ -1,0 +1,5 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Basket Service
+description: >-
+  A shop whose basket service serves its remote procedures from a Protocol Buffers service definition.

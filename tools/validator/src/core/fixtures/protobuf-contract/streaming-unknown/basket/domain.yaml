@@ -1,0 +1,21 @@
+version: "1.0.0"
+name: Basket domain
+scope: basket
+operations:
+  getBasket:
+    id: basket.QRY001
+    kind: query
+    name: Get Basket
+    exchange:
+      protocol: grpc
+      method:
+        name: BasketApi.Basket/GetBasket
+  watchBasket:
+    id: basket.QRY002
+    kind: query
+    name: Watch Basket
+    exchange:
+      protocol: grpc
+      method:
+        name: BasketApi.Basket/WatchBasket
+        streaming: duplex
