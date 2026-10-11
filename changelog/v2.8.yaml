@@ -5,6 +5,15 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.67"
+    date: "2026-10-11"
+    step: "queues and topics become message channels placed on a broker, an exchange names its channel and a consuming contract names its subscription"
+    summary: |
+      An architecture document accepts a new optional root list, `channels:`. Each entry is a message channel with a typed id (MCH###), a `name` and a `kind`: `topic`, where producers publish and every subscriber receives a copy (an AMQP exchange, a Kafka topic), or `queue`, where messages wait for one reader. A channel may state its wire `address` (the `name` otherwise), the broker it lives on (`broker_ref`, an infrastructure resource), a `description`, and protocol bindings keyed by protocol; `bindings.amqp.exchange_type` says which kind of AMQP exchange a topic channel is.
+      An operation names the channel it travels on through a new optional `channel_ref` on its inline `exchange.topic` or `exchange.queue`. The inline `name` keeps its meaning: on a topic channel it is the routing key the message is published with. An `asyncapi` contract accepts a new optional `subscription`: the consuming service's own subscription, by `channel_ref` to a queue channel where the broker gives each subscriber a queue (AMQP), or by `name` where it is no channel (a Kafka consumer group). The messages bound to it are the contract's `receive:` list. Every reference resolves like any other typed id, so a channel nothing declares is a cross-reference error.
+      The model builder extracts each channel as a `MessageChannel` entity in the architecture layer and draws three edges: `channel_broker` from a channel to its broker, `travels_on` from an operation to its channel (carrying the role, the routing key and the protocol), and `contract_subscription` from a consuming contract to its queue. The semantic checker adds two warnings: `message-queue-unread`, a queue from which no contract receives anything, and `message-channel-mismatch`, a channel named in a way its own declaration contradicts - a queue named as a topic or the reverse, a topic named as a subscription, or an operation travelling over a protocol the channel declares no binding for. `contract-operation-missing-channel-address` accepts a `channel_ref` as the channel's address.
+      Contract generators (Archally Pro) place a message published to a declared AMQP topic channel on its routing key, with the AMQP binding naming the exchange and its type, and place the messages a consuming contract receives on its subscription queue, described as an AMQP queue. A model that declares no channel produces the same documents as before.
+      Widened: a document carrying `channels`, `channel_ref` or `subscription` was rejected by 2.8.66 and is accepted now, so the version is minted rather than folded into the untagged 2.8.66. Every document 2.8.66 accepted is still accepted, the inline `topic` and `queue` included.
   - version: "2.8.66"
     date: "2026-10-11"
     step: "a messaging contract names its broker by a typed reference to an infrastructure resource"
