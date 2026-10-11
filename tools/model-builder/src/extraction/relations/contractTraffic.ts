@@ -45,6 +45,10 @@ const PROTOCOL_BY_CONTRACT_TYPE: Readonly<Record<string, string>> = Object.freez
   asyncapi: 'message',
   channel: 'message',
   openrpc: 'rpc',
+  // A Protocol Buffers service is a remote procedure call whatever wire serves it (gRPC, Connect,
+  // gRPC-Web), so it computes the same coupling as JSON-RPC; SURFACE_BY_CONTRACT_TYPE below keeps
+  // the two from joining each other.
+  protobuf: 'rpc',
   // MCP runs over JSON-RPC and a command line is a procedure call too, but each is a coupling of
   // its own and says so: an `mcp.call` and a `cli.expose` of one operation are two surfaces, and
   // the protocol mismatch below is what keeps them from joining. `graphql` names root fields
@@ -60,6 +64,17 @@ const PROTOCOL_BY_CONTRACT_TYPE: Readonly<Record<string, string>> = Object.freez
   inprocess: 'inprocess',
   shareddata: 'shareddata',
   scheduledtransfer: 'scheduledtransfer',
+});
+
+/**
+ * The kinds that compute one coupling and still name two surfaces. A JSON-RPC server and a Protocol
+ * Buffers service are both `rpc`, and a gRPC client of an operation does not call a JSON-RPC server
+ * of it: pairing the two would be a coupling the model never states. The join compares the surface,
+ * which is the protocol for every other kind; the edge carries the protocol.
+ */
+const SURFACE_BY_CONTRACT_TYPE: Readonly<Record<string, string>> = Object.freeze({
+  openrpc: 'openrpc',
+  protobuf: 'protobuf',
 });
 
 /** Verbs that make a contract's service the PROVIDER of the operation. */
@@ -84,6 +99,8 @@ const CONSUMER_VERBS: ReadonlySet<string> = new Set([
 interface Side {
   contextId: string;
   protocol: string;
+  /** What the join compares: the protocol, or the kind where two kinds share one (see above). */
+  surface: string;
   brokerId: string | null;
 }
 
@@ -153,7 +170,9 @@ export function extractContractTrafficRelations(
     if (!contextId) return null;
     const protocol = protocolOf(contract);
     if (!protocol) return null;
-    return { contextId, protocol, brokerId: brokerOf(contract) };
+    const type = (contract.data as { _contractType?: unknown } | undefined)?._contractType as string;
+    const surface = SURFACE_BY_CONTRACT_TYPE[type] ?? protocol;
+    return { contextId, protocol, surface, brokerId: brokerOf(contract) };
   }
 
   // operation -> who provides it and who consumes it, per protocol.
@@ -186,8 +205,9 @@ export function extractContractTrafficRelations(
     for (const consumer of consumerSides) {
       for (const provider of providerSides) {
         // A protocol mismatch is not traffic: an HTTP caller and a message producer of the same
-        // operation describe two surfaces, not one exchange.
-        if (consumer.protocol !== provider.protocol) continue;
+        // operation describe two surfaces, not one exchange. Nor is a gRPC caller of a JSON-RPC
+        // server, which share a protocol and not a surface.
+        if (consumer.surface !== provider.surface) continue;
         // A context calling its own service is internal, and drawing it as an arrow to itself
         // says nothing a reader of a context map wants.
         if (consumer.contextId === provider.contextId) continue;
