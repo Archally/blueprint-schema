@@ -5,8 +5,9 @@ import type { ParsedBlueprintDocument } from '../../model/types.js';
  *
  * A domain document root may carry `domain_ref`: the problem-space domain every operation below it
  * belongs to. This is the third header-inherited key after `owned_by` and `system_ref`, and it
- * rides the same mechanism - the document is annotated BEFORE extraction, so each extractor carries
- * the value through its own identity logic, and the marker is a separate key from the declaration.
+ * rides the same mechanism - the builder's own copy of the document is annotated BEFORE extraction,
+ * so each extractor carries the value through its own identity logic, and the marker is a separate
+ * key from the declaration.
  *
  * It differs from the first two in one way worth stating, because it is the reason no "does the
  * entity declare its own?" check appears below: an operation has NO `domain_ref` of its own to
@@ -28,10 +29,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Write the document's `domain_ref` onto every operation it declares. Mutates `doc.data` in place,
- * for the reason `annotateOwnershipDefaults` does: the extractor spreads the operation node, so a
- * copy would not travel. Idempotent, and a no-op for a document with no root `domain_ref` - which
- * is every document in every model until one is authored.
+ * Write the document's `domain_ref` onto every operation it declares. Writes into the document it is
+ * given, for the reason `annotateOwnershipDefaults` does: the extractor spreads the operation node,
+ * so a marker kept beside it would not travel. The extraction entry points hand it the builder's own
+ * copy of each document, never the caller's. Idempotent, and a no-op for a document with no root
+ * `domain_ref` - which is every document in every model until one is authored.
  */
 export function annotateDomainDefaults(doc: ParsedBlueprintDocument): void {
   const root = doc.data;

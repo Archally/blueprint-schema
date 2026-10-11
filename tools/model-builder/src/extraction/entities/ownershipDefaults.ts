@@ -4,9 +4,9 @@ import type { ParsedBlueprintDocument } from '../../model/types.js';
  * A document root may carry `owned_by`, which the schema describes as a file-level default:
  * *"File-level ownership default. Entities inherit unless overridden."* Only the entity-level half
  * reaches the graph on its own, because an `Entity` records neither its depth in the document nor
- * whether an ancestor claimed it. This module supplies the missing half by annotating the parsed
- * document BEFORE extraction, so each extractor carries the inherited owner through its own
- * identity logic rather than having that logic reproduced here.
+ * whether an ancestor claimed it. This module supplies the missing half by annotating the
+ * builder's own copy of the parsed document BEFORE extraction, so each extractor carries the
+ * inherited owner through its own identity logic rather than having that logic reproduced here.
  *
  * The annotation is written under `_owned_by_default`, joining `_party`, `_context` and `_scope` as
  * document-derived metadata an extractor spreads into `entity.data`. It is a separate key from
@@ -161,11 +161,12 @@ function isOwnerObject(value: unknown): value is Record<string, unknown> {
  * Write the document's file-level owner onto every entity node that inherits it, reading the
  * container table of the model's schema line (the newest served line when none is given).
  *
- * Mutates `doc.data` in place, which is what lets the marker travel: two extractors spread the node
- * (`{ ...context }`) and two hand it over by reference (`data: item`), so a copy would reach one
- * pair and not the other. Idempotent - a second run over the same document recomputes the same
- * annotation - and a no-op for a document with no root `owned_by`, which is every document in most
- * models.
+ * Writes into the document it is given, which is what lets the marker travel: two extractors spread
+ * the node (`{ ...context }`) and two hand it over by reference (`data: item`), so a marker kept
+ * beside the node would reach one pair and not the other. The extraction entry points hand it the
+ * builder's own copy of each document, never the caller's; a direct caller of this function owns
+ * the write. Idempotent - a second run over the same document recomputes the same annotation - and
+ * a no-op for a document with no root `owned_by`, which is every document in most models.
  */
 export function annotateOwnershipDefaults(
   doc: ParsedBlueprintDocument,

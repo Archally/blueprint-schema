@@ -5,10 +5,10 @@ import type { ParsedBlueprintDocument } from '../../model/types.js';
  *
  * An arch document root may carry `system_ref`: the system party every service under a ROOT-DECLARED
  * context in that document is a component of, unless the service names its own. This is the second
- * header-inherited key after `owned_by`, and it rides the same mechanism: the document is annotated
- * BEFORE extraction, the marker is a separate key from the declaration so a consumer can still tell
- * what the model said from what it inherited, and the relation built from the marker carries
- * `data.inherited`.
+ * header-inherited key after `owned_by`, and it rides the same mechanism: the builder's own copy of
+ * the document is annotated BEFORE extraction, the marker is a separate key from the declaration so
+ * a consumer can still tell what the model said from what it inherited, and the relation built from
+ * the marker carries `data.inherited`.
  *
  * Two rules, narrower than ownership's because the schema is narrower here:
  *
@@ -30,9 +30,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /**
  * Write the document's `system_ref` default onto every root-declared context's service that names no
- * system of its own. Mutates `doc.data` in place, for the reason `annotateOwnershipDefaults` does:
- * the extractor spreads the node, so a copy would not reach it. Idempotent, and a no-op for a
- * document with no root `system_ref` or no root `contexts`.
+ * system of its own. Writes into the document it is given, for the reason `annotateOwnershipDefaults`
+ * does: the extractor spreads the node, so a marker kept beside it would not reach the entity. The
+ * extraction entry points hand it the builder's own copy of each document, never the caller's.
+ * Idempotent, and a no-op for a document with no root `system_ref` or no root `contexts`.
  */
 export function annotateSystemDefaults(doc: ParsedBlueprintDocument): void {
   const root = doc.data;
