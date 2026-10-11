@@ -99,9 +99,16 @@ function protocolOf(contract: Entity): string | null {
   return PROTOCOL_BY_CONTRACT_TYPE[type] ?? null;
 }
 
+/**
+ * The broker a contract names: its typed `broker_ref` (an infrastructure resource id), else the
+ * superseded free-string `brokerId`, which the schema never accepts beside it.
+ */
 function brokerOf(contract: Entity): string | null {
-  const broker = (contract.data as { brokerId?: unknown } | undefined)?.brokerId;
-  return typeof broker === 'string' && broker.length > 0 ? broker : null;
+  const data = contract.data as { broker_ref?: unknown; brokerId?: unknown } | undefined;
+  for (const broker of [data?.broker_ref, data?.brokerId]) {
+    if (typeof broker === 'string' && broker.length > 0) return broker;
+  }
+  return null;
 }
 
 export function extractContractTrafficRelations(

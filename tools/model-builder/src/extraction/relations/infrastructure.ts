@@ -20,6 +20,7 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  *   Binding       --realizes_type-->        ResourceType  (binding.type_ref)
  *   Service       --needs-->                ResourceType  (service.needs[].type_ref, abstract intent)
  *   Service       --uses_resource-->        InfraResource (service.resource_refs[], concrete intent)
+ *   Contract      --contract_broker-->      InfraResource (a messaging contract's broker_ref)
  *   Service       --deployed_in_environment-> Environment (service.servers[].environment, where the
  *                                                          server names one by id; a NAME builds no
  *                                                          edge - see the note below)
@@ -251,6 +252,15 @@ export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
           emitted.add(env.id);
           push(e, RELATION_TYPE.DeployedInEnvironment, env);
         }
+      }
+    }
+
+    if (e.type === ENTITY_TYPE.Contract) {
+      // broker_ref → InfraResource: the broker a messaging contract publishes to and receives from.
+      const brokerRef = data.broker_ref;
+      if (typeof brokerRef === 'string') {
+        const broker = resolveByRef(infraByDisplayId, brokerRef);
+        if (broker) push(e, RELATION_TYPE.ContractBroker, broker);
       }
     }
 

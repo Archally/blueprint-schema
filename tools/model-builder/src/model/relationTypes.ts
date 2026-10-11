@@ -396,6 +396,10 @@ export const RELATION_TYPE = {
   Needs: 'needs',
   // uses_resource: arch Service → InfraResource (concrete intent, service.resource_refs[]).
   UsesResource: 'uses_resource',
+  // contract_broker: arch Contract → InfraResource (a messaging contract's broker_ref): the broker
+  // the contract publishes to and receives from. One per contract; the superseded free-string
+  // brokerId names no entity and builds no edge.
+  ContractBroker: 'contract_broker',
   // realizes_type: InfraResource/Binding → ResourceType (resource.type_ref / binding.type_ref).
   RealizesType: 'realizes_type',
   // binds: Binding → Environment (binding.environment_ref) and Binding → InfraResource
