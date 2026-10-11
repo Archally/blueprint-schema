@@ -22,9 +22,12 @@
  *                     `danglingRefs` - a blueprint describing code that has been moved or deleted.
  *
  * ── Cross-repo refs ───────────────────────────────────────────────────────────────────────────
- * A `code_ref.path` may be `org/repo#path/to/file` (metamodel `code_ref_entry`). Such a file cannot
- * be checked from this clone, so it is reported `unverifiable` and never counted as dangling.
- * Calling an unreachable file "missing" would make the whole report untrustworthy on first run.
+ * A `code_ref.path` may be `org/repo#path/to/file` (metamodel `code_ref_entry`). With `refExists`
+ * such a file cannot be checked, so it is reported `unverifiable` and never counted as dangling:
+ * calling an unreachable file "missing" would make the whole report untrustworthy on first run.
+ * With `checkRef` the caller decides per reference, prefix included: `present`, `missing`,
+ * `unverifiable` with a reason (its repository has no local root), or `outside-root` with a reason
+ * (absolute, or climbing out of its root; never probed).
  *
  * ── Matching ──────────────────────────────────────────────────────────────────────────────────
  * Segment-aligned, never raw substring: `src/a` must not match `src/abc/x`, which a bidirectional
@@ -68,6 +71,8 @@ export function analyzeCoverage(input) {
     const matches = [];
     const danglingRefs = [];
     const unverifiableRefs = [];
+    const outsideRootRefs = [];
+    const checkRef = input.checkRef;
     const coveredQueries = new Set();
     let entitiesWithRefs = 0;
     let refCount = 0;
@@ -100,7 +105,7 @@ export function analyzeCoverage(input) {
                     matchKind: kind,
                 });
             }
-            if (!input.refExists)
+            if (!checkRef && !input.refExists)
                 continue;
             const audit = {
                 entityId: entity.id,
@@ -110,7 +115,19 @@ export function analyzeCoverage(input) {
                 role,
                 status: 'present',
             };
-            if (repo !== null) {
+            if (checkRef) {
+                const verdict = checkRef(refPath, repo);
+                audit.status = verdict.status;
+                if (verdict.reason !== null && verdict.reason !== undefined)
+                    audit.reason = verdict.reason;
+                if (verdict.status === 'missing')
+                    danglingRefs.push(audit);
+                else if (verdict.status === 'unverifiable')
+                    unverifiableRefs.push(audit);
+                else if (verdict.status === 'outside-root')
+                    outsideRootRefs.push(audit);
+            }
+            else if (repo !== null) {
                 audit.status = 'unverifiable';
                 unverifiableRefs.push(audit);
             }
@@ -125,7 +142,8 @@ export function analyzeCoverage(input) {
         uncoveredPaths: queries.filter((query) => !coveredQueries.has(query)),
         danglingRefs,
         unverifiableRefs,
-        danglingChecked: Boolean(input.refExists),
+        ...(checkRef ? { outsideRootRefs } : {}),
+        danglingChecked: Boolean(checkRef || input.refExists),
         totals: {
             entities: input.entities.length,
             entitiesWithRefs,
@@ -135,4 +153,3 @@ export function analyzeCoverage(input) {
         },
     };
 }
-//# sourceMappingURL=code-refs-coverage.js.map
