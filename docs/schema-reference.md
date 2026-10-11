@@ -873,7 +873,7 @@ concepts:
     description: "Customer purchase request with line items and payment intent"
 ```
 
-Stereotypes are author-declared, not inferred. The Event Storming view derives aggregate stickies directly from `stereotype: aggregate-root`. Semantic validators warn if an aggregate-root lacks signals (states, contains relationships, governed-by rules).
+Stereotypes are author-declared, not inferred. The Event Storming view derives aggregate stickies directly from `stereotype: aggregate-root`. The semantic checker's `aggregate-root-signals` rule reports, as information, an aggregate root that no command reaches: no operation of `kind: command` names it in `materializes`, and none names a rule about it (one whose `concepts` or `concept` names the root) in `governed_by`, `preconditions` or `postconditions`. The finding says whether the root declares `states` and owns a `contains` relationship; neither decides it. A project may raise the rule to `warn` in its `.blueprint-lint.yaml`.
 
 ### Code References (`code_refs`)
 
@@ -1195,6 +1195,39 @@ Commands typically produce events and/or documents. Events do not produce — th
 | Event -> produces -> anything | Warning (validator warns) |
 | Query -> produces -> anything | Warning (validator warns) |
 | Document -> produces -> anything | Warning (validator warns) |
+
+### An integration event states the domain event it translates
+
+A context often holds two events for one business fact: the domain event its aggregate raises,
+which stays inside, and the integration event it publishes for other contexts, with a payload of its
+own. Both are operations of `kind: event`. The integration event names the domain events it is the
+published form of with `translates`, a list of operation references; the domain event carries no
+field for it. An event published with no domain event behind it states none.
+
+```yaml
+operations:
+  setPaid:
+    id: ordering.CMD006
+    kind: command
+    produces: {operations: [ordering.EVT106]}   # the aggregate raises the domain event
+  orderPaidDomain:
+    id: ordering.EVT106
+    kind: event
+    name: Order Paid                            # no exchange: it stays inside Ordering
+  orderPaid:
+    id: ordering.EVT006
+    kind: event
+    name: Order Status Changed To Paid
+    translates: [ordering.EVT106]
+    exchange: {protocol: amqp, topic: {name: OrderStatusChangedToPaidIntegrationEvent}}
+```
+
+`translates` changes no event's reach: whether an event is published is still read from the
+contracts that send or receive it and from its exchange. The semantic rule
+`translation-target-not-internal` warns when an entry names something other than an unpublished
+event of the same context, or when the event carrying `translates` is not itself published. The
+Event Storming Big Picture draws a pair as one sticky named after the domain event, carrying the
+integration mark; Process and Software Design draw both, joined by an arrow labelled `published as`.
 
 ---
 

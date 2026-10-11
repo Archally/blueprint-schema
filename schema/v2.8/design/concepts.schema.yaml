@@ -92,8 +92,10 @@ $defs:
           aggregate-root = entity that forms a transactional consistency boundary,
             owns child entities, and is the entry point for commands.
             Event Storming view derives aggregate stickies from this stereotype.
-            Validator warns if aggregate-root lacks characteristic signals
-            (states, contains relationships, governed-by rules).
+            The semantic checker reports, as information, an aggregate root that no
+            command reaches: no operation of kind command names it in `materializes`,
+            and none names a rule about it in `governed_by`, `preconditions` or
+            `postconditions`.
           domain-service = stateless behavior not owned by any entity.
           specification = encapsulates a business rule as reusable predicate object.
           read-model = query-only projection derived from events/commands with no

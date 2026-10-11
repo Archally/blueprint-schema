@@ -256,6 +256,13 @@ $defs:
                 - $ref: "../metamodel.schema.yaml#/$defs/rule_ref"
                 - $ref: "../metamodel.schema.yaml#/$defs/transition_ref"
               description: "Business rule governing this reaction."
+      translates:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Written on an integration event (an operation of `kind: event` that leaves its bounded context): the domain events of the same context that this event is the published form of. One integration event may translate several domain events, and one domain event may be translated by several integration events. The reference is stated once, on the integration event; the domain event carries no field for it. An event published with no domain event behind it states none. A `translates` entry that names something other than an unpublished event of the same context, or that is written on an event that is not itself published, is reported by the semantic checker. It changes no event's reach: whether an event is published is still read from the contracts and the exchange."
       task_type:
         type: string
         enum: [automated, manual, user-decision, external]

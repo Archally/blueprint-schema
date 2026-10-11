@@ -266,6 +266,7 @@ $defs:
           - association
           - produces
           - reacts_to
+          - translates
           - concepts
           - concept
           - governed_by
