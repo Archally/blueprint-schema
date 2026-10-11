@@ -1,0 +1,41 @@
+engineVersion: "0.1"
+# A messaging contract names the broker it publishes to and receives from by `broker_ref`, the typed
+# id of the infrastructure resource that declares it. The reference itself is checked by the
+# validator: an id nothing declares is a cross-reference error. These two rules advise on what the
+# validator accepts and cannot judge - a broker named by a free string, and a reference to a
+# resource that does not say it is a broker. Warnings, both, for the whole line. Override
+# per-project via .blueprint-lint.yaml.
+rules:
+  - id: contract-broker-id-superseded
+    severity: warn
+    description: >-
+      A messaging contract that names its broker with `brokerId`, the free string `broker_ref`
+      supersedes. The string resolves to nothing in the model, so no tool can tell which broker it
+      means: a contract generator cannot take the AsyncAPI servers from it, and nothing connects the
+      contract to the broker the infrastructure declares. Fix by declaring the broker as an
+      infrastructure resource (`kind: broker`) and naming it with `broker_ref`; `brokerId` stays
+      accepted on this line and is never written beside `broker_ref`.
+    find:
+      entity_type: Contract
+    check:
+      not:
+        any_non_empty: [data.brokerId]
+    message: 'Contract "{displayId}" names its broker with `brokerId`, a free string that resolves to nothing. Declare the broker as an infrastructure resource with `kind: broker` and name it with `broker_ref`.'
+
+  - id: broker-ref-target-not-a-broker
+    severity: warn
+    description: >-
+      An infrastructure resource that a messaging contract names as its broker (`broker_ref`) and
+      whose `kind` is not `broker`. The reference resolves, so the validator accepts it; but either
+      the contract names the wrong resource - a queue or a database the broker hosts - or the
+      resource is a broker described as something else, and a reader of the infrastructure layer
+      cannot find the model's brokers by their kind. Reported once per resource, naming the
+      contracts that point at it, because the fix is one edit: set `kind: broker` on the resource,
+      or point the contracts at the broker that hosts it.
+    find:
+      entity_type: InfraResource
+    check:
+      custom:
+        module: ./contract-broker.mjs
+        export: brokerRefTargetNotABroker
+    message: 'Infrastructure resource {subject} "{subject_name}" is the broker of {contracts} and declares `kind: {kind}`. Set `kind: broker` on it, or point the contracts at the broker that hosts it.'
