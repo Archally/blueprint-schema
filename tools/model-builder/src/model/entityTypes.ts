@@ -24,6 +24,12 @@ export const ENTITY_TYPE = {
   // scope of attention can change without notice, so what it omits is dated rather than assumed.
   // The omissions are the point, and they are carried onto the node whole (`blind_spots`).
   Probe: 'Probe',
+  // v2.8.67 message channels (arch.yaml root `channels:`, MCH###). A topic producers publish to or a
+  // queue a consumer reads from, placed on a broker. Shared by producers and consumers in different
+  // contexts, so declared at the document root like a probe, and named by an operation's
+  // `exchange.topic.channel_ref` / `exchange.queue.channel_ref` and by a consuming contract's
+  // `subscription.channel_ref`.
+  MessageChannel: 'MessageChannel',
   Goal: 'Goal',
   NonGoal: 'NonGoal',
   Risk: 'Risk',

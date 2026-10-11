@@ -400,6 +400,16 @@ export const RELATION_TYPE = {
   // the contract publishes to and receives from. One per contract; the superseded free-string
   // brokerId names no entity and builds no edge.
   ContractBroker: 'contract_broker',
+  // v2.8.67 message channels. channel_broker: MessageChannel → InfraResource (channel.broker_ref),
+  // the broker the channel lives on. travels_on: Operation → MessageChannel
+  // (exchange.topic.channel_ref / exchange.queue.channel_ref), the channel the message is published
+  // or sent to, with `data.role` (topic | queue), `data.name` (the inline name: the routing key on
+  // a topic channel) and `data.protocol` (the exchange entry's protocol). contract_subscription:
+  // Contract → MessageChannel (subscription.channel_ref), the queue a consuming service reads. A
+  // consumer group named by `subscription.name` is no entity and builds no edge.
+  ChannelBroker: 'channel_broker',
+  TravelsOn: 'travels_on',
+  ContractSubscription: 'contract_subscription',
   // realizes_type: InfraResource/Binding → ResourceType (resource.type_ref / binding.type_ref).
   RealizesType: 'realizes_type',
   // binds: Binding → Environment (binding.environment_ref) and Binding → InfraResource

@@ -20,11 +20,11 @@ const LAYER = SCHEMA_TYPE_TO_LAYER['arch']!;
  * `system_ref` and `spans` edges, so a consumer of the graph never needs to know which one the
  * author wrote.
  *
- * Produces Party, Context, Service, Contract and Probe entities. The internal id is the fully
+ * Produces Party, Context, Service, Contract, Probe and MessageChannel entities. The internal id is the fully
  * qualified path (party.context[.service[.contractType]]); a root-declared context's party segment
  * is empty (`.context`), which no nested path can produce, so the two shapes cannot collide. A
- * probe is declared at the document root and takes neither segment, so its path is the bare probe
- * id, which neither of the other two shapes can produce.
+ * probe or a message channel is declared at the document root and takes neither segment, so its
+ * path is the bare id, which neither of the other two shapes can produce.
  */
 export function extractArch(doc: ParsedBlueprintDocument): Entity[] {
   const entities: Entity[] = [];
@@ -90,6 +90,28 @@ export function extractArch(doc: ParsedBlueprintDocument): Entity[] {
         term: probe.name != null ? String(probe.name) : undefined,
         summary: probe.summary != null ? String(probe.summary) : undefined,
         data: { ...probe, ...scoped },
+      });
+    }
+  }
+
+  // Message channels (v2.8.67). Root-level for the same reason as a probe: a channel is shared by
+  // producers and consumers in different contexts, so no party or context segment enters the path.
+  const channels = data.channels as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(channels)) {
+    for (const channel of channels) {
+      const channelId = channel.id as string | undefined;
+      if (!channelId) continue;
+      entities.push({
+        id: makeInternalId(doc.scope, doc.filePath, channelId),
+        displayId: channelId,
+        type: ENTITY_TYPE.MessageChannel,
+        layer: LAYER,
+        fileOrigin: doc.filePath,
+        // The convention every id-keyed entity follows (see the probe above): the name reaches
+        // `term`, so `bp entities` and `bp query` show it.
+        term: channel.name != null ? String(channel.name) : undefined,
+        summary: channel.description != null ? String(channel.description) : undefined,
+        data: { ...channel, ...scoped },
       });
     }
   }

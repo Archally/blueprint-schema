@@ -34,6 +34,7 @@ import { extractLeverageRelations } from './leverage.js';
 import { extractBccRelations } from './bcc.js';
 import { extractRgRelations } from './rg.js';
 import { extractInfrastructureRelations } from './infrastructure.js';
+import { extractMessageChannelRelations } from './messageChannels.js';
 import { applyDomainHopTier, extractMembershipRelations } from './membership.js';
 import { extractDynamicsRelations } from './dynamics.js';
 import { extractQualityRelations } from './quality.js';
@@ -102,6 +103,7 @@ export function buildRelations(
     ...extractBccRelations(entities, placeholders),
     ...extractRgRelations(entities),
     ...extractInfrastructureRelations(entities),
+    ...extractMessageChannelRelations(entities),
     ...extractMembershipRelations(entities),
     ...extractDynamicsRelations(entities, placeholders),
     ...extractQualityRelations(entities, placeholders),
