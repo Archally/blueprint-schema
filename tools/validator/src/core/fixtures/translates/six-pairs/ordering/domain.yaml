@@ -53,11 +53,12 @@ operations:
     produces:
       operations: [ordering.EVT108]
 
-  # Domain events: raised by the aggregate, never published.
-  orderStartedDomain:
+  # Domain events: raised by the aggregate, never published. Each is named after the state of the
+  # order it enters; an integration event is named after the message other contexts receive.
+  orderSubmittedDomain:
     id: ordering.EVT102
     kind: event
-    name: Order Started
+    name: Order Submitted
   orderAwaitingValidationDomain:
     id: ordering.EVT104
     kind: event
@@ -83,7 +84,7 @@ operations:
   orderStarted:
     id: ordering.EVT001
     kind: event
-    name: Order Started Published
+    name: Order Started
     exchange:
       protocol: amqp
       topic: {name: OrderStartedIntegrationEvent}
