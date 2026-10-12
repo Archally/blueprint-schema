@@ -5,6 +5,13 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.72"
+    date: "2026-10-12"
+    step: "the schema reference says how Process draws a translated pair and the six-pairs fixture names its events by the naming guidance"
+    summary: |
+      The schema reference says how the Event Storming Process board draws a translated pair. A one-to-one pair is one sticky named after the domain event, carrying the integration mark, with the policies that react to the integration event drawn from that sticky, as on the Big Picture. Both stickies are drawn, joined by an arrow labelled `published as`, when one integration event translates several domain events or one domain event is translated by several integration events. Software Design always draws both, joined.
+      The validator's `translates/six-pairs` fixture names its events by the naming guidance: a domain event is named after the state the order enters, an integration event after the message other contexts receive. `ordering.EVT102` is `Order Submitted` (key `orderSubmittedDomain`) and `ordering.EVT001`, which translates it, is `Order Started`, where the two were `Order Started` and `Order Started Published`. A comment in the fixture states the rule. The fixture still validates clean.
+      Nothing validates differently: every document that validated under 2.8.71 validates, and every one it rejected is rejected. No tool behaves differently. Minted rather than folded, because 2.8.71 is tagged.
   - version: "2.8.71"
     date: "2026-10-12"
     step: "the checker reads a domain event and the integration event that translates it"
