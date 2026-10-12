@@ -5,6 +5,13 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.71"
+    date: "2026-10-12"
+    step: "the checker reads a domain event and the integration event that translates it"
+    summary: |
+      `inprocess-provide-without-consume` (warn) counts a fourth thing that starts an operation provided in-process: an operation its providing service provides under `expose:`, `send:` or `provide:` `produces` it. A domain event the aggregate raises inside the service, bound `inprocess.provide` by that service and produced by one of its commands, is started by that command and is not reported. A producer another service provides starts nothing, and an operation that produces only itself starts nothing. The message lists the four starts: no other service consumes it, no operation its service provides produces it, it reacts to nothing its service receives or raises, and no actor initiates it.
+      `activity-steps-without-causal-edge` (info) and `activity-steps-reverse-causal-edge` (warn) read `translates` as a causal edge. An integration event that `translates` a domain event counts as reacting to it: a story step naming the domain event, or the command that produces it, followed by a step naming the integration event is joined, and the opposite order is reported as reversed.
+      Nothing validates differently: every document that validated under 2.8.70 validates, and every one it rejected is rejected. Minted rather than folded, because 2.8.70 is tagged. On the PrestaShop example the finding counts are unchanged; the one `inprocess-provide-without-consume` finding carries the new message.
   - version: "2.8.70"
     date: "2026-10-11"
     step: "the semantic checker reads a model's non-functional requirements with six rules"
