@@ -1227,7 +1227,10 @@ contracts that send or receive it and from its exchange. The semantic rule
 `translation-target-not-internal` warns when an entry names something other than an unpublished
 event of the same context, or when the event carrying `translates` is not itself published. The
 Event Storming Big Picture draws a pair as one sticky named after the domain event, carrying the
-integration mark; Process and Software Design draw both, joined by an arrow labelled `published as`.
+integration mark. Process draws a one-to-one pair the same way, with the policies that react to the
+integration event drawn from that sticky, and draws both stickies, joined by an arrow labelled
+`published as`, when one integration event translates several domain events or one domain event is
+translated by several integration events. Software Design always draws both, joined.
 
 ---
 
