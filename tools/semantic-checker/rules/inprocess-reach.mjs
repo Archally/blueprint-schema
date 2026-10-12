@@ -3,7 +3,7 @@
  *
  * An in-process call has both of its ends inside the model, so an operation provided in-process
  * with nothing in the model to start it is a finding: a dead operation, or a caller nobody modelled.
- * Three things start one:
+ * Four things start one:
  *
  *   - ANOTHER service consumes it. A `consume:` entry is the dependency of one service on another
  *     service's in-process operation. A service listing an operation it provides itself is
@@ -13,6 +13,10 @@
  *     `provide:`), or one that an operation it provides `produces`. The message handler that runs
  *     the reaction is the caller, and it lives in the providing service.
  *   - An actor INITIATES it (`initiated_by`), such as a timer or a person.
+ *   - An operation its providing service provides (`expose:`, `send:` or `provide:`) PRODUCES it.
+ *     A domain event is the usual case: the aggregate raises it inside the service, its handlers
+ *     run in the same process, and the operation that raises it is what starts it. A producer
+ *     another service provides does not count: nothing in the providing service brings it about.
  *
  * Two checks read that once per model:
  *
@@ -103,6 +107,8 @@ function index(model) {
   const providedBy = new Map();
   /** @type {Map<string, Set<string>>} service -> the operations it hears. */
   const heardBy = new Map();
+  /** @type {Map<string, Set<string>>} service -> what the operations it provides produce. */
+  const raisedBy = new Map();
   /** @type {Map<string, Set<string>>} operation -> what it produces. */
   const products = new Map();
   /** @type {Map<string, Set<string>>} operation -> the operations it reacts to. */
@@ -125,11 +131,14 @@ function index(model) {
   for (const [service, operations] of providedBy) {
     for (const operation of operations) {
       addTo(heardBy, service, operation);
-      for (const product of products.get(operation) ?? []) addTo(heardBy, service, product);
+      for (const product of products.get(operation) ?? []) {
+        addTo(heardBy, service, product);
+        if (product !== operation) addTo(raisedBy, service, product);
+      }
     }
   }
 
-  const built = { byId, inProcessProviders, inProcessConsumers, heardBy, triggers, initiated };
+  const built = { byId, inProcessProviders, inProcessConsumers, heardBy, raisedBy, triggers, initiated };
   cache.set(model, built);
   return built;
 }
@@ -163,8 +172,9 @@ function nameOf(entity) {
 
 /**
  * An operation provided in-process that nothing in the model starts: no other service consumes it,
- * it reacts to no operation, and no actor initiates it. An operation whose reactions all miss its
- * providing services is reported by `inprocessReactionUnreached` instead.
+ * no operation its providing service provides produces it, it reacts to no operation, and no actor
+ * initiates it. An operation whose reactions all miss its providing services is reported by
+ * `inprocessReactionUnreached` instead.
  *
  * @param {any} model
  * @param {any} subject
@@ -175,6 +185,9 @@ export const inprocessProvideWithoutConsume = (model, subject) => {
   if (!providers) return { ok: true };
 
   if (state.initiated.has(subject.id)) return { ok: true };
+
+  // Raised inside a providing service: an operation that service provides produces it.
+  if ([...providers].some((service) => state.raisedBy.get(service)?.has(subject.id))) return { ok: true };
 
   for (const consumer of state.inProcessConsumers.get(subject.id) ?? []) {
     // Another service: one that is not the only provider. A service consuming what it provides

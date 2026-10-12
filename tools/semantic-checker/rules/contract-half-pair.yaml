@@ -15,7 +15,8 @@ engineVersion: "0.1"
 # there; a contract stating one end of a two-ended fact is a claim the model cannot support.
 #
 # An in-process operation has a second kind of caller beside a consuming service: the service that
-# provides it may start it itself, from a message it hears or on an actor's initiative. The two
+# provides it may start it itself, from a message it hears, on an actor's initiative, or by raising
+# it from another operation it provides. The two
 # in-process provider rules read that through `inprocess-reach.mjs`, because whether a trigger
 # reaches a service is a path through the contracts, and a declarative check tests one relation.
 # Warnings, all of them, for the whole line. Override per-project via .blueprint-lint.yaml.
@@ -44,11 +45,13 @@ rules:
   - id: inprocess-provide-without-consume
     severity: warn
     description: >-
-      An operation provided in-process that nothing in the model starts. Three things start one:
-      another service consumes it (`contracts.inprocess.consume`); it reacts to an operation that
-      reaches its providing service, which the service receives in a contract's `receive:` or raises
-      by providing it or providing an operation that `produces` it; or an actor initiates it
-      (`initiated_by`). A service that lists its own operation under `consume:` states nothing, so
+      An operation provided in-process that nothing in the model starts. Four things start one:
+      another service consumes it (`contracts.inprocess.consume`); an operation its providing
+      service provides under `expose:`, `send:` or `provide:` `produces` it, as a command produces
+      the domain event its aggregate raises; it reacts to an operation that reaches its providing
+      service, which the service receives in a contract's `receive:` or raises by providing it or
+      providing an operation that `produces` it; or an actor initiates it (`initiated_by`). A
+      producer that another service provides starts nothing here. A service that lists its own operation under `consume:` states nothing, so
       that entry starts nothing and is never reported. An operation that reacts only to triggers its
       service does not hear is reported once, by `inprocess-reaction-unreached`, which names the
       trigger. Where nothing starts the operation, either a caller exists and is not modelled, or
@@ -61,7 +64,7 @@ rules:
       custom:
         module: ./inprocess-reach.mjs
         export: inprocessProvideWithoutConsume
-    message: 'Operation "{displayId}" ({name|''unnamed''}) is provided in-process and nothing in the model starts it: no other service consumes it, it reacts to nothing its service receives or raises, and no actor initiates it. Model the caller, or drop the `provide:` entry.'
+    message: 'Operation "{displayId}" ({name|''unnamed''}) is provided in-process and nothing in the model starts it: no other service consumes it, no operation its service provides produces it, it reacts to nothing its service receives or raises, and no actor initiates it. Model the caller, or drop the `provide:` entry.'
 
   - id: inprocess-reaction-unreached
     severity: warn

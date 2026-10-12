@@ -1,8 +1,12 @@
 /**
  * The seam between an activity's `steps` and the domain's causal links.
  *
- * `steps` states the ORDER operations run in inside one activity of one story; `produces` and
- * `reacts_to` state CAUSALITY, true of an operation wherever it appears. The two are written
+ * `steps` states the ORDER operations run in inside one activity of one story; `produces`,
+ * `reacts_to` and `translates` state CAUSALITY, true of an operation wherever it appears.
+ *
+ * `translates` is read as a reaction. An integration event that `translates` a domain event is
+ * published by a handler that hears the domain event, so it stands where an operation that
+ * `reacts_to` the domain event stands: after it, and after the operation that produces it. The two are written
  * independently and agree where they overlap, so two adjacent steps can stand in three relations
  * to the causal graph:
  *
@@ -68,7 +72,7 @@ function resolvedActivities(subject) {
 
 /**
  * The declared causal edges as two maps: `produces` (source -> targets) and `reactsTo`
- * (reactor -> the events it reacts to). Both relation spellings are read, `source` / `target` and
+ * (reactor -> the events it reacts to, and integration event -> the domain events it translates). Both relation spellings are read, `source` / `target` and
  * `source_entity_id` / `target_entity_id`, so the rule holds whichever model hands it relations.
  *
  * @param {{ relations?: unknown[] }} model
@@ -85,7 +89,7 @@ function causalEdges(model) {
     const from = relation.source ?? relation.source_entity_id;
     const to = relation.target ?? relation.target_entity_id;
     if (relation.type === 'produces') add(produces, from, to);
-    else if (relation.type === 'reacts_to') add(reactsTo, from, to);
+    else if (relation.type === 'reacts_to' || relation.type === 'translates') add(reactsTo, from, to);
   }
   const has = (map, from, to) => map.get(from)?.has(to) === true;
   /** `a` leads to `b`: directly, through an event `b` reacts to, or because `b` reacts to `a`. */
