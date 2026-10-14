@@ -107,3 +107,46 @@ describe('extractDecisionRelations', () => {
     expect(placeholderEntity.displayId).toBe('INQ999');
   });
 });
+
+describe('extractDecisionRelations - declared_impact.direct', () => {
+  const PROCESS = makeEntity({
+    id: 'orders-story.yaml-PRC001',
+    displayId: 'orders.PRC001',
+    type: ENTITY_TYPE.Process,
+    layer: 'story',
+    fileOrigin: 'orders/story.yaml',
+  });
+
+  function impactRelations(direct: Record<string, unknown>, others: Entity[]) {
+    const decision = makeEntity({
+      id: 'decisions.yaml-DC001',
+      displayId: 'DC001',
+      type: ENTITY_TYPE.Decision,
+      data: { id: 'DC001', title: 'Test', declared_impact: { direct } },
+    });
+    const placeholders = new Map<string, Entity>();
+    const relations = extractDecisionRelations([decision, ...others], placeholders);
+    return {
+      placeholders,
+      relations: relations.filter((r) => r.type === RELATION_TYPE.DeclaredImpact),
+    };
+  }
+
+  it('draws an edge from the decision to each process it lists under processes', () => {
+    const { relations, placeholders } = impactRelations({ processes: ['orders.PRC001'] }, [PROCESS]);
+
+    expect(relations).toHaveLength(1);
+    expect(relations[0]!.source_entity_id).toBe('decisions.yaml-DC001');
+    expect(relations[0]!.target_entity_id).toBe(PROCESS.id);
+    expect(relations[0]!.predicate).toBe('process');
+    expect(placeholders.size).toBe(0);
+  });
+
+  it('still draws the edge for stories, the key models on schema lines before v2.8 write', () => {
+    const { relations } = impactRelations({ stories: ['orders.PRC001'] }, [PROCESS]);
+
+    expect(relations).toHaveLength(1);
+    expect(relations[0]!.target_entity_id).toBe(PROCESS.id);
+    expect(relations[0]!.predicate).toBe('story');
+  });
+});

@@ -18,8 +18,11 @@ const MOTIVATION_GROUPS: ReadonlyArray<{ key: string; predicate: string }> = [
  *
  * `models[]` is a `model_ref`, which `metamodel.schema.yaml` documents in four forms: typed id,
  * bare component name, JSON Pointer and file-relative JSON Pointer. It therefore resolves through
- * `modelRef.ts`, the one place those forms are implemented. The other five are typed ids and
+ * `modelRef.ts`, the one place those forms are implemented. The others are typed ids and
  * resolve by id.
+ *
+ * `processes` is the v2.8 key for business processes; `stories` is the key schema lines before
+ * v2.8 accept for the same targets, so a model on an earlier line keeps its edges.
  */
 const IMPACT_GROUPS: ReadonlyArray<{ key: string; predicate: string; modelRef?: true }> = [
   { key: 'concepts', predicate: 'concept' },
@@ -28,6 +31,7 @@ const IMPACT_GROUPS: ReadonlyArray<{ key: string; predicate: string; modelRef?: 
   { key: 'tests', predicate: 'test' },
   { key: 'models', predicate: 'model', modelRef: true },
   { key: 'stories', predicate: 'story' },
+  { key: 'processes', predicate: 'process' },
 ];
 
 const IMPACT_UI_GROUPS: ReadonlyArray<{ key: string; predicate: string }> = [
@@ -40,7 +44,8 @@ const IMPACT_UI_GROUPS: ReadonlyArray<{ key: string; predicate: string }> = [
  * Extract relations from decision entities:
  * - Decision.motivation_refs.{goals,risks,assumptions,trade_offs,questions,inquiries}[] → motivation_refs
  * - Decision.capability_refs[] → capability_refs
- * - Decision.declared_impact.direct.{concepts,rules,operations,tests}[] → declared_impact
+ * - Decision.declared_impact.direct.{concepts,rules,operations,tests,models,stories,processes}[] → declared_impact
+ * - Decision.declared_impact.direct.ui.{screens,actions,navigation}[] → declared_impact
  */
 export function extractDecisionRelations(
   entities: Entity[],
@@ -90,7 +95,7 @@ export function extractDecisionRelations(
       }
     }
 
-    // declared_impact.direct.{concepts,rules,operations,tests,models,stories}[]
+    // declared_impact.direct.{concepts,rules,operations,tests,models,stories,processes}[]
     const declaredImpact = data.declared_impact as Record<string, unknown> | undefined;
     const direct = declaredImpact?.direct as Record<string, unknown> | undefined;
     if (direct && typeof direct === 'object') {

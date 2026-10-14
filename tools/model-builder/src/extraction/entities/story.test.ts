@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { extractStory } from './story.js';
 import type { ParsedBlueprintDocument } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
+import { RELATION_TYPE } from '../../model/relationTypes.js';
+import { extractCodeRefRelations } from '../relations/codeRefs.js';
 
 /** Document shape matching projects/ecommerce/.blueprint/v2 orders story (step 00.5 fixture). */
 const ORDERS_STORY_DOC: ParsedBlueprintDocument = {
@@ -299,5 +301,67 @@ describe('extractStory', () => {
     expect(details[2]!.name).toBe('Reserve Stock');
     expect(details[2]!.operationRef).toBe('inventory.CMD001');
     expect(details[2]!.resolved).toBe(false);
+  });
+});
+
+describe('a process carries its status and implementation as stated', () => {
+  // The extractor keeps only the fields it names, so each field a consumer reads is named and tested.
+  function processDoc(extra: Record<string, unknown>): ParsedBlueprintDocument {
+    return {
+      filePath: 'orders/story.yaml',
+      scope: 'orders',
+      schemaType: 'story',
+      data: { scope: 'orders', processes: [{ id: 'orders.PRC001', title: 'A process', ...extra }] },
+    } as ParsedBlueprintDocument;
+  }
+  const dataOf = (extra: Record<string, unknown>) =>
+    extractStory(processDoc(extra))[0]!.data as { status?: unknown; implementation?: unknown };
+
+  it('carries both through, trimmed', () => {
+    expect(dataOf({ status: 'approved', implementation: ' as-is ' })).toMatchObject({ status: 'approved', implementation: 'as-is' });
+  });
+
+  it('leaves each undefined for a process that states none, or states something that is not a word', () => {
+    for (const value of [undefined, '', '   ', 42, null, { key: 'x' }]) {
+      const data = dataOf({ status: value, implementation: value });
+      expect(data.status, `status=${String(value)}`).toBeUndefined();
+      expect(data.implementation, `implementation=${String(value)}`).toBeUndefined();
+    }
+  });
+});
+
+describe('a process carries its code_refs as stated', () => {
+  function processDoc(extra: Record<string, unknown>): ParsedBlueprintDocument {
+    return {
+      filePath: 'orders/story.yaml',
+      scope: 'orders',
+      schemaType: 'story',
+      data: { scope: 'orders', processes: [{ id: 'orders.PRC001', title: 'A process', ...extra }] },
+    } as ParsedBlueprintDocument;
+  }
+  const CODE_REFS = [
+    { path: 'classes/PaymentModule.php', role: 'implementation', line: 12 },
+    { path: 'classes/order/OrderHistory.php', role: 'implementation' },
+  ];
+
+  it('carries the list through as written, beside implementation', () => {
+    const [process] = extractStory(processDoc({ implementation: 'as-is', code_refs: CODE_REFS }));
+    expect(process!.data).toMatchObject({ implementation: 'as-is', code_refs: CODE_REFS });
+  });
+
+  it('gives the code reference pass an edge from the process to each file it names', () => {
+    const entities = extractStory(processDoc({ code_refs: CODE_REFS }));
+    const { relations, codeFileEntities } = extractCodeRefRelations(entities);
+
+    const fromProcess = relations.filter((r) => r.type === RELATION_TYPE.CodeRef && r.source_entity_id === entities[0]!.id);
+    expect(fromProcess.map((r) => (r.data as { path: string }).path)).toEqual(CODE_REFS.map((ref) => ref.path));
+    expect(codeFileEntities).toHaveLength(2);
+  });
+
+  it('leaves code_refs undefined for a process that states none, an empty list or something that is not a list', () => {
+    for (const value of [undefined, [], 'classes/PaymentModule.php', null, { path: 'x' }]) {
+      const data = extractStory(processDoc({ code_refs: value }))[0]!.data as { code_refs?: unknown };
+      expect(data.code_refs, `code_refs=${JSON.stringify(value)}`).toBeUndefined();
+    }
   });
 });

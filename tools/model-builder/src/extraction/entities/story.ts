@@ -85,6 +85,11 @@ interface StoryInput {
   process?: { trigger?: unknown; end_states?: unknown; lanes?: unknown };
   /** Where the work behind this story is tracked (v2.7.5). Carried through, never interpreted. */
   tracker_ref?: unknown;
+  /** The process's status and whether the system runs it yet, as stated. Carried through, never interpreted. */
+  status?: unknown;
+  implementation?: unknown;
+  /** The source files behind the process, as stated. Carried through, never interpreted. */
+  code_refs?: unknown;
 }
 
 /**
@@ -160,6 +165,13 @@ export function extractStory(doc: ParsedBlueprintDocument): Entity[] {
         // Carried raw: what it means and how it becomes a link are the render kit's, not this
         // module's, and a story that states none keeps the key absent rather than undefined-valued.
         tracker_ref: typeof s.tracker_ref === 'string' && s.tracker_ref.trim() ? s.tracker_ref.trim() : undefined,
+        // Named here for the same reason: a field this extractor does not name is dropped. Raw and
+        // trimmed; a process stating none keeps the key absent, so "not stated" stays countable.
+        status: typeof s.status === 'string' && s.status.trim() ? s.status.trim() : undefined,
+        implementation: typeof s.implementation === 'string' && s.implementation.trim() ? s.implementation.trim() : undefined,
+        // The evidence `implementation` is read against, and the list the code reference pass turns
+        // into edges to the files it names. A process stating none, or an empty list, keeps it absent.
+        code_refs: Array.isArray(s.code_refs) && s.code_refs.length > 0 ? s.code_refs : undefined,
       },
     });
   }
