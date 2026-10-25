@@ -483,6 +483,31 @@ npm run guides:check    # drift check for committed PDFs
 
 Start with the [umbrella guide](docs/handoff-guides/markdown/README.md), the [umbrella PDF](docs/handoff-guides/pdf/blueprint-handoff-atlas.pdf), or browse the full [PDF directory](docs/handoff-guides/pdf/).
 
+## Editor setup
+
+Opened as a folder in VS Code, this repository's `.vscode/` settings give every blueprint file kind
+and every contract kind its own icon ([Material Icon Theme](https://marketplace.visualstudio.com/items?itemName=PKief.material-icon-theme))
+and validate blueprint files against the schema ([YAML](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)).
+VS Code offers to install both extensions.
+
+To work on your own model beside this repository in one window, start from the workspace template
+[`.vscode/blueprint-schema.code-workspace`](.vscode/blueprint-schema.code-workspace). In a
+multi-root window VS Code reads the icon settings and `yaml.schemas` from the workspace file, not
+from each folder's `.vscode/settings.json`, so the template carries them.
+
+1. Set the second folder's `path` to the repository that holds your product's `.blueprint/` model.
+   A relative path resolves against the workspace file's location: the placeholder `../../my-project`
+   is a `my-project` clone beside this one, as in the Quick Start. To keep this clone unchanged, copy
+   the template elsewhere first and set both folders' paths.
+2. Open it with **File > Open Workspace from File**.
+
+If your team already has a `.code-workspace` file, copy the template's `settings` entries
+(`workbench.iconTheme`, `yaml.schemas` and the two `material-icon-theme.*` keys) into it and name this
+repository's folder `blueprint-schema`, because the `yaml.schemas` paths start with that name.
+
+An entry for the same file name in your user `material-icon-theme.files.associations` wins over the
+workspace one, so keep such an entry identical or remove it.
+
 ## Example
 
 A working e-commerce example with 3 bounded contexts (catalog, orders, payments) is included in [`examples/ecommerce/`](examples/ecommerce/). Run `npm run validate:examples` to verify it.

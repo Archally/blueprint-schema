@@ -1,0 +1,104 @@
+// Workspace template: this repository and the repository that holds your product's blueprint
+// model, in one VS Code window. Set the second folder's "path" to that repository, then open this
+// file with File > Open Workspace from File. A relative "path" resolves against this file's
+// location; to keep this clone unchanged, copy the file elsewhere first and set both paths.
+//
+// In a multi-root window VS Code reads workbench.iconTheme, the Material Icon Theme keys and
+// yaml.schemas from this file only, not from a folder's .vscode/settings.json, so this file carries
+// the same values as this repository's .vscode/settings.json. A yaml.schemas path that starts with
+// a folder's name ("blueprint-schema/...") resolves inside that folder wherever this file is.
+{
+  "folders": [
+    { "name": "blueprint-schema", "path": ".." },
+    // Placeholder: the repository that holds your product's .blueprint/ model.
+    { "name": "product-model", "path": "../../my-project" }
+  ],
+  "settings": {
+    "workbench.iconTheme": "material-icon-theme",
+    "yaml.schemas": {
+      "blueprint-schema/schema/v2.8/blueprint.schema.yaml": ["**/.blueprint/**/blueprint.yaml"],
+      "blueprint-schema/schema/v2.8/metamodel.schema.yaml": ["**/.blueprint/**/metamodel.schema.yaml"],
+      "blueprint-schema/schema/v2.8/migration.schema.yaml": ["**/.blueprint/**/migration.yaml", "**/.blueprint/**/*.migration.yaml"],
+      "blueprint-schema/schema/v2.8/design/arch.schema.yaml": ["**/.blueprint/**/arch.yaml", "**/.blueprint/**/*.arch.yaml"],
+      "blueprint-schema/schema/v2.8/design/concepts.schema.yaml": ["**/.blueprint/**/concepts.yaml", "**/.blueprint/**/*.concepts.yaml"],
+      "blueprint-schema/schema/v2.8/design/domain.schema.yaml": ["**/.blueprint/**/domain.yaml", "**/.blueprint/**/*.domain.yaml"],
+      "blueprint-schema/schema/v2.8/design/dynamics.schema.yaml": ["**/.blueprint/**/dynamics.yaml", "**/.blueprint/**/*.dynamics.yaml"],
+      "blueprint-schema/schema/v2.8/design/models.schema.yaml": ["**/.blueprint/**/models.yaml", "**/.blueprint/**/*.models.yaml"],
+      "blueprint-schema/schema/v2.8/design/quality.schema.yaml": ["**/.blueprint/**/quality.yaml", "**/.blueprint/**/*.quality.yaml"],
+      "blueprint-schema/schema/v2.8/design/infrastructure.schema.yaml": ["**/.blueprint/**/infrastructure.yaml", "**/.blueprint/**/*.infrastructure.yaml"],
+      "blueprint-schema/schema/v2.8/design/rules.schema.yaml": ["**/.blueprint/**/rules.yaml", "**/.blueprint/**/*.rules.yaml"],
+      "blueprint-schema/schema/v2.8/design/story.schema.yaml": ["**/.blueprint/**/story.yaml", "**/.blueprint/**/*.story.yaml"],
+      "blueprint-schema/schema/v2.8/design/interactions.schema.yaml": ["**/.blueprint/**/interactions.yaml", "**/.blueprint/**/*.interactions.yaml"],
+      "blueprint-schema/schema/v2.8/governance/capability.schema.yaml": ["**/.blueprint/**/capability.yaml", "**/.blueprint/**/*.capability.yaml"],
+      "blueprint-schema/schema/v2.8/governance/decisions.schema.yaml": ["**/.blueprint/**/decisions.yaml", "**/.blueprint/**/*.decisions.yaml"],
+      "blueprint-schema/schema/v2.8/governance/leverage.schema.yaml": ["**/.blueprint/**/leverage.yaml", "**/.blueprint/**/*.leverage.yaml"],
+      "blueprint-schema/schema/v2.8/governance/motivation.schema.yaml": ["**/.blueprint/**/motivation.yaml", "**/.blueprint/**/*.motivation.yaml"],
+      "blueprint-schema/schema/v2.8/governance/organization.schema.yaml": ["**/.blueprint/**/organization.yaml", "**/.blueprint/**/*.organization.yaml"],
+      "blueprint-schema/schema/v2.8/governance/roadmap.schema.yaml": ["**/.blueprint/**/roadmap.yaml", "**/.blueprint/**/*.roadmap.yaml"],
+      "blueprint-schema/schema/v2.8/governance/test-cases.schema.yaml": ["**/.blueprint/**/test-cases.yaml", "**/.blueprint/**/*.test-cases.yaml"],
+      "blueprint-schema/schema/v2.8/governance/value-stream.schema.yaml": ["**/.blueprint/**/value-stream.yaml", "**/.blueprint/**/*.value-stream.yaml"]
+    },
+    "material-icon-theme.files.associations": {
+      "concepts.yaml": "instructions",
+      "*.concepts.yaml": "instructions",
+      "rules.yaml": "conduct",
+      "*.rules.yaml": "conduct",
+      "domain.yaml": "shader",
+      "*.domain.yaml": "shader",
+      "arch.yaml": "architecture",
+      "*.arch.yaml": "architecture",
+      "motivation.yaml": "favicon",
+      "*.motivation.yaml": "favicon",
+      "decisions.yaml": "verified",
+      "*.decisions.yaml": "verified",
+      "test-cases.yaml": "test-js",
+      "*.test-cases.yaml": "test-js",
+      "dynamics.yaml": "bench-ts",
+      "*.dynamics.yaml": "bench-ts",
+      "quality.yaml": "todo",
+      "*.quality.yaml": "todo",
+      "capability.yaml": "nim",
+      "*.capability.yaml": "nim",
+      "story.yaml": "pipeline",
+      "*.story.yaml": "pipeline",
+      "models.yaml": "email",
+      "*.models.yaml": "email",
+      "rg.yaml": "3d",
+      "*.rg.yaml": "3d",
+      "infrastructure.yaml": "3d",
+      "*.infrastructure.yaml": "3d",
+      "org.yaml": "tree",
+      "*.org.yaml": "tree",
+      "organization.yaml": "tree",
+      "*.organization.yaml": "tree",
+      "ui.yaml": "figma",
+      "*.ui.yaml": "figma",
+      "interactions.yaml": "figma",
+      "*.interactions.yaml": "figma",
+      "roadmap.yaml": "roadmap",
+      "*.roadmap.yaml": "roadmap",
+      "value-stream.yaml": "tune",
+      "*.value-stream.yaml": "tune",
+      "leverage.yaml": "smarty",
+      "*.leverage.yaml": "smarty",
+      "blueprint.yaml": "toc",
+      "migration.yaml": "diff",
+      "*.migration.yaml": "diff",
+      "migrations.yaml": "log",
+      "*.openapi": "openapi",
+      "*.openapi.yaml": "openapi",
+      "*.asyncapi": "turborepo",
+      "*.asyncapi.yaml": "turborepo",
+      "*.arazzo": "url",
+      "*.openrpc": "hosts",
+      "*.openrpc.json": "hosts",
+      "*.pact.json": "certificate"
+    },
+    "material-icon-theme.folders.associations": {
+      ".blueprint": "sandbox"
+    }
+  },
+  "extensions": {
+    "recommendations": ["PKief.material-icon-theme", "redhat.vscode-yaml"]
+  }
+}
