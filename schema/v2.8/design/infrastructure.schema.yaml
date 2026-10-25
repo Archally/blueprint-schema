@@ -556,7 +556,7 @@ $defs:
         description: "Where the resource is defined in that system (e.g. module path, `file:resource` address, Ansible role, Helm chart)."
       role:
         type: string
-        description: "Optional role of this reference (e.g. 'defines', 'configures', 'deploys')."
+        description: "Optional role of this reference (e.g. 'defines', 'configures', 'deploys'). 'planned' means the locator is where the resource is to be defined and it is not defined there yet; 'gap' means the locator shows the resource is absent where it would be expected. Neither is evidence that the resource is implemented."
 
   lifecycle:
     type: object

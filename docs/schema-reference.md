@@ -439,6 +439,7 @@ Cross-layer reference paths for tooling validation:
 | SLO | Metric + Operations | `slo.metric`, `slo.operations` | Required if SLO exists |
 | SLA | SLOs | `sla.slos` | Required if SLA exists |
 | Capability | Operations | `capability.operations` | Optional |
+| Capability | Domains / Bounded contexts | `capability.realized_in` | Optional (v2.8) |
 | Decision | Motivation | `decision.motivation_refs` | Optional (recommended) |
 | Decision | Capability | `decision.capability_refs` | Optional |
 | Test | Rules/Operations/Concepts | `test.validates` | Required |
@@ -480,6 +481,74 @@ Enforcement levels:
 - **Recommended:** Tooling warns if missing; not schema-enforced
 - **Optional:** Available for depth; no validation
 
+### Which operations realize a capability (`realized_in`, `operations`)
+
+A capability says where it is realized in two ways, at two grains:
+
+- **`realized_in`** names the modules that realize it: problem-space domains (`DMN###`, declared
+  in `blueprint.yaml` `domains[]`) and bounded contexts (`BC###`, the arch context id, optionally
+  prefixed). A domain's operations are those whose document names that domain in its header
+  `domain_ref` (or, without one, those in the slice folder named after the domain); a bounded
+  context's operations are those its services provide. Subdomain ids, slice scopes and kebab
+  context names are not accepted, and an id nothing declares is a cross-reference error.
+- **`operations`** lists operations one by one. A listing is the stated attribution and takes
+  precedence over every module default: an operation listed under at least one capability is
+  attributed to exactly the capabilities that list it, whichever modules other capabilities name.
+  An empty list states nothing.
+
+So a module split across capabilities is written as `realized_in` on the capability that holds most
+of it, plus an `operations` listing on each capability that holds an exception. Attribution is
+many-to-many: several capabilities may name one module, one capability may name several, and one
+operation may be listed under several capabilities. It is never inherited: a capability is not
+credited with its children's operations or its parent's, and a roll-up follows `children`.
+
+In the built model graph each capability is linked to the modules it names and to every operation
+attributed to it, one link per capability and operation, and each operation link records whether
+the attribution was stated in `operations` or came from a module, and from which modules.
+
+From those operation links the graph also links each process and use case to every capability it
+supports: one link per capability that realizes at least one operation the process orders, or the
+use case's main scenario or alternative flows name. Each link counts the distinct operations the
+capability realizes there against all the distinct operations the process or use case holds, names
+the origins that contributed, and, for a process, says whether its trigger operation is among them.
+An operation realized by two capabilities counts for both, so the shares of one process overlap and
+do not add up to its total. An operation named only in a process's trigger, a subprocess's
+operations, and the operations of the processes a use case lists are not credited.
+
+The semantic checker reports two signals at info: an operation realized by two capabilities that
+are not one another's ancestor or descendant (`operation-realizes-two-capabilities`), and a
+capability whose subtree realizes no operation, once at the topmost such capability, with the
+reason (`capability-realized-nowhere`).
+
+```yaml
+capabilities:
+  - id: CAP001
+    name: Order Management
+    level: 1
+    realized_in: [DMN001, BC003]        # every operation of the sales domain and of BC003
+  - id: CAP002
+    name: Returns
+    level: 1
+    operations: [orders.CMD007]         # an operation of BC003 that belongs here, not to CAP001
+```
+
+### Evidence and certainty
+
+Design entities, including test cases, cite their sources in `provenance.evidence[]`.
+Governance entities that carry evidence directly use `evidence[]`: capabilities, decisions,
+leverage points, value streams, and motivation's vision, goals, non-goals, risks, assumptions,
+trade-offs and inquiries. Each item requires `kind` and `summary`; `source` identifies the URL
+or written source and `date` records when the evidence was collected.
+
+An item may state `certainty: speculative | probable | confirmed` for the assertion it supports,
+including an inferred association between a source record and a test. Speculative means assumption
+or analogy, probable means partial evidence, and confirmed means research or stakeholder agreement.
+Missing item certainty is unstated, with no default. Several items may cite different records and
+state different certainty values. Enclosing entity or provenance certainty remains a separate
+judgement; `confidence_impact: supports | weakens | invalidates` states the direction of the
+item's effect on confidence, independently of its certainty. Sources remain evidence, while
+`code_refs` locates implementation and `validates` states test-to-blueprint traceability.
+
 ### Implementation status (`implementation`)
 
 `code_refs` say *where* an element is implemented. `implementation` says *whether* it is, and it is
@@ -506,8 +575,11 @@ where it can also say where in the code it is.
 
 Two semantic rules compare the claim with the evidence.
 `implementation-as-is-without-code-refs` reports an `as-is` element that names neither `code_refs`
-nor - for a resource - `iac_refs`. `implementation-to-be-with-code-refs` notes a `to-be` element
-that names one. An element marked `wip` is reported by neither. Both severities are per project in
+nor - for a resource - `iac_refs`, or whose only references have `role: planned` or `role: gap`,
+since neither a planned place nor code that shows the element absent is evidence that it exists. `implementation-to-be-with-code-refs` notes a `to-be` element
+that names one, unless one of its references has `role: planned`: such a reference points at the
+place the element is to be built, so the element states in data that it is not there yet. An
+element marked `wip` is reported by neither. Both severities are per project in
 `.blueprint-lint.yaml`: a model authored from interviews, and a greenfield slice inside a brownfield
 model, both hold `as-is` elements with nothing to point at and no defect, so this is a project's
 decision and not a schema constraint.
@@ -541,12 +613,22 @@ models in practice shorten roughly one key in ten. Read the key from the model r
 it from the name.
 
 ### Narrative (story.schema.yaml)
-- **activities[]**: Replaces operations[]. Each activity has required `id` (PA001) and `name`.
+- **activities[]**: Replaces operations[]. Each activity has required `id` (PA001) and `name`. The
+  activities are listed in execution order: the main-path activities run in the order they are
+  listed unless a main-path activity states a main-path successor (`next` or `next_activities`), in
+  which case the stated links are the whole order. An `error` or `compensation` activity is never
+  placed in the listed order; only a stated link reaches it. The model builder reads this order once
+  for every renderer and the checker: each activity's successors (`_next`) carry an `origin`,
+  `stated` or `declared-order`, and each process carries where it starts (`_start`) and which
+  activity leads to each end state (`_ends`).
 - **entry_operation**: Domain operation where the activity begins; the generator follows the causal chain from here. Optional - an activity whose operation is not yet modelled leaves it out, and `activity-without-entry-operation` reports the gap.
 - **steps[]**: Optional convenience view of operations in activity. Domain causal links are authoritative; validator WARNS if steps contradict.
 - **next[]**: Where an activity goes next. Each entry names the following activity in `to` and may
   carry a `condition` saying what takes that branch, in the model's own terms; the condition reaches
-  a generated Arazzo step as its criterion.
+  a generated Arazzo step as its criterion. One link between two main-path activities states the
+  process's whole order, so a process that writes one writes every main-path link it has; a plain
+  sequence needs none. A link to an `error` or `compensation` activity leaves the listed order of
+  the main path standing: the listed continuation is then the default flow of an exclusive split.
 - **gateway** (and|xor|or): How an activity's outgoing branches relate. Declared once on the activity
   that forks, so three branches cannot state the fact three times and disagree.
 - **join**: How the branches arriving at an activity converge, with its own `mode` on the same
@@ -556,8 +638,19 @@ it from the name.
 - **next_activities**: The successors alone, with no room for what chooses between them. Superseded
   by `next` since v2.8.23; accepted and read until the next major line, warned once per activity, and
   rewritten by the schema-update chain. An activity declares one or the other, never both.
-- **path_type** (happy|error|compensation): Optional flow metadata.
+- **path_type** (happy|error|compensation): Optional flow metadata. An activity that states none is
+  on the main path.
 - **trigger**, **end_states**, **lanes**: Optional BPMN metadata, direct properties of the process.
+  The process starts at the activity holding `trigger.operation` (as its entry or a step), else at
+  its first listed main-path activity; in a process with no main-path link, at its first listed
+  main-path activity. An end state's `from` names the activities of the process that lead to it;
+  where any end state states `from`, the stated attachments are the process's whole end routing,
+  and an end state that states none is attached to no activity. Where none states it, the
+  attachments follow a convention: where exactly one end state is `complete`, the last listed
+  main-path activity with no successor leads to it and every other one ends its own branch; where
+  every main-path activity has a successor, the last listed main-path activity leads to it when all
+  of its stated links go to `error` or `compensation` activities. Any other end state is attached
+  to no activity.
 - **tags**: Root, process, and activity level.
 
 ### Models (models.schema.yaml)
@@ -1909,3 +2002,58 @@ When `cadence` is set, work items may be placed by sprint number; dates derive a
 | `use_cases` | `UC\d{3,}` | Use cases delivered |
 
 **Views vs structure.** Pure-rendering concerns (tracker base URL, axis bounds, marker / "today" lines, colours, hatching) are **not** modelled here — they belong to a Gantt *view-config*. The roadmap is the single source of truth; the Gantt is a derived view.
+
+## Direct goal relations
+
+From 2.8.77, `goal.goal_relations` optionally records claims about achievement of other goals.
+The list, when present, is nonempty. Each item requires `target_goal`, `kind` and a nonblank
+`rationale`; `certainty` and `evidence` use the common definitions. Omitted certainty is unstated,
+never confirmed. A goal's own confidence does not confirm its edges; effect is independent of
+confidence. Missing evidence/certainty is reported as a quality gap, including confirmed claims
+without evidence. Absence of an edge makes no independence claim.
+
+| Kind authored on A | Effect | Raw relation | Meaning |
+|---|---|---|---|
+| `contributes_to` B | required `help` or `hurt` | `goal_contributes_to`, A -> B | Partial positive or negative effect on B. |
+| `requires` B | forbidden | `goal_requires`, A -> B | B is necessary for A, without sufficiency or temporal order. |
+| `conflicts_with` B | forbidden | `goal_conflicts_with`, A -> B | Incompatibility read symmetrically by incident queries, stored as one assertion. |
+
+```yaml
+goals:
+  - id: checkout.GL002
+    statement: Reduce checkout waiting.
+    priority: high
+    goal_relations:
+      - target_goal: GL001
+        kind: contributes_to
+        contribution: help
+        rationale: Lower waiting removes one cause of abandonment.
+        certainty: speculative
+```
+
+`GL001` must be declared elsewhere in this model. Targets resolve to exactly one declared Goal by
+exact-string identity, including scoped and legacy `G###` ids. A bare id never aliases a scoped id.
+Missing, ambiguous, wrong-type and self-targets are errors at the authored target path. Raw graphs
+keep diagnostic placeholders when a target cannot resolve to one Goal.
+
+This is a typed multigraph. Every authored assertion retains its effect, rationale, certainty,
+evidence and `source_path` (file and structured path), with an occurrence discriminator in its
+stable raw edge id. Distinct kinds/effects and repeated assertions cannot overwrite one another.
+Duplicate semantic keys (source, target, kind, effect) warn even when rationale differs; conflict
+pairs normalize endpoint order. Opposing help/hurt and conflict plus necessity on an unordered
+pair also warn while retaining every claim.
+
+Requires cycles are legal: `goal-requires-cycle` reports one warning per strongly connected
+component, sorted member ids and one deterministic witness path. It follows only `goal_requires`,
+so contribution loops and mixed-kind paths do not fabricate necessity cycles. Override severity or
+disable the rule in `.blueprint-lint.yaml`. Mutual necessity alone implies no temporal deadlock.
+
+No transitive edge, effect multiplication or causal conclusion is inferred. Shared work creates no
+goal relation. The six default advancing kinds and the union of `goal.kpi` and `kpi.goal` stay
+unchanged. Goal-only support cannot clear an unadvanced-goal gap; work advancing A never silently
+advances B. Use typed graph queries (`bp follow-path`, MCP `follow_path`) for traversal and incident
+queries (`bp neighbors --json`, MCP `get_neighbors` with direction `both`) for symmetric conflicts.
+Relation metadata stays on raw edges. See the [complete synthetic retail fixture](../v2.8/examples/retail-goal-relations/motivation.yaml).
+
+The change is BACKWARD only: old valid goals remain valid; older closed schemas reject enriched
+goals. No migration record is required.

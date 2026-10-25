@@ -138,6 +138,14 @@ $defs:
       kpi:
         $ref: "../metamodel.schema.yaml#/$defs/kpi_ref"
         description: "KPI in quality.schema.yaml that formally tracks this goal. Closes the goal→KPI→metric traceability chain."
+      goal_relations:
+        title: Goal relations
+        type: array
+        minItems: 1
+        uniqueItems: true
+        description: "Claims about achievement of this goal and another goal. Absence makes no independence claim."
+        items:
+          $ref: "#/$defs/goal_relation"
       assumption_refs:
         type: array
         items:
@@ -197,6 +205,58 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  goal_relation:
+    title: Goal relation
+    type: object
+    additionalProperties: false
+    required: [target_goal, kind, rationale]
+    description: "A source-owned claim, authored at goals[i].goal_relations[j]. Contribution is partial; requires states necessity without sufficiency or temporal order; conflict is symmetric. No transitive claims follow."
+    examples:
+      - target_goal: GL001
+        kind: contributes_to
+        contribution: help
+        rationale: Lower checkout waiting removes one cause of abandonment.
+        certainty: speculative
+    properties:
+      target_goal:
+        title: Target goal
+        $ref: "../metamodel.schema.yaml#/$defs/goal_ref"
+        description: "Exactly one declared Goal with this exact id, including any scope prefix. Self-targets are errors."
+      kind:
+        title: Relation kind
+        type: string
+        enum: [contributes_to, requires, conflicts_with]
+        description: "Source contributes to target, needs target achieved, or conflicts with target. Requires cycles warn; contribution loops are legal and silent."
+      contribution:
+        title: Contribution effect
+        type: string
+        enum: [help, hurt]
+        description: "Partial positive or negative effect on the target. Required only for contributes_to. Effect is independent of certainty."
+      rationale:
+        title: Rationale
+        type: string
+        minLength: 1
+        pattern: '\S'
+        description: "Why the claim holds and the conditions that bound it."
+      certainty:
+        title: Assertion certainty
+        $ref: "../metamodel.schema.yaml#/$defs/certainty"
+        description: "Confidence in this assertion, independent of goal certainty. Omission is unstated, never confirmed."
+      evidence:
+        title: Assertion evidence
+        $ref: "../metamodel.schema.yaml#/$defs/evidence"
+        description: "Sources supporting this assertion under the common evidence policy. Goal evidence does not confirm its edges."
+    allOf:
+      - if:
+          required: [kind]
+          properties:
+            kind: {const: contributes_to}
+        then:
+          required: [contribution]
+        else:
+          not:
+            required: [contribution]
 
   non_goal:
     type: object

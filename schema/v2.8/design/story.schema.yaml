@@ -95,12 +95,22 @@ $defs:
           $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
       activities:
         type: array
-        description: "Process activities composing this process. Each activity is an asynchronous phase containing synchronous steps."
+        description: >
+          Process activities composing this process, listed in execution order. Each activity is an
+          asynchronous phase containing synchronous steps. The main-path activities run in the order
+          they are listed, unless a main-path activity states a main-path successor (`next` or
+          `next_activities`): then the stated links are the whole order. An activity whose
+          `path_type` is `error` or `compensation` is never placed in the listed order; it is reached
+          only by a stated link.
         items:
           $ref: "#/$defs/process_activity"
       trigger:
         type: object
-        description: "Process start event."
+        description: >
+          Process start event. The process starts at the activity whose `entry_operation` or
+          `steps` hold `operation`, the first listed one where several do, else at the first listed
+          main-path activity. In a process none of whose main-path activities states a main-path
+          successor, it starts at the first listed main-path activity.
         required: [type]
         additionalProperties: false
         properties:
@@ -113,13 +123,22 @@ $defs:
             description: "Triggering operation (required for message/signal types)."
           schedule:
             type: string
-            description: "Cron expression or ISO 8601 duration (for timer type)."
+            description: "When a timer trigger fires (for timer type): an ISO 8601 date or date-time, an ISO 8601 duration, an ISO 8601 repeating interval, or a cron expression."
           description:
             type: string
             description: "Human-readable trigger description."
       end_states:
         type: array
-        description: "Process terminal states with their types."
+        description: >
+          Process terminal states with their types. Where any end state of the process states
+          `from`, the stated attachments are the whole end routing of the process: each end state
+          is reached from the activities its own `from` names, and one that states none is attached
+          to no activity. Where no end state states `from`, they are attached by convention: where
+          exactly one end state has type `complete`, the last listed main-path activity with no
+          successor leads to it, and every other activity with no successor ends its own branch.
+          Where every main-path activity has a successor, the last listed main-path activity leads
+          to it when all of its stated links go to `error` or `compensation` activities. Any other
+          end state is attached to no activity, and is reported as reached by no stated link.
         items:
           type: object
           required: [name, type]
@@ -135,6 +154,17 @@ $defs:
             description:
               type: string
               description: "End state description."
+            from:
+              type: array
+              minItems: 1
+              uniqueItems: true
+              description: >
+                The activities that lead to this end state, each the `id` of an activity of this
+                process, written as the activity writes it. An activity named here may also state
+                `next`; the end state is then one of its outgoing branches. Stating `from` on any
+                end state of a process makes the stated attachments its whole end routing.
+              items:
+                $ref: "../metamodel.schema.yaml#/$defs/process_activity_ref"
       lanes:
         type: array
         description: "Swim lane assignments mapping actors to their operations within this process."
@@ -210,7 +240,7 @@ $defs:
           present these are what the model reports as the activity's operation detail; when absent,
           `entry_operation` stands in as the single entry. Branching does not belong in this list:
           an activity that needs an alternative inside it is two activities linked through
-          `next_activities`.
+          `next`.
         items:
           type: object
           required: [operation_ref]
@@ -231,8 +261,8 @@ $defs:
           names the same successors and can also state the condition under which each branch is
           taken, which this key has no room for; an activity declares one or the other, never
           both, and the schema-update tool rewrites one into the other. Still accepted and still
-          read until the next major line. With neither present, flow is inferred from domain
-          causal links.
+          read until the next major line. Where no main-path activity of the process states
+          either, its activities run in the order they are listed (see `activities`).
       gateway:
         $ref: "../metamodel.schema.yaml#/$defs/gateway_kind"
         description: >
@@ -256,7 +286,10 @@ $defs:
         type: array
         description: >
           Where this activity goes next, and why. Each entry names the following activity and may
-          state the condition under which that branch is taken. Use it in preference to
+          state the condition under which that branch is taken. A link between two main-path
+          activities states the process's whole order: the listed order then no longer applies, so
+          every main-path link the process has is written. A link to an `error` or `compensation`
+          activity leaves the listed order of the main path standing. Use it in preference to
           `next_activities`, which names the following activities and can say nothing about what
           chooses between them; an activity declares one or the other, never both.
         items:
@@ -287,7 +320,7 @@ $defs:
       path_type:
         type: string
         enum: [happy, error, compensation]
-        description: "Process path classification: happy=expected flow, error=exception handling, compensation=rollback/undo."
+        description: "Process path classification: happy=expected flow, error=exception handling, compensation=rollback/undo. An activity that states none is on the main path, as `happy`."
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
 

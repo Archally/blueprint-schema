@@ -499,6 +499,19 @@ $defs:
         pattern: "^[a-z][a-z0-9-]*$"
         description: "Migration shim (deprecated): legacy kebab-context-name."
 
+  capability_realization_ref:
+    description: >
+      A module that realizes a business capability: a problem-space domain declared in
+      blueprint.yaml `domains[]` (DMN###, model-wide, no prefix) or a bounded context by its
+      arch id (BC###, optionally context/party-prefixed). A subdomain id, a slice scope and a
+      context's kebab name are not accepted. A reference to an undeclared domain or bounded
+      context is a cross-reference error.
+    oneOf:
+      - $ref: "#/$defs/domain_ref"
+      - type: string
+        pattern: "^([a-z][a-z0-9-]*\\.)?BC\\d{3,}$"
+        description: "Arch bounded-context id (BC###), optionally context/party-prefixed."
+
   service_ref:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?SVC\\d{3,}$"
@@ -994,8 +1007,15 @@ $defs:
           Purpose of this file relative to the entity.
           Recommended values: model, interface, implementation,
           test, validation, migration, configuration, documentation,
-          schema, proto, api-spec, seed-data.
-          Custom values are accepted.
+          schema, proto, api-spec, seed-data, planned, gap.
+          planned: the path is where the entity is to be built, and the
+          entity is not there yet. gap: the file shows the entity is absent
+          where it would be expected, such as a handler that accepts input
+          without the check a rule states. Neither is evidence that the
+          entity is implemented: they suit an entity whose implementation is
+          to-be, and an as-is entity needs a reference with another role.
+          A file that states the intent without implementing it is
+          documentation. Custom values are accepted.
       description:
         type: string
         description: "Optional clarification of what this file contributes."
@@ -1259,6 +1279,12 @@ $defs:
         summary:
           type: string
           description: "Brief description of what the evidence shows."
+        certainty:
+          $ref: "#/$defs/certainty"
+          description: >
+            Certainty of the assertion supported by this evidence item, including an inferred
+            association. Independent of the enclosing entity certainty and confidence_impact.
+            When absent, certainty is unstated.
         confidence_impact:
           type: string
           enum: [supports, weakens, invalidates]
@@ -1996,3 +2022,29 @@ x-gdsm:
         the metamodel vocabularies; a `metrics` or `slas` list under `verifies`, or a list of metrics,
         is a schema error, and an id nobody declares under any of them is a cross-reference error.
       schema_version: "2.8.61"
+    - lesson: >
+        A business rule's `name` states what holds ("An order total equals the sum of its lines"),
+        never a label ("Order total check"). Views that show a rule by its name alone - a film, a
+        canvas chip, a register row - then still state the rule; a rule not yet enforced is named as
+        the requirement it states.
+      category: semantics
+      date: "2026-10-14"
+      evidence: >
+        On the curated example, ten of 91 rule names were labels; rewritten as statements, every
+        name-only view of those rules states a rule, with the summary and logic unchanged.
+      schema_version: "2.8.73"
+    - lesson: >
+        An operation's `task_type` states how its work is done: `automated` by the system, `manual` by
+        people outside the system, `user-decision` by a person choosing inside it, `external` by a
+        third-party system. It is independent of exposure and transport: an operation a contract
+        exposes but that states no `exchange` has an undeclared transport, which is a gap, not manual
+        work; and a `manual` operation may still be exposed by a contract. Views draw the stated
+        `task_type` and mark an absent one as not stated; never infer it from a contract or an
+        exchange.
+      category: semantics
+      date: "2026-10-15"
+      evidence: >
+        On the curated example, 696 of 700 operations state no task_type; the one surfaced by the
+        missing-exchange check is exposed by an OpenAPI contract, so reading the missing exchange as
+        manual work would have stated a false fact.
+      schema_version: "2.8.73"

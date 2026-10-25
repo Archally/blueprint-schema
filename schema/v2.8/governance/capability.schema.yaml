@@ -61,7 +61,29 @@ $defs:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
-        description: "Operations that implement this capability. Links business 'what' to domain 'how'."
+        description: >
+          Operations that realize this capability, stated one by one. A listing is the stated
+          attribution and takes precedence over any module default: an operation listed under at
+          least one capability is attributed to exactly the capabilities that list it, and no
+          domain or bounded context named in any capability's `realized_in` adds another. List an
+          operation here when its module is split across capabilities, or when no module of it is
+          named; an operation that a `realized_in` module already attributes correctly needs no
+          listing. An empty list states nothing.
+      realized_in:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/capability_realization_ref"
+        description: >
+          Domains (DMN###) and bounded contexts (BC###) whose operations realize this capability.
+          A domain's operations are those whose document names that domain in its header
+          `domain_ref` (or, without one, those in the slice folder named after the domain); a
+          bounded context's operations are those its services provide. Each such operation is
+          attributed to this capability unless some capability lists it under `operations`, in
+          which case the listings alone decide. Several capabilities may name one module, and one
+          capability may name several. A capability is not credited with the operations of its
+          children or of its parent: each level states its own, and a roll-up follows `children`.
       rules:
         type: array
         items:
