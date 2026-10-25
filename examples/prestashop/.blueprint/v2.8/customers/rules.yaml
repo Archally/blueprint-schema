@@ -4,75 +4,186 @@ scope: customers
 
 structural:
   - id: customers.SR001
-    name: "One customer account per email per shop"
-    description: "Each email address can only be associated with one active customer account within the same shop scope."
+    name: "A registered customer email is used once across the shops that share customers"
+    description: "Guests are exempt: two guests, or a guest and a registered customer, may share an address."
     logic:
-      then: "UNIQUE(customer.email, customer.shop_id)"
+      then: "no other registered, not deleted customer in the shops sharing customers has the same email"
+      when: a registered customer is added, or a registered customer email is changed
     modality: necessary
     concepts: [customers.CN001]
     code_refs:
       - path: "src/Core/Domain/Customer/Exception/DuplicateCustomerEmailException.php"
         role: implementation
+        description: The exception raised for an address another registered customer has.
       - path: "src/Adapter/Customer/CommandHandler/AddCustomerHandler.php"
         role: implementation
+        description: "Lines 69-73: only a customer that is not a guest is checked; lines 92-103: getByEmail finds a registered customer and the add is refused."
+      - path: src/Adapter/Customer/CommandHandler/EditCustomerHandler.php
+        role: implementation
+        description: "Line 62 and lines 198-220: a changed email of a registered customer is checked the same way; a guest is not."
+      - path: classes/Customer.php
+        role: implementation
+        description: "Lines 457-481: getByEmail restricts to the shops sharing customers, ignores guests and skips deleted customers."
+      - path: tests/Integration/Behaviour/Features/Scenario/Customer/customer_management.feature
+        role: test
+        description: Scenarios at lines 30 (duplicate registered customer refused), 43 (guest with the same email allowed), 169 (guest email edit allowed) and 185 (registered email edit refused).
+    summary: "One registered account per email in the shops that share customers."
+    fact: "UNIQUE(Customer.email) over customers WHERE is_guest = 0 AND deleted = 0, within the shop sharing group"
+    scope: "customer add and edit, back office and storefront registration"
+    on_violation:
+      action: reject
+      message: Registered customer with email "%s" already exists
+    examples:
+      - input: A registered customer is added with an email another registered customer has
+        output: "Refused: 'Registered customer with email ... already exists'"
+      - input: A guest is added with the email of a registered customer
+        output: Accepted
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
 validation:
   - id: customers.VR001
-    name: "Customer email must be valid"
-    description: "Customer email must be a valid email format and unique within the shop."
+    name: "A customer email is a valid address of at most 255 characters"
+    description: "Whether another customer may share the address is a separate rule."
     logic:
       when: "customer is created or email is updated"
-      then: "email matches RFC 5322 format AND no other active customer has same email in shop"
+      then: "email is not empty AND length(email) <= 255 AND isEmail(email)"
     modality: obligatory
     concepts: [customers.CN001]
+    code_refs:
+      - path: src/Core/Domain/ValueObject/Email.php
+        role: validation
+        description: "Lines 67-72: empty is refused; lines 81-88: more than 255 characters is refused, both with INVALID_EMAIL."
+      - path: classes/Customer.php
+        role: model
+        description: "Line 165: email is required, validated with isEmail, size 255."
+      - path: classes/Validate.php
+        role: validation
+        description: "Lines 44-63: isEmail applies the strict Symfony Email constraint and the RFC validation."
+    summary: "Every customer has a valid email address."
+    fact: "Customer.email required AND length(Customer.email) <= 255 AND isEmail(Customer.email)"
+    scope: "customer add and edit, back office and storefront"
+    on_violation:
+      action: reject
+      code: 1
+      message: Email must not be empty
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: customers.VR002
-    name: "Password policy"
-    description: "Customer password must meet minimum security requirements. Configurable minimum length (default 8)."
+    name: "A customer password meets the policy of the place it is set"
+    description: "Holds each password to the policy of the place where it is set."
     logic:
-      when: "customer is created or password is changed"
-      then: "password.length >= configured_minimum"
+      when: "a customer password is set at registration, on the identity form, or by the merchant"
+      then: "storefront: minLength <= length <= maxLength AND zxcvbnScore >= minScore; back office: 5 <= length <= 72"
     modality: obligatory
     concepts: [customers.CN001]
     code_refs:
       - path: "src/Core/Domain/Customer/ValueObject/Password.php"
         role: implementation
+        description: "Line 19: MIN_LENGTH = 5; line 27: MAX_LENGTH = 72; lines 55-62: the back-office length check raising INVALID_PASSWORD."
       - path: "src/Core/Security/PasswordPolicyConfiguration.php"
         role: implementation
+        description: "Lines 25-26 and 36-38: default lengths 8 and 72 and the three configuration keys the storefront reads."
+      - path: classes/form/CustomerForm.php
+        role: validation
+        description: "Lines 139-175: the storefront form checks the configured length and the configured zxcvbn score."
+      - path: classes/Validate.php
+        role: validation
+        description: "Lines 589-625: isAcceptablePasswordScore and isAcceptablePasswordLength read the configuration, with defaults 3, 8 and 72."
+      - path: tests/Unit/Core/Domain/Customer/ValueObject/PasswordTest.php
+        role: test
+        description: testItThrowsExceptionWhenCreatingTooShortOrTooLongPassword (line 18).
+    summary: "Storefront: configured length and strength; back office: 5 to 72 characters."
+    fact: "storefront password: PS_SECURITY_PASSWORD_POLICY_MINIMUM_LENGTH..MAXIMUM_LENGTH AND zxcvbn >= MINIMUM_SCORE; back office: 5..72"
+    scope: "storefront registration and identity form; back office customer add and edit"
+    on_violation:
+      action: reject
+      message: Password must be between %d and %d characters long
+    examples:
+      - input: The merchant creates a customer with the password '123'
+        output: "Refused: the length must be between 5 and 72"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: customers.VR003
-    name: "Guest conversion prerequisites"
-    description: "Guest account must have a valid email before conversion to registered customer."
+    name: "A guest becomes a registered customer only when no registered customer has its email"
+    description: "Keeps a guest from taking over the email address of a registered account."
     logic:
       when: "guest is converted to customer"
-      then: "guest.email is valid AND guest.email not used by existing customer"
+      then: "customer.is_guest AND NOT customerExists(customer.email)"
     modality: obligatory
     concepts: [customers.CN001]
     code_refs:
       - path: "src/Core/Domain/Customer/Command/TransformGuestToCustomerCommand.php"
         role: implementation
+        description: The command naming the customer to transform.
       - path: "src/Core/Domain/Customer/Exception/CustomerTransformationException.php"
         role: implementation
+        description: "Line 17: CUSTOMER_IS_NOT_GUEST = 1; line 22: TRANSFORMATION_FAILED = 2."
+      - path: src/Adapter/Customer/CommandHandler/TransformGuestToCustomerHandler.php
+        role: implementation
+        description: "Lines 41-52 and 74-79: a registered customer with the same email raises CUSTOMER_IS_NOT_GUEST."
+      - path: classes/Customer.php
+        role: implementation
+        description: "Lines 1218-1272: transformToCustomer refuses a non-guest (1221) or a taken email (1226), then sets a random password, the customer group and sends the welcome email."
+    summary: "A guest is converted only while its email is free among registered customers."
+    fact: "transform(Customer) requires Customer.is_guest AND NOT exists registered Customer with the same email"
+    scope: "guest transformation, back office"
+    on_violation:
+      action: reject
+      code: 1
+      message: Customer with id "%s" already exists as non-guest
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: customers.VR004
-    name: "Customer group discount range"
-    description: "Group reduction percentage must be between 0 and 100 inclusive."
+    name: "A customer group reduction is between 0 and 100 percent"
+    description: "An edit made through the Admin API is not checked."
     logic:
       when: "customer group is created or edited"
       then: "0 <= reductionPercent <= 100"
     modality: necessary
     concepts: [customers.CN002]
+    code_refs:
+      - path: src/Core/Domain/Customer/Group/Command/AddCustomerGroupCommand.php
+        role: validation
+        description: "Line 55 and lines 106-114: a reduction below 0 or above 100 raises INVALID_REDUCTION."
+      - path: controllers/admin/AdminGroupsController.php
+        role: validation
+        description: "Lines 526-527 and 537-544: the back office refuses a group or category reduction outside 0 to 100."
+      - path: src/Core/Domain/Customer/Group/Command/EditCustomerGroupCommand.php
+        role: implementation
+        description: "Lines 62-65: setReductionPercent stores the value with no range check."
+      - path: src/Core/Domain/Customer/Group/Exception/GroupConstraintException.php
+        role: implementation
+        description: "Line 20: INVALID_REDUCTION = 20."
+    summary: "Group reductions are percentages from 0 to 100."
+    fact: "0 <= Group.reduction <= 100"
+    scope: "customer group add (back office and Admin API) and back office edit"
+    on_violation:
+      action: reject
+      code: 20
+      message: Reduction percent must be between 0 and 100
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: customers.VR005
-    name: "Address required fields per country"
+    name: "An address has every field the shop and its country require"
     description: >-
-      Address validation is country-dependent. On top of the shop-wide required_field list that
-      SetRequiredFieldsForAddress writes, the country row decides three further things: whether an
-      identification number is required (need_identification_number, read by Address::dniRequired),
-      whether a postcode is required and in what format (need_zip_code and zip_code_format, checked
-      by Country::checkZipCode), and whether a state may be given at all (contains_states, which
-      EditCustomerAddressHandler uses to reset the state to 0 when the country is changed). The
-      length ceilings in AddressConstraint apply to every country.
+      Fits each address to what
+      its
+      country asks for.
     logic:
       when: "address is created or edited"
       then: "all shop-wide required fields AND all fields the selected country requires are present, each within its AddressConstraint length"
@@ -81,57 +192,175 @@ validation:
     code_refs:
       - path: "src/Core/Domain/Address/Exception/AddressConstraintException.php"
         role: implementation
+        description: The exception the address constraints raise.
       - path: "src/Core/Domain/Address/Configuration/AddressConstraint.php"
         role: implementation
+        description: The length ceilings for every address field (alias 32, names and company 255).
       - path: "classes/Address.php"
         role: implementation
+        description: "Lines 349-360: an identification number is required when the country needs one; lines 383-390: dniRequired reads need_identification_number."
       - path: "classes/Country.php"
         role: implementation
+        description: "Lines 432-444: checkZipCode matches the postcode against zip_code_format."
       - path: "src/Adapter/Address/CommandHandler/EditCustomerAddressHandler.php"
         role: implementation
+        description: "Lines 108-109: a country without states resets the state to 0."
+      - path: src/Adapter/Address/AbstractAddressHandler.php
+        role: validation
+        description: "Lines 68-74: add and edit refuse an address whose fields fail validation."
+      - path: src/PrestaShopBundle/Form/Admin/Sell/Address/CustomerAddressType.php
+        role: validation
+        description: "Lines 303-306: the postcode format of the country; lines 365-367: a state when the country requires one."
+      - path: classes/form/CustomerAddressForm.php
+        role: validation
+        description: "Lines 102-110: the storefront refuses a postcode that does not match the country format."
+    summary: "Required address fields follow the shop list and the country."
+    fact: "Address has every shop-required field AND (Country.need_identification_number => dni) AND (Country.need_zip_code => postcode matches zip_code_format) AND (NOT Country.contains_states => state = 0)"
+    scope: "customer address add and edit, back office and storefront"
+    on_violation:
+      action: reject
+      message: Invalid postcode - should look like "%zipcode%"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: customers.VR006
-    name: "GDPR right to erasure"
-    description: "Customer data must be deletable upon request within 30 days per GDPR Article 17. Deletion anonymizes personal data but retains order records for legal compliance."
+    name: "A customer erasure request anonymizes personal data within 30 days and keeps the orders"
+    description: "The orders are kept for legal records. Core PrestaShop does not anonymize today: it deletes or soft-deletes the customer and leaves anonymization to a GDPR module."
     logic:
       when: "customer requests data deletion"
-      then: "personal data anonymized within 30 days; order records retained with anonymized customer reference"
+      then: "within 30 days: personal data anonymized AND orders retained with an anonymized customer reference"
     modality: obligatory
     concepts: [customers.CN001, customers.CN004]
+    code_refs:
+      - path: classes/Customer.php
+        role: planned
+        description: "Lines 389-420, delete removes the customer, keeps addresses when orders exist, and deletes carts without orders, messages and threads; orders are kept."
+      - path: src/Adapter/Customer/CommandHandler/DeleteCustomerHandler.php
+        role: gap
+        description: "Lines 43-51: allow_registration_after deletes the row; deny_registration_after sets deleted = true."
+      - path: install-dev/data/xml/hook.xml
+        role: documentation
+        description: "Lines 5221-5225: the actionDeleteGDPRCustomer hook is declared for a GDPR module to implement."
+      - path: PrestaShop/docs#modules/concepts/hooks/list-of-hooks/actionDeleteGDPRCustomer.md
+        role: documentation
+        description: The hook is called by the psgdpr module when it erases a customer.
+    summary: "Erasure anonymizes the customer and keeps the orders, within 30 days."
+    fact: "erasureRequest(Customer) => anonymized(Customer) within 30 days AND Orders(Customer) retained"
+    scope: "customer erasure requests"
+    implementation: to-be
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: documentation
+          source: the customers slice of this model
+          date: 2026-10-14
+          summary: "The model states the target twice: the goal 'Full GDPR compliance for customer data handling' measures 100% of deletion requests processed within 30 days, and the compliance requirement 'GDPR Data Subject Rights' asks for account deletion with anonymization within 30 days."
+          confidence_impact: supports
 
 classification:
   - id: customers.CR001
-    name: "Customer service thread status transitions"
-    description: "Valid transitions: open->pending_customer (reply sent), open->pending_employee (awaiting internal), pending_customer->open (customer replied), pending_employee->open (employee replied), any->closed (resolution)."
+    name: "A customer thread status is open, closed, pending 1 or pending 2"
+    description: "Closed means handled, and pending means to be answered later."
     logic:
-      when: "thread status changes"
-      then: "transition follows allowed paths"
+      when: "a thread status is set"
+      then: "status IN {open, closed, pending1, pending2}"
     concepts: [customers.CN005]
+    code_refs:
+      - path: src/Core/Domain/CustomerService/ValueObject/CustomerThreadStatus.php
+        role: validation
+        description: "Lines 16-19: the four statuses; lines 29-42: any other value is refused."
+      - path: src/Core/Domain/CustomerService/CommandHandler/UpdateCustomerThreadStatusHandler.php
+        role: implementation
+        description: "Line 43: the status is written with no check of the current one."
+      - path: src/Core/Domain/CustomerService/CommandHandler/ReplyToCustomerThreadHandler.php
+        role: implementation
+        description: "Line 69: replying sets the thread closed."
+      - path: controllers/front/OrderDetailController.php
+        role: implementation
+        description: "Lines 100 and 105: a customer message about an order opens the thread."
+    summary: "Four thread statuses; an employee may move between any of them."
+    fact: "CustomerThread.status IN {open, closed, pending1, pending2}"
+    scope: "customer service threads, back office and storefront messages"
+    on_violation:
+      action: reject
+      message: Customer thread status "%s" is not defined, available statuses are "%s"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
 transition:
   - id: customers.TR001
-    name: "Guest to active on conversion"
+    name: "A transformed guest becomes a registered customer"
     concept: customers.CN001
     from: "guest"
     to: "active"
     guard:
       when: "guest account is converted via TransformGuestToCustomer"
-    description: "Guest accounts become active registered customers after conversion."
+    description: "It is sent a link to set its own password; its enabled status is unchanged."
+    code_refs:
+      - path: classes/Customer.php
+        role: implementation
+        description: "Lines 1230-1266: is_guest becomes false, the groups are reset to the customer group, a random password is hashed and the welcome email is sent."
+      - path: src/Adapter/Customer/CommandHandler/TransformGuestToCustomerHandler.php
+        role: implementation
+        description: "Lines 41-52: the back-office transformation."
+    summary: "Guest to registered customer on transformation."
+    fact: "transform(Customer) => Customer.is_guest := false"
+    on_violation:
+      action: reject
+      message: Customer with id "%s" already exists as non-guest
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: customers.TR002
-    name: "Active to inactive on disable"
+    name: "A disabled customer becomes inactive and cannot sign in"
     concept: customers.CN001
     from: "active"
     to: "inactive"
     guard:
       when: "customer account is disabled"
-    description: "Customer account deactivated by administrator."
+    description: "Lets the merchant stop an account from signing in without deleting it."
+    code_refs:
+      - path: src/Adapter/Customer/CommandHandler/EditCustomerHandler.php
+        role: implementation
+        description: "Lines 136-137: the enabled flag is set from the command."
+      - path: src/Adapter/Customer/CommandHandler/BulkDisableCustomerHandler.php
+        role: implementation
+        description: "Line 32: active = false for each customer."
+      - path: classes/form/CustomerLoginForm.php
+        role: validation
+        description: "Lines 55-56: an inactive account is refused at sign-in."
+    summary: "Disabling makes a customer inactive."
+    fact: "disable(Customer) => Customer.active := false"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: customers.TR003
-    name: "Inactive to active on enable"
+    name: "An enabled customer becomes active again"
     concept: customers.CN001
     from: "inactive"
     to: "active"
     guard:
       when: "customer account is re-enabled"
-    description: "Customer account reactivated by administrator."
+    description: "Lets the merchant restore sign-in for a disabled account."
+    code_refs:
+      - path: src/Adapter/Customer/CommandHandler/EditCustomerHandler.php
+        role: implementation
+        description: "Lines 136-137: the enabled flag is set from the command."
+      - path: src/Adapter/Customer/CommandHandler/BulkEnableCustomerHandler.php
+        role: implementation
+        description: "Line 32: active = true for each customer."
+    summary: "Enabling makes a customer active."
+    fact: "enable(Customer) => Customer.active := true"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed

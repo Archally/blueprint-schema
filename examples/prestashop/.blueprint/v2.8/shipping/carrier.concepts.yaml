@@ -130,17 +130,16 @@ actors:
     type: human
     description: "Back-office operator responsible for configuring carriers, shipping zones, cost ranges, and managing order shipments."
     personas:
-      - name: "Typical ShippingManager"
-        quote: "I need to set up carriers correctly so customers see accurate shipping costs and orders get shipped on time."
-        goals: ["Configure carriers with correct zones and ranges", "Manage shipments efficiently", "Ensure shipping cost accuracy"]
-        pain_points: ["Complex range/zone matrix configuration", "Tracking multiple carriers across zones", "Handling split shipments"]
-        behaviors: ["Configures carriers during setup, adjusts ranges seasonally", "Manages shipments daily as orders flow in"]
-        tech_savviness: high
-        job_to_be_done: "Ensure every order has an available, correctly priced carrier and is shipped reliably"
-        context: "Back-office logistics management"
-        demographics:
-          role: "Logistics Administrator"
-          industry: "E-commerce"
+      - id: shipping.PER001
+        name: Logistician
+        description: The employee holding PrestaShop's default Logistician profile, whose menus are orders, invoices, credit and delivery slips, carriers and merchandise returns (presta-specs/content/1.7/back-office/advanced-parameters/team/permissions-listing.md, 'Logistician profile Menu permissions').
+        goals:
+          - Prepare orders with their invoices and delivery slips, and handle merchandise returns (presta-specs/content/1.7/back-office/advanced-parameters/team/permissions-listing.md, 'Logistician profile Menu permissions').
+          - Configure carriers with their shipping locations and costs (presta-specs/content/1.7/back-office/shipping/carriers/Add-edit-carrier.md, 'Shipping locations and costs').
+          - Download order documents in the logistician's language rather than the customer's (presta-specs/content/1.7/back-office/shop-parameters/order-settings/order-settings.md, 'Default language for order documents').
+        pain_points:
+          - Invoices and delivery slips come out in the customer's language unless the merchant switches the shop to the logistician language (presta-specs/content/1.7/back-office/orders/orders/view-page.md; PrestaShop issue 10258).
+          - The default Logistician profile has Stock disabled, so stock cannot be checked while preparing orders until the profile is widened (presta-specs/content/1.7/back-office/advanced-parameters/team/permissions-listing.md).
 
 enumerations:
   - id: shipping.EN001

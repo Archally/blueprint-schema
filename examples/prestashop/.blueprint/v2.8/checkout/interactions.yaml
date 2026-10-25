@@ -260,6 +260,7 @@ navigation:
   - id: checkout.UNV001
     from: checkout.SCR002
     to: checkout.SCR003
+    via_action: checkout.UAC003
     condition: "User clicks discount row or 'Create' button"
     description: "Navigate to discount edit form."
 
@@ -268,3 +269,61 @@ navigation:
     to: checkout.SCR002
     condition: "User clicks 'Manage Discounts' link"
     description: "Navigate from cart to discount list."
+
+  # The storefront path through checkout: the cart, the one-page checkout and the confirmation.
+
+  - id: checkout.UNV003
+    from: checkout.SCR005
+    to: checkout.SCR006
+    condition: "A cart page request carries the checkout parameter"
+    description: >
+      Cart to checkout. The cart controller answers a cart request that carries checkout by
+      redirecting to the checkout page before the cart is drawn. The control the shopper clicks is
+      theme markup in the cart's actions partial, cart-detailed-actions.tpl, which the core
+      repository does not ship, so no UI action is named for this edge.
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/CartController.php"
+        role: implementation
+        description: "Lines 65 and 66: on action=show, a request carrying checkout is redirected to the order page."
+      - path: "PrestaShop/docs#modules/concepts/hooks/list-of-hooks/displayExpressCheckout.md"
+        role: documentation
+        description: "Names the cart's actions partial, checkout/_partials/cart-detailed-actions.tpl, in the classic and hummingbird themes."
+
+  - id: checkout.UNV004
+    from: checkout.SCR006
+    to: checkout.SCR007
+    via_action: checkout.UAC011
+    condition: "Shopper confirms the order in the payment step and the order is created"
+    description: >
+      Checkout to confirmation. For a paid cart the payment module that owns the confirming
+      control creates the order and returns the shopper to a confirmation page; the documented
+      payment scenarios all end there, and the redirect itself is the module's code, not core's.
+      For a free cart core offers its own payment option, which posts to the confirmation page
+      with free_order; that page creates the order and redirects to itself. The confirmation page
+      opens only for a cart that has an order and a matching secure key.
+    implementation: as-is
+    code_refs:
+      - path: "PrestaShop/docs#modules/payment/_index.md"
+        role: documentation
+        description: "Lines 69 to 114: the offline, external, embedded and iframe payment scenarios each end with a confirmation page returned to the customer."
+      - path: "classes/checkout/PaymentOptionsFinder.php"
+        role: implementation
+        description: "findFree, lines 48 to 56: the free option's action is the order-confirmation page with free_order=1."
+      - path: "controllers/front/OrderConfirmationController.php"
+        role: implementation
+        description: "Lines 59 to 61 call checkFreeOrder, which redirects to order-confirmation at line 300; lines 70 to 89 send a request without an order or a matching key to the not-found page."
+
+  - id: checkout.UNV005
+    from: checkout.SCR006
+    to: checkout.SCR005
+    condition: "The cart is empty, below the minimum purchase, holds a product that can no longer be ordered, or ships to a disabled country"
+    description: >
+      Checkout back to the cart. The checkout page checks the cart every time it is drawn and
+      redirects to the cart when any check fails; the cart page then shows the detailed errors.
+      An ajax request is answered instead of redirected.
+    implementation: as-is
+    code_refs:
+      - path: "controllers/front/OrderController.php"
+        role: implementation
+        description: "initContent, lines 277 to 302: the four checks, then the redirect to the cart with action=show."

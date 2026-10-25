@@ -89,7 +89,7 @@ happy_path:
       operations: [shipping.CMD011, shipping.EVT009]
       rules: [shipping.VR006]
     given:
-      description: "Order 1001 exists. Carrier 3 is active. Product 42 is in the order with quantity 2."
+      description: "Order 1001 exists. Carrier 3 exists. Product 42 is in the order with quantity 2."
       state:
         orderId: 1001
         carrierId: 3
@@ -195,15 +195,10 @@ edge_cases:
     summary: "A shipment with a tracking number cannot be split."
     validates:
       operations: [shipping.CMD015]
+      transitions: [shipping.TR001]
     given:
       description: >-
-        A shipment that already carries a tracking number, asked to split. Corrected
-        2026-09-19: this case asserted that EDITING the tracking number on a shipped shipment
-        is refused. EditShipment carries only shipmentId and carrierId - there is no tracking
-        number on it, so the edit the case described is not expressible - and
-        EditShipmentHandler makes no shipped check at all. The shipped guard is real and lives
-        elsewhere: SplitShipmentHandler and MergeProductsToShipmentHandler both raise
-        CannotEditShipmentShippedException when the shipment has a tracking number.
+        A shipment that already carries a tracking number is asked to split.
       state:
         shipmentId: 15
         trackingNumber: "EXISTING-TRACKING-123"
@@ -240,6 +235,7 @@ edge_cases:
           date: "2026-09-19"
           summary: "Modeler-derived from code. No scenario splits a shipped shipment."
           confidence_impact: weakens
+    note: "Corrected 2026-09-19: this case asserted that editing the tracking number on a shipped shipment is refused. EditShipment carries only shipmentId and carrierId, and EditShipmentHandler makes no shipped check. The shipped guard lives in SplitShipmentHandler and MergeProductsToShipmentHandler, which raise CannotEditShipmentShippedException when the shipment has a tracking number."
 
 error_cases:
   - id: shipping.ER001

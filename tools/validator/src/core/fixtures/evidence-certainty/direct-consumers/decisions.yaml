@@ -1,0 +1,17 @@
+version: 1.0.0
+decisions:
+  - id: DC001
+    title: Use written records
+    summary: Records document expected behavior.
+    date: 2026-10-23
+    status: proposed
+    rationale:
+      problem: Retain sources.
+      chosen: Cite each written record.
+    evidence:
+      - kind: documentation
+        source: https://example.org/tests/record-1
+        date: 2026-10-23
+        summary: The written record supports this association.
+        confidence_impact: weakens
+        certainty: confirmed

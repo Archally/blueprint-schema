@@ -112,12 +112,14 @@ navigation:
   - id: content.UNV001
     from: content.SCR001
     to: content.SCR002
+    via_action: content.UAC001
     condition: "User clicks CMS page row or 'Add CMS Page' button"
     description: "Navigate to CMS page editor."
 
   - id: content.UNV002
     from: content.SCR003
     to: content.SCR004
+    via_action: content.UAC003
     condition: "User clicks category row or 'Add Category' button"
     description: "Navigate to CMS category editor."
 

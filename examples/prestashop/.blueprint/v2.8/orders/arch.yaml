@@ -109,3 +109,8 @@ contexts:
               - orders.EVT003
               - orders.EVT004
             brokerId: prestashop-event-bus
+        implementation: "as-is"
+        code_refs:
+          - path: src/Core/Domain/Order/
+            role: implementation
+            description: Source for this logical module within the PrestaShop PHP monolith; verified in the cited develop checkout a27e912eef9.

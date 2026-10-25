@@ -4,59 +4,187 @@ scope: modules
 
 structural:
   - id: modules.SR001
-    name: "Module Must Be Installed for Lifecycle Operations"
-    description: "Uninstall, status change, reset, and upgrade operations require the module to be in an installed state (installed=true). Operating on a non-installed module raises ModuleNotInstalledException."
+    name: "A module is installed before it is uninstalled, enabled, disabled, reset or upgraded"
+    description: "Keeps lifecycle commands from acting on a module that was never installed."
     modality: necessary
     concepts: [modules.CN001]
     code_refs:
       - path: "src/Core/Domain/Module/Exception/ModuleNotInstalledException.php"
         role: implementation
+        description: The exception each lifecycle handler raises for a module that is not installed.
+      - path: src/Adapter/Module/CommandHandler/UninstallModuleHandler.php
+        role: implementation
+        description: "Lines 30-39: refused when not installed unless deleteFiles is set; then only the files are deleted."
+      - path: src/Adapter/Module/CommandHandler/UpdateModuleStatusHandler.php
+        role: implementation
+        description: "Lines 30-32: enabling or disabling a module that is not installed is refused."
+      - path: src/Adapter/Module/CommandHandler/BulkToggleModuleStatusHandler.php
+        role: implementation
+        description: The first loop of handle() refuses the whole bulk when one module is not installed, before any status changes.
+      - path: src/Core/Module/ModuleManager.php
+        role: validation
+        description: assertIsInstalled (line 419) is called by uninstall (142), upgrade (192), enable (223), disable (246) and reset (272).
+      - path: tests/Integration/Behaviour/Features/Scenario/Module/uninstall_module.feature
+        role: test
+        description: Scenarios 'Update module status when uninstalled is not allowed' (line 113), 'Uninstall module that is not installed' (140) and 'Uninstall module that is not installed possible only to remove files' (150).
+    summary: "Only an installed module can be uninstalled, toggled, reset or upgraded."
+    logic:
+      when: a module is enabled, disabled, reset or upgraded, or uninstalled without deleting its files
+      then: module.installed = true
+    fact: "Module.installed = true OR (operation = uninstall AND deleteFiles = true)"
+    scope: "module lifecycle commands, single and bulk, back office module manager"
+    on_violation:
+      action: reject
+      message: Cannot toggle status for module %s since it is not installed
+    examples:
+      - input: ps_emailsubscription is not installed and is disabled, then enabled
+        output: Both refused with the not-installed exception; the module flags do not change
+      - input: An uploaded module that is not installed is uninstalled with deleteFiles true
+        output: Its files are removed and the module can no longer be found
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
 validation:
   - id: modules.VR001
-    name: "Module Technical Name Non-Empty"
-    description: "Module technical name must be a non-empty string. Validated by ModuleTechnicalName value object constructor."
+    name: "A module technical name is not empty"
+    description: "Keeps every module command addressed to a named module."
     modality: obligatory
     concepts: [modules.CN001]
     code_refs:
       - path: "src/Core/Domain/Module/ValueObject/ModuleTechnicalName.php"
         role: implementation
+        description: "Lines 24-29: assertNotEmpty refuses an empty value with EMPTY_TECHNICAL_NAME."
       - path: "src/Core/Domain/Module/Exception/ModuleConstraintException.php"
         role: implementation
-        description: "EMPTY_TECHNICAL_NAME error code"
+        description: "Line 11: EMPTY_TECHNICAL_NAME = 1."
+    summary: "Every module command names a module by a non-empty technical name."
+    logic:
+      when: a module command or query is built with a technical name
+      then: NOT empty(technicalName)
+    fact: "Module.technicalName NOT IN {'', '0'}, the strings PHP empty() treats as empty"
+    scope: "every module command and query"
+    on_violation:
+      action: reject
+      code: 1
+      message: Technical name cannot be empty
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: modules.VR002
-    name: "Reset Requires Installed Module"
-    description: "Module reset (uninstall+reinstall) requires the module to be currently installed. CannotResetModuleException with NOT_INSTALLED code is thrown otherwise."
+    name: "A module is installed before it is reset"
+    description: "A reset keeps the data by default; one that falls back to reinstalling leaves a disabled module enabled."
     modality: obligatory
     concepts: [modules.CN001]
     code_refs:
       - path: "src/Core/Domain/Module/Exception/CannotResetModuleException.php"
         role: implementation
-        description: "NOT_INSTALLED constant"
+        description: "Lines 15 and 17: NOT_INSTALLED and NOT_ACTIVE are declared (both 1); the reset handler raises the not-installed exception instead, and this one only for a technical failure."
+      - path: src/Adapter/Module/CommandHandler/ResetModuleHandler.php
+        role: implementation
+        description: "Lines 29-31: a module that is not installed is refused with ModuleNotInstalledException."
+      - path: src/Core/Module/ModuleManager.php
+        role: implementation
+        description: "Lines 259-287: reset asserts the module is installed (272), then runs onReset when keepData is set and the module has a reset method, else uninstall and install (279-284)."
+      - path: tests/Integration/Behaviour/Features/Scenario/Module/module.feature
+        role: test
+        description: Scenarios 'Reset module status' (line 65) and 'Reset disabled module is then enabled' (76).
+      - path: tests/Integration/Behaviour/Features/Scenario/Module/uninstall_module.feature
+        role: test
+        description: "Scenario 'Reset uninstalled the module is installed afterward' (line 101): the reset is refused."
+    summary: "Only an installed module can be reset."
+    logic:
+      when: a module is reset
+      then: module.installed = true
+    fact: "reset(Module) requires Module.installed = true"
+    scope: "module reset, back office module manager"
+    on_violation:
+      action: reject
+      message: Cannot reset module %s since it is not installed
+    examples:
+      - input: An installed, disabled module is reset
+        output: The module is installed and enabled
+      - input: A module that is not installed is reset
+        output: Refused with the not-installed exception; the module stays not installed
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: modules.VR003
-    name: "Upgrade Requires Installed Module with Available Update"
-    description: "Module upgrade requires the module to be installed and a newer version to be available. ModuleAlreadyUpToDateException is thrown if no update exists."
+    name: "A module is upgraded only when installed and behind an available version"
+    description: "Keeps an upgrade from running without a newer version to install."
     modality: obligatory
     concepts: [modules.CN001]
     code_refs:
       - path: "src/Core/Domain/Module/Exception/ModuleAlreadyUpToDateException.php"
         role: implementation
+        description: Raised when an installed module has no newer version.
+      - path: src/Adapter/Module/CommandHandler/UpgradeModuleHandler.php
+        role: implementation
+        description: "Lines 33-39: not installed raises ModuleNotInstalledException; canBeUpgraded false raises ModuleAlreadyUpToDateException."
+      - path: src/Adapter/Module/Module.php
+        role: validation
+        description: "Lines 426-438: canBeUpgraded is false when not installed, true when the API offers a new version or the disk version is above the installed one."
+      - path: tests/Integration/Behaviour/Features/Scenario/Module/upgrade_module.feature
+        role: test
+        description: "Scenario 'Upgrade module with zip file from remote (not present initially)': the upgrade succeeds at line 38, and a second upgrade is refused at lines 46-47."
+    summary: "An upgrade needs an installed module and a newer version."
+    logic:
+      when: a module is upgraded
+      then: module.installed = true AND (newVersionAvailable(module) OR version(disk) > version(installed))
+    fact: "upgrade(Module) requires Module.installed AND Module.canBeUpgraded"
+    scope: "module upgrade, back office module manager"
+    on_violation:
+      action: reject
+      message: Module is already up to date.
+    examples:
+      - input: dashproducts installed at 2.1.2, package 2.1.3 uploaded, upgraded
+        output: The installed version becomes 2.1.3
+      - input: dashproducts at 2.1.3 is upgraded again
+        output: "Refused: the module is already up to date"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
 transition:
   - id: modules.TR001
-    name: "Module Lifecycle State Machine"
-    description: "Module lifecycle follows a 3-state machine derived from (installed, enabled) booleans. Valid transitions: not_installed→installed_enabled (install), installed_enabled↔installed_disabled (updateStatus), installed_*→not_installed (uninstall), installed_*→installed_enabled (reset). The state installed_disabled cannot be reached directly from not_installed."
+    name: "Installing a module makes it installed and enabled"
+    description: "A module is never installed in a disabled state; the other moves of the lifecycle are listed on the module lifecycle state enumeration."
     concept: modules.CN001
     guard:
-      when: "Module lifecycle operation is invoked"
+      when: "the module is installed while it is not installed"
     from: "not_installed"
     to: "installed_enabled"
     code_refs:
       - path: "src/Core/Domain/Module/Command/InstallModuleCommand.php"
         role: implementation
+        description: The command that installs a module by technical name.
       - path: "src/Core/Domain/Module/Command/UpdateModuleStatusCommand.php"
         role: implementation
+        description: The command that enables or disables an installed module (the move between installed_enabled and installed_disabled).
       - path: "src/Core/Domain/Module/Command/UninstallModuleCommand.php"
         role: implementation
+        description: The command that uninstalls a module (back to not_installed).
+      - path: src/Adapter/Module/CommandHandler/InstallModuleHandler.php
+        role: implementation
+        description: "Lines 28-31: an installed module is refused with AlreadyInstalledModuleException."
+      - path: classes/module/Module.php
+        role: implementation
+        description: "Lines 442-446: install inserts the module row with active = 1; lines 464-467: it then enables the module for the shops in context."
+      - path: tests/Integration/Behaviour/Features/Scenario/Module/install_module.feature
+        role: test
+        description: "Scenario 'Upload module with zip file on disk (not present initially)' (line 12): installed and enabled after install; a second install is refused at line 35."
+    summary: "Install moves a module from not installed to installed and enabled."
+    fact: "install(Module) where NOT Module.installed => Module.installed AND Module.enabled"
+    on_violation:
+      action: reject
+      message: Cannot install module %s since it is already installed
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed

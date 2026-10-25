@@ -1,0 +1,16 @@
+engineVersion: "0.1"
+rules:
+  - id: goal-requires-cycle
+    severity: warn
+    description: >-
+      Mutual necessity is legal and does not imply temporal deadlock. Report one finding per
+      strongly connected component with sorted declared ids and one deterministic witness.
+      Contribution loops and mixed-kind paths do not participate. Self-target errors are separate.
+      Override per-project through .blueprint-lint.yaml, including goal-requires-cycle: off.
+    find:
+      entity_type: Goal
+    check:
+      custom:
+        module: ./goal-requires-cycle.mjs
+        export: goalRequiresCycle
+    message: 'Goals require one another: {members}. Witness: {witness}. Necessity states neither sufficiency nor temporal order.'

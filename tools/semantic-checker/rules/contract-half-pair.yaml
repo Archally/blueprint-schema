@@ -49,9 +49,9 @@ rules:
       another service consumes it (`contracts.inprocess.consume`); an operation its providing
       service provides under `expose:`, `send:` or `provide:` `produces` it, as a command produces
       the domain event its aggregate raises; it reacts to an operation that reaches its providing
-      service, which the service receives in a contract's `receive:` or raises by providing it or
-      providing an operation that `produces` it; or an actor initiates it (`initiated_by`). A
-      producer that another service provides starts nothing here. A service that lists its own operation under `consume:` states nothing, so
+      service, which the service receives in a contract's `receive:`, consumes in-process when it
+      is an event, or raises by providing it or providing an operation that `produces` it; or an
+      actor initiates it (`initiated_by`). A producer that another service provides starts nothing here. A service that lists its own operation under `consume:` states nothing, so
       that entry starts nothing and is never reported. An operation that reacts only to triggers its
       service does not hear is reported once, by `inprocess-reaction-unreached`, which names the
       trigger. Where nothing starts the operation, either a caller exists and is not modelled, or
@@ -64,17 +64,20 @@ rules:
       custom:
         module: ./inprocess-reach.mjs
         export: inprocessProvideWithoutConsume
-    message: 'Operation "{displayId}" ({name|''unnamed''}) is provided in-process and nothing in the model starts it: no other service consumes it, no operation its service provides produces it, it reacts to nothing its service receives or raises, and no actor initiates it. Model the caller, or drop the `provide:` entry.'
+    message: 'Operation "{displayId}" ({name|''unnamed''}) is provided in-process and nothing in the model starts it: no other service consumes it, no operation its service provides produces it, it reacts to nothing its service receives, consumes as an event in-process, or raises, and no actor initiates it. Model the caller, or drop the `provide:` entry.'
 
   - id: inprocess-reaction-unreached
     severity: warn
     description: >-
       An operation provided in-process that reacts to an operation none of its providing services
-      hears. A service hears what it receives in a contract's `receive:` and what it raises: an
+      hears. A service hears what it receives in a contract's `receive:`, events it consumes through
+      `contracts.inprocess.consume`, and what it raises: an
       operation it provides under `expose:`, `send:` or `provide:`, or one that such an operation
       `produces`. The reaction is modelled on a service that never learns its trigger happened, so
-      either the service's `receive:` list is missing the trigger, or the operation is provided by
-      the wrong service. One finding per operation, naming every trigger that does not reach it. A
+      either the service's `receive:` list or in-process event `consume:` list is missing the trigger,
+      or the operation is provided by the wrong service. Consuming a command or query is a call,
+      not hearing a trigger. An unprovided consumed event is reported independently by
+      `inprocess-consume-without-provide`. One finding per operation, naming every trigger that does not reach it. A
       trigger that resolves to no declaration is left to the cross-reference error.
     find:
       entity_type: Operation
@@ -82,7 +85,7 @@ rules:
       custom:
         module: ./inprocess-reach.mjs
         export: inprocessReactionUnreached
-    message: 'Operation "{displayId}" ({name|''unnamed''}) reacts to "{trigger}", which its providing service {service} neither receives nor raises. Add "{trigger}" to that service''s `receive:` list, or provide the operation from the service that hears it.'
+    message: 'Operation "{displayId}" ({name|''unnamed''}) reacts to "{trigger}", which its providing service {service} neither receives, consumes as an event in-process, nor raises. Add "{trigger}" to that service''s `receive:` list or, for an event, its `contracts.inprocess.consume` list, or provide the operation from the service that hears it.'
 
   - id: shared-document-read-without-writer
     severity: warn

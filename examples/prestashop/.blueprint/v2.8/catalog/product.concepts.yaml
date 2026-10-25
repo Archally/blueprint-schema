@@ -8,9 +8,8 @@ concepts:
     name: "Product"
     description: "A sellable item in the PrestaShop catalog with name, description, price, and attributes. The largest aggregate in the codebase with 51 CQRS commands across 7 semantic clusters."
     stereotype: aggregate-root
-    states: [draft, active, discontinued, archived]
-    initial_state: draft
-    terminal_states: [archived]
+    states: [disabled, enabled]
+    initial_state: disabled
     attributes:
       productId:
         id: CAT001
@@ -44,8 +43,9 @@ concepts:
       - path: "src/Core/Domain/Product/"
         role: model
         description: "Product domain aggregate root directory"
-      - path: "https://github.com/PrestaShop/docs/blob/9.x/development/architecture/domain/references/product/_index.md"
+      - path: "PrestaShop/docs#development/architecture/domain/references/product/index.md"
         role: documentation
+        description: "The Product domain reference: line 7 opens the 52 Product commands and line 166 the 24 Product queries, one section each."
     tags: [aggregate-root, core-domain]
 
   - id: catalog.CN003
@@ -326,41 +326,18 @@ actors:
       - "Bulk import/export product data"
       - "Ensure product descriptions meet quality standards"
       - "Manage seasonal product visibility"
-    personas:
-      - name: "Typical CategoryManager"
-        quote: "I spend hours fixing CSV import errors - give me a tool that validates before importing."
-        goals:
-          - "Import 1000 products in under 5 minutes"
-          - "Maintain consistent category hierarchy across 10+ languages"
-          - "Ensure every product has at least one image"
-        pain_points:
-          - "CSV import fails silently - missing SKUs not reported until customers complain"
-          - "Category hierarchy sync between back-office and Elasticsearch is unreliable"
-          - "No bulk image upload - one product at a time"
-        behaviors:
-          - "Works in bulk - processes 100+ products per session"
-          - "Uses CSV templates for product data"
-          - "Reviews catalog completeness weekly"
-        tech_savviness: medium
-        job_to_be_done: "Curate a complete, well-organized product catalog efficiently at scale."
-        demographics:
-          role: "Merchandising Specialist"
-          industry: "Retail / E-commerce"
-          team_size: "2-5"
 
 enumerations:
   - id: catalog.EN001
     name: "ProductStatus"
-    description: "Lifecycle states of a catalog product."
+    description: "Whether a product is shown and sold on the storefront, stored as its active flag. A new product starts disabled."
     values:
-      - name: draft
-        description: "Product created but not yet visible to customers."
-      - name: active
-        description: "Product is live and purchasable."
-      - name: discontinued
-        description: "Product no longer sold but still visible for SEO."
-      - name: archived
-        description: "Product removed from all views."
+      - name: disabled
+        description: "Not shown or sold on the storefront (active = 0); every product starts here."
+        transitions_to: [enabled]
+      - name: enabled
+        description: "Shown and sold on the storefront (active = 1); requires a name in the default language."
+        transitions_to: [disabled]
 
   - id: catalog.EN002
     name: "ProductType"

@@ -126,5 +126,6 @@ navigation:
   - id: catalog.UNV002
     from: catalog.SCR002
     to: checkout.SCR005
+    via_action: catalog.UAC002
     condition: "Shopper follows the add-to-cart link"
     description: "Add-to-cart is a link to the cart page, not an in-page form post, so adding a product is also a navigation. Link::getAddToCartURL line 366."

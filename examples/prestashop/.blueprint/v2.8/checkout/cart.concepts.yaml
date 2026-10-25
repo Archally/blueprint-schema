@@ -8,9 +8,9 @@ concepts:
     name: "CartSession"
     description: "Server-side cart session holding product selections, quantities, applied cart rules, and computed totals."
     stereotype: aggregate-root
-    states: [empty, active, checkout-started, completed, abandoned]
-    initial_state: empty
-    terminal_states: [completed, abandoned]
+    states: [not-ordered, ordered, abandoned]
+    initial_state: not-ordered
+    terminal_states: [ordered]
     attributes:
       cartId:
         id: CAT200

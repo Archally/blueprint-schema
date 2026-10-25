@@ -6,7 +6,7 @@
  * The project override (`.blueprint-quality.yaml`) is where a specific model states
  * its own bar, its ratchet, and its reasoned deferrals. Nothing here resolves paths
  * relative to the tool's own location beyond the default spec, so the same files
- * work from either repo (plan D18 — the port is a copy).
+ * work wherever the tool directory is placed.
  */
 
 import fs from 'node:fs';

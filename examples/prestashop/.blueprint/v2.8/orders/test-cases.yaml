@@ -13,11 +13,12 @@ happy_path:
       kind: openapi
       file: orders-api
     given:
-      description: "Cart with 2 items, both in stock. Shipping address provided."
+      description: "Cart with 2 items, both in stock. Delivery and invoice address set."
       state:
         cartItems: 2
         stockAvailable: true
-        shippingAddress: "valid"
+        deliveryAddress: "valid"
+        invoiceAddress: "valid"
     expected_result:
       status: success
       code: 201
@@ -96,10 +97,7 @@ happy_path:
       rules: [orders.SR002]
     given:
       description: >-
-        An order with no existing invoice, on a shop where PS_INVOICE is on. Note what the
-        handler does NOT check: nothing requires payment-accepted in the status history, which
-        is what orders.SR002 states. GenerateInvoiceHandler checks the invoicing configuration
-        and Order::hasInvoice, and nothing else.
+        An order with no existing invoice, on a shop where invoicing (PS_INVOICE) is on.
       state:
         existingInvoice: false
     expected_result:
@@ -128,6 +126,7 @@ happy_path:
             payment-accepted. The handler makes no such check. The rule overstates the code;
             this case no longer repeats the overstatement in its given.
           confidence_impact: weakens
+    note: "Checked against GenerateInvoiceHandler lines 29-35: the handler checks the invoicing configuration and Order::hasInvoice, and no payment status, as orders.SR002 states."
 
   - id: orders.TC004
     name: "Add payment - happy path"
@@ -138,9 +137,6 @@ happy_path:
     given:
       description: >-
         An order awaiting a wire payment, and a positive payment amount in the order's currency.
-        The amount is not required to match the order total: AddPaymentCommand asserts only that
-        the amount is positive, and no code anywhere caps the sum of payments at the order total,
-        which is the second half of what orders.VR002 claims.
       state:
         orderStatus: "awaiting-wire-payment"
         paymentAmount: 129.99
@@ -171,6 +167,7 @@ happy_path:
             Read for orders.VR002's second clause. Only the positive-amount assertion exists;
             no handler compares the running total of payments against totalPaidTaxIncl.
           confidence_impact: weakens
+    note: "Checked against AddPaymentCommand lines 194-198: the amount need not match the order total, and only a negative amount is refused, as orders.VR002 states."
 
 edge_cases:
   - id: orders.EC001
@@ -219,10 +216,7 @@ edge_cases:
       rules: [orders.VR004]
     given:
       description: >-
-        An order line already partly refunded, asked for more than its remainder. The
-        enforcement is per order line and by capping, not a rejection against a single
-        order-level accumulator as orders.VR004 describes: OrderRefundCalculator reduces the
-        requested amount to the line's remaining refundable quantity.
+        An order line already partly refunded, asked for more than its remainder.
       state:
         orderTotal: 100.00
         previousRefunds: 30.00
@@ -255,6 +249,7 @@ edge_cases:
             The cap is per order_detail through product_quantity_refunded. There is no
             order-level remaining-amount accumulator, so orders.VR004's shape is not the code's.
           confidence_impact: weakens
+    note: "Checked against OrderRefundCalculator lines 155-176: the cap is per order line, an amount above quantity times unit price is reduced to it, and a quantity above what is left is refused, as orders.VR004 states."
 
 error_cases:
   - id: orders.ER001
@@ -357,6 +352,7 @@ error_cases:
     summary: "The only status change PrestaShop refuses is the one to the current status."
     validates:
       operations: [orders.CMD004]
+      rules: [orders.CR001]
     given:
       description: >-
         An order already in the target status, asked to move to it again. Corrected

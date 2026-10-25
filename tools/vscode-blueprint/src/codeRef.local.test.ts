@@ -78,6 +78,22 @@ const PRESENT = 'src/models/Order.ts'; // exists under tmpRoot
 const MISSING = 'src/models/Ghost.ts'; // mapped repo, but no such file on disk
 const HOST_URL_MISSING = 'https://github.com/acme/shop/blob/main/src/models/Ghost.ts';
 
+test('resolveCodeRefTarget checks the real file and opens the first line of a range', async () => {
+  const target = await resolveCodeRefTarget(`${PRESENT}#L194-L210`, SET, rootsToTmp, 'localThenBrowser', exists);
+  assert.deepEqual(target, { kind: 'file', value: nodePath.join(tmpRoot, PRESENT), line: 194 });
+});
+
+test('resolveCodeRefTarget preserves the location when the local file is missing', async () => {
+  const target = await resolveCodeRefTarget(`${MISSING}#L194`, SET, rootsToTmp, 'localThenBrowser', exists);
+  assert.deepEqual(target, { kind: 'url', value: `${HOST_URL_MISSING}#L194` });
+});
+
+test('resolveCodeRefTarget opens a located cross-repository file with a prefix alias', async () => {
+  const target = await resolveCodeRefTarget(`acme/orders#${PRESENT}#L47`, SET,
+    { 'acme/orders': tmpRoot }, 'local', exists);
+  assert.deepEqual(target, { kind: 'file', value: nodePath.join(tmpRoot, PRESENT), line: 47 });
+});
+
 test('resolveCodeRefTarget — localThenBrowser + mapped + exists → local file', async () => {
   const target = await resolveCodeRefTarget(PRESENT, SET, rootsToTmp, 'localThenBrowser', exists);
   assert.equal(target?.kind, 'file');

@@ -106,6 +106,10 @@ export const RELATION_TYPE = {
   ContractReads: 'contract_reads',
   // motivation.schema: goal tracked by KPI (goal.kpi)
   GoalKpi: 'goal.kpi',
+  // Source-owned direct claims. Conflict is read incidentally, without a reverse record.
+  GoalContributesTo: 'goal_contributes_to',
+  GoalRequires: 'goal_requires',
+  GoalConflictsWith: 'goal_conflicts_with',
   // motivation.schema (v2.8.64): goal rests on assumption (goal.assumption_refs[]). The goal names
   // its premises, as a decision names them in motivation_refs.assumptions; the assumption names none
   // of the goals that rest on it, so impact from an assumption follows this edge backwards.
@@ -280,6 +284,26 @@ export const RELATION_TYPE = {
   VisionValueStream: 'vision_value_stream',
   // capability.schema (v2.5): capability references goal (capability.goal_refs[])
   CapabilityGoal: 'capability_goal',
+  // capability.schema (v2.8.75): a capability names the modules that realize it
+  // (capability.realized_in[]) - Capability -> Domain (DMN###) or Context (BC###), as declared.
+  CapabilityRealizedIn: 'capability_realized_in',
+  // Which operations realize a capability: one edge per effective (capability, operation)
+  // attribution. `data.origin: 'operation'` where a capability lists the operation in
+  // `operations` (a listing decides alone for that operation, model-wide); `data.origin: 'module'`
+  // where an unlisted operation's domain (`OperationInDomain`) or handling context (`HandledBy`) is
+  // named in the capability's `realized_in`, with `data.module`, `data.module_kind` and
+  // `data.modules`. Derived in the pass after the domain hop, from finished edges.
+  CapabilityOperation: 'capability_operation',
+  // Which capabilities a process supports: one edge per (process, capability) where at least one
+  // operation the process orders (`ProcessOrdersOperation`) is realized by the capability
+  // (`CapabilityOperation`). `data.operation_count` (distinct contributing operations),
+  // `data.operation_total` (distinct operations the process orders, realized or not), `data.origins`
+  // (sorted distinct `module` / `operation`) and `data.via_trigger` (the trigger's operation is
+  // among the contributing ones). Shares across capabilities overlap and are not a partition.
+  ProcessSupportsCapability: 'process_supports_capability',
+  // The same for a use case, over the operations its main scenario and alternative flows name
+  // (`UseCaseOperation`); no `via_trigger`. A use case is not credited with its processes' operations.
+  UseCaseSupportsCapability: 'use_case_supports_capability',
   // motivation.schema (v2.5): assumption references risk (assumption.risk_refs[])
   AssumptionRisk: 'assumption_risk',
   // value-stream.schema (v2.6): value stream stage references capability (stages[].capabilities[])

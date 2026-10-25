@@ -142,20 +142,18 @@ edge_cases:
     summary: "Search returns nothing for the length of a full rebuild; nothing isolates readers from it."
     given:
       description: >-
-        A live store on which a FULL search index rebuild is started. Corrected 2026-09-19:
-        this case asserted that a rebuild should not disrupt active customer searches. It does
-        disrupt them. Search::indexation with the full flag TRUNCATEs ps_search_index and
-        ps_search_word and then repopulates, and SearchIndexationHandler holds no lock, no
-        queue and no read isolation, so a shopper searching during the window gets an empty
-        result. An incremental rebuild, the default, does not truncate.
+        A live store on which a full search index rebuild is started.
       state:
         storeIsLive: true
         isFull: true
     expected_result:
       status: success
     note: >-
-      The expected result is success because the rebuild succeeds. What the case records is
-      its cost, which is the kind of fact an operator needs before scheduling one.
+      The expected result is success because the rebuild succeeds; what the case records is
+      its cost. Search::indexation with the full flag truncates ps_search_index and
+      ps_search_word and then repopulates them, and SearchIndexationHandler holds no lock,
+      queue or read isolation, so a shopper searching during the window gets an empty
+      result. An incremental rebuild, the default, does not truncate.
     validates:
       operations: [shop.CMD014]
       concepts: [shop.CN005]
@@ -191,9 +189,7 @@ error_cases:
     summary: "Uploading a logo whose extension is outside the allowed list is rejected."
     given:
       description: >-
-        A file whose extension is not one of the allowed logo image extensions. The allowed
-        set is wider than shop.VR001 says: ShopLogoSettings lists gif, jpg, jpeg, jpe, png,
-        webp and svg, so a bmp is refused but a webp and an svg are not.
+        A header logo whose file extension is not one of the allowed logo image extensions.
       state:
         fileExtension: "bmp"
     expected_result:
@@ -229,6 +225,7 @@ error_cases:
             jpeg, jpe, webp and svg. The rule's positive claim is narrower than the code, so
             this case no longer validates it.
           confidence_impact: weakens
+    note: "The allowed header logo set is gif, jpg, jpeg, jpe, png, webp and svg (ShopLogoSettings), so a bmp is refused while a webp and an svg are accepted."
 
   - id: shop.ER002
     name: "Add alias with empty search term"

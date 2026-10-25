@@ -1,0 +1,27 @@
+engineVersion: "0.1"
+rules:
+  - id: process-listed-order-against-causality
+    severity: warn
+    description: >-
+      A process runs its activities in the order they are listed unless a main-path activity states
+      a main-path successor, and in such a process the model's own causality reads otherwise in one
+      of two ways. (i) A main-path activity is `triggered_by` an event that a later-listed main-path
+      activity produces, and no earlier-listed one produces it: list order puts the reaction before
+      its cause. (ii) Two neighbouring main-path activities are `triggered_by` the same event: two
+      reactions to one event are a fork or alternatives, and list order chains them one after the
+      other. An activity produces an event when it runs an operation (its `entry_operation` or a
+      step's `operation_ref`) that `produces` it, or runs the event itself; actor entries in
+      `triggered_by` start an activity rather than cause it and are not compared. Only a process
+      whose order is read from its list is examined: one that states its main-path links has said
+      what it means, and on a model before the v2.8 line no order is read from a list. Fix it by
+      stating the order with `next`, with a `gateway` on an activity whose successors branch, or by
+      listing the activities in the order they run. A heuristic, so a warning and never an error.
+      One finding per process, naming every pair. Override per-project via .blueprint-lint.yaml
+      (e.g. `process-listed-order-against-causality: off`).
+    find:
+      entity_type: Process
+    check:
+      custom:
+        module: ./process-listed-order-against-causality.mjs
+        export: processListedOrderAgainstCausality
+    message: 'Process "{displayId}" ({name|''unnamed''}) runs its activities in the order they are listed, and {count} place(s) in the model read otherwise: {findings}. State the order with `next` (and a `gateway` where the activities branch), or list them in the order they run.'

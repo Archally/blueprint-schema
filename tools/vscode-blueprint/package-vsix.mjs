@@ -18,6 +18,7 @@
 // Usage: node package-vsix.mjs [--no-dependencies] [vsce args...]
 // Leaves the .vsix in this directory, named as vsce names it (archally-blueprint-navigation-<version>.vsix).
 
+import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -34,6 +35,9 @@ function run(cmd, args, options = {}) {
 
 // 1. Build in place, against the real toolchain - this is the source of truth, and is what
 //    `sync-schema.mjs --check` (the pre-commit gate) verifies against.
+run('node', [join(HERE, '../../../scripts/generate-editor-icon-block.mjs'), '--dry-run'], { cwd: HERE });
+run('node', [join(HERE, '../../../scripts/editor-icon-associations-check.mjs')], { cwd: HERE });
+run('node', [join(HERE, '../../../scripts/generate-editor-icon-kit.mjs'), '--check'], { cwd: HERE });
 run('npm', ['run', 'sync-schema'], { cwd: HERE });
 run('npm', ['run', 'compile'], { cwd: HERE });
 
@@ -59,17 +63,22 @@ try {
   isolatedPkg.scripts['vscode:prepublish'] = 'echo skip: already built in place by package-vsix.mjs';
   writeFileSync(isolatedPkgPath, `${JSON.stringify(isolatedPkg, null, 2)}\n`);
 
-  const vsceArgs = ['--yes', '@vscode/vsce', 'package', ...process.argv.slice(2)];
-  run('npx', vsceArgs, { cwd: isolated });
+  const require = createRequire(import.meta.url);
+  const vsce = require.resolve('@vscode/vsce/vsce');
+  run(process.execPath, [vsce, 'package', ...process.argv.slice(2)], { cwd: isolated });
 
   const vsixName = `${PKG.name}-${PKG.version}.vsix`;
   const producedPath = join(isolated, vsixName);
   if (!existsSync(producedPath)) {
     console.error(`package-vsix: expected ${vsixName} in ${isolated}, found nothing. vsce may have named it differently.`);
-    process.exit(1);
+    process.exitCode = 1;
+  } else {
+    const contents = execFileSync('unzip', ['-Z', '-1', producedPath], { encoding: 'utf8' }).split('\n');
+    const kitEntry = 'extension/editor-icon-kit/material-icon-theme.settings.jsonc';
+    if (!contents.includes(kitEntry)) throw new Error(`package-vsix: missing ${kitEntry} in ${vsixName}`);
+    cpSync(producedPath, join(HERE, vsixName));
+    console.log(`package-vsix: wrote ${join(HERE, vsixName)} with ${kitEntry}`);
   }
-  cpSync(producedPath, join(HERE, vsixName));
-  console.log(`package-vsix: wrote ${join(HERE, vsixName)}`);
 } finally {
   rmSync(isolated, { recursive: true, force: true });
 }

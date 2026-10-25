@@ -54,9 +54,29 @@ actions:
     description: "Enable or disable a hook extension point."
     triggers_operations: [modules.CMD009]
 
+  - id: modules.UAC005
+    screen: modules.SCR001
+    name: "Open the upload dialog"
+    description: >
+      The module pages' toolbar carries an 'Upload a module' button for an employee allowed to
+      add or delete modules. It does not leave the page: the button opens the upload dialog, where
+      the archive is chosen and sent.
+    implementation: as-is
+    code_refs:
+      - path: "src/PrestaShopBundle/Controller/Admin/Improve/Modules/ModuleAbstractController.php"
+        role: implementation
+        description: "getToolbarButtons, lines 69 to 76: the add_module button with href '#', shown only with the create or delete permission."
+      - path: "src/PrestaShopBundle/Resources/views/Admin/Module/Includes/modal_import.html.twig"
+        role: implementation
+        description: "The upload dialog the button opens, titled 'Upload a module' at line 10."
+      - path: "admin-dev/themes/new-theme/js/pages/module/controller.js"
+        role: implementation
+        description: "initAddModuleAction, lines 512 to 520: the toolbar button is turned into the dialog's toggle."
+
 navigation:
   - id: modules.UNV001
     from: modules.SCR001
     to: modules.SCR002
-    condition: "User clicks 'Upload Module' button"
+    via_action: modules.UAC005
+    condition: "User clicks the 'Upload a module' toolbar button"
     description: "Navigate to module upload form."

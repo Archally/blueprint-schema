@@ -1,0 +1,23 @@
+engineVersion: "0.1"
+rules:
+  - id: operation-realizes-two-capabilities
+    severity: info
+    description: >-
+      An operation realized by two or more capabilities, at least two of which are not one
+      another's direct L1 parent or L2 child in the `children` hierarchy. A capability realizes an
+      operation where it lists the operation under `operations` (origin `operation`), or where no
+      capability lists it and the capability's `realized_in` names the operation's domain or a
+      bounded context that handles it (origin `module`). A parent and its child realizing the same
+      operation is a refinement and is not reported; one unrelated pair is enough, whatever the
+      other pairs are. Deeper capabilities are judged independently. INFO, not a defect: an operation may serve two capabilities on purpose, and
+      the finding names them so a reader can confirm the overlap or attribute the operation to one
+      capability. One finding per operation, naming up to eight of its capabilities sorted by id,
+      each with its origin. Override per-project via .blueprint-lint.yaml (e.g.
+      `operation-realizes-two-capabilities: off`).
+    find:
+      entity_type: Operation
+    check:
+      custom:
+        module: ./operation-realizes-two-capabilities.mjs
+        export: operationRealizesTwoCapabilities
+    message: 'Operation "{operation}" ({operation_name}) is realized by {count} capabilities, at least one pair outside a direct L1/L2 relationship: {capabilities}. Confirm the overlap, or list the operation under one capability.'

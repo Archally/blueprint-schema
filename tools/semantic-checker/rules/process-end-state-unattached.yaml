@@ -1,0 +1,33 @@
+engineVersion: "0.1"
+rules:
+  - id: process-end-state-unattached
+    severity: info
+    description: >-
+      A process declares an end state no activity of the process is attached to. An end state names
+      the activities that lead to it in `from`; where any end state of a process states `from`, the
+      stated attachments are the process's whole end routing, and an end state that states none is
+      attached to nothing. Where no end state states `from`, one convention attaches: where a
+      process declares exactly one end state of type `complete`, the last listed main-path activity
+      with no successor leads to it, and where every main-path activity has a successor, the last
+      listed main-path activity leads to it when all of its stated links go to `error` or
+      `compensation` activities. Every other end state - an `error`, `cancel` or `terminate`
+      outcome, a second `complete` one, or the one `complete` end state of a process whose main
+      path ends in neither way - is reached by nothing the model states, and a drawing shows it as
+      an annotation on the process rather than as the end of a path. An id in `from` attaches only
+      where it names exactly one activity of the same process; an end state whose `from` names
+      none is reported with each id it names, so a mistyped or foreign id is visible. This is
+      information, not a defect: state `from` on the end state to attach it. Read the report as
+      the list of outcomes a reader of the drawings will not see reached. Different from
+      `process-end-state-unreachable`, which says no activity's operations can move a concept into
+      the state an end state names; this rule says no activity is attached to the end state at
+      all. Read from the model builder's end attachments, so it speaks only of a model on the v2.8
+      line whose process lists activities; on an older line, and on a process with no activities,
+      it is silent. One finding per process, naming every unattached end state and its type.
+      Override per-project via .blueprint-lint.yaml (e.g. `process-end-state-unattached: off`).
+    find:
+      entity_type: Process
+    check:
+      custom:
+        module: ./process-end-state-unattached.mjs
+        export: processEndStateUnattached
+    message: 'Process "{displayId}" ({name|''unnamed''}) declares {count} end state(s) no activity of the process is attached to, by its `from` or by the end convention: {end_states}. A drawing shows each as an annotation on the process, not as the end of a path.'

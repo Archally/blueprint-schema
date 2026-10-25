@@ -27,11 +27,11 @@ operations:
     kind: command
     dispatch: inprocess
     name: "RemoveProductFromOrder"
-    description: "Remove a product line from an existing order. Recalculates totals. Cannot remove the last line (SR001)."
+    description: "Remove a product line from an existing order. Recalculates totals."
     delivery_priority: must-have
     initiated_by: [orders.ACT003]
     governed_by:
-      - rule: orders.SR001
+      - rule: orders.SR004
     produces:
       operations: [orders.EVT009]
       mode: all

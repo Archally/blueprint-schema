@@ -56,3 +56,8 @@ contexts:
                 admin:read: Read admin data
                 admin:write: Modify admin data
                 employees:manage: Manage employee accounts
+        implementation: "as-is"
+        code_refs:
+          - path: src/Core/Domain/Employee/
+            role: implementation
+            description: Source for this logical module within the PrestaShop PHP monolith; verified in the cited develop checkout a27e912eef9.

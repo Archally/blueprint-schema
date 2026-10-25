@@ -1,0 +1,24 @@
+engineVersion: "0.1"
+rules:
+  - id: activity-fork-without-gateway
+    severity: warn
+    description: >-
+      A process activity names two or more following activities, in `next` or `next_activities`,
+      and states no `gateway`. Several successors are a fork, and a fork means one of three things:
+      exactly one branch is taken (`xor`), one or more are (`or`), or all of them are (`and`). The
+      branches alone do not say which, so every reader - a flowchart, a process catalog, a person
+      walking the process - has to guess, and two of them can guess differently. Fix it by writing
+      the `gateway` the process means on the activity that forks; where the branches are
+      alternatives, a `condition` on each `next` entry says what takes it. An activity with one
+      successor needs no gateway and is never reported. Successors are counted once each, so a
+      target written twice is one branch. A successor read from the order the activities are listed
+      in is not counted: only the links the model states make a fork. One finding per process,
+      naming every forking activity and its successors. Override per-project via .blueprint-lint.yaml (e.g.
+      `activity-fork-without-gateway: off`).
+    find:
+      entity_type: Process
+    check:
+      custom:
+        module: ./activity-fork-without-gateway.mjs
+        export: activityForkWithoutGateway
+    message: 'Process "{displayId}" ({name|''unnamed''}) has {count} activity(ies) with two or more successors and no gateway: {forks}. The model does not say whether one, some or all of the branches are taken; state `gateway: xor`, `or` or `and` on each.'

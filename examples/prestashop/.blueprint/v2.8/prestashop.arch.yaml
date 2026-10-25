@@ -62,6 +62,8 @@ contexts:
               scopes:
                 admin:read: Read access to admin API
                 admin:write: Write access to admin API
+        implementation: "unclear"
+        description: "External consumer under ApiIntegrators (PRT003), outside the PrestaShop monolith. The cited PrestaShop source implements the Admin API server and API-client registration, but supplies no implementation reference for this external consumer. Its implementation cannot be established from the cited repositories."
 
   # The mechanism every slice's events rest on, stated once here rather than re-explained in ten
   # slice files. PrestaShop has no domain-event infrastructure: `find src/Core -type d -name Event`

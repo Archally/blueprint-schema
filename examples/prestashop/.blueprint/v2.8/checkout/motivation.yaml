@@ -50,6 +50,38 @@ goals:
     discovery_stage: validated
     certainty: confirmed
 
+  - id: checkout.GL004
+    statement: "A cart line's price is computed by the shop, never taken from the browser"
+    description: >
+      The browser holds only the key of its cart; the cart and its lines are
+      rows on the server, and a line's price is recomputed from the catalog
+      whenever totals are computed. A shopper who edits a request can change
+      what is in the cart, never what it costs.
+    summary: "Prices are the shop's, not the browser's"
+    priority: high
+    measure: "No storefront cart request parameter carries a price, and every line price comes from the catalog when totals are computed"
+    affects:
+      operation_refs: [checkout.CMD001, checkout.CMD009, checkout.CMD010, checkout.CMD011]
+      concept_refs: [checkout.CN001]
+    discovery_stage: committed
+    certainty: confirmed
+    evidence:
+      - kind: documentation
+        source: "PrestaShop/docs#development/components/cookie.md"
+        date: "2026-10-14"
+        summary: "Line 109: the storefront cookie carries id_cart, the integer id of the cart, so the browser holds the key and not the content."
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: "presta-code a27e912eef9, controllers/front/CartController.php and classes/Cart.php"
+        date: "2026-10-14"
+        summary: "CartController.php lines 55-59 read the product, combination, customization, quantity and delivery address ids of a cart update and no price; Cart.php line 1176 takes each line's price from Product::getPriceStatic when totals are computed."
+        confidence_impact: supports
+      - kind: assumption
+        source: "presta-docs and presta-code, searched for a stated priority"
+        date: "2026-10-14"
+        summary: "No source ranks this goal against the others; priority high is the modeller's reading of the server-side cart decision, whose chosen option names tamper-proofing as its reason."
+        confidence_impact: weakens
+
 risks:
   - id: checkout.RSK001
     statement: "Cart abandonment spike during flash sales"

@@ -94,10 +94,14 @@ export function isIdentityOrReferenceViolation(instancePath, message, refKeys) {
  * scoped to a parent or a bounded context; see `cross-references.mjs`.
  *
  * @param {(declared: string, pathStack: string[]) => string} [spaceOf]
+ * @param {(space: string, path: Array<string | number>) => void} [onDeclaration]
+ *   Receives every exact identity property, including the first occurrence in a duplicate group.
+ * @param {Array<string | number>} [sourcePath] raw YAML keys and numeric sequence indices;
+ *   independent of the legacy display path, which is never parsed to recover source locations
  */
-export function collectIds(node, ids = new Map(), duplicates = new Map(), pathStack = [], spaceOf = (declared) => declared) {
+export function collectIds(node, ids = new Map(), duplicates = new Map(), pathStack = [], spaceOf = (declared) => declared, onDeclaration, sourcePath = []) {
   if (Array.isArray(node)) {
-    node.forEach((item, idx) => collectIds(item, ids, duplicates, [...pathStack, `[${idx}]`], spaceOf));
+    node.forEach((item, idx) => collectIds(item, ids, duplicates, [...pathStack, `[${idx}]`], spaceOf, onDeclaration, [...sourcePath, idx]));
     return { ids, duplicates };
   }
   if (!node || typeof node !== "object") return { ids, duplicates };
@@ -107,6 +111,7 @@ export function collectIds(node, ids = new Map(), duplicates = new Map(), pathSt
     if (typeof declared !== "string" || !ID_RE.test(declared)) continue;
     const loc = pathStack.join(".") || "root";
     const space = spaceOf(declared, pathStack);
+    onDeclaration?.(space, [...sourcePath, key]);
     if (ids.has(space)) {
       const current = duplicates.get(space) ?? [ids.get(space)];
       current.push(loc);
@@ -117,7 +122,7 @@ export function collectIds(node, ids = new Map(), duplicates = new Map(), pathSt
   }
 
   for (const [k, v] of Object.entries(node)) {
-    collectIds(v, ids, duplicates, [...pathStack, k], spaceOf);
+    collectIds(v, ids, duplicates, [...pathStack, k], spaceOf, onDeclaration, [...sourcePath, k]);
   }
   return { ids, duplicates };
 }
@@ -179,11 +184,13 @@ export function isPartyRedeclaration(locations) {
  * is a scope-qualified typed id, since that spelling is a reference wherever it appears; the bare
  * form is not read there, because a bare `TM001` under an untyped key could be a name. Arrays are
  * transparent: an item is walked with the key that held the array as its parent.
+ * `source.path` keeps raw keys and numeric indices beside the legacy `loc` display string;
+ * `source.target` distinguishes a reference map key from the value at that path.
  */
-export function collectRefs(node, refs = [], pathStack = [], refKeys, parent = "") {
+export function collectRefs(node, refs = [], pathStack = [], refKeys, parent = "", sourcePath = []) {
   if (!refKeys) throw new Error("collectRefs needs the derived reference keys; see reference-keys.mjs");
   if (Array.isArray(node)) {
-    node.forEach((item, idx) => collectRefs(item, refs, [...pathStack, `[${idx}]`], refKeys, parent));
+    node.forEach((item, idx) => collectRefs(item, refs, [...pathStack, `[${idx}]`], refKeys, parent, [...sourcePath, idx]));
     return refs;
   }
   if (!node || typeof node !== "object") return refs;
@@ -194,34 +201,39 @@ export function collectRefs(node, refs = [], pathStack = [], refKeys, parent = "
     // is a name, and a name is checked by nothing here.
     if (refKeys.isKeyReference?.(parent, k) && v && typeof v === "object" && !Array.isArray(v)) {
       for (const entryKey of Object.keys(v)) {
-        if (ID_RE.test(entryKey)) refs.push({ key: k, value: entryKey, loc: [...pathStack, k, entryKey].join(".") });
+        if (ID_RE.test(entryKey)) refs.push({ key: k, value: entryKey, loc: [...pathStack, k, entryKey].join("."),
+          source: { path: [...sourcePath, k, entryKey], target: "key" } });
       }
     }
     if (refKeys.isReference(parent, k)) {
       const keyedOk = refKeys.acceptsKeyedForm(parent, k);
       const accept = (value) => ID_RE.test(value) || (keyedOk && KEYED_REF_RE.test(value));
       if (typeof v === "string" && accept(v)) {
-        refs.push({ key: k, value: v, loc: [...pathStack, k].join(".") });
+        refs.push({ key: k, value: v, loc: [...pathStack, k].join("."),
+          source: { path: [...sourcePath, k], target: "value" } });
       } else if (Array.isArray(v)) {
         v.forEach((item, idx) => {
           if (typeof item === "string" && accept(item)) {
-            refs.push({ key: k, value: item, loc: [...pathStack, `${k}[${idx}]`].join(".") });
+            refs.push({ key: k, value: item, loc: [...pathStack, `${k}[${idx}]`].join("."),
+              source: { path: [...sourcePath, k, idx], target: "value" } });
           }
         });
       }
     } else if (!DECLARATION_KEYS.has(k) && !EXAMPLE_KEYS.has(k)) {
       if (typeof v === "string" && SCOPED_ID_RE.test(v)) {
-        refs.push({ key: k, value: v, loc: [...pathStack, k].join(".") });
+        refs.push({ key: k, value: v, loc: [...pathStack, k].join("."),
+          source: { path: [...sourcePath, k], target: "value" } });
       } else if (Array.isArray(v)) {
         v.forEach((item, idx) => {
           if (typeof item === "string" && SCOPED_ID_RE.test(item)) {
-            refs.push({ key: k, value: item, loc: [...pathStack, `${k}[${idx}]`].join(".") });
+            refs.push({ key: k, value: item, loc: [...pathStack, `${k}[${idx}]`].join("."),
+              source: { path: [...sourcePath, k, idx], target: "value" } });
           }
         });
       }
     }
     if (v && typeof v === "object" && !EXAMPLE_KEYS.has(k)) {
-      collectRefs(v, refs, [...pathStack, k], refKeys, k);
+      collectRefs(v, refs, [...pathStack, k], refKeys, k, [...sourcePath, k]);
     }
   }
   return refs;

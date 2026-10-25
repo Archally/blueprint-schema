@@ -41,9 +41,9 @@ import { entityDomain } from '../relations/resolver.js';
 export const EVENT_REACH = {
   /** A contract, a messaging transport or a cross-scope reaction says it leaves its context. */
   Published: 'published',
-  /** This scope wires contracts to events, and none of them wires this one. */
+  /** The services that could publish it wire contracts to events, and none of them wires this one. */
   Internal: 'internal',
-  /** Nothing in this scope wires a contract to an event, so the model does not say. */
+  /** Nothing those services (or, where none can be named, this scope) wire is an event, so the model does not say. */
   Unstated: 'unstated',
 } as const;
 
@@ -57,9 +57,9 @@ export const EVENT_REACH_EVIDENCE = {
   Exchange: 'exchange',
   /** An operation in another scope declares `reacts_to` it. */
   CrossScopeReaction: 'cross-scope-reaction',
-  /** No signal fired, and this scope does wire contracts to events. */
+  /** No signal fired, and the services that could publish it do wire contracts to events. */
   NoSignal: 'no-signal',
-  /** This scope wires no contract to any event. */
+  /** Some service that could publish it (or, where none can be named, its scope) wires no contract to any event. */
   NoContractCoverage: 'no-contract-coverage',
 } as const;
 
@@ -131,6 +131,19 @@ export function annotateEventReach(entities: Entity[], relations: Relation[]): v
   const scopesWiringContracts = new Set<string>();
   /** Events some operation in ANOTHER scope declares it reacts to. */
   const reachedAcrossScope = new Set<string>();
+  /** The services whose contracts wire some event, the same question asked of one service. */
+  const contractsWiringEvents = new Set<string>();
+  const serviceOfContract = new Map<string, string>();
+  const servicesOfContext = new Map<string, Set<string>>();
+  /** Event -> the contracts that name it as theirs without sending it (`provide`, `expose`). */
+  const ownedThrough = new Map<string, Set<string>>();
+  /** Event -> the contexts that handle it. */
+  const contextsOf = new Map<string, Set<string>>();
+  const add = (map: Map<string, Set<string>>, key: string, value: string): void => {
+    let bucket = map.get(key);
+    if (!bucket) map.set(key, (bucket = new Set<string>()));
+    bucket.add(value);
+  };
 
   for (const relation of relations) {
     if (relation.type === RELATION_TYPE.ContractSends || relation.type === RELATION_TYPE.ContractReceives) {
@@ -140,7 +153,26 @@ export function annotateEventReach(entities: Entity[], relations: Relation[]): v
       // nothing is the scope that cannot tell internal from unstated.
       const contract = byId.get(relation.source_entity_id);
       if (contract) scopesWiringContracts.add(entityDomain(contract));
+      contractsWiringEvents.add(relation.source_entity_id);
       if (eventIds.has(relation.target_entity_id)) wiredByContract.add(relation.target_entity_id);
+      continue;
+    }
+    if (relation.type === RELATION_TYPE.Provides) {
+      serviceOfContract.set(relation.target_entity_id, relation.source_entity_id);
+      continue;
+    }
+    if (relation.type === RELATION_TYPE.Contains) {
+      if (byId.get(relation.target_entity_id)?.type === ENTITY_TYPE.Service) {
+        add(servicesOfContext, relation.source_entity_id, relation.target_entity_id);
+      }
+      continue;
+    }
+    if (relation.type === RELATION_TYPE.ContractProvides || relation.type === RELATION_TYPE.ContractExposes) {
+      if (eventIds.has(relation.target_entity_id)) add(ownedThrough, relation.target_entity_id, relation.source_entity_id);
+      continue;
+    }
+    if (relation.type === RELATION_TYPE.HandledBy) {
+      if (eventIds.has(relation.source_entity_id)) add(contextsOf, relation.source_entity_id, relation.target_entity_id);
       continue;
     }
     if (relation.type !== RELATION_TYPE.ReactsTo) continue;
@@ -152,8 +184,41 @@ export function annotateEventReach(entities: Entity[], relations: Relation[]): v
     if (entityDomain(reactor) !== entityDomain(event)) reachedAcrossScope.add(event.id);
   }
 
+  const servicesWiringEvents = new Set<string>();
+  for (const contractId of contractsWiringEvents) {
+    const serviceId = serviceOfContract.get(contractId);
+    if (serviceId) servicesWiringEvents.add(serviceId);
+  }
+
+  /**
+   * Whether the services that could publish this event all wire contracts to events, or
+   * `undefined` where no service can be named.
+   *
+   * Contract coverage is a statement a SERVICE makes, so it counts only for the services that could
+   * publish the event: the one whose contract names it as its own (`provide`, `expose`), else every
+   * service of the contexts that handle it. The scope's coverage is necessary and not sufficient:
+   * silence is a statement only when each of those services also wires some event, because with two
+   * services in a context and nothing naming the event's owner, one service's contracts say nothing
+   * about the other's events. Where the context holds one service, or no service can be named, the
+   * scope's answer stands.
+   */
+  const ownersSpeak = (event: Entity): boolean | undefined => {
+    const owners = new Set<string>();
+    for (const contractId of ownedThrough.get(event.id) ?? []) {
+      const serviceId = serviceOfContract.get(contractId);
+      if (serviceId) owners.add(serviceId);
+    }
+    if (owners.size === 0) {
+      for (const contextId of contextsOf.get(event.id) ?? []) {
+        for (const serviceId of servicesOfContext.get(contextId) ?? []) owners.add(serviceId);
+      }
+    }
+    if (owners.size === 0) return undefined;
+    return [...owners].every((serviceId) => servicesWiringEvents.has(serviceId));
+  };
+
   for (const event of events) {
-    const [reach, evidence] = classify(event, wiredByContract, reachedAcrossScope, scopesWiringContracts);
+    const [reach, evidence] = classify(event, wiredByContract, reachedAcrossScope, scopesWiringContracts, ownersSpeak(event));
     const data = (event.data ?? {}) as Record<string, unknown>;
     data[EVENT_REACH_FIELD] = reach;
     data[EVENT_REACH_EVIDENCE_FIELD] = evidence;
@@ -174,6 +239,7 @@ function classify(
   wiredByContract: ReadonlySet<string>,
   reachedAcrossScope: ReadonlySet<string>,
   scopesWiringContracts: ReadonlySet<string>,
+  ownersSpeak: boolean | undefined,
 ): [EventReach, EventReachEvidence] {
   if (wiredByContract.has(event.id)) return [EVENT_REACH.Published, EVENT_REACH_EVIDENCE.Contract];
   if (travelsOffProcess(event)) return [EVENT_REACH.Published, EVENT_REACH_EVIDENCE.Exchange];
@@ -181,8 +247,10 @@ function classify(
     return [EVENT_REACH.Published, EVENT_REACH_EVIDENCE.CrossScopeReaction];
   }
   // The distinction the third value exists for. "No contract names it" means `internal` only where
-  // contracts name events at all; where none does, the model has not been asked the question.
-  return scopesWiringContracts.has(entityDomain(event))
+  // contracts name events at all; where none does, the model has not been asked the question. Where
+  // the services that could publish it can be named, each of them must be among those that speak.
+  const speaks = scopesWiringContracts.has(entityDomain(event)) && ownersSpeak !== false;
+  return speaks
     ? [EVENT_REACH.Internal, EVENT_REACH_EVIDENCE.NoSignal]
     : [EVENT_REACH.Unstated, EVENT_REACH_EVIDENCE.NoContractCoverage];
 }

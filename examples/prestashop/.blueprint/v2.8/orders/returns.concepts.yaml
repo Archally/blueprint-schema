@@ -6,31 +6,53 @@ tags: [returns]
 concepts:
   - id: orders.CN007
     name: "OrderReturn"
-    description: "A merchandise return request initiated by a customer or merchant. Tracks return status, affected products, and links to generated credit slips. Managed as a standalone aggregate with its own lifecycle."
+    description: "A merchandise return a customer requests for a delivered order, with the products and quantities sent back and a return state. Managed as a standalone aggregate with its own lifecycle."
     stereotype: aggregate-root
     states: [waiting-for-confirmation, waiting-for-package, package-received, return-completed, return-denied]
     initial_state: waiting-for-confirmation
-    terminal_states: [return-completed, return-denied]
     code_refs:
       - path: "src/Core/Domain/OrderReturn/"
         role: model
-        description: "OrderReturn domain aggregate directory"
+        description: "The CQRS commands and queries of the merchandise return."
       - path: "classes/order/OrderReturn.php"
         role: implementation
+        description: "Line 35: the ObjectModel definition, with id_order and the state id."
+      - path: controllers/front/OrderFollowController.php
+        role: implementation
+        description: "Line 108: a return requested in the storefront starts in state 1, Waiting for confirmation."
+      - path: src/Adapter/OrderReturn/CommandHandler/UpdateOrderReturnStateHandler.php
+        role: implementation
+        description: "Lines 65-77: the merchant may set any return state; the customer is emailed when it changes."
+    definition: A customer request to send back products of an order, listing the products and quantities, with a state taken from the shop return states.
+    identity: id_order_return
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: orders.CN008
     name: "OrderReturnState"
-    description: "Defines the possible states in the return lifecycle. Admin-configurable - merchants can add custom return states with labels and colors per language."
+    description: "A state a merchandise return can be in. The merchant names and colours each state per language and may add states; five ship with PrestaShop."
     stereotype: value-object
     code_refs:
       - path: "src/Core/Domain/OrderReturnState/"
         role: model
       - path: "classes/order/OrderReturnState.php"
         role: implementation
+        description: "Line 23: the ObjectModel definition."
+      - path: install-dev/langs/en/data/order_return_state.xml
+        role: seed-data
+        description: "Lines 3-16: the five return states PrestaShop ships."
+    definition: A merchandise return state with a name per language and a colour; PrestaShop ships Waiting for confirmation, Waiting for package, Package received, Return denied and Return completed.
+    identity: id_order_return_state
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: orders.CN009
     name: "CreditSlip"
-    description: "A financial document recording a refund or credit issued to a customer. Created as a side effect of IssuePartialRefund or IssueStandardRefund commands - has no commands of its own. Query-only read model."
+    description: "A document recording money returned to a customer for an order. Created only by a partial or standard refund; it has no commands of its own."
     stereotype: read-model
     attributes:
       creditSlipId:
@@ -52,10 +74,16 @@ concepts:
     code_refs:
       - path: "classes/order/OrderSlip.php"
         role: implementation
-        description: "OrderSlipCore extends ObjectModel; creating one fires actionObjectOrderSlipAddAfter"
+        description: "Line 56: the ObjectModel definition (id_order, totals with and without tax, shipping, partial); creating one fires actionObjectOrderSlipAddAfter."
       - path: "src/Core/Domain/CreditSlip/"
         role: model
         description: "The whole CQRS surface of the credit slip: one query class and no command, because a credit slip is only ever produced by a refund"
       - path: "src/Adapter/Order/Refund/OrderSlipCreator.php"
         role: implementation
         description: "Creates the slip during a refund and fires actionOrderSlipAdd"
+    definition: "A credit slip for an order: the products and shipping refunded, their amounts with and without tax, and whether the refund was partial."
+    identity: id_order_slip
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed

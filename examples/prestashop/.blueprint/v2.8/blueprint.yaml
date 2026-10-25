@@ -21,6 +21,18 @@ repositories:
     url: "https://github.com/PrestaShop/ps_apiresources"
     branch: "dev"
     provider: "github"
+  # The developer documentation. A ref to a page is written `PrestaShop/docs#<path inside the
+  # docs>`, with role documentation, as the checkout interactions cite the hook and payment pages.
+  PrestaShop/docs:
+    url: "https://github.com/PrestaShop/docs"
+    branch: "9.x"
+    provider: "github"
+  # The functional specifications of the back office and storefront pages. A ref is written
+  # `PrestaShop/prestashop-specs#<path inside the specs>`, with role documentation.
+  PrestaShop/prestashop-specs:
+    url: "https://github.com/PrestaShop/prestashop-specs"
+    branch: "master"
+    provider: "github"
 
 # Where the work behind a story or use case is tracked. PrestaShop plans and reviews in the open, so
 # the tracker is the same GitHub repository the code_refs point into; GitHub resolves an issue URL to

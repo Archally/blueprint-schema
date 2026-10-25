@@ -11,9 +11,9 @@ operations:
     dispatch: inprocess
     idempotent: true
     name: "PlaceOrder"
-    description: "Create a new order from a validated cart. Validates stock, calculates totals, snapshots addresses, and initiates payment capture."
+    description: "Create orders from a validated cart: one order per package, totals taken from the cart, stock decreased, and a payment recorded when the status the payment module names counts as validated."
     delivery_priority: must-have
-    initiated_by: [orders.ACT001]
+    initiated_by: [orders.ACT001, admin.ACT002]
     governed_by:
       - rule: orders.SR001
       - rule: orders.VR001
@@ -26,13 +26,16 @@ operations:
         description: "Back-office order creation command"
       - path: "src/Adapter/Order/CommandHandler/AddOrderFromBackOfficeHandler.php"
         role: implementation
+      - path: classes/PaymentModule.php
+        role: implementation
+        description: validateOrder (lines 194-824), the method every path from a cart to an order goes through.
 
   updateOrderStatus:
     id: orders.CMD004
     kind: command
     dispatch: inprocess
     name: "UpdateOrderStatus"
-    description: "Transition an order to a new state. Validates the transition against the state machine and triggers side effects (email, stock release, invoice generation)."
+    description: "Change an order to another existing status and run what entering it triggers (email, stock, invoice or delivery slip). Only a status equal to the current one is refused."
     delivery_priority: must-have
     initiated_by: [orders.ACT003, orders.ACT004]
     reacts_to:

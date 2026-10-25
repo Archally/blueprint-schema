@@ -2,6 +2,12 @@ import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { codeRefEntryMeta, buildCodeRefHover } from './codeRef';
 
+test('buildCodeRefHover shows the local target line', () => {
+  const hover = buildCodeRefHover({ rawPath: 'src/Order.php#L194', behavior: 'local',
+    target: { kind: 'file', value: '/code/src/Order.php', line: 194 } });
+  assert.match(hover, /Line: \*\*194\*\*/);
+});
+
 // ── codeRefEntryMeta — read role/description of the entry that owns a `path:` line ────────────────
 
 test('codeRefEntryMeta — block entry: role + description, no bleed into the next item', () => {

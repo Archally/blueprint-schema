@@ -28,7 +28,8 @@ import { extractRoadmapRelations } from './roadmap.js';
 import { extractMotivationRelations } from './motivation.js';
 import { extractInquiryRelations } from './inquiry.js';
 import { extractAffectsRelations } from './affects.js';
-import { extractCapabilityRelations } from './capability.js';
+import { extractCapabilityOperationRelations, extractCapabilityRelations } from './capability.js';
+import { extractCapabilitySupportRelations } from './capabilitySupport.js';
 import { extractValueStreamRelations } from './valueStream.js';
 import { extractLeverageRelations } from './leverage.js';
 import { extractBccRelations } from './bcc.js';
@@ -54,7 +55,7 @@ import { extractContractTrafficRelations } from './contractTraffic.js';
  * nodes ("out of scope" or "missing").
  *
  * @param entities - All entities extracted in step-03
- * @param _documentsByType - Reserved for future extractors that need raw document data
+ * @param _documentsByType - Raw motivation documents preserve authored sequence indices
  * @returns { relations, addedEntities } — caller merges addedEntities (placeholders) into
  *          the main entity list so the final model has one unified entities array.
  */
@@ -94,7 +95,7 @@ export function buildRelations(
     ...extractUserStoryRelations(entities, placeholders),
     ...extractUseCaseRelations(entities, placeholders),
     ...extractRoadmapRelations(entities, placeholders),
-    ...extractMotivationRelations(entities, placeholders),
+    ...extractMotivationRelations(entities, placeholders, _documentsByType.motivation ?? []),
     ...extractInquiryRelations(entities, placeholders),
     ...extractAffectsRelations(entities, placeholders),
     ...extractCapabilityRelations(entities, placeholders),
@@ -129,6 +130,12 @@ export function buildRelations(
   const bound = applyDomainHopTier(entities, direct);
   for (const r of bound) seen.add(r.id);
 
+  // Which operations realize a capability joins `realized_in` with the finished `handled_by` and
+  // `operation_in_domain`, after the domain hop; which processes and use cases support a capability
+  // joins those edges with `process_orders_operation` and `use_case_operation`, so it runs after them.
+  const capabilityOperations = extractCapabilityOperationRelations(entities, bound, placeholders);
+  const capabilitySupport = extractCapabilitySupportRelations(entities, [...bound, ...capabilityOperations]);
+
   // A SECOND PASS, over the edges the first one produced rather than over documents. Coverage is a
   // join of `handled_by` and `operation_in_domain`, so it cannot be computed beside them; deriving
   // it from the raw refs again would introduce a second matching rule for one question.
@@ -138,6 +145,8 @@ export function buildRelations(
     // A context's language joins the finished `handled_by` and `scoped_to` with `materializes` and
     // `question_about`, so it belongs to this pass for the same reason coverage does.
     ...extractContextLanguageRelations(entities, bound),
+    ...capabilityOperations,
+    ...capabilitySupport,
   ].filter((r) => {
     if (seen.has(r.id)) return false;
     seen.add(r.id);

@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Content heuristics (plan D20) — the difference between "a field is present" and
+ * Content heuristics - the difference between "a field is present" and
  * "a field says something".
  *
  * A presence-only gate is gameable by construction: an agent optimizing a red/green

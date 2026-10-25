@@ -1,0 +1,26 @@
+engineVersion: "0.1"
+rules:
+  - id: capability-realized-nowhere
+    severity: info
+    description: >-
+      An L1 capability that realizes no operation, and none of its direct L2 children realizes
+      one either, or an L2 capability that realizes no operation. Deeper capabilities are judged
+      independently and contribute nothing to an L1 or L2. A capability realizes an
+      operation where it lists the operation under `operations`, or where its `realized_in` names
+      the operation's domain or a bounded context that handles it and no capability lists the
+      operation; a listing that resolves to no operation realizes nothing. Reported once, at the
+      topmost capability whose two-level scope is empty, so an unwired level-1 capability with eight
+      sub-capabilities is one finding. The message says why: nothing listed and no module named,
+      listings that resolve to no operation, `realized_in` entries that resolve to no domain or
+      bounded context, named modules that hold no operation, or named modules whose every
+      operation some capability lists, which displaces the module default. INFO, not a defect: a
+      capability map is often written before it is wired to the rest of the model, and the
+      finding makes that absence countable. Override per-project via .blueprint-lint.yaml (e.g.
+      `capability-realized-nowhere: off`).
+    find:
+      entity_type: Capability
+    check:
+      custom:
+        module: ./capability-realized-nowhere.mjs
+        export: capabilityRealizedNowhere
+    message: 'Capability "{capability}" ({capability_name}, level {level}) realizes no operation, {scope}: {reason}. Name the domains or bounded contexts that realize it in realized_in, list its operations, or accept the gap.'

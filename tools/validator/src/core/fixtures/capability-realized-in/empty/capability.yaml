@@ -1,0 +1,6 @@
+version: "1.0.0"
+capabilities:
+  - id: CAP001
+    name: Order Management
+    level: 1
+    realized_in: []

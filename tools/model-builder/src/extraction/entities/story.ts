@@ -3,6 +3,7 @@ import type { ParsedBlueprintDocument } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { SCHEMA_TYPE_TO_LAYER } from '../../model/entityTypes.js';
 import { makeInternalId } from './id.js';
+import type { ServedSchemaLine } from './ownershipDefaults.js';
 
 const LAYER = SCHEMA_TYPE_TO_LAYER['story']!;
 
@@ -98,8 +99,11 @@ interface StoryInput {
  * Each stories[] item becomes one Story entity with operationsDetail[] (ordered, with the
  * operationRef as written and scope/component for swimlane inference; the relation pass resolves
  * each ref).
+ *
+ * `line` is the model's schema line. It decides how a process's order is read (`deriveProcessOrder`);
+ * a document read on its own is read under the newest served line, as an omitted `schemaVersion` is.
  */
-export function extractStory(doc: ParsedBlueprintDocument): Entity[] {
+export function extractStory(doc: ParsedBlueprintDocument, line: ServedSchemaLine = 'v2.8'): Entity[] {
   const entities: Entity[] = [];
   const data = doc.data ?? {};
   const docScope = (doc.scope ?? data.scope) as string | undefined;
@@ -133,6 +137,14 @@ export function extractStory(doc: ParsedBlueprintDocument): Entity[] {
       });
     }
 
+    // From v2.8.10 these are direct properties; before it they were nested under `process`,
+    // which after the rename would have read `process.process`. Normalized here so a consumer
+    // reads one shape whichever line the model is on.
+    const trigger = s.trigger ?? s.process?.trigger;
+    const endStates = s.end_states ?? s.process?.end_states;
+    const order =
+      Array.isArray(s.activities) && s.activities.length > 0 ? deriveProcessOrder(s.activities, trigger, endStates, line) : undefined;
+
     entities.push({
       id,
       displayId,
@@ -153,12 +165,13 @@ export function extractStory(doc: ParsedBlueprintDocument): Entity[] {
         // so downstream consumers (e.g., Mermaid flowchart generator) can access
         // activity boundaries, path_type, triggered_by, next_activities and the lanes.
         // Kept as `unknown` here; downstream parses against story.schema.yaml shape.
-        activities: Array.isArray(s.activities) && s.activities.length > 0 ? withNormalisedNext(s.activities) : undefined,
-        // From v2.8.10 these are direct properties; before it they were nested under `process`,
-        // which after the rename would have read `process.process`. Normalized here so a consumer
-        // reads one shape whichever line the model is on.
-        trigger: s.trigger ?? s.process?.trigger,
-        end_states: s.end_states ?? s.process?.end_states,
+        activities: order?.activities,
+        // Where the process starts and which activity reaches each end state, by the conventions
+        // `deriveProcessOrder` states; derived on the v2.8 line only, so absent before it.
+        ...(order?.start ? { _start: order.start } : {}),
+        ...(order?.ends ? { _ends: order.ends } : {}),
+        trigger,
+        end_states: endStates,
         lanes: s.lanes ?? s.process?.lanes,
         // This extractor names every field it keeps, so a field it does not name is DROPPED - which
         // is why a story could declare `tracker_ref` in a valid model and no consumer could see it.
@@ -232,10 +245,50 @@ export function extractStory(doc: ParsedBlueprintDocument): Entity[] {
  * are, so the authored keys survive verbatim beside it and a consumer can still tell what the model
  * actually says. An activity declaring both is not normal and not silently merged: `next` wins,
  * because it is the shape that can carry everything the other one can.
+ *
+ * Each branch carries its `origin`: `stated` for a link the model writes, `declared-order` for one
+ * read from the order the activities are listed in (`deriveProcessOrder`). A consumer that needs only
+ * the successors reads `to`; one that needs the difference reads `origin`.
  */
 export interface NormalisedBranch {
   to: string;
   condition?: string;
+  origin: BranchOrigin;
+}
+
+/** Where a successor comes from: a link the model writes, or the order its activities are listed in. */
+export type BranchOrigin = 'stated' | 'declared-order';
+
+/**
+ * The activity a process starts at (`_start`): the one holding the trigger's operation
+ * (`trigger-operation`), else the first listed main-path activity (`first-listed`).
+ */
+export interface ProcessStart {
+  to: string;
+  origin: 'trigger-operation' | 'first-listed';
+}
+
+/**
+ * One declared end state and the activities that lead to it (`_ends`). `from` is empty where no
+ * stated link and no convention attaches an activity to it. `origin` says where a non-empty `from`
+ * comes from: the end state's own `from` (`stated`), or the end convention (`convention`); it is
+ * absent on an end state attached to nothing.
+ */
+export interface ProcessEnd {
+  name: string;
+  type?: string;
+  from: string[];
+  origin?: EndOrigin;
+}
+
+/** Where an end state's attachment comes from: the model's `from`, or the end convention. */
+export type EndOrigin = 'stated' | 'convention';
+
+/** A process's activities with their derived successors, and its derived start and end attachments. */
+export interface ProcessOrder {
+  activities: unknown[];
+  start?: ProcessStart;
+  ends?: ProcessEnd[];
 }
 
 function normaliseNext(activity: Record<string, unknown>): NormalisedBranch[] | undefined {
@@ -243,12 +296,12 @@ function normaliseNext(activity: Record<string, unknown>): NormalisedBranch[] | 
   if (Array.isArray(declared)) {
     const branches = declared
       .filter((branch): branch is Record<string, unknown> => Boolean(branch) && typeof branch === 'object')
-      .map((branch) => {
+      .map((branch): NormalisedBranch | null => {
         const to = typeof branch.to === 'string' ? branch.to : null;
         if (!to) return null;
         return typeof branch.condition === 'string' && branch.condition.length > 0 ?
-            { to, condition: branch.condition }
-          : { to };
+            { to, condition: branch.condition, origin: 'stated' }
+          : { to, origin: 'stated' };
       })
       .filter((branch): branch is NormalisedBranch => branch !== null);
     return branches.length > 0 ? branches : undefined;
@@ -256,17 +309,156 @@ function normaliseNext(activity: Record<string, unknown>): NormalisedBranch[] | 
 
   const legacy = activity.next_activities;
   if (Array.isArray(legacy)) {
-    const branches = legacy.filter((to): to is string => typeof to === 'string' && to.length > 0).map((to) => ({ to }));
+    const branches = legacy
+      .filter((to): to is string => typeof to === 'string' && to.length > 0)
+      .map((to): NormalisedBranch => ({ to, origin: 'stated' }));
     return branches.length > 0 ? branches : undefined;
   }
 
   return undefined;
 }
 
-function withNormalisedNext(activities: unknown[]): unknown[] {
-  return activities.map((activity) => {
-    if (!activity || typeof activity !== 'object') return activity;
-    const next = normaliseNext(activity as Record<string, unknown>);
-    return next ? { ...(activity as Record<string, unknown>), _next: next } : activity;
+type ActivityRecord = Record<string, unknown>;
+
+const isRecord = (value: unknown): value is ActivityRecord => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+/** An activity whose `path_type` is absent or `happy` is on the main path; `error` and `compensation` are not. */
+function onMainPath(activity: ActivityRecord): boolean {
+  return activity.path_type === undefined || activity.path_type === null || activity.path_type === '' || activity.path_type === 'happy';
+}
+
+function idOf(activity: ActivityRecord): string | undefined {
+  return typeof activity.id === 'string' && activity.id.length > 0 ? activity.id : undefined;
+}
+
+/** Whether an activity runs `operation`, as its entry or as one of its steps. */
+function holdsOperation(activity: ActivityRecord, operation: string): boolean {
+  if (activity.entry_operation === operation) return true;
+  return Array.isArray(activity.steps) && activity.steps.some((step) => isRecord(step) && step.operation_ref === operation);
+}
+
+/**
+ * The order a process runs its activities in, read once, here, so every consumer reads the same one.
+ *
+ * On the v2.8 line, a process's activities are listed in execution order unless a main-path activity
+ * states a main-path successor (`next` or `next_activities`); then the stated links are the whole
+ * order. An activity whose `path_type` is `error` or `compensation` is never placed in the listed
+ * order, only reached by a stated link. So in a process with no main-path link, each main-path
+ * activity gets a `declared-order` successor, the next listed main-path activity, after any link it
+ * states (to an off-path activity, which leaves the listed order standing).
+ *
+ * The start (`_start`) leads to the activity holding `trigger.operation` (as its entry or a step),
+ * the first listed one where several do, else to the first listed main-path activity. In a process
+ * with no main-path link, list order is its whole order, so the start leads to the first listed
+ * main-path activity, and says `trigger-operation` only where that activity holds the operation.
+ *
+ * The end attachments (`_ends`) list every declared end state. Where any end state states `from`,
+ * the stated attachments are the process's whole end routing: each end state's `from` is its own
+ * list, copied as written (an id this process does not hold included, for the projection and the
+ * rule to report), with `origin: stated`, and an end state that states none has an empty `from`.
+ * Otherwise the end convention attaches: where exactly one has type `complete`, the last listed
+ * main-path activity with no successor leads to it. Where no main-path activity is without a
+ * successor, the last listed main-path activity leads to it when every successor it states is an
+ * `error` or `compensation` activity: a link that leaves the main path says what happens when the
+ * work goes wrong or is undone, not that the process never ends. That attachment carries
+ * `origin: convention`. Every other end state, and that one where neither activity exists, has an
+ * empty `from` and no `origin`.
+ *
+ * On v2.6 and v2.7, whose published text says nothing of list order, only the stated successors are
+ * derived and neither `_start` nor `_ends` is.
+ */
+export function deriveProcessOrder(
+  activities: unknown[],
+  trigger: unknown,
+  endStates: unknown,
+  line: ServedSchemaLine,
+): ProcessOrder {
+  const successors = new Map<ActivityRecord, NormalisedBranch[]>();
+  for (const activity of activities) {
+    if (!isRecord(activity)) continue;
+    const stated = normaliseNext(activity);
+    if (stated) successors.set(activity, stated);
+  }
+  const withSuccessors = (): unknown[] =>
+    activities.map((activity) => {
+      if (!isRecord(activity)) return activity;
+      const next = successors.get(activity);
+      return next ? { ...activity, _next: next } : activity;
+    });
+  if (line !== 'v2.8') return { activities: withSuccessors() };
+
+  const records = activities.filter(isRecord);
+  const byId = new Map<string, ActivityRecord>();
+  for (const activity of records) {
+    const id = idOf(activity);
+    if (id !== undefined) byId.set(id, activity);
+  }
+  const main = records.filter(onMainPath);
+  const mainLinked = main.some((activity) =>
+    (successors.get(activity) ?? []).some((branch) => {
+      const target = byId.get(branch.to);
+      return target !== undefined && onMainPath(target);
+    }),
+  );
+
+  if (!mainLinked) {
+    for (let index = 0; index + 1 < main.length; index++) {
+      const to = idOf(main[index + 1]!);
+      if (to === undefined) continue;
+      const from = main[index]!;
+      successors.set(from, [...(successors.get(from) ?? []), { to, origin: 'declared-order' }]);
+    }
+  }
+
+  const operation = isRecord(trigger) && typeof trigger.operation === 'string' ? trigger.operation : undefined;
+  const holder = operation === undefined ? undefined : records.find((activity) => holdsOperation(activity, operation) && idOf(activity) !== undefined);
+  const firstMain = main.find((activity) => idOf(activity) !== undefined);
+  let start: ProcessStart | undefined;
+  if (!mainLinked && firstMain) {
+    start = { to: idOf(firstMain)!, origin: operation !== undefined && holdsOperation(firstMain, operation) ? 'trigger-operation' : 'first-listed' };
+  } else if (holder) {
+    start = { to: idOf(holder)!, origin: 'trigger-operation' };
+  } else if (firstMain) {
+    start = { to: idOf(firstMain)!, origin: 'first-listed' };
+  }
+
+  const declaredEnds = (Array.isArray(endStates) ? endStates : [])
+    .filter(isRecord)
+    .filter((state): state is ActivityRecord & { name: string } => typeof state.name === 'string');
+  const completes = declaredEnds.filter((state) => state.type === 'complete');
+  const sinks = main.filter((activity) => idOf(activity) !== undefined && !successors.has(activity));
+  const leavesMainPathOnly = (activity: ActivityRecord | undefined): activity is ActivityRecord => {
+    const branches = activity === undefined ? [] : (successors.get(activity) ?? []);
+    return (
+      activity !== undefined &&
+      idOf(activity) !== undefined &&
+      branches.length > 0 &&
+      branches.every((branch) => {
+        const target = byId.get(branch.to);
+        return target !== undefined && !onMainPath(target);
+      })
+    );
+  };
+  const lastMain = main[main.length - 1];
+  const completing = sinks.length > 0 ? sinks[sinks.length - 1] : leavesMainPathOnly(lastMain) ? lastMain : undefined;
+  // An end state's own `from`, read as strings only: an absent, empty or non-array `from` is not
+  // stated, since the builder also reads models the schema rejects.
+  const statedFrom = (state: ActivityRecord): string[] | undefined => {
+    if (!Array.isArray(state.from)) return undefined;
+    const ids = state.from.filter((id): id is string => typeof id === 'string' && id.length > 0);
+    return ids.length > 0 ? [...new Set(ids)] : undefined;
+  };
+  const routesStated = declaredEnds.some((state) => statedFrom(state) !== undefined);
+  const ends: ProcessEnd[] = declaredEnds.map((state) => {
+    const base = { name: state.name, ...(typeof state.type === 'string' ? { type: state.type } : {}) };
+    if (routesStated) {
+      const from = statedFrom(state);
+      return from ? { ...base, from, origin: 'stated' } : { ...base, from: [] };
+    }
+    return completes.length === 1 && state === completes[0] && completing ?
+        { ...base, from: [idOf(completing)!], origin: 'convention' }
+      : { ...base, from: [] };
   });
+
+  return { activities: withSuccessors(), ...(start ? { start } : {}), ends };
 }

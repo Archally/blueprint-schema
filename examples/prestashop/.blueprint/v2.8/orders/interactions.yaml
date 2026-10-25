@@ -173,34 +173,65 @@ actions:
         role: implementation
         description: "getTemplateVarOrders, line 48: Order::getCustomerOrders, then one Order load and one presenter call per row."
 
+  - id: orders.UAC010
+    screen: orders.SCR001
+    name: "Open an order from the list"
+    description: >
+      A click anywhere on an order's row opens that order's view page. The grid makes the row
+      clickable through its View row action, which carries the clickable_row option, so the row
+      and the View button lead to the same page.
+    implementation: as-is
+    code_refs:
+      - path: "src/Core/Grid/Definition/Factory/OrderGridDefinitionFactory.php"
+        role: implementation
+        description: "Lines 470 to 478: LinkRowAction 'view' to admin_orders_view with clickable_row set to true."
+
+  - id: orders.UAC011
+    screen: orders.SCR002
+    name: "Open a return from the order"
+    description: >
+      The order's view page lists the order's merchandise returns, and each return's number links
+      to that return in the returns page, with a link back to the order. A virtual order shows no
+      such list, because returns do not apply to it.
+    implementation: as-is
+    code_refs:
+      - path: "src/PrestaShopBundle/Resources/views/Admin/Sell/Order/Order/Blocks/View/merchandise_returns.html.twig"
+        role: implementation
+        description: "Line 24: the return number links to AdminReturn with id_order_return and updateorder_return; line 6 hides the block for a virtual order."
+
 navigation:
   - id: orders.UNV001
     from: orders.SCR001
     to: orders.SCR002
+    via_action: orders.UAC010
     condition: "User clicks an order row."
     description: "Navigate from order list to order detail."
 
   - id: orders.UNV002
     from: orders.SCR002
     to: orders.SCR003
-    condition: "User clicks 'View Return' link on an order with an active return."
+    via_action: orders.UAC011
+    condition: "User clicks a return's number in the merchandise-returns block of an order that has a return."
     description: "Navigate from order detail to return management."
 
   - id: orders.UNV003
     from: customers.SCR007
     to: orders.SCR004
+    via_action: customers.UAC015
     condition: "Shopper opens Order history from the account hub"
     description: "The history is an account page served by the orders slice; the hub that links to it belongs to customers, which is why this edge crosses a slice boundary."
 
   - id: orders.UNV004
     from: orders.SCR004
     to: orders.SCR005
+    via_action: orders.UAC009
     condition: "Shopper clicks an order in the history"
     description: "The storefront order detail, not the back-office one: a different controller, a different template and a different set of controls."
 
   - id: orders.UNV005
     from: orders.SCR005
     to: orders.SCR006
+    via_action: orders.UAC008
     condition: "Shopper submits the merchandise-return form and every check passes"
     description: "The form is on the order detail page and the handler is the returns controller, so a successful request looks to the shopper like a move between two pages."
 

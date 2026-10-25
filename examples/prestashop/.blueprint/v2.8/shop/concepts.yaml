@@ -179,34 +179,21 @@ actors:
     type: human
     description: "Administrator responsible for platform-level configuration including multi-store setup, branding, SEO, search, and contact information."
     personas:
-      - name: "Typical StoreAdmin"
-        quote: "I need to manage multiple storefronts from one admin panel without breaking anything."
-        goals: ["Configure store branding", "Manage SEO referrers", "Set up search aliases", "Maintain contact departments"]
-        pain_points: ["Multi-store config complexity", "No CQRS coverage for store creation", "Search alias management is tedious"]
-        behaviors: ["Uses bulk operations for cleanup", "Tests search aliases after adding"]
-        tech_savviness: high
-        job_to_be_done: "Configure and maintain the platform's identity, search, and communication settings"
-        context: "Back-office platform configuration"
-        demographics:
-          role: "Store Administrator"
-          industry: "E-commerce"
+      - id: shop.PER001
+        name: Multistore merchant
+        description: A merchant who runs several shops from one back office, for B2B and B2C, several countries or several brands (presta-specs/content/1.7/back-office/advanced-parameters/multistore/multistore.md).
+        goals:
+          - Create as many shops as needed under a single back office (presta-specs/content/1.7/back-office/advanced-parameters/multistore/multistore.md).
+          - Group shops so they share characteristics while each can still be fine-tuned (presta-specs/content/1.7/back-office/advanced-parameters/multistore/multistore.md, 'Enable the multistore').
+          - Associate each category, block or employee with the shops it belongs to (presta-specs/content/1.7/back-office/multistoregeneralspecs.md, shop association block; presta-specs/content/1.7/modules/ps_linklist.md).
+        pain_points:
+          - Giving one shop its own category description means unchecking that shop and creating a second category with the same name (presta-specs/content/1.7/back-office/multistoregeneralspecs.md, the 'Shirts' example).
+          - Positions in a listing can be changed only in a single-shop context (presta-specs/content/1.7/back-office/multistoregeneralspecs.md).
 
   - id: shop.ACT002
     name: "MarketingManager"
     type: human
     description: "Marketing team member responsible for SEO referrer tracking, search optimization through aliases, and storefront branding."
-    personas:
-      - name: "Typical MarketingManager"
-        quote: "I need search to work well for customers - aliases fix the gap between what people type and what we call things."
-        goals: ["Optimize search relevance", "Track SEO referrers", "Maintain store branding"]
-        pain_points: ["No bulk alias import", "Cannot preview alias effects before saving"]
-        behaviors: ["Regularly reviews search analytics", "Adds aliases based on customer search patterns"]
-        tech_savviness: medium
-        job_to_be_done: "Improve discoverability and branding across storefronts"
-        context: "Marketing and SEO optimization"
-        demographics:
-          role: "Marketing Manager"
-          industry: "E-commerce"
 
 associations:
   - id: shop.ASC001

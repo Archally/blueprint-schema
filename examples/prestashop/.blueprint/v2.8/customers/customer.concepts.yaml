@@ -111,22 +111,16 @@ actors:
       - "Request personal data export or deletion (GDPR)"
       - "Submit customer service inquiries"
     personas:
-      - name: "Typical Customer"
-        quote: "I want to manage my account without calling support for every change."
+      - id: customers.PER001
+        name: Registered customer
+        description: A customer with an account, who returns to it for documents, past orders and vouchers (presta-specs/content/1.7/front-office/customer-account.md).
         goals:
-          - "Update my profile and addresses quickly"
-          - "Control what data the shop has about me"
-          - "Get help when I need it via customer service"
+          - View and download invoices and delivery slips in my own language from the order history (presta-specs/content/1.7/front-office/customer-account.md, 'Order history and details').
+          - Reorder a past order from the order history when the shop offers the reorder link (presta-specs/content/1.7/back-office/shop-parameters/order-settings/order-settings.md, 'Disable reordering option').
+          - See the vouchers available to me, with the quantity left and the expiry date (presta-specs/content/1.7/front-office/Your-vouchers.md).
         pain_points:
-          - "Address forms are too long for my country"
-          - "Cannot find where to delete my account"
-          - "Password reset flow sends too many emails"
-        behaviors:
-          - "Updates addresses mainly before checkout"
-          - "Rarely visits account settings unless something breaks"
-          - "Expects GDPR data export within 24 hours"
-        tech_savviness: medium
-        job_to_be_done: "Maintain my shop account with minimal effort and full control over my data"
+          - An invoice can be downloaded only once the order reaches a status the merchant has set to allow it (presta-specs/content/1.7/back-office/shop-parameters/order-settings/order-statuses.md, '6) Invoice').
+          - A voucher with a code that is not highlighted and not restricted to me personally is not listed on my vouchers page, even when it is restricted to my customer group (presta-specs/content/1.7/front-office/Your-vouchers.md, cases 3 and 6).
 
   - id: customers.ACT002
     name: "CustomerServiceAgent"
@@ -138,22 +132,16 @@ actors:
       - "Update thread status (open, closed, pending)"
       - "Use predefined message templates"
     personas:
-      - name: "Typical CustomerServiceAgent"
-        quote: "I need to see the customer's order history right next to their message."
+      - id: customers.PER002
+        name: Salesman
+        description: The employee holding PrestaShop's default Salesman profile, whose menus are orders, shopping carts, customers, customer service and order messages (presta-specs/content/1.7/back-office/advanced-parameters/team/permissions-listing.md, 'Salesman profile Menu permissions').
         goals:
-          - "Resolve customer inquiries quickly"
-          - "Access full customer context (orders, addresses) in one screen"
-          - "Track response time metrics"
+          - Answer customer threads and move each one through the Open, Closed, Pending 1 and Pending 2 statuses (presta-specs/content/1.7/back-office/customer-service/customer-service/dashboard.md, 'MEANING OF STATUS').
+          - Bring customers' email replies into the threads through the IMAP settings (presta-specs/content/1.7/back-office/customer-service/customer-service/dashboard.md, 'CUSTOMER SERVICE OPTIONS').
+          - Keep predefined order messages, such as the default Delay message, ready to send about an order (presta-specs/content/1.7/back-office/customer-service/order-messages/order-messages.md).
         pain_points:
-          - "No unified view of customer history alongside service thread"
-          - "Cannot merge duplicate threads from same customer"
-          - "Manual forwarding is error-prone"
-        behaviors:
-          - "Handles 30-50 threads per day"
-          - "Uses keyboard shortcuts for quick replies"
-          - "Escalates complex issues to specific teams"
-        tech_savviness: high
-        job_to_be_done: "Resolve customer inquiries efficiently with full context visibility"
+          - A message sent through the front-office contact form reaches the thread list only if its contact has 'Save messages?' enabled (presta-specs/content/1.7/back-office/customer-service/customer-service/dashboard.md, 'Listing').
+          - The default Salesman profile has Merchandise Returns and Delivery Slips disabled, so a return cannot be handled until someone widens the profile (presta-specs/content/1.7/back-office/advanced-parameters/team/permissions-listing.md, 'Salesman profile Menu permissions').
 
 enumerations:
   - id: customers.EN001

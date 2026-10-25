@@ -102,9 +102,9 @@ resources:
       - path: "INSTALL.txt"
         role: documentation
         description: "States the server PrestaShop needs: a web server running PHP 8.1+ and MySQL 5.6+."
-      - path: "https://github.com/PrestaShop/docs/blob/9.x/basics/installation/system-requirements.md"
+      - path: "PrestaShop/docs#basics/installation/system-requirements.md"
         role: documentation
-        description: "The published requirement table: web server, PHP, SQL and memory_limit."
+        description: "Lines 14-17: the published requirement table for the web server, PHP, SQL and memory_limit."
     tags: [platform, compute]
 
   - id: prestashop.IR004

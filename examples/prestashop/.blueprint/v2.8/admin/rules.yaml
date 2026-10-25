@@ -5,8 +5,8 @@ tags: [identity-access, security]
 
 validation:
   - id: admin.VR001
-    name: "Employee email uniqueness"
-    description: "No two employees can share the same email address."
+    name: "An employee email address is used by one employee"
+    description: "Keeps an email address pointing at one employee account."
     concepts: [admin.CN001]
     modality: necessary
     logic:
@@ -14,21 +14,64 @@ validation:
       then: "Email must not already be assigned to another employee"
     on_violation:
       action: reject
+      message: "An account already exists for this email address"
+    code_refs:
+      - path: src/Adapter/Profile/Employee/CommandHandler/AddEmployeeHandler.php
+        role: implementation
+        description: "Line 73 and lines 118-123: an address any employee has raises EmailAlreadyUsedException."
+      - path: src/Adapter/Profile/Employee/CommandHandler/EditEmployeeHandler.php
+        role: implementation
+        description: "Line 85 and lines 151-161: the employee own address does not count; another employee address is refused."
+    summary: "One employee per email address."
+    fact: "Employee.email is unique"
+    scope: "employee add and edit, back office"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: admin.VR002
-    name: "Password strength policy"
-    description: "Employee passwords must meet configurable strength requirements: minimum length, maximum length, and minimum zxcvbn score."
+    name: "An employee password meets the configured length and strength"
+    description: "A reset from the login page checks only the length on the server; the strength check, a zxcvbn score out of 4, is left to the browser."
     concepts: [admin.CN001]
     modality: obligatory
     logic:
-      when: "Employee password is set or reset"
-      then: "Password must satisfy minLength, maxLength, and minScore thresholds"
+      when: "an employee password is set on add or edit"
+      then: "minLength <= length(password) <= maxLength AND zxcvbnScore(password) >= minScore"
     on_violation:
       action: reject
+      code: 4
+      message: "Employee password is too weak"
+    code_refs:
+      - path: src/Core/Domain/Employee/ValueObject/Password.php
+        role: validation
+        description: "Lines 72-86: the length bounds; lines 93-100: the zxcvbn score; both raise INVALID_PASSWORD."
+      - path: src/Core/Domain/Employee/Command/AddEmployeeCommand.php
+        role: implementation
+        description: "Line 107: the password is wrapped with the configured bounds."
+      - path: src/Core/Domain/Employee/Command/EditEmployeeCommand.php
+        role: implementation
+        description: "Line 281: the same on an edit."
+      - path: src/Core/Security/PasswordPolicyConfiguration.php
+        role: configuration
+        description: "Lines 25-26 and 36-38: default lengths 8 and 72 and the three configuration keys."
+      - path: install-dev/data/xml/configuration.xml
+        role: seed-data
+        description: "Lines 882-890: maximum length 72, minimum length 8, minimum score 3."
+      - path: src/PrestaShopBundle/Form/Admin/Login/ResetPasswordType.php
+        role: validation
+        description: "Lines 32-56: the reset form applies the length constraint and passes the minimum score as data-minscore."
+    summary: "Length within the configured bounds, strength at or above the configured score."
+    fact: "PS_SECURITY_PASSWORD_POLICY_MINIMUM_LENGTH <= length(password) <= PS_SECURITY_PASSWORD_POLICY_MAXIMUM_LENGTH AND zxcvbn(password) >= PS_SECURITY_PASSWORD_POLICY_MINIMUM_SCORE"
+    scope: "employee add and edit; the length part also on the password reset form"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: admin.VR003
-    name: "Profile deletion requires no assigned employees"
-    description: "A profile cannot be deleted if any employees are still assigned to it."
+    name: "A profile with employees is not deleted"
+    description: "Keeps every employee attached to an existing profile."
     concepts: [admin.CN002]
     modality: necessary
     logic:
@@ -36,43 +79,153 @@ validation:
       then: "No employee must reference this profile"
     on_violation:
       action: reject
+      code: 1
+      message: "Failed to delete profile with id \"%d\", because it is assigned to employee."
+    code_refs:
+      - path: src/Adapter/Profile/CommandHandler/AbstractProfileHandler.php
+        role: validation
+        description: "Lines 25-32: a profile with employees raises PROFILE_IS_ASSIGNED_TO_EMPLOYEE."
+      - path: src/Adapter/Profile/CommandHandler/DeleteProfileHandler.php
+        role: implementation
+        description: "Line 63: the acting employee profile is refused; line 66: the employee check."
+      - path: src/Adapter/Profile/CommandHandler/BulkDeleteProfileHandler.php
+        role: implementation
+        description: "Line 74: the same check for each profile of a bulk delete."
+      - path: src/Core/Domain/Profile/Exception/FailedToDeleteProfileException.php
+        role: implementation
+        description: "Lines 17 and 27: PROFILE_IS_ASSIGNED_TO_EMPLOYEE = 1, PROFILE_IS_ASSIGNED_TO_CONTEXT_EMPLOYEE = 3."
+    summary: "Reassign every employee before deleting their profile."
+    fact: "delete(Profile) requires count(Employee where profile = Profile) = 0"
+    scope: "profile delete and bulk delete, back office"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: admin.VR004
-    name: "Permission matrix consistency"
-    description: "Tab and module permissions must reference valid tabs and modules. Permission levels must be from the allowed set (view, add, edit, delete)."
+    name: "A permission names an existing tab or module and a supported level"
+    description: "Keeps a profile's permissions to levels PrestaShop can enforce."
     concepts: [admin.CN003]
     modality: obligatory
     logic:
       when: "Tab or module permissions are updated"
-      then: "All referenced tab/module identifiers must exist and permission levels must be valid"
+      then: "level IN {view, add, edit, delete, all} for a tab, IN {view, configure, uninstall} for a module, AND the tab or module has an authorization role"
     on_violation:
       action: reject
+      message: "Invalid permission \"%s\" provided"
+    code_refs:
+      - path: src/Core/Domain/Profile/Permission/ValueObject/ControllerPermission.php
+        role: validation
+        description: "Lines 21-26: view, add, edit, delete; lines 51-58: any other value raises InvalidPermissionValueException."
+      - path: src/Core/Domain/Profile/Permission/ValueObject/ModulePermission.php
+        role: validation
+        description: "Lines 19-23: view, configure, uninstall."
+      - path: src/Core/Domain/Profile/Permission/Command/UpdateTabPermissionsCommand.php
+        role: implementation
+        description: "Line 54: all, or one supported level."
+      - path: classes/Access.php
+        role: implementation
+        description: "Lines 324-360: updateLgcAccess throws when no authorization role exists for the tab and level."
+      - path: src/Adapter/Profile/Permission/CommandHandler/UpdateTabPermissionsHandler.php
+        role: implementation
+        description: "Lines 45-52: an exception or an error result raises PermissionUpdateException."
+      - path: tests/Integration/Behaviour/Features/Scenario/Profile/profile_permissions.feature
+        role: test
+        description: Scenarios 'I can edit tab permission for a profile' (line 44) and 'I can edit module permission for a profile' (122).
+    summary: "Permissions use the levels PrestaShop defines, on tabs and modules that exist."
+    fact: "TabPermission.level IN {view, add, edit, delete, all}; ModulePermission.level IN {view, configure, uninstall}"
+    scope: "profile tab and module permission updates, back office"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: admin.VR005
-    name: "API client scope validation"
-    description: "All scopes provided to an API client must be non-empty strings. The AddApiClientCommand constructor validates this at creation time."
+    name: "An API client scope is one an installed API resource declares"
+    description: "Keeps an API client from holding a scope no installed resource answers."
     concepts: [admin.CN005]
     modality: obligatory
     logic:
       when: "API client is created or edited with scopes"
-      then: "Each scope must be a non-empty string"
+      then: "every scope is a string AND every scope IN scopes declared by the installed API resources"
     on_violation:
       action: reject
+      code: 12
+      message: "The scopes %scope_names% are not associated to any installed API."
+    code_refs:
+      - path: src/Core/Domain/ApiClient/Command/AddApiClientCommand.php
+        role: validation
+        description: "Lines 24-25: a non-string scope raises INVALID_SCOPES."
+      - path: src/Core/Domain/ApiClient/Command/EditApiClientCommand.php
+        role: validation
+        description: "Lines 94-97: the same check on an edit."
+      - path: src/PrestaShopBundle/Entity/ApiClient.php
+        role: model
+        description: "Lines 71-74: scopes are NotNull and carry InstalledApiResourceScope."
+      - path: src/Core/ConstraintValidator/InstalledApiResourceScopeValidator.php
+        role: validation
+        description: "Lines 34-53: every scope must match one declared by an installed API resource."
+      - path: src/Core/Domain/ApiClient/Exception/ApiClientConstraintException.php
+        role: implementation
+        description: "Lines 26-27: INVALID_SCOPES = 11, NON_INSTALLED_SCOPES = 12 (lines 62-63 map the scopes violation)."
+      - path: tests/Integration/Behaviour/Features/Scenario/ApiClient/api_client_management.feature
+        role: test
+        description: Scenario 'Create or edit an api client with invalid scopes' (line 181).
+    summary: "Only installed API scopes can be granted."
+    fact: "ApiClient.scopes SUBSET OF scopes(installed API resources)"
+    scope: "API client creation and edit, back office"
+    examples:
+      - input: An API client created with the scope 'unknown_api_client'
+        output: "Refused: scopes is invalid"
+      - input: Client with scope product_read edited to 'product_read, unknown_api_client'
+        output: Refused; the client keeps product_read
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: admin.VR006
-    name: "SQL query safety guard"
-    description: "SQL queries executed through SqlManagement must be read-only SELECT statements. Write operations (INSERT, UPDATE, DELETE) and schema modifications (DROP, ALTER) are forbidden."
+    name: "A saved SQL query is a SELECT without forbidden keywords"
+    description: "The forbidden list holds DELETE, INSERT, UPDATE, DROP, ALTER and about ninety more keywords. Execution runs the stored query without a second check."
     concepts: [admin.CN007]
     modality: prohibited
     logic:
-      when: "SQL query is added, edited, or executed"
-      then: "Query must not contain forbidden SQL keywords for write or schema modification operations"
+      when: "an SQL manager query is added or edited"
+      then: "query has SELECT AND FROM AND no keyword IN RequestSql.tested.unauthorized AND every table and column exists"
     on_violation:
       action: reject
+      code: 20
+      message: "\"%key%\" is an unauthorized keyword."
+    code_refs:
+      - path: classes/RequestSql.php
+        role: validation
+        description: "Lines 30-51: required SELECT and FROM, the allowed functions and the unauthorized keyword list; lines 54-57: passwd and secure_key are masked."
+      - path: src/Adapter/SqlManager/SqlQueryValidator.php
+        role: validation
+        description: "Lines 27-48: parses and validates the query; lines 384-400: an unauthorized keyword error."
+      - path: src/Adapter/SqlManager/CommandHandler/AbstractSqlRequestHandler.php
+        role: implementation
+        description: "Lines 38-46: add and edit refuse a query with any validation error."
+      - path: src/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandler.php
+        role: implementation
+        description: "Line 44: the stored query is executed; lines 86-95: sensitive columns are hidden."
+      - path: tests/Integration/Behaviour/Features/Scenario/Database/sql_manager.feature
+        role: test
+        description: Scenarios 'Create a UPDATE request' (line 33), 'Create a DELETE request' (39) and 'Create an INSERT request' (45).
+    summary: "The SQL manager saves read-only SELECT queries only."
+    fact: "RequestSql.sql is a SELECT ... FROM ... with no unauthorized keyword"
+    scope: "SQL manager query add and edit, back office"
+    examples:
+      - input: INSERT INTO ps_customer VALUES(NULL, 'test');
+        output: "Refused: only a SELECT request is allowed"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: admin.VR007
     name: "Business entity addresses must be consistent"
-    description: "A business entity must carry exactly one default billing address, and exactly one default shipping address unless it reuses the billing address for shipping. AddBusinessEntityCommand asserts this in its own constructor, so an inconsistent entity never reaches a handler."
+    description: "Leaves no doubt which address a business entity bills to and ships to."
     concepts: [admin.CN012]
     modality: obligatory
     logic:
@@ -83,14 +236,56 @@ validation:
     code_refs:
       - path: "src/Core/Domain/BusinessEntity/Command/AddBusinessEntityCommand.php"
         role: implementation
-        description: "assertBusinessEntityAddressAreConsistent(), called from the constructor"
+        description: "Line 43: the constructor calls the check; lines 105-143: the six refusals."
       - path: "src/Core/Domain/BusinessEntity/Exception/BusinessEntityBillingAddressConstraintException.php"
         role: implementation
-        description: "Six codes: missing or multiple default billing and shipping addresses"
+        description: "Lines 13-18: MISSING_BILLING_ADDRESS (1) to MULTIPLE_DEFAULT_SHIPPING_ADDRESSES (6)."
+      - path: tests/Integration/Behaviour/Features/Scenario/BusinessEntity/business_entity_management.feature
+        role: test
+        description: Scenarios 'Add a new business entity with billing address used as shipping address' (line 9) and 'Add a new business entity with separate billing and shipping addresses' (26).
+    summary: "One default billing address, and one default shipping address unless billing is reused."
+    fact: "count(default billing) = 1 AND (billingAsShipping OR count(default shipping) = 1)"
+    scope: "business entity registration"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
 structural:
   - id: admin.SR001
-    name: "Employee requires profile assignment"
-    description: "Every employee must be assigned to exactly one profile. The profileId is a required parameter in both AddEmployeeCommand and EditEmployeeCommand."
+    name: "An employee has exactly one profile"
+    description: "Ties every employee to one set of permissions."
     concepts: [admin.CN001, admin.CN002]
     modality: necessary
+    code_refs:
+      - path: classes/Employee.php
+        role: model
+        description: "Line 101: id_profile is a required integer, one per employee."
+      - path: src/Core/Domain/Employee/Command/AddEmployeeCommand.php
+        role: implementation
+        description: "Lines 92 and 105: the profile is a constructor argument."
+      - path: src/Core/Domain/Employee/Command/EditEmployeeCommand.php
+        role: implementation
+        description: "Lines 236-238: setProfileId is optional on an edit."
+      - path: src/Adapter/Profile/Employee/CommandHandler/AddEmployeeHandler.php
+        role: validation
+        description: "Lines 64-71: a profile the acting employee cannot access raises InvalidProfileException."
+      - path: src/Adapter/Profile/Employee/CommandHandler/EditEmployeeHandler.php
+        role: validation
+        description: "Lines 74-76 and 117: the same access check before the new profile is stored."
+      - path: tests/Integration/Behaviour/Features/Scenario/Employee/employee_management.feature
+        role: test
+        description: Scenario 'I can create an employee' (line 14) creates an employee with a profile.
+    summary: "One profile per employee, chosen among those the acting employee can access."
+    logic:
+      when: an employee is added, or its profile is changed
+      then: employee.profile is set AND canEmployeeAccessProfile(actingEmployee, employee.profile)
+    fact: "Employee.profile exactly 1"
+    scope: "employee add and edit, back office"
+    on_violation:
+      action: reject
+      message: You cannot access the provided profile.
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed

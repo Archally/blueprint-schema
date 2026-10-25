@@ -1,0 +1,12 @@
+version: 1.0.0
+capabilities:
+  - id: CAP001
+    name: Orders
+    level: 1
+    evidence:
+      - kind: documentation
+        source: https://example.org/tests/record-1
+        date: 2026-10-23
+        summary: The written record supports this association.
+        confidence_impact: weakens
+        certainty: confirmed

@@ -52,3 +52,8 @@ contexts:
               - customers.CMD002
               - customers.CMD012
               - customers.QRY002
+        implementation: "as-is"
+        code_refs:
+          - path: src/Core/Domain/Customer/
+            role: implementation
+            description: Source for this logical module within the PrestaShop PHP monolith; verified in the cited develop checkout a27e912eef9.

@@ -25,7 +25,8 @@
   ],
   "activationEvents": [
     "onLanguage:yaml",
-    "workspaceContains:**/.blueprint/**/*.yaml"
+    "workspaceContains:**/.blueprint/**/*.yaml",
+    "workspaceContains:**/.blueprint/**/*.yml"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -34,7 +35,7 @@
       "properties": {
         "archallyBlueprint.fileGlob": {
           "type": "string",
-          "default": "**/.blueprint/**/*.yaml",
+          "default": "**/.blueprint/**/*.{yaml,yml}",
           "description": "Glob for the blueprint YAML files to index for id navigation."
         },
         "archallyBlueprint.highlight.enabled": {
@@ -57,12 +58,12 @@
             "bold-underline"
           ],
           "default": "bold",
-          "description": "Font style for highlighted IDs. Note: the editor font FAMILY cannot be changed per token — only weight/style/underline."
+          "description": "Font style for highlighted IDs. Note: the editor font FAMILY cannot be changed per token \u2014 only weight/style/underline."
         },
         "archallyBlueprint.codeRef.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Turn code_ref paths in .blueprint YAML into clickable links → the local clone (see codeRef.localRoots) when resolvable, otherwise the file on the configured git host (from `repository`/`repositories` in blueprint.yaml)."
+          "description": "Turn code_ref paths in .blueprint YAML into clickable links \u2192 the local clone (see codeRef.localRoots) when resolvable, otherwise the file on the configured git host (from `repository`/`repositories` in blueprint.yaml)."
         },
         "archallyBlueprint.codeRef.localRoots": {
           "type": "object",
@@ -112,7 +113,49 @@
         "archallyBlueprint.referenceLinks.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Linkify http(s) URLs anywhere in .blueprint YAML (evidence sources, trackers, docs) → open in the browser, and evidence[].source file-paths → open the local workspace file. Shares the code_ref link colour."
+          "description": "Linkify http(s) URLs anywhere in .blueprint YAML (evidence sources, trackers, docs) \u2192 open in the browser, and evidence[].source file-paths \u2192 open the local workspace file. Shares the code_ref link colour."
+        },
+        "archallyBlueprint.diagnostics.debounceMs": {
+          "type": "number",
+          "default": 300,
+          "minimum": 0,
+          "maximum": 5000,
+          "description": "Delay in milliseconds before recomputing unsaved model diagnostics and ID decorations (0-5000). Saves refresh immediately."
+        },
+        "archallyBlueprint.diagnostics.duplicateSeverity": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "information",
+            "hint",
+            "off"
+          ],
+          "default": "error",
+          "description": "Severity for duplicate ID declarations in one model."
+        },
+        "archallyBlueprint.diagnostics.danglingSeverity": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "information",
+            "hint",
+            "off"
+          ],
+          "default": "error",
+          "description": "Severity for references not declared in the owning model."
+        },
+        "archallyBlueprint.diagnostics.schemaRoot": {
+          "type": "string",
+          "default": "",
+          "description": "Optional absolute local schema version root (or its schema directory). Empty uses bundled v2.8; unavailable versions are reported visibly."
+        },
+        "archallyBlueprint.diagnostics.schemaVersion": {
+          "type": "string",
+          "default": "",
+          "pattern": "^(v?[0-9]+(\\.[0-9]+)?)?$",
+          "description": "Explicit diagnostic schema version override, for example 2.8. Otherwise a precise version directory wins, then schemaVersion in a legacy major directory, then its bare major."
         }
       }
     },
@@ -333,22 +376,29 @@
     ]
   },
   "scripts": {
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "test": "npm run compile && node --test ./out/codeRef.test.js ./out/codeRef.local.test.js ./out/codeRef.hover.test.js ./out/completion.test.js",
+    "compile": "tsc -p ./ && node build.mjs",
+    "watch": "node build.mjs --watch",
+    "test": "npm run compile && node --test ./out/codeRef.test.js ./out/codeRef.local.test.js ./out/codeRef.hover.test.js ./out/completion.test.js ./gen-id-fields.test.mjs",
     "vscode:prepublish": "npm run sync-schema && npm run compile",
     "sync-schema": "node sync-schema.mjs",
     "sync-schema:check": "node sync-schema.mjs --check",
     "package": "node package-vsix.mjs --no-dependencies",
     "gen-id-fields": "node gen-id-fields.mjs",
-    "gen-id-fields:check": "node gen-id-fields.mjs --check"
+    "gen-id-fields:check": "node gen-id-fields.mjs --check",
+    "type-check": "tsc -p ./ --noEmit"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.75.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.4",
+    "esbuild": "^0.27.7",
+    "@vscode/vsce": "^3.9.2"
   },
   "extensionDependencies": [
     "redhat.vscode-yaml"
-  ]
+  ],
+  "dependencies": {
+    "yaml": "^2.8.2"
+  }
 }

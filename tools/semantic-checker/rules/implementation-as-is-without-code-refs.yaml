@@ -5,7 +5,10 @@ rules:
     description: >-
       An element that says it is implemented should say where. In a model that traces code,
       `as-is` with no `code_refs` (or, for a resource, no `iac_refs`) is a claim nothing backs.
-      If the code is only partly there, the value is `wip`, not `as-is`; if it is not there at
+      A reference with role `planned` points at the place an element is to be built, and one with
+      role `gap` at code that shows the element is absent; neither is evidence that the element
+      exists, so an `as-is` element whose only references are planned or gap is reported as one
+      with none. If the code is only partly there, the value is `wip`, not `as-is`; if it is not there at
       all, `to-be`. The rule is warn by default because tracing code is a property of the project
       rather than of the schema: a model authored from interviews, and a greenfield slice inside a
       brownfield model, both hold `as-is` elements with no code reference and no defect. A project
@@ -18,7 +21,7 @@ rules:
       field_eq:
         data.implementation: as-is
     check:
-      any_of:
-        - all_non_empty: [data.code_refs]
-        - all_non_empty: [data.iac_refs]
-    message: 'Element "{displayId}" ({name|''unnamed''}) says it is implemented (as-is) but names no code_refs or iac_refs. Add the reference, or set implementation to wip or to-be.'
+      custom:
+        module: ./implementation-as-is-without-code-refs.mjs
+        export: asIsWithoutCodeRefs
+    message: 'Element "{displayId}" ({name|''unnamed''}) says it is implemented (as-is) but {reason}. Add the reference to where it is, or set implementation to wip or to-be.'

@@ -1,7 +1,7 @@
-import type { Entity, Relation } from '../../model/types.js';
+import type { Entity, Relation, ParsedBlueprintDocument } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
-import { entityDomain, resolveOrPlaceholder } from './resolver.js';
+import { entityDomain, resolveOrPlaceholder, createPlaceholder } from './resolver.js';
 
 /**
  * Extract outbound relations from motivation entities (v2.5 enrichments):
@@ -17,7 +17,8 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  */
 export function extractMotivationRelations(
   entities: Entity[],
-  placeholders: Map<string, Entity>
+  placeholders: Map<string, Entity>,
+  documents: ParsedBlueprintDocument[] = []
 ): Relation[] {
   const relations: Relation[] = [];
 
@@ -56,6 +57,56 @@ export function extractMotivationRelations(
     }
 
     if (entity.type === ENTITY_TYPE.Goal) {
+      const assertions = data.goal_relations;
+      if (Array.isArray(assertions)) {
+        const kinds: Record<string, string> = {
+          contributes_to: RELATION_TYPE.GoalContributesTo,
+          requires: RELATION_TYPE.GoalRequires,
+          conflicts_with: RELATION_TYPE.GoalConflictsWith,
+        };
+        assertions.forEach((assertion, occurrence) => {
+          if (!assertion || typeof assertion !== 'object') return;
+          const type = Object.hasOwn(kinds, assertion.kind) ? kinds[assertion.kind] : undefined;
+          if (!type || typeof assertion.target_goal !== 'string') return;
+          // Count declarations, including duplicate declarations sharing an internal id.
+          const candidates = entities.filter(candidate => candidate.type !== ENTITY_TYPE.Missing
+            && candidate.displayId === assertion.target_goal);
+          const target = candidates.length === 1 ? candidates[0] : undefined;
+          const resolution = candidates.length > 1 ? 'ambiguous' : 'unresolved';
+          let targetId: string;
+          if (target?.type === ENTITY_TYPE.Goal) {
+            targetId = target.id;
+          } else {
+            const placeholder = createPlaceholder(assertion.target_goal,
+              resolution === 'ambiguous' ? candidates.map(candidate => candidate.id) : undefined);
+            // A typed goal target resolving to a non-Goal stays diagnostic in the raw graph.
+            placeholder.id = `missing-goal-${encodeURIComponent(assertion.target_goal)}`;
+            placeholder.data = { ...placeholder.data, expectedType: ENTITY_TYPE.Goal,
+              resolution: target ? 'wrong-type' : resolution };
+            placeholders.set(placeholder.id, placeholder);
+            targetId = placeholder.id;
+          }
+          const documentGoals = entities.filter(candidate => candidate.type === ENTITY_TYPE.Goal
+            && candidate.fileOrigin === entity.fileOrigin);
+          const position = documentGoals.indexOf(entity);
+          const rawGoals = documents.find(document => document.filePath === entity.fileOrigin)?.data.goals;
+          const authoredIndexes = Array.isArray(rawGoals)
+            ? rawGoals.flatMap((goal, index) => goal && typeof goal === 'object' && goal.id != null ? [index] : [])
+            : undefined;
+          const goalIndex = authoredIndexes?.[position] ?? position;
+          relations.push({
+            id: `${entity.id}--${type}--${assertion.contribution ?? 'none'}--${targetId}--${occurrence}`,
+            source_entity_id: entity.id,
+            target_entity_id: targetId,
+            type,
+            data: { ...assertion, source_path: {
+              file: entity.fileOrigin ?? '',
+              path: ['goals', goalIndex, 'goal_relations', occurrence],
+            } },
+          });
+        });
+      }
+
       // kpi - the indicator this goal is tracked by
       const kpi = data.kpi as string | undefined;
       if (typeof kpi === 'string' && kpi) {

@@ -1,0 +1,50 @@
+version: 1.0.0
+vision:
+  statement: Sources remain visible.
+  evidence:
+    - &a1
+      kind: documentation
+      source: https://example.org/tests/record-1
+      date: 2026-10-23
+      summary: The written record supports this association.
+      confidence_impact: weakens
+      certainty: confirmed
+goals:
+  - id: GL001
+    statement: Retain evidence.
+    priority: high
+    evidence:
+      - *a1
+non_goals:
+  - id: NG001
+    statement: Inventing evidence.
+    reason: Claims need support.
+    evidence:
+      - *a1
+risks:
+  - id: RSK001
+    statement: Sources disappear.
+    likelihood: low
+    impact: high
+    mitigation: Keep citations.
+    evidence:
+      - *a1
+assumptions:
+  - id: ASM001
+    statement: Written records exist.
+    consequence: Otherwise use another source.
+    evidence:
+      - *a1
+trade_offs:
+  - id: TRO001
+    choice: Brevity or detail.
+    selected: Citations.
+    rejected: Unexplained claims.
+    rationale: Sources permit review.
+    evidence:
+      - *a1
+inquiries:
+  - id: INQ001
+    statement: Which record supports this?
+    evidence:
+      - *a1

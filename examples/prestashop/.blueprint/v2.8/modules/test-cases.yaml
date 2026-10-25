@@ -10,6 +10,7 @@ happy_path:
       operations: [modules.CMD001, modules.EVT001]
       rules: [modules.VR001]
       concepts: [modules.CN001]
+      transitions: [modules.TR001]
     contract:
       kind: openapi
       file: modules-api

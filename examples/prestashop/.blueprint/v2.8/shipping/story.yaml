@@ -64,6 +64,12 @@ processes:
         triggered_by: [shipping.ACT001]
         entry_operation: shipping.CMD011
         path_type: happy
+        next:
+          - to: shipping.PA005
+            condition: the remaining products ship with the same carrier
+          - to: shipping.PA006
+            condition: products require different carriers
+        gateway: xor
       - id: shipping.PA005
         name: "Add Products to Shipment"
         triggered_by: [shipping.EVT009]

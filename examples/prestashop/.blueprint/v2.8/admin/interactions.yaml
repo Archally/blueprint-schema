@@ -91,6 +91,7 @@ navigation:
   - id: admin.UNV001
     from: admin.SCR001
     to: admin.SCR002
+    via_action: admin.UAC001
     condition: "User clicks 'Add Employee' or selects employee row"
     description: "Navigate to employee creation or edit form."
 

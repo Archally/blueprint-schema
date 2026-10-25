@@ -11,7 +11,10 @@ tags: [sell-and-fulfill]
 # Every capability below is a level-2 member of CAP105 Merchandising & Fulfilment, the family
 # this file holds; their own children are level 3.
 #
-# `operations` lists a REPRESENTATIVE SPINE, not an inventory.
+# `realized_in` states each main capability's domain default. The original representative
+# `operations` listings remain, with split-domain exceptions completed where the modeled scope
+# supports them. An explicit listing displaces module attribution model-wide; realization does
+# not pass between parent and child capabilities.
 
 capabilities:
   # Level 1: the family - the merchant's side of commerce
@@ -103,6 +106,46 @@ capabilities:
               - catalog.CMD109
               - catalog.QRY003
               - catalog.QRY104
+              - catalog.CMD306
+              - catalog.CMD033
+              - catalog.CMD307
+              - catalog.QRY302
+              - catalog.QRY007
+              - catalog.CMD310
+              - catalog.CMD311
+              - catalog.CMD312
+              - catalog.CMD308
+              - catalog.QRY303
+              - catalog.CMD313
+              - catalog.CMD314
+              - catalog.CMD315
+              - catalog.QRY304
+              - catalog.QRY008
+              - catalog.CMD316
+              - catalog.CMD317
+              - catalog.CMD318
+              - catalog.QRY305
+              - catalog.EVT301
+              - catalog.EVT302
+              - catalog.EVT303
+              - catalog.EVT304
+              - catalog.EVT305
+              - catalog.EVT306
+              - catalog.EVT307
+              - catalog.EVT308
+              - catalog.CMD014
+              - catalog.CMD201
+              - catalog.CMD202
+              - catalog.QRY004
+              - catalog.QRY200
+              - catalog.QRY202
+              - catalog.QRY203
+              - catalog.QRY204
+              - catalog.EVT004
+              - catalog.EVT005
+              - catalog.EVT200
+              - catalog.QRY105
+              - catalog.QRY106
             owned_by:
               team: TM002
             maturity: established
@@ -139,6 +182,32 @@ capabilities:
               - catalog.QRY109
               - catalog.QRY011
               - catalog.QRY010
+              - catalog.CMD015
+              - catalog.QRY201
+              - catalog.CMD112
+              - catalog.QRY107
+              - catalog.CMD035
+              - catalog.CMD036
+              - catalog.CMD407
+              - catalog.CMD405
+              - catalog.CMD406
+              - catalog.CMD408
+              - catalog.QRY402
+              - catalog.QRY403
+              - catalog.CMD039
+              - catalog.CMD402
+              - catalog.CMD403
+              - catalog.CMD404
+              - catalog.CMD400
+              - catalog.CMD401
+              - catalog.QRY400
+              - catalog.QRY401
+              - catalog.EVT400
+              - catalog.EVT401
+              - catalog.EVT402
+              - catalog.EVT403
+              - catalog.EVT404
+              - catalog.EVT405
             owned_by:
               team: TM002
             maturity: developing
@@ -155,6 +224,7 @@ capabilities:
                   shard. Core carries no purchase order and no warehouse receipt, which is why the
                   maturity is developing rather than established: sourcing is recorded, not managed.
                 confidence_impact: supports
+        realized_in: [DMN002]
 
       # Level 2: selling it for less, on purpose
       - id: CAP100
@@ -179,6 +249,22 @@ capabilities:
           - catalog.CMD022
           - catalog.CMD203
           - orders.CMD010
+          - catalog.CMD023
+          - catalog.QRY205
+          - catalog.QRY206
+          - catalog.EVT007
+          - checkout.QRY005
+          - checkout.QRY006
+          - checkout.EVT007
+          - checkout.EVT008
+          - checkout.EVT009
+          - checkout.CMD023
+          - checkout.QRY007
+          - checkout.QRY008
+          - checkout.EVT010
+          - checkout.EVT011
+          - checkout.EVT012
+          - orders.CMD011
         owned_by:
           team: TM003
         maturity: established
@@ -233,6 +319,7 @@ capabilities:
               slice; Shipment's split, merge and switch-carrier commands are what make fulfilment a
               capability rather than a status field on the order.
             confidence_impact: supports
+        realized_in: [DMN009]
 
       # Level 2: selling across borders
       - id: CAP011
@@ -289,6 +376,42 @@ capabilities:
               - international.QRY006
               - international.QRY004
               - content.CMD017
+              - international.CMD012
+              - international.CMD013
+              - international.CMD031
+              - international.CMD032
+              - international.CMD033
+              - international.CMD015
+              - international.CMD016
+              - international.CMD017
+              - international.CMD018
+              - international.CMD020
+              - international.CMD021
+              - international.CMD038
+              - international.CMD022
+              - international.CMD039
+              - international.EVT011
+              - international.EVT012
+              - international.EVT013
+              - international.EVT031
+              - international.EVT032
+              - international.EVT014
+              - international.EVT015
+              - international.EVT016
+              - international.EVT017
+              - international.EVT018
+              - international.EVT019
+              - international.EVT020
+              - international.EVT021
+              - international.EVT022
+              - international.QRY005
+              - international.QRY007
+              - international.QRY008
+              - international.CMD009
+              - international.EVT007
+              - international.EVT008
+              - international.EVT009
+              - international.EVT010
             owned_by:
               team: TM006
             maturity: established
@@ -305,3 +428,4 @@ capabilities:
                   localization is an ability rather than a lookup table: what an address must
                   contain is a per-country business rule.
                 confidence_impact: supports
+        realized_in: [DMN006]

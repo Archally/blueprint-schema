@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Patch-mode scoping (plan D19): which files changed since a git ref.
+ * Patch-mode scoping: which files changed since a git ref.
  *
  * Untracked files are included deliberately — a newly authored slice is the single
  * most important thing a patch gate should judge, and it has no committed history.

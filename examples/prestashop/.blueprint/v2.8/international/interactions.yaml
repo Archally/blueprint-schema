@@ -77,6 +77,7 @@ navigation:
   - id: international.UNV001
     from: international.SCR001
     to: international.SCR002
+    via_action: international.UAC001
     condition: "User clicks currency row or 'Add Currency' button"
     description: "Navigate to currency configuration."
 

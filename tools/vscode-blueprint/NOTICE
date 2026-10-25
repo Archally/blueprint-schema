@@ -1,0 +1,10 @@
+Archally Blueprint Navigation
+Copyright (c) Archally.
+
+Includes the Archally Blueprint reference conformance validator,
+Copyright (c) Archally, licensed under Apache-2.0.
+The validator is bundled from its authoritative source without rule changes.
+See LICENSE for the Apache License, Version 2.0.
+
+Includes third-party dependencies. Their full copyright and permission
+notices are reproduced in THIRD-PARTY-LICENSES.txt.

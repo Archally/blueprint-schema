@@ -1,0 +1,18 @@
+engineVersion: "0.1"
+rules:
+  - id: capability-nested-deeper-than-two-levels
+    severity: info
+    description: >-
+      A capability nested deeper than an L1 and its direct L2 children. Reported once per
+      deeper capability, naming it, its direct parent and its L1. The realization rules read
+      only L1 and its direct children; a deeper capability is judged independently and never
+      contributes to their realization scope. Nesting depth is read from children, regardless
+      of the stated level. INFO: deeper nesting is accepted by the schema. Override per-project
+      via .blueprint-lint.yaml (`capability-nested-deeper-than-two-levels: off`).
+    find:
+      entity_type: Capability
+    check:
+      custom:
+        module: ./capability-nested-deeper-than-two-levels.mjs
+        export: capabilityNestedDeeperThanTwoLevels
+    message: 'Capability "{capability}" ({capability_name}) is nested deeper than two levels under "{parent}" ({parent_name}), within L1 "{root}" ({root_name}). The realization rules judge it independently; use L1 and direct L2 children for the capability map.'

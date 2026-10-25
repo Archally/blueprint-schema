@@ -99,18 +99,6 @@ actors:
     name: "ContentManager"
     type: human
     description: "Back-office operator responsible for creating and managing CMS pages, organizing content categories, and ensuring content quality and SEO optimization."
-    personas:
-      - name: "Typical ContentManager"
-        quote: "I need to publish and organize content quickly so customers find the information they need."
-        goals: ["Publish CMS pages efficiently", "Organize content in logical categories", "Optimize page SEO metadata"]
-        pain_points: ["Managing deep category hierarchies", "Keeping SEO metadata up to date across languages", "Bulk content operations across multi-store"]
-        behaviors: ["Creates content pages for legal, marketing, and informational purposes", "Organizes categories seasonally or by topic"]
-        tech_savviness: medium
-        job_to_be_done: "Ensure the storefront has well-organized, discoverable content pages"
-        context: "Back-office content management"
-        demographics:
-          role: "Content Editor"
-          industry: "E-commerce"
 
 enumerations:
   - id: content.EN001

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Frozen evidence definition from dc77d2a30 (2.8.75).",
+  "type": "array",
+  "description": "Evidence chain justifying this entity's discovery_stage and certainty.",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "kind",
+      "summary"
+    ],
+    "properties": {
+      "kind": {
+        "type": "string",
+        "enum": [
+          "interview",
+          "survey",
+          "analytics",
+          "stakeholder-signoff",
+          "competitive-analysis",
+          "codebase-analysis",
+          "documentation",
+          "assumption",
+          "experiment",
+          "workshop"
+        ],
+        "description": "The kind of source the evidence comes from. interview: a conversation with a user, expert or stakeholder. survey: aggregated answers from many respondents. analytics: measured usage or operational data. stakeholder-signoff: an explicit agreement by the people accountable. competitive-analysis: a comparison against other products or approaches. codebase-analysis: a reading of the implementation. documentation: an existing written source. assumption: a belief not yet backed by evidence, named so it can be tested. experiment: an outcome observed under a designed test. workshop: a collaborative modelling session (EventStorming, Domain Storytelling, a whiteboard workshop). The source is the board export or photo and the date is the session's, so an element harvested from the board points back to it and the board's age stays visible.\n"
+      },
+      "source": {
+        "type": "string",
+        "description": "Where this evidence comes from (URL, document name, person/team)."
+      },
+      "date": {
+        "type": "string",
+        "format": "date",
+        "description": "When this evidence was collected (ISO 8601)."
+      },
+      "summary": {
+        "type": "string",
+        "description": "Brief description of what the evidence shows."
+      },
+      "confidence_impact": {
+        "type": "string",
+        "enum": [
+          "supports",
+          "weakens",
+          "invalidates"
+        ],
+        "description": "How this evidence affects confidence in the entity."
+      }
+    }
+  }
+}

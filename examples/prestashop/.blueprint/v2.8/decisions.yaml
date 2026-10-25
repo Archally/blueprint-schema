@@ -99,6 +99,7 @@ decisions:
       direct:
         concepts: [orders.CN002, modules.CN002]
         operations: [orders.CMD004, orders.EVT005]
+        processes: [orders.PRC001]
       transitive_hints:
         - "The 201 event operations in this model are hook publications, not messages. If this decision were carried out, every one of them would need a verdict on whether it becomes a published fact, stays a hook, or becomes both."
         - "LP001 is the leverage point that would carry this decision out and WI001 is the work item under it, which is why this entry stays proposed rather than being marked deprecated: it is unbuilt, not abandoned."
@@ -210,8 +211,6 @@ decisions:
         as a recommendation and not as an implementation: PrestaShop 9.3.0 ships no engine, no
         client and no configuration for one, and the recommendation lives in the documentation
         chapter addressed to whoever operates the shop.
-    motivation_refs:
-      goals: [catalog.GL001]
     capability_refs: [CAP005, CAP018]
     consequences:
       positive:
@@ -233,7 +232,7 @@ decisions:
         - "If a shop adopts an engine, the operation that changes is the indexer and not the search query: SearchProducts is already behind a CQRS boundary and its callers would not notice. That is the cheapest thing this model can tell a reader considering the move."
     evidence:
       - kind: documentation
-        source: "https://devdocs.prestashop-project.org/9/scale/"
+        source: "PrestaShop/docs#scale/_index.md"
         date: "2026-09-19"
         summary: >-
           PrestaShop lists Elasticsearch, or a solution built on it, as one of four systems a
@@ -251,6 +250,9 @@ decisions:
           and the SQL returns nothing, so neither the recorded chosen option nor the recorded
           baseline was in the code.
         confidence_impact: weakens
+    motivation_refs:
+      risks: [catalog.RSK005]
+      assumptions: [catalog.ASM001]
 
   - id: DC003
     title: "PCI-compliant payment via gateway modules"
@@ -265,9 +267,6 @@ decisions:
         - "Use tokenized gateway modules (PCI SAQ-A)"
         - "Redirect to hosted payment pages only"
       chosen: "Tokenized gateway modules - card data never touches PrestaShop servers"
-    motivation_refs:
-      goals: [checkout.GL002]
-      risks: [checkout.RSK002]
     capability_refs: [CAP003]
     consequences:
       positive:
@@ -279,12 +278,47 @@ decisions:
       - path: "src/Core/Domain/Order/Payment/"
         role: implementation
         description: "Payment domain classes"
+      - path: classes/PaymentModule.php
+        role: implementation
+        description: "validateOrder at line 194: the payment module calls it once it has the payment result, and core creates the order from the cart."
+      - path: src/Core/Payment/PaymentOption.php
+        role: model
+        description: "What a payment module offers at checkout: setAction (line 182) for a redirect or a post, setForm (line 230) for an embedded form, setBinary (line 279) for a form that brings its own submit button."
+      - path: PrestaShop/docs#modules/payment/_index.md
+        role: documentation
+        description: Lines 21-27 state the module contract; lines 60-67 the four payment option types; lines 91-103 the embedded scenario, where the card form is submitted to the payment service provider.
+    motivation_refs:
+      assumptions: [checkout.ASM001]
+    declared_impact:
+      direct:
+        operations: [orders.CMD001]
+        ui:
+          screens: [checkout.SCR006]
+          actions: [checkout.UAC011]
+    discovery_stage: validated
+    certainty: probable
+    evidence:
+      - kind: documentation
+        source: PrestaShop/docs#modules/payment/_index.md
+        date: 2026-10-14
+        summary: "Lines 21-27: a payment module extends PaymentModule and returns PaymentOption objects from hookPaymentOptions. Lines 60-67 and 91-103: in the external, embedded and iframe cases the shopper submits the card form to the payment service provider, and the shop creates the order afterwards. Core takes no card itself; what a module renders in $form is the module's choice."
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: presta-code a27e912eef9, classes, src and controllers
+        date: 2026-10-14
+        summary: "The order_payment table declares card_number, card_brand, card_expiration and card_holder columns (classes/order/OrderPayment.php lines 17-20 and 41-44), and no core code writes them: the only other reader is the back-office order view. A module may therefore store card data in the shop's database, so \"never touches PrestaShop servers\" holds for the documented scenarios, not by construction."
+        confidence_impact: weakens
+      - kind: assumption
+        source: presta-docs and presta-code, searched for PCI
+        date: 2026-10-14
+        summary: "The PCI DSS levels, the SAQ-A scope and the audit cost in the rationale have no PrestaShop source: a case-insensitive search for PCI over presta-docs, presta-code/classes and presta-code/src returns nothing, and the payment chapter does not discuss compliance scope."
+        confidence_impact: weakens
 
   - id: DC004
     title: "Server-side cart with session persistence"
     summary: "Store cart state server-side (database) rather than client-side (cookies/localStorage)."
     date: "2025-12"
-    status: accepted
+    status: landed
     rationale:
       problem: "Client-side carts lose data on device switch, can be tampered with (price manipulation), and cannot be recovered after browser clear."
       options:
@@ -292,9 +326,6 @@ decisions:
         - "Server-side cart (database, session-keyed)"
         - "Hybrid (local for speed, server for persistence)"
       chosen: "Server-side cart - single source of truth, tamper-proof"
-    motivation_refs:
-      goals: [orders.GL001, checkout.GL001]
-      risks: [orders.RSK003]
     capability_refs: [CAP001, CAP003]
     consequences:
       positive:
@@ -307,6 +338,43 @@ decisions:
       - path: "src/Core/Domain/Cart/"
         role: implementation
         description: "Cart domain aggregate"
+      - path: classes/Cart.php
+        role: model
+        description: The cart is an ObjectModel on the cart table (line 118); line prices come from Product::getPriceStatic (line 1176) when totals are computed by getOrderTotal (line 2197).
+      - path: classes/controller/FrontController.php
+        role: implementation
+        description: "Lines 364-366: each storefront request loads the cart from the id_cart the cookie carries."
+      - path: controllers/front/CartController.php
+        role: implementation
+        description: "Lines 55-59: a cart update reads the product, combination, customization, quantity and delivery address ids, and no price."
+      - path: classes/Context.php
+        role: implementation
+        description: "Lines 350-353: with PS_CART_FOLLOWING on, signing in restores the customer's last cart that has no order."
+    decision_scope: checkout
+    declared_impact:
+      direct:
+        concepts: [checkout.CN001]
+        operations: [checkout.CMD001, checkout.CMD009, checkout.CMD010, checkout.CMD011]
+    discovery_stage: validated
+    certainty: confirmed
+    evidence:
+      - kind: documentation
+        source: PrestaShop/docs#development/components/cookie.md
+        date: 2026-10-14
+        summary: "Line 109: the storefront cookie carries id_cart, the integer id of the cart, so the cart itself is a database row and the browser holds only its key."
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: presta-code a27e912eef9, controllers/front and classes/checkout
+        date: 2026-10-14
+        summary: "No storefront request parameter named price is read when a cart line is written: a search for getValue of price or unit_price in controllers/front and classes/checkout returns nothing, so a line's price is always recomputed on the server."
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: presta-code a27e912eef9, install-dev
+        date: 2026-10-14
+        summary: A cart follows a signed-in customer to another device only when PS_CART_FOLLOWING is on (classes/Context.php lines 350-353), and the install data declares no default for that key, so the consequence "survives device switches" depends on a setting a merchant turns on.
+        confidence_impact: weakens
+    motivation_refs:
+      goals: [checkout.GL004]
 
   - id: DC005
     title: "CQRS pattern for domain commands"
@@ -320,8 +388,6 @@ decisions:
         - "CQRS with separate command/query handlers"
         - "Event sourcing with command/event store"
       chosen: "CQRS with separate command/query handlers - pragmatic write/read split without event sourcing complexity"
-    motivation_refs:
-      goals: [orders.GL003]
     capability_refs: [CAP001, CAP005]
     consequences:
       positive:
@@ -335,9 +401,36 @@ decisions:
       - path: "src/Core/Domain/"
         role: implementation
         description: "CQRS domain layer root - all aggregates follow Command/CommandHandler pattern"
-      - path: "https://github.com/PrestaShop/docs/blob/9.x/development/architecture/domain/_index.md"
+      - path: "PrestaShop/docs#development/architecture/domain/_index.md"
         role: documentation
-        description: "CQRS architecture documentation"
+        description: "Lines 10-17: the architecture is evolving toward domain-driven design, with CQRS at the heart of it."
+    decision_scope: prestashop
+    motivation_refs:
+      trade_offs: [catalog.TRO001]
+      inquiries: [admin.INQ002, shop.INQ001]
+    links:
+      related: [DC006]
+    declared_impact:
+      transitive_hints:
+        - "Every command and query this model declares sits behind this decision: a handler in the Adapter namespace still reaches ObjectModel, and replacing it changes the handler, not the command or query, so the operations keep their identity when the legacy model is retired."
+    discovery_stage: validated
+    certainty: confirmed
+    evidence:
+      - kind: documentation
+        source: PrestaShop/docs#development/architecture/domain/cqrs.md
+        date: 2026-10-14
+        summary: "Lines 13-17: CQRS was adopted during the back-office migration to Symfony, to reach data from the new pages without multiplying sources of truth and without calling ObjectModel directly. Line 27: Adapter handlers keep using ObjectModel so it can be replaced later without breaking commands and queries."
+        confidence_impact: supports
+      - kind: documentation
+        source: PrestaShop/docs#development/architecture/migration-guide/strategy.md
+        date: 2026-10-14
+        summary: "Lines 75-93: CQRS is phase 3 of the migration project, introduced to build a frontier between migrated and legacy code; handlers belong to the Adapter namespace because they use legacy logic. The page describes the vision at the end of 2020, so the adoption predates the 2024-06 date this log records."
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: presta-code a27e912eef9, src/Core/Domain and src/Adapter
+        date: 2026-10-14
+        summary: "Counted: 380 Command classes and 139 files in Query folders across 65 domain folders under src/Core/Domain; 368 command handlers and 133 query handlers under src/Adapter, so most handlers are still the legacy-backed adapters the documentation describes."
+        confidence_impact: supports
 
   - id: DC006
     title: "Symfony framework migration"
@@ -364,15 +457,42 @@ decisions:
       - path: "src/PrestaShopBundle/"
         role: implementation
         description: "Symfony bundle for back-office"
-      - path: "https://github.com/PrestaShop/docs/blob/9.x/development/architecture/migration-guide/_index.md"
+      - path: "PrestaShop/docs#development/architecture/migration-guide/_index.md"
         role: documentation
-        description: "Symfony migration guide"
+        description: "Lines 11-34: the to-do list for migrating one legacy page to Symfony, ending with the deletion of the legacy controller and templates."
+      - path: PrestaShop/docs#development/architecture/migration-guide/strategy.md
+        role: documentation
+        description: "Lines 32-120: the phases of the migration, from configuration forms through listings and CQRS to add and edit forms."
+    decision_scope: back-office
+    declared_impact:
+      transitive_hints:
+        - A back-office page is either a Symfony controller with Twig templates or a legacy Admin controller with Smarty templates, so a change to a page lands in one of two stacks, and each remaining legacy controller is a page the CQRS commands may not reach.
+    discovery_stage: validated
+    certainty: confirmed
+    evidence:
+      - kind: documentation
+        source: PrestaShop/docs#development/architecture/migration-guide/_index.md
+        date: 2026-10-14
+        summary: "Lines 11-34: migrating a legacy page means a Symfony controller, routing, form types, Twig templates and the hooks re-introduced, then deleting the legacy Admin controller and its templates, one page at a time."
+        confidence_impact: supports
+      - kind: documentation
+        source: PrestaShop/docs#development/architecture/migration-guide/strategy.md
+        date: 2026-10-14
+        summary: Line 8 dates the strategy page to the end of 2020; lines 32-54 start from Smarty views and logic-heavy controllers and describe the first migrated pages, configuration forms, as Twig and thin Symfony controllers. The migration therefore predates the 2023-01 date this log records.
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: presta-code a27e912eef9, controllers/admin and src/PrestaShopBundle
+        date: 2026-10-14
+        summary: "Counted: 27 legacy Admin*Controller.php files remain under controllers/admin beside 98 Symfony controllers under src/PrestaShopBundle/Controller/Admin, and 32 legacy template folders beside 668 Twig templates under src/PrestaShopBundle/Resources/views/Admin. The migration is in force and not finished."
+        confidence_impact: supports
+    motivation_refs:
+      goals: [admin.GL005]
 
   - id: DC007
     title: "New Admin API with OAuth2"
     summary: "Introduce a modern REST API for back-office operations with OAuth2 authentication, replacing legacy webservice."
     date: "2024-01"
-    status: accepted
+    status: landed
     owned_by:
       team: TM009
     rationale:
@@ -388,6 +508,8 @@ decisions:
     # shop sets.
     motivation_refs:
       assumptions: [admin.ASM100]
+      goals: [admin.GL002, catalog.GL004]
+      trade_offs: [admin.TRO001]
     consequences:
       positive:
         - "Standard OAuth2 flow (RFC 6749) for third-party integrations"
@@ -426,12 +548,32 @@ decisions:
       - path: "src/Core/Domain/ApiClient/"
         role: implementation
         description: "API client domain aggregate"
-      - path: "https://github.com/PrestaShop/docs/blob/9.x/admin-api/_index.md"
+      - path: "PrestaShop/docs#admin-api/_index.md"
         role: documentation
         description: >-
           The Admin API chapter, which states the reason in its own words - CQRS-based
           endpoints are domain-oriented where the webservice was connected to ObjectModel. The
           legacy webservice surface this decision replaces is the one DC009 records.
+      - path: install-dev/data/xml/feature_flag.xml
+        role: configuration
+        description: "Lines 14-15: the Admin API with multistore and its experimental endpoints are beta feature flags, off by default."
+      - path: PrestaShop/ps_apiresources#src/ApiPlatform/Resources
+        role: implementation
+        description: The resource classes that declare every Admin API route and the CQRS class behind it.
+    decision_scope: admin
+    discovery_stage: validated
+    certainty: confirmed
+    evidence:
+      - kind: documentation
+        source: PrestaShop/docs#admin-api/_index.md
+        date: 2026-10-14
+        summary: "Lines 13-17: the Admin API ships in PrestaShop 9, built on API Platform 3, authorized by OAuth and backed by CQRS commands, which the page contrasts with the webservice connected to ObjectModel."
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: presta-apiresources dcf05ff, src/ApiPlatform/Resources
+        date: 2026-10-14
+        summary: "Counted: 124 resource classes declare 150 distinct uriTemplate paths, each naming the CQRS command or query behind it."
+        confidence_impact: supports
 
   - id: DC008
     title: "Headless architecture support"
@@ -445,8 +587,6 @@ decisions:
         - "Add REST API layer for headless alongside existing frontend"
         - "Full headless-only (drop server-rendered frontend)"
       chosen: "Add REST API layer - support headless while maintaining traditional frontend for backwards compatibility"
-    motivation_refs:
-      goals: [catalog.GL001]
     capability_refs: [CAP016, CAP005]
     consequences:
       positive:
@@ -456,6 +596,20 @@ decisions:
       negative:
         - "Two frontend paradigms to maintain (server-rendered + headless)"
         - "SEO requires server-side rendering or pre-rendering for headless"
+    decision_scope: storefront
+    motivation_refs:
+      inquiries: [catalog.INQ001, checkout.INQ002, content.INQ001]
+    declared_impact:
+      direct:
+        operations: [catalog.QRY001, catalog.QRY002, checkout.CMD009, checkout.QRY001, content.QRY001]
+    discovery_stage: hypothesis
+    certainty: speculative
+    evidence:
+      - kind: assumption
+        source: presta-docs and presta-code, searched for a storefront API
+        date: 2026-10-14
+        summary: "No PrestaShop source states this decision: presta-docs contains no page on headless commerce (a search for headless returns nothing), and the routing under src/PrestaShopBundle/Resources/config/routing declares admin, admin-api and an internal back-office api, none of which serves the storefront."
+        confidence_impact: weakens
 
   - id: DC009
     title: "Legacy webservice with per-key CRUD permissions"
@@ -529,6 +683,9 @@ decisions:
         role: model
         description: "WebserviceKeyCore extends ObjectModel, which is why a key's lifecycle is observable through the actionObject family while its successor's is not."
     tags: [legacy, api, superseded]
+    motivation_refs:
+      assumptions: [admin.ASM100]
+      trade_offs: [admin.TRO001]
 
   - id: DC010
     title: "Hooks are the extension point, and they run in the caller's request"
@@ -610,7 +767,7 @@ decisions:
           cannot be listed by reading text.
         confidence_impact: supports
       - kind: documentation
-        source: "https://devdocs.prestashop-project.org/9/modules/concepts/hooks/"
+        source: "PrestaShop/docs#modules/concepts/hooks/_index.md"
         date: "2026-09-19"
         summary: >-
           PrestaShop documents hooks as the way to associate module code with shop events,
@@ -639,6 +796,10 @@ decisions:
         role: implementation
         description: "The Symfony-side dispatcher the modern back-office pages use, alongside the legacy static entry point. dispatchWithParameters is the second of the four call shapes that take a literal hook name."
     tags: [extension-point, modules, architecture]
+    motivation_refs:
+      goals: [modules.GL003]
+      trade_offs: [modules.TRO001]
+      assumptions: [modules.ASM001]
 
 # Bounded Context Canvas business decisions (BD###), for the context cards.
 #
@@ -664,6 +825,13 @@ business_decisions:
     domain_scope: orders
     linked_contexts: [platformkernel]
     tags: [order-lifecycle, synchronous]
+    code_refs:
+      - path: classes/order/OrderHistory.php
+        role: implementation
+        description: changeIdOrderState (line 63) fires actionOrderStatusUpdate at line 90, before the change is written, and actionOrderStatusPostUpdate at line 319, after it, both in the request that made the change.
+      - path: app/config/messenger.yml
+        role: configuration
+        description: The messenger bus is configured with no transport, so nothing is delivered outside the request.
 
   - id: BD002
     name: "Storefront search runs on the shop's own index until a merchant replaces it"
@@ -692,11 +860,12 @@ business_decisions:
   - id: BD004
     name: "The cart lives on the server, and a price the browser sends is not a price"
     description: >-
-      Cart state is persisted server-side so it survives a device switch, a cleared browser and a
-      returning shopper, and so that a line's price is recomputed rather than accepted. Recorded as
-      DC004, accepted: the rejected option was a client-side cart, which loses data and can be
-      tampered with. The cost is that an anonymous visitor's cart is a row the shop has to create
-      and eventually expire.
+      Cart state is persisted server-side and the browser holds only the cart's id, so a line's
+      price is recomputed rather than accepted. A signed-in customer's open cart follows them to
+      another device only when the merchant turns on PS_CART_FOLLOWING, which the install data
+      leaves without a default. Recorded as DC004, landed: the rejected option was a client-side
+      cart, which loses data and can be tampered with. The cost is that an anonymous visitor's cart
+      is a row the shop has to create and eventually expire.
     domain_scope: checkout
     tags: [cart, tamper-resistance]
 
@@ -731,7 +900,7 @@ business_decisions:
       with scopes and a version in the path, so an integrator gets an authorization vocabulary
       below the employee profile. The legacy webservice is not switched off when the Admin API
       arrives; both surfaces stay reachable, which is the trade-off admin.TRO001 selected. Recorded
-      as DC007, accepted.
+      as DC007, landed.
     domain_scope: admin
     linked_contexts: [externalapiconsumers]
     tags: [api, oauth2, authorization]
@@ -752,7 +921,7 @@ business_decisions:
       An ERP, marketplace connector or stock system reaches shop data through a machine identity the
       shop issues, not by holding a back-office employee session. Two such identities exist and both
       stay reachable: the legacy webservice key, a 32-character shop key carrying a per-resource
-      CRUD matrix (DC009, deprecated), and OAuth2 scoped tokens on the Admin API (DC007, accepted).
+      CRUD matrix (DC009, deprecated), and OAuth2 scoped tokens on the Admin API (DC007, landed).
       The integrator chooses; the shop does not migrate them.
     domain_scope: externalapiconsumers
     linked_contexts: [admin]
@@ -761,11 +930,13 @@ business_decisions:
   - id: BD010
     name: "A module is installed, upgraded and reset while the shop is running"
     description: >-
-      Module lifecycle is a state machine the merchant drives from the back office
-      (modules.TR001), with reset as the recovery path when an upgrade leaves configuration behind
-      (modules.VR002, modules.VR003). There is no deployment step and no staging gate, which is
-      exactly why an install that reports success can still break the storefront afterwards - the
-      risk modules.KPI001 is written to watch.
+      Module lifecycle is a state machine the merchant drives from the back office: installing makes
+      a module installed and enabled (modules.TR001), and the other moves, enable, disable,
+      uninstall and reset, are listed on the module lifecycle state enumeration. An upgrade needs an
+      installed module and a newer version (modules.VR003); a reset, allowed only on an installed
+      module, keeps its data by default or reinstalls the module (modules.VR002). There is no
+      deployment step and no staging gate, which is exactly why an install that reports success can
+      still break the storefront afterwards - the risk modules.KPI001 is written to watch.
     domain_scope: modules
     tags: [module-lifecycle, runtime-change]
 
@@ -785,8 +956,10 @@ business_decisions:
       A CMS page's body is stored and rendered as HTML written by someone the shop trusts
       (content.ASM001); the control is who may edit, not what the editor may write. Meta fields are
       the exception and are constrained (content.VR002). One theme is active at a time: enabling
-      another deactivates the current one (content.TR001, content.VR004) and the active theme
-      cannot be deleted (content.VR005), so the storefront always has exactly one renderer.
+      another deactivates the current one (content.TR001, content.VR004). The active theme is meant
+      not to be deleted (content.VR005): the back office offers the delete only for themes not in
+      use, but the delete itself does not check it, so the storefront keeps its one renderer through
+      the screen rather than through the command.
     domain_scope: content
     tags: [content, trust-boundary, theming]
 
@@ -804,13 +977,19 @@ business_decisions:
   - id: BD014
     name: "Tax comes from the rule bound to the product and the address, never from a shop-wide rate"
     description: >-
-      A line's tax is resolved from the tax rules group attached to the product and the zone the
-      customer's address falls in; there is no single shop rate to fall back on. A binding is unique
-      per group and country (international.VR008) and a rate cannot be negative
-      (international.VR006). The cost is coverage: a zone and country combination nobody bound has
-      no tax rule, which is what international.KPI002 counts.
+      A line's tax is resolved from the tax rules group attached to the product and the country,
+      state and postcode of the customer's address; there is no single shop rate to fall back on.
+      Within a group, a country or state that has a rule with the behavior 'this tax only' takes no
+      other rule, while rules that combine or apply one after another may share it
+      (international.VR008). A rate is meant to be zero or more (international.VR006), though
+      nothing refuses a negative rate today. The cost is coverage: a country or state nobody bound
+      in the product's group has no tax rule, which is what international.KPI002 counts.
     domain_scope: international
     tags: [tax, per-zone, coverage]
+    code_refs:
+      - path: classes/tax/TaxRulesTaxManager.php
+        role: implementation
+        description: "Lines 74-87: the tax rules of a group are selected by the address country, its state (or none) and a postcode range, most specific first; no zone is read."
 
   - id: BD015
     name: "A destination the merchant's range table does not cover is not shippable"

@@ -34,16 +34,29 @@
  * `String.includes` would. Every match carries the reason it matched (`matchKind`) so a surprising
  * row can be audited rather than trusted.
  */
-/** Split the metamodel's `org/repo#path` cross-repo form. Same-repo paths get `repo: null`. */
+/** Remove a terminal #Lstart[-Lend] navigation location; coverage concerns the file. */
+export function stripLineLocation(rawPath) {
+    const path = rawPath.trim();
+    const match = /#L([1-9]\d*)(?:-L([1-9]\d*))?$/.exec(path);
+    if (!match)
+        return rawPath;
+    const line = Number(match[1]);
+    const endLine = match[2] ? Number(match[2]) : undefined;
+    if (!Number.isSafeInteger(line) || (endLine !== undefined && (!Number.isSafeInteger(endLine) || endLine < line)))
+        return rawPath;
+    return path.slice(0, match.index);
+}
+/** Split org/repo#path after removing a trailing line location. Same-repo paths get repo: null. */
 export function splitRepoRef(rawPath) {
-    const hash = rawPath.indexOf('#');
+    const path = stripLineLocation(rawPath);
+    const hash = path.indexOf('#');
     if (hash === -1)
-        return { repo: null, path: rawPath };
-    return { repo: rawPath.slice(0, hash), path: rawPath.slice(hash + 1) };
+        return { repo: null, path };
+    return { repo: path.slice(0, hash), path: path.slice(hash + 1) };
 }
 /** Windows separators, `./` prefixes and trailing slashes are noise, not meaning. */
 export function normalizePath(rawPath) {
-    let path = rawPath.trim().replace(/\\/g, '/');
+    let path = stripLineLocation(rawPath).trim().replace(/\\/g, '/');
     while (path.startsWith('./'))
         path = path.slice(2);
     while (path.endsWith('/') && path.length > 1)

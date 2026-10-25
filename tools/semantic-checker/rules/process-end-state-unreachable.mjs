@@ -1,10 +1,11 @@
 /**
  * A process declares an end state the model says none of its activities can produce.
  *
- * The link, and why it is the only honest one available. An end state is a `name` and a `type`;
- * an activity carries operations. Neither names the other, so "this activity ends in that state"
- * is not something the model can say, and a rule cannot read it. What the model CAN say is a
- * chain of four statements it already makes independently:
+ * The link, and why it is the only honest one available. An end state is a `name`, a `type` and
+ * the activities that lead to it (`from`), and names no lifecycle state; an activity carries
+ * operations. So "this process ends in that state" is not something the model can say, and a rule
+ * cannot read it. What the model CAN say is a chain of four statements it already makes
+ * independently:
  *
  *   1. a concept declares a lifecycle state, and a transition rule moves INTO it (`to:`);
  *   2. an operation declares that it is `governed_by` that transition rule, which is the model's

@@ -44,7 +44,7 @@ processes:
 
   - id: modules.PRC002
     title: "Module Troubleshooting"
-    description: "A store admin disables or resets a problematic module to restore store stability."
+    description: "A store admin disables a problematic module to restore store stability, then resets the module to a clean state."
     trigger:
       type: manual
       operation: modules.CMD003

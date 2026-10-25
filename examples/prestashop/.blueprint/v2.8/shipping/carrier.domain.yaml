@@ -195,6 +195,7 @@ operations:
     governed_by:
       - rule: shipping.VR004
       - rule: shipping.VR005
+      - rule: shipping.VR010
     code_refs:
       - path: "src/Core/Domain/Carrier/Command/SetCarrierRangesCommand.php"
         role: implementation

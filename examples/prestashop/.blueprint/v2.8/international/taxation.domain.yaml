@@ -361,6 +361,8 @@ operations:
       - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/TaxRule/TaxRule.php"
         role: api-spec
         description: "Declares the route. Second clone, PrestaShop/ps_apiresources at dcf05ff."
+    governed_by:
+      - rule: international.VR008
 
   editTaxRule:
     id: international.CMD035
@@ -766,5 +768,18 @@ questions:
     concepts: [international.CN007, international.CN008, international.CN009]
     resolved: true
     resolution: >
-      A product carries a TaxRulesGroup; that group holds one TaxRule per country and state,
-      each naming a Tax with its rate. GetTaxRuleList is the lookup from destination to rate.
+      A product carries a TaxRulesGroup. Its rules are matched to the delivery address by
+      country, state and zip code range,
+      each naming a Tax with its rate, and the behavior of the most specific rule says
+      whether several taxes combine, apply one after another, or stop at that one.
+      GetTaxRuleList is the lookup from destination to rate.
+  - id: international.QN004
+    name: Negative Tax Rate
+    statement: Should a tax rate below zero be refused? The model states that a tax
+      rate is zero or more; PrestaShop accepts a negative rate today.
+    category: business
+    priority: medium
+    bounded_context_ref: prestashop.BC006
+    answered_by: []
+    concepts:
+      - international.CN007

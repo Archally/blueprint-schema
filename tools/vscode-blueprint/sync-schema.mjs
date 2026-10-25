@@ -24,18 +24,10 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEST = join(HERE, 'schema');
 
-/**
- * Where a schema tree may live, relative to this file. First match wins; none is an error.
- *
- * v2.8 is the carried line (the schema the extension validates against). The v2.7 entries stay as
- * a fallback for a checkout that has not caught up yet - cheap to keep, and it never shadows v2.8:
- * both v2.8 candidates are tried before either v2.7 one.
- */
+// Only v2.8 is bundled. Older versions require an explicit local diagnostic schema root.
 const CANDIDATES = [
   '../../../schemas/blueprint/v2.8/schema', // monorepo
-  '../../../schemas/blueprint/v2.7/schema', // monorepo, fallback
-  '../../schema/v2.8',                      // publication repo
-  '../../schema/v2.7',                      // publication repo, fallback
+  '../../schema/v2.8', // publication repo
 ];
 
 function findSource() {
@@ -59,37 +51,42 @@ function listFiles(dir, prefix = '') {
   return found;
 }
 
-const source = findSource();
-if (!source) {
-  console.error(
-    'sync-schema: no schema tree found. Looked for `metamodel.schema.yaml` under:\n'
-      + CANDIDATES.map((candidate) => `  ${resolve(HERE, candidate)}`).join('\n')
-      + '\nThe extension cannot be packaged without one - `yamlValidation` would point at nothing.',
-  );
-  process.exit(2);
-}
-
-const check = process.argv.includes('--check');
-const wanted = listFiles(source).filter((file) => file.endsWith('.yaml'));
-
-if (check) {
-  const have = existsSync(DEST) ? listFiles(DEST).filter((file) => file.endsWith('.yaml')) : [];
-  const differing = wanted.filter(
-    (file) => !have.includes(file) || readFileSync(join(source, file), 'utf8') !== readFileSync(join(DEST, file), 'utf8'),
-  );
-  const extra = have.filter((file) => !wanted.includes(file));
-  if (differing.length || extra.length) {
-    console.error(`sync-schema: bundled copy is stale (${differing.length} differing, ${extra.length} extra). Run: node sync-schema.mjs`);
-    process.exit(1);
+function main() {
+  const source = findSource();
+  if (!source) {
+    console.error(
+      'sync-schema: no v2.8 schema tree found. Looked for `metamodel.schema.yaml` under:\n'
+        + CANDIDATES.map((candidate) => `  ${resolve(HERE, candidate)}`).join('\n')
+        + '\nThe extension cannot be packaged without one - `yamlValidation` would point at nothing.',
+    );
+    return 2;
   }
-  console.log(`sync-schema: in sync - ${wanted.length} schema file(s) from ${source}.`);
-  process.exit(0);
+
+  const check = process.argv.includes('--check');
+  const wanted = listFiles(source).filter((file) => file.endsWith('.yaml'));
+
+  if (check) {
+    const have = existsSync(DEST) ? listFiles(DEST).filter((file) => file.endsWith('.yaml')) : [];
+    const differing = wanted.filter(
+      (file) => !have.includes(file) || readFileSync(join(source, file), 'utf8') !== readFileSync(join(DEST, file), 'utf8'),
+    );
+    const extra = have.filter((file) => !wanted.includes(file));
+    if (differing.length || extra.length) {
+      console.error(`sync-schema: bundled copy is stale (${differing.length} differing, ${extra.length} extra). Run: node sync-schema.mjs`);
+      return 1;
+    }
+    console.log(`sync-schema: in sync - ${wanted.length} schema file(s) from ${source}.`);
+    return 0;
+  }
+
+  rmSync(DEST, { recursive: true, force: true });
+  mkdirSync(DEST, { recursive: true });
+  for (const file of wanted) {
+    mkdirSync(dirname(join(DEST, file)), { recursive: true });
+    cpSync(join(source, file), join(DEST, file));
+  }
+  console.log(`sync-schema: copied ${wanted.length} schema file(s) from ${source}.`);
+  return 0;
 }
 
-rmSync(DEST, { recursive: true, force: true });
-mkdirSync(DEST, { recursive: true });
-for (const file of wanted) {
-  mkdirSync(dirname(join(DEST, file)), { recursive: true });
-  cpSync(join(source, file), join(DEST, file));
-}
-console.log(`sync-schema: copied ${wanted.length} schema file(s) from ${source}.`);
+process.exitCode = main();

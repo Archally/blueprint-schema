@@ -6,7 +6,7 @@ tags: [order-core]
 concepts:
   - id: orders.CN002
     name: "Order"
-    description: "A confirmed purchase with payment, shipping, and line-item details. The primary aggregate root of the orders bounded context, governing all order lifecycle transitions, product modifications, refunds, and invoice generation."
+    description: "A purchase a customer made from a validated cart; the aggregate root of the orders context."
     stereotype: aggregate-root
     states:
       - name: awaiting-check-payment
@@ -33,8 +33,8 @@ concepts:
         description: "Ordered goods are not in stock and the money has not arrived either. The shop is committed to nothing yet, which is why this state and its paid twin are held apart."
       - name: awaiting-cod-validation
         description: "Cash on delivery order; awaiting validation."
-    initial_state: awaiting-check-payment
-    terminal_states: [delivered, cancelled, refunded]
+      - name: payment-remotely-accepted
+        description: Payment accepted by a remote payment service; paid and invoiced, like Payment accepted.
     transition_rules:
       - orders.TR001
     attributes:
@@ -72,7 +72,7 @@ concepts:
         example: "12"
       currency:
         id: CAT108
-        description: "ISO 4217 currency code used for this order."
+        description: "Currency of the order, stored as a reference to a shop currency (id_currency); the example shows that currency ISO 4217 code."
         example: "EUR"
       paymentMethod:
         id: CAT109
@@ -81,11 +81,27 @@ concepts:
     code_refs:
       - path: "src/Core/Domain/Order/"
         role: model
-        description: "Order domain aggregate root directory"
+        description: "The CQRS commands, queries and value objects of the order."
       - path: "classes/order/Order.php"
         role: implementation
-        description: "Legacy Order ObjectModel class"
+        description: "Line 172: the ObjectModel definition (id_order primary, reference, current_state, module, id_currency, totals); lines 1752-1758: generateReference."
+      - path: classes/PaymentModule.php
+        role: implementation
+        description: "Lines 278-284: one reference is generated per checkout and given to every order it creates."
+      - path: install-dev/data/xml/order_state.xml
+        role: seed-data
+        description: "Lines 18-55: the thirteen order statuses PrestaShop ships, each with its paid, invoice, delivery and shipped flags."
     tags: [aggregate-root, core-domain]
+    definition: "A customer purchase recorded from a validated cart: the products bought, the delivery and invoice addresses, the carrier, the payment module, the currency and the totals, and a current status taken from the shop order statuses."
+    identity: id_order, auto-incremented. The reference (nine random capital letters unless a module supplies one) is shared by the orders one checkout splits into.
+    summary: A customer purchase made from a validated cart, with its lines, addresses, carrier, payment, totals and current status.
+    examples:
+      - name: A back-office order awaiting bank wire payment
+        description: Placed by an employee from a customer cart with a payment module and the status Awaiting bank wire payment; it holds no document until a status that issues invoices is applied (order_documents.feature, lines 22-31).
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: orders.CN003
     name: "OrderLine"
@@ -110,7 +126,7 @@ concepts:
         example: "1049.990000"
       lineTotal:
         id: CAT114
-        description: "Computed line total: unitPrice * quantity."
+        description: "Line total excluding tax, stored on the line (total_price_tax_excl) when the order is created or edited."
         example: "2099.980000"
     relationships:
       - predicate: part-of
@@ -120,10 +136,17 @@ concepts:
     code_refs:
       - path: "classes/order/OrderDetail.php"
         role: implementation
+        description: "Line 176: the ObjectModel definition; product_name (line 187), unit_price_tax_excl (218) and total_price_tax_excl (220) are stored on the line."
+    definition: One product or combination in an order, with the name, quantity and prices copied from the catalog when it was ordered.
+    identity: id_order_detail
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: orders.CN006
     name: "Invoice"
-    description: "A tax invoice generated for a paid order. Contains line-item breakdown, tax details, and sequential invoice number. Created as a side effect of payment acceptance or explicitly via generateInvoice command."
+    description: "The invoice of an order: line breakdown, taxes and a sequential number. Issued when the order enters a status that issues invoices, or when the merchant generates it."
     stereotype: entity
     attributes:
       invoiceNumber:
@@ -150,10 +173,20 @@ concepts:
     code_refs:
       - path: "classes/order/OrderInvoice.php"
         role: implementation
+        description: "Line 84: the ObjectModel definition; lines 832-848: getInvoiceNumberFormatted, prefix plus six digits unless a module formats it."
+      - path: classes/order/Order.php
+        role: implementation
+        description: "Line 1308: setInvoice creates the invoice and its number."
+    definition: The invoice of an order, numbered in sequence and shown with the shop invoice prefix, issued when the order enters an invoicing status or on the merchant request.
+    identity: id_order_invoice; the printed number is the invoice prefix followed by the number on six digits
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: orders.CN005
     name: "PaymentRecord"
-    description: "Captures a payment transaction - gateway, amount, currency, transaction ID, and status. Multiple payments may exist for a single order (e.g. split payment, partial refund credits)."
+    description: "A payment received for an order, with its amount, currency, payment method and transaction id. One order may have several."
     stereotype: entity
     attributes:
       paymentId:
@@ -184,10 +217,17 @@ concepts:
     code_refs:
       - path: "classes/order/OrderPayment.php"
         role: implementation
+        description: "Lines 31-45: the ObjectModel definition; the payment names order_reference, not an order id."
+    definition: "A payment received and recorded against an order reference: amount, currency and conversion rate, payment method, transaction id and card details."
+    identity: id_order_payment. A payment belongs to an order reference, so it covers every order one checkout split into.
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: orders.CN004
     name: "ShippingAddress"
-    description: "Delivery address associated with an order. Snapshotted at order creation time to preserve the address even if the customer later modifies their address book."
+    description: "The delivery address an order names. An address an order uses is copied when the customer edits it, so the order keeps the address it was placed with."
     stereotype: value-object
     attributes:
       firstName:
@@ -214,6 +254,19 @@ concepts:
         id: CAT129
         description: "ISO 3166-1 alpha-2 country code."
         example: "FR"
+    definition: The address an order is delivered to, held as a reference to an address record that is never edited in place once an order uses it.
+    identity: id_address, named by the order as id_address_delivery
+    implementation: as-is
+    code_refs:
+      - path: classes/Address.php
+        role: model
+        description: "Line 104: the ObjectModel definition; lines 397-410: isUsed counts the orders naming the address for delivery or invoice."
+      - path: classes/form/CustomerAddressPersister.php
+        role: implementation
+        description: "Lines 60-66: an address already used in an order is copied rather than updated."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
 actors:
   - id: orders.ACT001
@@ -227,63 +280,25 @@ actors:
       - "Complete checkout and payment"
       - "Track order status"
     personas:
-      - name: "Impulse Buyer"
-        quote: "I saw it, I want it, just let me pay."
+      - id: orders.PER001
+        name: Guest shopper
+        description: A visitor who buys without opening an account; the specifications name the group 'Guest - All persons who placed an order through Guest Checkout' (presta-specs/content/1.7/back-office/shop-parameters/customer-settings/groups.md).
         goals:
-          - "One-click checkout"
-          - "Save payment method for repeat purchases"
-          - "Complete purchase in under 60 seconds"
+          - Place an order without creating an account, the password being optional (presta-specs/content/1.7/back-office/shop-parameters/order-settings/order-settings.md, 'Enable guest checkout').
+          - Check the delivery address, invoice address, carrier, products and totals on one summary before paying (presta-specs/content/1.7/back-office/shop-parameters/order-settings/order-settings.md, 'Enable final summary').
         pain_points:
-          - "Mandatory account creation before purchase"
-          - "Cart cleared after session timeout"
-          - "Too many checkout steps"
-        behaviors:
-          - "Shops on mobile during commute (60% mobile traffic)"
-          - "Rarely compares prices - buys on impulse"
-          - "Abandons cart if checkout requires more than 2 steps"
-        tech_savviness: high
-        job_to_be_done: "Purchase products instantly with zero friction."
-        demographics:
-          role: "Online consumer"
-          industry: "Retail / E-commerce"
-      - name: "Research Shopper"
-        quote: "I need to compare specs and read reviews before buying."
+          - When the merchant disables guest checkout, the first checkout step demands an account with a required password (presta-specs/content/1.7/back-office/shop-parameters/order-settings/order-settings.md, 'Enable guest checkout').
+          - "'Proceed to checkout' stays disabled until the cart reaches the merchant's minimum purchase total (presta-specs/content/1.7/back-office/shop-parameters/order-settings/order-settings.md, 'Minimum purchase total required in order to validate the order')."
+      - id: orders.PER002
+        name: Gift buyer
+        description: A shopper who sends the order to someone else; the checkout's gift wrapping and gift message exist for this case (presta-specs/content/1.7/back-office/shop-parameters/order-settings/order-settings.md, 'Gift'; code classes/checkout/CheckoutDeliveryStep.php).
         goals:
-          - "Detailed product comparison across attributes"
-          - "Trusted reviews and ratings"
-          - "Price history or price-match guarantees"
+          - Have the order gift wrapped by ticking 'I would like my order to be gift wrapped' at the shipping step (presta-specs/content/1.7/back-office/shop-parameters/order-settings/order-settings.md, 'Offer gift wrapping').
+          - Send a gift message with the order (code classes/checkout/CheckoutDeliveryStep.php, the gift and gift_message request parameters).
+          - Deliver to an address other than the invoice address (code classes/checkout/CheckoutAddressesStep.php, use_same_address).
         pain_points:
-          - "Incomplete product specifications"
-          - "No way to compare products side-by-side"
-          - "Unexpected shipping costs revealed only at checkout"
-        behaviors:
-          - "Desktop user - opens 10+ tabs"
-          - "Spends 30+ minutes researching before purchase"
-          - "Compares prices across 2-3 stores"
-        tech_savviness: high
-        job_to_be_done: "Make an informed purchase decision with full product transparency."
-        demographics:
-          role: "Online consumer"
-          industry: "Retail / E-commerce"
-      - name: "Gift Buyer"
-        quote: "I need it wrapped and shipped to someone else by Friday."
-        goals:
-          - "Gift wrapping options"
-          - "Ship to different address than billing"
-          - "Guaranteed delivery by a specific date"
-        pain_points:
-          - "No clear delivery date estimates"
-          - "Gift message not supported"
-          - "Confusing multi-address checkout"
-        behaviors:
-          - "Shops seasonally (holidays, birthdays)"
-          - "Willing to pay express shipping premium"
-          - "Needs order tracking to share with recipient"
-        tech_savviness: medium
-        job_to_be_done: "Purchase and deliver a gift to someone else with confidence in timing."
-        demographics:
-          role: "Online consumer"
-          industry: "Retail / E-commerce"
+          - The gift option appears only when the merchant has enabled gift wrapping, and a gift message is kept only when the gift box is ticked (code classes/checkout/CheckoutDeliveryStep.php; presta-specs/content/1.7/back-office/shop-parameters/order-settings/order-settings.md, 'Offer gift wrapping').
+          - The wrapping price, taxed by the merchant's gift-wrapping tax rule, is shown only at the shipping step (presta-specs/content/1.7/back-office/shop-parameters/order-settings/order-settings.md, 'Gift-wrapping price', 'Gift-wrapping tax').
 
   - id: orders.ACT002
     name: "Order Domain Lead"
@@ -302,46 +317,19 @@ actors:
       - "Handle returns and refunds"
       - "Monitor store performance metrics"
     personas:
-      - name: "Solo Merchant"
-        quote: "I need to see my orders and revenue without asking a developer."
+      - id: orders.PER003
+        name: Single-shop merchant
+        description: The merchant who runs one shop alone with the SuperAdmin profile created at installation, the reader the specifications address as 'the merchant' (presta-specs/content/1.7/back-office/advanced-parameters/team/permissions-listing.md, 'Left panel').
         goals:
-          - "Process orders within 24 hours of placement"
-          - "Reduce return rate below 5%"
-          - "Understand store performance from the dashboard"
+          - Read the day's activity and main statistics at a glance on the dashboard (presta-specs/content/1.7/back-office/dashboard/dashboard.md).
+          - Decide per order status whether the customer gets an email and may download the invoice (presta-specs/content/1.7/back-office/shop-parameters/order-settings/order-statuses.md, '4) Send email to the customer', '6) Invoice').
+          - Run promotions as cart rules that grant free shipping, a percentage or amount discount, or a free gift (presta-specs/content/1.7/back-office/catalog/discount/add-edit-cart-price-rule.md, 'Actions tab').
+          - Load categories and products from CSV files (presta-specs/content/1.7/back-office/advanced-parameters/import/configure-import.md).
+          - Get the list of every module that needs an update (presta-specs/content/1.7/back-office/modules/module-manager/updates.md).
         pain_points:
-          - "Back-office is slow and requires too many clicks per order"
-          - "No clear visibility into order error rates"
-          - "Module updates break checkout without warning"
-        behaviors:
-          - "Checks order dashboard 3-5 times daily"
-          - "Processes orders in bulk during morning shift"
-          - "Relies on email notifications for urgent issues"
-        tech_savviness: low
-        job_to_be_done: "Run a profitable online store without needing technical expertise."
-        demographics:
-          role: "SMB Owner"
-          industry: "Retail"
-          team_size: "1-10"
-      - name: "Enterprise Catalog Manager"
-        quote: "I manage 50,000 SKUs across 3 stores - I need bulk tools and reliable imports."
-        goals:
-          - "Bulk order processing across multiple stores"
-          - "Automated order routing by warehouse location"
-          - "Real-time inventory sync across channels"
-        pain_points:
-          - "No bulk status update - must process orders one by one"
-          - "Multi-store order visibility requires switching contexts"
-          - "CSV import breaks on large datasets"
-        behaviors:
-          - "Uses API integrations for order management"
-          - "Delegates to team members with role-based access"
-          - "Reviews aggregated reports weekly"
-        tech_savviness: high
-        job_to_be_done: "Operate a multi-store e-commerce operation with team delegation and automation."
-        demographics:
-          role: "E-commerce Operations Manager"
-          industry: "Retail / Enterprise"
-          team_size: "10-50"
+          - The 'Delayed shipping' order setting does not work (presta-specs/content/1.7/back-office/shop-parameters/order-settings/order-settings.md, 'Delayed shipping', PrestaShop issue 9781).
+          - An import with 'Delete all ... before import' switched on erases the existing records first (presta-specs/content/1.7/back-office/advanced-parameters/import/configure-import.md).
+          - Rounding the tax amount separately can leave an invoice one cent off its total (presta-specs/content/1.7/broader-topics/price-calculation-rules.md, 'Context - the problem').
 
   - id: orders.ACT004
     name: "Administrator"
@@ -353,32 +341,11 @@ actors:
       - "Process refunds and cancellations"
       - "Investigate order processing errors"
       - "Escalate technical issues to engineering"
-    personas:
-      - name: "Support Administrator"
-        quote: "Give me fast access to order history and one-click refund tools."
-        goals:
-          - "Resolve customer tickets within 30 minutes"
-          - "Access complete order history with 2 clicks"
-          - "Process refunds without developer assistance"
-        pain_points:
-          - "Order search in back-office is slow for large stores"
-          - "No audit trail for who modified an order"
-          - "Refund process requires 5+ steps across multiple screens"
-        behaviors:
-          - "Handles 20-40 support tickets per day"
-          - "Uses keyboard shortcuts extensively"
-          - "Cross-references order data with payment gateway dashboard"
-        tech_savviness: medium
-        job_to_be_done: "Resolve customer order issues quickly with full data access and efficient tooling."
-        demographics:
-          role: "Customer Support"
-          industry: "E-commerce Operations"
-          team_size: "5-20"
 
 enumerations:
   - id: orders.EN001
     name: "OrderStatus"
-    description: "Lifecycle states of an order in PrestaShop. Maps to the ps_order_state table with configurable labels and colors."
+    description: "Lifecycle states of an order in PrestaShop. Maps to the ps_order_state table with configurable labels and colors. transitions_to lists the moves the default flow makes; the product accepts a change to any other existing status."
     values:
       - name: awaiting-check-payment
         description: "Order placed with offline payment; awaiting manual verification."
@@ -416,6 +383,8 @@ enumerations:
       - name: awaiting-cod-validation
         description: "Cash on delivery; awaiting validation."
         transitions_to: [payment-accepted, cancelled]
+      - name: payment-remotely-accepted
+        description: Payment accepted by a remote payment service.
 
   - id: orders.EN002
     name: "PaymentMethod"
@@ -435,4 +404,4 @@ associations:
     predicate: triggers
     subject: orders.CN002
     object: orders.CN006
-    description: "Payment acceptance on an order triggers invoice generation."
+    description: "Entering an order status flagged to issue invoices, Payment accepted among them, triggers invoice generation."

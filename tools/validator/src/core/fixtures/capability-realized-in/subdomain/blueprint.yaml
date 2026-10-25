@@ -1,0 +1,18 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Order Capabilities
+description: >-
+  A capability map whose capabilities name the domains and bounded contexts that realize them.
+domains:
+  - id: DMN001
+    name: sales
+    description: Selling to customers.
+    type: core-domain
+    subdomains:
+      - id: SDM001
+        name: quoting
+        description: Pricing an order before it is placed.
+  - id: DMN002
+    name: billing
+    description: Charging customers for what they bought.
+    type: supporting-domain

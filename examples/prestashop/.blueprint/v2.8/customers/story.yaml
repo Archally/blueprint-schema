@@ -50,26 +50,39 @@ processes:
     initiated_by: [customers.ACT002]
     trigger:
       type: message
-      operation: customers.CMD016
-      description: "Support agent replies to a customer service thread."
+      operation: customers.QRY011
+      description: "Support agent opens a customer service thread to answer it."
     end_states:
       - name: "Inquiry resolved"
         type: complete
-        description: "Reply sent, thread resolved or forwarded to specialist."
+        description: "Reply sent and the inquiry resolved. Forwarding hands the thread to a specialist and ends its own branch."
       - name: "Thread not found"
         type: error
         description: "Service thread does not exist or is already closed."
     lanes:
       - actor: customers.ACT002
-        operations: [customers.CMD016, customers.CMD017]
+        operations: [customers.QRY011, customers.CMD016, customers.CMD017]
     activities:
-      - id: customers.PA004
-        name: "Reply to thread"
-        entry_operation: customers.CMD016
+      - id: customers.PA006
+        name: "Review the thread"
+        description: "The agent opens the thread with its message history and decides whether to answer it or hand it to a specialist."
+        triggered_by: [customers.ACT002]
+        entry_operation: customers.QRY011
         path_type: happy
+        next:
+          - to: customers.PA004
+            condition: the issue does not require specialist knowledge
+          - to: customers.PA005
+            condition: the issue requires specialist knowledge
+        gateway: xor
       - id: customers.PA005
         name: "Forward to specialist"
         entry_operation: customers.CMD017
+        path_type: happy
+        description: "The agent hands the thread to a specialist. Forwarding ends this branch; the reply branch ends with Inquiry resolved."
+      - id: customers.PA004
+        name: "Reply to thread"
+        entry_operation: customers.CMD016
         path_type: happy
 
 user_stories:

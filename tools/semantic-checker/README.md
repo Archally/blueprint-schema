@@ -43,7 +43,10 @@ npm run check -- <blueprint-dir> --config .blueprint-lint.yaml
 | `activity-steps-reverse-causal-edge` | warn |
 | `activity-steps-without-causal-edge` | info |
 | `activity-without-entry-operation` | warn | every story activity names the `entry_operation` it begins with; an activity may omit it while the operation is not yet modelled, and this reports the gap |
+| `activity-fork-without-gateway` | warn | reports each process activity with two or more distinct stated successors and no `gateway`; successors inferred from listed order do not count. State `xor`, `or` or `and` on the forking activity |
 | `aggregate-root-signals` | info | reports an aggregate root that no command reaches: no operation of `kind: command` names it in `materializes`, and none names a rule about it (one whose `concepts` or `concept` names the root) in `governed_by`, `preconditions` or `postconditions`. The message says whether the root declares `states` and owns a `contains` relationship; neither decides the finding |
+| `capability-nested-deeper-than-two-levels` | info | reports each capability nested below an L1 and its direct L2 children, reading depth from `children`; deeper capabilities remain schema-valid and are judged independently by realization checks |
+| `capability-realized-nowhere` | info | reports the topmost capability whose realization scope contains no operation: an L1 and its direct L2 children, or any other capability alone. Resolved `operations` listings and effective `realized_in` attribution count; unresolved listings do not |
 | `unanswered-questions` | info | every Question has an outgoing `answered-by` edge |
 | `dispatch-with-exchange` | warn | no Operation sets `dispatch: in-process` *and* an `exchange` — they are mutually exclusive |
 | `empty-context` | warn | a Context that declares services handles at least one operation (an incoming `handled_by`); a context with no services is a named boundary and is out of scope |
@@ -51,8 +54,11 @@ npm run check -- <blueprint-dir> --config .blueprint-lint.yaml
 | `unbound-question` | warn | every competency Question resolves to a bounded context |
 | `leverage-point-no-address` | warn | every LeveragePoint addresses at least one finding, risk or decision |
 | `leverage-point-no-strategic-intent` | info | every LeveragePoint links to a goal or value stream |
+| `goal-not-advanced` | info | reports a goal advanced by no capability, value stream, leverage point, milestone, work item or decision naming its exact, unambiguous declared id; risks, inquiries, KPIs, screens, questions, visions and fitness functions do not count |
+| `goal-requires-cycle` | warn | reports each cyclic group of two or more goals connected by `requires`, with sorted goal ids and one deterministic cycle witness; contribution and mixed-kind loops do not count. Mutual necessity is legal and implies neither sufficiency nor temporal order |
 | `undescribed-event` | warn | every event Operation carries prose (`description` \| `statement` \| `summary`) — catches the asymmetric `one_of` pair, where only the happy-path half is described |
 | `decision-asserted-without-evidence` | warn | every Decision marked `certainty: confirmed` cites `evidence[]` — an evidentiary claim with no source. Speculative/probable decisions are exempt by design |
+| `evidence-source-credentials` | warn | reports absolute evidence source URLs containing a username or password in `evidence` or `provenance.evidence`, including test cases; one finding per entity names all affected item paths without repeating the URLs or credentials |
 | `user-story-use-case-back-reference` | warn |
 | `user-story-without-acceptance-criteria` | info | every UserStory has `acceptance_criteria` — without them nothing can be derived into a test case |
 | `model-without-purpose` | info | every model declares its CQRS `purpose` (`command-payload` \| `event-payload` \| `read-model` \| `shared` \| `dto`) |
@@ -130,6 +136,8 @@ Severities: `error` (fails), `warn`, `info`, `off`.
 | `dangling-relation-endpoint` | warn | every relation's source and target resolve to an entity the model holds, including the `Missing` placeholder |
 | `operation-outside-every-contract` | info | every command or query that states how it is reached is named by at least one service contract, in any role |
 | `process-end-state-unreachable` | warn | every end state a process declares is produced by an operation one of its own activities runs |
+| `process-end-state-unattached` | info | reports each process end state with no activity attached through `from` or the end convention; a `from` id attaches only when it names exactly one activity of that process. One finding per process; silent before v2.8 and for processes without activities |
+| `process-listed-order-against-causality` | warn | reports a v2.8 process running in listed order when a main-path activity reacts to an event produced only later in the list, or adjacent main-path activities react to the same event; one finding per process. State `next` links or correct the listed order |
 | `sent-event-without-receiver` | warn | every integration event a contract `send`s is `receive`d by at least one other contract |
 | `use-case-step-action-operation-disagrees` | warn | a use-case step naming both a UI action and an operation agrees with that action's `triggers_operations` |
 | `use-case-step-action-screen-disagrees` | warn | a use-case step naming both a UI action and a screen agrees with that action's own `screen` |
@@ -139,6 +147,7 @@ Severities: `error` (fails), `warn`, `info`, `off`.
 | `uses-restates-contract` | info | a `uses` item the service's contracts already state - an operation it calls, receives or consumes that the named service exposes, sends or provides - can be deleted, since the contracts carry the operations, direction and transport |
 | `imports-cycle` | warn | no service's `imports` lead back to itself; one finding per cycle group, listing its members and one cycle through them. A cycle among `uses` edges is not reported |
 | `operation-exposed-by-many` | info | reports an operation three or more services provide through a contract's `expose`, `send` or `provide`, in any contract kind, naming the services; a service listing it under two kinds counts once |
+| `operation-realizes-two-capabilities` | info | reports an operation realized by capabilities containing at least one pair outside a direct L1 parent/L2 child relationship, through listings or effective module attribution; names up to eight capabilities and their attribution origins so the overlap can be confirmed |
 | `assumption-unplaced` | info | reports an assumption that names nothing it bears on: no `affects` edge, no `risk_refs`, no decision citing it, and no goal naming it in `assumption_refs`. An owner says who confirms the assumption, not what depends on it, so ownership does not place it |
 | `test-case-act-not-validated` | warn | reports a test case whose act, `when.operation`, invokes an operation the case does not list under `validates.operations`; the act is not coverage, so the operation reads untested by the case. The two references are compared after resolution, so a typed id and a `domain:key` agree, and an operation reached only through a validated use case's or process's steps is still reported. Fix by adding the operation to `validates.operations`, or by correcting the act |
 | `test-case-given-carries-notes` | warn | reports a test case whose `given.description` names code (`::`, a source file, a call, a class ending in a code role such as `Handler`), carries a review remark (a dated correction, a sentence opening with `Note`, a TODO marker) or runs past 250 characters; the precondition is what a tester sets up, and the rest belongs in `note` |

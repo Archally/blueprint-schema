@@ -181,9 +181,7 @@ edge_cases:
     given:
       description: >-
         A product whose combinations were already generated for Size [S,M] and Color
-        [White,Black,Blue]. A duplicate attribute set does not fail: CombinationCreator looks
-        the pair up with findMatchingCombinationId and reuses the existing combination, so
-        regeneration is idempotent and any reference already set on a combination survives it.
+        [White,Black,Blue].
     expected_result:
       status: success
     code_refs:
@@ -213,6 +211,7 @@ edge_cases:
             only. There is no duplicate-combination conflict to raise, which is why the 409 this
             case used to assert could not have been observed.
           confidence_impact: invalidates
+    note: "A duplicate attribute set does not fail: CombinationCreator looks the pair up with findMatchingCombinationId and reuses the existing combination, so regeneration is idempotent and any reference already set on a combination survives it."
 
   - id: catalog.EC002
     name: "Deep nesting is accepted and the depth follows the parent"
@@ -260,13 +259,11 @@ edge_cases:
     summary: "A standard, pack or virtual product rejects combination generation and keeps its type."
     validates:
       operations: [catalog.CMD011]
+      rules: [catalog.CR002]
     given:
       description: >-
         A product of type standard, asked to generate combinations for Size [S,M] and Color
-        [White,Black,Blue]. No guard caps the number of combinations a generation produces -
-        neither GenerateProductCombinationsHandler nor CombinationCreator counts the
-        permutations. The boundary the code enforces on this command is the product type, so
-        that is what this case asserts.
+        [White,Black,Blue].
     expected_result:
       status: failure
     code_refs:
@@ -295,6 +292,7 @@ edge_cases:
             Read for the retired assertion: the class has no count, limit or maximum of any kind,
             so the combination explosion guard this case used to describe does not exist.
           confidence_impact: invalidates
+    note: "No guard caps the number of combinations a generation produces: neither GenerateProductCombinationsHandler nor CombinationCreator counts the permutations. The boundary the code enforces on this command is the product type, so that is what this case asserts."
 
 error_cases:
   - id: catalog.ER001
@@ -302,13 +300,11 @@ error_cases:
     summary: "An upload over the configured size limit or of an unsupported type is rejected."
     validates:
       operations: [catalog.CMD016]
+      rules: [catalog.VR001]
     given:
       description: >-
         A file larger than the max_size_product_image configuration, or one whose detected mime
-        type is outside the allowed list. PrestaShop enforces no minimum dimension on an
-        upload - ImageValidator checks file size and mime type only. 800x800 is the
-        large_default image TYPE, which PrestaShop GENERATES from whatever is uploaded, not a
-        constraint on the file.
+        type is outside the allowed list.
     expected_result:
       status: failure
       code: 400
@@ -349,6 +345,7 @@ error_cases:
             Read for the retired assertion. There is no minimum-dimension constraint in the image
             domain, so the 400x300-against-800x800 rejection this case used to assert never happens.
           confidence_impact: invalidates
+    note: "PrestaShop enforces no minimum dimension on an upload: ImageValidator checks file size and mime type only. 800x800 is the large_default image type, which PrestaShop generates from whatever is uploaded, not a constraint on the file."
 
   - id: catalog.ER002
     name: "Delete a product that does not exist"
@@ -357,11 +354,7 @@ error_cases:
       operations: [catalog.CMD003]
     given:
       description: >-
-        A product id that no product carries in the requested shop. A product with pending
-        orders can still be deleted - ProductDeleter never looks at orders, and
-        CannotDeleteProductException is raised only when the delete itself fails. An order keeps
-        its own snapshot of the product in order_detail (product_name is a required column), so
-        deleting a sold product loses no order history.
+        A product id that no product carries in the requested shop.
     expected_result:
       status: failure
       code: 404
@@ -394,6 +387,7 @@ error_cases:
             Modeler-derived from code. No test deletes a product by an unknown id, so the 404 is
             read from the repository's not-found path rather than observed.
           confidence_impact: weakens
+    note: "A product with pending orders can still be deleted: ProductDeleter never looks at orders, and CannotDeleteProductException is raised only when the delete itself fails. An order keeps its own copy of the product in order_detail (product_name is a required column), so deleting a sold product loses no order history."
 
   - id: catalog.ER003
     name: "Invalid specific price percentage"

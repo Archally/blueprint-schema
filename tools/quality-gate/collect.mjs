@@ -9,7 +9,7 @@
  * One observation = one thing that could have been self-described.
  * Aggregation, scoring and thresholds all happen downstream in evaluate.mjs, so a
  * single pass feeds the human report, the strict gate AND the per-item worklist
- * that the remediation dossier (plan step-10) is generated from.
+ * that a remediation pass works through.
  */
 
 import fs from 'node:fs';
@@ -37,10 +37,41 @@ const TEST_CASE_CATEGORIES = ['happy_path', 'edge_cases', 'error_cases', 'fitnes
  * @property {string} file        absolute path of the source file
  * @property {string} [slice]     architectural slice (first path segment under the model root)
  * @property {string} [entityId]  typed id when the subject has one
+ * @property {string} [ownedId]   typed id of the part the value belongs to, when the entity owns
+ *                                parts with ids of their own (a concept attribute's `CAT` id)
  * @property {string} subject     human locator, e.g. `JustifyPriceRulePayload.criteria`
+ * @property {string} field       the authored key the value was read from (`description`,
+ *                                `example`, `produces`, ...). Two metrics can observe one field:
+ *                                an event's description is read by the operation metric and by
+ *                                the event metric, so a per-entity view counts the field once
+ * @property {string} entityName  display name of the entity the value rolls up to
+ * @property {string} entityKind  what the entity is: the collector's noun (`concept`, `model`,
+ *                                an operation's `kind`), or for the safety net the container key
+ *                                the entity was found under
  * @property {unknown} value      the collected value (undefined when absent)
  * @property {Record<string,string>} [context] echo-detection context (`name`, `title`)
  */
+
+/**
+ * The field a metric reads, when it is not the last segment of the metric id.
+ * @type {Record<string, string>}
+ */
+const FIELD_OF_METRIC = {
+  'decision.evidence_when_asserted': 'evidence',
+};
+
+/** @param {string} metric */
+function fieldOf(metric) {
+  return FIELD_OF_METRIC[metric] ?? metric.slice(metric.lastIndexOf('.') + 1);
+}
+
+/**
+ * The entity an observation rolls up to.
+ * @param {string|undefined} entityId @param {string} entityName @param {string} entityKind
+ */
+function owner(entityId, entityName, entityKind) {
+  return { entityId, entityName, entityKind };
+}
 
 /** Tooling config that lives beside the model but is not part of it. */
 const EXCLUDE_FILES = new Set(['.blueprint-quality.yaml', '.blueprint-lint.yaml']);
@@ -58,7 +89,7 @@ function* walkYamlFiles(dir) {
 }
 
 /** @param {unknown} id */
-function typedIdOf(id) {
+export function typedIdOf(id) {
   if (typeof id !== 'string') return undefined;
   return TYPED_ID_RE.test(id) ? id : undefined;
 }
@@ -70,7 +101,7 @@ function typedIdOf(id) {
  * @param {unknown} collection
  * @returns {Array<[string|undefined, Record<string, any>]>}
  */
-function entriesOf(collection) {
+export function entriesOf(collection) {
   if (Array.isArray(collection)) {
     return collection
       .filter((value) => value && typeof value === 'object')
@@ -99,14 +130,14 @@ function compareVersions(left, right) {
 }
 
 /** @param {Record<string,any>} entity @param {string|undefined} key */
-function nameOf(entity, key) {
+export function nameOf(entity, key) {
   return entity.name ?? entity.term ?? entity.title ?? key ?? entity.id ?? '(unnamed)';
 }
 
 /**
  * Several entity types legitimately carry their prose under a different key —
  * some models document actors with `summary` and are 100% covered that way, so treating `description`
- * as the only carrier would manufacture false positives (plan D11).
+ * as the only carrier would manufacture false positives.
  * @param {Record<string,any>} entity
  */
 function proseOf(entity) {
@@ -124,6 +155,8 @@ class ObservationCollector {
     this.schemaVersion = undefined;
     /** Entities a specific collector already measured — the generic sweep skips these. */
     this.claimed = new Set();
+    /** @type {Array<{file: string, doc: any, slice?: string}>} every parsed document, for the structure measure */
+    this.documents = [];
   }
 
   /**
@@ -131,10 +164,10 @@ class ObservationCollector {
    * @param {string} file
    * @param {string} subject
    * @param {unknown} value
-   * @param {{entityId?: string, context?: Record<string,string>}} [extra]
+   * @param {{entityId?: string, entityName: string, entityKind: string, ownedId?: string, context?: Record<string,string>}} extra
    */
-  add(metric, file, subject, value, extra = {}) {
-    this.observations.push({ metric, file, subject, value, ...extra });
+  add(metric, file, subject, value, extra) {
+    this.observations.push({ metric, file, subject, field: fieldOf(metric), value, ...extra });
   }
 
   /** @template T @param {T} entity @returns {T} */
@@ -171,10 +204,11 @@ class ObservationCollector {
       const title = schemaName ?? schema['x-model-id'] ?? '(schema)';
       const entityId = typedIdOf(schema['x-model-id']);
       const context = { name: String(title), title: String(title) };
+      const entity = owner(entityId, String(title), 'model');
 
-      this.add('model.schema.description', file, String(title), schema.description, { entityId, context });
-      this.add('model.schema.purpose', file, String(title), schema.purpose, { entityId, context });
-      this.add('model.schema.represents', file, String(title), schema.represents, { entityId, context });
+      this.add('model.schema.description', file, String(title), schema.description, { ...entity, context });
+      this.add('model.schema.purpose', file, String(title), schema.purpose, { ...entity, context });
+      this.add('model.schema.represents', file, String(title), schema.represents, { ...entity, context });
 
       this.collectProperties(file, String(title), schema, entityId);
     }
@@ -204,10 +238,11 @@ class ObservationCollector {
 
         if (!isPureRef) {
           const context = { name: propertyName, title: schemaTitle };
-          this.add('model.property.description', file, subject, property.description, { entityId, context });
-          this.add('model.property.example', file, subject, property.example ?? property.examples, { entityId, context });
+          const entity = owner(entityId, schemaTitle, 'model');
+          this.add('model.property.description', file, subject, property.description, { ...entity, context });
+          this.add('model.property.example', file, subject, property.example ?? property.examples, { ...entity, context });
           if (Array.isArray(property.enum)) {
-            this.add('model.enum_property.description', file, subject, property.description, { entityId, context });
+            this.add('model.enum_property.description', file, subject, property.description, { ...entity, context });
           }
         }
         this.collectProperties(file, schemaTitle, property, entityId, fullPath, seen);
@@ -235,22 +270,24 @@ class ObservationCollector {
         ?? ({ C: 'command', E: 'event', Q: 'query', D: 'document' })[String(operation.id ?? '')[0]]
         ?? '';
 
-      this.add('domain.operation.description', file, name, proseOf(operation), { entityId, context });
+      const entity = owner(entityId, name, kind || 'operation');
+
+      this.add('domain.operation.description', file, name, proseOf(operation), { ...entity, context });
 
       if (kind === 'command') {
-        this.add('domain.command.produces', file, name, operation.produces, { entityId, context });
-        this.add('domain.command.exchange', file, name, operation.exchange ?? operation.dispatch, { entityId, context });
+        this.add('domain.command.produces', file, name, operation.produces, { ...entity, context });
+        this.add('domain.command.exchange', file, name, operation.exchange ?? operation.dispatch, { ...entity, context });
       } else if (kind === 'event') {
         // The observed failure shape: `one_of` pairs where only the happy-path half was
         // described and the failure counterpart was left bare.
-        this.add('domain.event.description', file, name, proseOf(operation), { entityId, context });
+        this.add('domain.event.description', file, name, proseOf(operation), { ...entity, context });
       }
     }
     for (const [key, error] of entriesOf(doc?.errors)) {
       this.claim(error);
       const name = String(nameOf(error, key));
       this.add('domain.error.description', file, name, proseOf(error), {
-        entityId: typedIdOf(error.id), context: { name, title: name },
+        ...owner(typedIdOf(error.id), name, 'error'), context: { name, title: name },
       });
     }
   }
@@ -261,21 +298,27 @@ class ObservationCollector {
       this.claim(concept);
       const name = String(nameOf(concept, key));
       const entityId = typedIdOf(concept.id);
-      this.add('concept.description', file, name, proseOf(concept), { entityId, context: { name, title: name } });
+      const entity = owner(entityId, name, 'concept');
+      this.add('concept.description', file, name, proseOf(concept), { ...entity, context: { name, title: name } });
 
       for (const [attributeName, attribute] of entriesOf(concept.attributes)) {
+        // An attribute is measured here, with its name as echo context, and rolls up to its
+        // concept. Claiming it keeps the safety net from observing the same description a second
+        // time under the attribute's own typed id, where there is no name to compare it against.
+        this.claim(attribute);
         const attrName = String(attributeName ?? nameOf(attribute, undefined));
         const subject = `${name}.${attrName}`;
         const context = { name: attrName, title: name };
-        this.add('concept.attribute.description', file, subject, attribute.description, { entityId, context });
-        this.add('concept.attribute.example', file, subject, attribute.example ?? attribute.examples, { entityId, context });
+        const ownedId = typedIdOf(attribute.id);
+        this.add('concept.attribute.description', file, subject, attribute.description, { ...entity, context, ownedId });
+        this.add('concept.attribute.example', file, subject, attribute.example ?? attribute.examples, { ...entity, context, ownedId });
       }
     }
     for (const [key, actor] of entriesOf(doc?.actors)) {
       this.claim(actor);
       const name = String(nameOf(actor, key));
       this.add('concept.actor.description', file, name, proseOf(actor), {
-        entityId: typedIdOf(actor.id), context: { name, title: name },
+        ...owner(typedIdOf(actor.id), name, 'actor'), context: { name, title: name },
       });
     }
     for (const [key, enumeration] of entriesOf(doc?.enumerations)) {
@@ -285,7 +328,7 @@ class ObservationCollector {
         if (!value || typeof value !== 'object') continue;
         const valueName = String(value.value ?? value.name ?? '(value)');
         this.add('concept.enum_value.description', file, `${enumName}.${valueName}`, value.description, {
-          entityId: typedIdOf(enumeration.id), context: { name: valueName, title: enumName },
+          ...owner(typedIdOf(enumeration.id), enumName, 'enumeration'), context: { name: valueName, title: enumName },
         });
       }
     }
@@ -299,7 +342,7 @@ class ObservationCollector {
         this.claim(rule);
         const name = String(nameOf(rule, key));
         this.add('rule.description', file, name, proseOf(rule), {
-          entityId: typedIdOf(rule.id), context: { name, title: name },
+          ...owner(typedIdOf(rule.id), name, `${kind} rule`), context: { name, title: name },
         });
       }
     }
@@ -311,16 +354,16 @@ class ObservationCollector {
       this.claim(userStory);
       const name = String(nameOf(userStory, key));
       this.add('user_story.acceptance_criteria', file, name, userStory.acceptance_criteria, {
-        entityId: typedIdOf(userStory.id), context: { name, title: name },
+        ...owner(typedIdOf(userStory.id), name, 'user story'), context: { name, title: name },
       });
     }
     // `processes` from v2.8.10, `stories` before it - one file kind under two names.
-    for (const collection of [doc?.processes ?? doc?.stories, doc?.use_cases]) {
+    for (const [collection, kind] of [[doc?.processes ?? doc?.stories, 'process'], [doc?.use_cases, 'use case']]) {
       for (const [key, story] of entriesOf(collection)) {
         this.claim(story);
         const name = String(nameOf(story, key));
         this.add('story.description', file, name, proseOf(story), {
-          entityId: typedIdOf(story.id), context: { name, title: name },
+          ...owner(typedIdOf(story.id), name, kind), context: { name, title: name },
         });
       }
     }
@@ -333,10 +376,12 @@ class ObservationCollector {
       for (const [activityKey, activity] of entriesOf(story?.activities)) {
         const activityName = String(activity?.id ?? nameOf(activity, activityKey));
         const steps = Array.isArray(activity?.steps) ? activity.steps : [];
+        // The kind is the container key, as the safety net reports an activity it meets on its own.
+        const entity = owner(typedIdOf(activity?.id), String(nameOf(activity, activityKey)), 'activities');
         steps.forEach((step, index) => {
           const subject = `${storyName} / ${activityName} / step ${index + 1}`;
           this.add('story.step.note', file, subject, step?.note, {
-            entityId: typedIdOf(activity?.id), context: { name: String(step?.operation_ref ?? subject), title: activityName },
+            ...entity, context: { name: String(step?.operation_ref ?? subject), title: activityName },
           });
         });
       }
@@ -352,10 +397,10 @@ class ObservationCollector {
       for (const [key, testCase] of entriesOf(doc?.[scenarioClass])) {
         this.claim(testCase);
         const name = String(nameOf(testCase, key));
-        const entityId = typedIdOf(testCase.id);
+        const entity = owner(typedIdOf(testCase.id), name, 'test case');
         const context = { name, title: name };
-        this.add('test_case.description', file, name, proseOf(testCase), { entityId, context });
-        this.add('test_case.provenance', file, name, testCase.provenance, { entityId, context });
+        this.add('test_case.description', file, name, proseOf(testCase), { ...entity, context });
+        this.add('test_case.provenance', file, name, testCase.provenance, { ...entity, context });
       }
     }
   }
@@ -368,22 +413,23 @@ class ObservationCollector {
    * @param {string} file
    * @param {any} node
    * @param {Set<object>} seen
+   * @param {string} [containerKey] the key the node was found under, reported as its kind
    */
-  collectUnclaimedEntities(file, node, seen = new Set()) {
+  collectUnclaimedEntities(file, node, seen = new Set(), containerKey = '(document)') {
     if (!node || typeof node !== 'object' || seen.has(node)) return;
     seen.add(node);
     if (Array.isArray(node)) {
-      for (const item of node) this.collectUnclaimedEntities(file, item, seen);
+      for (const item of node) this.collectUnclaimedEntities(file, item, seen, containerKey);
       return;
     }
     const entityId = typedIdOf(node.id);
     if (entityId && !this.claimed.has(node)) {
       const name = String(nameOf(node, undefined));
       this.add('entity.description', file, `${entityId} ${name}`, proseOf(node), {
-        entityId, context: { name, title: name },
+        ...owner(entityId, name, containerKey), context: { name, title: name },
       });
     }
-    for (const value of Object.values(node)) this.collectUnclaimedEntities(file, value, seen);
+    for (const [key, value] of Object.entries(node)) this.collectUnclaimedEntities(file, value, seen, key);
   }
 
   /** @param {string} file @param {any} doc */
@@ -391,9 +437,9 @@ class ObservationCollector {
     for (const [key, decision] of entriesOf(doc?.decisions)) {
       this.claim(decision);
       const name = String(nameOf(decision, key));
-      const entityId = typedIdOf(decision.id);
+      const entity = owner(typedIdOf(decision.id), name, 'decision');
       const context = { name, title: name };
-      this.add('decision.description', file, name, proseOf(decision), { entityId, context });
+      this.add('decision.description', file, name, proseOf(decision), { ...entity, context });
 
       // A decision claiming settled status while citing nothing is an epistemic
       // defect, not a coverage gap — so it is only observed where the claim is made.
@@ -401,14 +447,14 @@ class ObservationCollector {
         || decision.discovery_stage === 'validated'
         || decision.discovery_stage === 'committed';
       if (isAsserted) {
-        this.add('decision.evidence_when_asserted', file, name, decision.evidence, { entityId, context });
+        this.add('decision.evidence_when_asserted', file, name, decision.evidence, { ...entity, context });
       }
     }
     for (const [key, risk] of entriesOf(doc?.risks)) {
       this.claim(risk);
       const name = String(nameOf(risk, key));
       this.add('risk.mitigation', file, name, risk.mitigation ?? risk.contingency, {
-        entityId: typedIdOf(risk.id), context: { name, title: name },
+        ...owner(typedIdOf(risk.id), name, 'risk'), context: { name, title: name },
       });
     }
   }
@@ -417,7 +463,7 @@ class ObservationCollector {
 /**
  * Scan one model root.
  * @param {string} modelRoot
- * @returns {{observations: Observation[], parseErrors: string[], fileCount: number, schemaVersion?: string}}
+ * @returns {{observations: Observation[], parseErrors: string[], fileCount: number, schemaVersion?: string, documents: Array<{file: string, doc: any, slice?: string}>}}
  */
 export function collectObservations(modelRoot) {
   const collector = new ObservationCollector();
@@ -430,7 +476,10 @@ export function collectObservations(modelRoot) {
       collector.parseErrors.push(`${path.relative(modelRoot, file)}: ${String(error.message).split('\n')[0]}`);
       continue;
     }
-    if (doc && typeof doc === 'object') collector.collectFile(file, doc);
+    if (doc && typeof doc === 'object') {
+      collector.documents.push({ file, doc });
+      collector.collectFile(file, doc);
+    }
   }
   // Stamp each observation with the slice its file belongs to, so evaluate.mjs can
   // scope a run to one slice without re-deriving paths.
@@ -438,10 +487,14 @@ export function collectObservations(modelRoot) {
   for (const observation of collector.observations) {
     observation.slice = sliceOf(resolvedRoot, observation.file);
   }
+  for (const document of collector.documents) {
+    document.slice = sliceOf(resolvedRoot, document.file);
+  }
   return {
     observations: collector.observations,
     parseErrors: collector.parseErrors,
     fileCount: collector.fileCount,
     schemaVersion: collector.schemaVersion,
+    documents: collector.documents,
   };
 }

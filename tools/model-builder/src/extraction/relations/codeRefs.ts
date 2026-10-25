@@ -1,3 +1,4 @@
+import { stripLineLocation } from '../../../../coverage-check/analyze.mjs';
 import type { Entity, Relation } from '../../model/types.js';
 import { slicePrefixOf } from './refResolution.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
@@ -6,7 +7,7 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
 /**
  * Extract CodeFile entities and code_ref relations from all entities that have code_refs.
  *
- * For each unique code path across all entities, a synthetic CodeFile entity is created.
+ * For each unique file path without a terminal line location, a synthetic CodeFile entity is created.
  * Relations link the blueprint entity to the CodeFile entity with role/line metadata.
  *
  * CodeFile entities are hidden by default in the viewer (toggled via toolbar).
@@ -30,8 +31,9 @@ export function extractCodeRefRelations(
 
     for (const ref of codeRefs) {
       if (!ref || typeof ref !== 'object') continue;
-      const filePath = ref.path as string | undefined;
-      if (!filePath) continue;
+      const authoredPath = ref.path as string | undefined;
+      if (!authoredPath) continue;
+      const filePath = stripLineLocation(authoredPath);
 
       // Create or reuse CodeFile entity for this path
       const sanitized = filePath.replace(/[^a-zA-Z0-9]/g, '-');
@@ -59,7 +61,7 @@ export function extractCodeRefRelations(
         target_entity_id: codeFileId,
         type: RELATION_TYPE.CodeRef,
         data: {
-          path: filePath,
+          path: authoredPath,
           ...(role != null && { role }),
           ...(line != null && { line }),
           ...(description != null && { description }),

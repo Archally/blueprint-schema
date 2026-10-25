@@ -75,14 +75,12 @@ actors:
     type: human
     description: "Developer or technical partner who configures API clients and webservice keys for third-party system integrations (ERP, CRM, PIM, marketplaces)."
     personas:
-      - name: "Typical ApiIntegrator"
-        quote: "I need clear scope documentation and reliable secret rotation without downtime."
-        goals: ["Set up API access for integrations", "Rotate secrets safely", "Understand scope permissions"]
-        pain_points: ["Scope naming is inconsistent", "No secret rotation without downtime", "Two API systems (legacy + new) to manage"]
-        behaviors: ["Uses Admin API for new integrations", "Maintains legacy webservice keys for old systems"]
-        tech_savviness: high
-        job_to_be_done: "Configure and maintain API access for third-party system integrations"
-        context: "API integration setup and maintenance"
-        demographics:
-          role: "Integration Developer"
-          industry: "E-commerce / Software"
+      - id: admin.PER002
+        name: Integration developer
+        description: A developer who connects a third-party tool to the shop through the Admin API or the legacy webservice (presta-docs/admin-api/oauth.md; presta-docs/webservice/_index.md).
+        goals:
+          - "Connect a server-to-server integration with a client ID and secret through the client credentials grant (presta-docs/admin-api/oauth.md, 'Grant Type: Client Credentials')."
+          - Request only the scopes the integration needs, so a stolen token grants little (presta-docs/admin-api/oauth.md).
+        pain_points:
+          - The first token request must already name every scope; calls that need other scopes need another token (presta-docs/admin-api/oauth.md).
+          - A legacy webservice key authenticates with no password, so anyone holding it gets its rights (presta-docs/webservice/getting-started.md).

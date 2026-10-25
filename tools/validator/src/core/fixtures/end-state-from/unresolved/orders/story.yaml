@@ -1,0 +1,24 @@
+version: "1.0.0"
+name: Orders stories
+scope: orders
+processes:
+  - id: orders.PRC001
+    title: Move an order through its lifecycle
+    description: An order is advanced step by step until it is delivered, or it is cancelled.
+    end_states:
+      - name: Order Delivered
+        type: complete
+        from: [orders.PA009]
+      - name: Order Cancelled
+        type: cancel
+        from: [orders.PA003]
+    activities:
+      - id: orders.PA001
+        name: Decide the order's next step
+        gateway: xor
+        next: [{to: orders.PA002}, {to: orders.PA003}]
+      - id: orders.PA002
+        name: Advance the order one step
+        next: [{to: orders.PA002}]
+      - id: orders.PA003
+        name: Cancel the order

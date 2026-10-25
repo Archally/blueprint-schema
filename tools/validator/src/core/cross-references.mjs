@@ -21,6 +21,7 @@
 
 import { retiredBandOf, rebanded, outOfBandFinding } from "./id-bands.mjs";
 import { indexDeclarations, resolveReference, suggestDeclaredIds } from "./ref-resolve.mjs";
+import { goalRelationFindings } from "./goal-relations.mjs";
 import { detectSchemaType } from "./schema-types.mjs";
 import {
   collectIds,
@@ -133,11 +134,19 @@ export const CATALOG_REF_RE = /^([a-z][a-z0-9-]*\.)?RT\d{3,}$/;
  */
 
 /**
+ * @typedef {object} SourceLocator
+ * @property {string} relFile path relative to the model root, POSIX separators
+ * @property {Array<string | number>} path raw YAML mapping keys and numeric sequence indices,
+ *   including the identity property for declarations; never split from a display location
+ * @property {"value" | "key"} target selects the value, or the map entry's key at this path
+ */
+
+/**
  * @typedef {object} ReferenceFindings
- * @property {Array<{ value: string, loc: string, file: string, suggestions: string[] }>} missing
+ * @property {Array<{ value: string, loc: string, file: string, suggestions: string[], source: SourceLocator }>} missing
  *   `suggestions` are the declared ids that differ from `value` only by a prefix (the shared
  *   did-you-mean rule): a hint for the refusal, never a resolution
- * @property {Array<{ id: string, locations: string[] }>} duplicates
+ * @property {Array<{ id: string, locations: string[], sources: SourceLocator[] }>} duplicates
  * @property {string[][]} parentCycles each ring in walk order, rotated to its lowest member
  * @property {Array<{ id: string, key: string, arm: string, loc: string, file: string }>} selfEdges
  * @property {Array<{ service: string, declared: string, envelope: string, loc: string, file: string }>} envelopeConflicts
@@ -246,6 +255,8 @@ export function resolveModelReferences(documents, refKeys, bandTable, declaredBa
   // the location it was declared at.
   const declarations = [];
   const allDuplicates = new Map();
+  /** @type {Map<string, SourceLocator[]>} exact properties, in the same order as duplicate locations */
+  const declarationSources = new Map();
   // Duplicate detection runs over the whole model in one pass below, keyed by the space each id is
   // unique in; resolution needs only the id strings.
   const everything = new Map();
@@ -293,7 +304,7 @@ export function resolveModelReferences(documents, refKeys, bandTable, declaredBa
       envelopeConflicts.push({ ...conflict, file: relFile });
     }
     for (const ref of collectRefs(data, [], [relFile], refKeys)) {
-      allRefs.push({ ...ref, file: relFile });
+      allRefs.push({ ...ref, file: relFile, source: { relFile, ...ref.source } });
     }
   }
 
@@ -303,7 +314,11 @@ export function resolveModelReferences(documents, refKeys, bandTable, declaredBa
     const context = typeof declaredScope === "string"
       ? declaredScope
       : relFile.includes("/") ? relFile.slice(0, relFile.indexOf("/")) : null;
-    collectIds(declarationsOf(relFile, data), everything, allDuplicates, [relFile], idSpaceOf(idSpaces, context));
+    collectIds(declarationsOf(relFile, data), everything, allDuplicates, [relFile], idSpaceOf(idSpaces, context), (space, path) => {
+      const sources = declarationSources.get(space) ?? [];
+      sources.push({ relFile, path, target: "value" });
+      declarationSources.set(space, sources);
+    });
   }
 
   const index = indexDeclarations(declarations);
@@ -311,16 +326,17 @@ export function resolveModelReferences(documents, refKeys, bandTable, declaredBa
   for (const ref of allRefs) {
     if (CATALOG_REF_RE.test(ref.value)) continue;
     if (resolveReference(index, ref.value).status !== "unresolved") continue;
-    missing.push({ value: ref.value, loc: ref.loc, file: ref.file, suggestions: suggestDeclaredIds(index.byId.keys(), ref.value) });
+    missing.push({ value: ref.value, loc: ref.loc, file: ref.file, suggestions: suggestDeclaredIds(index.byId.keys(), ref.value), source: ref.source });
   }
 
   const duplicates = [];
   for (const [space, locations] of allDuplicates.entries()) {
     if (isPartyRedeclaration(locations)) continue;
-    duplicates.push({ id: space.split(SPACE)[0], locations });
+    duplicates.push({ id: space.split(SPACE)[0], locations, sources: declarationSources.get(space) ?? [] });
   }
 
   return {
+    goalRelations: goalRelationFindings(documents),
     missing,
     duplicates,
     parentCycles: findParentCycles(parentEdges),

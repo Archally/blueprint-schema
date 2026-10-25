@@ -64,6 +64,36 @@ goals:
     discovery_stage: validated
     certainty: confirmed
 
+  - id: admin.GL005
+    statement: "Back-office pages are built in layers, with no business logic in the controller"
+    description: >
+      PrestaShop judges that the project has grown too big for the three-layer
+      MVC its legacy back office follows, a Smarty view over a controller that
+      often carries the logic, and has chosen more layers: a Twig view, a thin
+      Symfony controller that handles the view, security and routing, and the
+      model behind forms, data providers and command handlers.
+    summary: "Thin controllers, layered back office"
+    priority: high
+    measure: "Every back-office page is served by a Symfony controller with Twig templates; the legacy Admin controllers left under controllers/admin are counted down to none (27 at presta-code a27e912eef9)"
+    discovery_stage: committed
+    certainty: confirmed
+    evidence:
+      - kind: documentation
+        source: "PrestaShop/docs#development/architecture/migration-guide/strategy.md"
+        date: "2026-10-14"
+        summary: "Line 41: the project has grown too big to follow the three-layer model, rather fitted for small applications, so more architecture layers were introduced. Lines 47-54: the first migrated pages use a Twig view, a Symfony controller empty of business logic, and a form handler and data provider in the model layer."
+        confidence_impact: supports
+      - kind: documentation
+        source: "PrestaShop/docs#development/architecture/migration-guide/_index.md"
+        date: "2026-10-14"
+        summary: "Lines 11-34: a page is migrated one at a time and the migration of a page ends with the deletion of its legacy Admin controller and templates, which is what the measure counts."
+        confidence_impact: supports
+      - kind: assumption
+        source: "presta-docs, searched for a stated priority"
+        date: "2026-10-14"
+        summary: "The documentation states the choice and not its rank against other goals; priority high is the modeller's reading of a choice that governs every migrated back-office page."
+        confidence_impact: weakens
+
 risks:
   - id: admin.RSK001
     statement: "Privilege escalation via profile misconfiguration"

@@ -4,26 +4,35 @@ scope: catalog
 
 structural:
   - id: catalog.SR001
-    name: "Product must have valid type configuration"
-    description: "A product's type (standard, combinations, pack, virtual) determines which fields are available and required. Standard products cannot have combinations; virtual products must have a downloadable file."
+    name: "A product has one of four types, and a type change drops what only the old type holds"
+    description: "A virtual product does not need a file."
     logic:
       when: "product is created or type is changed"
-      then: "product.type IN (standard, combinations, pack, virtual) AND type-specific invariants hold"
+      then: "product.type IN (standard, pack, virtual, combinations) AND leaving a type removes its combinations, pack content or virtual file"
     modality: necessary
     concepts: [catalog.CN001]
     code_refs:
       - path: "src/Core/Domain/Product/ValueObject/ProductType.php"
         role: validation
+        description: "Lines 21-56: the four types; lines 85-95: any other value raises ProductConstraintException."
+      - path: src/Adapter/Product/Update/ProductTypeUpdater.php
+        role: implementation
+        description: "Lines 80-125: leaving combinations resets stock and deletes them, leaving pack empties it, leaving virtual deletes the file; virtual moves ecotax into price; lines 149-153: a product inside a pack cannot become a pack."
+    summary: "Four product types; changing type removes the old type parts."
+    fact: "Product.type IN {standard, pack, virtual, combinations}"
+    scope: "product creation and type change, back office and Admin API"
+    on_violation:
+      action: reject
+      message: You cannot change this product into a pack because it is already associated as a pack content
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: catalog.SR002
     name: "Category depth is derived from the parent, never set"
     description: >-
-      A category's level_depth is computed from its parent and is not writable: Category::add
-      calls calcLevelDepth() when the field is unset, Category::update recomputes it whenever
-      the stored value disagrees, and the field definition carries 'setter' => false. No code
-      enforces a maximum nesting depth - CategorySettings defines length and format constants
-      only, and the only maxDepth in the category code is a rendering argument on a
-      tree-building helper. The invariant PrestaShop holds is the derivation.
+      Keeps a category's place in the tree consistent with its parent's.
     logic:
       then: "category.level_depth == parent.level_depth + 1"
     modality: necessary
@@ -31,39 +40,87 @@ structural:
     code_refs:
       - path: "classes/Category.php"
         role: implementation
-        description: "calcLevelDepth, the recompute in add and update, and the 'setter' => false field definition"
+        description: "Line 141: level_depth has 'setter' => false; line 193: add computes it when unset; lines 246-247: update recomputes it when it disagrees; line 477: calcLevelDepth."
       - path: "src/Core/Domain/Category/CategorySettings.php"
         role: implementation
         description: "The constants a category really is constrained by: title, link-rewrite and description lengths. No depth constant is defined here."
       - path: "src/Core/Domain/Category/Exception/CategoryConstraintException.php"
         role: implementation
+    summary: "Depth follows the parent; there is no depth limit."
+    fact: "Category.level_depth = parent(Category).level_depth + 1"
+    scope: "category add and edit"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: catalog.SR003
-    name: "Root category cannot be deleted"
-    description: "The root category (ID=1, ID=2 for home) is required by the system and cannot be deleted."
+    name: "A root category is not deleted"
+    description: "Keeps every shop's category tree, rooted at Home by default, with its root."
     logic:
       when: "category.delete is attempted"
-      then: "category.id NOT IN system_root_ids"
+      then: "category is not the root of any shop AND category.id != PS_ROOT_CATEGORY"
     modality: prohibited
     concepts: [catalog.CN002]
     code_refs:
       - path: "src/Core/Domain/Category/Exception/CannotDeleteRootCategoryForShopException.php"
         role: implementation
+        description: The exception raised for a shop root category.
       - path: "src/Adapter/Category/CommandHandler/DeleteCategoryHandler.php"
         role: implementation
+        description: "Lines 39-40: a shop root category is refused; line 44: a failed delete, which the global root returns, raises FailedToDeleteCategoryException."
+      - path: classes/Category.php
+        role: implementation
+        description: "Lines 380-384: delete returns false for the PS_ROOT_CATEGORY id; lines 2249-2255: isRootCategoryForAShop."
+    summary: "Shop roots and the global root stay."
+    fact: "delete(Category) requires Category NOT IN {Shop.id_category} AND Category.id != PS_ROOT_CATEGORY"
+    scope: "category delete, back office"
+    on_violation:
+      action: reject
+      message: Shop's root category with id %s cannot be deleted.
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
 validation:
   - id: catalog.VR001
-    name: "Product image dimensions"
-    description: "Product images must be at least 800x800 pixels for zoom functionality."
+    name: "A product image is a supported image file within the upload size limit"
+    description: "The type is read from the file's content, not its name, so the extension is not checked. No minimum dimension is checked; the image types are generated from whatever passes."
     logic:
       when: "image is uploaded for a product"
-      then: "image.width >= 800 AND image.height >= 800"
+      then: "size(file) <= maxUploadSize AND the MIME type detected from the file's content is a supported image MIME type AND the image fits in memory"
     concepts: [catalog.CN004]
+    code_refs:
+      - path: src/Adapter/Product/Image/CommandHandler/AddProductImageHandler.php
+        role: implementation
+        description: "Lines 53-63: the file is checked for size and type before it is stored."
+      - path: src/Adapter/Image/ProductImageFileValidator.php
+        role: validation
+        description: "Lines 38-56: the limit is the smaller of the PHP upload limit and the product image quota set in the back office, then the memory check."
+      - path: src/Adapter/Image/ImageValidator.php
+        role: validation
+        description: "Lines 62-74: the detected mime type must be an allowed image type."
+      - path: classes/ImageManager.php
+        role: model
+        description: "Lines 20-30: the supported MIME types, SVG included; lines 446-466: isRealImage matches the MIME type detected from the content against them."
+      - path: PrestaShop/prestashop-specs#content/1.7/back-office/catalog/products/add-edit-v2.md
+        role: documentation
+        description: "Line 121: 'Recommended size 800 x 800px for default theme.'"
+    summary: "Any supported image within the size limit; 800 x 800 is a recommendation."
+    fact: "(limit = 0 OR size(file) <= limit) AND mime(content) contains one of {image/gif, image/jpg, image/jpeg, image/pjpeg, image/png, image/x-png, image/webp, image/svg+xml, image/svg} AND checkImageMemoryLimit(file), where limit = MIN(PHP upload limit, back-office product image quota)"
+    scope: "product image upload, back office and Admin API"
+    on_violation:
+      action: reject
+      message: 'Image type "%s" is not allowed, allowed types are: %s'
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: catalog.VR002
-    name: "Product deletion safety check"
-    description: "A product cannot be deleted if it has pending (non-delivered, non-cancelled) orders."
+    name: "A product is not deleted while an order for it is pending"
+    description: "Pending means not delivered and not cancelled. Nothing refuses the deletion today."
     logic:
       when: "product.delete is attempted"
       then: "product.pendingOrders.count == 0"
@@ -71,60 +128,181 @@ validation:
     concepts: [catalog.CN001]
     code_refs:
       - path: "src/Core/Domain/Product/Exception/CannotDeleteProductException.php"
-        role: implementation
+        role: gap
+        description: Declares no code; raised only when the delete itself fails.
       - path: "src/Adapter/Product/CommandHandler/DeleteProductHandler.php"
-        role: implementation
+        role: planned
+        description: "handle() hands the product to ProductDeleter."
+      - path: src/Adapter/Product/ProductDeleter.php
+        role: gap
+        description: "Lines 74-84: disables cart rules gifting the product, removes images and combinations and deletes the product, with no order lookup."
+    summary: "No delete while an order for the product is pending."
+    fact: "delete(Product) requires count(pending orders containing Product) = 0"
+    scope: "product delete and bulk delete, back office and Admin API"
+    implementation: to-be
+    provenance:
+      discovery_stage: exploring
+      certainty: speculative
+      evidence:
+        - kind: assumption
+          source: modeler
+          date: 2026-10-14
+          summary: "Searched for a source stating that a product with pending orders cannot be deleted: DeleteProductHandler, ProductDeleter, CannotDeleteProductException (no codes), classes/Product.php delete(), delete_product.feature, and the specifications page back-office/catalog/products/listing-v2.md (the delete action and its confirmation modal, no order condition). None states it. classes/order/OrderDetail.php keeps product_name and the prices on each order line, so an order does not depend on the product row."
+          confidence_impact: weakens
 
   - id: catalog.VR003
-    name: "Specific price reduction range"
-    description: "Specific price reduction must be positive and, for percentage type, cannot exceed 100%."
+    name: "A specific price reduction is zero or more, at most 100 percent, and a reduction or a fixed price is set"
+    description: "Keeps a specific price meaningful: it lowers or fixes a price, never by a negative amount."
     logic:
       when: "specific price is created or updated"
-      then: "reduction > 0 AND (reductionType == 'percentage' IMPLIES reduction <= 100)"
+      then: "reduction >= 0 AND (reductionType = 'percentage' => reduction <= 100) AND NOT (reduction = 0 AND price = 0)"
     modality: necessary
     concepts: [catalog.CN010]
     code_refs:
       - path: "src/Core/Domain/Product/SpecificPrice/Exception/SpecificPriceConstraintException.php"
         role: implementation
+        description: REDUCTION_OR_PRICE_MUST_BE_SET, among the specific price constraint codes.
       - path: "src/Core/Domain/Product/SpecificPrice/Command/AddSpecificPriceCommand.php"
         role: implementation
+        description: "Line 138: the reduction is wrapped in the Reduction value object."
+      - path: src/Core/Domain/ValueObject/Reduction.php
+        role: validation
+        description: "Lines 100-111: a percentage outside 0 to 100, or any negative value, is refused."
+      - path: src/Adapter/Product/SpecificPrice/Validate/SpecificPriceValidator.php
+        role: validation
+        description: "Lines 209-213: a zero reduction with a zero price is refused."
+      - path: tests/Integration/Behaviour/Features/Scenario/Product/SpecificPrice/add_specific_price.feature
+        role: test
+        description: Scenario 'I add a specific price with invalid fields I get errors' (line 66).
+    summary: "Reductions are non-negative, percentages at most 100, and a specific price changes something."
+    fact: "SpecificPrice.reduction >= 0 AND (percentage => reduction <= 100) AND (reduction > 0 OR price > 0)"
+    scope: "specific price add and edit, back office and Admin API"
+    on_violation:
+      action: reject
+      code: 4
+      message: Invalid reduction percentage "%s". It must be from 0 to %s%%
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: catalog.VR004
-    name: "Combination attribute uniqueness"
-    description: "Each combination must have a unique set of attribute values within a product. No two combinations can share the same attribute value combination."
+    name: "A product has at most one combination per set of attribute values"
+    description: "Regenerating over existing values adds nothing and keeps what was set on the existing combination."
     logic:
       when: "combination is generated or created"
-      then: "no other combination for this product has the same attribute value set"
+      then: "an attribute set that already has a combination is reused, not created again"
     modality: necessary
     concepts: [catalog.CN003]
     code_refs:
       - path: "src/Core/Domain/Product/Combination/Command/GenerateProductCombinationsCommand.php"
         role: implementation
+        description: The command naming the attribute groups and values to generate.
       - path: "src/Core/Domain/Product/Combination/Exception/CombinationConstraintException.php"
         role: implementation
+        description: The combination constraint exception.
+      - path: src/Adapter/Product/Combination/Create/CombinationCreator.php
+        role: implementation
+        description: "Lines 191-215: an existing combination with the same attributes is found (findMatchingCombinationId, line 245) and only associated with missing shops."
+      - path: tests/Integration/Behaviour/Features/Scenario/Product/Combination/generate_combinations.feature
+        role: test
+        description: Scenario 'Generate product combinations does not create duplicates' (line 64).
+    summary: "One combination per attribute set; regeneration is idempotent."
+    fact: "UNIQUE(Combination.product, set(Combination.attributeValues))"
+    scope: "combination generation, back office and Admin API"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: catalog.VR005
-    name: "Manufacturer name uniqueness"
-    description: "Manufacturer names must be unique across the system."
+    name: "A manufacturer name is used by one manufacturer"
+    description: "A manufacturer name is meant to be unique; nothing refuses a duplicate today."
     logic:
       when: "manufacturer is created or renamed"
       then: "no other manufacturer has the same name"
     modality: necessary
     concepts: [catalog.CN008]
+    summary: "One manufacturer per name."
+    fact: "Manufacturer.name is unique"
+    scope: "manufacturer add and edit, back office and Admin API"
+    code_refs:
+      - path: src/Adapter/Manufacturer/CommandHandler/AddManufacturerHandler.php
+        role: planned
+        description: "Lines 35-43 validate the fields and add the manufacturer with no lookup by name."
+      - path: classes/Manufacturer.php
+        role: gap
+        description: "Line 54: name is required, isCatalogName, size 64; no uniqueness."
+      - path: src/Adapter/Manufacturer/Repository/ManufacturerRepository.php
+        role: gap
+        description: "Lines 39-43: manufacturer.name carries no unique constraint, so the exact-name lookup the product import uses returns every match, oldest first, and the import reports the count instead of picking one homonym silently."
+    implementation: to-be
+    provenance:
+      discovery_stage: exploring
+      certainty: speculative
+      evidence:
+        - kind: assumption
+          source: modeler
+          date: 2026-10-14
+          summary: "Searched for a source stating that a manufacturer name is unique: AddManufacturerHandler, EditManufacturerHandler, classes/Manufacturer.php, the manufacturer table in install-dev/data/db_structure.sql (primary key only), manufacturer_management.feature, ManufacturerRepository.php (lines 39-43 state that the name carries no unique constraint and that the import reports homonyms, which describes the data and not whether a duplicate should be refused), and the specifications pages back-office/catalog/brands-and-suppliers/add-edit-brand.md (the name is mandatory, with invalid characters listed) and brands-and-suppliers-brands.md. None states it."
+          confidence_impact: weakens
 
 classification:
   - id: catalog.CR001
-    name: "Product lifecycle transitions"
-    description: "Valid product status transitions: draft→active, active→discontinued, discontinued→archived, draft→archived. No backward transitions."
+    name: "A product is enabled or disabled"
+    description: "An enabled product is shown and sold on the storefront, and either status can be set from the other at any time."
     logic:
-      when: "product.status changes"
-      then: "transition is in allowed set"
+      when: "a product is created or its status is set"
+      then: "status IN {enabled, disabled}; a new product is disabled; enabled requires a name in the default language"
     concepts: [catalog.CN001]
+    code_refs:
+      - path: src/Adapter/Product/Repository/ProductRepository.php
+        role: implementation
+        description: "Lines 250-251: a product is created with active = false."
+      - path: src/Adapter/Product/Validate/ProductValidator.php
+        role: validation
+        description: "Lines 283-291: an enabled product without a name in the default language raises INVALID_ONLINE_DATA."
+      - path: src/Core/Domain/Product/Exception/ProductConstraintException.php
+        role: implementation
+        description: "Line 267: INVALID_ONLINE_DATA = 500."
+      - path: tests/Integration/Behaviour/Features/Scenario/Product/update_status.feature
+        role: test
+        description: Scenarios 'I update standard product status' (line 20) and 'I can not publish a product without a name' (143).
+    summary: "Enabled or disabled; new products start disabled."
+    fact: "Product.active IN {true, false}; new Product.active = false"
+    scope: "product creation and status change, back office and Admin API"
+    on_violation:
+      action: reject
+      code: 500
+      message: Missing name to be online.
+    examples:
+      - input: A new standard product with no name is enabled
+        output: "Refused: product online data are invalid; the product stays disabled"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: catalog.CR002
-    name: "Product type determines combination eligibility"
-    description: "Only products with type 'combinations' can have Combination entities. Standard, pack, and virtual products cannot."
+    name: "Only a product with combinations has combinations"
+    description: "A product of another type refuses them and keeps its type."
     logic:
       when: "combinations are generated for a product"
       then: "product.type == 'combinations'"
     concepts: [catalog.CN001, catalog.CN003]
+    code_refs:
+      - path: src/Adapter/Product/Combination/Create/CombinationCreator.php
+        role: validation
+        description: "Lines 123-125: a product whose type is not 'combinations' raises InvalidProductTypeException (EXPECTED_COMBINATIONS_TYPE)."
+      - path: tests/Integration/Behaviour/Features/Scenario/Product/Combination/forbidden_actions.feature
+        role: test
+        description: Scenario 'Combination commands can only be done on product with type combinations' (line 22).
+    summary: "Combinations belong to products of type 'combinations' only."
+    fact: "exists Combination(Product) => Product.type = 'combinations'"
+    scope: "combination generation and commands, back office and Admin API"
+    on_violation:
+      action: reject
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed

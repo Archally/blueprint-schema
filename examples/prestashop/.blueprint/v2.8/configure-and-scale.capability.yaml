@@ -12,7 +12,10 @@ tags: [configure-and-scale]
 # Every capability below is a level-2 member of CAP107 Platform Operation & Extension, the
 # family this file holds.
 #
-# `operations` lists a REPRESENTATIVE SPINE, not an inventory.
+# `realized_in` states each main capability's domain default. The original representative
+# `operations` listings remain, with split-domain exceptions completed where the modeled scope
+# supports them. An explicit listing displaces module attribution model-wide; realization does
+# not pass between parent and child capabilities.
 
 capabilities:
   # Level 1: the family - the platform that the selling runs on
@@ -78,6 +81,7 @@ capabilities:
               concerns modelled in one slice; the theme commands reach the mail templates, which is
               why template editing sits here and notification sending sits in CAP006.
             confidence_impact: supports
+        realized_in: [DMN004]
 
       # Level 2: how the platform grows
       - id: CAP014
@@ -126,6 +130,7 @@ capabilities:
               the marketplace, which is the commercial reason the extension point is a critical
               capability and not merely a technical one.
             confidence_impact: supports
+        realized_in: [DMN007]
 
       # Level 2: who may touch it
       - id: CAP015
@@ -144,6 +149,34 @@ capabilities:
           - admin.CMD019
           - admin.QRY001
           - admin.QRY004
+          - admin.EVT001
+          - admin.CMD002
+          - admin.EVT002
+          - admin.CMD003
+          - admin.EVT003
+          - admin.CMD004
+          - admin.EVT004
+          - admin.CMD005
+          - admin.CMD006
+          - admin.EVT005
+          - admin.CMD008
+          - admin.EVT006
+          - admin.QRY002
+          - admin.EVT007
+          - admin.CMD010
+          - admin.EVT008
+          - admin.CMD011
+          - admin.EVT009
+          - admin.CMD012
+          - admin.QRY003
+          - admin.EVT010
+          - admin.EVT011
+          - admin.EVT012
+          - admin.CMD016
+          - admin.EVT013
+          - admin.CMD017
+          - admin.CMD018
+          - admin.CMD020
         owned_by:
           team: TM009
         maturity: established
@@ -177,6 +210,15 @@ capabilities:
           - admin.CMD027
           - admin.QRY005
           - admin.QRY006
+          - admin.EVT014
+          - admin.EVT015
+          - admin.CMD023
+          - admin.EVT016
+          - admin.EVT017
+          - admin.EVT018
+          - admin.EVT019
+          - admin.EVT020
+          - admin.CMD028
         owned_by:
           team: TM009
         maturity: developing
@@ -232,6 +274,7 @@ capabilities:
               rather than the merchant or the shopper. They were the largest group of operations in
               the model with no capability above them.
             confidence_impact: supports
+        realized_in: [DMN001]
 
       # Level 2: running more than one shop
       - id: CAP017

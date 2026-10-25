@@ -38,20 +38,8 @@ const CANDIDATES = [
   './schema',                               // the copy sync-schema.mjs places for packaging
 ];
 
-const source = CANDIDATES.map((c) => resolve(HERE, c)).find((p) => existsSync(join(p, 'metamodel.schema.yaml')));
-if (!source) {
-  console.error('gen-id-fields: no schema tree found. Looked under:\n'
-    + CANDIDATES.map((c) => '  ' + resolve(HERE, c)).join('\n'));
-  process.exit(2);
-}
-
-// ── 1. metamodel `*_ref` defs -> the id prefixes their pattern accepts ───────────────────────────
-
-const metamodel = YAML.parse(readFileSync(join(source, 'metamodel.schema.yaml'), 'utf8'));
-const defs = metamodel['$defs'] ?? {};
-
 /** Every `PREFIX` an id pattern accepts: `^([a-z][a-z0-9-]*\.)?(CMD|EVT)\d{3,}$` -> ['CMD','EVT']. */
-function prefixesFromPattern(pattern) {
+export function prefixesFromPattern(pattern) {
   if (typeof pattern !== 'string') return [];
   // Strip the optional scope group, then read the literal/alternation that precedes the digits.
   const tail = pattern.replace(/^\^\(\[a-z\]\[a-z0-9-\]\*\\\.\)\?/, '').replace(/^\^/, '');
@@ -60,120 +48,150 @@ function prefixesFromPattern(pattern) {
   return (m[1] ?? m[2]).split('|').filter(Boolean);
 }
 
-/** A def may state its pattern directly or under `anyOf`; collect prefixes from every branch. */
-function prefixesForDef(def) {
+/**
+ * Every prefix a def accepts: its own `pattern`, every `anyOf`/`oneOf` branch, and every local
+ * `#/$defs/<name>` a branch points at, followed through the metamodel's own `$defs`. A union such
+ * as `capability_realization_ref` states one arm as a pattern and the other as a `$ref` to
+ * `domain_ref`, so reading direct patterns alone drops the referenced arm. `visited` stops a def
+ * that reaches itself.
+ *
+ * @param {any} def
+ * @param {Record<string, any>} [defs] the metamodel's `$defs`, for local `$ref`s
+ * @param {Set<string>} [visited]
+ * @returns {string[]}
+ */
+export function prefixesForDef(def, defs = {}, visited = new Set()) {
   if (!def || typeof def !== 'object') return [];
   const found = new Set();
+  const local = typeof def['$ref'] === 'string' ? def['$ref'].match(/^#\/\$defs\/([A-Za-z0-9_]+)$/)?.[1] : undefined;
+  if (local && !visited.has(local)) {
+    visited.add(local);
+    for (const p of prefixesForDef(defs[local], defs, visited)) found.add(p);
+  }
   for (const p of prefixesFromPattern(def.pattern)) found.add(p);
-  for (const branch of def.anyOf ?? def.oneOf ?? []) {
-    for (const p of prefixesFromPattern(branch?.pattern)) found.add(p);
+  for (const branch of [...(def.anyOf ?? []), ...(def.oneOf ?? [])]) {
+    for (const p of prefixesForDef(branch, defs, visited)) found.add(p);
   }
   return [...found];
 }
 
-/** ref-def name -> prefixes, for every `*_ref` def that yields at least one. */
-const refPrefixes = new Map();
-for (const [name, def] of Object.entries(defs)) {
-  if (!name.endsWith('_ref')) continue;
-  const prefixes = prefixesForDef(def);
-  if (prefixes.length) refPrefixes.set(name, prefixes);
-}
-
-// ── 2. walk every document schema, recording property -> ref-def ─────────────────────────────────
-
-function schemaFiles(dir) {
-  const out = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const p = join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...schemaFiles(p));
-    else if (entry.name.endsWith('.schema.yaml')) out.push(p);
+/** Derives the table, then writes or checks it; returns the exit code the header documents. */
+function main() {
+  const source = CANDIDATES.map((c) => resolve(HERE, c)).find((p) => existsSync(join(p, 'metamodel.schema.yaml')));
+  if (!source) {
+    console.error('gen-id-fields: no schema tree found. Looked under:\n'
+      + CANDIDATES.map((c) => '  ' + resolve(HERE, c)).join('\n'));
+    return 2;
   }
-  return out;
-}
 
-/** The `<name>_ref` a `$ref` string points at, or undefined. */
-const refDefName = (s) => (typeof s === 'string' ? s.match(/#\/\$defs\/([a-z_]+_ref)$/)?.[1] : undefined);
+  // ── 1. metamodel `*_ref` defs -> the id prefixes their pattern accepts ───────────────────────────
 
-/** field name -> Set of prefixes, unioned across every schema that declares that field. */
-const fields = new Map();
-const add = (field, prefixes) => {
-  if (!fields.has(field)) fields.set(field, new Set());
-  for (const p of prefixes) fields.get(field).add(p);
-};
+  const metamodel = YAML.parse(readFileSync(join(source, 'metamodel.schema.yaml'), 'utf8'));
+  const defs = metamodel['$defs'] ?? {};
 
-/**
- * Field names that hold ENTITY DECLARATIONS somewhere in the suite.
- *
- * The same word is a reference in one document and a container in another: `actions:` is a list of
- * `ui_action_ref` in test-cases.yaml, and the list of action OBJECTS in interactions.yaml. A table
- * keyed by field name alone cannot tell the two apart, and offering existing ids where the author
- * is declaring a new one is worse than offering nothing - so a name used as a container anywhere is
- * withheld everywhere. The cost is named in the report: `actions` and `navigation` do not complete
- * in test-cases.yaml or decisions.yaml.
- */
-const containers = new Set();
+  /** ref-def name -> prefixes, for every `*_ref` def that yields at least one. */
+  const refPrefixes = new Map();
+  for (const [name, def] of Object.entries(defs)) {
+    if (!name.endsWith('_ref')) continue;
+    const prefixes = prefixesForDef(def, defs);
+    if (prefixes.length) refPrefixes.set(name, prefixes);
+  }
 
-/** A local `#/$defs/x` whose object has an `id` property - i.e. a declaration, not a reference. */
-function declaresEntity(ref, root) {
-  const name = typeof ref === 'string' ? ref.match(/^#\/\$defs\/([A-Za-z0-9_]+)$/)?.[1] : undefined;
-  return name ? Boolean(root?.['$defs']?.[name]?.properties?.id) : false;
-}
+  // ── 2. walk every document schema, recording property -> ref-def ─────────────────────────────────
 
-/**
- * Every `$ref` a property spec can reach without leaving it: directly, through `items`, and through
- * a `oneOf`/`anyOf` branch of either. `environments:` states `items.oneOf: [string, #/$defs/environment]`,
- * so a check that reads only `items.$ref` calls a container a reference field.
- */
-function localRefsOf(spec) {
-  const out = [];
-  const visit = (node) => {
-    if (!node || typeof node !== 'object') return;
-    if (typeof node['$ref'] === 'string') out.push(node['$ref']);
-    for (const branch of node.oneOf ?? []) visit(branch);
-    for (const branch of node.anyOf ?? []) visit(branch);
-  };
-  visit(spec);
-  visit(spec.items);
-  return out;
-}
-
-/** Walk a schema node, treating any `properties` map as field declarations. */
-function walk(node, root) {
-  if (!node || typeof node !== 'object') return;
-  if (Array.isArray(node)) { for (const n of node) walk(n, root); return; }
-
-  if (node.properties && typeof node.properties === 'object') {
-    for (const [field, spec] of Object.entries(node.properties)) {
-      if (!spec || typeof spec !== 'object') continue;
-      // `field: <ref>` - a scalar reference.
-      let name = refDefName(spec['$ref']);
-      // `field: [<ref>, ...]` - an array of references.
-      if (!name && spec.type === 'array') name = refDefName(spec.items?.['$ref']);
-      if (name && refPrefixes.has(name)) add(field, refPrefixes.get(name));
-
-      if (localRefsOf(spec).some((ref) => declaresEntity(ref, root))) containers.add(field);
+  function schemaFiles(dir) {
+    const out = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, entry.name);
+      if (entry.isDirectory()) out.push(...schemaFiles(p));
+      else if (entry.name.endsWith('.schema.yaml')) out.push(p);
     }
+    return out;
   }
-  for (const value of Object.values(node)) walk(value, root);
-}
 
-for (const file of schemaFiles(source)) {
-  const root = YAML.parse(readFileSync(file, 'utf8'));
-  walk(root, root);
-}
+  /** The `<name>_ref` a `$ref` string points at, or undefined. */
+  const refDefName = (s) => (typeof s === 'string' ? s.match(/#\/\$defs\/([a-z_]+_ref)$/)?.[1] : undefined);
 
-// `id:` declares an entity rather than referencing one - completing it would offer ids already taken.
-fields.delete('id');
-for (const name of containers) fields.delete(name);
+  /** field name -> Set of prefixes, unioned across every schema that declares that field. */
+  const fields = new Map();
+  const add = (field, prefixes) => {
+    if (!fields.has(field)) fields.set(field, new Set());
+    for (const p of prefixes) fields.get(field).add(p);
+  };
 
-// ── 3. emit ──────────────────────────────────────────────────────────────────────────────────────
+  /**
+   * Field names that hold ENTITY DECLARATIONS somewhere in the suite.
+   *
+   * The same word is a reference in one document and a container in another: `actions:` is a list of
+   * `ui_action_ref` in test-cases.yaml, and the list of action OBJECTS in interactions.yaml. A table
+   * keyed by field name alone cannot tell the two apart, and offering existing ids where the author
+   * is declaring a new one is worse than offering nothing - so a name used as a container anywhere is
+   * withheld everywhere. The cost is named in the report: `actions` and `navigation` do not complete
+   * in test-cases.yaml or decisions.yaml.
+   */
+  const containers = new Set();
 
-const rows = [...fields.entries()]
-  .map(([field, set]) => [field, [...set].sort()])
-  .sort((a, b) => a[0].localeCompare(b[0]));
+  /** A local `#/$defs/x` whose object has an `id` property - i.e. a declaration, not a reference. */
+  function declaresEntity(ref, root) {
+    const name = typeof ref === 'string' ? ref.match(/^#\/\$defs\/([A-Za-z0-9_]+)$/)?.[1] : undefined;
+    return name ? Boolean(root?.['$defs']?.[name]?.properties?.id) : false;
+  }
 
-const version = source.match(/v(\d+\.\d+)/)?.[1] ?? 'unknown';
-const body = `// GENERATED by gen-id-fields.mjs from blueprint schema v${version} - do not edit by hand.
+  /**
+   * Every `$ref` a property spec can reach without leaving it: directly, through `items`, and through
+   * a `oneOf`/`anyOf` branch of either. `environments:` states `items.oneOf: [string, #/$defs/environment]`,
+   * so a check that reads only `items.$ref` calls a container a reference field.
+   */
+  function localRefsOf(spec) {
+    const out = [];
+    const visit = (node) => {
+      if (!node || typeof node !== 'object') return;
+      if (typeof node['$ref'] === 'string') out.push(node['$ref']);
+      for (const branch of node.oneOf ?? []) visit(branch);
+      for (const branch of node.anyOf ?? []) visit(branch);
+    };
+    visit(spec);
+    visit(spec.items);
+    return out;
+  }
+
+  /** Walk a schema node, treating any `properties` map as field declarations. */
+  function walk(node, root) {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) { for (const n of node) walk(n, root); return; }
+
+    if (node.properties && typeof node.properties === 'object') {
+      for (const [field, spec] of Object.entries(node.properties)) {
+        if (!spec || typeof spec !== 'object') continue;
+        // `field: <ref>` - a scalar reference.
+        let name = refDefName(spec['$ref']);
+        // `field: [<ref>, ...]` - an array of references.
+        if (!name && spec.type === 'array') name = refDefName(spec.items?.['$ref']);
+        if (name && refPrefixes.has(name)) add(field, refPrefixes.get(name));
+
+        if (localRefsOf(spec).some((ref) => declaresEntity(ref, root))) containers.add(field);
+      }
+    }
+    for (const value of Object.values(node)) walk(value, root);
+  }
+
+  for (const file of schemaFiles(source)) {
+    const root = YAML.parse(readFileSync(file, 'utf8'));
+    walk(root, root);
+  }
+
+  // `id:` declares an entity rather than referencing one - completing it would offer ids already taken.
+  fields.delete('id');
+  for (const name of containers) fields.delete(name);
+
+  // ── 3. emit ──────────────────────────────────────────────────────────────────────────────────────
+
+  const rows = [...fields.entries()]
+    .map(([field, set]) => [field, [...set].sort()])
+    .sort((a, b) => a[0].localeCompare(b[0]));
+
+  const version = source.match(/v(\d+\.\d+)/)?.[1] ?? 'unknown';
+  const body = `// GENERATED by gen-id-fields.mjs from blueprint schema v${version} - do not edit by hand.
 //
 // Which typed id prefixes each reference field accepts, read from the \`$ref\` each property
 // declares and the \`pattern\` of the metamodel def behind it. Re-run \`npm run gen-id-fields\`
@@ -189,17 +207,22 @@ export const ALL_REF_PREFIXES: readonly string[] = Object.freeze(
 );
 `;
 
-if (process.argv.includes('--check')) {
-  const current = existsSync(OUT) ? readFileSync(OUT, 'utf8') : '';
-  if (current !== body) {
-    console.error('gen-id-fields: src/idFields.generated.ts is out of sync with ' + source);
-    console.error('Run: npm run gen-id-fields');
-    process.exit(1);
+  if (process.argv.includes('--check')) {
+    const current = existsSync(OUT) ? readFileSync(OUT, 'utf8') : '';
+    if (current !== body) {
+      console.error('gen-id-fields: src/idFields.generated.ts is out of sync with ' + source);
+      console.error('Run: npm run gen-id-fields');
+      return 1;
+    }
+    console.log(`gen-id-fields: in sync (${rows.length} fields, schema v${version}).`);
+    return 0;
   }
-  console.log(`gen-id-fields: in sync (${rows.length} fields, schema v${version}).`);
-  process.exit(0);
+
+  writeFileSync(OUT, body);
+  console.log(`gen-id-fields: wrote ${rows.length} reference fields from schema v${version}.`);
+  console.log(rows.map(([f, p]) => `  ${f.padEnd(26)} ${p.join(', ')}`).join('\n'));
+  return 0;
 }
 
-writeFileSync(OUT, body);
-console.log(`gen-id-fields: wrote ${rows.length} reference fields from schema v${version}.`);
-console.log(rows.map(([f, p]) => `  ${f.padEnd(26)} ${p.join(', ')}`).join('\n'));
+// Run only as a script, so a test can import the helpers above without writing the table.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exitCode = main();

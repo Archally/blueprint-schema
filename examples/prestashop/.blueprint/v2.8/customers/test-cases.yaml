@@ -78,6 +78,7 @@ happy_path:
     validates:
       operations: [customers.CMD008, customers.EVT004]
       rules: [customers.VR003]
+      transitions: [customers.TR001]
     given:
       description: "Guest account with valid email, no existing registered account with same email."
       state:
@@ -147,7 +148,7 @@ edge_cases:
     summary: "Attempt to register with an email already in use."
     validates:
       operations: [customers.CMD001]
-      rules: [customers.SR001, customers.VR001]
+      rules: [customers.SR001]
     given:
       description: "Email existing@example.com already registered."
       state:
@@ -225,11 +226,9 @@ error_cases:
       rules: [customers.VR002]
     given:
       description: >-
-        Password '123' is 3 characters. On the path AddCustomerCommand takes, the minimum is
-        5 - the Password value object hardcodes MIN_LENGTH = 5 (and MAX_LENGTH = 72). The
-        configurable default of 8 lives in PasswordPolicyConfiguration and is wired into the
-        employee and storefront login forms, not into this command. Three characters is below
-        the value object's minimum, so the command refuses it.
+        The
+        merchant creates a customer with
+        the password '123', three characters.
       state:
         password: "123"
     expected_result:
@@ -261,6 +260,7 @@ error_cases:
             PasswordPolicyConfiguration::DEFAULT_MINIMUM_LENGTH = 8 is a different mechanism
             that AddCustomerCommand never consults.
           confidence_impact: invalidates
+    note: "On the path AddCustomerCommand takes the minimum is 5: the Password value object hardcodes MIN_LENGTH = 5 and MAX_LENGTH = 72. The configurable default of 8 in PasswordPolicyConfiguration is read by the storefront and employee forms, not by this command."
 
   - id: customers.ER002
     name: "Guest conversion with duplicate email"

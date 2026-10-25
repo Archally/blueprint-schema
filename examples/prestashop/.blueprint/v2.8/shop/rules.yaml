@@ -5,45 +5,149 @@ tags: [platform-config]
 
 validation:
   - id: shop.VR001
-    name: "Logo file extension validation"
-    description: "Uploaded logo images must match allowed extensions: header/mail/invoice logos accept jpg, gif, png; favicon accepts ico only."
+    name: "A logo has an image extension its slot accepts"
+    description: "The extension is read from the uploaded file name."
     concepts: [shop.CN001]
     modality: obligatory
     logic:
       when: "Logo file is uploaded"
-      then: "File extension must be in the allowed set for that logo type"
+      then: "the file extension is in the set allowed for that logo slot"
     on_violation:
       action: reject
+      message: "Not supported \"%s\" image logo extension. Supported extensions are \"%s\""
+    code_refs:
+      - path: src/Core/Domain/Shop/DTO/ShopLogoSettings.php
+        role: model
+        description: "Line 25: header logo extensions; line 30: mail and invoice logo extensions; line 35: ico for the favicon."
+      - path: src/Core/Domain/Shop/Command/UploadLogosCommand.php
+        role: validation
+        description: "Lines 121-124: the favicon must be ico; lines 137-147: the header logo check; the mail and invoice setters use the narrower set."
+      - path: tests/Unit/Core/Domain/Shop/Command/UploadLogosCommandTest.php
+        role: test
+        description: "testSetUploadedHeaderLogoNotValidHeaderLogoImage (line 31): a file of a refused type raises NotSupportedLogoImageExtensionException."
+    summary: "Header logo: image or svg; mail and invoice logo: image; favicon: ico."
+    fact: "ext(header logo) IN {gif, jpg, jpeg, jpe, png, webp, svg}; ext(mail or invoice logo) IN {gif, jpg, jpeg, jpe, png, webp}; ext(favicon) = 'ico'"
+    scope: "shop logo upload, back office theme settings"
+    examples:
+      - input: A header logo uploaded as a .bmp file
+        output: Refused with NotSupportedLogoImageExtensionException
+      - input: A favicon uploaded as a .png file
+        output: 'Refused: the supported extension is "ico"'
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: shop.VR002
-    name: "Alias search term non-empty"
-    description: "Search term aliases must have a non-empty search term and at least one non-empty alias."
+    name: "A search term alias entry names a search term and at least one alias"
+    description: "Keeps an alias entry from being empty on either side."
     concepts: [shop.CN004]
     modality: obligatory
     logic:
       when: "Search term alias is added or updated"
-      then: "Both the search term and aliases must be non-empty strings"
+      then: "searchTerm is not empty AND aliases is not empty AND every alias is set"
     on_violation:
       action: reject
+      code: 20
+      message: "Alias parameter search term must not be empty"
+    code_refs:
+      - path: src/Core/Domain/Alias/Command/AddSearchTermAliasesCommand.php
+        role: validation
+        description: "Lines 39-40: the constructor asserts a non-empty alias list and search term; lines 72-97 raise INVALID_ALIAS and INVALID_SEARCH."
+      - path: src/Core/Domain/Alias/Command/UpdateSearchTermAliasesCommand.php
+        role: validation
+        description: "Lines 37-38: the same two checks on an update."
+      - path: classes/Alias.php
+        role: model
+        description: "Lines 23-24: search and alias are required, validated with isValidSearch, alias at most 191 characters."
+      - path: src/Core/Domain/Alias/Exception/AliasConstraintException.php
+        role: implementation
+        description: "Lines 22 and 27: INVALID_SEARCH = 20, INVALID_ALIAS = 30."
+      - path: tests/Integration/Behaviour/Features/Scenario/Search/add_alias.feature
+        role: test
+        description: Scenarios 'I add alias with empty alias field' (line 73) and 'I add alias with empty search field' (78).
+    summary: "No alias entry without a search term or without aliases."
+    fact: "NOT empty(SearchTerm) AND count(Aliases) >= 1"
+    scope: "search term alias add and update, back office"
+    examples:
+      - input: Search term 'noalias' added with no alias
+        output: "Refused: alias cannot be empty"
+      - input: An empty search term added with the alias 'new_alias'
+        output: "Refused: search term cannot be empty"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: shop.VR003
-    name: "Contact email format"
-    description: "Contact department email must be a valid email address."
+    name: "A contact email, when given, is a valid address of at most 255 characters"
+    description: "Lets a contact department go without an email address, never with a malformed one."
     concepts: [shop.CN006]
     modality: obligatory
     logic:
-      when: "Contact department is added or edited"
-      then: "Email field must be a valid email format"
+      when: "a contact department is added or edited with an email address"
+      then: "email is not empty AND length(email) <= 255 AND isEmail(email)"
     on_violation:
       action: reject
+      code: 1
+      message: "Email is too long. Max allowed length is %s"
+    code_refs:
+      - path: src/Core/Domain/ValueObject/Email.php
+        role: validation
+        description: "Lines 67-72: an empty email is refused; lines 81-88: more than 255 characters is refused, both with INVALID_EMAIL."
+      - path: src/Core/Domain/Contact/Command/AddContactCommand.php
+        role: implementation
+        description: "Lines 88-93: setEmail wraps the address in the Email value object; no email means none is set."
+      - path: classes/Contact.php
+        role: model
+        description: "Lines 36-40: email validates with isEmail, size 255, not required."
+      - path: classes/Validate.php
+        role: validation
+        description: "Lines 44-63: isEmail applies the strict Symfony Email constraint and the RFC validation."
+      - path: src/PrestaShopBundle/Form/Admin/Configure/ShopParameters/Contact/ContactType.php
+        role: validation
+        description: "Lines 92-104: the back office field is optional and carries an Email constraint."
+      - path: tests/Integration/Behaviour/Features/Scenario/Contact/contact.feature
+        role: test
+        description: Scenario 'Add new contact' (line 7) stores test@prestashop.com.
+    summary: "An optional contact email that must be valid when present."
+    fact: "Contact.email IS NULL OR (length(Contact.email) <= 255 AND isEmail(Contact.email))"
+    scope: "contact department add and edit, back office"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: shop.VR004
-    name: "Search engine server uniqueness"
-    description: "No two search engine entries should share the same server hostname."
+    name: "A search engine server has one referrer entry"
+    description: "A server is meant to have one referrer entry; nothing refuses a duplicate today."
     concepts: [shop.CN003]
     modality: obligatory
     logic:
       when: "Search engine is added or edited"
-      then: "Server value must not already exist in another entry"
+      then: "no other search engine entry has the same server"
     on_violation:
       action: reject
+    summary: "One referrer entry per search engine server."
+    fact: "SearchEngine.server is unique"
+    scope: "referrer search engine add and edit, back office and Admin API"
+    code_refs:
+      - path: src/Adapter/SearchEngine/CommandHandler/AddSearchEngineHandler.php
+        role: planned
+        description: "handle() validates the fields and adds the entry with no lookup of an existing server."
+      - path: src/Adapter/SearchEngine/CommandHandler/EditSearchEngineHandler.php
+        role: planned
+        description: "On an edit, handle() validates the fields and updates."
+      - path: classes/SearchEngine.php
+        role: gap
+        description: "Lines 22-23: server (isUrl, size 64) and getvar (isModuleName, size 16), both required; no uniqueness."
+    implementation: to-be
+    provenance:
+      discovery_stage: exploring
+      certainty: speculative
+      evidence:
+        - kind: assumption
+          source: modeler
+          date: 2026-10-14
+          summary: "Searched for a source stating that a search engine server is unique: AddSearchEngineHandler, EditSearchEngineHandler, classes/SearchEngine.php, the search_engine table in install-dev/data/db_structure.sql (primary key only, no unique index), search_engine_management.feature, and the specifications page back-office/shop-parameters/traffic-and-seo/add-edit-search-engine.md (required fields and lengths, no uniqueness). The seed data install-dev/data/xml/search_engine.xml holds 38 entries with distinct servers, which is consistent with the rule but states nothing."
+          confidence_impact: weakens

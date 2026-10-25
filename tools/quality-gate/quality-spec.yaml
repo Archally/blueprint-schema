@@ -1,6 +1,6 @@
 # Blueprint quality specification — what "self-described" means, and how good is good enough.
 #
-# Version-agnostic by design (plan D18): metrics declare the schema minor lines they
+# Version-agnostic by design: metrics declare the schema minor lines they
 # apply to, so ONE spec serves v2.7 and v2.8 rather than forking with the schema tree.
 #
 # Thresholds are calibrated from a corpus of real models, not from a single golden
@@ -232,7 +232,8 @@ metrics:
     # because a step with no note is an operation reference the narrative says nothing about. The
     # signal this metric exists for is the FILLER state: a note that opens with a condition says
     # the step branches, and an activity whose sequence branches is two activities linked through
-    # `next_activities` - the branch belongs on the edge between them, not in a note. Both
+    # `next`, whose `condition` says what takes the branch - the branch belongs on the edge between
+    # them, not in a note. A plain sequence needs no `next`: activities run in the order listed. Both
     # languages the corpus is authored in are listed; a multi-word entry matches as a phrase.
     content:
       deny_opening:
@@ -313,3 +314,23 @@ metrics:
     patch_threshold: 1
     calibration: >-
       corpus p50=100% (n=4, thin); golden 100%
+
+# ── structure: facts in fields, or only in prose ─────────────────────────────
+# Read beside the coverage metrics, never gated: these signals carry no threshold, add no metric
+# and never change the exit code. A metric above asks whether an entity says something; this block
+# asks whether what it says sits in the fields built for it. Fields used is read with the entity's
+# sources, never maximised: a field is written when a source supports it, and an empty field stays
+# empty.
+#
+#   containers             the top-level keys whose entities are measured
+#   identity_fields        name the entity; excluded from fields used and from both sides of a reference
+#   prose_fields           restate the entity in prose; excluded from fields used and from the field side
+#   reference_text_fields  where references held only in prose are read
+#
+# The fields a type makes available, and the fields that can hold a reference of a given kind,
+# come from the schema's own `$defs`; nothing per type is listed here.
+structure:
+  containers: [structural, classification, derivation, equivalence, validation, transition, decisions, business_decisions, concepts, processes, kpis, slos]
+  identity_fields: [id, name, title, term]
+  prose_fields: [description, summary, statement]
+  reference_text_fields: [description, logic]

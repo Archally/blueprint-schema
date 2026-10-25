@@ -242,7 +242,7 @@ watchlist:
       Monitored, not yet acted on. Promote to a leverage point once a slice depends on removing
       them; today the legacy controllers still serve pages the CQRS layer does not cover, such as
       store creation and shop domain settings.
-    decision_refs: [DC007]
+    decision_refs: [DC006]
   - id: WCH002
     title: "Third-party module coupling growth"
     note: >

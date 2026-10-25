@@ -7,10 +7,10 @@ tags: [shop-and-buy]
 # shopper-facing side of PrestaShop is where the product is thickest, not because the other two
 # were left unfinished - see the note at the head of each sibling.
 #
-# `operations` lists a REPRESENTATIVE SPINE, not an inventory: the commands and queries that
-# define the ability, so a reader can jump from "what the business can do" to the code that does
-# it. The model holds 680 operations; a capability that listed all of its own would be a second
-# copy of the domain layer.
+# `realized_in` states each main capability's domain default. The original representative
+# `operations` listings remain, with split-domain exceptions completed where the modeled scope
+# supports them. An explicit listing displaces module attribution model-wide; realization does
+# not pass between parent and child capabilities.
 #
 # Every capability below is a level-2 member of CAP106 Customer-Facing Commerce, the family
 # this file holds; their own children are level 3.
@@ -231,6 +231,7 @@ capabilities:
                   currency and line editing; order placement itself is an Orders-slice command, so
                   the capability crosses the Checkout and Orders contexts.
                 confidence_impact: supports
+            realized_in: [DMN003]
 
           - id: CAP004
             name: "Stock Availability Control"
@@ -265,6 +266,7 @@ capabilities:
                   StockAvailable::updateQuantity() from OrderDetail when the order is created. No
                   reservation, hold or timed release exists anywhere in src/Core or classes/.
                 confidence_impact: supports
+        realized_in: [DMN008]
 
       - id: CAP006
         name: "Customer Notifications"
@@ -283,6 +285,13 @@ capabilities:
           - content.CMD018
           - content.QRY009
           - admin.CMD007
+          - content.EVT017
+          - content.QRY010
+          - content.EVT014
+          - orders.CMD029
+          - orders.CMD030
+          - orders.CMD031
+          - orders.QRY006
         owned_by:
           team: TM001
         maturity: established
@@ -351,6 +360,14 @@ capabilities:
               - customers.CMD026
               - customers.QRY009
               - customers.QRY010
+              - customers.CMD027
+              - customers.CMD023
+              - customers.CMD024
+              - customers.QRY014
+              - customers.EVT007
+              - customers.EVT008
+              - customers.EVT009
+              - customers.EVT015
             owned_by:
               team: TM004
             maturity: established
@@ -382,6 +399,10 @@ capabilities:
               - customers.CMD019
               - customers.QRY011
               - customers.QRY012
+              - customers.EVT010
+              - customers.EVT011
+              - customers.EVT012
+              - customers.EVT019
             owned_by:
               team: TM004
             maturity: developing
@@ -397,3 +418,4 @@ capabilities:
                   Threads carry a status and a forward command; there is no SLA, queue or assignment
                   construct in core, which is what keeps the maturity at developing.
                 confidence_impact: supports
+        realized_in: [DMN005]

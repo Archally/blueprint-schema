@@ -9,7 +9,8 @@
  *     service's in-process operation. A service listing an operation it provides itself is
  *     redundant: it states nothing, so it counts for nothing and is never reported.
  *   - It REACTS to an operation that reaches its providing service. The service hears a trigger it
- *     receives (a contract's `receive:` entry) or raises: one it provides (`expose:`, `send:` or
+ *     receives (a contract's `receive:` entry), consumes in-process when the trigger is an event,
+ *     or raises: one it provides (`expose:`, `send:` or
  *     `provide:`), or one that an operation it provides `produces`. The message handler that runs
  *     the reaction is the caller, and it lives in the providing service.
  *   - An actor INITIATES it (`initiated_by`), such as a timer or a person.
@@ -121,13 +122,15 @@ function index(model) {
     if (relation.type === IN_PROCESS_PROVIDES && owner) addTo(inProcessProviders, relation.target, owner);
     if (relation.type === IN_PROCESS_CONSUMES) addTo(inProcessConsumers, relation.target, owner ?? UNKNOWN_SERVICE);
     if (PROVIDER_RELATION_TYPES.has(relation.type) && owner) addTo(providedBy, owner, relation.target);
-    if (relation.type === RECEIVES && owner) addTo(heardBy, owner, relation.target);
+    if (owner && (relation.type === RECEIVES || (
+      relation.type === IN_PROCESS_CONSUMES && byId.get(relation.target)?.data?.kind === 'event'
+    ))) addTo(heardBy, owner, relation.target);
     if (relation.type === PRODUCES) addTo(products, relation.source, relation.target);
     if (relation.type === REACTS_TO) addTo(triggers, relation.source, relation.target);
     if (relation.type === INITIATED_BY) initiated.add(relation.source);
   }
 
-  // A service hears what it provides and what those operations produce, beside what it receives.
+  // A service also hears what it provides and what those operations produce.
   for (const [service, operations] of providedBy) {
     for (const operation of operations) {
       addTo(heardBy, service, operation);

@@ -10,13 +10,25 @@ export interface ModelDocument {
   data: unknown;
 }
 
+/** A lossless YAML location, independent of the legacy dotted display strings. */
+export interface SourceLocator {
+  /** Path relative to the model root, POSIX separators. */
+  relFile: string;
+  /** Raw mapping keys and numeric sequence indices; declarations include `id` or `x-model-id`. */
+  path: Array<string | number>;
+  /** Select the value, or the map entry's key at this path. */
+  target: "value" | "key";
+}
+
 export interface ReferenceFindings {
+  goalRelations: { errors: Array<{ file: string; path: string; message: string }>; warnings: Array<{ file: string; path: string; message: string }> };
   /**
    * `suggestions` are the declared ids that differ from `value` only by a prefix (the shared
    * did-you-mean rule): a hint for the refusal, never a resolution. Empty when there is none.
    */
-  missing: Array<{ value: string; loc: string; file: string; suggestions: string[] }>;
-  duplicates: Array<{ id: string; locations: string[] }>;
+  missing: Array<{ value: string; loc: string; file: string; suggestions: string[]; source: SourceLocator }>;
+  /** `sources` identifies every identity property in the same order as `locations`. */
+  duplicates: Array<{ id: string; locations: string[]; sources: SourceLocator[] }>;
   /** Each ring in walk order, rotated to its lowest member. */
   parentCycles: string[][];
   selfEdges: Array<{ id: string; key: string; arm: string; loc: string; file: string }>;

@@ -22,14 +22,30 @@ export interface RepoConfigSet {
   repositories?: Record<string, RepositoryConfig>;
 }
 
-/** Split a code_ref path into an optional `org/repo` prefix (before the first `#`) and the file path. */
-export function parseCodeRefPath(raw: string): { prefix: string | null; filepath: string } {
-  const trimmed = raw.trim();
+interface CodeRefLocation {
+  line?: number;
+  endLine?: number;
+}
+
+/** Split a trailing #Lstart[-Lend] location before the optional org/repo# prefix. Lines are 1-based. */
+export function parseCodeRefPath(raw: string): { prefix: string | null; filepath: string } & CodeRefLocation {
+  let trimmed = raw.trim();
+  const match = /#L([1-9]\d*)(?:-L([1-9]\d*))?$/.exec(trimmed);
+  const location: CodeRefLocation = {};
+  if (match) {
+    const line = Number(match[1]);
+    const endLine = match[2] ? Number(match[2]) : undefined;
+    if (Number.isSafeInteger(line) && (endLine === undefined || (Number.isSafeInteger(endLine) && endLine >= line))) {
+      trimmed = trimmed.slice(0, match.index);
+      location.line = line;
+      if (endLine !== undefined) location.endLine = endLine;
+    }
+  }
   const hash = trimmed.indexOf('#');
   if (hash > 0) {
-    return { prefix: trimmed.slice(0, hash), filepath: trimmed.slice(hash + 1) };
+    return { prefix: trimmed.slice(0, hash), filepath: trimmed.slice(hash + 1), ...location };
   }
-  return { prefix: null, filepath: trimmed };
+  return { prefix: null, filepath: trimmed, ...location };
 }
 
 /** Pick the repo config for a code_ref: prefixed → `repositories[prefix]`; unprefixed → `repository`. */
@@ -63,20 +79,29 @@ export function buildCodeRefUrl(config: RepositoryConfig, filepath: string): str
 
 /** Full browser resolution: raw code_ref path + repo-config set → URL, or `undefined` if unresolvable. */
 export function resolveBrowserUrl(rawPath: string, set: RepoConfigSet): string | undefined {
-  const { prefix, filepath } = parseCodeRefPath(rawPath);
+  const { prefix, filepath, line, endLine } = parseCodeRefPath(rawPath);
   if (!filepath) return undefined;
   const config = selectRepoConfig(prefix, set);
   if (!config || !config.url) return undefined;
-  return buildCodeRefUrl(config, filepath);
+  const url = buildCodeRefUrl(config, filepath);
+  if (line === undefined) return url;
+  switch ((config.provider || 'github').toLowerCase()) {
+    case 'gitlab':
+      return `${url}#L${line}`;
+    case 'bitbucket':
+      return `${url}#${filepath.replace(/\\/g, '/').split('/').pop()}-${line}`;
+    default:
+      return `${url}#L${line}${endLine === undefined ? '' : `-L${endLine}`}`;
+  }
 }
 
-// ── local-clone resolution (step-02; D2 local-then-browser, D5 url-keyed + prefix alias) ──────────
+// Local-clone resolution uses URL mappings with repository-prefix aliases.
 
 export type CodeRefOpenBehavior = 'localThenBrowser' | 'browser' | 'local';
 
 /**
  * Resolve a code_ref to a candidate ABSOLUTE local file path (a string — existence is NOT checked here; that
- * is I/O the caller does). The `localRoots` map is keyed by the resolved repo `url` (primary identity, D5) with
+ * is I/O the caller does). The `localRoots` map is keyed by the resolved repo `url` with
  * the `org/repo` prefix accepted as an alias; a trailing slash on the url key is tolerated. `localRoots` values
  * must already be absolute folders (the extension resolves any relative folder against the workspace first).
  * Returns `<root>/<filepath>` (forward-slash normalized), or `undefined` if no mapping applies.
@@ -99,7 +124,7 @@ export function resolveLocalPath(
 }
 
 /**
- * Decide what a code_ref link opens (D2), given the `localRoots` map + `openBehavior`. The existence check is
+ * Decide what a code_ref link opens, given the `localRoots` map + `openBehavior`. The existence check is
  * INJECTED (`exists`) so this stays pure / `vscode`-free and the full behavior × existence matrix is unit-testable;
  * the extension supplies an fs-backed predicate. Semantics:
  *   - `localThenBrowser` → the local file when it exists, else the git-host URL;
@@ -112,10 +137,13 @@ export async function resolveCodeRefTarget(
   localRoots: Record<string, string>,
   behavior: CodeRefOpenBehavior,
   exists: (absPath: string) => Promise<boolean>,
-): Promise<{ kind: 'file'; value: string } | { kind: 'url'; value: string } | undefined> {
+): Promise<{ kind: 'file'; value: string; line?: number } | { kind: 'url'; value: string } | undefined> {
   if (behavior !== 'browser') {
     const candidate = resolveLocalPath(rawPath, set, localRoots);
-    if (candidate && (await exists(candidate))) return { kind: 'file', value: candidate };
+    if (candidate && (await exists(candidate))) {
+      const { line } = parseCodeRefPath(rawPath);
+      return { kind: 'file', value: candidate, ...(line === undefined ? {} : { line }) };
+    }
     if (behavior === 'local') return undefined; // no browser fallback
   }
   const url = resolveBrowserUrl(rawPath, set);
@@ -227,7 +255,7 @@ export function scanEvidenceSources(text: string): CodeRefHit[] {
 }
 
 // Every http(s):// URL in a scalar value; the char class stops at a quote / whitespace / bracket, then
-// trailing sentence punctuation is trimmed. Field-agnostic (E1) — VS Code does not linkify YAML-string URLs.
+// Trailing sentence punctuation is trimmed. VS Code does not linkify YAML-string URLs.
 const URL_RE = /https?:\/\/[^\s"'`<>()\[\]{}]+/g;
 
 /** Every http(s):// URL anywhere in the document, with exact ranges. */
@@ -246,7 +274,7 @@ export function scanUrls(text: string): CodeRefHit[] {
   return hits;
 }
 
-// ── code_ref hover (step-03; pure text builders — the extension supplies I/O + wraps in a Hover) ──
+// Pure code_ref hover builders; the extension supplies I/O and wraps the text in a Hover.
 
 /**
  * Read the `role` / `description` of the code_ref entry that owns the `path:` on `pathLine`. Handles a block
@@ -300,7 +328,7 @@ export interface CodeRefHoverModel {
   role?: string;
   description?: string;
   /** The click destination (undefined ⇒ unresolved). */
-  target?: { kind: 'file'; value: string } | { kind: 'url'; value: string };
+  target?: { kind: 'file'; value: string; line?: number } | { kind: 'url'; value: string };
   /** Host URL offered alongside a local-file target under `localThenBrowser`. */
   hostAlternate?: string;
   /** A mapped local path that was NOT opened (missing on disk) — explains a fallback or a `local`-mode miss. */
@@ -309,7 +337,7 @@ export interface CodeRefHoverModel {
 
 /**
  * Build the hover markdown for a `code_ref` path: the resolved destination (local path or host URL), the
- * code_ref `role`/`description`, and — when nothing resolves — a single actionable hint (D2 behavior surfaced).
+ * code_ref role/description, and a single actionable hint when nothing resolves.
  * Pure so it is unit-testable; the extension wraps the string in a `vscode.Hover`.
  */
 export function buildCodeRefHover(model: CodeRefHoverModel): string {
@@ -331,6 +359,7 @@ export function buildCodeRefHover(model: CodeRefHoverModel): string {
   }
 
   if (model.description) parts.push(model.description);
+  if (model.target?.kind === 'file' && model.target.line !== undefined) parts.push(`Line: **${model.target.line}**`);
   return parts.join('\n\n');
 }
 

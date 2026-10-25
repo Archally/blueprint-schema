@@ -105,17 +105,16 @@ actors:
     type: human
     description: "Back-office administrator managing currencies, languages, exchange rates, and localization settings."
     personas:
-      - name: "Typical LocalizationAdmin"
-        quote: "I need to support multiple currencies and languages so our store serves international customers."
-        goals: ["Configure multi-currency support", "Keep exchange rates current", "Enable multi-language store"]
-        pain_points: ["Manual exchange rate updates", "Ensuring all content is translated", "Complex locale configuration"]
-        behaviors: ["Configures currencies/languages during store setup", "Periodically refreshes exchange rates"]
-        tech_savviness: high
-        job_to_be_done: "Enable the store to operate across multiple currencies and languages"
-        context: "Back-office international settings"
-        demographics:
-          role: "Store Administrator"
-          industry: "E-commerce"
+      - id: international.PER001
+        name: Translator
+        description: The employee holding PrestaShop's default Translator profile, whose menus are translations, localization, products, categories and search (presta-specs/content/1.7/back-office/advanced-parameters/team/permissions-listing.md, 'Translator profile Menu permissions').
+        goals:
+          - Translate the back office, front office, installed modules and emails into each shop language (presta-specs/content/1.7/back-office/international/translations/translations.md, 'Modify translations section').
+          - Translate product and category texts, which the Translator profile may edit (presta-specs/content/1.7/back-office/advanced-parameters/team/permissions-listing.md).
+        pain_points:
+          - Two identical wordings in two translation domains are two different wordings, so the same text is translated once per domain (presta-specs/content/1.7/back-office/international/translations/translations.md, 'Conceptual vocabulary').
+          - Email bodies are translated in a separate legacy interface, not the one used for every other text (presta-specs/content/1.7/back-office/international/translations/translations.md, 'Particular cases').
+          - The default Translator profile has Languages disabled, so a missing language cannot be added without the SuperAdmin (presta-specs/content/1.7/back-office/advanced-parameters/team/permissions-listing.md).
 
 enumerations:
   - id: international.EN001

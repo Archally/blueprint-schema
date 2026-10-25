@@ -4,66 +4,322 @@ scope: international
 
 structural:
   - id: international.SR001
-    name: "Unique ISO currency code per shop"
-    description: "Each currency ISO code must be unique within a shop scope. No two currencies can share the same alpha ISO code in the same shop."
+    name: "A currency ISO code is used once in the store"
+    description: "Keeps one currency record per ISO code, so a code means the same currency in every shop."
     modality: necessary
     concepts: [international.CN001]
+    summary: One currency per ISO code across all shops; a deleted currency with the code is reused.
+    logic:
+      when: a currency is added, or an unofficial currency's ISO code is changed
+      then: no currency that is not deleted already holds the ISO code
+    fact: Currency.getIdByIsoCode(isoCode, shop = 0) = none OR Currency.deleted = true
+    scope: currency creation (official and unofficial) and the change of an unofficial currency's ISO code, store-wide
+    on_violation:
+      action: reject
+      message: Currency with iso code "%s" already exists and cannot be created
+    examples:
+      - input: Currency USD exists; a new currency is added with ISO code USD
+        output: "Refused: the currency already exists"
+      - input: Unofficial currencies CST and CUS exist; CST is edited to take the code CUS
+        output: Refused; the store still holds one CST and one CUS
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+    code_refs:
+      - path: src/Adapter/Currency/CommandHandler/CurrencyCommandValidator.php
+        role: validation
+        description: "Lines 82-89: refuses an ISO code held by a currency that is not deleted."
+      - path: src/Adapter/Currency/CurrencyDataProvider.php
+        role: implementation
+        description: "Lines 70-82: the lookup by ISO code passes shop 0, so it searches the whole store."
+      - path: src/Adapter/Currency/CommandHandler/AddOfficialCurrencyHandler.php
+        role: implementation
+        description: "Lines 68-71: checks the code, then reuses a deleted currency with it or creates a new one."
+      - path: src/Adapter/Currency/CommandHandler/AddUnofficialCurrencyHandler.php
+        role: validation
+        description: "Line 68: the same check for an unofficial currency."
+      - path: src/Adapter/Currency/CommandHandler/EditUnofficialCurrencyHandler.php
+        role: validation
+        description: "Line 76: the same check when an unofficial currency's ISO code changes."
+      - path: tests/Integration/Behaviour/Features/Scenario/Currency/currency_management.feature
+        role: test
+        description: "Scenarios at lines 94, 215 and 227: a deleted currency is reused; adding USD twice and editing CST to CUS are refused."
 
 validation:
   - id: international.VR001
-    name: "Currency ISO code format"
-    description: "Currency ISO code must be a valid 3-letter alphabetic code (ISO 4217 for official, any 3 letters for unofficial)."
+    name: "A currency ISO code is two or three letters"
+    description: "Keeps currency codes in the ISO shape and keeps an unofficial currency from posing as a listed one."
     modality: obligatory
     concepts: [international.CN001]
     code_refs:
       - path: "src/Core/Domain/Currency/ValueObject/AlphaIsoCode.php"
         role: model
+        description: "Line 19: the pattern /^[a-zA-Z]{2,3}$/; lines 52-53 refuse any other value."
+      - path: src/Adapter/Currency/CommandHandler/CurrencyCommandValidator.php
+        role: validation
+        description: "Lines 62-73: refuses an unofficial currency whose code CLDR lists."
+      - path: tests/Unit/Core/Domain/Currency/ValueObject/CurrencyIsoCodeTest.php
+        role: test
+        description: testItThrowsAnExceptionOnIncorrectIsoCodeRegex (line 21), whose data provider includes LTUU (line 36).
+      - path: tests/Integration/Behaviour/Features/Scenario/Currency/currency_management.feature
+        role: test
+        description: "Scenario 'Adding invalid unofficial currency' at line 118: an unofficial EUR is refused."
+    summary: Two or three letters; an unofficial currency avoids the CLDR codes.
+    logic:
+      when: a currency's ISO code is given on add or edit
+      then: isoCode matches two or three letters, and an unofficial currency's code is not in the CLDR reference
+    fact: AlphaIsoCode matches /^[a-zA-Z]{2,3}$/ AND (Currency.unofficial = false OR CLDR.getCurrency(isoCode) = none)
+    scope: currency add and edit commands, official and unofficial
+    on_violation:
+      action: reject
+      message: Given iso code "%s" is not valid. It did not matched given regex %s
+    examples:
+      - input: A currency is added with ISO code LTUU
+        output: "Refused: the code does not match two or three letters"
+      - input: An unofficial currency is added with ISO code EUR
+        output: "Refused: an unofficial currency is invalid when CLDR lists its code"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: international.VR002
-    name: "Default currency cannot be deleted"
-    description: "The store's default (reference) currency cannot be deleted or disabled. Another currency must be set as default first."
+    name: "The default currency cannot be deleted or disabled"
+    description: "Every shop keeps a usable default (reference) currency; to retire it, another currency is made the default first."
     modality: prohibited
     concepts: [international.CN001]
+    summary: A shop's default currency stays enabled, assigned to that shop and undeleted.
+    logic:
+      when: a shop's default currency is deleted, disabled or unassigned from that shop
+      then: the change is refused
+    fact: Currency.id = PS_CURRENCY_DEFAULT(shop) => Currency is not deleted AND Currency.active = true AND shop IN Currency.shops
+    scope: currency delete, status toggle and edit, per shop in a multistore
+    on_violation:
+      action: reject
+      message: Currency with id "%s" is the default currency and cannot be deleted.
+    examples:
+      - input: Currency USD is the default of shop1 and is deleted
+        output: "Refused: the default currency cannot be deleted"
+      - input: Currency USD is the default of shop1 and is disabled
+        output: "Refused: the default currency cannot be disabled"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+    code_refs:
+      - path: src/Adapter/Currency/CommandHandler/DeleteCurrencyHandler.php
+        role: validation
+        description: "Lines 56 and 73-77: deleting the default currency is refused."
+      - path: src/Adapter/Currency/CommandHandler/CurrencyCommandValidator.php
+        role: validation
+        description: Lines 98-103 refuse disabling the default currency; lines 114-140 refuse unassigning or disabling it in a shop it is the default of.
+      - path: src/Adapter/Currency/CommandHandler/ToggleCurrencyStatusHandler.php
+        role: validation
+        description: "Lines 57-58: the status toggle runs the same two checks."
+      - path: tests/Integration/Behaviour/Features/Scenario/Currency/currency_management.feature
+        role: test
+        description: "Scenarios at lines 65 and 71: disabling and deleting the default currency are refused."
 
   - id: international.VR003
-    name: "Language ISO code uniqueness"
-    description: "Each language must have a unique ISO 639-1 code within the store."
+    name: "A language ISO code is used once in the store"
+    description: "Keeps an ISO code pointing at one language."
     modality: obligatory
     concepts: [international.CN002]
+    summary: One language per ISO code.
+    logic:
+      when: a language is added or its ISO code is changed
+      then: no other language holds the ISO code
+    fact: Language.getIdByIso(isoCode) = none OR Language.getIdByIso(isoCode) = language.id
+    scope: language add and edit, store-wide
+    on_violation:
+      action: reject
+      message: Language with ISO code "%s" already exists
+    examples:
+      - input: A language with ISO code fr exists and another is added with fr
+        output: "Refused: a language with this ISO code already exists"
+      - input: The French language is edited to take the ISO code gb, which another language holds
+        output: "Refused: a language with this ISO code already exists"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+    code_refs:
+      - path: src/Adapter/Language/CommandHandler/AddLanguageHandler.php
+        role: validation
+        description: "Lines 77-82: refuses a new language whose ISO code is in use."
+      - path: src/Adapter/Language/CommandHandler/EditLanguageHandler.php
+        role: validation
+        description: "Lines 236-237: refuses changing a language to an ISO code in use."
+      - path: src/Core/Domain/Language/ValueObject/IsoCode.php
+        role: model
+        description: "Lines 20 and 52: the code is two or three letters."
+      - path: tests/Integration/Behaviour/Features/Scenario/Language/language.feature
+        role: test
+        description: "Scenario at line 182: adding, then editing to, an ISO code already in the database is forbidden."
 
   - id: international.VR004
-    name: "Default language cannot be deleted"
-    description: "The store's default language cannot be deleted or disabled. Another language must be set as default first."
+    name: "The default language cannot be deleted or disabled"
+    description: "Every shop keeps a usable default language; to retire it, another language is made the default first."
     modality: prohibited
     concepts: [international.CN002]
+    summary: The default language, and the language in use, stay.
+    logic:
+      when: a language is deleted, alone or in bulk, or disabled
+      then: it is neither the default language nor, for a deletion, the language in use
+    fact: Language.id = PS_LANG_DEFAULT => Language is not deleted AND Language.active = true
+    scope: language delete, bulk delete, status toggle and bulk toggle
+    on_violation:
+      action: reject
+      message: Default language "%s" cannot be deleted
+    examples:
+      - input: French is the default language and is deleted
+        output: "Refused: a default language cannot be deleted; French still exists"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+    code_refs:
+      - path: src/Adapter/Language/CommandHandler/AbstractLanguageHandler.php
+        role: validation
+        description: "Lines 137-158: the checks for the language in use and for the default language."
+      - path: src/Adapter/Language/CommandHandler/DeleteLanguageHandler.php
+        role: validation
+        description: "Lines 53-64: deleting the default language or the language in use is refused."
+      - path: src/Adapter/Language/CommandHandler/BulkDeleteLanguagesHandler.php
+        role: validation
+        description: "Lines 50-56: the bulk deletion refuses the default language."
+      - path: tests/Integration/Behaviour/Features/Scenario/Language/language.feature
+        role: test
+        description: "Scenarios at lines 116, 130, 150 and 170: deleting or disabling the default language, alone or in bulk, is refused."
 
   - id: international.VR005
-    name: "Country ISO code format"
-    description: "Country ISO code must be a valid 2-letter alphabetic code (ISO 3166-1 alpha-2). Automatically uppercased and truncated to 2 characters."
+    name: "A country ISO code is two or three letters, and two when a country is added"
+    description: "The code's shape is checked, not its presence in the ISO 3166-1 list."
     modality: obligatory
     concepts: [international.CN004]
     code_refs:
       - path: "src/Core/Domain/Country/Command/AddCountryCommand.php"
         role: implementation
-        description: "ISO code uppercased and substr'd to 2 chars in constructor"
+        description: "Line 45: upper-cases the code and keeps its first two characters."
+      - path: src/Core/Domain/Country/Command/EditCountryCommand.php
+        role: implementation
+        description: "Lines 88-92: the edit command stores the code as given."
+      - path: classes/Country.php
+        role: validation
+        description: "Line 67: iso_code is validated with isLanguageIsoCode, size 3."
+      - path: classes/Validate.php
+        role: validation
+        description: "Lines 307-310: isLanguageIsoCode accepts two or three letters."
+      - path: tests/Integration/Behaviour/Features/Scenario/Country/country_management.feature
+        role: test
+        description: "Scenario 'Adding new country' at line 8: the code TE is stored as TE."
+    summary: Added countries get a two-letter upper-case code; an edit accepts two or three letters.
+    logic:
+      when: a country is added or its ISO code is edited
+      then: the stored code is two or three letters; on add it is the first two characters of the input, upper-cased
+    fact: Country.iso_code matches /^[a-zA-Z]{2,3}$/
+    scope: country add and edit, back office and Admin API
+    examples:
+      - input: A country is added with ISO code TE
+        output: The country is stored with ISO code TE
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: international.VR006
     name: "Tax rate must be non-negative"
-    description: "Tax rate percentage must be zero or positive. Negative tax rates are not permitted."
+    description: "A tax rate is meant to be zero or more; nothing refuses a negative rate today."
     modality: obligatory
     concepts: [international.CN007]
+    summary: A tax rate is zero or more.
+    logic:
+      when: a tax is added or its rate is edited
+      then: tax.rate >= 0
+    fact: Tax.rate >= 0
+    scope: tax add and edit, back office and Admin API
+    implementation: to-be
+    provenance:
+      discovery_stage: exploring
+      certainty: speculative
+      evidence:
+        - kind: assumption
+          source: modeler
+          date: 2026-10-14
+          summary: "Searched for a source stating that a tax rate must not be negative: classes/tax/Tax.php and classes/Validate.php (the rate is validated with isFloat, not isUnsignedFloat), AddTaxHandler, the TaxType form (NotBlank, Length, numeric type), ps_apiresources Tax (NotNull), tax_management.feature, and the specifications page back-office/international/taxes/add-edit-taxes.md (format XX.XX, no sign). None states it. BD014 names the rule by citing it, so it is not an independent source."
+          confidence_impact: weakens
+    code_refs:
+      - path: classes/tax/Tax.php
+        role: planned
+        description: "Line 30 validates rate with isFloat, which accepts a negative value."
+      - path: classes/Validate.php
+        role: gap
+        description: "Lines 132-135: isUnsignedFloat, the validator that would refuse a negative rate, exists and is not used for the rate."
+      - path: src/Adapter/Tax/CommandHandler/AddTaxHandler.php
+        role: gap
+        description: "Lines 38-40: the handler runs the object model validation and adds no rate check of its own."
 
   - id: international.VR007
     name: "Exchange rate must be positive"
-    description: "Exchange rate must be a positive number. Zero or negative exchange rates are rejected."
+    description: "Keeps every currency convertible from the default currency."
     modality: obligatory
     concepts: [international.CN003]
     code_refs:
       - path: "src/Core/Domain/Currency/ValueObject/ExchangeRate.php"
         role: model
+        description: "Lines 58-64: refuses a value that is not a number or is zero or less."
+      - path: src/Core/Domain/Currency/Command/AbstractAddCurrencyCommand.php
+        role: implementation
+        description: "Line 53: adding a currency builds the exchange rate value object."
+      - path: src/Core/Domain/Currency/Command/AbstractEditCurrencyCommand.php
+        role: implementation
+        description: "Line 68: editing a currency builds it too."
+    summary: An exchange rate is a number above zero.
+    logic:
+      when: a currency's exchange rate is set when the currency is added or edited
+      then: exchangeRate > 0
+    fact: ExchangeRate.value is a number AND ExchangeRate.value > 0
+    scope: currency add and edit commands, official and unofficial
+    on_violation:
+      action: reject
+      message: Given exchange rate %s is not valid. It must be more than 0
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: international.VR008
-    name: "Tax rule binding uniqueness"
-    description: "Within a TaxRulesGroup, no duplicate Tax x Zone x Country/State bindings are allowed. Each geographic combination can have at most one tax rate assignment."
+    name: "A country or state with a 'this tax only' rule takes no other rule in the group"
+    description: "Rules that combine or apply one after another may share a country and state; only a 'This tax only' rule excludes the others."
     modality: obligatory
     concepts: [international.CN009]
+    summary: A 'this tax only' rule is the only rule for its country and state in a group.
+    logic:
+      when: a tax rule is added to a group for a country and state
+      then: no rule of the group for that country and state has the behavior 'This tax only'
+    fact: NOT EXISTS TaxRule r IN group WHERE r.id_country = country AND r.id_state = state AND r.behavior = 0
+    scope: tax rule creation in the back-office form and through the AddTaxRule command, per country and state; zip code ranges are not compared
+    on_violation:
+      action: reject
+      message: A tax rule already exists for this country/state with tax only behavior.
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+    code_refs:
+      - path: classes/tax/TaxRulesGroup.php
+        role: implementation
+        description: "Lines 231-241: hasUniqueTaxRuleForCountry is true only when a rule for the country and state has behavior 0, 'This tax only'."
+      - path: controllers/admin/AdminTaxRulesGroupController.php
+        role: validation
+        description: "Lines 415-421: the back-office form refuses the rule with the message above; lines 274-300 offer the three behaviors."
+      - path: src/Adapter/TaxRulesGroup/CommandHandler/AddTaxRuleHandler.php
+        role: implementation
+        description: "Lines 50-54: the command skips the country and state without an error."
+      - path: classes/tax/TaxRule.php
+        role: model
+        description: "Line 30: the behavior field of a tax rule."
+      - path: classes/tax/TaxRulesTaxManager.php
+        role: implementation
+        description: "Lines 97-105: at calculation, the most specific rule sets the behavior and a 'This tax only' row ends the list of taxes."

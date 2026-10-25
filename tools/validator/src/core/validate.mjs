@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import YAML from "yaml";
 import path from "node:path";
 import { toPosixPath, walkFiles, loadYaml } from "./utils.mjs";
 import { loadSchemaRegistry, makeAjv, SCHEMA_BASE_URI } from "./schema-registry.mjs";
@@ -154,7 +155,7 @@ export function checkContractOutputSlice(relFile, serviceName, kind, output, sli
   const known = [...slices].sort().join(", ") || "(none declared)";
   return (
     `[${relFile}] Service "${serviceName}" ${kind} output "${output}" begins with "${prefix}/", ` +
-    `which is not a declared slice — the artifact stays under that subdirectory rather than being ` +
+    `which is not a declared slice - the artifact stays under that subdirectory rather than being ` +
     `placed in a slice. Declared slices: ${known}. Use "<slice>/<name>", or "_global/<name>" to ` +
     `mark it cross-cutting.`
   );
@@ -570,6 +571,45 @@ function checkTrackedRegister({ registerPath, modelDir, ajv, schemaErrors, warni
 
 export function validateModel(args) {
   const { registry } = loadSchemaRegistry(args.schemas);
+  const modelDir = args.model;
+  if (!fs.existsSync(modelDir)) {
+    throw new Error(`Model directory not found: ${modelDir}`);
+  }
+  const isDir = fs.statSync(modelDir).isDirectory();
+  const yamlFiles = isDir
+    ? walkFiles(modelDir, (f) => /\.(yaml|yml)$/i.test(f))
+    : [path.resolve(modelDir)];
+
+  const relFileOf = filePath => isDir ? toPosixPath(path.relative(modelDir, filePath)) : path.basename(filePath);
+  const membership = new Set(classifyModelFiles(yamlFiles.map(relFileOf), { singleFile: !isDir }).modelFiles);
+  const files = yamlFiles.map(filePath => ({
+    relFile: relFileOf(filePath),
+    // Outside-model YAML contributes membership findings, but its contents are never read.
+    text: membership.has(relFileOf(filePath)) ? fs.readFileSync(filePath, "utf8") : "",
+  }));
+  const result = validateModelTexts({ ...args, registry, files, singleFile: !isDir });
+  if (args.trackedRegister && fs.existsSync(args.trackedRegister)) {
+    result.trackedRegister = checkTrackedRegister({
+      registerPath: args.trackedRegister, modelDir, ajv: makeAjv(registry),
+      schemaErrors: result.schemaErrors, warnings: result.warnings,
+    });
+  }
+  return result;
+}
+
+/** Full conformance over caller-owned texts. No model reads or writes, including temp files. */
+export function validateModelTexts(args) {
+  const { registry, files } = args;
+  const seen = new Set();
+  for (const { relFile, text } of files) {
+    if (typeof relFile !== "string" || !relFile || /[\\:]/.test(relFile)
+      || relFile.split("/").some(part => !part || part === "." || part === "..")
+      || typeof text !== "string" || seen.has(relFile)) throw new Error("Unsafe or duplicate snapshot path");
+    seen.add(relFile);
+  }
+  const modelDir = args.model;
+  const isDir = !args.singleFile;
+
   // Which id bands this schema line retires is the line's own statement, so a model checked against
   // an earlier tree is told nothing about bands that tree never retired.
   const bandTable = retiredBandTable(registry);
@@ -599,15 +639,6 @@ export function validateModel(args) {
   // warning used to describe. See TYPED_ID above for why both must never fire on one value.
   const typedIdsEnforcedBySchema = atLeast(version, 2, 8);
 
-  const modelDir = args.model;
-  if (!fs.existsSync(modelDir)) {
-    throw new Error(`Model directory not found: ${modelDir}`);
-  }
-  const isDir = fs.statSync(modelDir).isDirectory();
-  const yamlFiles = isDir
-    ? walkFiles(modelDir, (f) => /\.(yaml|yml)$/i.test(f))
-    : [path.resolve(modelDir)];
-
   const schemaErrors = [];
   /** Subset of schemaErrors that `--compat` must never relax (see isIdentityOrReferenceViolation). */
   const nonDemotable = new Set();
@@ -631,21 +662,18 @@ export function validateModel(args) {
   // file outside it is neither schema-checked nor a source of declarations or references: a verdict
   // about content no reader sees would describe a different model from the one every reader gets.
   // A file outside the model whose name says it was meant to be inside is reported, never ignored.
-  const relFileOf = (filePath) =>
-    isDir ? toPosixPath(path.relative(modelDir, filePath)) : path.basename(filePath);
-  const membership = classifyModelFiles(yamlFiles.map(relFileOf), { singleFile: !isDir });
+  const membership = classifyModelFiles(files.map(file => file.relFile), { singleFile: !isDir });
   const modelFiles = new Set(membership.modelFiles);
   for (const finding of membership.findings) crossErrors.push(finding.message);
 
-  for (const filePath of yamlFiles) {
-    const relFile = relFileOf(filePath);
+  for (const { relFile, text } of files) {
     if (!modelFiles.has(relFile)) { skippedFiles.push(relFile); continue; }
     const schemaType = detectSchemaType(relFile);
     const schemaRelPath = schemaType ? FILENAME_TO_SCHEMA[schemaType] : undefined;
 
     let data;
     try {
-      data = loadYaml(filePath);
+      data = YAML.parse(text);
     } catch (err) {
       // Only files of the model reach this point, and a model file that does not parse is a model
       // file nobody can read.
@@ -695,6 +723,8 @@ export function validateModel(args) {
   // The space each id is unique in is read off the same schema tree, so a line that scopes an
   // attribute to its bounded context is judged by that rule and no other.
   const references = resolveModelReferences(parsedFiles, refKeys, bandTable, declaredBands, deriveIdSpaces(registry));
+  crossErrors.push(...references.goalRelations.errors.map(finding => finding.message));
+  warnings.push(...references.goalRelations.warnings.map(finding => finding.message));
   // A duplicate id is an error: two declarations of one id leave every lookup by that id answering
   // one of them, so the other cannot be addressed at all.
   for (const { id, locations } of references.duplicates) {
@@ -854,7 +884,7 @@ export function validateModel(args) {
           if (!item || typeof item !== "object") continue;
           if (typeof item.id === "string" && !re.test(item.id)) {
             warnings.push(
-              `[${relFile}] ${kind} id "${item.id}" SHOULD match ${expected} (v2.7.7 typed-id convention) — free-string is valid but discouraged; required in v2.8`,
+              `[${relFile}] ${kind} id "${item.id}" SHOULD match ${expected} (v2.7.7 typed-id convention) - free-string is valid but discouraged; required in v2.8`,
             );
           }
         }
@@ -875,26 +905,13 @@ export function validateModel(args) {
     }
     if (retained.length > 0) {
       warnings.push(
-        `Compat mode does NOT relax ${retained.length} identity/reference violation(s) — these remain fatal.`,
+        `Compat mode does NOT relax ${retained.length} identity/reference violation(s) - these remain fatal.`,
       );
     }
     schemaErrors.length = 0;
     schemaErrors.push(...retained);
   }
 
-  // The register is checked LAST, so a fault in it can never truncate the model's own findings.
-  // It is reported separately from `filesValidated` because it is not one of the model's files:
-  // folding it into that count would make the two numbers disagree with the directory they name.
-  const trackedRegister =
-    args.trackedRegister && fs.existsSync(args.trackedRegister)
-      ? checkTrackedRegister({
-          registerPath: args.trackedRegister,
-          modelDir,
-          ajv,
-          schemaErrors,
-          warnings,
-        })
-      : null;
 
   return {
     schemaErrors,
@@ -905,6 +922,6 @@ export function validateModel(args) {
     filesValidated,
     filesSkipped: skippedFiles.length,
     skippedFiles,
-    trackedRegister,
+    trackedRegister: null,
   };
 }

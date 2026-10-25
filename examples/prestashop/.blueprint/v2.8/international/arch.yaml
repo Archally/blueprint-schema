@@ -44,3 +44,8 @@ contexts:
               - international.QRY010
               - international.QRY005
               - international.QRY004
+        implementation: "as-is"
+        code_refs:
+          - path: src/Core/Domain/Currency/
+            role: implementation
+            description: Source for this logical module within the PrestaShop PHP monolith; verified in the cited develop checkout a27e912eef9.

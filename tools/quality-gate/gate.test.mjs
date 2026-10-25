@@ -17,6 +17,7 @@ import { collectObservations } from './collect.mjs';
 import { evaluate, nextBaseline } from './evaluate.mjs';
 import { loadSpec, loadProjectConfig, writeBaseline } from './config.mjs';
 import { sliceOf, normalizeSliceArg, observedSlices, ROOT_SLICE } from './slice.mjs';
+import { rollupEntities, selectEntity, selectFile } from './entities.mjs';
 
 const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const CLI = path.join(TOOL_DIR, 'cli.mjs');
@@ -52,7 +53,7 @@ errors:
     id: shop.ER01
     description: "Raised when reserved stock falls below the requested quantity."
 `,
-  // Actors carry prose under `summary`, not `description` (plan D11). Treating
+  // Actors carry prose under `summary`, not `description`. Treating
   // `description` as the only carrier would report these as gaps.
   'shop/concepts.yaml': `
 schemaVersion: "2.7.0"
@@ -62,6 +63,7 @@ concepts:
     description: "A customer's confirmed intent to purchase, priced and payable."
     attributes:
       total:
+        id: shop.CAT01
         description: "Order grand total in the order's settlement currency."
         example: 42.5
       status:
@@ -172,7 +174,7 @@ describe('collection — the shapes that broke in the stress test', () => {
     assert.equal(bare?.value, undefined, 'the failure counterpart has no description');
   });
 
-  test('an actor documented via `summary` counts as covered (D11)', () => {
+  test('an actor documented via `summary` counts as covered', () => {
     const { observations } = collectObservations(fixtureRoot);
     const actor = observations.find((observation) => observation.metric === 'concept.actor.description');
     assert.ok(String(actor?.value).includes('buying goods'), 'summary must be read as the prose carrier');
@@ -208,6 +210,18 @@ describe('collection — the shapes that broke in the stress test', () => {
     const unclaimed = observations.filter((observation) => observation.metric === 'entity.description');
     assert.ok(!unclaimed.some((observation) => observation.entityId === 'shop.CN001'),
       'a concept is measured by concept.description, not twice');
+  });
+
+  test('a concept attribute with a typed id is observed once, by its specific metric', () => {
+    const { observations } = collectObservations(fixtureRoot);
+    const attribute = observations.filter((observation) => observation.ownedId === 'shop.CAT01');
+    assert.deepEqual(attribute.map((observation) => observation.metric).sort(),
+      ['concept.attribute.description', 'concept.attribute.example'],
+      'the attribute is measured by the concept-attribute metrics and carries its own id');
+    assert.equal(attribute[0].entityId, 'shop.CN001', 'and rolls up to the concept that owns it');
+    const catchAll = observations.filter((observation) => observation.metric === 'entity.description');
+    assert.ok(!catchAll.some((observation) => observation.entityId === 'shop.CAT01'),
+      'the safety net must not observe the same description a second time under its bare id');
   });
 
   test('takes the highest declared schemaVersion across the model', () => {
@@ -571,5 +585,257 @@ describe('slice scoping refuses a selection that measures nothing', () => {
     const { code, stdout } = runCli([fixtureRoot, '--slice', 'warehouse']);
     assert.equal(code, 0);
     assert.match(stdout, /slice "warehouse"/);
+  });
+});
+
+describe('entities - one record per entity, one row per authored field', () => {
+  /** @param {object} [config] @param {Parameters<typeof evaluate>[0]['selection']} [selection] */
+  function evaluateFixture(config = {}, selection = undefined) {
+    const { observations, schemaVersion } = collectObservations(fixtureRoot);
+    const { spec } = loadSpec();
+    return { observations, result: evaluate({ observations, spec, config, selection, schemaVersion }) };
+  }
+
+  test('every observation names the field it read and the entity it rolls up to', () => {
+    const { observations } = collectObservations(fixtureRoot);
+    const incomplete = observations.filter((observation) => !observation.field || !observation.entityName || !observation.entityKind);
+    assert.deepEqual(incomplete, []);
+    const property = observations.find((observation) => observation.subject === 'PlaceOrderPayload.orderId'
+      && observation.metric === 'model.property.example');
+    assert.equal(property?.field, 'example');
+    assert.equal(property?.entityName, 'PlaceOrderPayload');
+    assert.equal(property?.entityKind, 'model');
+  });
+
+  test('a field two metrics read is one row naming both, and the worse verdict wins', () => {
+    const { result } = evaluateFixture();
+    const rejected = result.entities.find((entity) => entity.entityId === 'shop.E002');
+    assert.ok(rejected, 'the undescribed event is an entity');
+    assert.equal(rejected.kind, 'event');
+    assert.equal(rejected.fields.length, 1, 'its description is one field, read by two metrics');
+    assert.deepEqual(rejected.fields[0].metrics.sort(), ['domain.event.description', 'domain.operation.description']);
+    assert.equal(rejected.fields[0].status, 'missing');
+    assert.deepEqual(rejected.counts, { fields: 1, covered: 0, filler: 0, missing: 1 });
+  });
+
+  test('a concept attribute rolls up to its concept and keeps its own id on its rows', () => {
+    const { result } = evaluateFixture();
+    const order = result.entities.find((entity) => entity.entityId === 'shop.CN001');
+    assert.ok(order);
+    assert.deepEqual(order.ownedIds, ['shop.CAT01']);
+    const totalRows = order.fields.filter((row) => row.subject === 'Order.total');
+    assert.deepEqual(totalRows.map((row) => [row.field, row.ownedId]), [['description', 'shop.CAT01'], ['example', 'shop.CAT01']]);
+    assert.ok(!result.entities.some((entity) => entity.entityId === 'shop.CAT01'), 'the attribute is not an entity of its own');
+  });
+
+  test('each entity counts its fields, and its findings sum to its missing and filler counts', () => {
+    const { result } = evaluateFixture();
+    for (const entity of result.entities) {
+      const { fields, covered, filler, missing } = entity.counts;
+      assert.equal(fields, entity.fields.length, `${entity.name}: one count per row`);
+      assert.equal(covered + filler + missing, fields, `${entity.name}: every row has one status`);
+      assert.equal(entity.fields.filter((row) => row.status !== 'covered').length, filler + missing);
+    }
+    const distinctFieldFindings = new Set(result.findings.map((finding) => `${finding.file}|${finding.entityId}|${finding.subject}|${finding.metric.split('.').pop()}`));
+    const entityFindings = result.entities.reduce((sum, entity) => sum + entity.counts.filler + entity.counts.missing, 0);
+    assert.equal(entityFindings, distinctFieldFindings.size, 'the rollup loses no finding and counts a doubly-read field once');
+  });
+
+  test('a field two metrics judge differently reports the worse verdict and its reason', () => {
+    const observation = /** @type {any} */ ({ file: '/m/a.yaml', entityId: 'E1', entityName: 'e', entityKind: 'event', subject: 'e', field: 'description' });
+    const [entity] = rollupEntities([
+      { observation, metric: 'domain.operation.description', status: 'covered' },
+      { observation, metric: 'domain.event.description', status: 'filler', reason: 'too short' },
+    ]);
+    assert.deepEqual(entity.fields.map((row) => [row.status, row.reason]), [['filler', 'too short']]);
+    assert.deepEqual(entity.counts, { fields: 1, covered: 0, filler: 1, missing: 0 });
+  });
+
+  test('rollupEntities keeps the order entities were first observed', () => {
+    const rows = rollupEntities([
+      { observation: /** @type {any} */ ({ file: '/m/a.yaml', entityId: 'B1', entityName: 'b', entityKind: 'k', subject: 'b', field: 'description' }), metric: 'x.description', status: 'covered' },
+      { observation: /** @type {any} */ ({ file: '/m/a.yaml', entityId: 'A1', entityName: 'a', entityKind: 'k', subject: 'a', field: 'description' }), metric: 'x.description', status: 'missing' },
+    ]);
+    assert.deepEqual(rows.map((entity) => entity.entityId), ['B1', 'A1']);
+  });
+
+  test('the whole-model result ranks the worst entities', () => {
+    const { result } = evaluateFixture();
+    assert.ok(result.worstEntities.length > 0);
+    const scores = result.worstEntities.map((entity) => entity.score);
+    assert.deepEqual(scores, [...scores].sort((a, b) => b - a));
+    assert.ok(result.worstEntities.every((entity) => entity.score > 0), 'a clean entity is not a worst entity');
+  });
+});
+
+describe('entity and file selection', () => {
+  test('--entity selects an entity by its own id', () => {
+    const { observations } = collectObservations(fixtureRoot);
+    const { selected, focus } = selectEntity(observations, 'shop.CN001');
+    assert.equal(focus, undefined);
+    assert.ok(selected.size > 0);
+    assert.ok([...selected].every((observation) => observation.entityId === 'shop.CN001'));
+  });
+
+  test('an owned part selects its owner and becomes the focus', () => {
+    const { observations } = collectObservations(fixtureRoot);
+    const { selected, focus } = selectEntity(observations, 'shop.CAT01');
+    assert.equal(focus, 'shop.CAT01');
+    assert.ok([...selected].some((observation) => observation.metric === 'concept.description'),
+      'the whole owning concept is selected, not only the attribute');
+  });
+
+  test('an id without its scope prefix is accepted when it is unique', () => {
+    const { observations } = collectObservations(fixtureRoot);
+    const { selected } = selectEntity(observations, 'LP01');
+    assert.ok([...selected].every((observation) => observation.entityId === 'shop.LP01'));
+  });
+
+  test('an unknown id refuses and lists the ids that share its prefix', () => {
+    const { observations } = collectObservations(fixtureRoot);
+    assert.throws(() => selectEntity(observations, 'shop.CN999'), /selects nothing measurable.*prefix CN: shop\.CN001/);
+    assert.throws(() => selectEntity(observations, 'NOPE999'), /selects nothing measurable.*prefixes: .*CN/);
+  });
+
+  test('an id that matches several scoped ids refuses as ambiguous', () => {
+    const observations = /** @type {any[]} */ ([
+      { file: '/m/a/x.yaml', entityId: 'a.CN001', entityName: 'A', subject: 'A' },
+      { file: '/m/b/x.yaml', entityId: 'b.CN001', entityName: 'B', subject: 'B' },
+    ]);
+    assert.throws(() => selectEntity(observations, 'CN001'), /ambiguous.*a\.CN001, b\.CN001/);
+  });
+
+  test('--file reads a path relative to the model root, or to the working directory', () => {
+    const { observations } = collectObservations(fixtureRoot);
+    const fromRoot = selectFile(observations, fixtureRoot, path.join('shop', 'models.yaml'), '/');
+    const fromCwd = selectFile(observations, fixtureRoot, path.join(path.basename(fixtureRoot), 'shop', 'models.yaml'), path.dirname(fixtureRoot));
+    assert.equal(fromRoot.file, path.join(fixtureRoot, 'shop', 'models.yaml'));
+    assert.equal(fromCwd.file, fromRoot.file);
+    assert.ok([...fromRoot.selected].every((observation) => observation.file === fromRoot.file));
+  });
+
+  test('a file that holds nothing measurable refuses, as a misspelled one does', () => {
+    const { observations } = collectObservations(fixtureRoot);
+    assert.throws(() => selectFile(observations, fixtureRoot, 'blueprint.yaml', '/'), /holds no entity the gate observes/);
+    assert.throws(() => selectFile(observations, fixtureRoot, path.join('shop', 'modls.yaml'), '/'), /selects nothing measurable.*Similar files: shop/);
+  });
+
+  test('a selection judges work in progress: the patch bar, and no ratchet', () => {
+    const { observations, schemaVersion } = collectObservations(fixtureRoot);
+    const { spec } = loadSpec();
+    const config = { baseline: { 'concept.attribute.description': 1 } };
+    const whole = evaluate({ observations, spec, config, schemaVersion });
+    assert.equal(scoreOf(whole, 'concept.attribute.description').status, 'below-baseline');
+    const selection = { mode: /** @type {const} */ ('entity'), value: 'shop.CN001', ...selectEntity(observations, 'shop.CN001') };
+    const scoped = evaluate({ observations, spec, config, selection, schemaVersion });
+    const metric = scoreOf(scoped, 'concept.attribute.description');
+    assert.equal(metric.status, 'below-threshold', 'the ratchet is a whole-model claim; a selection meets the patch bar');
+    assert.equal(metric.threshold, spec.metrics['concept.attribute.description'].patch_threshold);
+    assert.equal(scoped.entities.length, 1);
+    assert.equal(scoped.entityMode, 'shop.CN001');
+  });
+});
+
+describe('CLI contract - --entity and --file', () => {
+  test('--entity prints one block headed by the id and the name, one row per field', () => {
+    const { code, stdout } = runCli([fixtureRoot, '--entity', 'shop.CN001']);
+    assert.equal(code, 0);
+    assert.match(stdout, /scope: entity "shop\.CN001"/);
+    assert.equal(stdout.match(/^  shop\.CN001 Order$/gm)?.length, 1);
+    assert.match(stdout, /^    concept - shop\/concepts\.yaml - 5 field\(s\): 3 covered, 1 filler, 1 missing$/m);
+    assert.match(stdout, /FILL  description  Order\.status/);
+    assert.doesNotMatch(stdout, /Worst (files|entities)/, 'the block is the worklist');
+  });
+
+  test('--entity with an owned id prints the owner block and points at the part', () => {
+    const { code, stdout } = runCli([fixtureRoot, '--entity', 'shop.CAT01']);
+    assert.equal(code, 0);
+    assert.match(stdout, /^  shop\.CN001 Order$/m);
+    assert.match(stdout, /^   >ok    description  Order\.total \[shop\.CAT01\]$/m);
+  });
+
+  test('--file prints only the entities of that file', () => {
+    const { code, stdout } = runCli([fixtureRoot, '--file', path.join('shop', 'domain.yaml')]);
+    assert.equal(code, 0);
+    const headings = stdout.match(/^  \S+ .*$/gm)?.filter((line) => /^  shop\./.test(line)) ?? [];
+    assert.deepEqual(headings, ['  shop.C001 PlaceOrder', '  shop.E001 OrderPlaced', '  shop.E002 OrderRejected', '  shop.ER01 StockUnavailable']);
+    assert.doesNotMatch(stdout, /shop\.CN001/);
+  });
+
+  test('an empty selection exits 2 and names candidates', () => {
+    const entity = runCli([fixtureRoot, '--entity', 'NOPE999']);
+    assert.equal(entity.code, 2);
+    assert.match(entity.stdout, /selects nothing measurable/);
+    const file = runCli([fixtureRoot, '--file', 'nope.yaml']);
+    assert.equal(file.code, 2);
+    assert.match(file.stdout, /selects nothing measurable.*shop/);
+  });
+
+  test('--entity and --file are scoping modes: exclusive with each other, --since and --slice', () => {
+    for (const args of [
+      ['--entity', 'shop.CN001', '--slice', 'shop'],
+      ['--entity', 'shop.CN001', '--since', 'HEAD'],
+      ['--file', 'shop/domain.yaml', '--slice', 'shop'],
+      ['--entity', 'shop.CN001', '--file', 'shop/domain.yaml'],
+    ]) {
+      const { code, stdout } = runCli([fixtureRoot, ...args]);
+      assert.equal(code, 2, args.join(' '));
+      assert.match(stdout, /scoping modes and cannot be combined/);
+    }
+  });
+
+  test('--entity refuses --update-baseline, a missing value and a second model root', () => {
+    assert.match(runCli([fixtureRoot, '--entity', 'shop.CN001', '--update-baseline']).stdout, /cannot be combined with --entity or --file/);
+    assert.equal(runCli([fixtureRoot, '--entity']).code, 2);
+    const twoRoots = runCli([fixtureRoot, fixtureRoot, '--file', 'shop/domain.yaml']);
+    assert.equal(twoRoots.code, 2);
+    assert.match(twoRoots.stdout, /exactly one model root/);
+  });
+
+  test('--json carries entities[] beside findings[] and worstFiles[]', () => {
+    const { code, stdout } = runCli([fixtureRoot, '--json']);
+    assert.equal(code, 0);
+    const [run] = JSON.parse(stdout).runs;
+    assert.ok(Array.isArray(run.findings) && Array.isArray(run.worstFiles));
+    const order = run.entities.find((entity) => entity.entityId === 'shop.CN001');
+    // A concept is a measured structure kind, so its record carries `structure` after the findings.
+    assert.deepEqual(Object.keys(order), ['entityId', 'name', 'kind', 'file', 'ownedIds', 'counts', 'findings', 'structure']);
+    assert.equal(order.file, path.join('shop', 'concepts.yaml'));
+    assert.deepEqual(order.findings.map((finding) => [finding.field, finding.subject, finding.status]), [['description', 'Order.status', 'filler'], ['example', 'Order.status', 'missing']]);
+  });
+
+  test('--entity --json reports entityMode and only the selected entity', () => {
+    const { code, stdout } = runCli([fixtureRoot, '--entity', 'shop.E002', '--json']);
+    assert.equal(code, 0);
+    const [run] = JSON.parse(stdout).runs;
+    assert.equal(run.entityMode, 'shop.E002');
+    assert.deepEqual(run.entities.map((entity) => entity.entityId), ['shop.E002']);
+  });
+
+  test('the whole-model report lists worst entities beside worst files', () => {
+    const { stdout } = runCli([fixtureRoot, '--worst', '2']);
+    const section = stdout.split('Worst entities (missing + filler fields)')[1] ?? '';
+    const rows = section.split('\n').filter((line) => /^\s+\d+\s{2}\S/.test(line));
+    assert.equal(rows.length, 2, '--worst limits the entity list too');
+  });
+});
+
+describe('CLI contract - output on a pipe', () => {
+  test('--json on stdout reaches a pipe whole, past the 64 KiB a pipe buffers', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bp-quality-pipe-'));
+    try {
+      const properties = Array.from({ length: 300 }, (_, index) => `        field${index}:\n          type: string\n`).join('');
+      fs.mkdirSync(path.join(root, 'bulk'));
+      fs.writeFileSync(path.join(root, 'bulk', 'models.yaml'),
+        `schemaVersion: "2.7.0"\ncomponents:\n  schemas:\n    BulkPayload:\n      x-model-id: bulk.MDL001\n      type: object\n      properties:\n${properties}`);
+      // execFileSync reads the child's stdout through a pipe, as a shell pipeline does.
+      const { code, stdout } = runCli([root, '--json']);
+      assert.equal(code, 0);
+      const [run] = JSON.parse(stdout).runs;
+      assert.equal(run.entities[0].counts.fields, 603, 'every row survived the pipe: 300 properties x 2 fields, plus the model\'s own 3');
+      assert.ok(Buffer.byteLength(stdout) > 65536, 'the payload exceeds one pipe buffer, so the case is real');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 });

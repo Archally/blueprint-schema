@@ -17,6 +17,51 @@ test('parseCodeRefPath — unprefixed vs cross-repo, trims', () => {
   assert.deepEqual(parseCodeRefPath('  src/x.ts  '), { prefix: null, filepath: 'src/x.ts' });
 });
 
+test('parseCodeRefPath separates trailing line locations from repository prefixes', () => {
+  assert.deepEqual(parseCodeRefPath('src/Order.php#L194'), {
+    prefix: null, filepath: 'src/Order.php', line: 194,
+  });
+  assert.deepEqual(parseCodeRefPath(' acme/orders#src/Order.php#L194-L210 '), {
+    prefix: 'acme/orders', filepath: 'src/Order.php', line: 194, endLine: 210,
+  });
+});
+
+test('parseCodeRefPath preserves a repository prefix for a located extensionless file', () => {
+  assert.deepEqual(parseCodeRefPath('acme/orders#L194#L47'), {
+    prefix: 'acme/orders', filepath: 'L194', line: 47,
+  });
+});
+
+test('resolveBrowserUrl retains GitHub line ranges', () => {
+  assert.equal(resolveBrowserUrl('src/Order.php#L194-L210', {
+    repository: { url: 'https://github.com/acme/shop' },
+  }), 'https://github.com/acme/shop/blob/main/src/Order.php#L194-L210');
+});
+
+test('resolveBrowserUrl opens the first line on GitLab and Bitbucket', () => {
+  assert.equal(resolveBrowserUrl('acme/orders#src/Order.php#L194-L210', {
+    repositories: { 'acme/orders': { url: 'https://gitlab.com/acme/orders', provider: 'gitlab' } },
+  }), 'https://gitlab.com/acme/orders/-/blob/main/src/Order.php#L194');
+  assert.equal(resolveBrowserUrl('src/Order.php#L194', {
+    repository: { url: 'https://bitbucket.org/acme/shop', provider: 'bitbucket' },
+  }), 'https://bitbucket.org/acme/shop/src/main/src/Order.php#Order.php-194');
+});
+
+test('scanCodeRefPaths includes a line fragment in quoted and plain paths', () => {
+  const text = 'code_refs:\n  - path: src/Order.php#L194\n  - { path: "acme/orders#src/Order.php#L194-L210", role: implementation }';
+  assert.deepEqual(scanCodeRefPaths(text).map(hit => hit.raw), [
+    'src/Order.php#L194', 'acme/orders#src/Order.php#L194-L210',
+  ]);
+});
+
+test('parseCodeRefPath leaves invalid line suffixes as literal path text', () => {
+  for (const suffix of ['#L0', '#L01', '#L-1', '#L5-L2', '#L2-L0', '#L9007199254740992', '#L1-L9007199254740992']) {
+    assert.deepEqual(parseCodeRefPath(`acme/orders#src/Order.php${suffix}`), {
+      prefix: 'acme/orders', filepath: `src/Order.php${suffix}`,
+    });
+  }
+});
+
 test('buildCodeRefUrl — provider patterns + branch default', () => {
   assert.equal(
     buildCodeRefUrl({ url: 'https://github.com/acme/shop', branch: 'main', provider: 'github' }, 'src/a.ts'),

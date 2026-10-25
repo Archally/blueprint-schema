@@ -6,21 +6,26 @@ scope: orders
 processes:
   - id: orders.PRC001
     title: "Place an order"
-    description: "End-to-end flow from cart to confirmed order."
-    initiated_by: [orders.ACT001]
+    description: "From a cart confirmed by the shopper or submitted by a back-office employee to the orders PrestaShop writes for it. Either actor may initiate orders.CMD001; both lanes list that shared operation."
+    initiated_by: [orders.ACT001, admin.ACT002]
     trigger:
       type: message
       operation: orders.CMD001
-      description: "Customer submits order from checkout."
+      description: "The shopper confirms the order at the last checkout step, or an employee places it in the back office, and the payment module validates the cart."
     end_states:
       - name: "Order placed"
         type: complete
-        description: "Order created with payment recorded and stock reserved."
-      - name: "Order rejected"
+        description: "One order per package written from the cart, stock decreased for each line, the first status set, and a payment recorded when that status counts as validated."
+      - name: "Order not placed"
         type: error
-        description: "Validation failure - insufficient stock, invalid address, or payment declined."
+        description: "The checkout sends the shopper back to the cart (no product, a product no longer available, a disabled delivery or invoice country), or validation refuses a cart that already has an order or an inactive payment module."
+      - name: Order placed with a payment error
+        type: error
+        description: The order is written, but with the Payment error status, because a validated status was named with a paid amount different from the cart total.
     lanes:
       - actor: orders.ACT001
+        operations: [orders.CMD001]
+      - actor: admin.ACT002
         operations: [orders.CMD001]
     activities:
       - id: orders.PA001
@@ -28,20 +33,27 @@ processes:
         entry_operation: orders.CMD001
         steps:
           - operation_ref: orders.CMD001
-            note: "Validate cart and create order."
+            note: "PaymentModule::validateOrder checks the cart, creates one order per package and records the payment when the status counts as validated."
           - operation_ref: orders.EVT001
-            note: "OrderPlaced event emitted."
+            note: "actionValidateOrder fires once the orders are written."
     code_refs:
       - path: "src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php"
         role: implementation
-        description: "Back-office order management controller."
+        description: "Line 211: placeAction, where an employee places an order from a customer cart; it reaches validateOrder through AddOrderFromBackOfficeHandler."
       - path: "controllers/front/OrderController.php"
         role: implementation
-        description: "Front-office order placement controller."
+        description: "Lines 280-295: the checkout returns the shopper to the cart when it is empty, a product is unavailable or a country is disabled."
+      - path: classes/PaymentModule.php
+        role: implementation
+        description: "validateOrder: lines 246-251 refuse a cart already ordered; 261 splits the cart into packages; 332-335 switch to Payment error when the paid amount differs from the cart total; 412-427 record the payment for a validated status; 608 fires actionValidateOrder; 627-629 set the first status."
+      - path: classes/order/OrderDetail.php
+        role: implementation
+        description: "Lines 522-540: updateProductQuantityInStock decreases the available quantity of each ordered product."
+    implementation: as-is
 
   - id: orders.PRC002
     title: "Cancel and refund"
-    description: "Merchant or customer cancels an order and triggers refund."
+    description: "Either Merchant or Administrator may perform both steps: cancel the order and process its refund. Both lanes list these operations because either role may carry them out."
     initiated_by: [orders.ACT003, orders.ACT004]
     trigger:
       type: message

@@ -14,7 +14,7 @@ happy_path:
     expected_result:
       status: success
     validates:
-      rules: [admin.VR001, admin.VR002]
+      rules: [admin.VR001, admin.VR002, admin.SR001]
       operations: [admin.CMD001, admin.EVT001]
       concepts: [admin.CN001]
     contract:
@@ -209,13 +209,7 @@ edge_cases:
     summary: "After rotation the previous secret no longer authenticates and the new one does."
     given:
       description: >-
-        An API client whose secret is rotated. Corrected 2026-09-19: this case asserted that
-        rotation does not immediately invalidate ACTIVE TOKENS. Nothing supports that in either
-        direction - GenerateApiClientSecretHandler rewrites the stored hashed secret and no
-        code on the token issuance or validation path was found that either revokes or
-        preserves tokens already issued, and no test issues a token, rotates, then reuses it.
-        Asserting an unevidenced property is worse than asserting the smaller one the suite
-        really proves, so the case now asserts the credential.
+        An API client whose secret is rotated.
       state:
         secretRotated: true
     expected_result:
@@ -248,6 +242,7 @@ edge_cases:
             happens to tokens already minted is not stated by any code the modeler found and
             not exercised by any test. It is an open question, not a modelled fact.
           confidence_impact: weakens
+    note: "The case asserts the credential, not active tokens: GenerateApiClientSecretHandler rewrites the stored hashed secret, and no code on the token issuance or validation path was found that revokes or preserves tokens already issued, nor does any test issue a token, rotate, then reuse it."
 
 error_cases:
   - id: admin.ER001

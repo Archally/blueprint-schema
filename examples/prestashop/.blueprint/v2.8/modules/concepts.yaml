@@ -178,35 +178,21 @@ actors:
     name: "StoreAdmin"
     type: human
     description: "Back-office administrator responsible for installing, configuring, and managing modules to extend storefront functionality."
-    personas:
-      - name: "Typical StoreAdmin"
-        quote: "I need modules to work reliably. A broken module can take down the entire store."
-        goals: ["Install modules safely", "Keep modules up to date", "Disable problematic modules quickly"]
-        pain_points: ["Module incompatibilities after upgrades", "No rollback mechanism", "Unclear dependency chains"]
-        behaviors: ["Tests modules in staging before production", "Disables modules before major upgrades"]
-        tech_savviness: high
-        job_to_be_done: "Extend storefront functionality through modules while maintaining store stability"
-        context: "Back-office module management"
-        demographics:
-          role: "Store Administrator"
-          industry: "E-commerce"
 
   - id: modules.ACT002
     name: "ModuleDeveloper"
     type: human
     description: "Third-party or in-house developer who builds, uploads, and tests modules against the PrestaShop extension system."
     personas:
-      - name: "Typical ModuleDeveloper"
-        quote: "I need clear hook documentation and reliable lifecycle events to build quality modules."
-        goals: ["Build compatible modules", "Register hooks correctly", "Test module lifecycle"]
-        pain_points: ["Hook documentation gaps", "Version compatibility matrix", "Reset behavior unpredictability"]
-        behaviors: ["Uses upload command for local development", "Tests install/uninstall/reset cycles"]
-        tech_savviness: high
-        job_to_be_done: "Build and deploy modules that integrate cleanly with the PrestaShop extension system"
-        context: "Module development and testing"
-        demographics:
-          role: "PHP Developer"
-          industry: "E-commerce / Software"
+      - id: modules.PER001
+        name: Module developer
+        description: A developer who extends PrestaShop with modules registered on hooks (presta-docs/modules/concepts/hooks/_index.md; presta-docs/basics/introduction.md).
+        goals:
+          - Extend the shop by registering hooks at installation and implementing a hook method for each (presta-docs/modules/concepts/hooks/_index.md, 'Registration', 'Execution').
+          - Track, per PrestaShop version, the core changes that may impact my modules (presta-docs/modules/core-updates/_index.md).
+        pain_points:
+          - PrestaShop 9.0 removes hooks and migrates back-office pages to Symfony, deleting legacy controllers and Smarty templates a module may rely on (presta-docs/modules/core-updates/9.0.md, 'Removed hooks in PrestaShop 9.0', 'Migrated pages').
+          - PrestaShop 9.0 moves from Symfony 4.4 to 6.4 and removes dependencies such as Guzzle (presta-docs/modules/core-updates/9.0.md, 'Core changes', 'Removed dependencies').
 
 enumerations:
   - id: modules.EN002

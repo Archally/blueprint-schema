@@ -4,35 +4,80 @@ scope: orders
 
 structural:
   - id: orders.SR001
-    name: "Order must have at least one line"
-    description: "An order cannot be created with zero line items. Removing the last line item is prohibited."
+    name: "An order is placed only from a cart with at least one product"
+    description: "Keeps every order, and every order line, about something actually bought."
     logic:
-      then: "order.lines.count >= 1"
+      then: "cart.products.count >= 1 AND line.quantity > 0"
+      when: "a cart is turned into an order, or a line is added to or changed on an order"
     modality: necessary
     concepts: [orders.CN002, orders.CN003]
     code_refs:
-      - path: "src/Core/Domain/Order/OrderConstraints.php"
-        role: implementation
       - path: "src/Core/Domain/Order/Exception/InvalidProductQuantityException.php"
         role: implementation
+        description: The exception both order-line commands raise for a quantity of zero or less.
+      - path: controllers/front/OrderController.php
+        role: validation
+        description: "Lines 280-283: the checkout sends the shopper back to the cart when it holds no product."
+      - path: src/Core/Domain/Order/Product/Command/AddProductToOrderCommand.php
+        role: validation
+        description: "Lines 285-286: adding a line with a quantity of zero or less is refused."
+      - path: src/Core/Domain/Order/Product/Command/UpdateProductInOrderCommand.php
+        role: validation
+        description: "Lines 145-150: changing a line to a quantity of zero or less is refused."
+    summary: An order comes from a non-empty cart, and each of its lines has a quantity above zero.
+    fact: Cart.products.count >= 1 AND OrderDetail.product_quantity > 0
+    scope: checkout order placement; back-office add and update of an order line
+    on_violation:
+      action: reject
+      message: When adding a product quantity must be strictly positive
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: orders.SR002
-    name: "Invoice requires paid status"
-    description: "An invoice can only be generated for an order that has at least one payment-accepted status in its history. Prevents premature invoice issuance."
+    name: "An order gets its invoice on an invoicing status or on request"
+    description: "Keeps an order from being invoiced twice."
     logic:
-      when: "generateInvoice is requested"
-      then: "order.statusHistory contains payment-accepted"
+      when: "an order enters a status whose invoice flag is set, or the merchant asks for an invoice"
+      then: "the order gets an invoice number when invoicing is enabled and it has none"
     modality: obligatory
     concepts: [orders.CN002, orders.CN006]
     code_refs:
       - path: "src/Core/Domain/Order/Invoice/Command/GenerateInvoiceCommand.php"
         role: implementation
-      - path: "src/Core/Domain/Order/Invoice/Exception/InvoiceException.php"
+        description: The command the back office sends to generate an invoice by hand.
+      - path: src/Adapter/Order/CommandHandler/GenerateInvoiceHandler.php
+        role: validation
+        description: "Lines 29-35: refuses only when invoicing is disabled or the order already has an invoice; payment is not checked."
+      - path: classes/order/OrderHistory.php
         role: implementation
+        description: "Lines 271-272: entering a status whose invoice flag is set issues the invoice when the order has none."
+      - path: install-dev/data/xml/order_state.xml
+        role: seed-data
+        description: 'Line 21: Payment accepted ships with invoice="1", as do Processing in progress, Shipped, Delivered, Refunded and the paid backorder state.'
+      - path: tests/Integration/Behaviour/Features/Scenario/Order/order_documents.feature
+        role: test
+        description: "Scenarios at lines 33 and 40: Payment accepted issues an invoice; Delivered issues an invoice and a delivery slip."
+    summary: An order is invoiced once, on entering an invoicing status or on the merchant's request; payment is not a condition.
+    fact: OrderState.invoice = true AND Order.invoice_number = 0 => Order.setInvoice()
+    scope: order status change; back-office invoice generation
+    on_violation:
+      action: reject
+      message: This order already has an invoice.
+    examples:
+      - input: An order awaiting bank wire payment is moved to Payment accepted
+        output: "The order has one document, invoice #IN000001"
+      - input: The same order is moved to Delivered instead
+        output: The order has an invoice and a delivery slip
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: orders.SR003
     name: "Merchandise return must keep at least one product line"
-    description: "A merchandise return cannot be left with zero product lines. Both the single-row and the staged bulk delete refuse when the request would remove the last line, so a return always names something that is being returned."
+    description: "A return always names something that is being returned."
     logic:
       when: "a product line is removed from a merchandise return"
       then: "orderReturn.productLines.count >= 1"
@@ -41,112 +86,306 @@ structural:
     code_refs:
       - path: "src/Adapter/OrderReturn/CommandHandler/DeleteProductFromOrderReturnHandler.php"
         role: implementation
+        description: "Lines 36-39: refuses to delete a line when the return has one line or fewer."
       - path: "src/Adapter/OrderReturn/CommandHandler/BulkDeleteProductsFromOrderReturnHandler.php"
         role: implementation
+        description: "Lines 47-50: refuses a bulk deletion that would leave fewer than one line."
       - path: "src/Core/Domain/OrderReturn/Exception/CannotDeleteLastProductFromOrderReturnException.php"
         role: implementation
+        description: The exception both handlers raise.
+      - path: tests/Integration/Behaviour/Features/Scenario/OrderReturn/order_return_management.feature
+        role: test
+        description: "Scenarios at lines 53 and 58: deleting the last product, alone or in bulk, is refused."
+    summary: A merchandise return keeps at least one product line.
+    fact: OrderReturn.productLines.count >= 1
+    scope: back-office editing of a merchandise return
+    on_violation:
+      action: reject
+      message: A merchandise return must contain at least one product.
+    examples:
+      - input: A return holds two products; one is deleted, then the other
+        output: The second deletion is refused with CannotDeleteLastProductFromOrderReturnException
+      - input: Both products of a return are staged for deletion and committed together
+        output: The bulk deletion is refused and the return keeps its lines
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+  - id: orders.SR004
+    name: The last line of an order cannot be removed
+    description: "An order is meant to keep at least one line; nothing refuses removing the last one today."
+    summary: An order keeps at least one line when a product is removed from it.
+    logic:
+      when: a line is removed from an order
+      then: order.lines.count >= 1 after the removal
+    fact: Order.getProducts().count >= 1
+    scope: back-office removal of a product from an order
+    modality: prohibited
+    concepts:
+      - orders.CN002
+      - orders.CN003
+    implementation: to-be
+    code_refs:
+      - path: src/Adapter/Order/CommandHandler/DeleteProductFromOrderHandler.php
+        role: planned
+        description: "Lines 102-118 refuse an unknown line, a line of another order and a delivered order, and nothing counts the lines left."
+      - path: controllers/front/OrderController.php
+        role: documentation
+        description: "Lines 280-283: where an order is made, the checkout refuses a cart with no product."
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
 
 classification:
   - id: orders.CR001
-    name: "Order status transitions"
-    description: "Defines valid state transitions for the order lifecycle. Enforced at the aggregate root level before persisting state changes."
+    name: "An order may move to any status other than its current one"
+    description: "PrestaShop keeps no table of allowed transitions between order statuses."
     logic:
-      when: "order.status changes"
-      then: "new status must be in allowed transitions from current status"
+      when: "an order status update is requested"
+      then: "the new status exists AND the new status differs from order.currentStatus"
     concepts: [orders.CN002]
-    rationale: >
-      Prevents invalid transitions like refunded-to-processing. The state machine
-      is defined by the OrderState entity configuration and enforced by the
-      UpdateOrderStatus command handler.
     code_refs:
       - path: "src/Core/Domain/Order/Command/UpdateOrderStatusCommand.php"
         role: implementation
-      - path: "src/Core/Domain/Order/Exception/InvalidOrderStateException.php"
-        role: implementation
+        description: A data carrier with no transition check.
+      - path: src/Adapter/Order/CommandHandler/UpdateOrderStatusHandler.php
+        role: validation
+        description: "Lines 47-50: the only refusal is a status equal to the current one; lines 88-96 refuse a status id that does not exist."
+    summary: Any existing status may follow any other; only re-assigning the current status is refused.
+    fact: OrderState(newStatusId).id == newStatusId AND Order.current_state != newStatusId
+    scope: order status update through UpdateOrderStatusCommand (back office and Admin API)
+    on_violation:
+      action: reject
+      message: The order has already been assigned this status.
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
 validation:
   - id: orders.VR001
-    name: "Shipping address required for physical products"
-    description: "Orders containing physical (non-digital) products must have a valid shipping address."
+    name: "Checkout needs a delivery and an invoice address in enabled countries"
+    description: "Virtual carts need a delivery address too; a cart of virtual products only skips the carrier step."
     logic:
-      when: "order contains physical products"
-      then: "order.shippingAddress must be present and valid"
+      when: "a shopper completes the address step of checkout, for any cart, virtual or not"
+      then: "cart.deliveryAddress AND cart.invoiceAddress are set AND the countries of both are enabled"
     concepts: [orders.CN002, orders.CN004]
+    summary: Checkout completes only with a delivery address and an invoice address in enabled countries.
+    fact: Cart.id_address_delivery > 0 AND Cart.id_address_invoice > 0 AND Cart.checkCountriesAreEnabled()
+    scope: storefront checkout
+    modality: obligatory
+    implementation: as-is
+    code_refs:
+      - path: classes/checkout/CheckoutAddressesStep.php
+        role: validation
+        description: "Lines 174-178: the address step is complete only when both a delivery and an invoice address are set."
+      - path: controllers/front/OrderController.php
+        role: validation
+        description: "Lines 292-295: a disabled delivery or invoice country sends the shopper back to the cart; lines 415-419: every cart gets the address step; line 425: only a cart that is not virtual gets the carrier step."
+      - path: classes/Cart.php
+        role: implementation
+        description: "Lines 5027-5040: checkCountriesAreEnabled is false when the country of the delivery or the invoice address is disabled."
+    provenance:
+      discovery_stage: validated
+      certainty: probable
 
   - id: orders.VR002
-    name: "Payment amount must not exceed order total"
-    description: "The total of all payments and refunds must not result in a negative balance or exceed the order total."
+    name: "A payment recorded on an order cannot be negative"
+    description: "Keeps the payments recorded on an order to amounts received."
     logic:
-      when: "payment or refund is processed"
-      then: "sum(payments) - sum(refunds) >= 0 AND sum(payments) <= order.totalPaidTaxIncl"
+      when: "a payment is recorded against an order"
+      then: "payment.amount >= 0"
     modality: obligatory
     concepts: [orders.CN002, orders.CN005]
     code_refs:
       - path: "src/Core/Domain/Order/Payment/Command/AddPaymentCommand.php"
         role: implementation
+        description: "Lines 194-198: assertAmountIsPositive refuses a negative amount, the only amount check."
       - path: "src/Core/Domain/Order/Exception/NegativePaymentAmountException.php"
         role: implementation
+        description: The exception raised for a negative amount.
+      - path: src/Adapter/Order/QueryHandler/GetOrderForViewingHandler.php
+        role: implementation
+        description: "Lines 675-686: an order whose payments differ from its total is listed as a payment mismatch for the order view."
+      - path: tests/Integration/Behaviour/Features/Scenario/Order/order_add_payment.feature
+        role: test
+        description: "Scenario at line 72: a payment that does not match the order total is recorded."
+    summary: A recorded payment is zero or more; a total that differs from the payments is flagged, not refused.
+    fact: OrderPayment.amount >= 0
+    scope: back-office payment entry (AddPaymentCommand)
+    on_violation:
+      action: reject
+      message: The amount should be greater than 0.
+    examples:
+      - input: A 6.00 payment is added to an order whose total is not 6.00
+        output: The payment is recorded
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: orders.VR003
-    name: "Return eligibility window"
-    description: "A return request must be submitted within the configurable return window (default 14 days) from the delivery date. EU consumer law mandates a minimum 14-day window."
+    name: "Returns are open only when enabled, for a paid and shipped order, within the return period"
+    description: "Keeps return requests within the period the merchant allows after delivery."
     logic:
-      when: "return request is submitted"
-      then: "currentDate - order.deliveryDate <= returnWindowDays"
+      when: "a customer asks to return products of an order"
+      then: "returns are enabled AND the order is paid and shipped AND (returnPeriodDays = 0 OR today - order.deliveryDate <= returnPeriodDays)"
     modality: obligatory
     concepts: [orders.CN002, orders.CN007]
     code_refs:
       - path: "src/Core/Domain/Order/Command/IssueReturnProductCommand.php"
         role: implementation
+        description: "Lines 94-104: the back-office return command refuses when returns are disabled or the order is not delivered; it does not count days."
       - path: "src/Core/Domain/Order/Exception/ReturnProductDisabledException.php"
         role: implementation
+        description: The exception raised when returns are disabled.
+      - path: classes/order/Order.php
+        role: validation
+        description: "Lines 1221-1235: getNumberOfDays compares today with delivery_date against PS_ORDER_RETURN_NB_DAYS, 0 meaning no limit; lines 1243-1250: isReturnable also needs returns enabled and the order paid and shipped."
+      - path: controllers/front/OrderFollowController.php
+        role: validation
+        description: "Lines 55-56: the storefront refuses the return request when the order is not returnable."
+      - path: install-dev/data/xml/configuration.xml
+        role: seed-data
+        description: "Lines 101-106: returns ship disabled (PS_ORDER_RETURN 0) with a return period of 14 days."
+      - path: PrestaShop/prestashop-specs#content/1.7/back-office/customer-service/merchandise-returns/merchandise-returns-listing.md
+        role: documentation
+        description: 'Line 30: "Time limit of validity" is the number of days after the delivery date, 14 by default.'
+    summary: Returns are open while enabled, for a paid and shipped order, within the return period after delivery.
+    fact: Configuration.PS_ORDER_RETURN AND Order.isPaidAndShipped() AND Order.getNumberOfDays()
+    scope: storefront return request; the back-office return command checks only that returns are enabled and the order is delivered
+    rationale: EU consumer law sets a minimum 14-day withdrawal period, which the default return period matches.
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: documentation
+          source: PrestaShop/prestashop-specs#content/1.7/back-office/customer-service/merchandise-returns/merchandise-returns-listing.md line 30
+          date: 2026-10-14
+          summary: The specification of the merchandise returns page states the time limit counts days after the delivery date and defaults to 14, as the code does.
+          confidence_impact: supports
+        - kind: assumption
+          source: modeler
+          date: 2026-10-14
+          summary: "The legal reason in rationale has no PrestaShop source: searched install-dev/data/xml/configuration.xml, controllers/admin/AdminReturnController.php and the merchandise returns pages of prestashop-specs, which give the 14-day default and no reason for it."
+          confidence_impact: weakens
 
   - id: orders.VR004
-    name: "Partial refund constraints"
-    description: "A partial refund amount must be positive and cannot exceed the remaining refundable amount (order total minus previously refunded amounts)."
+    name: "A partial refund is positive and never exceeds what is left on a line"
+    description: "Keeps a refund from paying back more than an order line has left."
     logic:
-      when: "partial refund is requested"
-      then: "0 < refundAmount <= (order.totalPaid - sum(previousRefunds))"
+      when: "a partial refund is requested on an order line"
+      then: "0 < refundQuantity <= line.quantity - line.quantityRefunded - line.quantityReturned AND refundAmount > 0; refunded = min(refundAmount, refundQuantity * line.unitPrice)"
     modality: obligatory
-    concepts: [orders.CN002, orders.CN009]
+    concepts: [orders.CN002, orders.CN009, orders.CN003]
     code_refs:
       - path: "src/Core/Domain/Order/Command/IssuePartialRefundCommand.php"
         role: implementation
-      - path: "src/Core/Domain/Order/Exception/InvalidRefundException.php"
-        role: implementation
+        description: The command the back office sends for a partial refund.
+      - path: src/Core/Domain/Order/ValueObject/OrderDetailRefund.php
+        role: validation
+        description: "Lines 53-55: a refund amount of zero or less is refused (INVALID_AMOUNT); lines 83-85: a quantity of zero or less (INVALID_QUANTITY)."
+      - path: src/Adapter/Order/Refund/OrderRefundCalculator.php
+        role: validation
+        description: "Lines 155-160: a quantity above the units left on the line is refused (QUANTITY_TOO_HIGH); lines 167-176: the amount is capped at quantity times unit price."
+      - path: tests/Integration/Behaviour/Features/Scenario/Order/partial_refund.feature
+        role: test
+        description: Scenarios at lines 363 (amount capped), 560 (quantity too high) and 600 (amount must be positive).
+    summary: "Per line: refund quantity within what is left, amount above zero, amount capped at quantity times unit price."
+    fact: OrderDetail.product_quantity - product_quantity_refunded - product_quantity_return >= refundQuantity
+    scope: back-office partial refund (IssuePartialRefundCommand)
+    on_violation:
+      action: reject
+      code: 2
+      message: "QUANTITY_TOO_HIGH: the refund quantity exceeds the units left on the line (code 3, INVALID_AMOUNT, for an amount of zero or less)"
+    examples:
+      - input: Refund 1 unit at 1024 on a line priced 11.90 excluding tax
+        output: The credit slip refunds 11.90 excluding tax for that unit
+      - input: Refund 3 units on a line with 2 left
+        output: "Refused: refund quantity is too high, max is 2"
+      - input: Refund 1 unit at -2.5
+        output: "Refused: refund amount is invalid; no credit slip is created"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
 equivalence:
   - id: orders.EQ001
-    name: "Order total equals sum of line totals"
-    description: "The order total must equal the sum of all line totals plus shipping minus discounts."
+    name: "Order total equals products less discounts plus shipping and wrapping"
+    description: "Each amount is rounded to the shop's precision before it is added."
     logic:
-      then: "order.total == sum(lines.total) + shipping - discount"
+      then: "order.total == round(sum(lines.totalBeforeDiscount)) - round(discounts) + round(shipping) + round(wrapping)"
     modality: necessary
     concepts: [orders.CN002, orders.CN003]
+    summary: Total = products before discounts - discounts + shipping + gift wrapping, each rounded first.
+    fact: Order.total_paid_tax_incl == Cart.getOrderTotal(true, Cart::BOTH)
+    scope: order creation and every recalculation after an order is edited
+    implementation: as-is
+    code_refs:
+      - path: src/Core/Cart/Calculator.php
+        role: implementation
+        description: "Lines 153-188: getTotal sums the rounded products before discount, subtracts the rounded discounts, then adds rounded shipping and wrapping."
+      - path: src/Adapter/Order/OrderAmountUpdater.php
+        role: implementation
+        description: "Lines 263-275: an edited order takes its totals from Cart::BOTH, which holds products, shipping fees and cart rules."
+    provenance:
+      discovery_stage: validated
+      certainty: probable
 
 derivation:
   - id: orders.DR001
-    name: "Estimated delivery from shipping method"
-    description: "Estimated delivery date is derived from the selected shipping method's base transit time plus processing time."
+    name: "The delivery estimate is the carrier transit time"
+    description: "Shows the shopper the merchant's own promise of transit time."
     logic:
-      then: "estimatedDelivery = orderDate + processingDays + transitDays"
-    concepts: [orders.CN002]
+      then: "deliveryEstimate = carrier.transitTime[shopperLanguage]"
+    concepts: [orders.CN002, shipping.CN001]
+    summary: The estimate shown at checkout is the carrier's transit-time text; no date is computed.
+    fact: Carrier.delay (per language, required, at most 512 characters)
+    scope: checkout carrier choice
+    implementation: as-is
+    code_refs:
+      - path: classes/Carrier.php
+        role: model
+        description: "Line 165: delay is a required text per language, at most 512 characters."
+      - path: controllers/admin/AdminCarriersController.php
+        role: implementation
+        description: "Lines 199-205: the field is labelled Transit time, with the hint that the estimated delivery time is displayed during checkout."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
 transition:
   - id: orders.TR001
-    name: "Order state machine transitions"
+    name: "A paid order moves from Payment accepted to Processing in progress"
     concept: orders.CN002
     from: "payment-accepted"
     to: "processing"
-    description: "Orders with accepted payment transition to processing when the merchant begins fulfillment."
+    description: "The merchant makes the move when preparation of the order starts."
     guard:
-      when: "order.paymentStatus == accepted"
-    modality: obligatory
+      when: "the new status differs from the current status"
+    modality: permitted
     rationale: >
-      This is the primary happy-path transition. PrestaShop allows customization
-      of the state machine, but this transition is the most common default flow.
+      It is the step after payment in
+      the default flow: both statuses ship with PrestaShop, and Processing in progress
+      is the first of them flagged for delivery.
     code_refs:
       - path: "src/Adapter/Order/CommandHandler/UpdateOrderStatusHandler.php"
         role: implementation
+        description: "Lines 47-50: the only guard is a status different from the current one; line 62 writes the change through OrderHistory."
       - path: "src/Core/Domain/Order/Exception/ChangeOrderStatusException.php"
         role: implementation
+        description: "Line 80: raised when the history row or its email cannot be saved, not for a disallowed transition."
+      - path: install-dev/data/xml/order_state.xml
+        role: seed-data
+        description: "Lines 21-25: Payment accepted (paid, invoice) and Processing in progress (paid, invoice, delivery) ship as default statuses."
+    summary: "Default flow: Payment accepted, then Processing in progress; permitted, not enforced."
+    fact: Order.current_state == PS_OS_PAYMENT AND newStatus == PS_OS_PREPARATION
+    on_violation:
+      action: reject
+      message: The order has already been assigned this status.
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed

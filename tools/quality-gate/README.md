@@ -38,19 +38,38 @@ npm run quality <model-dir> --slice payroll --strict
 # Record a slice's current scores as its own ratchet floor
 npm run quality <model-dir> --slice payroll --update-baseline
 
+# One entity, field by field: its own id, or the id of a part it owns
+npm run quality <model-dir> --entity catalog.CN001
+npm run quality <model-dir> --entity CAT813
+
+# Every entity of one file, field by field - the check to run after editing it
+npm run quality <model-dir> --file catalog/product.concepts.yaml
+
 # Machine-readable: per-finding records, usable directly as a backfill worklist
 npm run quality <model-dir> --json worklist.json
+
+# Read entity types from a named schema tree instead of the one found beside the model
+npm run quality <model-dir> --entity BD014 --schemas <schemas-dir>/v2.8
 ```
 
-`--since` and `--slice` are the two scoping modes and are mutually exclusive: one
-scopes by git history, the other by folder.
+The JSON carries, per run, `metrics[]`, `findings[]` (one record per metric and value
+that is not covered), `worstFiles[]` and `entities[]`: one record per entity in the
+selection, with `entityId`, `name`, `kind`, `file`, `ownedIds` when it owns parts with ids,
+`counts` (`fields`, `covered`, `filler`, `missing`) and its `findings` (one per field that
+is not covered, naming the metrics that read it). `entityMode` and `fileMode` echo the
+selection beside `patchMode` and `sliceMode`. An entity of a kind the structure signals
+measure also carries `structure`, and each run carries a `structure` block with one row per
+kind; both are described in [Structure](#structure-facts-in-fields-or-only-in-prose).
+
+`--since`, `--slice`, `--entity` and `--file` are the scoping modes and are mutually
+exclusive: they scope by git history, by folder, by entity and by file.
 
 The same gate is also a verb on the **Archally Pro** CLI (`bp quality <project>`), which
 resolves projects by name and shares this tool's spec and thresholds — see
 [archally.pro](https://archally.pro).
 
 Exit codes: `0` clean · `1` threshold or baseline breach under `--strict` · `2`
-usage error or invalid configuration.
+usage error or invalid configuration. The structure signals never change the exit code.
 
 ## The definition-of-done sentence
 
@@ -91,6 +110,56 @@ Content rules are deterministic — minimum length, a placeholder denylist, and 
 echo check that normalizes case, punctuation, articles and words like "field" before
 comparing prose against the name it describes. No model is involved.
 
+## Structure: facts in fields or only in prose
+
+The metrics above ask whether an entity says something. The structure signals ask whether
+what it says sits in the fields built for it. They are read beside the metrics and gate
+nothing: no threshold, no metric, no effect on the exit code.
+
+| Signal | What it reports |
+|---|---|
+| **references held only in prose** | ids an entity's `description` (or a rule's `logic`) names that no other field of the same entity names. Each token is resolved against the ids the model declares: first under the entity's own scope (`VR008` written in an `international` rule is `international.VR008`), then exactly, then by its unscoped tail when exactly one declared id ends with it. A token shaped like an id that the model does not declare (a version string, a currency code) is ignored, and so is the entity's own id |
+| **fields used** | the fields an entity fills, out of those its schema type makes available. An empty string, list or map is not a field used |
+| **description length** | context beside the two, never a score of its own |
+
+Each reference held only in prose is marked with what the schema offers for it: **a field can
+hold it** (the field is named, so the fix is to move the id into it) or **the schema has no
+field for this** (the entity's type has no field accepting an id of that kind, so the fix is a
+schema change, not an edit). Which fields accept which ids is read from the reference patterns
+the type's fields reach (`concept_ref`, `rule_ref`, ...).
+
+The available set and the reference fields come from the schema's own `$defs`: each measured
+container key (`validation`, `business_decisions`, `kpis`, ...) maps to the type its items are,
+so the measure follows the schema without a hand-kept list. `quality-spec.yaml` holds only the
+`structure` block: the measured containers, the identity fields (`id`, `name`, `title`, `term`)
+and prose fields (`description`, `summary`, `statement`) left out of fields used, and the fields
+references are read from. A container two schema files define with different types has no
+known available set.
+
+The schema tree is found by walking up from the model, then from this tool's directory, then
+from the working directory, trying `schemas/blueprint/v<major.minor>/` and `schema/v<major.minor>/`
+for the version the model declares; `BLUEPRINT_SCHEMAS` names a tree to try first. `--schemas
+<dir>` names it outright, as a version root or a directory of versions, and a `--schemas` that
+holds no schema for the model's version is a usage error (exit 2). Without a schema the
+references are still reported and the available set reads as unknown, with the reason.
+
+Where it shows:
+
+- **entity and file mode**: each entity block ends with `fields used: <n> of <available>
+  (<fields>); description <n> chars`, then one `held only in prose` line per reference;
+- **whole-model, patch and slice mode**: a table with one row per kind (entities, entities with
+  references held only in prose, those references, how many are schema gaps, fields used
+  median and maximum against the available set, description length median and maximum),
+  then the entities holding references only in prose, most first, limited by `--worst`;
+- **`--json`**: `entities[].structure` (`kind`, `type`, `fieldsUsed`, `fieldsAvailable`,
+  `descriptionLength`, `proseOnlyReferences[]` with `id`, `written`, `in`, `schemaHasField`,
+  `fields`) and `runs[].structure` (`schemaRoot`, `schemaSource`, `note`, `kinds[]` with the
+  table's counts, the `fieldsUsed.distribution` and a `fieldUse` count per field).
+
+Fields used is read with the entity's sources, never maximised. A field is written when a
+source supports it and an empty field stays empty, so a low count on a well-sourced entity is
+not a defect, and a high count reached with invented values is worse than prose.
+
 ## The three gating mechanisms
 
 One bar does not fit a corpus ranging from a three-file sketch to a 557-file
@@ -107,16 +176,18 @@ coverage can never pass an 85% absolute bar, so an absolute-only gate gets defer
 off and stops doing anything. With `--since`, that same model is still required to
 write its *next* property properly, and the ratchet stops the overall number sliding.
 
-## Two scoping modes: patch and slice
+## Scoping modes: patch, slice, entity and file
 
 A brownfield model is not remediated in one pass — it is enriched one architectural
-**slice** at a time. The gate offers two orthogonal ways to scope a run below the
-whole model:
+**slice** at a time, and authored one entity and one file at a time. The gate offers
+four ways to scope a run below the whole model:
 
 | Mode | Flag | Scopes by | Bar it applies | Ratchet |
 |---|---|---|---|---|
 | **patch** | `--since <ref>` | files changed since a git ref | `patch_threshold` (higher — new work has no legacy excuse) | off (a changed-file subset is not a whole-model claim) |
 | **slice** | `--slice <name>` | first path segment (`payroll/`, `recruitment/`, …) | `threshold` (the slice measured as its own steady-state unit) | the slice's own baseline |
+| **entity** | `--entity <id>` | one entity | `patch_threshold` (the entity is work in progress) | off |
+| **file** | `--file <path>` | every entity of one file | `patch_threshold` | off |
 
 A slice is the first path segment under the model root; files that sit directly in
 the root belong to a synthetic `(root)` slice. A `--slice` that selects nothing
@@ -126,6 +197,34 @@ zero files: that verdict would be green and meaningless. Slice mode is what make
 remediation plan measurable: `--slice payroll --strict` answers "is the payroll
 slice at its bar yet?" and `--slice payroll --update-baseline` records payroll's own
 floor so it ratchets independently of every other slice.
+
+Entity and file mode answer the author's question while editing: "does what I just wrote
+say enough?". Their report leads with one block per entity: its id and name, its kind,
+its file, and one row per authored field marked `ok`, `FILL` or `MISS` with the reason
+a filler value was condemned. The metric table follows, showing only the metrics that saw
+data in the selection.
+
+- `--entity` takes the entity's own id (`catalog.CN001`, `MDL800`) or the id of a part it
+  owns (`CAT813`, a concept attribute). A part selects its owner's block, and its rows
+  are marked `>`. An id without its scope prefix (`CN001`) is accepted when exactly one
+  entity carries it; when several do, the run refuses and lists them.
+- `--file` takes a path relative to the model root (`admin/models.yaml`) or to the working
+  directory, so the path an editor reports works as it is.
+- A selection that names nothing refuses with exit 2 and names candidates: ids sharing
+  the requested prefix, or files in the same folder. A file that exists but holds no
+  entity the gate observes refuses the same way.
+- Both select inside one model, so they take exactly one model root, and neither combines
+  with `--update-baseline`: a ratchet floor is a claim about a whole model or slice.
+
+**What an entity is.** A property rolls up to the model that declares it, an attribute
+to the concept that owns it, a story step's note to its activity; everything else with a
+typed id is an entity of its own. Some fields are read by two metrics (an event's
+description by the operation metric and the event metric; an enum property's description
+by the property metric and the enum-property metric). Each metric still counts it, since
+each is its own lens, but an entity block shows it once and names both metrics, with the
+worse of the two verdicts. The whole-model, patch and slice reports list the **worst
+entities** (most missing and filler fields) beside the worst files, both limited by
+`--worst`.
 
 ## Configuration
 
@@ -193,8 +292,10 @@ whole when a new schema minor opens, and a tool placed inside one would fork wit
 producing two copies that drift apart. Instead, each metric declares which schema minor
 lines it applies to, and the tool runs against any of them.
 
-Nothing resolves relative to the tool's own location except the default spec; the model
-root always arrives as an argument. That is what lets one copy serve every version.
+The model root always arrives as an argument. Two things resolve relative to the tool's own
+location: the default spec, and, when the model's own surroundings hold no schema tree, the
+schema the structure signals read, looked up by the model's declared version. That is what
+lets one copy serve every version.
 
 ## Files
 
@@ -207,6 +308,8 @@ root always arrives as an argument. That is what lets one copy serve every versi
 | `report.mjs` | text rendering |
 | `git-changes.mjs` | `--since` changed-file resolution |
 | `slice.mjs` | `--slice` scoping — derives a file's slice from its path |
+| `entities.mjs` | `--entity` and `--file` selection; the per-entity rollup |
+| `structure.mjs` | the structure signals: schema lookup, references held only in prose, fields used |
 | `config.mjs` | spec + project-config loading, baseline writing (flat + per-slice) |
 | `quality-spec.yaml` | metric definitions, content rules, calibrated thresholds |
 
@@ -216,7 +319,10 @@ Adding a **threshold, content rule or deferral** is a YAML edit. Teaching the to
 Unrecognised typed-id entities fall through to a catch-all `entity.description`
 metric rather than vanishing — when the schema gains an entity kind, it lands there
 instead of silently dropping out of the gate. A rising count there is the signal to
-add a real metric for it.
+add a real metric for it. Anything a specific metric already reads is not read again
+by the catch-all: a concept attribute with a typed id is measured once, by the
+concept-attribute metrics, and reports under its concept. The catch-all reports an
+entity's kind as the key it was found under (`goals`, `activities`).
 
 ## Tests
 

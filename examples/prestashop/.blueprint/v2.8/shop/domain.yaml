@@ -1325,3 +1325,14 @@ questions:
       A Store carries its address, opening hours and coordinates for the store locator; a
       Contact is the department a message form is routed to, which is the other half of how
       a shopper reaches the merchant.
+  - id: shop.QN004
+    name: Duplicate Search Engine Server
+    statement: Should a second referrer search engine entry with the same server be
+      refused? The model states that a server is listed once; PrestaShop accepts a
+      duplicate today.
+    category: business
+    priority: low
+    bounded_context_ref: prestashop.BC011
+    answered_by: []
+    concepts:
+      - shop.CN003

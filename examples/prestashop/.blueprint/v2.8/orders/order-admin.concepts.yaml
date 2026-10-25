@@ -6,7 +6,7 @@ tags: [order-admin]
 concepts:
   - id: orders.CN010
     name: "OrderState"
-    description: "Admin-configurable order state definition. Defines the label, color, template email, and behavioral flags (e.g. logable, send_email, paid, shipped, delivery) for each order lifecycle state. CRUD-managed by administrators."
+    description: "An order status the merchant defines, with the flags that say what entering it does. Thirteen ship with PrestaShop."
     stereotype: entity
     attributes:
       orderStateId:
@@ -35,10 +35,20 @@ concepts:
         description: "OrderState domain aggregate directory"
       - path: "classes/order/OrderState.php"
         role: implementation
+        description: "Line 57: the ObjectModel definition with the invoice, delivery, paid, shipped, logable and send_email flags."
+      - path: install-dev/data/xml/order_state.xml
+        role: seed-data
+        description: "Lines 18-55: the thirteen statuses PrestaShop ships and their flags."
+    definition: "An order status with a name per language, a colour, an email template and the flags that say what entering it does: issue an invoice, issue a delivery slip, mark the order paid or shipped, count it in statistics, email the customer."
+    identity: id_order_state
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: orders.CN011
     name: "OrderMessage"
-    description: "Predefined message template for customer-merchant communication. Merchants create reusable message templates that can be attached to orders for common responses (e.g. delay notice, shipping update)."
+    description: "A reusable message text the merchant writes once, per language, and picks when writing to a customer about an order."
     stereotype: entity
     attributes:
       orderMessageId:
@@ -57,3 +67,12 @@ concepts:
       - path: "src/Core/Domain/OrderMessage/"
         role: model
         description: "OrderMessage domain aggregate directory"
+      - path: classes/order/OrderMessage.php
+        role: implementation
+        description: "Lines 23-32: the ObjectModel definition, multilingual, with name and message required."
+    definition: A predefined message with a name and a text per language, chosen in the order page to answer a customer.
+    identity: id_order_message
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed

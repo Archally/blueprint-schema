@@ -1,7 +1,7 @@
 import type { Entity } from '../../model/types.js';
 import type { ParsedBlueprintDocument, DocumentsBySchemaType } from '../../model/types.js';
 import { getSchemaTypeFromPath } from './id.js';
-import { annotateOwnershipDefaults, resolveSchemaLine } from './ownershipDefaults.js';
+import { annotateOwnershipDefaults, resolveSchemaLine, type ServedSchemaLine } from './ownershipDefaults.js';
 import { annotateDomainDefaults } from './domainDefaults.js';
 import { annotateSystemDefaults } from './systemDefaults.js';
 import { extractConcepts } from './concepts.js';
@@ -26,7 +26,8 @@ import { extractDynamics } from './dynamics.js';
 import { extractDomains } from './domains.js';
 import { extractMigrations } from './migrations.js';
 
-const EXTRACTORS: Record<string, (doc: ParsedBlueprintDocument) => Entity[]> = {
+/** An extractor reads one document; the model's schema line is passed to those whose reading depends on it. */
+const EXTRACTORS: Record<string, (doc: ParsedBlueprintDocument, line: ServedSchemaLine) => Entity[]> = {
   blueprint: extractDomains,
   concepts: extractConcepts,
   rules: extractRules,
@@ -84,7 +85,7 @@ export function extractAllEntities(documentsByType: DocumentsBySchemaType): Enti
       annotateOwnershipDefaults(own, line);
       annotateSystemDefaults(own);
       annotateDomainDefaults(own);
-      entities.push(...extract(own));
+      entities.push(...extract(own, line));
     }
   }
   return entities;
@@ -125,10 +126,11 @@ export function extractEntitiesFromDocument(
   const extract = EXTRACTORS[schemaType];
   if (!extract) return [];
   const own = ownCopy(doc);
-  annotateOwnershipDefaults(own, resolveSchemaLine(schemaVersion));
+  const line = resolveSchemaLine(schemaVersion);
+  annotateOwnershipDefaults(own, line);
   annotateSystemDefaults(own);
   annotateDomainDefaults(own);
-  return extract(own);
+  return extract(own, line);
 }
 
 export { extractConcepts } from './concepts.js';

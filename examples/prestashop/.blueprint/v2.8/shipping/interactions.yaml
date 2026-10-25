@@ -77,6 +77,7 @@ navigation:
   - id: shipping.UNV001
     from: shipping.SCR001
     to: shipping.SCR002
+    via_action: shipping.UAC001
     condition: "User clicks carrier row or 'Add Carrier' button"
     description: "Navigate to carrier configuration."
 

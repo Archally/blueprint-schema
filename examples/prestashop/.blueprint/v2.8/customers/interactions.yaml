@@ -253,45 +253,146 @@ actions:
         role: implementation
         description: "The credential check and the session the storefront opens on success."
 
+  - id: customers.UAC010
+    screen: customers.SCR001
+    name: "Open a customer from the list"
+    description: >
+      A click anywhere on a customer's row opens that customer's view page. The grid makes the
+      row clickable through its View row action, which carries the clickable_row option, so the
+      row and the View button lead to the same page.
+    implementation: as-is
+    code_refs:
+      - path: "src/Core/Grid/Definition/Factory/CustomerGridDefinitionFactory.php"
+        role: implementation
+        description: "Lines 217 to 224: LinkRowAction 'view' to admin_customers_view with clickable_row set to true."
+
+  - id: customers.UAC011
+    screen: customers.SCR002
+    name: "Add an address for this customer"
+    description: >
+      The addresses block of the customer's view page links to the address form with the
+      customer already chosen: as a small link in the block's header, and as a button when the
+      customer has no address yet. Both carry the customer's id and a link back to this page.
+    implementation: as-is
+    code_refs:
+      - path: "src/PrestaShopBundle/Resources/views/Admin/Sell/Customer/Blocks/View/addresses.html.twig"
+        role: implementation
+        description: "Line 12 (the header link) and line 26 (the button shown when there is no address): AdminAddresses with id_customer and addaddress."
+
+  - id: customers.UAC012
+    screen: customers.SCR005
+    name: "Follow the create-account link"
+    description: >
+      The sign-in page carries a link to the registration page for a shopper who has no account.
+      The link is theme markup; the core repository holds it only in a test fixture copy of the
+      classic theme, which is the source cited here. The sign-in controller also sends a request
+      carrying create_account to the registration page.
+    implementation: as-is
+    code_refs:
+      - path: "tests/Resources/themes/classic/templates/customer/authentication.tpl"
+        role: test
+        description: "Test fixture, line 41: a link to urls.pages.register with data-link-action display-register-form."
+      - path: "controllers/front/AuthController.php"
+        role: implementation
+        description: "Lines 39 and 40: a submitted create_account is redirected to the registration page."
+
+  - id: customers.UAC013
+    screen: customers.SCR007
+    name: "Open Addresses"
+    description: >
+      The account hub links to the address book. The link is theme markup; the core repository
+      holds it only in a test fixture copy of the classic theme, which is the source cited here.
+    implementation: as-is
+    code_refs:
+      - path: "tests/Resources/themes/classic/templates/customer/my-account.tpl"
+        role: test
+        description: "Test fixture, line 43: the addresses-link to urls.pages.addresses."
+
+  - id: customers.UAC014
+    screen: customers.SCR007
+    name: "Open Information"
+    description: >
+      The account hub links to the personal information form. The link is theme markup; the
+      core repository holds it only in a test fixture copy of the classic theme, which is the
+      source cited here.
+    implementation: as-is
+    code_refs:
+      - path: "tests/Resources/themes/classic/templates/customer/my-account.tpl"
+        role: test
+        description: "Test fixture, line 35: the identity-link to urls.pages.identity."
+
+  - id: customers.UAC015
+    screen: customers.SCR007
+    name: "Open Order history"
+    description: >
+      The account hub links to the order history, which the orders slice serves. The link is
+      theme markup; the core repository holds it only in a test fixture copy of the classic
+      theme, which is the source cited here.
+    implementation: as-is
+    code_refs:
+      - path: "tests/Resources/themes/classic/templates/customer/my-account.tpl"
+        role: test
+        description: "Test fixture, line 59: the history-link to urls.pages.history."
+
+  - id: customers.UAC016
+    screen: customers.SCR008
+    name: "Add a new address"
+    description: >
+      The address book links to an empty address form. The link is theme markup; the core
+      repository holds it only in a test fixture copy of the classic theme, which is the source
+      cited here.
+    implementation: as-is
+    code_refs:
+      - path: "tests/Resources/themes/classic/templates/customer/addresses.tpl"
+        role: test
+        description: "Test fixture, line 47: a link to urls.pages.address with data-link-action add-address."
+
 navigation:
   - id: customers.UNV001
     from: customers.SCR001
     to: customers.SCR002
+    via_action: customers.UAC010
     condition: "User clicks customer row"
     description: "Navigate to customer detail."
 
   - id: customers.UNV002
     from: customers.SCR002
     to: customers.SCR004
+    via_action: customers.UAC011
     condition: "User clicks 'Add Address' or address row"
     description: "Navigate to address form."
 
   - id: customers.UNV003
     from: customers.SCR005
     to: customers.SCR006
-    condition: "Shopper submits the sign-in page with create_account"
+    via_action: customers.UAC012
+    condition: "Shopper follows the create-account link on the sign-in page, or submits the sign-in page with create_account"
     description: "AuthController does not handle account creation; it redirects to the registration page, which is why the two are separate screens."
 
   - id: customers.UNV004
     from: customers.SCR005
     to: customers.SCR007
+    via_action: customers.UAC009
     condition: "Sign-in succeeds with no page to return to"
     description: "The default destination after signing in is my-account; a shopper who was sent to sign in from somewhere else returns there instead."
 
   - id: customers.UNV005
     from: customers.SCR007
     to: customers.SCR008
+    via_action: customers.UAC013
     condition: "Shopper opens Addresses from the account hub"
     description: "The account hub is the only page that links to every other account page; without it the address book is reachable only from checkout."
 
   - id: customers.UNV006
     from: customers.SCR008
     to: customers.SCR009
+    via_action: customers.UAC016
     condition: "Shopper adds a new address or opens an existing one"
     description: "Both destinations are the same page: the form loads an address when the link carries an id and starts empty when it does not."
 
   - id: customers.UNV007
     from: customers.SCR007
     to: customers.SCR010
+    via_action: customers.UAC014
     condition: "Shopper opens Information from the account hub"
     description: "The identity form is reached only from the hub; nothing in checkout links to it."

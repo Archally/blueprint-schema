@@ -1,0 +1,8 @@
+version: "1.0.0"
+name: Orders architecture
+scope: orders
+contexts:
+  - id: BC001
+    name: Orders
+    kind: core
+    domain_ref: DMN001

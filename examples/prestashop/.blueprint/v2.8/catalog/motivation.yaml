@@ -186,6 +186,40 @@ risks:
     discovery_stage: validated
     certainty: confirmed
 
+  - id: catalog.RSK005
+    statement: "Search ranking flattens once the built-in index holds more than 100,000 distinct words"
+    description: >
+      The built-in index weights a match by word length against the size of
+      its vocabulary. Once ps_search_word holds more than 100,000 distinct
+      words, every length coefficient is 1, so a large or multilingual catalog
+      keeps answering searches but loses that part of its ranking, and neither
+      the storefront nor the back office reports it.
+    summary: "A large catalog loses the word-length ranking signal, silently"
+    likelihood: low
+    impact: medium
+    affects:
+      operation_refs: [catalog.QRY001]
+    mitigation: "A shop whose catalog outgrows the index adds a dedicated search engine through a search module, as PrestaShop's Scale chapter advises; core ships none, so the mitigation is the merchant's to apply."
+    status: identified
+    discovery_stage: validated
+    certainty: confirmed
+    evidence:
+      - kind: codebase-analysis
+        source: "presta-code a27e912eef9, classes/Search.php"
+        date: "2026-10-14"
+        summary: "Line 105 sets PS_SEARCH_MAX_WORDS_IN_TABLE to 100000, commented as the size above which the coefficients for target length are always 1; lines 1191-1207 apply it when ps_search_word is larger."
+        confidence_impact: supports
+      - kind: documentation
+        source: "PrestaShop/docs#scale/_index.md"
+        date: "2026-10-14"
+        summary: "Lines 46-51 list Elasticsearch or a solution built on it (line 50) among the systems a merchant may add to a shop that has outgrown the stack, which is the mitigation this risk names."
+        confidence_impact: supports
+      - kind: assumption
+        source: "presta-docs and presta-code, searched for the size of real search vocabularies"
+        date: "2026-10-14"
+        summary: "No PrestaShop source publishes how many shops pass 100,000 distinct indexed words. The likelihood follows the assumption, held in this model as probable, that the built-in index keeps ranking usefully as the vocabulary grows; the impact is medium because search keeps answering and only the ranking degrades."
+        confidence_impact: weakens
+
 assumptions:
   - id: catalog.ASM001
     domain_scope: catalog
@@ -214,6 +248,7 @@ assumptions:
       the back office says it has happened.
     risk_refs:
       - catalog.RSK001
+      - catalog.RSK005
     discovery_stage: validated
     certainty: probable
 

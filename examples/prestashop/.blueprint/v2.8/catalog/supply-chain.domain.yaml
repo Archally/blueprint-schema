@@ -1618,3 +1618,14 @@ questions:
       GetAssociatedSuppliers lists the suppliers attached to the product and
       GetProductSupplierOptions the per-supplier reference and price; GetProductStockMovements
       shows what those supplies have actually delivered.
+  - id: catalog.QN006
+    name: Duplicate Manufacturer Name
+    statement: Should a second manufacturer with the same name be refused? The model
+      states that a name is used once; PrestaShop accepts a duplicate today.
+    category: business
+    priority: low
+    bounded_context_ref: prestashop.BC002
+    answered_by: []
+    concepts:
+      - catalog.CN008
+    description: "What the code states: src/Adapter/Manufacturer/Repository/ManufacturerRepository.php lines 39-43 say that manufacturer.name carries no unique constraint, and the product import that resolves a manufacturer by name takes every match, uses the oldest and reports how many there were. That describes the data and how the import copes with homonyms; no source found states whether a duplicate should be refused, which is what the rule on manufacturer name uniqueness asks and why this question stays open."

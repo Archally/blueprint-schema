@@ -101,3 +101,8 @@ contexts:
               - catalog.EVT001
               - catalog.EVT002
             brokerId: prestashop-event-bus
+        implementation: "as-is"
+        code_refs:
+          - path: src/Core/Domain/Product/
+            role: implementation
+            description: Source for this logical module within the PrestaShop PHP monolith; verified in the cited develop checkout a27e912eef9.

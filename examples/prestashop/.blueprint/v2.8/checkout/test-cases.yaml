@@ -15,7 +15,7 @@ happy_path:
     given:
       description: "Product SKU-001 in stock (qty: 10). Cart is empty."
       state:
-        cartStatus: "empty"
+        cartStatus: "not-ordered"
         productStock: 10
         quantity: 2
     expected_result:
@@ -230,9 +230,9 @@ error_cases:
       operations: [checkout.CMD007]
       rules: [checkout.VR005]
     given:
-      description: "Cart ID 42 has status 'completed' - order was placed."
+      description: "An order was placed from cart 42."
       state:
-        cartStatus: "completed"
+        cartStatus: "ordered"
     expected_result:
       status: failure
       code: 409

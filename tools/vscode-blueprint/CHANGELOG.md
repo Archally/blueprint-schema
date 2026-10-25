@@ -1,9 +1,21 @@
-# Changelog — Archally Blueprint Navigation
+# Changelog - Archally Blueprint Navigation
 
 All notable changes to this extension. Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this extension versions independently of `@archally/blueprint-schema`.
 
 ## Unreleased
+
+- ID hovers label each declaration's model root when an id occurs across models or versions,
+  and use hyphens between the entity name and summary.
+- Unavailable-schema warnings show the explanatory message without an Error prefix.
+
+- Duplicate ID declarations and missing references appear as model-scoped diagnostics, with exact
+  token ranges and related locations for every other duplicate. Unsaved buffers and closed sibling
+  files participate; separate model/version directories remain independent.
+- Both rules default to error, with configurable severity and a 300 ms unsaved-edit debounce.
+  Unsupported schema versions and conflicting declarations produce visible notices.
+- The standalone VSIX bundles the Apache conformance reference rules and YAML parser, full v2.8
+  schemas, source maps and license notices. Source builds require v2.8; no older-schema fallback.
 
 - `yamlValidation` binds a schema to exactly the files that form a model. `*.blueprint.yaml` and
   `*.blueprint.yml` are no longer bound: the root document is `blueprint.yaml` (or `.yml`) by that
@@ -34,7 +46,7 @@ Local `code_ref` resolution and hover.
   (`localThenBrowser` default / `browser` / `local`) controls the preference. A relative `localRoots` folder
   resolves against the workspace folder; absolute is recommended.
 - **Hover on a `code_ref` path** shows where it resolves (local path or host URL), its `role`/`description`,
-  and — when it resolves to nothing — a single, actionable hint (add `repository:` or set `codeRef.localRoots`).
+  and - when it resolves to nothing - a single, actionable hint (add `repository:` or set `codeRef.localRoots`).
   Hover-only, so files with many unresolved refs never produce error noise.
 - Settings changes (`localRoots` / `openBehavior` / the enable toggles) now re-resolve links **live** without a
   window reload.

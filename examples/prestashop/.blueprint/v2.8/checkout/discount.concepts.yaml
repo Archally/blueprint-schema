@@ -95,23 +95,6 @@ actors:
       - "Configure catalog price rules for B2B/wholesale"
       - "Monitor promotion performance and ROI"
       - "Manage discount stacking and priority rules"
-    personas:
-      - name: "Typical MarketingManager"
-        quote: "I need to launch the spring sale by Friday with the right discounts and usage limits."
-        goals:
-          - "Launch promotional campaigns quickly"
-          - "Track discount ROI accurately"
-          - "Prevent discount abuse"
-        pain_points:
-          - "Complex condition combinations are hard to preview"
-          - "No visibility into stacking behavior before publishing"
-          - "Difficult to duplicate and adapt seasonal campaigns"
-        behaviors:
-          - "Creates campaigns weeks in advance with scheduled activation"
-          - "Copies last year's seasonal campaigns as templates"
-          - "Tests discount codes before sharing with customers"
-        tech_savviness: medium
-        job_to_be_done: "Configure and monitor promotional pricing strategies that drive revenue without margin erosion"
 
 enumerations:
   - id: checkout.EN003

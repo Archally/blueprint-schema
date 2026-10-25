@@ -76,6 +76,9 @@ operations:
       - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderMessage/OrderMessage.php"
         role: api-spec
         description: "Declares POST /order-messages and names the CQRS class it fronts"
+    materializes:
+      - concept: orders.CN011
+        action: create
 
   editOrderMessage:
     id: orders.CMD029
@@ -96,6 +99,9 @@ operations:
       - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderMessage/OrderMessage.php"
         role: api-spec
         description: "Declares PATCH /order-messages/{orderMessageId} and names the CQRS class it fronts"
+    materializes:
+      - concept: orders.CN011
+        action: update
 
   deleteOrderMessage:
     id: orders.CMD030
@@ -116,6 +122,9 @@ operations:
       - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderMessage/OrderMessage.php"
         role: api-spec
         description: "Declares DELETE /order-messages/{orderMessageId} and names the CQRS class it fronts"
+    materializes:
+      - concept: orders.CN011
+        action: delete
 
   bulkDeleteOrderMessage:
     id: orders.CMD031
@@ -136,6 +145,9 @@ operations:
       - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderMessage/BulkDeleteOrderMessages.php"
         role: api-spec
         description: "Declares DELETE /order-messages/bulk-delete and names the CQRS class it fronts"
+    materializes:
+      - concept: orders.CN011
+        action: delete
 
   # --- OrderReturnState CRUD ---
 

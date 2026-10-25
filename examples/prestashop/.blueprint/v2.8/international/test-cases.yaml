@@ -118,10 +118,9 @@ happy_path:
       rules: [international.VR008]
     given:
       description: >-
-        A tax rules group exists and tax rates for France, Germany and Ireland have been
-        created with AddTax. Each is then bound to its country with AddTaxRule. Corrected
-        2026-09-19: this case named CMD027 and CMD028, group create and group edit, neither of
-        which binds anything. The binding command is CMD034.
+        A tax rules group with no rules exists, and taxes for France, Germany and Ireland
+        exist.
+        Each tax is bound to its own country with AddTaxRule.
       state:
         taxRates:
           - name: "FR VAT 20%"
@@ -153,6 +152,7 @@ happy_path:
             binds one country rather than this case's three; the mechanism is the same command
             run three times.
           confidence_impact: supports
+    note: "Corrected 2026-09-19: this case named CMD027 and CMD028, group create and group edit, neither of which binds anything; the binding command is CMD034. Corrected 2026-10-14: each country receives its first rule, so international.VR008 refuses none of the three bindings; the case shows the rule's permitted path."
 
 edge_cases:
   - id: international.EC001
@@ -182,24 +182,21 @@ edge_cases:
           date: "2026-09-19"
           summary: >-
             The scenario deletes the default currency and asserts the refusal. Same assertion.
-            Note that international.VR002, the rule this case validates, carries no code_refs
-            of its own, so the test is currently the rule's only evidence.
           confidence_impact: supports
 
   - id: international.EC002
-    name: "A duplicate tax rule binding is skipped, not rejected"
-    summary: "Re-binding a rate to a country the group already covers adds nothing and raises nothing."
+    name: "A second rule beside a 'this tax only' rule is skipped, not rejected"
+    summary: "AddTaxRule adds nothing and raises nothing for a country and state that already has a 'This tax only' rule."
     validates:
       operations: [international.CMD034]
+      rules: [international.VR008]
     given:
       description: >-
-        A tax rules group that already has a rule for country FR, asked to add one again.
-        Corrected 2026-09-19: this case asserted a 422 refusal, and named CMD028 EditTaxRulesGroup,
-        which does not bind rules at all. AddTaxRuleHandler loops over the requested countries
-        and states, asks hasUniqueTaxRuleForCountry, and where the pair already exists it
-        CONTINUES - silently skipping that country. AddTaxRuleResult is returned with fewer
-        rule ids and no error. The silence is the fact worth knowing, because a merchant
-        rebinding a country gets a success and no new rule.
+        A tax rules group already holds a rule for France with
+        the behavior 'This tax only',
+        and AddTaxRule
+        is asked to add another
+        rule for France.
       state:
         taxId: 1
         countryIso: "FR"
@@ -211,7 +208,7 @@ edge_cases:
         description: "The hasUniqueTaxRuleForCountry check and the continue that follows it."
       - path: "classes/tax/TaxRulesGroup.php"
         role: implementation
-        description: "hasUniqueTaxRuleForCountry, which deduplicates on the country and state pair."
+        description: "Lines 231-241: hasUniqueTaxRuleForCountry is true only when a rule for the country and state has behavior 0, 'This tax only'."
     provenance:
       discovery_stage: exploring
       certainty: probable
@@ -230,6 +227,7 @@ edge_cases:
             Modeler-derived from code. All seven scenarios in tax_rule_management.feature bind
             distinct countries, so nothing observes the skip.
           confidence_impact: weakens
+    note: "Corrected 2026-09-19: this case asserted a 422 refusal and named CMD028 EditTaxRulesGroup, which binds no rules. AddTaxRuleHandler loops over the requested countries and states and, where hasUniqueTaxRuleForCountry is true, continues, skipping that country; AddTaxRuleResult returns fewer rule ids and no error. Corrected 2026-10-14: the skip happens only beside a 'This tax only' rule; a 'Combine' or 'One after another' rule for the same country is added."
 
 error_cases:
   - id: international.ER001
@@ -240,9 +238,7 @@ error_cases:
       rules: [international.VR001]
     given:
       description: >-
-        ISO code 'EURO' is 4 characters. Note what the pattern really is: AlphaIsoCode accepts
-        two OR three letters, not three exactly, so a two-letter code passes and only length
-        and non-alphabetic characters are refused.
+        ISO code 'EURO' is four letters.
       state:
         isoCode: "EURO"
     expected_result:
@@ -270,9 +266,10 @@ error_cases:
           source: "src/Core/Domain/Currency/ValueObject/AlphaIsoCode.php"
           date: "2026-09-19"
           summary: >-
-            The pattern accepts two or three letters. international.VR001's description says a
-            valid three-letter alphabetic code, which is narrower than the code.
-          confidence_impact: weakens
+            The pattern accepts two or three letters,
+            which is what international.VR001 states.
+          confidence_impact: supports
+    note: AlphaIsoCode accepts two or three letters, so a two-letter code passes and only the length and non-letters are refused.
 
   - id: international.ER002
     name: "A negative tax rate is accepted, and nothing refuses it"

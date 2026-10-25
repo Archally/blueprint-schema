@@ -5,8 +5,9 @@ rules:
     description: >-
       A process declares an end state named after a lifecycle state, and none of the operations its
       activities run is the one the model says makes the move into that state. An end state is a
-      name and a type; an activity carries operations, and neither names the other, so "this
-      activity ends in that state" is not something a process can state directly. What the model
+      name, a type and the activities that lead to it (`from`), and names no lifecycle state; an
+      activity carries operations. So "this process ends in that state" is not something a
+      process can state directly. What the model
       states instead, in four independent places, is: a transition rule moves a concept INTO a
       state (`to:`); an operation declares itself `governed_by` that transition rule, which is the
       model's statement that this operation is what makes the move; a process's activities name the

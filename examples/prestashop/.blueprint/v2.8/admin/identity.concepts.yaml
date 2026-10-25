@@ -122,34 +122,21 @@ actors:
     type: human
     description: "Top-level administrator with full access to all back-office features including employee management, profile configuration, API client setup, and system configuration."
     personas:
-      - name: "Hands-On SuperAdmin"
-        quote: "I need full control over who can do what in the back-office, and I need to respond fast to security incidents."
-        goals: ["Manage employee access securely", "Configure API integrations", "Monitor and clear sessions"]
-        pain_points: ["Complex permission matrices", "No audit trail for permission changes", "Session management spread across screens"]
-        behaviors: ["Reviews permissions after employee role changes", "Clears sessions during security incidents"]
-        tech_savviness: high
-        job_to_be_done: "Control back-office access and maintain system security"
-        context: "Back-office administration and security management"
-        demographics:
-          role: "System Administrator"
-          industry: "E-commerce"
+      - id: admin.PER001
+        name: Merchant with a team
+        description: The SuperAdmin of a shop with employees, who gives each one a profile and its permissions (presta-specs/content/1.7/back-office/advanced-parameters/team/add-edit-employee.md; presta-specs/content/1.7/back-office/advanced-parameters/team/permissions-listing.md).
+        goals:
+          - Create an employee and give them one of the default profiles SuperAdmin, Logistician, Translator or Salesman (presta-specs/content/1.7/back-office/advanced-parameters/team/add-edit-employee.md, '9) Permission profile').
+          - Restrict an employee to the shops they may access (presta-specs/content/1.7/back-office/advanced-parameters/team/add-edit-employee.md, '10) Shop association').
+          - Delete an employee's session so it can no longer be used to log in (presta-specs/content/1.7/back-office/advanced-parameters/Security/employee-sessions-listing.md).
+        pain_points:
+          - Every default profile starts with all module permissions disabled, so each module an employee needs must be granted by hand (presta-specs/content/1.7/back-office/advanced-parameters/team/permissions-listing.md).
+          - Outdated employee sessions are cleared only when someone presses 'Clear outdated sessions manually' (presta-specs/content/1.7/back-office/advanced-parameters/Security/employee-sessions-listing.md, 'Outdated sessions').
 
   - id: admin.ACT002
     name: "ShopOperator"
     type: human
     description: "Day-to-day back-office user with profile-restricted access. Cannot manage employees or profiles but uses the system within their assigned permissions."
-    personas:
-      - name: "Typical ShopOperator"
-        quote: "I just need to do my job without hitting permission walls I don't understand."
-        goals: ["Access assigned features reliably", "Understand what I can and cannot do"]
-        pain_points: ["Cryptic permission denied errors", "Cannot see why access was revoked"]
-        behaviors: ["Works within assigned profile", "Contacts admin when access issues arise"]
-        tech_savviness: medium
-        job_to_be_done: "Operate the store back-office within assigned role boundaries"
-        context: "Daily back-office operations"
-        demographics:
-          role: "Store Operator"
-          industry: "E-commerce"
 
 enumerations:
   - id: admin.EN001

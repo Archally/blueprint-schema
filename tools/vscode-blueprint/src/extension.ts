@@ -15,6 +15,8 @@ import {
   type RepoConfigSet,
 } from './codeRef';
 import { completionsFor, fieldAtCursor, type IdEntry } from './completion';
+import { DiagnosticWorkspace, DEFAULT_DEBOUNCE_MS, MAX_DEBOUNCE_MS, owningModelRoot, clearSchemaCache, type Severity, type DiagnosticPublication } from './diagnostics';
+import { DiagnosticScheduler } from './diagnosticScheduler';
 
 /**
  * Archally Blueprint Navigation
@@ -28,7 +30,7 @@ import { completionsFor, fieldAtCursor, type IdEntry } from './completion';
  * dependency — the line scan gives exact locations and works before the model is built.
  */
 
-const DEFAULT_GLOB = '**/.blueprint/**/*.yaml';
+const DEFAULT_GLOB = '**/.blueprint/**/*.{yaml,yml}';
 
 // A blueprint id under the cursor: scoped (`slice.TYPE###`) or bare (`TYPE###` / `MIG###` / `CAT####`).
 const TOKEN_RE = /[a-z][a-z0-9-]*\.[A-Za-z]{1,6}\d{2,5}|[A-Za-z]{1,6}\d{2,5}/;
@@ -108,7 +110,7 @@ function describe(lines: string[], i: number, declLine: string): { kind: string;
   if (summary.length > 160) summary = summary.slice(0, 157) + '…';
 
   const head = [kind, name].filter(Boolean).join(' ');
-  return { kind, name, summary: [head, summary].filter(Boolean).join(' — ') };
+  return { kind, name, summary: [head, summary].filter(Boolean).join(' - ') };
 }
 
 function removeFile(uriStr: string): void {
@@ -191,11 +193,18 @@ const hoverProvider: vscode.HoverProvider = {
 
     const md = new vscode.MarkdownString();
     md.isTrusted = true;
+    const modelRoots = decls.map(declaration => owningModelRoot(declaration.uri.fsPath));
+    const showModelRoots = new Set(modelRoots).size > 1;
     for (const d of decls) {
+      if (showModelRoots) {
+        const root = owningModelRoot(d.uri.fsPath);
+        const label = root ? vscode.workspace.asRelativePath(vscode.Uri.file(root)) : 'Outside a versioned model';
+        md.appendMarkdown(`Model: \`${label}\`\n\n`);
+      }
       const rel = vscode.workspace.asRelativePath(d.uri);
       const line = d.range.start.line + 1;
       const gotoArgs = encodeURIComponent(JSON.stringify([d.uri.toString(), d.range.start.line, d.range.start.character]));
-      if (d.summary) md.appendMarkdown(`**\`${token}\`** — ${d.summary}\n\n`);
+      if (d.summary) md.appendMarkdown(`**\`${token}\`** - ${d.summary}\n\n`);
       else md.appendMarkdown(`**\`${token}\`**\n\n`);
       md.appendMarkdown(`📄 [${rel}:${line}](command:archallyBlueprint.goto?${gotoArgs})\n`);
     }
@@ -370,7 +379,7 @@ const blueprintLinkProvider: vscode.DocumentLinkProvider = {
     const links: vscode.DocumentLink[] = [];
     const text = doc.getText();
 
-    // code_refs → local clone if resolvable (codeRef.localRoots + openBehavior, D2), else git-host file URL.
+    // code_refs open the mapped local clone when available, otherwise the git-host file URL.
     // No repo-config guard: a localRoots entry keyed by the `org/repo` prefix can resolve a clone even when the
     // owning blueprint.yaml has no `repository:` (resolveCodeRefTarget no-ops when nothing resolves).
     if (codeRefEnabled()) {
@@ -389,7 +398,8 @@ const blueprintLinkProvider: vscode.DocumentLinkProvider = {
           if (!target) continue;
           links.push(
             target.kind === 'file'
-              ? makeLink(hit, vscode.Uri.file(target.value), `Open local file: ${target.value}`)
+              ? makeLink(hit, vscode.Uri.file(target.value).with({ fragment: target.line ? `L${target.line}` : '' }),
+                `Open local file: ${target.value}${target.line ? `:${target.line}` : ''}`)
               : makeLink(hit, vscode.Uri.parse(target.value), `Open on host: ${target.value}`),
           );
         }
@@ -526,7 +536,7 @@ function applyDecorations(editor: vscode.TextEditor | undefined): void {
     editor.setDecorations(decoType, idRanges);
   }
 
-  // Links — code_ref paths + any URL + evidence file-paths — share the link-blue colour (E3),
+  // Code_ref paths, URLs and evidence file paths share the link-blue colour,
   // and each kind is included only when its feature toggle is on.
   if (codeRefDecoType) {
     const linkHits: CodeRefHit[] = [];
@@ -543,7 +553,103 @@ function refreshAllDecorations(): void {
   for (const editor of vscode.window.visibleTextEditors) applyDecorations(editor);
 }
 
+function diagnosticDelay(document?: vscode.TextDocument): number {
+  const value = vscode.workspace.getConfiguration('archallyBlueprint', document?.uri).get<number>('diagnostics.debounceMs', DEFAULT_DEBOUNCE_MS);
+  return Number.isFinite(value) ? Math.min(MAX_DEBOUNCE_MS, Math.max(0, value)) : DEFAULT_DEBOUNCE_MS;
+}
+
+/** Host boundary kept small so the same publication path can be exercised without Electron. */
+export function registerDiagnostics(context: vscode.ExtensionContext): { refresh(): void; dispose(): void } {
+  const collection = vscode.languages.createDiagnosticCollection('Archally');
+  const deleted = new Set<string>();
+  const diagnosticWorkspace = new DiagnosticWorkspace({
+    bundledSchemaRoot: context.asAbsolutePath('schema'),
+    async files() {
+      const eligible = await vscode.workspace.findFiles(currentGlob(), '**/node_modules/**');
+      for (const document of vscode.workspace.textDocuments) {
+        if (vscode.languages.match(selector(), document) > 0 && !deleted.has(document.uri.fsPath)) eligible.push(document.uri);
+      }
+      const roots = new Set(eligible.map(uri => owningModelRoot(uri.fsPath)).filter((root): root is string => !!root));
+      const eligibleFiles = new Set(eligible.map(uri => uri.fsPath));
+      const members = await Promise.all([...roots].map(root => vscode.workspace.findFiles(new vscode.RelativePattern(root, '**/*.{yaml,yml}'), null)));
+      return [...new Map([...members.flat(), ...eligible].map(uri => [uri.fsPath, uri])).values()].filter(uri => !deleted.has(uri.fsPath)).map(uri => ({ file: uri.fsPath, eligible: eligibleFiles.has(uri.fsPath) }));
+    },
+    read: async file => Buffer.from(await vscode.workspace.fs.readFile(vscode.Uri.file(file))).toString('utf8'),
+    overlays: () => new Map(vscode.workspace.textDocuments.filter(document => document.uri.scheme === 'file' && !deleted.has(document.uri.fsPath))
+      .map(document => [document.uri.fsPath, document.getText()])),
+    settings(root) {
+      const configuration = vscode.workspace.getConfiguration('archallyBlueprint', vscode.Uri.file(root));
+      const severity = (key: string): Severity => {
+        const value = configuration.get<Severity>(key, 'error');
+        return ['error', 'warning', 'information', 'hint', 'off'].includes(value) ? value : 'error';
+      };
+      return { duplicateSeverity: severity('diagnostics.duplicateSeverity'), danglingSeverity: severity('diagnostics.danglingSeverity'),
+        schemaRoot: configuration.get<string>('diagnostics.schemaRoot'), schemaVersion: configuration.get<string>('diagnostics.schemaVersion') };
+    },
+  });
+  const publish = (publications: DiagnosticPublication[]) => {
+    const entries = new Map<string, vscode.Diagnostic[]>();
+    for (const publication of publications) {
+      const location = (file: string, offsets: [number, number]) => {
+        const source = publication.model.parsed.get(file)!;
+        const positions = offsets.map(offset => source.lineCounter.linePos(offset));
+        return new vscode.Location(vscode.Uri.file(path.join(publication.root, file)),
+          new vscode.Range(positions[0].line - 1, positions[0].col - 1, positions[1].line - 1, positions[1].col - 1));
+      };
+      for (const finding of publication.diagnostics) {
+        const target = location(finding.file, finding.range);
+        const severity = { error: vscode.DiagnosticSeverity.Error, warning: vscode.DiagnosticSeverity.Warning,
+          information: vscode.DiagnosticSeverity.Information, hint: vscode.DiagnosticSeverity.Hint }[finding.severity];
+        const diagnostic = new vscode.Diagnostic(target.range, finding.message, severity);
+        diagnostic.source = 'Archally';
+        diagnostic.code = finding.code;
+        diagnostic.relatedInformation = finding.related.map(other => new vscode.DiagnosticRelatedInformation(location(other.file, other.range),
+          `Also declared at ${other.file}:${other.line}.`));
+        const key = target.uri.fsPath;
+        const diagnostics = entries.get(key) ?? [];
+        diagnostics.push(diagnostic);
+        entries.set(key, diagnostics);
+      }
+    }
+    collection.clear();
+    collection.set([...entries].map(([file, diagnostics]) => [vscode.Uri.file(file), diagnostics]));
+  };
+  const scheduler = new DiagnosticScheduler(() => diagnosticWorkspace.compute(), publish, error => {
+    collection.clear();
+    void vscode.window.showWarningMessage(`Archally model diagnostics unavailable: ${String(error)}`);
+  });
+  const refresh = () => { diagnosticWorkspace.invalidate(undefined, true); scheduler.schedule(0); };
+  const changed = (uri: vscode.Uri, membership = false) => {
+    if (!owningModelRoot(uri.fsPath)) return;
+    diagnosticWorkspace.invalidate(uri.fsPath, membership);
+    scheduler.schedule(0);
+  };
+  const watcher = vscode.workspace.createFileSystemWatcher('**/.blueprint/**/*.{yaml,yml}');
+  const subscriptions = [
+    watcher,
+    watcher.onDidChange(uri => changed(uri)),
+    watcher.onDidCreate(uri => { deleted.delete(uri.fsPath); changed(uri, true); }),
+    watcher.onDidDelete(uri => { deleted.add(uri.fsPath); collection.delete(uri); changed(uri, true); }),
+    vscode.workspace.onDidOpenTextDocument(document => { if (owningModelRoot(document.uri.fsPath)) refresh(); }),
+    vscode.workspace.onDidChangeTextDocument(event => { if (owningModelRoot(event.document.uri.fsPath)) scheduler.schedule(diagnosticDelay(event.document)); }),
+    vscode.workspace.onDidSaveTextDocument(document => changed(document.uri)),
+    vscode.workspace.onDidCloseTextDocument(document => { if (owningModelRoot(document.uri.fsPath)) changed(document.uri, true); }),
+    vscode.workspace.onDidCreateFiles(refresh),
+    vscode.workspace.onDidDeleteFiles(event => { for (const uri of event.files) deleted.add(uri.fsPath); refresh(); }),
+    vscode.workspace.onDidRenameFiles(event => { for (const file of event.files) { deleted.add(file.oldUri.fsPath); deleted.delete(file.newUri.fsPath); } refresh(); }),
+    vscode.workspace.onDidChangeWorkspaceFolders(refresh),
+    vscode.workspace.onDidChangeConfiguration(event => {
+      if (event.affectsConfiguration('archallyBlueprint')) { clearSchemaCache(); refresh(); }
+    }),
+  ];
+  const registration = { refresh, dispose() { scheduler.dispose(); for (const subscription of subscriptions) subscription.dispose(); collection.dispose(); } };
+  context.subscriptions.push(registration);
+  scheduler.schedule(0);
+  return registration;
+}
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  const diagnostics = registerDiagnostics(context);
   await rebuildIndex();
   rebuildDecoType();
   refreshAllDecorations();
@@ -559,7 +665,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.languages.registerHoverProvider(selector(), hoverProvider),
     vscode.languages.registerHoverProvider(selector(), codeRefHoverProvider),
     { dispose: () => linkProviderReg?.dispose() },
-    vscode.commands.registerCommand('archallyBlueprint.reindex', rebuildIndex),
+    vscode.commands.registerCommand('archallyBlueprint.reindex', async () => { await rebuildIndex(); diagnostics.refresh(); refreshAllDecorations(); }),
     vscode.commands.registerCommand('archallyBlueprint.goto', async (uriStr: string, line: number, character: number) => {
       const uri = vscode.Uri.parse(uriStr);
       const sel = new vscode.Range(line, character, line, character);
@@ -595,10 +701,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const ed = vscode.window.activeTextEditor;
       if (!ed || e.document !== ed.document) return;
       if (decoTimer) clearTimeout(decoTimer);
-      decoTimer = setTimeout(() => applyDecorations(ed), 150);
+      decoTimer = setTimeout(() => applyDecorations(ed), diagnosticDelay(ed.document));
     }),
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration('archallyBlueprint.fileGlob')) void rebuildIndex();
+      if (e.affectsConfiguration('archallyBlueprint.fileGlob')) void rebuildIndex().then(refreshAllDecorations);
       const linkCfgChanged =
         e.affectsConfiguration('archallyBlueprint.codeRef') ||
         e.affectsConfiguration('archallyBlueprint.referenceLinks');

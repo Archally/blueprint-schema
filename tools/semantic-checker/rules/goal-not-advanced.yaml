@@ -1,0 +1,17 @@
+engineVersion: "0.1"
+rules:
+  - id: goal-not-advanced
+    severity: info
+    description: >-
+      A goal with no capability, value stream, leverage point, milestone, work item or decision
+      working toward it. References must name the goal's exact, unambiguous declared id.
+      Risks, inquiries, KPIs, screens, questions, visions and fitness functions do not count
+      as advancing a goal. The default severity is info; raise it to warn or disable it in
+      the project's .blueprint-lint.yaml.
+    find:
+      entity_type: Goal
+    check:
+      custom:
+        module: ./goal-advancers.mjs
+        export: goalNotAdvanced
+    message: 'Goal "{displayId}" has nothing advancing it. State capability.goal_refs, value_stream.goal_refs, leverage_point.advances_goals, milestone.advances_goals, work_item.advances_goals or decision.motivation_refs.goals, or accept the gap.'

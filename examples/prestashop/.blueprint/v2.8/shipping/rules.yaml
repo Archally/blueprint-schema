@@ -5,85 +5,301 @@ scope: shipping
 structural:
   - id: shipping.SR001
     name: "Carrier requires at least one zone"
-    description: "A carrier must be assigned to at least one shipping zone. Carriers without zones cannot calculate shipping costs and are rejected at creation time."
+    description: "A carrier without zones cannot price a delivery."
     modality: necessary
     concepts: [shipping.CN001]
     code_refs:
       - path: "src/Core/Domain/Carrier/Command/AddCarrierCommand.php"
         role: implementation
-        description: "assertCarrierHasAtLeastOneZone() in constructor"
+        description: "Lines 55 and 64-72: the constructor refuses an empty zone list."
+      - path: src/Core/Domain/Carrier/Command/EditCarrierCommand.php
+        role: validation
+        description: "Lines 289-296: setting an empty zone list on an edit is refused."
+      - path: tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature
+        role: test
+        description: Scenario 'Add a new carrier without any zone' at line 759.
+      - path: tests/Integration/Behaviour/Features/Scenario/Carrier/Ranges/carrier_ranges.feature
+        role: test
+        description: Scenario 'Adding prices ranges without zone' at line 151.
+    summary: A carrier serves at least one zone.
+    logic:
+      when: a carrier is created, or its zones are set on an edit
+      then: carrier.zones.count >= 1
+    fact: Carrier.zones.count >= 1
+    scope: carrier creation and edit, back office and Admin API
+    on_violation:
+      action: reject
+      code: 210
+      message: Carrier need to have at least one zone
+    examples:
+      - input: A carrier is created with an empty zone list
+        output: Refused with INVALID_ZONE_MISSING
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
 validation:
   - id: shipping.VR001
-    name: "Carrier name constraints"
-    description: "Carrier name must be a non-empty string within system-defined length limits."
+    name: "A carrier name is required, at most 64 characters, without < > { }"
+    description: "Keeps a carrier name short enough to display and free of markup characters."
     modality: obligatory
     concepts: [shipping.CN001]
     code_refs:
       - path: "src/Core/Domain/Carrier/Exception/CarrierConstraintException.php"
         role: implementation
-        description: "INVALID_NAME error code"
+        description: "Line 29: INVALID_NAME (30), raised when the name fails validation."
+      - path: classes/Carrier.php
+        role: model
+        description: "Line 145: name is required, size 64, validated with isCarrierName."
+      - path: classes/Validate.php
+        role: validation
+        description: "Lines 156-159: isCarrierName refuses the characters < > { }."
+      - path: src/Adapter/Carrier/Validate/CarrierValidator.php
+        role: validation
+        description: "Line 100: the carrier validator checks the name and raises INVALID_NAME."
+    summary: Required, up to 64 characters, no angle or curly brackets.
+    logic:
+      when: a carrier is created or edited
+      then: name is set AND length(name) <= 64 AND name matches /^[^<>{}]*$/
+    fact: Carrier.name required AND size(Carrier.name) <= 64 AND isCarrierName(Carrier.name)
+    scope: carrier creation and edit
+    on_violation:
+      action: reject
+      code: 30
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: shipping.VR002
     name: "Shipping method must be valid"
-    description: "Shipping method must be one of the defined values: by_weight (1) or by_price (2). Invalid values are rejected."
+    description: "The legacy values 0 (default) and 3 (free) remain only on carriers loaded from the database."
     modality: obligatory
     concepts: [shipping.CN001]
     code_refs:
       - path: "src/Core/Domain/Carrier/ValueObject/ShippingMethod.php"
         role: implementation
+        description: Lines 21-31 declare BY_WEIGHT, BY_PRICE and the allowed values; lines 67-76 refuse any other value with INVALID_SHIPPING_METHOD.
+      - path: classes/Carrier.php
+        role: model
+        description: "Lines 30-33 and 201-204: the legacy values 0 and 3 kept for rows loaded from the database."
+    summary: A carrier is priced by weight or by price.
+    logic:
+      when: a carrier's shipping method is set on create or edit
+      then: shippingMethod IN {1, 2}
+    fact: ShippingMethod.value IN {BY_WEIGHT = 1, BY_PRICE = 2}
+    scope: carrier creation and edit
+    on_violation:
+      action: reject
+      code: 140
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: shipping.VR003
     name: "Free shipping disables additional handling fee"
-    description: "When a carrier is marked as free, additional handling fee configuration is contradictory. The system rejects this combination."
+    description: "Keeps a free carrier from charging a handling fee."
     modality: obligatory
     concepts: [shipping.CN001]
     code_refs:
       - path: "src/Core/Domain/Carrier/Exception/CarrierConstraintException.php"
         role: implementation
-        description: "INVALID_HAS_ADDITIONAL_HANDLING_FEE_WITH_FREE_SHIPPING"
+        description: "Line 104: INVALID_HAS_ADDITIONAL_HANDLING_FEE_WITH_FREE_SHIPPING (170)."
+      - path: src/Adapter/Carrier/Validate/CarrierValidator.php
+        role: validation
+        description: "Lines 120-127: a carrier both free and with the handling fee is refused."
+      - path: src/Adapter/Carrier/CommandHandler/EditCarrierHandler.php
+        role: implementation
+        description: "Lines 79-96: an edit that sets one flag clears the other."
+      - path: tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature
+        role: test
+        description: "Scenarios at lines 619, 643 and 667: setting one flag clears the other; setting both is refused."
+    summary: Free shipping and the handling fee exclude each other.
+    logic:
+      when: a carrier is created or edited
+      then: NOT (isFree AND hasAdditionalHandlingFee); an edit setting one clears the other
+    fact: NOT (Carrier.is_free AND Carrier.shipping_handling)
+    scope: carrier creation, edit and the free-shipping toggle
+    on_violation:
+      action: reject
+      code: 170
+      message: Carrier cannot be both shipping handling and free
+    examples:
+      - input: A carrier with the handling fee is edited to set isFree and the handling fee both to true
+        output: Refused with INVALID_HAS_ADDITIONAL_HANDLING_FEE_WITH_FREE_SHIPPING
+      - input: A carrier with the handling fee is edited to set only isFree to true
+        output: isFree is true and the handling fee is false
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: shipping.VR004
     name: "Ranges must not overlap within a zone"
-    description: "For a given carrier and zone, weight/price ranges must not overlap. Each bracket must have a unique non-overlapping from-to interval."
+    description: "Keeps any weight or price in a zone inside at most one range."
     modality: obligatory
     concepts: [shipping.CN002]
     code_refs:
       - path: "src/Core/Domain/Carrier/Exception/CarrierConstraintException.php"
         role: implementation
-        description: "INVALID_RANGES_OVERLAPPING"
+        description: "Line 109: INVALID_RANGES_OVERLAPPING (180)."
+      - path: src/Core/Domain/Carrier/ValueObject/CarrierRangeZone.php
+        role: validation
+        description: "Lines 80-105: sorts the ranges by start and refuses one that starts before the previous end."
+      - path: tests/Integration/Behaviour/Features/Scenario/Carrier/Ranges/carrier_ranges.feature
+        role: test
+        description: Scenario 'Adding overlapping ranges in carrier' at line 66.
+    summary: Ranges of one zone do not overlap; touching is allowed.
+    logic:
+      when: a carrier's ranges are set for a zone
+      then: sorted by range_from, each range_from >= the previous range_to
+    fact: "FOR consecutive ranges a, b of a zone sorted by range_from: b.range_from >= a.range_to"
+    scope: setting a carrier's ranges, per zone
+    on_violation:
+      action: reject
+      code: 180
+      message: Carrier ranges are overlapping
+    examples:
+      - input: Zone 1 gets the ranges 0-100 and 50-200
+        output: Refused with INVALID_RANGES_OVERLAPPING
+      - input: Zone 2 gets the ranges 0-100 and 100-200
+        output: The two ranges touch and do not overlap
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: shipping.VR005
-    name: "Range values must be non-negative"
-    description: "Range from/to values and prices must be zero or positive. Negative range values are rejected."
+    name: "A carrier range's bounds are zero or more"
+    description: "The sign of the range price is a separate rule."
     modality: obligatory
     concepts: [shipping.CN002]
     code_refs:
       - path: "src/Core/Domain/Carrier/Exception/CarrierConstraintException.php"
         role: implementation
-        description: "INVALID_RANGE_NEGATIVE"
+        description: "Line 129: INVALID_RANGE_NEGATIVE (220)."
+      - path: src/Core/Domain/Carrier/ValueObject/CarrierRangeZone.php
+        role: validation
+        description: "Lines 92-97: a negative from or to is refused; the price is not checked here."
+      - path: tests/Integration/Behaviour/Features/Scenario/Carrier/Ranges/carrier_ranges.feature
+        role: test
+        description: Scenario 'Adding negative ranges in carrier' at line 158.
+    summary: Range bounds are not negative.
+    logic:
+      when: a carrier's ranges are set
+      then: range_from >= 0 AND range_to >= 0
+    fact: CarrierRange.range_from >= 0 AND CarrierRange.range_to >= 0
+    scope: setting a carrier's ranges, per zone
+    on_violation:
+      action: reject
+      code: 220
+      message: Carrier range cannot be less than zero.
+    examples:
+      - input: Zone 1 gets the range -5 to 100
+        output: Refused with INVALID_RANGE_NEGATIVE
+      - input: Zone 1 gets the range 0 to -100
+        output: Refused with INVALID_RANGE_NEGATIVE
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
 
   - id: shipping.VR006
-    name: "Shipment requires valid order and carrier"
-    description: "A shipment can only be created or edited for an existing order with a valid, active carrier. The product and quantity must reference a valid order line."
+    name: "A shipment belongs to an existing order, and a carrier it is switched to exists"
+    description: "Whether the carrier is active is not checked."
     modality: obligatory
     concepts: [shipping.CN004]
+    summary: Existing order, order lines and, on a change, an existing carrier.
+    logic:
+      when: a shipment is created or edited, its carrier switched, or a product added to it
+      then: the order exists; the product is a line of the order; a changed carrier exists
+    fact: EXISTS Order(shipment.order_id) AND EXISTS OrderDetail(order, product) AND (carrier changed => EXISTS Carrier(carrier_id))
+    scope: back-office shipment create, edit, carrier switch and product add
+    on_violation:
+      action: reject
+    examples:
+      - input: A shipment is edited to use a carrier that does not exist
+        output: "Refused: the carrier was not found"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+    code_refs:
+      - path: src/Adapter/Shipment/CommandHandler/CreateShipmentHandler.php
+        role: validation
+        description: "Line 42: the order is loaded and must exist; lines 50-55 refuse a product that is not in the order when shipping is recalculated."
+      - path: src/Adapter/Shipment/CommandHandler/EditShipmentHandler.php
+        role: validation
+        description: "Line 53: the carrier must exist."
+      - path: src/Adapter/Shipment/CommandHandler/SwitchShipmentCarrierHandler.php
+        role: validation
+        description: "Line 49: the carrier must exist."
+      - path: src/Adapter/Shipment/CommandHandler/AddProductToShipmentHandler.php
+        role: validation
+        description: "Lines 40-44: the product must be a line of the order."
+      - path: tests/Integration/Behaviour/Features/Scenario/Shipment/shipment.feature
+        role: test
+        description: "Scenarios at lines 108 and 115: editing or switching to a carrier that does not exist is refused."
 
   - id: shipping.VR007
-    name: "Split shipment requires valid quantities"
-    description: "When splitting a shipment, the specified product quantities must not exceed available quantities in the source shipment."
+    name: "A split moves between one unit and the quantity the source shipment holds"
+    description: "The split command does not bound the quantity: a larger one empties the source line and puts the full requested quantity on the new shipment."
     modality: obligatory
     concepts: [shipping.CN004]
+    summary: From 1 to the quantity in the source shipment, per product.
+    logic:
+      when: a product of a shipment is selected for a split
+      then: 1 <= selectedQuantity <= quantity in the source shipment
+    fact: 1 <= split.quantity <= ShipmentProduct.quantity
+    scope: the back-office split shipment form
+    on_violation:
+      action: reject
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+    code_refs:
+      - path: src/PrestaShopBundle/Form/Admin/Sell/Order/Shipment/ProductSplitType.php
+        role: validation
+        description: "Lines 42-55: the selected quantity is limited from 1 to the quantity in the shipment."
+      - path: src/Adapter/Shipment/ShipmentSplitter.php
+        role: implementation
+        description: "Lines 46-69: the splitter refuses a product not in the source shipment and does not bound the quantity."
 
   - id: shipping.VR008
     name: "Merge requires compatible shipments"
-    description: "Products can only be merged into a shipment belonging to the same order. Cross-order merging is not permitted."
+    description: "Products are meant to be merged only within one order; the merge command does not compare the two shipments' orders today."
     modality: obligatory
     concepts: [shipping.CN004]
+    summary: Source and target shipments of a merge belong to one order.
+    logic:
+      when: products are merged from one shipment into another
+      then: source.orderId = target.orderId
+    fact: Shipment(source).order_id = Shipment(target).order_id
+    scope: merging products between shipments
+    implementation: to-be
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+    code_refs:
+      - path: src/Adapter/Shipment/CommandHandler/MergeProductsToShipmentHandler.php
+        role: planned
+        description: "Lines 39-80 refuse a missing or shipped shipment and never compare the orders."
+      - path: src/Adapter/Shipment/ShipmentMerger.php
+        role: gap
+        description: "Lines 27-70: moves the order lines without an order check."
+      - path: src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php
+        role: documentation
+        description: "Lines 683-689 and 758: the back office offers a merge only inside one order."
+      - path: src/Adapter/Shipment/QueryHandler/ListAvailableShipmentsForProductHandler.php
+        role: documentation
+        description: "Lines 43-61: the shipments offered for a product are the order's own."
 
   - id: shipping.VR009
     name: "Tracking number must not be blank"
-    description: "A shipment is fulfilled by recording the carrier's tracking number, and a string of whitespace is not one. The TrackingNumber value object trims the input and refuses an empty result, so a shipment can never be marked packed with nothing to track it by."
+    description: "A shipment is never marked packed with nothing to track it by."
     logic:
       when: "a shipment is fulfilled"
       then: "trim(trackingNumber) != ''"
@@ -92,18 +308,84 @@ validation:
     code_refs:
       - path: "src/Core/Domain/Shipment/ValueObject/TrackingNumber.php"
         role: model
+        description: "Lines 24-26 and 38-43: trims the input and refuses an empty result."
       - path: "src/Core/Domain/Shipment/Exception/InvalidShipmentTrackingNumberException.php"
         role: implementation
+        description: The exception the value object raises.
+      - path: tests/Integration/Behaviour/Features/Scenario/Shipment/shipment.feature
+        role: test
+        description: "Scenarios at lines 137, 158 and 165: a tracking number is accepted; an empty or whitespace-only one is refused."
+    summary: A tracking number is not empty after trimming.
+    fact: trim(Shipment.tracking_number) != ''
+    scope: fulfilling a shipment
+    on_violation:
+      action: reject
+      message: Tracking number cannot be empty or whitespace.
+    examples:
+      - input: A shipment is fulfilled with a tracking number
+        output: The shipment carries the number and is packed
+      - input: A shipment is fulfilled with a tracking number of spaces only
+        output: "Refused: the tracking number cannot be empty or whitespace"
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+  - id: shipping.VR010
+    name: A carrier range price is zero or more
+    description: A range price is meant to be zero or more; the ranges command writes it without checking its sign today.
+    summary: A range price is not negative.
+    logic:
+      when: a carrier range is set with its price
+      then: rangePrice >= 0
+    fact: Delivery.price >= 0
+    scope: setting a carrier's ranges and prices per zone
+    modality: obligatory
+    concepts:
+      - shipping.CN002
+    implementation: to-be
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+    code_refs:
+      - path: src/Adapter/Carrier/Repository/CarrierRangeRepository.php
+        role: planned
+        description: "Lines 118-125 insert the price into the delivery table as given."
+      - path: classes/Delivery.php
+        role: documentation
+        description: "Line 49: the delivery price is declared with isPrice, which accepts no sign."
+      - path: classes/Validate.php
+        role: documentation
+        description: "Lines 283-286: isPrice matches digits and an optional decimal part
+          only."
 
 transition:
   - id: shipping.TR001
-    name: "Shipped shipment becomes immutable"
+    name: "A shipment becomes shipped when it is fulfilled with a tracking number"
     concept: shipping.CN004
     from: "pending"
     to: "shipped"
     guard:
-      when: "shipment has been dispatched to carrier"
-    description: "Once shipped, a shipment cannot be edited, split, or have products added/removed."
+      when: "the shipment is fulfilled with a tracking number"
+    description: "Editing its carrier and adding or removing its products are not refused once it is shipped."
     code_refs:
       - path: "src/Core/Domain/Shipment/Exception/CannotEditShipmentShippedException.php"
         role: implementation
+        description: The exception split and merge raise for a shipment that has a tracking number.
+      - path: src/Adapter/Shipment/CommandHandler/FulfillShipmentCommandHandler.php
+        role: implementation
+        description: "Lines 56-58: fulfilling sets the tracking number and the packing time."
+      - path: src/Adapter/Shipment/CommandHandler/SplitShipmentHandler.php
+        role: validation
+        description: "Lines 51-58: a shipment with a tracking number is not split."
+      - path: src/Adapter/Shipment/CommandHandler/MergeProductsToShipmentHandler.php
+        role: validation
+        description: "Lines 53-80: neither the source nor the target of a merge may have a tracking number."
+    summary: A tracking number makes a shipment shipped; then no split or merge.
+    fact: Shipment.tracking_number != '' => shipped
+    on_violation:
+      action: reject
+      message: Cannot split the shipment "%id%" because it has already been shipped.
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed

@@ -46,6 +46,18 @@ contexts:
             provide:
               - modules.CMD010
               - modules.CMD011
+              - modules.CMD012
+              - modules.CMD013
+              - modules.QRY004
+              - modules.EVT001
+              - modules.EVT002
+              - modules.EVT003
+              - modules.EVT004
+              - modules.EVT005
+              - modules.EVT006
+              - modules.EVT007
+              - modules.EVT008
+              - modules.EVT009
           openapi:
             contract_name: modules-api
             slice: modules
@@ -53,3 +65,17 @@ contexts:
               - modules.CMD001
               - modules.CMD002
               - modules.QRY001
+              - modules.CMD003
+              - modules.CMD004
+              - modules.CMD005
+              - modules.CMD006
+              - modules.CMD007
+              - modules.CMD008
+              - modules.CMD009
+              - modules.QRY002
+              - modules.QRY003
+        implementation: "as-is"
+        code_refs:
+          - path: src/Core/Module/ModuleManager.php
+            role: implementation
+            description: Source for this logical module within the PrestaShop PHP monolith; verified in the cited develop checkout a27e912eef9.

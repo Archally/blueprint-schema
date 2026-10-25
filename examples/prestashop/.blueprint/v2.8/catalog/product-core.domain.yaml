@@ -1425,3 +1425,15 @@ errors:
     code_refs:
       - path: "src/Core/Domain/Product/Pack/Exception/ProductPackConstraintException.php"
         role: implementation
+questions:
+  - id: catalog.QN005
+    name: Deleting A Product With Pending Orders
+    statement: Should deleting a product be refused while an order containing it is
+      pending? The model states that it is; PrestaShop deletes the product and the
+      order lines keep their own copy.
+    category: business
+    priority: medium
+    bounded_context_ref: prestashop.BC002
+    answered_by: []
+    concepts:
+      - catalog.CN001

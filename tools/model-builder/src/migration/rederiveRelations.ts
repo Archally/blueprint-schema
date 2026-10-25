@@ -31,11 +31,17 @@
  * file entities `buildRelations` creates are added when a new edge needs one and removed when no
  * edge needs it any more. And an event's reach is annotated again from the finished relations, as
  * the build annotates it.
+ *
+ * The build also reads the file an entity sits in. An entity a migration adds is declared in the
+ * migration, so the derivation reads it from the file `_written_in` names (see `placeAsWritten.ts`)
+ * where it has one, and from its `fileOrigin` otherwise; a contract takes it from its service. The
+ * entity's `fileOrigin` is not changed.
  */
 import type { BlueprintModel, Entity, Relation } from '../model/types.js';
 import { ENTITY_TYPE } from '../model/entityTypes.js';
 import { buildRelations } from '../extraction/relations/index.js';
 import { annotateEventReach } from '../extraction/entities/eventReach.js';
+import { WRITTEN_IN, writtenFileOf } from './changes/placeAsWritten.js';
 
 /** Entities `buildRelations` creates rather than reads. */
 const BUILT_TYPES: ReadonlySet<string> = new Set([ENTITY_TYPE.Missing, ENTITY_TYPE.CodeFile]);
@@ -77,6 +83,17 @@ function contractServiceKey(contract: Entity): string {
   return serviceKey(data._party, data._context, data._service);
 }
 
+/**
+ * The entities as the build reads them: one that records the file it would be written into is read
+ * from that file. A copy, sharing its `data`, so an annotation made on it is made on the entity.
+ */
+function asWritten(entities: Entity[]): Entity[] {
+  return entities.map((entity) => {
+    const file = writtenFileOf(entity);
+    return file === entity.fileOrigin ? entity : { ...entity, fileOrigin: file };
+  });
+}
+
 function servicesOf(model: BlueprintModel): Map<string, { key: string; state: string }> {
   const services = new Map<string, { key: string; state: string }>();
   for (const entity of model.entities) {
@@ -94,7 +111,7 @@ function servicesOf(model: BlueprintModel): Map<string, { key: string; state: st
  * rather than repeated for every migration replayed.
  */
 export function deriveFrom(model: BlueprintModel): DerivedState {
-  const input = model.entities.filter((entity) => !BUILT_TYPES.has(entity.type));
+  const input = asWritten(model.entities.filter((entity) => !BUILT_TYPES.has(entity.type)));
   const warn = console.warn;
   let built: ReturnType<typeof buildRelations>;
   console.warn = () => {};
@@ -137,7 +154,7 @@ function syncContracts(model: BlueprintModel, before: Map<string, { key: string;
     const contracts = data.contracts;
     if (!contracts || typeof contracts !== 'object' || Array.isArray(contracts)) continue;
     const placement: Record<string, unknown> = {};
-    for (const key of PLACEMENT_KEYS) if (data[key] !== undefined) placement[key] = data[key];
+    for (const key of [...PLACEMENT_KEYS, WRITTEN_IN]) if (data[key] !== undefined) placement[key] = data[key];
     const serviceName = nameOf(service);
     for (const [contractType, contract] of Object.entries(contracts as Record<string, unknown>)) {
       if (!contract || typeof contract !== 'object') continue;
@@ -229,6 +246,6 @@ export function rederiveRelations(model: BlueprintModel, before: DerivedState): 
     if (!entityIds.has(id) && referenced.has(id)) model.entities.push(entity);
   }
 
-  annotateEventReach(model.entities, model.relations);
+  annotateEventReach(asWritten(model.entities), model.relations);
   return after;
 }

@@ -14,7 +14,18 @@
  * the same slice (the scope prefix of a domain id), contexts placed the same way, services of the
  * same context. A document key is taken only when every sibling carries it with the same value, so
  * a slice whose files disagree passes on nothing it cannot be sure of. An entity with no siblings
- * gets no document keys, as before.
+ * gets no document keys.
+ *
+ * The file itself is the build's third input: an operation's folder names its domain, and an arch
+ * file nests a service in the context declared beside it. The entity keeps the migration's path as
+ * its `fileOrigin`, since that is where it is declared, and records under `_written_in` the file the
+ * relation build reads it from instead (see `rederiveRelations.ts`):
+ *
+ * - a service: the file of the context it names, which is where a file nests it;
+ * - any other entity: the one file all its siblings sit in, else, when they share one folder, a file
+ *   of the migration's own name in that folder, as a migration written out becomes a new file there.
+ *
+ * Where neither holds, nothing is recorded and the entity is read where it is declared.
  */
 import type { Entity } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
@@ -30,6 +41,9 @@ const KEYED_BY_NAME: ReadonlySet<string> = new Set(['context', 'service', 'depen
 
 /** The keys a document writes onto every entity it declares in one place. */
 const DOCUMENT_KEYS = ['_scope', '_context_name', '_root', '_party', OWNED_BY_DEFAULT, DOMAIN_REF_DEFAULT, SYSTEM_REF_DEFAULT] as const;
+
+/** The file the relation build reads an entity a migration adds from, when it differs from its `fileOrigin`. */
+export const WRITTEN_IN = '_written_in';
 
 /** Entities the relation builder creates; they sit in no document. */
 const BUILT_TYPES: ReadonlySet<string> = new Set([ENTITY_TYPE.Missing, ENTITY_TYPE.CodeFile]);
@@ -68,6 +82,49 @@ function samePlacement(a: Record<string, unknown>, b: Record<string, unknown>): 
   return (a._party ?? null) === (b._party ?? null);
 }
 
+/** The file an entity is read from: the one it would be written into, else the one declaring it. */
+export function writtenFileOf(entity: { fileOrigin?: string; data?: unknown }): string | undefined {
+  const written = ((entity.data ?? {}) as Record<string, unknown>)[WRITTEN_IN];
+  return typeof written === 'string' && written.length > 0 ? written : entity.fileOrigin;
+}
+
+function splitPath(path: string): { folder: string; name: string } {
+  const normalized = path.replace(/\\/g, '/');
+  const slash = normalized.lastIndexOf('/');
+  return slash < 0 ? { folder: '', name: normalized } : { folder: normalized.slice(0, slash), name: normalized.slice(slash + 1) };
+}
+
+/** The context a service names, placed as the service is, when exactly one matches. */
+function contextOf(service: Entity, entities: Entity[]): Entity | undefined {
+  const data = dataOf(service);
+  const matches = entities.filter(
+    (other) =>
+      other !== service &&
+      other.type === ENTITY_TYPE.Context &&
+      (other.term ?? other.displayId) === data._context &&
+      samePlacement(dataOf(other), data),
+  );
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+/** The file the build would read `entity` from, were it written beside its siblings. */
+function writtenFile(entity: Entity, siblings: Entity[], entities: Entity[]): string | undefined {
+  if (entity.type === ENTITY_TYPE.Service) {
+    const context = contextOf(entity, entities);
+    if (context) return writtenFileOf(context);
+  }
+  const files = new Set(siblings.map((sibling) => writtenFileOf(sibling) ?? ''));
+  if (files.size === 1) {
+    const [only] = files;
+    if (only) return only;
+  }
+  const folders = new Set([...files].map((file) => splitPath(file).folder));
+  if (folders.size !== 1) return undefined;
+  const [folder] = folders;
+  if (!folder) return undefined;
+  return `${folder}/${splitPath(entity.fileOrigin ?? '').name || 'migration.yaml'}`;
+}
+
 /** The entities that sit where this one would be written. */
 function siblingsOf(entity: Entity, entities: Entity[]): Entity[] {
   const data = dataOf(entity);
@@ -102,9 +159,12 @@ function siblingsOf(entity: Entity, entities: Entity[]): Entity[] {
  */
 export function placeAsWritten(entity: Entity, entities: Entity[]): void {
   const siblings = siblingsOf(entity, entities);
-  if (siblings.length === 0) return;
   const data = dataOf(entity);
   const placed: Record<string, unknown> = {};
+  if (!(WRITTEN_IN in data)) {
+    const file = writtenFile(entity, siblings, entities);
+    if (file && file !== entity.fileOrigin) placed[WRITTEN_IN] = file;
+  }
   for (const key of DOCUMENT_KEYS) {
     if (key in data) continue;
     const values = new Set(siblings.map((sibling) => JSON.stringify(dataOf(sibling)[key])));

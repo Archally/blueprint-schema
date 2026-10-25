@@ -87,6 +87,7 @@ happy_path:
       operations: [content.CMD013, content.CMD014]
       rules: [content.VR004]
       concepts: [content.CN003]
+      transitions: [content.TR001]
     given:
       description: "A theme archive is available and a default theme is currently active."
       state:
@@ -233,11 +234,7 @@ edge_cases:
       concepts: [content.CN003]
     given:
       description: >-
-        Theme 'classic' is currently active and is enabled again. Corrected 2026-09-19: this
-        case was called idempotent. ThemeManager::enable has no already-active short-circuit -
-        it disables the shop's current theme (itself, in this case) and re-runs the whole
-        activation sequence: custom hooks, configuration, module enable and reset, image types,
-        hook and unhook. It returns true, so nothing errors, but the second call does work.
+        Theme 'classic' is currently active and is enabled again.
       state:
         activeTheme: "classic"
         enableTheme: "classic"
@@ -264,6 +261,7 @@ edge_cases:
           date: "2026-09-19"
           summary: "Modeler-derived from code. No test enables a theme, let alone an already-active one."
           confidence_impact: weakens
+    note: "ThemeManager::enable has no already-active short-circuit: it disables the current theme (itself here) and re-runs the whole activation sequence (custom hooks, configuration, module enable and reset, image types, hook and unhook), then returns true. Nothing errors, but the second call does work."
 
 error_cases:
   - id: content.ER001
@@ -275,21 +273,19 @@ error_cases:
       concepts: [content.CN002]
     given:
       description: >-
-        Category 'Legal' has 3 assigned CMS pages and at least one child category. Corrected
-        2026-09-19: this case asserted that such a delete is rejected with a 409, while
-        content.VR003 and content.ERR003 already describe the behaviour the other way. CMSCategory::delete returns false for exactly one input, id 1; for
-        everything else it walks getAllChildren, deletes each descendant's CMS pages and the
-        descendant itself, and returns true. The cascade is the fact worth testing, because it
-        loses page content silently.
+        Category 'Legal' has 3 assigned CMS pages and at least one child category.
       state:
         categoryId: 5
         assignedPageCount: 3
     expected_result:
       status: success
     note: >-
-      The 409 half of the old assertion survives, narrowed to its real subject: deleting the
-      root CMS category (id 1) returns false and the handler raises
-      CannotDeleteCmsPageCategoryException.
+      CMSCategory::delete returns false for one input only, the
+      root (id 1), and the handler then raises
+      CannotDeleteCmsPageCategoryException. For every other category it walks
+      getAllChildren, deletes each descendant's CMS pages and the descendant itself, and
+      returns true: the cascade loses page content silently, which is why it is the fact
+      this case tests.
     code_refs:
       - path: "classes/CMSCategory.php"
         role: implementation
@@ -326,13 +322,7 @@ error_cases:
     given:
       description: >-
         A theme is deleted by a caller without the AdminThemes delete permission and without the
-        theme_write API scope. Corrected 2026-09-19: this case asserted that the ACTIVE theme
-        cannot be deleted. Nothing in the path checks that. ThemeManager::uninstall returns
-        false on the permission check alone, then unconditionally calls onUninstall (a no-op
-        returning true) and removes the theme directory; no comparison against the shop's
-        theme_name appears in ThemeManager, ThemeRepository, DeleteThemeHandler or the
-        controller. The exception's own message, "Theme is used and thus cannot be deleted",
-        names a reason the code never establishes.
+        theme_write API scope.
       state:
         hasDeletePermission: false
     expected_result:
@@ -364,6 +354,7 @@ error_cases:
             deletes a theme. An absence is the hardest thing to prove from source, so a reader
             who needs certainty should run the delete against the active theme.
           confidence_impact: weakens
+    note: "The delete path checks only the permission: ThemeManager::uninstall returns false on the permission check alone, then calls onUninstall and removes the theme directory. No comparison against the shop's theme_name appears in ThemeManager, ThemeRepository, DeleteThemeHandler or the controller, so content.VR005 is a to-be rule; the exception message names the reason the rule states."
 
   - id: content.ER003
     name: "Add meta with duplicate page name is rejected"
@@ -375,9 +366,7 @@ error_cases:
     given:
       description: >-
         A meta entry for page name 'index' already exists and a second is submitted for the same
-        page. The refusal is real, and the mechanism is not a duplicate check: AddMetaHandler
-        asks MetaDataProvider for the pages still AVAILABLE, and an already-used page is not
-        among them, so the submission fails as an invalid page name.
+        page.
       state:
         existingPageName: "index"
         newPageName: "index"
@@ -410,3 +399,4 @@ error_cases:
             PrestaShop has no dedicated duplicate-meta error, so a client cannot tell the two
             apart from the code alone.
           confidence_impact: supports
+    note: "The refusal is not a duplicate check: AddMetaHandler accepts only the pages still available, and a page already used is not among them, so the submission fails as an invalid page name."

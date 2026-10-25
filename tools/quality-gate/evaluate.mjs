@@ -3,7 +3,7 @@
  * Observations + spec + project config → scored result.
  *
  * Three independent gating mechanisms, because one size does not fit a corpus that
- * ranges from a 3-file sketch to a 557-file brownfield model (plan D19):
+ * ranges from a 3-file sketch to a 557-file brownfield model:
  *
  *   threshold — absolute bar. Meaningful for greenfield and for patch mode.
  *   baseline  — ratchet: "never worse than today". The only mechanism that gives a
@@ -13,6 +13,8 @@
  */
 
 import { classifyValue } from './heuristics.mjs';
+import { rollupEntities, worstEntities, entityKeyOf } from './entities.mjs';
+import { summarizeStructure } from './structure.mjs';
 
 /**
  * A metric applies to a model when the model's schema version is in its `applies_to`
@@ -56,10 +58,17 @@ function checkDeferral(deferral, metricId, now) {
  * @param {object} [input.config]           project `.blueprint-quality.yaml`
  * @param {Set<string>} [input.changedFiles] absolute paths; when present, patch mode
  * @param {string} [input.slice]            slice name; when present, slice mode
+ * @param {{mode: 'entity'|'file', value: string, selected: Set<object>, focus?: string}} [input.selection]
+ *        one entity or one file's entities; when present, entity or file mode
  * @param {string} [input.schemaVersion]
+ * @param {import('./structure.mjs').StructureRecord[]} [input.structure]
+ *        per-entity structure records, scoped here as the observations are; reported, never gated
  * @param {Date} [input.now]
  */
-export function evaluate({ observations, spec, config = {}, changedFiles, slice, schemaVersion, now = new Date() }) {
+export function evaluate({ observations, spec, config = {}, changedFiles, slice, selection, schemaVersion, structure = [], now = new Date() }) {
+  // Patch, entity and file mode all judge a subset that is being authored right now: they use
+  // the higher patch bar and are exempt from the whole-model (or whole-slice) ratchet.
+  const judgesWorkInProgress = Boolean(changedFiles) || Boolean(selection);
   const thresholdOverrides = config.thresholds ?? {};
   // Per-slice baselines live under `baseline.slices.<name>`; a slice run ratchets
   // against its own floor, a whole-model run against the flat `baseline` map. The two
@@ -86,7 +95,9 @@ export function evaluate({ observations, spec, config = {}, changedFiles, slice,
     ? observations.filter((observation) => changedFiles.has(observation.file))
     : slice
       ? observations.filter((observation) => observation.slice === slice)
-      : observations;
+      : selection
+        ? observations.filter((observation) => selection.selected.has(observation))
+        : observations;
 
   const observationsByMetric = new Map();
   for (const observation of scopedObservations) {
@@ -100,6 +111,8 @@ export function evaluate({ observations, spec, config = {}, changedFiles, slice,
   const findings = [];
   /** @type {Map<string, {file: string, missing: number, filler: number}>} */
   const byFile = new Map();
+  /** @type {Parameters<typeof rollupEntities>[0]} */
+  const classified = [];
 
   for (const [metricId, metricSpec] of Object.entries(spec.metrics ?? {})) {
     const enabled = metricSpec.enabled !== false;
@@ -112,6 +125,7 @@ export function evaluate({ observations, spec, config = {}, changedFiles, slice,
 
     for (const observation of bucket) {
       const { status, reason } = classifyValue(observation.value, metricSpec.content, observation.context);
+      classified.push({ observation, metric: metricId, status, reason });
       if (status === 'covered') {
         covered++;
         continue;
@@ -138,7 +152,7 @@ export function evaluate({ observations, spec, config = {}, changedFiles, slice,
     // Patch mode judges work being authored right now, so it uses the higher bar.
     // A model can be at 19% overall and still be required to write the NEXT property
     // properly — that gap is the whole reason a brownfield gate is usable at all.
-    const specThreshold = changedFiles
+    const specThreshold = judgesWorkInProgress
       ? (metricSpec.patch_threshold ?? metricSpec.threshold ?? null)
       : (metricSpec.threshold ?? null);
     const threshold = thresholdOverrides[metricId] ?? specThreshold;
@@ -161,7 +175,7 @@ export function evaluate({ observations, spec, config = {}, changedFiles, slice,
         }
         status = 'deferred';
       }
-    } else if (!changedFiles && baseline !== null && score !== null && score < baseline - 1e-9) {
+    } else if (!judgesWorkInProgress && baseline !== null && score !== null && score < baseline - 1e-9) {
       // The ratchet is a whole-model claim ("this model never gets worse"); comparing
       // a changed-file subset (patch mode) against it would fire on any edit to a weak
       // area, so patch mode is exempt. Slice mode is NOT — a slice's baseline is a
@@ -195,18 +209,49 @@ export function evaluate({ observations, spec, config = {}, changedFiles, slice,
 
   const scopedFileCount = changedFiles
     ? changedFiles.size
-    : slice
+    : slice || selection
       ? new Set(scopedObservations.map((observation) => observation.file)).size
       : undefined;
+
+  // Classification ran metric by metric; put it back in collection order so entities and their
+  // fields read in the order the collector met them.
+  const collectionOrder = new Map(scopedObservations.map((observation, index) => [observation, index]));
+  classified.sort((a, b) => (collectionOrder.get(a.observation) ?? 0) - (collectionOrder.get(b.observation) ?? 0));
+  const entities = rollupEntities(classified);
+
+  // The structure signals follow the same scope as the observations and attach to the entity they
+  // describe. They add no metric and no breach: they are read, never gated.
+  const selectedKeys = selection ? new Set([...selection.selected].map(entityKeyOf)) : undefined;
+  const scopedStructure = structure.filter((record) => (changedFiles
+    ? changedFiles.has(record.file)
+    : slice
+      ? record.slice === slice
+      : selectedKeys
+        ? selectedKeys.has(record.key)
+        : true));
+  const structureByKey = new Map(scopedStructure.map((record) => [record.key, record]));
+  for (const entity of entities) {
+    const record = structureByKey.get(entity.key);
+    if (record) entity.structure = record;
+  }
 
   return {
     schemaVersion,
     patchMode: Boolean(changedFiles),
     sliceMode: slice ? slice : undefined,
+    entityMode: selection?.mode === 'entity' ? selection.value : undefined,
+    fileMode: selection?.mode === 'file' ? selection.value : undefined,
+    focus: selection?.focus,
     scopedFileCount,
     metrics,
     findings,
     worstFiles,
+    entities,
+    worstEntities: worstEntities(entities),
+    structure: {
+      records: scopedStructure,
+      kinds: summarizeStructure(scopedStructure, spec.structure?.containers ?? []),
+    },
     breaches,
     configErrors,
     warnings,

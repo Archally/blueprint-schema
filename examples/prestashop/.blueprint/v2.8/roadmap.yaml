@@ -7,21 +7,28 @@ tags: [roadmap, release-train]
 # ─────────────────────────────────────────────────────────────────────────────
 #  PRESTASHOP DELIVERY ROADMAP
 #
-#  Two tiers of truth, and every entry says which one it is.
+#  Compressed sample schedule for screen presentation (owner, 2026-10-25).
+#  Operative milestone dates and work windows are sample positions, not history:
+#  date = 2024-06-06 + round((source date - 2024-06-06) / 3.5) days.
+#  Inline source_date comments preserve the uncompressed dates. Historical dates
+#  in descriptions and notes below remain evidence and describe SOURCE windows.
+#  Identity, hierarchy, dependencies, overlaps and ordering are unchanged.
+#
+#  Two tiers of source evidence, and every entry says which one it is.
 #
 #  1. THE RELEASE TRAIN (MS100, MS101, MS102 and the WI1xx work items). These are
-#     PrestaShop's real minor releases. Every date is a published release date from
+#     PrestaShop's real minor releases. Every SOURCE release date is published in
 #     `presta-code/docs/CHANGELOG.txt`, cross-checked against the git tag of the same
 #     name; every feature is one the project documents in
-#     `presta-docs/modules/core-updates/9.{0,1,2}.md`; every work-item window starts at
+#     `presta-docs/modules/core-updates/9.{0,1,2}.md`; every SOURCE window starts at
 #     a measured first commit or merge and ends at the release that carried it. The one
-#     date that is not published is 9.2.0's, which has not shipped: it is derived, and
+#     release date that is not published is 9.2.0's: it is derived, and
 #     MS102 shows the arithmetic.
 #
 #  2. TWO PROPOSALS (MS002 and MS003, and the work items that carry them). These are
 #     changes THIS MODEL proposes, not work PrestaShop has announced. Each one is staged
 #     as a draft migration in `.blueprint/migrations.yaml` or named by a leverage point in
-#     `leverage.yaml`. They are placed on the development phase of the next minor line,
+#     `leverage.yaml`. Their SOURCE windows cover the next minor development phase,
 #     which is a derivation and not a schedule, and each says so. A draft is cited by its
 #     name, never by its MIG id: the draft register numbers its entries apart from this
 #     model's own `migrations.yaml`, so a bare MIG001 in prose resolves to the change that
@@ -46,7 +53,8 @@ tags: [roadmap, release-train]
 # development, one month of stabilization, one month of public beta and then a
 # release-candidate timer. Sprint 1 therefore begins on the first published build of the
 # 9 line (9.0.0 Alpha 1, 2024-06-06, CHANGELOG), which is the earliest date anything below
-# carries, so no work item lands on a negative sprint. Every work item is placed by
+# carries before compression, and remains the sample origin after compression.
+# No work item lands on a negative sprint. Every work item is placed by
 # explicit date; not one of them asserts a sprint number.
 cadence:
   anchor_sprint: 1
@@ -66,7 +74,7 @@ milestones:
       resolves against: the notable-changes page for 9.0 introduces it, and 8.1's names no
       Admin API at all, so before the 9 line the only programmatic surface was the legacy
       webservice.
-    target_date: "2025-06-06"
+    target_date: "2024-09-18"  # source_date: 2025-06-06
     status: achieved
     deliverables:
       - kind: capability
@@ -101,7 +109,7 @@ milestones:
       delivered their first usable form rather than their finished one. Hummingbird also
       became the default theme for new installations, and PHP 8.5 joined the supported
       set.
-    target_date: "2026-03-13"
+    target_date: "2024-12-07"  # source_date: 2026-03-13
     status: achieved
     deliverables:
       - kind: capability
@@ -148,7 +156,7 @@ milestones:
       availability, whose median is 22. 2026-09-11 plus 22 days is 2026-10-03. PrestaShop
       publishes no date of its own, and the lifecycle document is explicit that a new
       regression resets the timer.
-    target_date: "2026-10-03"
+    target_date: "2025-02-04"  # source_date: 2026-10-03
     status: in-progress
     deliverables:
       - kind: capability
@@ -198,7 +206,7 @@ milestones:
       decision log: the model's own DC002 records a choice of Elasticsearch, which the
       codebase does not contain; this proposal is about facets over the search the product
       has, and says nothing about a search engine.
-    target_date: "2027-01-02"
+    target_date: "2025-03-02"  # source_date: 2027-01-02
     status: planned
     deliverables:
       - kind: capability
@@ -228,7 +236,7 @@ milestones:
       point LP001, which moves fulfilment, mail and webhook work off the request thread.
       PrestaShop today decrements stock at order placement and runs those side effects
       inline, so neither is a description of the product as it stands.
-    target_date: "2027-01-02"
+    target_date: "2025-03-02"  # source_date: 2027-01-02
     status: planned
     deliverables:
       - kind: capability
@@ -272,8 +280,8 @@ work_items:
     status: achieved
     confidence: committed
     progress: 100
-    start_date: "2024-06-06"
-    end_date: "2025-06-06"
+    start_date: "2024-06-06"  # source_date: 2024-06-06
+    end_date: "2024-09-18"  # source_date: 2025-06-06
     owned_by:
       team: TM010
     tracker_ref: "33993"
@@ -298,8 +306,8 @@ work_items:
     status: achieved
     confidence: committed
     progress: 100
-    start_date: "2025-01-27"
-    end_date: "2026-03-13"
+    start_date: "2024-08-12"  # source_date: 2025-01-27
+    end_date: "2024-12-07"  # source_date: 2026-03-13
     owned_by:
       team: TM010
     value_streams: [VS002]
@@ -314,8 +322,8 @@ work_items:
         status: achieved
         confidence: committed
         progress: 100
-        start_date: "2025-02-24"
-        end_date: "2026-03-13"
+        start_date: "2024-08-20"  # source_date: 2025-02-24
+        end_date: "2024-12-07"  # source_date: 2026-03-13
         owned_by:
           team: TM005
         advances_goals: [shipping.GL003]
@@ -335,8 +343,8 @@ work_items:
         status: achieved
         confidence: committed
         progress: 100
-        start_date: "2025-01-27"
-        end_date: "2026-03-13"
+        start_date: "2024-08-12"  # source_date: 2025-01-27
+        end_date: "2024-12-07"  # source_date: 2026-03-13
         owned_by:
           team: TM003
         user_stories: [checkout.US004, checkout.US005]
@@ -354,8 +362,8 @@ work_items:
         status: achieved
         confidence: committed
         progress: 100
-        start_date: "2025-12-30"
-        end_date: "2026-03-13"
+        start_date: "2024-11-16"  # source_date: 2025-12-30
+        end_date: "2024-12-07"  # source_date: 2026-03-13
         owned_by:
           team: TM007
         tracker_ref: "40418"
@@ -374,8 +382,8 @@ work_items:
     milestone: MS102
     status: in-progress
     confidence: committed
-    start_date: "2026-01-20"
-    end_date: "2026-10-03"
+    start_date: "2024-11-22"  # source_date: 2026-01-20
+    end_date: "2025-02-04"  # source_date: 2026-10-03
     owned_by:
       team: TM010
     value_streams: [VS001]
@@ -399,8 +407,8 @@ work_items:
           of its own.
         status: in-progress
         confidence: estimated
-        start_date: "2026-03-24"
-        end_date: "2026-10-03"
+        start_date: "2024-12-10"  # source_date: 2026-03-24
+        end_date: "2025-02-04"  # source_date: 2026-10-03
         owned_by:
           team: TM010
         executor: ["Kiwik", "PrestaShop SA teams"]
@@ -423,8 +431,8 @@ work_items:
           incompatibilities between payment modules, carrier modules and themes.
         status: in-progress
         confidence: committed
-        start_date: "2026-02-20"
-        end_date: "2026-10-03"
+        start_date: "2024-12-01"  # source_date: 2026-02-20
+        end_date: "2025-02-04"  # source_date: 2026-10-03
         owned_by:
           team: TM003
         tracker_ref: "40796"
@@ -443,8 +451,8 @@ work_items:
           B2B users.
         status: in-progress
         confidence: tentative
-        start_date: "2026-01-20"
-        end_date: "2026-10-03"
+        start_date: "2024-11-22"  # source_date: 2026-01-20
+        end_date: "2025-02-04"  # source_date: 2026-10-03
         owned_by:
           team: TM004
         executor: ["Soledis", "PrestaShop SA teams"]
@@ -473,8 +481,8 @@ work_items:
     milestone: MS003
     status: planned
     confidence: tentative
-    start_date: "2026-06-26"
-    end_date: "2026-10-26"
+    start_date: "2025-01-06"  # source_date: 2026-06-26
+    end_date: "2025-02-10"  # source_date: 2026-10-26
     owned_by:
       team: TM001
     realizes_decisions: [DC001]
@@ -497,8 +505,8 @@ work_items:
       than an edit inside shared checkout code.
     status: planned
     confidence: tentative
-    start_date: "2026-06-26"
-    end_date: "2026-10-26"
+    start_date: "2025-01-06"  # source_date: 2026-06-26
+    end_date: "2025-02-10"  # source_date: 2026-10-26
     owned_by:
       team: TM008
     realizes_decisions: [DC003]
@@ -520,8 +528,8 @@ work_items:
     milestone: MS003
     status: planned
     confidence: tentative
-    start_date: "2026-06-26"
-    end_date: "2026-10-26"
+    start_date: "2025-01-06"  # source_date: 2026-06-26
+    end_date: "2025-02-10"  # source_date: 2026-10-26
     owned_by:
       team: TM001
     value_streams: [VS001, VS002]
@@ -545,8 +553,8 @@ work_items:
     milestone: MS002
     status: planned
     confidence: tentative
-    start_date: "2026-06-26"
-    end_date: "2026-10-26"
+    start_date: "2025-01-06"  # source_date: 2026-06-26
+    end_date: "2025-02-10"  # source_date: 2026-10-26
     owned_by:
       team: TM002
     value_streams: [VS001]
@@ -567,8 +575,8 @@ work_items:
       an edit inside the checkout context.
     status: planned
     confidence: tentative
-    start_date: "2026-06-26"
-    end_date: "2026-10-26"
+    start_date: "2025-01-06"  # source_date: 2026-06-26
+    end_date: "2025-02-10"  # source_date: 2026-10-26
     owned_by:
       team: TM005
     value_streams: [VS001, VS002]
@@ -594,8 +602,8 @@ work_items:
     milestone: MS003
     status: planned
     confidence: tentative
-    start_date: "2026-06-26"
-    end_date: "2026-10-26"
+    start_date: "2025-01-06"  # source_date: 2026-06-26
+    end_date: "2025-02-10"  # source_date: 2026-10-26
     owned_by:
       team: TM001
     value_streams: [VS001]
