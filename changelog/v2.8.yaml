@@ -5,6 +5,169 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.77"
+    date: "2026-10-25"
+    step: "a goal states which goals it serves"
+    summary: |
+      A goal may state goal_relations, source-owned claims to exactly one declared Goal:
+      contributes_to with help/hurt, requires, or conflicts_with. Every assertion gives a
+      nonblank rationale and may cite common certainty and evidence. Omission is unstated.
+      Contribution is partial, requires states necessity without sufficiency or temporal order,
+      and conflict is symmetric while stored once. No transitive or delivery claims follow.
+
+      BACKWARD only: old valid goals remain valid. Older closed schemas reject enriched goals.
+      No migration is required. Self-targets, ambiguous and wrong-type targets are errors;
+      duplicate semantic keys, opposing effects and conflict plus necessity warn. Each cyclic
+      requires component warns with sorted ids and a deterministic witness. Contribution loops
+      stay legal and silent. Existing advancement and KPI joins remain unchanged.
+  - version: "2.8.76"
+    date: "2026-10-23"
+    step: "evidence items state their certainty"
+    summary: |
+      Each evidence item may state certainty: speculative, probable or confirmed, using the
+      shared certainty vocabulary. It describes the assertion that item supports, including
+      an inferred association. Item certainty is independent of enclosing entity or provenance
+      certainty and confidence_impact; absence is unstated and has no default.
+
+      BACKWARD: every document accepted by 2.8.75 remains accepted. A document stating certainty
+      on an evidence item was rejected as an additional property and is now accepted. This is
+      an optional-property expansion, so a new patch names the changed accepted set; older
+      validators reject documents using the field. No migration or schema-update step is needed.
+      The shared evidence definition applies through provenance and directly to capability,
+      decisions, leverage, value-stream and all seven motivation evidence sites. The kind enum,
+      required fields and confidence_impact are unchanged.
+  - version: "2.8.75"
+    date: "2026-10-22"
+    step: "a capability names the modules that realize it"
+    summary: |
+      A capability can name the problem-space domains (`DMN###`) and bounded contexts (`BC###`)
+      that realize it, in `realized_in`. A domain's operations are those whose document names that
+      domain; a bounded context's are those its services provide. Each such operation is
+      attributed to the capability unless some capability lists it under `operations`: a listing
+      is the stated attribution, and for a listed operation the listings alone decide, whichever
+      modules other capabilities name. Attribution is many-to-many and never inherited between a
+      capability and its children. `capability.operations` is described as that stated
+      attribution.
+
+      BACKWARD: every document that validated under 2.8.74 validates, and a document that states
+      `realized_in` was rejected before (`must NOT have additional properties`) and is accepted
+      now. One optional property and one metamodel definition, so no migration record and no
+      schema-update step. Minted rather than folded into 2.8.74, because adding a property changes
+      the accepted set; a port of 2.8.75 also carries 2.8.73's and 2.8.74's unported work.
+
+      This release also derives which processes and use cases support each capability: one link
+      per capability that realizes at least one operation a process orders, or a use case's main
+      scenario or alternative flows name, counting the distinct operations it realizes there
+      against all the process's or use case's distinct operations. The semantic checker also
+      reports, at info, an operation realized by two capabilities that are not one another's
+      direct L1 parent or L2 child, a capability whose two-level scope realizes no operation, and
+      each capability nested deeper than two levels. An L1 reads itself and direct L2 children;
+      every other capability is judged alone. Deeper nesting remains schema-valid. The accepted set
+      did not change: the derivation and checks read the built graph, and neither adds
+      a schema property. Folded while 2.8.75 is
+      untagged and unported; the residual risk is that the 2.8.75 number names the schema before
+      and after this derivation in this repository's history.
+  - version: "2.8.74"
+    date: "2026-10-20"
+    step: "a process end state names the activities that lead to it"
+    summary: |
+      A process end state can name the activities that lead to it, in `from`: a list of activity
+      ids of the same process, written as the activity writes it. Where any end state of a process
+      states `from`, the stated attachments are the process's whole end routing, and an end state
+      that states none is attached to no activity. Where none states it, the end attachments follow
+      the convention they followed before: the one `complete` end state is reached from the last
+      listed main-path activity with no successor, and every other end state is attached to
+      nothing. An activity named in `from` may also continue through `next`; the end state is then
+      one of its branches.
+
+      BACKWARD: every document that validated under 2.8.73 validates, and a document that states
+      `from` was rejected before (`must NOT have additional properties`) and is accepted now. One
+      optional property, so no migration record and no schema-update step. Minted rather than
+      folded into 2.8.73, because adding a property changes the accepted set; a port of 2.8.74 also
+      carries 2.8.73's unported work.
+  - version: "2.8.73"
+    date: "2026-10-14"
+    step: "a timer trigger's schedule says the forms it is read in"
+    summary: |
+      This release ALSO restates what a timer trigger's `schedule` holds: an ISO 8601 date or
+      date-time, an ISO 8601 duration, an ISO 8601 repeating interval, or a cron expression. The
+      form is read from the value's shape, so no field says which form a schedule is.
+
+      Nothing validates differently: every document that validated before this change validates,
+      and every one it rejected is rejected. One description changed; no field, enum or `required`
+      list did. Folded into 2.8.73 because 2.8.73 is untagged and not yet ported, so until it is
+      tagged the same number names the schema with and without this description.
+  - version: "2.8.73"
+    date: "2026-10-14"
+    step: "a code reference says where an element is to be built with role planned, or that it is absent with role gap, and the implementation rules read them"
+    summary: |
+      This release ALSO lists `planned` and `gap` among the recommended values of a code
+      reference's `role` and names both in an iac reference's `role`. A planned reference says
+      where an element is to be built while the element is not there yet; a gap reference points
+      at code that shows the element is absent where it would be expected. A model can so say in
+      data, rather than in prose, where a `to-be` element will live and what shows it is missing.
+      A file that states the intent without implementing it keeps the existing value
+      `documentation`.
+
+      The two implementation rules read it. `implementation-to-be-with-code-refs` no longer notes
+      a `to-be` element when one of its references is planned, whatever else it names beside it.
+      `implementation-as-is-without-code-refs` reports an `as-is` element whose only references
+      are planned or gap, as it reports one with none, because neither is evidence that the
+      element exists; an `as-is` element with a reference of any other role, or of none, is not
+      reported. Both rules move their check into a module beside their rule file.
+
+      Nothing validates differently: every document that validated before this change validates,
+      and every one it rejected is rejected. Two descriptions changed; no field, enum or
+      `required` list did. Folded into 2.8.73 because 2.8.73 is untagged and not yet ported, so
+      until it is tagged the same number names the schema with and without this description.
+  - version: "2.8.73"
+    date: "2026-10-14"
+    step: "a process runs its activities in the order they are listed unless it states otherwise"
+    summary: |
+      A process whose main-path activities state no link between them now reads as running those
+      activities in the order they are listed. Before, the schema said the flow of such a process
+      was inferred from domain causal links, and every reader of it drew something different; now
+      the listed order is the order, and a renderer draws it as connected flow.
+
+      The rule, in the `activities` description: the main-path activities run in the order they
+      are listed unless a main-path activity states a main-path successor (`next` or
+      `next_activities`), in which case the stated links are the whole order. An activity whose
+      `path_type` is `error` or `compensation` is never placed in the listed order; only a stated
+      link reaches it, and a link to one leaves the listed order of the main path standing. An
+      activity that states no `path_type` is on the main path. `trigger` says where the process
+      starts (the activity holding its operation, else the first listed main-path activity) and
+      `end_states` which activity leads to the one `complete` end state where exactly one is
+      declared. `next_activities`, `next` and `steps` say the same in their own terms.
+
+      The model builder reads the rule once, for every renderer and the checker, on the v2.8 line
+      only: each activity's derived successors (`_next`) carry an `origin`, `stated` or
+      `declared-order`, and each process carries `_start` and `_ends`. On v2.6 and v2.7 the
+      builder derives the stated successors alone, each `origin: stated`, as their published text
+      says.
+
+      Nothing validates differently: every document that validated under 2.8.72 validates, and
+      every one it rejected is rejected. The descriptions changed meaning; no field, enum or
+      `required` list changed. Minted rather than folded, because 2.8.72 is tagged.
+
+      This release ALSO attaches the one `complete` end state where every main-path activity has
+      a successor: the last listed main-path activity leads to it when all of its stated links go
+      to `error` or `compensation` activities. A link that leaves the main path says what happens
+      when the work goes wrong or is undone, not that the process never ends, and such a process
+      had no activity leading to its `complete` end. The `end_states` description says so, and
+      the model builder writes the attachment in `_ends`. Where a main-path activity with no
+      successor exists, where the last main-path activity also states a main-path successor, or
+      where the process declares no `complete` end state or more than one, nothing changes.
+      Folded into 2.8.73 because 2.8.73 is untagged and not yet ported and the change is a
+      description only, so until it is tagged the same number names the schema with and without
+      this sentence.
+
+      Three checks come with it. `activity-fork-without-gateway` warns where an activity names
+      two or more successors and states no `gateway`; a list-order successor is not counted.
+      `process-listed-order-against-causality` warns where a process that runs in listed order
+      reacts to an event before the activity that produces it, or chains two reactions to one
+      event. `process-end-state-unattached` reports, as information, each end state that no
+      stated link and no convention attaches an activity to. The two process checks read the
+      model builder's derived order, so they speak of the v2.8 line only.
   - version: "2.8.72"
     date: "2026-10-12"
     step: "the schema reference says how Process draws a translated pair and the six-pairs fixture names its events by the naming guidance"
