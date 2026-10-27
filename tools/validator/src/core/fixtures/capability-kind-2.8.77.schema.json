@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Blueprint Business Capabilities",
+  "description": "Governance Plane: Business Capability Map - a hierarchical view of what the business can do, independent of organizational structure or process. Capabilities are stable building blocks mapping the business 'what' (not 'how' or 'who'). Reference operations, rules, and concepts for traceability.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "capabilities"
+  ],
+  "properties": {
+    "version": {
+      "$ref": "../metamodel.schema.yaml#/$defs/semver",
+      "description": "Content version of this capability document."
+    },
+    "schemaVersion": {
+      "$ref": "../metamodel.schema.yaml#/$defs/schema_version",
+      "description": "Schema version this document conforms to. Omit to assume latest."
+    },
+    "scope": {
+      "$ref": "../metamodel.schema.yaml#/$defs/scope_prefix",
+      "description": "Bounded context or business domain this capability map covers."
+    },
+    "tags": {
+      "$ref": "../metamodel.schema.yaml#/$defs/tags"
+    },
+    "owned_by": {
+      "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+      "description": "File-level ownership default. Entities inherit unless overridden."
+    },
+    "capabilities": {
+      "type": "array",
+      "description": "Top-level business capabilities. Level 1 capabilities decompose into level 2 via nested children, level 2 into level 3, etc. Typical maps have 2-3 levels.",
+      "items": {
+        "$ref": "#/$defs/capability"
+      }
+    }
+  },
+  "$defs": {
+    "capability": {
+      "type": "object",
+      "description": "A business capability - something the business can do or needs to do. Stable and technology-independent. Links to operations (how), rules (constraints), and concepts (domain vocabulary).",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "level"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "../metamodel.schema.yaml#/$defs/capability_ref",
+          "description": "Unique capability identifier (CAP + NNN)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Capability name in business language (e.g. 'Order Management', 'Payment Processing')."
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Hierarchy level: 1=top-level business capability, 2=decomposition of level 1, 3=further decomposition."
+        },
+        "description": {
+          "type": "string",
+          "description": "What this capability means in business terms. Describe the 'what' without implementation details."
+        },
+        "children": {
+          "type": "array",
+          "description": "Sub-capabilities that decompose this capability. Each child is a full capability with its own ID and optional further children.",
+          "items": {
+            "$ref": "#/$defs/capability"
+          }
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+          },
+          "description": "Operations that realize this capability, stated one by one. A listing is the stated attribution and takes precedence over any module default: an operation listed under at least one capability is attributed to exactly the capabilities that list it, and no domain or bounded context named in any capability's `realized_in` adds another. List an operation here when its module is split across capabilities, or when no module of it is named; an operation that a `realized_in` module already attributes correctly needs no listing. An empty list states nothing.\n"
+        },
+        "realized_in": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/capability_realization_ref"
+          },
+          "description": "Domains (DMN###) and bounded contexts (BC###) whose operations realize this capability. A domain's operations are those whose document names that domain in its header `domain_ref` (or, without one, those in the slice folder named after the domain); a bounded context's operations are those its services provide. Each such operation is attributed to this capability unless some capability lists it under `operations`, in which case the listings alone decide. Several capabilities may name one module, and one capability may name several. A capability is not credited with the operations of its children or of its parent: each level states its own, and a roll-up follows `children`.\n"
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/rule_ref"
+          },
+          "description": "Rules that govern this capability."
+        },
+        "concepts": {
+          "type": "array",
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/concept_ref"
+          },
+          "description": "Domain concepts involved in this capability."
+        },
+        "goal_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/goal_ref"
+          },
+          "description": "Strategic goals this capability supports."
+        },
+        "maturity": {
+          "type": "string",
+          "enum": [
+            "emerging",
+            "developing",
+            "established",
+            "optimized"
+          ],
+          "description": "Current maturity: emerging=not yet implemented, developing=partially built, established=fully operational, optimized=continuously improved."
+        },
+        "strategic_importance": {
+          "$ref": "../metamodel.schema.yaml#/$defs/importance_scale",
+          "description": "Business strategy importance: critical=core differentiator, high=essential, medium=supporting, low=commodity."
+        },
+        "delivery_priority": {
+          "$ref": "../metamodel.schema.yaml#/$defs/delivery_priority",
+          "description": "MoSCoW delivery priority. Orthogonal to strategic_importance: a high-importance capability may be wont-have for current release.\n"
+        },
+        "owner": {
+          "$ref": "../metamodel.schema.yaml#/$defs/actor_ref",
+          "description": "Actor (ACT###) responsible for this capability."
+        },
+        "version": {
+          "$ref": "../metamodel.schema.yaml#/$defs/entity_version",
+          "description": "Capability version for lifecycle tracking."
+        },
+        "owned_by": {
+          "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+          "description": "Capability-level ownership override."
+        },
+        "value_stream_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/value_stream_ref"
+          },
+          "description": "Value streams this capability participates in (convenience back-reference; authoritative direction is value_stream → stages[].capabilities[])."
+        },
+        "discovery_stage": {
+          "$ref": "../metamodel.schema.yaml#/$defs/discovery_stage",
+          "description": "Epistemic maturity of this capability."
+        },
+        "certainty": {
+          "$ref": "../metamodel.schema.yaml#/$defs/certainty",
+          "description": "Confidence level of this capability assessment."
+        },
+        "evidence": {
+          "$ref": "../metamodel.schema.yaml#/$defs/evidence",
+          "description": "Evidence justifying this capability's assessment."
+        },
+        "properties": {
+          "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+        },
+        "tags": {
+          "$ref": "../metamodel.schema.yaml#/$defs/tags"
+        }
+      }
+    }
+  }
+}

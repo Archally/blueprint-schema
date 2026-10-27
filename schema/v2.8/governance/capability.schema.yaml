@@ -45,6 +45,13 @@ $defs:
       name:
         type: string
         description: "Capability name in business language (e.g. 'Order Management', 'Payment Processing')."
+      kind:
+        type: string
+        enum: [capability, feature]
+        description: >
+          Classification of this capability. Omission means capability at every depth; no value
+          is inserted. A feature is a narrower capability with CAP identity, nested directly
+          under a capability, and has no children. Level and tags do not determine kind.
       level:
         type: integer
         minimum: 1

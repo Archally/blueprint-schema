@@ -1,0 +1,15 @@
+engineVersion: "0.1"
+rules:
+  - id: capability-kind
+    severity: error
+    description: >-
+      A feature is a leaf capability nested immediately under a capability. Omitted kind means
+      capability at every depth. Declaration paths determine parents, independently of level,
+      tags and realization ancestry. Each finding retains file, scoped id and nesting paths.
+    find:
+      entity_type: Capability
+    check:
+      custom:
+        module: ./capability-kind.mjs
+        export: capabilityKind
+    message: 'Capability "{capability}" has invalid feature nesting: {violations}.'

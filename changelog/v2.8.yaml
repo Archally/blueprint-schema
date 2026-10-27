@@ -5,6 +5,23 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.78"
+    date: "2026-10-27"
+    step: "capabilities carry kind"
+    summary: |
+      Capabilities accept optional kind: capability or feature. Omission means capability at
+      every depth without inserting a default. A feature is a narrower capability, retains
+      its CAP identity, has an immediate capability parent and is a leaf. Level and tags do
+      not determine kind. Operations and realized_in retain their attribution contracts.
+
+      BACKWARD only: existing valid capability documents remain valid. Older closed schemas
+      reject documents carrying kind. No instance migration is required.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/governance/capability.schema.yaml"
+        notes: "Optional local kind enum preserves existing capability fields and references."
+
   - version: "2.8.77"
     date: "2026-10-25"
     step: "a goal states which goals it serves"
