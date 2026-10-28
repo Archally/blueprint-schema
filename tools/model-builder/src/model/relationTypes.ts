@@ -245,6 +245,8 @@ export const RELATION_TYPE = {
   InquiryRisk: 'inquiry_risk',
   // motivation.schema (v2.5): inquiry references domain question (inquiry.question_refs[])
   InquiryQuestion: 'inquiry_question',
+  // motivation.schema: findings an inquiry concerns (inquiry.finding_refs[])
+  InquiryFinding: 'inquiry_finding',
   // motivation.schema (v2.5): inquiry owned by actor (inquiry.owner)
   InquiryOwner: 'inquiry_owner',
   // motivation.schema (v2.5): inquiry stakeholder actor (inquiry.stakeholders[])

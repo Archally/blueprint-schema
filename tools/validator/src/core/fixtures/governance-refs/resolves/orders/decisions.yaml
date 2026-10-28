@@ -1,0 +1,17 @@
+version: "1.0.0"
+scope: orders
+decisions:
+  - id: orders.DC001
+    title: Move pricing out of the order service
+    summary: Pricing becomes its own service.
+    date: 2026-10-28
+    status: proposed
+    rationale:
+      problem: The order service computes prices inline.
+      chosen: Extract a pricing service.
+    declared_impact:
+      direct:
+        bounded_contexts: [orders.BC001]
+        services: [orders.SVC001]
+        infrastructure: [IR001]
+        environments: [ENV001]

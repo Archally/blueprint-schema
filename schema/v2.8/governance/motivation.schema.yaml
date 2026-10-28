@@ -163,7 +163,7 @@ $defs:
               description: "Example description."
       affects:
         type: object
-        description: "Blueprint entities this goal touches: where it sticks on the domain model, so a story board or a wall can pin the opportunity beside the operation, concept, context or story it is about."
+        description: "Blueprint entities this goal touches: where it sticks on the domain model, so a story board or a wall can pin the opportunity beside the operation, concept, bounded context, service or story it is about."
         additionalProperties: false
         properties:
           operation_refs:
@@ -180,7 +180,23 @@ $defs:
             type: array
             items:
               $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
-            description: "Bounded contexts / slices affected."
+            description: "Bounded contexts / slices affected, by scope name. A name, not a reference: it builds no edge. Name a bounded context by its arch id in `bounded_context_refs`."
+          bounded_context_refs:
+            type: array
+            title: Bounded contexts
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/bounded_context_ref"
+            description: "Bounded contexts (BC###) affected as a whole, by arch id. A typed reference: an id no arch file declares is a cross-reference error. A scope name belongs in `context_refs`."
+            examples:
+              - [BC001, shop.BC002]
+          service_refs:
+            type: array
+            title: Services
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+            description: "Architecture services (SVC###) affected as a whole, by arch id. A typed reference: an id no arch file declares is a cross-reference error."
+            examples:
+              - [SVC001]
           process_refs:
             type: array
             items:
@@ -330,10 +346,11 @@ $defs:
         type: string
         description: "Fallback plan if the primary mitigation strategy fails."
       owner:
-        $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        $ref: "../metamodel.schema.yaml#/$defs/owner_ref"
         description: >
-          Individual responsible for risk response. Distinct from owned_by
-          (org unit accountability).
+          A person or role (ACT###) or a team (TM###) who drives the risk response. Distinct from
+          owned_by (org unit accountability).
+        examples: [ACT001, TM002]
       status:
         type: string
         enum: [identified, open, mitigated, accepted, closed]
@@ -351,7 +368,7 @@ $defs:
         description: "Goals threatened by this risk."
       affects:
         type: object
-        description: "Blueprint entities this risk touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, context or story it is about."
+        description: "Blueprint entities this risk touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, bounded context, service or story it is about."
         additionalProperties: false
         properties:
           operation_refs:
@@ -368,7 +385,23 @@ $defs:
             type: array
             items:
               $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
-            description: "Bounded contexts / slices affected."
+            description: "Bounded contexts / slices affected, by scope name. A name, not a reference: it builds no edge. Name a bounded context by its arch id in `bounded_context_refs`."
+          bounded_context_refs:
+            type: array
+            title: Bounded contexts
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/bounded_context_ref"
+            description: "Bounded contexts (BC###) affected as a whole, by arch id. A typed reference: an id no arch file declares is a cross-reference error. A scope name belongs in `context_refs`."
+            examples:
+              - [BC001, shop.BC002]
+          service_refs:
+            type: array
+            title: Services
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+            description: "Architecture services (SVC###) affected as a whole, by arch id. A typed reference: an id no arch file declares is a cross-reference error."
+            examples:
+              - [SVC001]
           process_refs:
             type: array
             items:
@@ -430,7 +463,7 @@ $defs:
         description: "Risks associated with this assumption being wrong."
       affects:
         type: object
-        description: "Blueprint entities this assumption bears on: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept or process that depends on it holding."
+        description: "Blueprint entities this assumption bears on: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, process, bounded context or service that depends on it holding."
         additionalProperties: false
         properties:
           operation_refs:
@@ -447,7 +480,23 @@ $defs:
             type: array
             items:
               $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
-            description: "Bounded contexts / slices this assumption bears on, by scope name. A name, not a reference: it builds no edge."
+            description: "Bounded contexts / slices this assumption bears on, by scope name. A name, not a reference: it builds no edge. Name a bounded context by its arch id in `bounded_context_refs`."
+          bounded_context_refs:
+            type: array
+            title: Bounded contexts
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/bounded_context_ref"
+            description: "Bounded contexts (BC###) this assumption bears on as a whole, by arch id. A typed reference: an id no arch file declares is a cross-reference error. A scope name belongs in `context_refs`."
+            examples:
+              - [BC001, shop.BC002]
+          service_refs:
+            type: array
+            title: Services
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+            description: "Architecture services (SVC###) that depend on this assumption holding, by arch id. A typed reference: an id no arch file declares is a cross-reference error."
+            examples:
+              - [SVC001]
           process_refs:
             type: array
             items:
@@ -572,6 +621,18 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/question_ref"
         description: "Domain competency questions (QN###) that prompted this governance inquiry."
+      finding_refs:
+        type: array
+        title: Findings
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/finding_ref"
+        description: >
+          Quality findings (FN###) this inquiry is about or was prompted by. The inquiry owns the
+          link and a finding carries no reference back, so an inquiry that closes leaves nothing
+          stale on the finding; the inquiries open on a finding are read in the reverse direction.
+          An id no quality file declares is a cross-reference error.
+        examples:
+          - [FN001, orders.FN002]
       stakeholders:
         type: array
         items:
@@ -579,7 +640,7 @@ $defs:
         description: "Actors who care about the resolution."
       affects:
         type: object
-        description: "Blueprint entities this inquiry touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, context or story it is about."
+        description: "Blueprint entities this inquiry touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, bounded context, service or story it is about."
         additionalProperties: false
         properties:
           operation_refs:
@@ -596,15 +657,34 @@ $defs:
             type: array
             items:
               $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
-            description: "Bounded contexts / slices affected."
+            description: "Bounded contexts / slices affected, by scope name. A name, not a reference: it builds no edge. Name a bounded context by its arch id in `bounded_context_refs`."
+          bounded_context_refs:
+            type: array
+            title: Bounded contexts
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/bounded_context_ref"
+            description: "Bounded contexts (BC###) affected as a whole, by arch id. A typed reference: an id no arch file declares is a cross-reference error. A scope name belongs in `context_refs`."
+            examples:
+              - [BC001, shop.BC002]
+          service_refs:
+            type: array
+            title: Services
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+            description: "Architecture services (SVC###) affected as a whole, by arch id. A typed reference: an id no arch file declares is a cross-reference error."
+            examples:
+              - [SVC001]
           process_refs:
             type: array
             items:
               $ref: "../metamodel.schema.yaml#/$defs/process_ref"
             description: "Business processes affected, for a concern about a flow as a whole rather than one of its operations."
       owner:
-        $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
-        description: "Person responsible for driving resolution."
+        $ref: "../metamodel.schema.yaml#/$defs/owner_ref"
+        description: >
+          A person or role (ACT###) or a team (TM###) who drives this inquiry to its resolution.
+          Distinct from owned_by (the unit accountable for it).
+        examples: [ACT001, TM002]
       blocking:
         type: boolean
         default: false

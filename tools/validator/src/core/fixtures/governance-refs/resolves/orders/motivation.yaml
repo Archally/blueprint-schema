@@ -1,0 +1,38 @@
+version: "1.0.0"
+scope: orders
+goals:
+  - id: orders.GL001
+    statement: "Every paid order ships within a day."
+    priority: high
+    affects:
+      bounded_context_refs: [orders.BC001]
+assumptions:
+  - id: orders.ASM001
+    statement: "Card payments are authorised within a minute."
+    consequence: "Orders wait for payment and miss the day's dispatch."
+    affects:
+      service_refs: [orders.SVC001]
+risks:
+  - id: orders.RSK001
+    statement: "Pricing changes break order totals."
+    likelihood: medium
+    impact: high
+    mitigation: "Price in one place."
+    owner: TM001
+    affects:
+      bounded_context_refs: [orders.BC001]
+      service_refs: [orders.SVC001]
+  - id: orders.RSK002
+    statement: "Dispatch staff miss the cut-off."
+    likelihood: low
+    impact: medium
+    mitigation: "Alert at the cut-off."
+    owner: orders.ACT001
+inquiries:
+  - id: orders.INQ001
+    statement: "Should pricing leave the order service?"
+    finding_refs: [orders.FN001]
+    owner: TM001
+    affects:
+      bounded_context_refs: [orders.BC001]
+      service_refs: [orders.SVC001]

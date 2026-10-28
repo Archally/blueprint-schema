@@ -32,6 +32,10 @@ const IMPACT_GROUPS: ReadonlyArray<{ key: string; predicate: string; modelRef?: 
   { key: 'models', predicate: 'model', modelRef: true },
   { key: 'stories', predicate: 'story' },
   { key: 'processes', predicate: 'process' },
+  { key: 'bounded_contexts', predicate: 'bounded_context' },
+  { key: 'services', predicate: 'service' },
+  { key: 'infrastructure', predicate: 'infrastructure' },
+  { key: 'environments', predicate: 'environment' },
 ];
 
 const IMPACT_UI_GROUPS: ReadonlyArray<{ key: string; predicate: string }> = [
@@ -44,7 +48,7 @@ const IMPACT_UI_GROUPS: ReadonlyArray<{ key: string; predicate: string }> = [
  * Extract relations from decision entities:
  * - Decision.motivation_refs.{goals,risks,assumptions,trade_offs,questions,inquiries}[] → motivation_refs
  * - Decision.capability_refs[] → capability_refs
- * - Decision.declared_impact.direct.{concepts,rules,operations,tests,models,stories,processes}[] → declared_impact
+ * - Decision.declared_impact.direct.{concepts,rules,operations,tests,models,stories,processes,bounded_contexts,services,infrastructure,environments}[] → declared_impact
  * - Decision.declared_impact.direct.ui.{screens,actions,navigation}[] → declared_impact
  */
 export function extractDecisionRelations(

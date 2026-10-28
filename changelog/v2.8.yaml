@@ -5,6 +5,69 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.80"
+    date: "2026-10-28"
+    step: "governance names bounded contexts, services and findings; an owner may be a team"
+    summary: |
+      A goal, risk, assumption, inquiry or finding names the bounded contexts and services it is
+      about in affects.bounded_context_refs (BC###) and affects.service_refs (SVC###); a scope
+      name stays in affects.context_refs. An inquiry names the findings it is about in
+      finding_refs (FN###); the finding carries no reference back. A decision names the bounded
+      contexts and services it changes in declared_impact.direct.bounded_contexts and services.
+      owner on a question, KPI, capability, risk and inquiry accepts an actor (ACT###) or a team
+      (TM###) through the new owner_ref; owned_by keeps naming the accountable unit. The
+      migration predicate list gains inquiry_finding.
+
+      BACKWARD only: existing valid documents remain valid. Older closed schemas reject documents
+      carrying the new fields or a team owner. No instance migration is required.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/metamodel.schema.yaml#/$defs/owner_ref"
+        notes: "An actor or a team id; a modeling_guidance lesson separates owner from owned_by, and bounded_context_ref lists its new users."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/governance/motivation.schema.yaml"
+        notes: "bounded_context_refs and service_refs in the affects of a goal, risk, assumption and inquiry; inquiry.finding_refs; owner on a risk and an inquiry takes owner_ref."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/quality.schema.yaml"
+        notes: "bounded_context_refs and service_refs in a finding's affects; owner on a KPI takes owner_ref."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/governance/decisions.schema.yaml#/$defs/impact_declaration"
+        notes: "direct gains bounded_contexts and services."
+      - kind: change
+        semver: patch
+        target: "schema/v2.8/design/domain.schema.yaml#/$defs/question"
+        notes: "owner takes owner_ref: an actor or a team."
+      - kind: change
+        semver: patch
+        target: "schema/v2.8/governance/capability.schema.yaml#/$defs/capability"
+        notes: "owner takes owner_ref: an actor or a team."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/migration.schema.yaml"
+        notes: "inquiry_finding joins the relationship predicate list."
+  - version: "2.8.79"
+    date: "2026-10-27"
+    step: "decisions carry open and rfc statuses"
+    summary: |
+      Decisions accept open for a question with no proposed direction yet and rfc for a
+      proposed direction circulating for comments before acceptance. The lifecycle is
+      open -> proposed -> rfc -> accepted -> landed; rejected or deprecated at any stage.
+      BACKWARD only: existing valid decisions remain valid. Older schemas reject the two
+      new statuses. No instance migration is required.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/metamodel.schema.yaml#/$defs/decision_status"
+        notes: "Adds open and rfc with a description per value."
+      - kind: docs
+        semver: patch
+        target: "schema/v2.8/governance/decisions.schema.yaml"
+        notes: "States the lifecycle and when to use open and rfc."
+
   - version: "2.8.78"
     date: "2026-10-27"
     step: "capabilities carry kind"

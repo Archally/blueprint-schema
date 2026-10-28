@@ -1,0 +1,12 @@
+version: "1.0.0"
+name: Orders domain
+scope: orders
+operations:
+  placeOrder:
+    id: orders.CMD001
+    kind: command
+    name: Place Order
+questions:
+  - id: orders.QN001
+    statement: "Which orders missed the day's dispatch?"
+    owner: TM001

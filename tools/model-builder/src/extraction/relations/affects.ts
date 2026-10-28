@@ -6,11 +6,11 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
 /**
  * Where a governance statement sticks on the domain model.
  *
- *   Risk       --risk_affects-->       Operation | Concept | Process  (risk.affects.*_refs[])
- *   Inquiry    --inquiry_affects-->    Operation | Concept | Process  (inquiry.affects.*_refs[])
- *   Finding    --finding_affects-->    Operation | Concept | Process  (finding.affects.*_refs[])
- *   Goal       --goal_affects-->       Operation | Concept | Process  (goal.affects.*_refs[])
- *   Assumption --assumption_affects--> Operation | Concept | Process  (assumption.affects.*_refs[])
+ *   Risk       --risk_affects-->       Operation | Concept | Process | BoundedContext | Service
+ *   Inquiry    --inquiry_affects-->    Operation | Concept | Process | BoundedContext | Service
+ *   Finding    --finding_affects-->    Operation | Concept | Process | BoundedContext | Service
+ *   Goal       --goal_affects-->       Operation | Concept | Process | BoundedContext | Service
+ *   Assumption --assumption_affects--> Operation | Concept | Process | BoundedContext | Service
  *
  * `affects.context_refs[]` is a context PREFIX (`orders`), a name rather than an entity id, so it
  * builds no edge here; the slice it names is the folder the concern's artifacts already land in.
@@ -35,9 +35,9 @@ const AFFECTS_TYPE: Partial<Record<string, string>> = {
   [ENTITY_TYPE.Assumption]: RELATION_TYPE.AssumptionAffects,
 };
 
-// `process_refs` is the current spelling; `story_refs` is read too, so a model on an earlier schema line
-// still gets its edges.
-const REF_LISTS = ['operation_refs', 'concept_refs', 'process_refs', 'story_refs'] as const;
+// `context_refs` remains a name/prefix; bounded_context_refs is the typed BC id list.
+// `story_refs` is retained for models written before `process_refs` became canonical.
+const REF_LISTS = ['operation_refs', 'concept_refs', 'process_refs', 'story_refs', 'bounded_context_refs', 'service_refs'] as const;
 
 export function extractAffectsRelations(entities: Entity[], placeholders: Map<string, Entity>): Relation[] {
   const relations: Relation[] = [];

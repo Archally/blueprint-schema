@@ -11,7 +11,7 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  *   Metric      --metric_work_item-->     WorkItem             (collection.work_item_ref)
  *   KPI         --kpi_metric-->           Metric               (metric)
  *   KPI         --kpi_goal-->             Goal                 (goal)
- *   KPI         --kpi_owner-->            Actor                (owner)
+ *   KPI         --kpi_owner-->            Actor | Team          (owner)
  *   SLO         --slo_metric-->           Metric               (metric)
  *   SLO         --slo_operation-->        Operation            (operations[])
  *   SLO         --slo_resource-->         InfraResource        (resource_refs[])

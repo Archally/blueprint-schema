@@ -119,8 +119,9 @@ $defs:
           MoSCoW delivery priority. Orthogonal to strategic_importance:
           a high-importance capability may be wont-have for current release.
       owner:
-        $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
-        description: "Actor (ACT###) responsible for this capability."
+        $ref: "../metamodel.schema.yaml#/$defs/owner_ref"
+        description: "A person or role (ACT###) or a team (TM###) who drives this capability. Distinct from owned_by (the unit accountable for it)."
+        examples: [ACT001, TM002]
       version:
         $ref: "../metamodel.schema.yaml#/$defs/entity_version"
         description: "Capability version for lifecycle tracking."

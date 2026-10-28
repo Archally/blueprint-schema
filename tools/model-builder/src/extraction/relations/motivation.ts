@@ -5,7 +5,7 @@ import { entityDomain, resolveOrPlaceholder, createPlaceholder } from './resolve
 
 /**
  * Extract outbound relations from motivation entities (v2.5 enrichments):
- * - risk.owner      → RiskOwner      (risk → actor)
+ * - risk.owner      → RiskOwner      (risk → actor or team)
  * - risk.goal_refs[] → RiskGoal      (risk → goal)
  * - assumption.risk_refs[] → AssumptionRisk (assumption → risk)
  * - goal.kpi        → GoalKpi       (goal → KPI)

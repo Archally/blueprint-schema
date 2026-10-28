@@ -1001,11 +1001,11 @@ $defs:
           Actors who need this question answered. Captures the human demand
           side - who in the organization needs this knowledge and why.
       owner:
-        $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        $ref: "../metamodel.schema.yaml#/$defs/owner_ref"
         description: >
-          Person responsible for driving resolution. Distinct from
-          stakeholders[] (who care about the answer) - owner is who
-          must actually resolve it.
+          A person or role (ACT###) or a team (TM###) who drives resolution. Distinct from
+          stakeholders[] (who care about the answer) - owner is who must actually resolve it.
+        examples: [ACT001, TM002]
       blocking:
         type: boolean
         default: false

@@ -83,7 +83,7 @@ export function extractQuestionRelations(
       }
     }
 
-    // v2.5: owner — actor responsible for driving resolution
+    // v2.5: owner, actor or team responsible for driving resolution
     const owner = data.owner as string | undefined;
     if (typeof owner === 'string' && owner) {
       const targetId = resolveOrPlaceholder(owner, domain, entities, placeholders);

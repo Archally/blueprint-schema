@@ -1,0 +1,7 @@
+version: "1.0.0"
+scope: orders
+concepts: []
+actors:
+  - id: orders.ACT001
+    name: Order Clerk
+    type: human

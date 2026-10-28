@@ -472,6 +472,21 @@ $defs:
     pattern: "^([a-z][a-z0-9-]*\\.)?TM\\d{3}$"
     description: "Reference to a team (e.g. TM001 or billing.TM001)."
 
+  owner_ref:
+    description: >
+      Who drives an item: a person or role (ACT###) or a team (TM###). Distinct from `owned_by`,
+      the unit accountable for the item and the file-level default; an item may state both, and a
+      team that drives the item it is accountable for is named in each. A reference to an actor or
+      team nobody declares is a cross-reference error.
+    anyOf:
+      - type: string
+        pattern: "^([a-z][a-z0-9-]*\\.)?ACT\\d{3}$"
+        description: "An actor (ACT###), the same shape as `actor_ref`."
+      - type: string
+        pattern: "^([a-z][a-z0-9-]*\\.)?TM\\d{3}$"
+        description: "A team (TM###), the same shape as `team_ref`."
+    examples: [ACT001, TM002, billing.TM001]
+
   # ---------------------------------------------------------------------------
   # Architecture hierarchy (v2.7.6)
   # Bounded contexts and services become first-class, referenceable nodes.
@@ -482,8 +497,10 @@ $defs:
     description: >
       Reference to a bounded context by its arch id (e.g. BC001 or shop.BC001). Used
       as the arch `context.id` (self-identity), by inter-context `dependency` targets
-      (id-based context-map edges), and by a competency question, which names the one
-      context whose knowledge boundary it defines. Operation→bounded-context membership
+      (id-based context-map edges), by a competency question, which names the one
+      context whose knowledge boundary it defines, by the `affects.bounded_context_refs` of a
+      goal, risk, assumption, inquiry or finding, and by a decision's
+      `declared_impact.direct.bounded_contexts`. Operation→bounded-context membership
       is NOT declared with this ref - it is derived from arch service contracts
       (`expose`/`send` = handled / produced), so there is no `bounded_context_ref` on a
       domain file's operations. A ref to an unknown BC### is a cross-reference error. The
@@ -975,8 +992,16 @@ $defs:
 
   decision_status:
     type: string
-    enum: [proposed, accepted, landed, rejected, deprecated]
-    description: "Decision lifecycle: proposed→accepted→landed; rejected or deprecated at any stage."
+    enum: [open, proposed, rfc, accepted, landed, rejected, deprecated]
+    description: >
+      Decision lifecycle: open -> proposed -> rfc -> accepted -> landed; rejected or deprecated at any stage.
+      open: A question is open with no proposed direction yet.
+      proposed: A direction is proposed for consideration.
+      rfc: A proposed direction circulates for comments before acceptance.
+      accepted: The direction is agreed and awaits implementation.
+      landed: The agreed direction is implemented.
+      rejected: The direction is declined.
+      deprecated: The decision no longer applies.
 
   # ---------------------------------------------------------------------------
   # Code Traceability (v2.4)
@@ -2048,3 +2073,18 @@ x-gdsm:
         missing-exchange check is exposed by an OpenAPI contract, so reading the missing exchange as
         manual work would have stated a false fact.
       schema_version: "2.8.73"
+    - lesson: >
+        `owner` and `owned_by` answer two questions. `owned_by` names the unit ACCOUNTABLE for an
+        item - a team, department or party - and is inherited from the file default when absent.
+        `owner` names who DRIVES the item to its outcome - a person or role (ACT###) or a team
+        (TM###) - on a question, KPI, capability, risk or inquiry. Write `owned_by` alone when the
+        accountable unit also drives it and nobody narrower does; add `owner` when a person or one
+        team drives an item that a wider unit is accountable for; never restate the driving team
+        in prose beside an `owned_by.team`, which is the shape `owner` exists to replace.
+      category: semantics
+      date: "2026-10-28"
+      evidence: >
+        Before `owner` accepted a team, the largest real model on this line stated a team that
+        drives the item only as `owned_by.team` plus prose on 13 of 167 inquiries and 10 of 98
+        risks, while `owner` (then an actor only) was set on 1 of each; no entity carried both.
+      schema_version: "2.8.80"

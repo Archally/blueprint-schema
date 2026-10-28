@@ -286,8 +286,9 @@ $defs:
             type: string
             description: "Critical threshold triggering escalation (e.g. '95%')."
       owner:
-        $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
-        description: "Actor (ACT###) responsible for this KPI."
+        $ref: "../metamodel.schema.yaml#/$defs/owner_ref"
+        description: "A person or role (ACT###) or a team (TM###) who drives this KPI towards its target. Distinct from owned_by (the unit accountable for it)."
+        examples: [ACT001, TM002]
       description:
         type: string
         description: "Human-readable description."
@@ -725,7 +726,7 @@ $defs:
         description: "Suggested remediation direction, in prose. The structured fix lives in the linked migration."
       affects:
         type: object
-        description: "Blueprint entities this finding touches. Links the defect to the domain model."
+        description: "Blueprint entities this finding touches. Links the defect to the domain model and to the bounded contexts and services it sits in."
         additionalProperties: false
         properties:
           operation_refs:
@@ -742,7 +743,23 @@ $defs:
             type: array
             items:
               $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
-            description: "Bounded contexts / slices affected."
+            description: "Bounded contexts / slices affected, by scope name. A name, not a reference: it builds no edge. Name a bounded context by its arch id in `bounded_context_refs`."
+          bounded_context_refs:
+            type: array
+            title: Bounded contexts
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/bounded_context_ref"
+            description: "Bounded contexts (BC###) affected as a whole, by arch id. A typed reference: an id no arch file declares is a cross-reference error. A scope name belongs in `context_refs`."
+            examples:
+              - [BC001, shop.BC002]
+          service_refs:
+            type: array
+            title: Services
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+            description: "Architecture services (SVC###) affected as a whole, by arch id. A typed reference: an id no arch file declares is a cross-reference error."
+            examples:
+              - [SVC001]
           process_refs:
             type: array
             items:

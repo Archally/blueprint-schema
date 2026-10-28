@@ -1,0 +1,9 @@
+version: "1.0.0"
+name: Order infrastructure
+environments:
+  - id: ENV001
+    name: production
+resources:
+  - id: IR001
+    kind: database
+    name: Order Store

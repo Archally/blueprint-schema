@@ -8,7 +8,8 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  * - inquiry.goal_refs[]     → InquiryGoal       (inquiry → goal)
  * - inquiry.risk_refs[]     → InquiryRisk       (inquiry → risk)
  * - inquiry.question_refs[] → InquiryQuestion   (inquiry → question)
- * - inquiry.owner           → InquiryOwner      (inquiry → actor)
+ * - inquiry.finding_refs[]  → InquiryFinding    (inquiry → finding)
+ * - inquiry.owner           → InquiryOwner      (inquiry → actor or team)
  * - inquiry.stakeholders[]  → InquiryStakeholder (inquiry → actor)
  */
 export function extractInquiryRelations(
@@ -65,6 +66,21 @@ export function extractInquiryRelations(
           source_entity_id: entity.id,
           target_entity_id: targetId,
           type: RELATION_TYPE.InquiryQuestion,
+        });
+      }
+    }
+
+    // finding_refs[] → InquiryFinding
+    const findingRefs = data.finding_refs as string[] | undefined;
+    if (Array.isArray(findingRefs)) {
+      for (const ref of findingRefs) {
+        if (typeof ref !== 'string' || !ref) continue;
+        const targetId = resolveOrPlaceholder(ref, domain, entities, placeholders);
+        relations.push({
+          id: `${entity.id}--${RELATION_TYPE.InquiryFinding}--${targetId}`,
+          source_entity_id: entity.id,
+          target_entity_id: targetId,
+          type: RELATION_TYPE.InquiryFinding,
         });
       }
     }

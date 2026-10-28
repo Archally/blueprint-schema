@@ -13,8 +13,9 @@ export function entityDomain(entity: Entity): string {
 }
 
 /**
- * The index of every entity by the id string it was declared with (`displayId`), built once per
- * entity list and rebuilt when the list grows. Placeholders never take part.
+ * The index keeps each entity's displayId as before. Context and Service nodes also declare a
+ * typed id in data.id while using displayId as a human name; index that exact id as an additional
+ * key. Placeholders never take part. No prefix or suffix normalization is applied.
  */
 const indexes = new WeakMap<Entity[], { size: number; index: RefIndex }>();
 
@@ -23,8 +24,17 @@ function entityIndex(allEntities: Entity[]): RefIndex {
   if (cached && cached.size === allEntities.length) return cached.index;
   const declarations: RefDeclaration[] = [];
   for (const entity of allEntities) {
-    if (entity.type === ENTITY_TYPE.Missing || typeof entity.displayId !== 'string') continue;
-    declarations.push({ id: entity.displayId, handle: entity.id });
+    if (entity.type === ENTITY_TYPE.Missing) continue;
+    const declaredId = (entity.data as { id?: unknown } | undefined)?.id;
+    if (typeof entity.displayId === 'string' && entity.displayId) {
+      declarations.push({ id: entity.displayId, handle: entity.id });
+    }
+    if (
+      (entity.type === ENTITY_TYPE.Context || entity.type === ENTITY_TYPE.Service) &&
+      typeof declaredId === 'string' && declaredId && declaredId !== entity.displayId
+    ) {
+      declarations.push({ id: declaredId, handle: entity.id });
+    }
   }
   const index = indexDeclarations(declarations);
   indexes.set(allEntities, { size: allEntities.length, index });

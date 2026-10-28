@@ -5,4 +5,4 @@ assumptions:
     statement: "The identity provider remains the source of truth for user accounts."
     consequence: "Users edited in the product are overwritten by the next import."
     affects:
-      bounded_context_refs: [sync.BC001]
+      slice_refs: [sync]

@@ -475,6 +475,11 @@ Cross-layer reference paths for tooling validation:
 | Milestone | Deliverables | `milestone.deliverables[].ref` | Optional (v2.5) |
 | Question | Owner | `question.owner` | Optional (v2.5) |
 | Risk | Owner | `risk.owner` | Optional (v2.5) |
+| Question / KPI / Capability / Risk / Inquiry | Owner: an actor or a team (`owner_ref`) | `owner` | Optional (v2.8) |
+| Goal / Risk / Assumption / Inquiry / Finding | Bounded contexts (BC###) | `affects.bounded_context_refs` | Optional (v2.8) |
+| Goal / Risk / Assumption / Inquiry / Finding | Services (SVC###) | `affects.service_refs` | Optional (v2.8) |
+| Inquiry | Findings (FN###) | `inquiry.finding_refs` | Optional (v2.8) |
+| Decision | Bounded contexts / Services | `declared_impact.direct.bounded_contexts`, `declared_impact.direct.services` | Optional (v2.8) |
 
 Enforcement levels:
 - **Required:** Schema validation rejects if missing

@@ -70,7 +70,7 @@ $defs:
         description: "Date proposed or accepted. Format: YYYY-MM or YYYY-MM-DD."
       status:
         $ref: "../metamodel.schema.yaml#/$defs/decision_status"
-        description: "Lifecycle status: proposed→accepted→landed; rejected or deprecated at any stage."
+        description: "Lifecycle status: open -> proposed -> rfc -> accepted -> landed; rejected or deprecated at any stage."
       rationale:
         $ref: "#/$defs/rationale"
         description: "The reasoning behind this decision. Answers 'why' for future readers."
@@ -268,6 +268,28 @@ $defs:
             items:
               $ref: "../metamodel.schema.yaml#/$defs/process_ref"
             description: "Business processes directly affected."
+          bounded_contexts:
+            type: array
+            title: Bounded contexts
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/bounded_context_ref"
+            description: >
+              Bounded contexts (BC###) this decision changes as a whole, by arch id - e.g. a
+              decision that splits a context or moves its boundary. A typed reference: an id no
+              arch file declares is a cross-reference error.
+            examples:
+              - [BC001]
+          services:
+            type: array
+            title: Services
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+            description: >
+              Architecture services (SVC###) this decision changes directly, by arch id - e.g. a
+              decision that replaces a service's runtime or retires it. A typed reference: an id
+              no arch file declares is a cross-reference error.
+            examples:
+              - [SVC001, shop.SVC002]
           ui:
             type: object
             description: "UI elements directly affected by this decision."
@@ -462,3 +484,16 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
       code_refs:
         $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+
+x-gdsm:
+  modeling_guidance:
+    - lesson: >
+        Use status open for a question with no proposed direction yet. Use proposed once a
+        direction is put forward, and rfc while that direction circulates for comments before
+        acceptance. Accepted records agreement; landed records implementation. Rejected or
+        deprecated may end any stage. Status describes the decision lifecycle independently
+        of discovery_stage, certainty and evidence. The required rationale.chosen remains a
+        statement of the current position; for open, state that no direction is proposed yet.
+      category: semantics
+      date: "2026-10-27"
+      schema_version: "2.8.79"

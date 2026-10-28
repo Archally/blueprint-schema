@@ -338,6 +338,7 @@ $defs:
           - inquiry_goal
           - inquiry_risk
           - inquiry_question
+          - inquiry_finding
           - inquiry_owner
           - inquiry_stakeholder
           - risk_goal

@@ -1,0 +1,16 @@
+version: "1.0.0"
+scope: orders
+kpis:
+  - id: orders.KPI001
+    name: Same-day dispatch rate
+    target: "98%"
+    owner: TM001
+findings:
+  - id: orders.FN001
+    title: Order Service holds pricing logic
+    kind: god-class
+    severity: high
+    statement: "The order service computes prices inline."
+    affects:
+      bounded_context_refs: [orders.BC001]
+      service_refs: [orders.SVC001]
