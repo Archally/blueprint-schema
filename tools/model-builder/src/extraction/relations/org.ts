@@ -4,6 +4,7 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
 import { createPlaceholder, entityDomain, resolveRef } from './resolver.js';
 import { indexDeclarations, resolveReference, type RefDeclaration } from './refResolution.js';
 import { OWNED_BY_DEFAULT } from '../entities/ownershipDefaults.js';
+import { statedOwnerName } from '../entities/ownerStatement.js';
 import { partyIdentityKey } from '../entities/partyIdentity.js';
 
 /**
@@ -152,6 +153,11 @@ function resolveTypedOrPlaceholder(
  * can still tell a statement from a default - a report on undeclared ownership wants the first and
  * not the second. An entity has one or the other and never both: the annotation skips any node that
  * declares an owner.
+ *
+ * **A name draws no edge of its own.** `owned_by.name` alone names an accountable unit the model does
+ * not declare, so there is no entity to point at and no placeholder is made for it; read it with
+ * `ownerStatementOf`. A name beside a reference rides on that reference's edge as `data.stated_name`,
+ * the owner as the source states it.
  */
 export function extractOrgOwnershipRelations(
   entities: Entity[],
@@ -165,6 +171,7 @@ export function extractOrgOwnershipRelations(
     const ownedBy = declared ?? asOwnerObject(data?.[OWNED_BY_DEFAULT]);
     if (!ownedBy) continue;
     const inherited = declared === null;
+    const statedName = statedOwnerName(ownedBy);
 
     for (const [arm, expectedType] of OWNER_ARMS) {
       const ref = ownedBy[arm];
@@ -176,7 +183,11 @@ export function extractOrgOwnershipRelations(
         source_entity_id: entity.id,
         target_entity_id: targetId,
         type: RELATION_TYPE.OwnedBy,
-        data: inherited ? { arm, inherited: true } : { arm },
+        data: {
+          arm,
+          ...(inherited ? { inherited: true } : {}),
+          ...(statedName !== undefined ? { stated_name: statedName } : {}),
+        },
       });
     }
   }

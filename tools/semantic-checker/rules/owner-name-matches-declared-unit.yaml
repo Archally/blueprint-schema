@@ -1,0 +1,22 @@
+engineVersion: "0.1"
+rules:
+  - id: owner-name-matches-declared-unit
+    severity: info
+    description: >-
+      An owner stated by name alone (`owned_by: { name: ... }`) whose name equals the name of a
+      declared team, department or party. A name alone is a complete owner statement, so this is a
+      suggestion rather than a defect: the unit now exists, and writing its reference lets the owner
+      reach the graph. Names are compared ignoring case and with runs of whitespace collapsed; there
+      is no fuzzy matching. One matching unit is named with the reference to write; several are
+      listed as ambiguous; a name that matches nothing is not reported. Each statement is reported
+      once: an entity's own `owned_by` on that entity, and a file-level default once for its file,
+      on the first entity that inherits it, never once per inheriting entity. A name beside a
+      reference is never reported. Override per project via .blueprint-lint.yaml (e.g.
+      `owner-name-matches-declared-unit: off`).
+    find:
+      all: true
+    check:
+      custom:
+        module: ./owner-name-matches-declared-unit.mjs
+        export: ownerNameMatchesDeclaredUnit
+    message: '{statement} names its owner "{ownerName}" by name only, and that name {match}'

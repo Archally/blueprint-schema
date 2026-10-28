@@ -1,0 +1,10 @@
+version: "1.0.0"
+name: Orders domain
+scope: orders
+owned_by:
+  name: "The team for returns"
+operations:
+  placeOrder:
+    id: orders.CMD001
+    kind: command
+    name: Place Order

@@ -555,14 +555,30 @@ $defs:
 
   # ---------------------------------------------------------------------------
   # Ownership (v2.2)
-  # File-level default with entity-level override. Exactly one owner.
+  # File-level default with entity-level override. One owner per statement: a name, a
+  # reference to a team, department or party, or a name beside one reference.
   # ---------------------------------------------------------------------------
 
   owned_by:
     type: object
-    description: "Entity ownership. Exactly one of team, department, or party. File-level default; entity-level overrides."
+    description: >
+      The unit accountable for an entity: a file-level default that an entity-level `owned_by`
+      replaces whole. It names the owner by `name`, by a reference to one team, department or
+      party, or by both. A name alone is a complete owner statement for a unit the model does not
+      declare yet; it draws no graph edge. Beside a reference, the reference is the owner and the
+      name is the owner as the source states it. At most one reference.
     additionalProperties: false
     properties:
+      name:
+        type: string
+        description: >
+          The owner as written in the source, for example "the team for payments". Alone, it is
+          the owner; beside a reference, it is the owner as stated. It contains at least one
+          non-space character and is never a typed id: write a team, department or party as its
+          reference key instead.
+        pattern: "\\S"
+        not:
+          pattern: "^([a-z][a-z0-9-]*\\.)?[A-Z]{1,4}\\d{3,}$"
       team:
         $ref: "#/$defs/team_ref"
         description: "Owning team reference."
@@ -572,10 +588,21 @@ $defs:
       party:
         $ref: "#/$defs/party_ref"
         description: "Owning organizational party reference."
-    oneOf:
+    anyOf:
+      - required: [name]
       - required: [team]
       - required: [department]
       - required: [party]
+    not:
+      anyOf:
+        - required: [team, department]
+        - required: [team, party]
+        - required: [department, party]
+    examples:
+      - name: "The team for payments"
+      - team: TM001
+      - name: "Payments squad"
+        team: TM004
 
   # ---------------------------------------------------------------------------
   # Architecture Vocabulary
@@ -2088,3 +2115,20 @@ x-gdsm:
         drives the item only as `owned_by.team` plus prose on 13 of 167 inquiries and 10 of 98
         risks, while `owner` (then an actor only) was set on 1 of each; no entity carried both.
       schema_version: "2.8.80"
+    - lesson: >
+        An owner may be known before its unit is modelled. When the source names an accountable
+        unit the model does not declare yet, write `owned_by: { name: "..." }` rather than
+        inventing a team or leaving the owner out. Once the team, department or party is declared,
+        add its reference; keep the name beside it only when the source called the owner something
+        other than the declared unit's name, and drop it otherwise. A name alone draws no graph
+        edge: it states who is accountable without claiming an entity the model never declared.
+        The semantic rule `owner-name-matches-declared-unit` suggests the reference when a name
+        alone matches the name of a declared team, department or party.
+      category: semantics
+      date: "2026-10-28"
+      evidence: >
+        A modeller stating ownership of bounded contexts often knows the accountable unit as "the
+        team for X" before any team is declared; a reference-only owner forced either an invented
+        team or no owner at all. A scan of the models on this line for prose standing in for an
+        owner found none, so the shape precedes measured use rather than answering it.
+      schema_version: "2.8.81"

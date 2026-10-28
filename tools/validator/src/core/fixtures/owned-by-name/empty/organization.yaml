@@ -1,0 +1,9 @@
+version: "1.0.0"
+parties:
+  - id: PRT001
+    name: Order Desk
+    teams:
+      - id: TM001
+        name: Order Platform Team
+      - id: TM004
+        name: Payments Team

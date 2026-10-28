@@ -454,7 +454,7 @@ Cross-layer reference paths for tooling validation:
 | Screen | Processes | `screen.processes` | Optional (v2.2) |
 | Action | Operations | `action.triggers_operations` | Optional (v2.2) |
 | Navigation | Screens | `navigation.from/to` | Required (v2.2) |
-| Entity | Team/Dept/Party | `owned_by` | Optional (v2.2) |
+| Entity | Team/Dept/Party, or a name | `owned_by` | Optional (v2.2; a name from v2.8) |
 | Entity | Source code | `code_refs` | Optional (v2.4) |
 | Concept | DDD classification | `stereotype` | Optional (v2.4) |
 | Question | Operations | `answered_by` | Optional (v2.4) |
@@ -754,7 +754,11 @@ parties:
 
 ### Ownership (owned_by)
 
-File-level default + entity-level override. Exactly one owner (team, department, or party):
+File-level default + entity-level override; an entity's own `owned_by` replaces the default
+whole. An owner is a name, a reference to one team, department or party, or a name beside one
+reference. A name alone is a complete owner statement for a unit the model does not declare yet
+and draws no graph edge; beside a reference, the reference is the owner and the name is the owner
+as the source states it. A name is never a typed id, and at most one reference is allowed:
 
 ```yaml
 # File-level (applies to all entities in file)
@@ -767,6 +771,15 @@ concepts:
     term: "Order Line"
     owned_by:
       department: DPT002    # overrides file-level TM001
+  - id: CN003
+    term: "Refund"
+    owned_by:
+      name: "The team for returns"    # no team declared yet
+  - id: CN004
+    term: "Payment"
+    owned_by:
+      name: "Payments squad"    # what the source calls TM004
+      team: TM004
 ```
 
 ### Interactions Schema (interactions.schema.yaml) — NEW
@@ -1988,7 +2001,7 @@ When `cadence` is set, work items may be placed by sprint number; dates derive a
 | `start_sprint` / `end_sprint` | number | Sprint placement (fractional allowed: `30.5`) |
 | `start_date` / `end_date` | date | Explicit dates (override sprint placement) |
 | `buffer_end_sprint` / `buffer_end` | number / date | Buffer tail after the committed end |
-| `owned_by` | owned_by | Typed org owner (team / department / party) |
+| `owned_by` | owned_by | Org owner: a team, department or party reference, a name, or a name beside one reference |
 | `executor` | string[] | Human owner name(s), distinct from typed `owned_by` |
 | `tracker_ref` | string | External issue-tracker key/URL (base-URL construction is a view concern) |
 | `depends_on` | (`WI` \| `MS`)[] | Predecessor work items or milestones |

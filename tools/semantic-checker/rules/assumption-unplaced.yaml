@@ -9,7 +9,7 @@ rules:
       Ownership does not place it. An owner, stated on the assumption or inherited from its file's
       `owned_by`, says who confirms or retires the assumption, not what depends on it holding, so
       an owned assumption can still be placed nowhere, and `orphan-entities` stops reporting it once
-      it has an owner. Advisory: a model may record an assumption before it knows what the
+      it has an owner reference (a name alone draws no edge). Advisory: a model may record an assumption before it knows what the
       assumption touches. Override per project via .blueprint-lint.yaml (e.g.
       `assumption-unplaced: off`).
     find:

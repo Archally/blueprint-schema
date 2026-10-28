@@ -1,0 +1,6 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Order Desk
+description: >-
+  A shop whose bounded contexts are owned by a declared team, by a unit known only by name, or by
+  a team the source calls by another name.

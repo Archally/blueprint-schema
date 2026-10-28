@@ -368,7 +368,7 @@ $defs:
         description: "Behavioural archetype(s) of the domain model (Wirfs-Brock role stereotypes)."
       owner:
         $ref: "metamodel.schema.yaml#/$defs/owned_by"
-        description: "Owning team/department/party (references governance/organization)."
+        description: "The accountable unit: a team, department or party by reference, a name for a unit the model does not declare yet, or both."
       subdomains:
         type: array
         description: "The subdomains this domain divides into. A subdomain has no subdomains of its own."
@@ -410,7 +410,7 @@ $defs:
         description: "Behavioural archetype(s) of this subdomain."
       owner:
         $ref: "metamodel.schema.yaml#/$defs/owned_by"
-        description: "Owning team/department/party, when it differs from the domain's."
+        description: "The accountable unit when it differs from the domain's: a team, department or party by reference, a name for a unit the model does not declare yet, or both."
   slice:
     type: object
     description: >
@@ -451,7 +451,7 @@ $defs:
         description: "Behavioural archetype(s) of the slice (Wirfs-Brock role stereotypes)."
       owner:
         $ref: "metamodel.schema.yaml#/$defs/owned_by"
-        description: "Owning team/department/party (references governance/organization)."
+        description: "The accountable unit: a team, department or party by reference, a name for a unit the model does not declare yet, or both."
       bands:
         type: array
         items:

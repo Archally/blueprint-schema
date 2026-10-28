@@ -5,6 +5,33 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.81"
+    date: "2026-10-28"
+    step: "an owner may be a name until its unit is modelled"
+    summary: |
+      owned_by names the accountable unit by name, by a reference to one team, department or
+      party, or by a name beside one reference. A name alone is a complete owner statement for a
+      unit the model does not declare yet and draws no graph edge; beside a reference, the
+      reference is the owner and the name is the owner as the source states it. A name contains
+      a non-space character and is never shaped like a typed id. At most one reference, as
+      before. A modeling_guidance lesson says when to write the name and when to add the
+      reference.
+
+      BACKWARD only: existing valid documents remain valid. Older closed schemas reject a
+      document carrying owned_by.name. No instance migration is required.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/metamodel.schema.yaml#/$defs/owned_by"
+        notes: "name joins team, department and party; the constraint becomes a name, a reference, or both, with at most one reference."
+      - kind: docs
+        semver: patch
+        target: "schema/v2.8/blueprint.schema.yaml"
+        notes: "The owner of the domain, a subdomain and a slice is described as a reference, a name, or both. Description only; the accepted set is unchanged."
+      - kind: docs
+        semver: patch
+        target: "schema/v2.8/governance/roadmap.schema.yaml"
+        notes: "A work item's owned_by is described as a reference, a name, or both. Description only; the accepted set is unchanged."
   - version: "2.8.80"
     date: "2026-10-28"
     step: "governance names bounded contexts, services and findings; an owner may be a team"

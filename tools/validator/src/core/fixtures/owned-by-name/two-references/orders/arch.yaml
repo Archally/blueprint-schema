@@ -1,0 +1,25 @@
+version: "1.0.0"
+name: Orders architecture
+scope: orders
+parties:
+  - id: orders.PRT002
+    name: Order system
+    kind: system
+    contexts:
+      - id: orders.BC001
+        name: Ordering
+        kind: core
+        owned_by:
+          team: TM001
+      - id: orders.BC002
+        name: Payments
+        kind: support
+        owned_by:
+          name: "Payments squad"
+          team: TM004
+      - id: orders.BC003
+        name: Returns
+        kind: support
+        owned_by:
+          team: TM001
+          party: PRT001

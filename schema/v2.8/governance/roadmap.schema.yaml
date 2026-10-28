@@ -251,7 +251,7 @@ $defs:
         description: "Explicit buffer right edge. Overrides buffer_end_sprint."
       owned_by:
         $ref: "../metamodel.schema.yaml#/$defs/owned_by"
-        description: "Owning team/department/party (typed org reference)."
+        description: "The accountable unit: a team, department or party by reference, a name for a unit the model does not declare yet, or both."
       executor:
         type: array
         items:
