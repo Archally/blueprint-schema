@@ -508,6 +508,14 @@ repository's folder `blueprint-schema`, because the `yaml.schemas` paths start w
 An entry for the same file name in your user `material-icon-theme.files.associations` wins over the
 workspace one, so keep such an entry identical or remove it.
 
+## AI agent kit
+
+The repository carries a blueprint-modeling kit for AI coding agents: a `blueprint-modeler` agent,
+fifteen method skills and two commands, `/blueprint-new` and `/blueprint-check-all`, for Claude
+Code, Codex and Cursor. It needs no Archally CLI and no MCP server. Open this folder in your agent's
+host after `npm install` and `npm run build`; [docs/ai-agent-kit.md](docs/ai-agent-kit.md) has the
+quick start for each host, how to check that it works, and how to use the kit in another project.
+
 ## Example
 
 A working e-commerce example with 3 bounded contexts (catalog, orders, payments) is included in [`examples/ecommerce/`](examples/ecommerce/). Run `npm run validate:examples` to verify it.
@@ -554,7 +562,7 @@ This repository is **dual-licensed** — see [LICENSE](./LICENSE) for the author
 
 | Part | License | You may |
 | --- | --- | --- |
-| Schema, examples, docs, reference validator, VS Code extension | [Apache 2.0](./LICENSE-APACHE) | Use freely, including in commercial and proprietary products. The format is meant to be adopted. |
+| Schema, examples, docs, reference validator, VS Code extension, AI agent kit | [Apache 2.0](./LICENSE-APACHE) | Use freely, including in commercial and proprietary products. The format is meant to be adopted. |
 | Tooling — `model-builder`, `semantic-checker`, `renderer`, `schema-update`, `schema-atlas` | [FSL-1.1-ALv2](./LICENSE-FSL) | Use for any Permitted Purpose (internal use, non-commercial education/research, professional services). **Not** for a Competing Use. Each version converts to Apache 2.0 two years after its release. |
 
 For a commercial license covering a Competing Use, contact adam.walkowski@inperceptic.com. "Archally" and "Blueprint" are trademarks — see [TRADEMARKS.md](./TRADEMARKS.md).

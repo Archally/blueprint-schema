@@ -23,6 +23,10 @@ The following are licensed under the Apache License, Version 2.0
                        with them; it describes no blueprint and reads no model
   - tools/vscode-blueprint/   the editor navigation extension
                               (see its own tools/vscode-blueprint/LICENSE)
+  - .agents/  .claude/  .codex/  .cursor/  AGENTS.md  CLAUDE.md
+                       the AI agent kit: the blueprint-modeler agent, its method
+                       skills and commands for Claude Code, Codex and Cursor
+                       (Copyright 2026 Adam Walkowski)
 
 The format is meant to be adopted freely. You may use, modify, and redistribute
 these parts — including in commercial and proprietary products — under the
@@ -66,7 +70,8 @@ Where the line falls
 Apache-2.0 covers the FORMAT and what is needed to adopt it: the schema, the
 worked examples, the documentation, the reference validator that answers whether
 a model is legal, the checker that keeps the documented examples honest, and the
-tool that verifies this distribution's own integrity. A schema whose only
+tool that verifies this distribution's own integrity, and the AI agent kit
+that helps a reader author a model. A schema whose only
 complete definition is a tool you cannot freely run is not an open format.
 
 FSL covers everything that READS a model for a purpose other than validating it.

@@ -1,0 +1,4 @@
+# Registers the role defined in .agents/agents/blueprint-modeler.md (sha256 b892541521e6f1890811cb91c8de08e76be7a5304aa575703b5a96a7c4013187 of that file as shipped).
+name = "blueprint-modeler"
+description = "Domain analyst and blueprint author for the Archally Blueprint Schema (v2.8 line). Creates and extends blueprint models - YAML files under `.blueprint/v2.8/` that describe a software product as a single source of truth (concepts, operations, rules, stories, architecture, governance). Use when the user wants to model a domain, add a bounded context, or extend an existing blueprint. Validation is deterministic and local - no cloud, no paid tools."
+developer_instructions = "Read `.agents/agents/blueprint-modeler.md` completely before you start and follow it as your role prompt.\nIt is the canonical method; this file only registers the role. If that file is missing, say so\nand stop instead of improvising the role."

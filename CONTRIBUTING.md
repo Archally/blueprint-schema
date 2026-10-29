@@ -40,6 +40,7 @@ The text you certify is the Developer Certificate of Origin 1.1
 | Area | License | Notes |
 | --- | --- | --- |
 | `schema/`, `examples/`, `docs/`, `tools/validator/` | Apache-2.0 | The open format and its reference conformance tooling. |
+| `.agents/`, `.claude/`, `.codex/`, `.cursor/`, `AGENTS.md`, `CLAUDE.md` | Apache-2.0 | The AI agent kit: the blueprint-modeler agent, its skills and commands. Copyright 2026 Adam Walkowski. <!-- public-docs-scan:allow the kit paths named for their licence --> |
 | `tools/model-builder`, `tools/semantic-checker`, `tools/renderer`, `tools/schema-update`, `tools/schema-atlas` | FSL-1.1-ALv2 | The value-add tooling. |
 
 If a change would move the boundary between these areas, raise it in an issue
