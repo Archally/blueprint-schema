@@ -5,6 +5,161 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.86"
+    date: "2026-10-30"
+    step: "a feature lists its user stories"
+    summary: |
+      A capability with kind: feature may state the user stories it delivers in an optional
+      user_stories list of story references, without duplicates. The list is accepted only on a
+      feature: a capability whose kind is omitted or is capability is rejected when it carries
+      one. No default is inserted and a story does not name its feature back. Each entry is the
+      exact id the story declares, scope prefix included, and an undeclared story is a
+      cross-reference error. A present list is complete, an empty one included; an omitted list
+      leaves the feature open to an association derived from shared operations, which is never
+      written back. The at-most-one-feature rule and the comparison of stated lists with
+      operation-derived reach are semantic checks and are not part of schema validation. A use
+      case's user_stories list keeps its meaning.
+
+      BACKWARD only: existing valid capability documents remain valid. Older closed schemas
+      reject a capability carrying user_stories. No instance migration is required.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/governance/capability.schema.yaml#/$defs/capability"
+        notes: "Optional unique user_stories list of user_story_ref, accepted only when kind is feature."
+  - version: "2.8.85"
+    date: "2026-10-29"
+    step: "render manifests select artifact modes"
+    summary: |
+      A render manifest can select an ordered, non-empty, duplicate-free list of light, dark and
+      blueprint modes in defaults.themes and targets[].themes. A target's list replaces the
+      defaults. Omission preserves renderer defaults and single-theme settings; paired artifacts
+      and generated page controls default to light and dark. Blueprint is opt-in. Generated pages
+      cycle only their selected modes. Conflicting settings and unsupported tool, format and mode
+      combinations are refused before rendering.
+
+      BACKWARD only: existing manifests remain valid. Older closed schemas reject themes in
+      defaults or targets. No instance migration is required.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/render.manifest.schema.yaml#/$defs/themes"
+        notes: "Optional defaults.themes and target themes reference an ordered, non-empty, unique light/dark/blueprint list."
+  - version: "2.8.84"
+    date: "2026-10-29"
+    step: "a third-party package is its own entity"
+    summary: |
+      An architecture document can declare the third-party packages its services are built on, in a
+      root `packages:` list, without inventing a party, a bounded context and a service to hold
+      each one. A package (PKG###) requires an id, a name and a non-empty license; its ecosystem,
+      supplier (`vendor_ref`, a party) and version are optional. An unknown license is stated as
+      `license: { expression: NOASSERTION }`; unknown optional fields are omitted.
+      The version is the text its ecosystem writes, and two versions in use at the same time are two
+      entries. The license describes one documented entitlement: an SPDX expression or a
+      `LicenseRef-` identifier, the terms in words, and the calendar date the entitlement ends,
+      omitted where no single date is established. A document may now declare packages and
+      nothing else.
+
+      A service's `imports` list holds a service reference or a package reference in each item, in
+      one list, still without duplicates; `uses` stays service-only. A library the organization
+      builds itself stays a service of `kind: library`. Goals, risks, assumptions, inquiries and
+      findings name packages in `affects.package_refs`, and a decision names the packages it
+      changes in `declared_impact.direct.packages`. Every package reference resolves to the
+      declaration carrying the same string, scope prefix included; one nobody declares is a
+      cross-reference error.
+
+      BACKWARD only: existing valid documents remain valid. Older closed schemas reject a document
+      carrying `packages`, a package id in `imports`, `affects.package_refs` or
+      `declared_impact.direct.packages`. No instance migration is required.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/metamodel.schema.yaml#/$defs/package_ref"
+        notes: "PKG### typed reference, optionally scope-prefixed, the shape of service_ref."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/properties/packages"
+        notes: "Optional root array of package; the document-level anyOf accepts parties, contexts or packages."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/package"
+        notes: "Requires id, name and non-empty license; optional summary, description, ecosystem, vendor_ref, version, code_refs, provenance, owned_by, properties, tags. Closed."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/package_license"
+        notes: "Optional expression, terms and expires_on (format date); closed, at least one member. An unknown license uses expression: NOASSERTION."
+      - kind: change
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/imports"
+        notes: "Items widen from service_ref to service_ref or package_ref; uniqueItems kept."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/governance/motivation.schema.yaml"
+        notes: "affects.package_refs on goal, risk, assumption and inquiry: optional array of package_ref."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/quality.schema.yaml#/$defs/finding/properties/affects/properties/package_refs"
+        notes: "Optional array of package_ref."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/governance/decisions.schema.yaml#/$defs/impact_declaration/properties/direct/properties/packages"
+        notes: "Optional array of package_ref."
+      - kind: docs
+        semver: patch
+        target: "schema/v2.8/metamodel.schema.yaml#/$defs/service_kind"
+        notes: "library is a library the organization builds itself; a third-party library is a package. Description only."
+  - version: "2.8.83"
+    date: "2026-10-29"
+    step: "a risk and an inquiry name the capabilities they affect"
+    summary: |
+      A risk and an inquiry can name the capabilities and features they bear on, in
+      `affects.capability_refs`: a list of CAP ids, each resolved by its exact declared id, so an
+      id no capability file declares, or one written without the prefix its declaration carries,
+      is a cross-reference error at the field. The item shape is the one vision and decision use
+      for the same key. The concern belongs to each capability it names and to no other: a named
+      capability's children, its parent and the capabilities that share an operation with it are
+      not implied. Goals, assumptions and findings do not take the key.
+
+      BACKWARD only: existing valid documents remain valid. Older closed schemas reject a risk or
+      an inquiry carrying affects.capability_refs. No instance migration is required.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/affects/properties/capability_refs"
+        notes: "Optional array of capability_ref, no cardinality or uniqueness constraint."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects/properties/capability_refs"
+        notes: "Optional array of capability_ref, no cardinality or uniqueness constraint."
+      - kind: docs
+        semver: patch
+        target: "schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/affects"
+        notes: "The risk and inquiry affects descriptions name a capability among the things a concern is pinned beside. Description only."
+  - version: "2.8.82"
+    date: "2026-10-29"
+    step: "a render target can open without its dashboard"
+    summary: |
+      A render manifest target can say whether its artifacts open on a dashboard. `dashboard:` is
+      a boolean on a target and under `defaults:`, true when omitted; a target's own value wins
+      over the default, and false removes the dashboard and its reopen button from every format
+      the target produces, the first page of a PDF included. `bp render` passes it to the tool as
+      `--no-dashboard`. The key written on a target whose tool has no dashboard switch is refused
+      before anything renders, naming the reason; a default never reaches such a target, so one
+      manifest can mix the two.
+
+      BACKWARD only: existing valid manifests remain valid and open on a dashboard wherever their
+      tools draw one, as before. Older closed schemas, and a `bp render` that predates this
+      version, reject a manifest carrying `dashboard`, so a manifest that declares it needs both
+      sides at this version. No instance migration is required.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/render.manifest.schema.yaml#/$defs/target/properties/dashboard"
+        notes: "Optional boolean, default true. False opens the target's artifacts directly on the full view."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/render.manifest.schema.yaml#/properties/defaults/properties/dashboard"
+        notes: "Optional boolean, default true, applied to every target whose tool has a dashboard switch unless the target sets its own."
   - version: "2.8.81"
     date: "2026-10-28"
     step: "an owner may be a name until its unit is modelled"

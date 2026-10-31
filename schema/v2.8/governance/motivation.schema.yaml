@@ -163,7 +163,7 @@ $defs:
               description: "Example description."
       affects:
         type: object
-        description: "Blueprint entities this goal touches: where it sticks on the domain model, so a story board or a wall can pin the opportunity beside the operation, concept, bounded context, service or story it is about."
+        description: "Blueprint entities this goal touches: where it sticks on the domain model, so a story board or a wall can pin the opportunity beside the operation, concept, bounded context, service, package or story it is about."
         additionalProperties: false
         properties:
           operation_refs:
@@ -197,6 +197,14 @@ $defs:
             description: "Architecture services (SVC###) affected as a whole, by arch id. A typed reference: an id no arch file declares is a cross-reference error."
             examples:
               - [SVC001]
+          package_refs:
+            type: array
+            title: Packages
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/package_ref"
+            description: "Third-party packages (PKG###) affected as a whole, by the id their `packages:` declaration carries. A typed reference: an id no arch file declares is a cross-reference error."
+            examples:
+              - [PKG001]
           process_refs:
             type: array
             items:
@@ -368,7 +376,7 @@ $defs:
         description: "Goals threatened by this risk."
       affects:
         type: object
-        description: "Blueprint entities this risk touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, bounded context, service or story it is about."
+        description: "Blueprint entities this risk touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, bounded context, service, package, capability or story it is about."
         additionalProperties: false
         properties:
           operation_refs:
@@ -402,11 +410,27 @@ $defs:
             description: "Architecture services (SVC###) affected as a whole, by arch id. A typed reference: an id no arch file declares is a cross-reference error."
             examples:
               - [SVC001]
+          package_refs:
+            type: array
+            title: Packages
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/package_ref"
+            description: "Third-party packages (PKG###) affected as a whole, by the id their `packages:` declaration carries. A typed reference: an id no arch file declares is a cross-reference error."
+            examples:
+              - [PKG001]
           process_refs:
             type: array
             items:
               $ref: "../metamodel.schema.yaml#/$defs/process_ref"
             description: "Business processes affected, for a concern about a flow as a whole rather than one of its operations."
+          capability_refs:
+            type: array
+            title: Capabilities
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/capability_ref"
+            description: "Capabilities and features (CAP###) this risk bears on, each named by its declared id. A typed reference: an id no capability file declares is a cross-reference error. The risk belongs to each capability named here and to no other: a named capability's children, its parent and the capabilities that share an operation with it are not implied, so name every capability or feature the risk is about."
+            examples:
+              - [CAP001, billing.CAP002]
       version:
         $ref: "../metamodel.schema.yaml#/$defs/entity_version"
         description: "Risk version for lifecycle tracking."
@@ -463,7 +487,7 @@ $defs:
         description: "Risks associated with this assumption being wrong."
       affects:
         type: object
-        description: "Blueprint entities this assumption bears on: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, process, bounded context or service that depends on it holding."
+        description: "Blueprint entities this assumption bears on: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, process, bounded context, service or package that depends on it holding."
         additionalProperties: false
         properties:
           operation_refs:
@@ -497,6 +521,14 @@ $defs:
             description: "Architecture services (SVC###) that depend on this assumption holding, by arch id. A typed reference: an id no arch file declares is a cross-reference error."
             examples:
               - [SVC001]
+          package_refs:
+            type: array
+            title: Packages
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/package_ref"
+            description: "Third-party packages (PKG###) that depend on this assumption holding, by the id their `packages:` declaration carries. A typed reference: an id no arch file declares is a cross-reference error."
+            examples:
+              - [PKG001]
           process_refs:
             type: array
             items:
@@ -640,7 +672,7 @@ $defs:
         description: "Actors who care about the resolution."
       affects:
         type: object
-        description: "Blueprint entities this inquiry touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, bounded context, service or story it is about."
+        description: "Blueprint entities this inquiry touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, bounded context, service, package, capability or story it is about."
         additionalProperties: false
         properties:
           operation_refs:
@@ -674,11 +706,27 @@ $defs:
             description: "Architecture services (SVC###) affected as a whole, by arch id. A typed reference: an id no arch file declares is a cross-reference error."
             examples:
               - [SVC001]
+          package_refs:
+            type: array
+            title: Packages
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/package_ref"
+            description: "Third-party packages (PKG###) affected as a whole, by the id their `packages:` declaration carries. A typed reference: an id no arch file declares is a cross-reference error."
+            examples:
+              - [PKG001]
           process_refs:
             type: array
             items:
               $ref: "../metamodel.schema.yaml#/$defs/process_ref"
             description: "Business processes affected, for a concern about a flow as a whole rather than one of its operations."
+          capability_refs:
+            type: array
+            title: Capabilities
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/capability_ref"
+            description: "Capabilities and features (CAP###) this inquiry bears on, each named by its declared id. A typed reference: an id no capability file declares is a cross-reference error. The inquiry belongs to each capability named here and to no other: a named capability's children, its parent and the capabilities that share an operation with it are not implied, so name every capability or feature the inquiry is about."
+            examples:
+              - [CAP001, billing.CAP002]
       owner:
         $ref: "../metamodel.schema.yaml#/$defs/owner_ref"
         description: >

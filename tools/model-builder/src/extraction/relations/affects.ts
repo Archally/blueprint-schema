@@ -6,11 +6,11 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
 /**
  * Where a governance statement sticks on the domain model.
  *
- *   Risk       --risk_affects-->       Operation | Concept | Process | BoundedContext | Service
- *   Inquiry    --inquiry_affects-->    Operation | Concept | Process | BoundedContext | Service
- *   Finding    --finding_affects-->    Operation | Concept | Process | BoundedContext | Service
- *   Goal       --goal_affects-->       Operation | Concept | Process | BoundedContext | Service
- *   Assumption --assumption_affects--> Operation | Concept | Process | BoundedContext | Service
+ *   Risk       --risk_affects-->       Operation | Concept | Process | BoundedContext | Service | Package | Capability
+ *   Inquiry    --inquiry_affects-->    Operation | Concept | Process | BoundedContext | Service | Package | Capability
+ *   Finding    --finding_affects-->    Operation | Concept | Process | BoundedContext | Service | Package
+ *   Goal       --goal_affects-->       Operation | Concept | Process | BoundedContext | Service | Package
+ *   Assumption --assumption_affects--> Operation | Concept | Process | BoundedContext | Service | Package
  *
  * `affects.context_refs[]` is a context PREFIX (`orders`), a name rather than an entity id, so it
  * builds no edge here; the slice it names is the folder the concern's artifacts already land in.
@@ -37,10 +37,22 @@ const AFFECTS_TYPE: Partial<Record<string, string>> = {
 
 // `context_refs` remains a name/prefix; bounded_context_refs is the typed BC id list.
 // `story_refs` is retained for models written before `process_refs` became canonical.
-const REF_LISTS = ['operation_refs', 'concept_refs', 'process_refs', 'story_refs', 'bounded_context_refs', 'service_refs'] as const;
+// `package_refs` (v2.8.84) names third-party packages; like `capability_refs` it resolves against its
+// own type only, so a ref that names no package is a placeholder rather than an edge to whatever
+// else declares the string.
+const REF_LISTS = ['operation_refs', 'concept_refs', 'process_refs', 'story_refs', 'bounded_context_refs', 'service_refs', 'package_refs'] as const;
 
 export function extractAffectsRelations(entities: Entity[], placeholders: Map<string, Entity>): Relation[] {
   const relations: Relation[] = [];
+  // Invalid raw models still retain missing/ambiguous pins, without resolving to a wrong type.
+  const capabilities = entities.filter(entity => entity.type === ENTITY_TYPE.Capability
+    && /^([a-z][a-z0-9-]*\.)?CAP\d{3}$/.test(entity.displayId));
+  const packages = entities.filter(entity => entity.type === ENTITY_TYPE.Package);
+  const candidatesFor = (list: string): Entity[] => {
+    if (list === 'capability_refs') return capabilities;
+    if (list === 'package_refs') return packages;
+    return entities;
+  };
   for (const entity of entities) {
     const type = AFFECTS_TYPE[entity.type];
     if (!type) continue;
@@ -48,12 +60,14 @@ export function extractAffectsRelations(entities: Entity[], placeholders: Map<st
     if (!affects || typeof affects !== 'object') continue;
     const domain = entityDomain(entity);
     const seen = new Set<string>();
-    for (const list of REF_LISTS) {
+    const lists: readonly string[] = entity.type === ENTITY_TYPE.Risk || entity.type === ENTITY_TYPE.Inquiry
+      ? [...REF_LISTS, 'capability_refs'] : REF_LISTS;
+    for (const list of lists) {
       const refs = affects[list];
       if (!Array.isArray(refs)) continue;
       for (const ref of refs) {
         if (typeof ref !== 'string' || !ref) continue;
-        const targetId = resolveOrPlaceholder(ref, domain, entities, placeholders);
+        const targetId = resolveOrPlaceholder(ref, domain, candidatesFor(list), placeholders);
         if (seen.has(targetId)) continue;
         seen.add(targetId);
         relations.push({

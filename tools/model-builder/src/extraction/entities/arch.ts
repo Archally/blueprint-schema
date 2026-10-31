@@ -20,11 +20,11 @@ const LAYER = SCHEMA_TYPE_TO_LAYER['arch']!;
  * `system_ref` and `spans` edges, so a consumer of the graph never needs to know which one the
  * author wrote.
  *
- * Produces Party, Context, Service, Contract, Probe and MessageChannel entities. The internal id is the fully
- * qualified path (party.context[.service[.contractType]]); a root-declared context's party segment
- * is empty (`.context`), which no nested path can produce, so the two shapes cannot collide. A
- * probe or a message channel is declared at the document root and takes neither segment, so its
- * path is the bare id, which neither of the other two shapes can produce.
+ * Produces Party, Context, Service, Contract, Probe, MessageChannel and Package entities. The
+ * internal id is the fully qualified path (party.context[.service[.contractType]]); a root-declared
+ * context's party segment is empty (`.context`), which no nested path can produce, so the two shapes
+ * cannot collide. A probe, a message channel or a package is declared at the document root and takes
+ * neither segment, so its path is the bare id, which neither of the other two shapes can produce.
  */
 export function extractArch(doc: ParsedBlueprintDocument): Entity[] {
   const entities: Entity[] = [];
@@ -46,13 +46,15 @@ export function extractArch(doc: ParsedBlueprintDocument): Entity[] {
       // Emit Party entity (DQ-ARCH-16, step-08c). Always emitted, even when `contexts` is empty or
       // absent: a party declared whole carries no contexts of its own, and an external party (a
       // CRM, an ESB) declared as a known integration partner renders as an actor node.
-      const partyId = makeInternalId(doc.scope, doc.filePath, partyName);
+      const displayId = typeof party.id === 'string' && party.id.length > 0 ? party.id : partyName;
+      const partyId = makeInternalId(doc.scope, doc.filePath, displayId);
       entities.push({
         id: partyId,
-        displayId: partyName,
+        displayId,
         type: ENTITY_TYPE.Party,
         layer: LAYER,
         fileOrigin: doc.filePath,
+        term: partyName,
         summary: party.description != null ? String(party.description) : undefined,
         data: { ...party, ...scoped },
       });
@@ -112,6 +114,29 @@ export function extractArch(doc: ParsedBlueprintDocument): Entity[] {
         term: channel.name != null ? String(channel.name) : undefined,
         summary: channel.description != null ? String(channel.description) : undefined,
         data: { ...channel, ...scoped },
+      });
+    }
+  }
+
+  // Third-party packages (v2.8.84). Root-level like a channel: a package is shared by every service
+  // that imports it, whatever context each sits in. The id is the address and `name` reaches `term`,
+  // the convention above. Only what the declaration states is carried: an absent version, vendor or
+  // license stays absent on the node.
+  const packages = data.packages as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(packages)) {
+    for (const declared of packages) {
+      const packageId = declared?.id as string | undefined;
+      if (typeof packageId !== 'string') continue;
+      if (packageId.length === 0) continue;
+      entities.push({
+        id: makeInternalId(doc.scope, doc.filePath, packageId),
+        displayId: packageId,
+        type: ENTITY_TYPE.Package,
+        layer: LAYER,
+        fileOrigin: doc.filePath,
+        term: declared.name != null ? String(declared.name) : undefined,
+        summary: declared.summary != null ? String(declared.summary) : undefined,
+        data: { ...declared, ...scoped },
       });
     }
   }

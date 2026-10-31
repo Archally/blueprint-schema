@@ -1,0 +1,37 @@
+version: "1.0.0"
+scope: orders
+goals:
+  - id: orders.GL001
+    statement: "Every order confirmation renders without a manual step."
+    priority: high
+    affects:
+      service_refs: [SVC001]
+      package_refs: [PKG001]
+assumptions:
+  - id: orders.ASM001
+    statement: "The document toolkit subscription is renewed before it ends."
+    consequence: "Order confirmations stop rendering."
+    affects:
+      package_refs: [PKG001, PKG003]
+risks:
+  - id: orders.RSK001
+    statement: "The document toolkit subscription lapses."
+    likelihood: medium
+    impact: high
+    mitigation: "Renew a quarter ahead."
+    affects:
+      package_refs: [PKG001]
+  - id: orders.RSK002
+    statement: "A risk that names no package."
+    likelihood: low
+    impact: low
+    mitigation: "None needed for the fixture."
+    affects:
+      service_refs: [SVC001]
+      package_refs: []
+inquiries:
+  - id: orders.INQ001
+    statement: "Which toolkit version does each host run?"
+    category: technical
+    affects:
+      package_refs: [PKG001, PKG003, platform.PKG002]

@@ -30,6 +30,11 @@ export const ENTITY_TYPE = {
   // `exchange.topic.channel_ref` / `exchange.queue.channel_ref` and by a consuming contract's
   // `subscription.channel_ref`.
   MessageChannel: 'MessageChannel',
+  // v2.8.84 third-party packages (arch.yaml root `packages:`, PKG###). A library obtained from a
+  // supplier or a public registry, at one version; a library the organization builds stays a
+  // Service of `kind: library`. Declared at the document root like a channel, imported by services
+  // through `service.imports`, and named by governance items and decisions.
+  Package: 'Package',
   Goal: 'Goal',
   NonGoal: 'NonGoal',
   Risk: 'Risk',

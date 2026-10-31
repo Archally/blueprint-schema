@@ -1,0 +1,7 @@
+version: "1.0.0"
+scope: admin
+concepts:
+  - id: admin.CN005
+    name: ApiClient
+    stereotype: aggregate-root
+    description: "An OAuth2 API client for the Admin API, with a rotatable secret."

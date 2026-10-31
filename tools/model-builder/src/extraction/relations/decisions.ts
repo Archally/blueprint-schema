@@ -24,7 +24,7 @@ const MOTIVATION_GROUPS: ReadonlyArray<{ key: string; predicate: string }> = [
  * `processes` is the v2.8 key for business processes; `stories` is the key schema lines before
  * v2.8 accept for the same targets, so a model on an earlier line keeps its edges.
  */
-const IMPACT_GROUPS: ReadonlyArray<{ key: string; predicate: string; modelRef?: true }> = [
+const IMPACT_GROUPS: ReadonlyArray<{ key: string; predicate: string; modelRef?: true; type?: string }> = [
   { key: 'concepts', predicate: 'concept' },
   { key: 'rules', predicate: 'rule' },
   { key: 'operations', predicate: 'operation' },
@@ -34,6 +34,9 @@ const IMPACT_GROUPS: ReadonlyArray<{ key: string; predicate: string; modelRef?: 
   { key: 'processes', predicate: 'process' },
   { key: 'bounded_contexts', predicate: 'bounded_context' },
   { key: 'services', predicate: 'service' },
+  // v2.8.84: a third-party package (PKG###), declared in an arch `packages:` list. Resolved against
+  // packages only, so a ref naming no package is a placeholder, never an edge to another type.
+  { key: 'packages', predicate: 'package', type: ENTITY_TYPE.Package },
   { key: 'infrastructure', predicate: 'infrastructure' },
   { key: 'environments', predicate: 'environment' },
 ];
@@ -48,7 +51,7 @@ const IMPACT_UI_GROUPS: ReadonlyArray<{ key: string; predicate: string }> = [
  * Extract relations from decision entities:
  * - Decision.motivation_refs.{goals,risks,assumptions,trade_offs,questions,inquiries}[] → motivation_refs
  * - Decision.capability_refs[] → capability_refs
- * - Decision.declared_impact.direct.{concepts,rules,operations,tests,models,stories,processes,bounded_contexts,services,infrastructure,environments}[] → declared_impact
+ * - Decision.declared_impact.direct.{concepts,rules,operations,tests,models,stories,processes,bounded_contexts,services,packages,infrastructure,environments}[] → declared_impact
  * - Decision.declared_impact.direct.ui.{screens,actions,navigation}[] → declared_impact
  */
 export function extractDecisionRelations(
@@ -56,6 +59,13 @@ export function extractDecisionRelations(
   placeholders: Map<string, Entity>
 ): Relation[] {
   const relations: Relation[] = [];
+  const byType = new Map<string, Entity[]>();
+  const pool = (type: string | undefined): Entity[] => {
+    if (!type) return entities;
+    let typed = byType.get(type);
+    if (!typed) byType.set(type, typed = entities.filter(entity => entity.type === type));
+    return typed;
+  };
 
   for (const entity of entities) {
     if (entity.type !== ENTITY_TYPE.Decision) continue;
@@ -103,14 +113,14 @@ export function extractDecisionRelations(
     const declaredImpact = data.declared_impact as Record<string, unknown> | undefined;
     const direct = declaredImpact?.direct as Record<string, unknown> | undefined;
     if (direct && typeof direct === 'object') {
-      for (const { key, predicate, modelRef } of IMPACT_GROUPS) {
+      for (const { key, predicate, modelRef, type } of IMPACT_GROUPS) {
         const refs = (direct as Record<string, unknown>)[key];
         if (!Array.isArray(refs)) continue;
         for (const ref of refs) {
           if (typeof ref !== 'string' || !ref) continue;
           const targetId = modelRef
             ? resolveModelRefOrPlaceholder(ref, domain, entities, placeholders)
-            : resolveOrPlaceholder(ref, domain, entities, placeholders);
+            : resolveOrPlaceholder(ref, domain, pool(type), placeholders);
           relations.push({
             id: `${entity.id}--${RELATION_TYPE.DeclaredImpact}--${predicate}--${targetId}`,
             source_entity_id: entity.id,

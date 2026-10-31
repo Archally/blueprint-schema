@@ -3,13 +3,18 @@
  *
  * `imports` names the libraries a service is built on: a package it imports, a component it embeds.
  * `uses` names the services it depends on while running. The model builder draws one
- * `service_imports` or `service_uses` edge per resolved item, Service -> Service. The two checks
- * here compare each item with the `kind` its target STATES:
+ * `service_imports` edge per resolved item, Service -> Service or Package, and one `service_uses`
+ * edge, Service -> Service. The two checks here compare each SERVICE target with the `kind` it
+ * STATES:
  *
  *   - an `imports` item whose target states a kind other than `library` names something that runs,
  *     not something a build contains;
  *   - a `uses` item whose target states `kind: library` names something a build contains, not
  *     something that runs.
+ *
+ * SILENT FOR A PACKAGE TARGET. A third-party package (PKG###) is a library by definition, so an
+ * `imports` item naming one is what the list is for, whatever the package states or omits; only
+ * Service -> Service edges are read.
  *
  * SILENT WHERE THE TARGET STATES NO KIND. `kind` is optional on a service, so a target without one
  * says nothing either check could compare with, and guessing would report missing data as a wrong

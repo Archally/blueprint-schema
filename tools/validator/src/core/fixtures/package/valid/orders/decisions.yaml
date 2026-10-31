@@ -1,0 +1,15 @@
+version: "1.0.0"
+scope: orders
+decisions:
+  - id: orders.DC001
+    title: Move every service to one toolkit version
+    summary: The order service upgrades to the version the invoice service runs.
+    date: "2026-10-29"
+    status: proposed
+    rationale:
+      problem: Two toolkit versions are licensed and maintained.
+      chosen: Upgrade the order service.
+    declared_impact:
+      direct:
+        services: [SVC001]
+        packages: [PKG001, PKG003]

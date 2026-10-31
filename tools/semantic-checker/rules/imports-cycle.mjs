@@ -2,8 +2,10 @@
  * A cycle among `imports` edges.
  *
  * `imports` names the libraries a service is built on, and the model builder draws one
- * `service_imports` edge per resolved item. A build cannot finish when A needs B built first and B
- * needs A built first, so a cycle among those edges is a layering defect with one fix: break it.
+ * `service_imports` edge per resolved item. Only the edges between two services are read: a
+ * third-party package declares no `imports` of its own, so no cycle can pass through one. A build
+ * cannot finish when A needs B built first and B needs A built first, so a cycle among those edges
+ * is a layering defect with one fix: break it.
  * A service importing itself is the shortest such cycle and is reported the same way.
  *
  * A cycle among `uses` edges is NOT read here, and nothing reports it: two running services may

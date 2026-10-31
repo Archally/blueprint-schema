@@ -120,6 +120,8 @@ properties:
     type: object
     additionalProperties: false
     properties:
+      themes:
+        $ref: "#/$defs/themes"
       formats:
         type: array
         items: { type: string }
@@ -135,6 +137,14 @@ properties:
           keys such as `scope` or `arch_base`, not command-line flags, so they are composed into the
           target's view rather than passed on a command line. A target's own `view:` file overrides
           them, and `view_overrides` on the target overrides both.
+      dashboard:
+        type: boolean
+        default: true
+        description: >
+          Whether artifacts open on a dashboard, for every target whose tool has a dashboard switch,
+          unless the target sets its own `dashboard`. True when omitted. A target whose tool has no
+          switch is outside this value and renders as it would without it, so one manifest can mix
+          the two.
     description: "Values applied to every target unless the target overrides them."
   targets:
     type: array
@@ -151,6 +161,19 @@ properties:
       Optional named sets of target ids, selectable together - e.g. the subset of targets that
       make up a single deliverable pack.
 $defs:
+  themes:
+    type: array
+    minItems: 1
+    uniqueItems: true
+    items:
+      type: string
+      enum: [light, dark, blueprint]
+    description: >
+      Ordered artifact modes. A target's list replaces defaults.themes. Omission preserves the
+      renderer's defaults and single-theme settings; paired output and generated page controls use
+      light and dark by default. Blueprint is included only when requested. Generated pages cycle
+      only the selected modes. Explicit selections must agree with view and tool options, and
+      unsupported tool, format and mode combinations are refused before rendering.
   target:
     type: object
     additionalProperties: false
@@ -231,6 +254,8 @@ $defs:
           SOFT-DEPRECATED (v2.8.10). The same list, under the name the unit carried before it was
           called a process. Read identically, so a manifest pointing at a model on an earlier
           schema line keeps naming its units the way that line does.
+      themes:
+        $ref: "#/$defs/themes"
       formats:
         type: array
         items: { type: string }
@@ -287,6 +312,22 @@ $defs:
           A delivery is a set of documents for people, and which people is a fact about the target
           that nothing else in the manifest states. Written down, it can be asked of a whole set:
           whether every named reader has an artifact, and whether every artifact has a reader.
+      dashboard:
+        type: boolean
+        default: true
+        description: >
+          Whether this target's artifacts open on a dashboard: a first screen that says what the
+          artifact is, the few numbers and conclusions it found and where to look next, with an
+          Overview button that reopens it from the full view. True, the default, keeps it wherever
+          the target's tool draws one; a tool that draws none renders as it would without the
+          key. False removes the dashboard and its reopen button from every format the target
+          produces, the first page of a PDF included, so each artifact opens directly on its full
+          view. Overrides `defaults.dashboard`.
+
+          Declared on a target whose tool has no dashboard switch, it is refused before anything
+          renders, naming the reason: the tool's artifacts are exempt (a static image, an
+          interaction diagram read top to bottom, a machine contract, a third-party layout), or its
+          command line does not take the switch.
       view_overrides:
         type: object
         minProperties: 1

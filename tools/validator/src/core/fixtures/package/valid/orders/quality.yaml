@@ -1,0 +1,11 @@
+version: "1.0.0"
+scope: orders
+findings:
+  - id: orders.FN001
+    title: Two toolkit versions in use
+    kind: other
+    severity: medium
+    statement: "The order and invoice services build against different toolkit versions."
+    affects:
+      service_refs: [SVC001, SVC003]
+      package_refs: [PKG001, PKG003]

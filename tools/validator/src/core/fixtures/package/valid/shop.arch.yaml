@@ -1,0 +1,53 @@
+version: "1.0.0"
+name: Shop architecture
+# A mixed document: contexts and services beside the packages they import.
+parties:
+  - id: PRT001
+    name: Order Desk
+    kind: system
+    contexts:
+      - id: BC001
+        name: Ordering
+        kind: core
+        services:
+          - id: SVC001
+            name: Order Service
+            kind: service
+            # A library the organization builds, a local package and a qualified package, in one list.
+            imports: [SVC002, PKG001, platform.PKG002]
+            uses: [SVC003]
+          - id: SVC002
+            name: Order Rules
+            kind: library
+            imports: []
+          - id: SVC003
+            name: Invoice Service
+            kind: service
+            imports: [PKG003]
+  - id: PRT002
+    name: Document Tools Ltd
+    kind: organization
+packages:
+  # Two versions in use at the same time are two entries.
+  - id: PKG001
+    name: DocumentToolkit
+    summary: Renders invoices and order confirmations as PDF.
+    ecosystem: nuget
+    vendor_ref: PRT002
+    version: "23.10.0"
+    license:
+      expression: LicenseRef-Commercial
+      terms: "Developer subscription for one team, renewed yearly."
+      expires_on: "2027-03-31"
+    code_refs:
+      - path: src/OrderService/OrderService.csproj
+    owned_by:
+      team: TM001
+    tags: [document-generation]
+  - id: PKG003
+    name: DocumentToolkit
+    ecosystem: nuget
+    vendor_ref: PRT002
+    version: "24.1.0"
+    license:
+      expression: NOASSERTION

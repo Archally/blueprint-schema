@@ -1,0 +1,6 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Order Desk
+description: >-
+  A shop whose order service is built on a library the organization builds and on third-party
+  packages, and whose governance items name the packages they are about.

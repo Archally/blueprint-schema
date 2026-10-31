@@ -7,10 +7,12 @@ additionalProperties: false
 required:
   - name
 # A document declares its bounded contexts nested under the parties that provide their services
-# (`parties`), at the document root (`contexts`), or both; it must declare at least one list.
+# (`parties`), at the document root (`contexts`), or both, or it declares only third-party packages
+# (`packages`); it must declare at least one of the three lists.
 anyOf:
   - required: [parties]
   - required: [contexts]
+  - required: [packages]
 properties:
   name:
     type: string
@@ -101,7 +103,114 @@ properties:
       `exchange.queue.channel_ref`; a consuming contract names the queue it reads through
       `subscription.channel_ref`.
 
+  packages:
+    type: array
+    items:
+      $ref: "#/$defs/package"
+    description: >
+      Third-party packages: the libraries the organization obtains from a supplier or a public
+      registry rather than builds, each declared once in the model. A package belongs to no bounded
+      context, so it is declared here rather than under one, and a document may declare packages and
+      nothing else. Services name the packages they are built on through `imports`; the services
+      that import a package are read from those lists, never stated on the package. A library the
+      organization builds itself is a service of `kind: library`, not a package.
+
 $defs:
+
+  package:
+    type: object
+    description: >
+      A third-party package: a library obtained from a supplier or a public registry, at one
+      version. Two versions in use at the same time are two entries, each with its own id. What the
+      package depends on, its vulnerabilities and where each copy is deployed are not stated here.
+    additionalProperties: false
+    required:
+      - id
+      - name
+      - license
+    properties:
+      id:
+        $ref: "../metamodel.schema.yaml#/$defs/package_ref"
+        description: "Stable package id (PKG###), making the package a referenceable node."
+      name:
+        type: string
+        minLength: 1
+        description: "Package name, as its ecosystem or supplier publishes it (e.g. yaml, Newtonsoft.Json, org.apache.commons:commons-lang3)."
+      summary:
+        type: string
+        description: "Brief description of what the package provides."
+      description:
+        type: string
+        description: "Human-readable description: what the package is used for here and anything a reader needs before changing it."
+      ecosystem:
+        type: string
+        minLength: 1
+        description: >
+          The package ecosystem the package is obtained from, written as its Package URL type in
+          lowercase (npm, nuget, maven, pypi, gem, golang, cargo, composer), or `generic` for a
+          package distributed outside any registry. Absent means not stated.
+        examples: [npm, nuget, generic]
+      vendor_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/party_ref"
+        description: >
+          The party that supplies the package (PRT###), normally one of `kind: organization`. A
+          reference to a party nobody declares is a cross-reference error. Absent means the supplier
+          is not stated.
+      version:
+        type: string
+        minLength: 1
+        description: >
+          The version this entry describes, written as its ecosystem writes it (4.2.1, 23.10.0,
+          2.0.0-rc.1, 2024.1). Compared as text, never parsed as a version number. Absent means not
+          stated.
+        examples: ["23.10.0"]
+      license:
+        $ref: "#/$defs/package_license"
+        description: "Required, non-empty license statement; use expression: NOASSERTION when the license is unknown."
+      code_refs:
+        $ref: "../metamodel.schema.yaml#/$defs/code_refs"
+        description: "Where the package is pinned or carried in the source: a manifest, a lock file, a vendored directory."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: "How sure the model is that this package, at this version, is in use, and on what evidence."
+      owned_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owned_by"
+        description: "The unit accountable for this package: keeping it current and its license in force."
+      properties:
+        $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
+      tags:
+        $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  package_license:
+    type: object
+    description: >
+      The license statement for this package entry, with at least one member. An unknown license is
+      stated as `expression: NOASSERTION`. Known members describe the documented entitlement; unknown
+      terms and dates are omitted rather than guessed. A license label does not establish a
+      supplier's terms. Where entitlements differ between the places the package is used,
+      each with its own date, no single date is stated here.
+    additionalProperties: false
+    minProperties: 1
+    properties:
+      expression:
+        type: string
+        minLength: 1
+        description: >
+          The license as an SPDX license expression (MIT, Apache-2.0, MIT OR Apache-2.0), or a
+          `LicenseRef-` identifier for terms no SPDX identifier names. Use the SPDX value
+          `NOASSERTION` when the license is unknown.
+        examples: [MIT, LicenseRef-Commercial, NOASSERTION]
+      terms:
+        type: string
+        minLength: 1
+        description: "The terms of the entitlement in words: its tier, its seat or host count, what renewing it involves."
+      expires_on:
+        type: string
+        format: date
+        description: >
+          The calendar date (YYYY-MM-DD) on which the entitlement ends. Absent means no single end
+          date is established, which includes a license that does not expire.
+        examples: ["2027-03-31"]
 
   message_channel:
     type: object
@@ -571,17 +680,22 @@ $defs:
         type: array
         uniqueItems: true
         items:
-          $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+          anyOf:
+            - $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+            - $ref: "../metamodel.schema.yaml#/$defs/package_ref"
         description: >
           The libraries this service is built on: a package it imports or a component it embeds,
-          so that its build contains them. Each item names another service, normally one of
-          `kind: library`, by its exact declared id, scope prefix included; an item that names no
-          declared service is a cross-reference error. The model graph draws a `service_imports`
-          edge to each named service, so impact analysis reaches every service built on a changed
-          library. A call over an interface to a running service is not an import: state it in
-          `uses`, and in the contracts once they are written. Optional.
+          so that its build contains them. Each item names, by its exact declared id, scope prefix
+          included, either another service, normally one of `kind: library`, for a library the
+          organization builds, or a third-party package (PKG###) declared in a `packages:` list;
+          an item that names nothing declared is a cross-reference error. One list holds both, and
+          the model graph draws a `service_imports` edge to each named service or package, so impact
+          analysis reaches every service built on a changed library. A call over an interface to a
+          running service is not an import: state it in `uses`, and in the contracts once they are
+          written. Optional.
         examples:
           - ["platform.SVC012", "platform.SVC014"]
+          - ["platform.SVC012", "PKG001"]
       uses:
         type: array
         uniqueItems: true

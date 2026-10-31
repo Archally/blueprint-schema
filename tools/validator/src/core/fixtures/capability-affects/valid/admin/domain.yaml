@@ -1,0 +1,14 @@
+version: "1.0.0"
+name: Admin API domain
+scope: admin
+operations:
+  addApiClient:
+    id: admin.CMD021
+    kind: command
+    dispatch: inprocess
+    name: AddApiClient
+  rotateApiClientSecret:
+    id: admin.CMD024
+    kind: command
+    dispatch: inprocess
+    name: RotateApiClientSecret

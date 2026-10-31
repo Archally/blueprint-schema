@@ -1,0 +1,34 @@
+version: "1.0.0"
+scope: admin
+# The capability_refs below are fixture-only assignments; the PrestaShop example states none.
+risks:
+  - id: admin.RSK003
+    statement: "API client secret leakage allowing unauthorized access"
+    likelihood: medium
+    impact: high
+    mitigation: "Secret rotation command enables immediate rotation."
+    affects:
+      operation_refs: [admin.CMD021, admin.CMD024]
+      concept_refs: [admin.CN005]
+      capability_refs: [admin.CAP002, admin.CAP003]
+  - id: admin.RSK090
+    statement: "A risk that names no capability yet"
+    likelihood: low
+    impact: low
+    mitigation: "None needed for the fixture."
+    affects:
+      operation_refs: [admin.CMD021]
+      capability_refs: []
+inquiries:
+  - id: admin.INQ001
+    statement: "Should the Admin API implement rate limiting per API client?"
+    category: technical
+    affects:
+      operation_refs: [admin.CMD021]
+      concept_refs: [admin.CN005]
+      capability_refs: [CAP001]
+  - id: admin.INQ090
+    statement: "An inquiry whose affects omits capability_refs"
+    category: technical
+    affects:
+      concept_refs: [admin.CN005]

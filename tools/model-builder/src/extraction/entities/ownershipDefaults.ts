@@ -95,7 +95,7 @@ const COMMON_CONTAINERS = [
  * loses `owned_by` on a line is not a silent change here.
  *
  * The rows differ, and each difference is a container a file-level owner must not reach on the line
- * that gives its items no `owned_by`: `assumptions` and `probes` are ownable from v2.8,
+ * that gives its items no `owned_by`: `assumptions`, `probes` and `packages` are ownable from v2.8,
  * `findings`, `leverage_points` and `work_items` from v2.7, and the narrative container is `stories`
  * up to v2.7 and `processes` from v2.8.
  */
@@ -110,6 +110,7 @@ const OWNING_CONTAINERS_BY_LINE: Readonly<Record<ServedSchemaLine, ReadonlySet<s
     'work_items',
     'assumptions',
     'probes',
+    'packages',
   ]),
 };
 

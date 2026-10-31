@@ -726,7 +726,7 @@ $defs:
         description: "Suggested remediation direction, in prose. The structured fix lives in the linked migration."
       affects:
         type: object
-        description: "Blueprint entities this finding touches. Links the defect to the domain model and to the bounded contexts and services it sits in."
+        description: "Blueprint entities this finding touches. Links the defect to the domain model and to the bounded contexts, services and third-party packages it sits in."
         additionalProperties: false
         properties:
           operation_refs:
@@ -760,6 +760,14 @@ $defs:
             description: "Architecture services (SVC###) affected as a whole, by arch id. A typed reference: an id no arch file declares is a cross-reference error."
             examples:
               - [SVC001]
+          package_refs:
+            type: array
+            title: Packages
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/package_ref"
+            description: "Third-party packages (PKG###) affected as a whole, by the id their `packages:` declaration carries. A typed reference: an id no arch file declares is a cross-reference error."
+            examples:
+              - [PKG001]
           process_refs:
             type: array
             items:

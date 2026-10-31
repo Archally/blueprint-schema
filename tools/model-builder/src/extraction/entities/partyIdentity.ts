@@ -40,7 +40,7 @@ export function partyIdentityKey(entity: Entity): string {
  * walks `documentsByType` in **file order**. So the survivor's `layer` and `displayId` come from
  * whichever part the directory walk reached first, which depends on how the model's files sort:
  *
- *   arch.ts  →  displayId = the party NAME     layer = design.arch
+ *   arch.ts  →  displayId = the PRT###, or the party NAME when it declares none   layer = design.arch
  *   org.ts   →  displayId = the PRT###         layer = governance.org
  *
  * Both are correct descriptions of *a part*; neither is a property of the party, because under the

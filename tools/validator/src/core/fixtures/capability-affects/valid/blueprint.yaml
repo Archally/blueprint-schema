@@ -1,0 +1,9 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Admin API
+description: >-
+  An isolated fixture built from two concerns of the PrestaShop example's admin slice: the risk of
+  API client secret leakage and the inquiry about per-client rate limiting. Their statements and
+  their operation and concept pins are the example's. Every capability below, and every
+  capability_refs assignment in admin/motivation.yaml, is authored for this fixture only: the
+  PrestaShop example states none of them.

@@ -1,0 +1,17 @@
+version: "1.0.0"
+capabilities:
+  - id: CAP001
+    name: Admin API Access
+    level: 1
+    kind: capability
+    children:
+      - id: admin.CAP002
+        name: Issue an API client
+        level: 2
+        kind: feature
+        operations: [admin.CMD021]
+      - id: admin.CAP003
+        name: Rotate an API client secret
+        level: 2
+        kind: feature
+        operations: [admin.CMD021, admin.CMD024]

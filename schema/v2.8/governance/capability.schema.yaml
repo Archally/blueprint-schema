@@ -38,6 +38,13 @@ $defs:
       - id
       - name
       - level
+    if:
+      required: [user_stories]
+    then:
+      required: [kind]
+      properties:
+        kind:
+          const: feature
     properties:
       id:
         $ref: "../metamodel.schema.yaml#/$defs/capability_ref"
@@ -96,6 +103,23 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/rule_ref"
         description: "Rules that govern this capability."
+      user_stories:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/user_story_ref"
+        description: >
+          The user stories this feature delivers, stated by the feature. Allowed only with
+          `kind: feature`. This is where the link is stated: a story does not name its feature back,
+          and a story is listed by at most one feature in the model. Each entry is the exact id the
+          story declares, scope prefix included; `US001` and `orders.US001` are two different
+          stories. A present list is complete, including an empty one: no story is added to it by
+          inference. When the list is omitted, a story may still be associated with this feature
+          by the operations it shares with it; such an association is derived, reported with
+          origin `derived`, and never written back here. A story whose operations point at a
+          different feature than the one that lists it is reported as a mismatch, and the stated
+          list wins. Schema validation checks the list's shape and that each story is declared;
+          the at-most-one-feature rule and the comparison with operations are semantic checks.
       concepts:
         type: array
         items:

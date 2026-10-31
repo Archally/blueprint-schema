@@ -1,0 +1,15 @@
+version: "1.0.0"
+name: Platform packages
+scope: platform
+# A package-only document: no parties, no contexts.
+packages:
+  - id: platform.PKG002
+    name: yaml
+    ecosystem: npm
+    version: "2.8.1"
+    license:
+      expression: ISC
+  - id: platform.PKG004
+    name: lodash
+    license:
+      expression: NOASSERTION

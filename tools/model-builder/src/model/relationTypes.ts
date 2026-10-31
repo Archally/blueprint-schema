@@ -254,8 +254,9 @@ export const RELATION_TYPE = {
   // motivation.schema (v2.5): risk references goal (risk.goal_refs[])
   RiskGoal: 'risk_goal',
   // v2.8.1: where a governance concern sticks on the domain model - risk.affects.*_refs[],
-  // inquiry.affects.*_refs[], finding.affects.*_refs[] (operation, concept, story). One type per
-  // source, as `race_condition_affects`: the target's own type says what was affected.
+  // inquiry.affects.*_refs[], finding.affects.*_refs[] (operation, concept, story; bounded context and
+  // service from v2.8.80; package from v2.8.84). One type per source, as `race_condition_affects`:
+  // the target's own type says what was affected.
   // A migration's three edges. All three are PREFIXED with the source type, for the reason the
   // `ContextDependsOn` / `LeverageDependsOn` comments below give: a bare `depends_on` already names
   // the TOSCA infrastructure verb, and a declarative rule matching the string would match both.
@@ -296,6 +297,7 @@ export const RELATION_TYPE = {
   // named in the capability's `realized_in`, with `data.module`, `data.module_kind` and
   // `data.modules`. Derived in the pass after the domain hop, from finished edges.
   CapabilityOperation: 'capability_operation',
+  FeatureUserStory: 'feature_user_story',
   // Which capabilities a process supports: one edge per (process, capability) where at least one
   // operation the process orders (`ProcessOrdersOperation`) is realized by the capability
   // (`CapabilityOperation`). `data.operation_count` (distinct contributing operations),
@@ -373,9 +375,11 @@ export const RELATION_TYPE = {
   // context that several systems provide services to has several, which the nested form could only
   // state by declaring the context once per system.
   Spans: 'spans',
-  // A build dependency: Service -> Service, one edge per resolved item of `service.imports`. The
-  // source is built on the target - a package it imports, a component it embeds - so a change to
-  // the target reaches every service built on it. The target is normally a `kind: library` service.
+  // A build dependency: Service -> Service or Package, one edge per resolved item of
+  // `service.imports`. The source is built on the target - a package it imports, a component it
+  // embeds - so a change to the target reaches every service built on it. A service target is
+  // normally a `kind: library` service the organization builds; a Package target is a third-party
+  // package declared in a `packages:` list. One list, one edge type: the target's own type says which.
   //
   // PREFIXED with the source type, as `ContextDependsOn` is above: `uses` and `imports` alone are
   // substrings or near-homonyms of existing names (`uses_resource`, `screen_uses_model`,
@@ -387,6 +391,10 @@ export const RELATION_TYPE = {
   // import a target and use it, and those are two edges of two types, never merged. Prefixed for
   // the reason given on `ServiceImports`.
   ServiceUses: 'service_uses',
+  // v2.8.84: Package -> Party, from `package.vendor_ref`: the party that supplies the package.
+  // PREFIXED with the source type, as `ServiceImports` is, so a filter on the string cannot match
+  // another type's vendor or supplier edge.
+  PackageVendor: 'package_vendor',
   // The organizational ownership edge: any unit that declares `owned_by` → the Team, Department or
   // Party named by the one arm it sets. ONE type serves all three arms, because the arm is
   // recoverable from the target entity's type; `data.arm` carries it as well, so the edge is

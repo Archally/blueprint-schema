@@ -5,7 +5,8 @@ rules:
     description: >-
       A service names, in `imports`, a service whose stated `kind` is something other than
       `library`. `imports` names the libraries a service is built on - a package it imports, a
-      component it embeds - so its target is something a build contains. A target that states it is
+      component it embeds - so its target is something a build contains. A third-party package
+      named in `imports` is one, and is never reported. A service target that states it is
       an api, a worker, a cli or another running kind is either a runtime dependency written in the
       wrong list, or a library whose `kind` misstates it. Silent when the target states no `kind`:
       the field is optional, and a missing kind is not a wrong one. A service naming itself is left

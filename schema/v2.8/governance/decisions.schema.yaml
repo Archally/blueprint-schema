@@ -290,6 +290,18 @@ $defs:
               no arch file declares is a cross-reference error.
             examples:
               - [SVC001, shop.SVC002]
+          packages:
+            type: array
+            title: Packages
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/package_ref"
+            description: >
+              Third-party packages (PKG###) this decision changes directly, by the id their
+              `packages:` declaration carries - e.g. a decision that adopts, replaces or upgrades a
+              package, or renews its license. A typed reference: an id no arch file declares is a
+              cross-reference error.
+            examples:
+              - [PKG001, platform.PKG002]
           ui:
             type: object
             description: "UI elements directly affected by this decision."

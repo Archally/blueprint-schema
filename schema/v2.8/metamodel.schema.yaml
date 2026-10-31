@@ -534,6 +534,17 @@ $defs:
     pattern: "^([a-z][a-z0-9-]*\\.)?SVC\\d{3,}$"
     description: "Reference to an architecture service (e.g. SVC001 or shop.SVC001)."
 
+  package_ref:
+    type: string
+    pattern: "^([a-z][a-z0-9-]*\\.)?PKG\\d{3,}$"
+    description: >
+      Reference to a third-party package by its typed id (e.g. PKG001 or platform.PKG001): a
+      library the organization obtains from a supplier or a public registry rather than builds,
+      declared once in an architecture document's `packages:` list. A reference resolves to the
+      declaration whose id is the same string, scope prefix included, and to nothing else; a
+      reference to a package nobody declares is a cross-reference error. A library the
+      organization builds itself is a service of `kind: library` and is named by `service_ref`.
+
   process_ref:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?PRC\\d{3}$"
@@ -611,7 +622,7 @@ $defs:
   service_kind:
     type: string
     enum: [service, worker, api, webapp, cli, library, function]
-    description: "Architectural component type: service=backend, worker=job processor, api=endpoint, webapp=frontend, cli=command-line, library=package, function=serverless."
+    description: "Architectural component type: service=backend, worker=job processor, api=endpoint, webapp=frontend, cli=command-line, library=a library the organization builds itself, function=serverless. A third-party library is not a service: it is declared as a package (PKG###) in an architecture document's `packages:` list."
 
   value_stream_ref:
     type: string

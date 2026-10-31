@@ -169,6 +169,7 @@ Rule prefixes: `SR`=structural, `CR`=classification, `DR`=derivation, `EQ`=equiv
 | Bounded context | `BC\d{3,}` | `BC001` |
 | Service | `SVC\d{3,}` | `SVC001` |
 | Message channel | `MCH\d{3,}` | `MCH001` |
+| Package (third-party) | `PKG\d{3,}` | `PKG001` |
 | Domain | `DMN\d{3,}` | `DMN001` (no context prefix) |
 | Subdomain | `SDM\d{3,}` | `SDM001` (no context prefix) |
 | Probe | `PRB\d{3,}` | `PRB001` |
@@ -478,8 +479,12 @@ Cross-layer reference paths for tooling validation:
 | Question / KPI / Capability / Risk / Inquiry | Owner: an actor or a team (`owner_ref`) | `owner` | Optional (v2.8) |
 | Goal / Risk / Assumption / Inquiry / Finding | Bounded contexts (BC###) | `affects.bounded_context_refs` | Optional (v2.8) |
 | Goal / Risk / Assumption / Inquiry / Finding | Services (SVC###) | `affects.service_refs` | Optional (v2.8) |
+| Goal / Risk / Assumption / Inquiry / Finding | Third-party packages (PKG###) | `affects.package_refs` | Optional (v2.8) |
+| Risk / Inquiry | Capabilities and features (CAP###), each named directly; children, parents and capabilities sharing an operation are not implied | `affects.capability_refs` | Optional (v2.8) |
 | Inquiry | Findings (FN###) | `inquiry.finding_refs` | Optional (v2.8) |
-| Decision | Bounded contexts / Services | `declared_impact.direct.bounded_contexts`, `declared_impact.direct.services` | Optional (v2.8) |
+| Decision | Bounded contexts / Services / Third-party packages | `declared_impact.direct.bounded_contexts`, `declared_impact.direct.services`, `declared_impact.direct.packages` | Optional (v2.8) |
+| Service | Libraries it is built on: a service (SVC###), normally `kind: library`, or a third-party package (PKG###), in one list | `service.imports` | Optional (v2.8) |
+| Package | Supplier party (PRT###) | `package.vendor_ref` | Optional (v2.8) |
 
 Enforcement levels:
 - **Required:** Schema validation rejects if missing

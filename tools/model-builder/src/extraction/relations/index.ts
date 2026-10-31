@@ -5,7 +5,7 @@ import { extractDomainRelations } from './domain.js';
 import { extractPayloadModelRelations } from './payloadModel.js';
 import { extractDecisionRelations } from './decisions.js';
 import { extractTestCaseRelations } from './testCases.js';
-import { extractArchRelations, extractServiceDependencyRelations } from './arch.js';
+import { extractArchRelations, extractPackageVendorRelations, extractServiceDependencyRelations } from './arch.js';
 import { extractArchContractRelations } from './archContracts.js';
 import { extractArchDependencyRelations } from './archDependencies.js';
 import { extractSystemRelations } from './systemRef.js';
@@ -29,6 +29,7 @@ import { extractMotivationRelations } from './motivation.js';
 import { extractInquiryRelations } from './inquiry.js';
 import { extractAffectsRelations } from './affects.js';
 import { extractCapabilityOperationRelations, extractCapabilityRelations } from './capability.js';
+import { compareFeatureUserStories } from './featureUserStories.js';
 import { extractCapabilitySupportRelations } from './capabilitySupport.js';
 import { extractValueStreamRelations } from './valueStream.js';
 import { extractLeverageRelations } from './leverage.js';
@@ -79,6 +80,7 @@ export function buildRelations(
     ...extractTestCaseRelations(entities, placeholders),
     ...extractArchRelations(entities),
     ...extractServiceDependencyRelations(entities),
+    ...extractPackageVendorRelations(entities),
     ...extractArchContractRelations(entities, placeholders),
     ...extractArchDependencyRelations(entities, placeholders),
     ...extractSystemRelations(entities, placeholders),
@@ -134,6 +136,7 @@ export function buildRelations(
   // `operation_in_domain`, after the domain hop; which processes and use cases support a capability
   // joins those edges with `process_orders_operation` and `use_case_operation`, so it runs after them.
   const capabilityOperations = extractCapabilityOperationRelations(entities, bound, placeholders);
+  const featureStories = compareFeatureUserStories(entities, [...bound, ...capabilityOperations]);
   const capabilitySupport = extractCapabilitySupportRelations(entities, [...bound, ...capabilityOperations]);
 
   // A SECOND PASS, over the edges the first one produced rather than over documents. Coverage is a
@@ -146,6 +149,7 @@ export function buildRelations(
     // `question_about`, so it belongs to this pass for the same reason coverage does.
     ...extractContextLanguageRelations(entities, bound),
     ...capabilityOperations,
+    ...featureStories.relations,
     ...capabilitySupport,
   ].filter((r) => {
     if (seen.has(r.id)) return false;
