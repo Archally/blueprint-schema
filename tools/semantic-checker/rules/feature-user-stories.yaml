@@ -1,0 +1,22 @@
+engineVersion: "0.1"
+rules:
+  - id: feature-user-stories-exclusive
+    severity: error
+    description: A declared story is listed by at most one distinct feature across the model.
+    find:
+      entity_type: UserStory
+    check:
+      custom:
+        module: ./feature-user-stories.mjs
+        export: featureStoryExclusive
+    message: 'Story {story} is stated by multiple features: {features}.'
+  - id: feature-user-stories-mismatch
+    severity: warn
+    description: A present feature story list is complete and is compared independently with operation-derived membership; unresolved references are reported separately.
+    find:
+      entity_type: Capability
+    check:
+      custom:
+        module: ./feature-user-stories.mjs
+        export: featureStoryMismatch
+    message: 'Feature {feature} has story membership evidence to review: {differences}.'
