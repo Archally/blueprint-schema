@@ -6,13 +6,95 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 ## Schema-native examples
 
+- `schema/v2.8/design/arch.schema.yaml#/$defs/package/properties/ecosystem/examples/0`: `"npm"`
+
+- `schema/v2.8/design/arch.schema.yaml#/$defs/package/properties/ecosystem/examples/1`: `"nuget"`
+
+- `schema/v2.8/design/arch.schema.yaml#/$defs/package/properties/ecosystem/examples/2`: `"generic"`
+
+- `schema/v2.8/design/arch.schema.yaml#/$defs/package/properties/version/examples/0`: `"23.10.0"`
+
+- `schema/v2.8/design/arch.schema.yaml#/$defs/package_license/properties/expression/examples/0`: `"MIT"`
+
+- `schema/v2.8/design/arch.schema.yaml#/$defs/package_license/properties/expression/examples/1`: `"LicenseRef-Commercial"`
+
+- `schema/v2.8/design/arch.schema.yaml#/$defs/package_license/properties/expression/examples/2`: `"NOASSERTION"`
+
+- `schema/v2.8/design/arch.schema.yaml#/$defs/package_license/properties/expires_on/examples/0`: `"2027-03-31"`
+
 - `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/imports/examples/0`: `["platform.SVC012","platform.SVC014"]`
 
+- `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/imports/examples/1`: `["platform.SVC012","PKG001"]`
+
 - `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/uses/examples/0`: `["payments.SVC003"]`
+
+- `schema/v2.8/design/domain.schema.yaml#/$defs/question/properties/owner/examples/0`: `"ACT001"`
+
+- `schema/v2.8/design/domain.schema.yaml#/$defs/question/properties/owner/examples/1`: `"TM002"`
+
+- `schema/v2.8/design/quality.schema.yaml#/$defs/kpi/properties/owner/examples/0`: `"ACT001"`
+
+- `schema/v2.8/design/quality.schema.yaml#/$defs/kpi/properties/owner/examples/1`: `"TM002"`
+
+- `schema/v2.8/design/quality.schema.yaml#/$defs/finding/properties/affects/properties/bounded_context_refs/examples/0`: `["BC001","shop.BC002"]`
+
+- `schema/v2.8/design/quality.schema.yaml#/$defs/finding/properties/affects/properties/service_refs/examples/0`: `["SVC001"]`
+
+- `schema/v2.8/design/quality.schema.yaml#/$defs/finding/properties/affects/properties/package_refs/examples/0`: `["PKG001"]`
 
 - `schema/v2.8/design/story.schema.yaml#/$defs/process_activity/properties/next/items/properties/condition/examples/0`: `"the order total is above the free-shipping threshold"`
 
 - `schema/v2.8/design/story.schema.yaml#/$defs/process_activity/properties/next/items/properties/condition/examples/1`: `"credit score >= 600"`
+
+- `schema/v2.8/governance/capability.schema.yaml#/$defs/capability/properties/owner/examples/0`: `"ACT001"`
+
+- `schema/v2.8/governance/capability.schema.yaml#/$defs/capability/properties/owner/examples/1`: `"TM002"`
+
+- `schema/v2.8/governance/decisions.schema.yaml#/$defs/impact_declaration/properties/direct/properties/bounded_contexts/examples/0`: `["BC001"]`
+
+- `schema/v2.8/governance/decisions.schema.yaml#/$defs/impact_declaration/properties/direct/properties/services/examples/0`: `["SVC001","shop.SVC002"]`
+
+- `schema/v2.8/governance/decisions.schema.yaml#/$defs/impact_declaration/properties/direct/properties/packages/examples/0`: `["PKG001","platform.PKG002"]`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/goal/properties/affects/properties/bounded_context_refs/examples/0`: `["BC001","shop.BC002"]`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/goal/properties/affects/properties/service_refs/examples/0`: `["SVC001"]`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/goal/properties/affects/properties/package_refs/examples/0`: `["PKG001"]`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/goal_relation/examples/0`: `{"target_goal":"GL001","kind":"contributes_to","contribution":"help","rationale":"Lower checkout waiting removes one ca…`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/owner/examples/0`: `"ACT001"`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/owner/examples/1`: `"TM002"`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/affects/properties/bounded_context_refs/examples/0`: `["BC001","shop.BC002"]`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/affects/properties/service_refs/examples/0`: `["SVC001"]`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/affects/properties/package_refs/examples/0`: `["PKG001"]`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/affects/properties/capability_refs/examples/0`: `["CAP001","billing.CAP002"]`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/assumption/properties/affects/properties/bounded_context_refs/examples/0`: `["BC001","shop.BC002"]`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/assumption/properties/affects/properties/service_refs/examples/0`: `["SVC001"]`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/assumption/properties/affects/properties/package_refs/examples/0`: `["PKG001"]`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/finding_refs/examples/0`: `["FN001","orders.FN002"]`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects/properties/bounded_context_refs/examples/0`: `["BC001","shop.BC002"]`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects/properties/service_refs/examples/0`: `["SVC001"]`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects/properties/package_refs/examples/0`: `["PKG001"]`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects/properties/capability_refs/examples/0`: `["CAP001","billing.CAP002"]`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/owner/examples/0`: `"ACT001"`
+
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/owner/examples/1`: `"TM002"`
 
 - `schema/v2.8/governance/roadmap.schema.yaml#/properties/name/examples/0`: `"Checkout platform roadmap 2026"`
 
@@ -24,89 +106,7 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/governance/roadmap.schema.yaml#/properties/cadence/properties/sprint_length_days/examples/0`: `14`
 
-- `schema/v2.8/governance/roadmap.schema.yaml#/$defs/milestone/properties/tracker_ref/examples/0`: `"ABC-1200"`
-
-- `schema/v2.8/governance/roadmap.schema.yaml#/$defs/milestone/properties/tracker_ref/examples/1`: `"jira:ABC-1200"`
-
-- `schema/v2.8/governance/roadmap.schema.yaml#/$defs/work_item/properties/id/examples/0`: `"WI001"`
-
-- `schema/v2.8/governance/roadmap.schema.yaml#/$defs/work_item/properties/id/examples/1`: `"WI010"`
-
-- `schema/v2.8/governance/roadmap.schema.yaml#/$defs/work_item/properties/progress/examples/0`: `0`
-
-- `schema/v2.8/governance/roadmap.schema.yaml#/$defs/work_item/properties/progress/examples/1`: `80`
-
-- `schema/v2.8/governance/roadmap.schema.yaml#/$defs/work_item/properties/start_sprint/examples/0`: `30`
-
-- `schema/v2.8/governance/roadmap.schema.yaml#/$defs/work_item/properties/start_sprint/examples/1`: `30.5`
-
-- `schema/v2.8/governance/roadmap.schema.yaml#/$defs/work_item/properties/end_sprint/examples/0`: `35`
-
-- `schema/v2.8/governance/roadmap.schema.yaml#/$defs/work_item/properties/end_sprint/examples/1`: `31.5`
-
-- `schema/v2.8/governance/roadmap.schema.yaml#/$defs/work_item/properties/executor/examples/0`: `["Jane Doe"]`
-
-- `schema/v2.8/governance/roadmap.schema.yaml#/$defs/work_item/properties/executor/examples/1`: `["Backend Team"]`
-
-- `schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_act/properties/operation/examples/0`: `"CMD001"`
-
-- `schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_act/properties/operation/examples/1`: `"orders.CMD001"`
-
-- `schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_act/properties/operation/examples/2`: `"orders:placeOrder"`
-
-- `schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_act/properties/input/examples/0`: `{"cartId":"cart-42","paymentMethod":"card","voucherCode":"SPRING20"}`
-
-- `schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_act/properties/description/examples/0`: `"The customer submits the cart for checkout with voucher SPRING20."`
-
-- `schema/v2.8/metamodel.schema.yaml#/$defs/domain_coverage/properties/extent/examples/0`: `"partial"`
-
-- `schema/v2.8/metamodel.schema.yaml#/$defs/domain_coverage/properties/reason/examples/0`: `"Batch reconciliation runs against the ledger directly, outside any declared contract."`
-
-- `schema/v2.8/migrations.schema.yaml#/properties/version/examples/0`: `"1.0.0"`
-
-- `schema/v2.8/migrations.schema.yaml#/$defs/register_entry/properties/name/examples/0`: `"Accounting Domain Bootstrap"`
-
-- `schema/v2.8/migrations.schema.yaml#/$defs/register_change/properties/entity/examples/0`: `"contracts.CN006"`
-
-- `schema/v2.8/migrations.schema.yaml#/$defs/register_change/properties/entity/examples/1`: `"CN006"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_migration_ref/examples/0`: `"MIG001"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_migration_ref/examples/1`: `"MIG042"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_rename/properties/from/examples/0`: `"catalog.CN001"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_rename/properties/to/examples/0`: `"catalog.CN099"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_patch/properties/target/examples/0`: `"catalog.CN001"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_patch/properties/target/examples/1`: `"StockReservation"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_tag/properties/where/examples/0`: `{"slice":"catalog"}`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_tag/properties/set/examples/0`: `{"review":"2026-Q4"}`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_rewrite_ref/properties/from/examples/0`: `"catalog.CN001"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_rewrite_ref/properties/to/examples/0`: `"catalog.CN099"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_rewrite_ref/properties/scope/examples/0`: `"checkout"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/entity_type/examples/0`: `"concept"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/entity_type/examples/1`: `"command"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/entity_type/examples/2`: `"event"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/entity_type/examples/3`: `"service"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/file/examples/0`: `"catalog/product-core.domain.yaml"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/key/examples/0`: `"reserveStock"`
-
-- `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_new/properties/under/examples/0`: `"Catalog"`
-
-_… and 12 more (listed first 50 for readability)._
+_… and 59 more (listed first 50 for readability)._
 
 ## Reference example models
 

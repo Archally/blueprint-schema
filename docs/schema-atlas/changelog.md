@@ -10,10 +10,10 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 | Impact | Count |
 | --- | --- |
-| Breaking (major) | 29 |
-| Additive (minor) | 254 |
+| Breaking (major) | 34 |
+| Additive (minor) | 268 |
 | Clarification (patch) | 0 |
-| **Total changes** | 283 |
+| **Total changes** | 302 |
 
 ## ⚠ Breaking changes
 
@@ -41,7 +41,12 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Requiredness changed | design/arch.schema.yaml#/$defs/dependency/properties/relationship | Property relationship became required (breaking). |
 | Requiredness changed | design/models.schema.yaml#/$defs/model_schema/properties/description | Property description became required (breaking). |
 | Requiredness changed | governance/decisions.schema.yaml#/$defs/decision/properties/summary | Property summary became required (breaking). |
+| Modified | design/domain.schema.yaml#/$defs/question/properties/owner | Property owner type changed ref → actor_ref → ref → owner_ref. |
 | Modified | design/dynamics.schema.yaml#/$defs/race_condition/properties/affects | Property affects type changed array<string> → array<union>. |
+| Modified | design/quality.schema.yaml#/$defs/kpi/properties/owner | Property owner type changed string → ref → owner_ref. |
+| Modified | governance/capability.schema.yaml#/$defs/capability/properties/owner | Property owner type changed string → ref → owner_ref. |
+| Modified | governance/motivation.schema.yaml#/$defs/inquiry/properties/owner | Property owner type changed ref → actor_ref → ref → owner_ref. |
+| Modified | governance/motivation.schema.yaml#/$defs/risk/properties/owner | Property owner type changed ref → actor_ref → ref → owner_ref. |
 | Modified | migration.schema.yaml#/$defs/entity_change/properties/entity_type | Property entity_type enum values removed: story, activity. |
 | Added | design/arch.schema.yaml#/$defs/context/properties/id | Property id added (required — breaking). |
 | Added | design/arch.schema.yaml#/$defs/party/properties/id | Property id added (required — breaking). |
@@ -153,7 +158,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `governance/motivation.schema.yaml#/$defs/inquiry/properties/resolved` — Property `resolved` marked deprecated.
   - _Sources: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/resolved`, `schema/v2.6/governance/motivation.schema.yaml#/$defs/inquiry/properties/resolved`_
 
-## Modified (22)
+## Modified (28)
 
 - [additive] `blueprint.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/blueprint.schema.yaml#/properties/schemaVersion`, `schema/v2.6/blueprint.schema.yaml#/properties/schemaVersion`_
@@ -166,6 +171,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/concepts.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/design/concepts.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/concepts.schema.yaml#/properties/schemaVersion`_
+
+- **[breaking]** `design/domain.schema.yaml#/$defs/question/properties/owner` — Property `owner` type changed `ref → actor_ref` → `ref → owner_ref`.
+  - _Sources: `schema/v2.8/design/domain.schema.yaml#/$defs/question/properties/owner`, `schema/v2.6/design/domain.schema.yaml#/$defs/question/properties/owner`_
 
 - [additive] `design/domain.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/design/domain.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/domain.schema.yaml#/properties/schemaVersion`_
@@ -182,6 +190,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/models.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/design/models.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/models.schema.yaml#/properties/schemaVersion`_
 
+- **[breaking]** `design/quality.schema.yaml#/$defs/kpi/properties/owner` — Property `owner` type changed `string` → `ref → owner_ref`.
+  - _Sources: `schema/v2.8/design/quality.schema.yaml#/$defs/kpi/properties/owner`, `schema/v2.6/design/quality.schema.yaml#/$defs/kpi/properties/owner`_
+
 - [additive] `design/quality.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/design/quality.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/quality.schema.yaml#/properties/schemaVersion`_
 
@@ -191,11 +202,23 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/story.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/design/story.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/story.schema.yaml#/properties/schemaVersion`_
 
+- **[breaking]** `governance/capability.schema.yaml#/$defs/capability/properties/owner` — Property `owner` type changed `string` → `ref → owner_ref`.
+  - _Sources: `schema/v2.8/governance/capability.schema.yaml#/$defs/capability/properties/owner`, `schema/v2.6/governance/capability.schema.yaml#/$defs/capability/properties/owner`_
+
 - [additive] `governance/capability.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/governance/capability.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/capability.schema.yaml#/properties/schemaVersion`_
 
+- [additive] `governance/decisions.schema.yaml#/$defs/decision/properties/status` — Property `status` enum values added: `open`, `rfc`.
+  - _Sources: `schema/v2.8/governance/decisions.schema.yaml#/$defs/decision/properties/status`, `schema/v2.6/governance/decisions.schema.yaml#/$defs/decision/properties/status`_
+
 - [additive] `governance/decisions.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/governance/decisions.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/decisions.schema.yaml#/properties/schemaVersion`_
+
+- **[breaking]** `governance/motivation.schema.yaml#/$defs/inquiry/properties/owner` — Property `owner` type changed `ref → actor_ref` → `ref → owner_ref`.
+  - _Sources: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/owner`, `schema/v2.6/governance/motivation.schema.yaml#/$defs/inquiry/properties/owner`_
+
+- **[breaking]** `governance/motivation.schema.yaml#/$defs/risk/properties/owner` — Property `owner` type changed `ref → actor_ref` → `ref → owner_ref`.
+  - _Sources: `schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/owner`, `schema/v2.6/governance/motivation.schema.yaml#/$defs/risk/properties/owner`_
 
 - [additive] `governance/motivation.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/governance/motivation.schema.yaml#/properties/schemaVersion`, `schema/v2.6/governance/motivation.schema.yaml#/properties/schemaVersion`_
@@ -215,13 +238,13 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/$defs/entity_change/properties/kind` — Property `kind` enum values added: `rename`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/$defs/entity_change/properties/kind`, `schema/v2.6/migration.schema.yaml#/$defs/entity_change/properties/kind`_
 
-- [additive] `migration.schema.yaml#/$defs/relationship_change/properties/predicate` — Property `predicate` enum values added: `translates`, `context_depends_on`, `goal_assumption`.
+- [additive] `migration.schema.yaml#/$defs/relationship_change/properties/predicate` — Property `predicate` enum values added: `translates`, `context_depends_on`, `inquiry_finding`, `goal_assumption`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/$defs/relationship_change/properties/predicate`, `schema/v2.6/migration.schema.yaml#/$defs/relationship_change/properties/predicate`_
 
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (231)
+## Added (244)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -367,6 +390,12 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/message_channel` — New definition `message_channel` added to `design/arch.schema.yaml`.
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/message_channel`_
 
+- [additive] `design/arch.schema.yaml#/$defs/package` — New definition `package` added to `design/arch.schema.yaml`.
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/package`_
+
+- [additive] `design/arch.schema.yaml#/$defs/package_license` — New definition `package_license` added to `design/arch.schema.yaml`.
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/package_license`_
+
 - **[breaking]** `design/arch.schema.yaml#/$defs/party/properties/id` — Property `id` added (required — breaking).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/party/properties/id`_
 
@@ -423,6 +452,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/arch.schema.yaml#/properties/contexts` — Property `contexts` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/properties/contexts`_
+
+- [additive] `design/arch.schema.yaml#/properties/packages` — Property `packages` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/properties/packages`_
 
 - [additive] `design/arch.schema.yaml#/properties/probes` — Property `probes` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/properties/probes`_
@@ -625,6 +657,15 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - **[breaking]** `design/story.schema.yaml#/properties/processes` — Property `processes` added (required — breaking).
   - _Source: `schema/v2.8/design/story.schema.yaml#/properties/processes`_
 
+- [additive] `governance/capability.schema.yaml#/$defs/capability/properties/kind` — Property `kind` added (optional).
+  - _Source: `schema/v2.8/governance/capability.schema.yaml#/$defs/capability/properties/kind`_
+
+- [additive] `governance/capability.schema.yaml#/$defs/capability/properties/realized_in` — Property `realized_in` added (optional).
+  - _Source: `schema/v2.8/governance/capability.schema.yaml#/$defs/capability/properties/realized_in`_
+
+- [additive] `governance/capability.schema.yaml#/$defs/capability/properties/user_stories` — Property `user_stories` added (optional).
+  - _Source: `schema/v2.8/governance/capability.schema.yaml#/$defs/capability/properties/user_stories`_
+
 - **[breaking]** `governance/decisions.schema.yaml#/$defs/business_decision/properties/domain_scope` — Property `domain_scope` added (required — breaking).
   - _Source: `schema/v2.8/governance/decisions.schema.yaml#/$defs/business_decision/properties/domain_scope`_
 
@@ -646,14 +687,23 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `governance/motivation.schema.yaml#/$defs/concern` — New definition `concern` added to `governance/motivation.schema.yaml`.
   - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/concern`_
 
+- [additive] `governance/motivation.schema.yaml#/$defs/goal_relation` — New definition `goal_relation` added to `governance/motivation.schema.yaml`.
+  - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/goal_relation`_
+
 - [additive] `governance/motivation.schema.yaml#/$defs/goal/properties/affects` — Property `affects` added (optional).
   - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/goal/properties/affects`_
 
 - [additive] `governance/motivation.schema.yaml#/$defs/goal/properties/assumption_refs` — Property `assumption_refs` added (optional).
   - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/goal/properties/assumption_refs`_
 
+- [additive] `governance/motivation.schema.yaml#/$defs/goal/properties/goal_relations` — Property `goal_relations` added (optional).
+  - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/goal/properties/goal_relations`_
+
 - [additive] `governance/motivation.schema.yaml#/$defs/inquiry/properties/affects` — Property `affects` added (optional).
   - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects`_
+
+- [additive] `governance/motivation.schema.yaml#/$defs/inquiry/properties/finding_refs` — Property `finding_refs` added (optional).
+  - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/finding_refs`_
 
 - [additive] `governance/motivation.schema.yaml#/$defs/risk/properties/affects` — Property `affects` added (optional).
   - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/affects`_
@@ -766,6 +816,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `metamodel.schema.yaml#/$defs/bounded_context_ref` — New definition `bounded_context_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/bounded_context_ref`_
 
+- [additive] `metamodel.schema.yaml#/$defs/capability_realization_ref` — New definition `capability_realization_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/capability_realization_ref`_
+
 - [additive] `metamodel.schema.yaml#/$defs/complexity_pattern` — New definition `complexity_pattern` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/complexity_pattern`_
 
@@ -840,6 +893,15 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `metamodel.schema.yaml#/$defs/outcome` — New definition `outcome` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/outcome`_
+
+- [additive] `metamodel.schema.yaml#/$defs/owned_by/properties/name` — Property `name` added (optional).
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/owned_by/properties/name`_
+
+- [additive] `metamodel.schema.yaml#/$defs/owner_ref` — New definition `owner_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/owner_ref`_
+
+- [additive] `metamodel.schema.yaml#/$defs/package_ref` — New definition `package_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/package_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/persona_ref` — New definition `persona_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/persona_ref`_

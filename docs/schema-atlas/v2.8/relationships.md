@@ -11,9 +11,11 @@ Metamodel `*_ref` definitions turn a model into a navigable graph — each entit
 | ID prefix | Ref type | Description |
 | --- | --- | --- |
 | `ACT` | `actor_ref` | Reference to an actor (e.g. ACT001 or billing.ACT001). |
+| `ACT` | `owner_ref` | Who drives an item: a person or role (ACT###) or a team (TM###). Distinct from `owned_by`, the unit accountable for the item and the file-level default; an ite… |
 | `ASC` | `association_ref` | Reference to an association (e.g. ASC001 or billing.ASC001). `AS###` is the band's retired spelling: it still validates on this line and stops validating in th… |
 | `ASM` | `assumption_ref` | Reference to a motivation assumption (e.g. ASM001 or billing.ASM001). `A###` is the band's retired spelling: it still validates on this line and stops validati… |
 | `BC` | `bounded_context_ref` | Reference to a bounded context by its arch id (e.g. BC001 or shop.BC001). Used as the arch `context.id` (self-identity), by inter-context `dependency` targets… |
+| `BC` | `capability_realization_ref` | A module that realizes a business capability: a problem-space domain declared in blueprint.yaml `domains[]` (DMN###, model-wide, no prefix) or a bounded contex… |
 | `BD` | `business_decision_ref` | Reference to a Bounded Context Canvas business decision (e.g. BD001 or orders.BD001). Distinct from `decision_ref` (DC###, ADR rationale): a business_decision… |
 | `BND` | `binding_ref` | Reference to a binding by its typed id (e.g. BND001 or prod.BND001). A binding resolves (resource-type x environment) -> a concrete platform / module + params… |
 | `CAP` | `capability_ref` | Reference to a business capability (e.g. CAP001 or billing.CAP001). |
@@ -49,6 +51,7 @@ Metamodel `*_ref` definitions turn a model into a navigable graph — each entit
 | `PA` | `process_activity_ref` | Reference to a process activity (e.g. PA001 or billing.PA001). |
 | `PAR` | `parallelism_ref` | Reference to a dynamics parallelism opportunity (e.g. PAR001 or billing.PAR001). |
 | `PER` | `persona_ref` | Reference to a persona (e.g. PER001 or shop.PER001). A persona is a named archetype of an actor: the same role can be lived very differently by two people, and… |
+| `PKG` | `package_ref` | Reference to a third-party package by its typed id (e.g. PKG001 or platform.PKG001): a library the organization obtains from a supplier or a public registry ra… |
 | `PRB` | `probe_ref` | Reference to a probe - an instrument that reads an artifact the model does not author and reports an observation about it (e.g. PRB001 or integration.PRB001).… |
 | `PRC` | `process_ref` | Reference to a business process (e.g. PRC001 or orders.PRC001). |
 | `PRT` | `party_ref` | Reference to a party, system or organizational (e.g. PRT001 or billing.PRT001). A party is one node however many documents declare it: declarations fold on the… |
@@ -87,7 +90,7 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub �
 
 | Schema file | Inbound refs |
 | --- | --- |
-| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 795 |
+| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 830 |
 | [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | 1 |
 | [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | 1 |
 | [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | 1 |
@@ -120,20 +123,20 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub �
 | `blueprint.schema.yaml` | `governance/value-stream.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `metamodel.schema.yaml` | 19 |
 | `blueprint.schema.yaml` | `migration.schema.yaml` | 1 |
-| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 73 |
+| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 81 |
 | `design/concepts.schema.yaml` | `metamodel.schema.yaml` | 44 |
 | `design/domain.schema.yaml` | `metamodel.schema.yaml` | 56 |
 | `design/dynamics.schema.yaml` | `metamodel.schema.yaml` | 29 |
 | `design/infrastructure.schema.yaml` | `metamodel.schema.yaml` | 28 |
 | `design/interactions.schema.yaml` | `metamodel.schema.yaml` | 33 |
 | `design/models.schema.yaml` | `metamodel.schema.yaml` | 14 |
-| `design/quality.schema.yaml` | `metamodel.schema.yaml` | 85 |
+| `design/quality.schema.yaml` | `metamodel.schema.yaml` | 88 |
 | `design/rules.schema.yaml` | `metamodel.schema.yaml` | 26 |
-| `design/story.schema.yaml` | `metamodel.schema.yaml` | 65 |
-| `governance/capability.schema.yaml` | `metamodel.schema.yaml` | 21 |
-| `governance/decisions.schema.yaml` | `metamodel.schema.yaml` | 47 |
+| `design/story.schema.yaml` | `metamodel.schema.yaml` | 66 |
+| `governance/capability.schema.yaml` | `metamodel.schema.yaml` | 23 |
+| `governance/decisions.schema.yaml` | `metamodel.schema.yaml` | 50 |
 | `governance/leverage.schema.yaml` | `metamodel.schema.yaml` | 29 |
-| `governance/motivation.schema.yaml` | `metamodel.schema.yaml` | 93 |
+| `governance/motivation.schema.yaml` | `metamodel.schema.yaml` | 111 |
 | `governance/organization.schema.yaml` | `metamodel.schema.yaml` | 21 |
 | `governance/roadmap.schema.yaml` | `metamodel.schema.yaml` | 38 |
 | `governance/test-cases.schema.yaml` | `metamodel.schema.yaml` | 40 |

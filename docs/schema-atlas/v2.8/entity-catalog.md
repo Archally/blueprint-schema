@@ -88,7 +88,7 @@ A region of the problem space: a business domain, or a cross-cutting technical c
 | `modeling_space` | `ref → modeling_space` | — |  | What this region is about: the business the product serves, the system's own machinery, or the endeavour that produces the system. Absent means the business th… |
 | `complexity` | `ref → complexity_pattern` | — |  | Dominant problem-type of the domain's model. Use the subdomain entries when the domain is split-natured (e.g. order-lifecycle=state-management, inventory-reser… |
 | `model_traits` | `array<ref → model_traits_item>` | — |  | Behavioural archetype(s) of the domain model (Wirfs-Brock role stereotypes). |
-| `owner` | `ref → owned_by` | — |  | Owning team/department/party (references governance/organization). |
+| `owner` | `ref → owned_by` | — |  | The accountable unit: a team, department or party by reference, a name for a unit the model does not declare yet, or both. |
 | `subdomains` | `array<ref → subdomain>` | — |  | The subdomains this domain divides into. A subdomain has no subdomains of its own. |
 
 _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -107,7 +107,7 @@ A partition of one domain, classified on the same axis as the domain that contai
 | `type` | `ref → subdomain_kind` | — |  | DDD importance of this subdomain, on the same axis as its domain. |
 | `complexity` | `ref → complexity_pattern` | — |  | Dominant problem-type of this subdomain, so a split-natured domain can mark each facet. |
 | `model_traits` | `array<ref → model_traits_item>` | — |  | Behavioural archetype(s) of this subdomain. |
-| `owner` | `ref → owned_by` | — |  | Owning team/department/party, when it differs from the domain's. |
+| `owner` | `ref → owned_by` | — |  | The accountable unit when it differs from the domain's: a team, department or party by reference, a name for a unit the model does not declare yet, or both. |
 
 _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/subdomain`_
 
@@ -124,7 +124,7 @@ A slice folder - `name` is the kebab-case subfolder under the blueprint root. A 
 | `type` | `ref → subdomain_kind` | — |  | SOFT-DEPRECATED (v2.8.6). Slice nature, as a region of the problem space. A slice is a folder, and its nature belongs to the domain it holds: declare `type` on… |
 | `complexity` | `ref → complexity_pattern` | — |  | Dominant problem-type of the slice: crud / presentation / transformation / integration / cdc / concurrency / state-management. The implementation-complexity ax… |
 | `model_traits` | `array<ref → model_traits_item>` | — |  | Behavioural archetype(s) of the slice (Wirfs-Brock role stereotypes). |
-| `owner` | `ref → owned_by` | — |  | Owning team/department/party (references governance/organization). |
+| `owner` | `ref → owned_by` | — |  | The accountable unit: a team, department or party by reference, a name for a unit the model does not declare yet, or both. |
 | `bands` | `array<ref → id_band>` | — |  | Numeric ranges of typed id prefixes this slice reserves. Declared here rather than in a registry keyed by slice name, so ownership is stated by position and a… |
 | `subdomains` | `array<union>` | — |  | SOFT-DEPRECATED (v2.8.6). Subdomains within this slice. They are problem-space partitions and belong in `domains[].subdomains[]`, under the domain they divide;… |
 
@@ -197,10 +197,11 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/id_band`_
 
 #### `owned_by`
 
-Entity ownership. Exactly one of team, department, or party. File-level default; entity-level overrides.
+The unit accountable for an entity: a file-level default that an entity-level `owned_by` replaces whole. It names the owner by `name`, by a reference to one team, department or party, or by both. A name alone is a complete owner statement for a unit the model does not declare yet; it draws no graph edge. Beside a reference, the reference is the owner and the name is the owner as the source states…
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
+| `name` | `string` | — |  | The owner as written in the source, for example "the team for payments". Alone, it is the owner; beside a reference, it is the owner as stated. It contains at… |
 | `team` | `ref → team_ref` | — |  | Owning team reference. |
 | `department` | `ref → department_ref` | — |  | Owning department reference. |
 | `party` | `ref → party_ref` | — |  | Owning organizational party reference. |
@@ -343,12 +344,15 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `party_ref` | `string` |  | Reference to a party, system or organizational (e.g. PRT001 or billing.PRT001). A party is one node however many documents declare it: declarations fold on the… |
 | `department_ref` | `string` |  | Reference to an organizational department (e.g. DPT001 or billing.DPT001). |
 | `team_ref` | `string` |  | Reference to a team (e.g. TM001 or billing.TM001). |
+| `owner_ref` | `union` |  | Who drives an item: a person or role (ACT###) or a team (TM###). Distinct from `owned_by`, the unit accountable for the item and the file-level default; an ite… |
 | `bounded_context_ref` | `union` |  | Reference to a bounded context by its arch id (e.g. BC001 or shop.BC001). Used as the arch `context.id` (self-identity), by inter-context `dependency` targets… |
+| `capability_realization_ref` | `union` |  | A module that realizes a business capability: a problem-space domain declared in blueprint.yaml `domains[]` (DMN###, model-wide, no prefix) or a bounded contex… |
 | `service_ref` | `string` |  | Reference to an architecture service (e.g. SVC001 or shop.SVC001). |
+| `package_ref` | `string` |  | Reference to a third-party package by its typed id (e.g. PKG001 or platform.PKG001): a library the organization obtains from a supplier or a public registry ra… |
 | `process_ref` | `string` |  | Reference to a business process (e.g. PRC001 or orders.PRC001). |
 | `question_ref` | `string` |  | Reference to a domain competency question (e.g. QN001 or billing.QN001). Questions are first-class entities representing knowledge requirements of a bounded co… |
 | `x_model_id` | `string` |  | Model identifier as JSON Schema x-extension (e.g. MDL001 or orders.MDL001). |
-| `service_kind` | `string` | `service`, `worker`, `api`, `webapp`, `cli`, `library` … (7) | Architectural component type: service=backend, worker=job processor, api=endpoint, webapp=frontend, cli=command-line, library=package, function=serverless. |
+| `service_kind` | `string` | `service`, `worker`, `api`, `webapp`, `cli`, `library` … (7) | Architectural component type: service=backend, worker=job processor, api=endpoint, webapp=frontend, cli=command-line, library=a library the organization builds… |
 | `value_stream_ref` | `string` |  | Reference to a value stream (e.g. VS001 or orders.VS001). |
 | `capability_ref` | `string` |  | Reference to a business capability (e.g. CAP001 or billing.CAP001). |
 | `non_goal_ref` | `string` |  | Reference to a motivation non-goal (e.g. NG001 or billing.NG001). |
@@ -381,7 +385,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `semver_impact` | `string` | `major`, `minor`, `patch` | Semantic versioning impact: major=breaking, minor=backward-compatible addition, patch=docs or clarification. |
 | `gateway_kind` | `string` | `and`, `xor`, `or` | How several branches of a process relate to one another: `and` takes every branch, `xor` exactly one, `or` one or more. The same three words describe a fork an… |
 | `sbvr_modality` | `string` | `necessary`, `obligatory`, `prohibited`, `permitted` | SBVR deontic modality expressing rule strength. |
-| `decision_status` | `string` | `proposed`, `accepted`, `landed`, `rejected`, `deprecated` | Decision lifecycle: proposed→accepted→landed; rejected or deprecated at any stage. |
+| `decision_status` | `string` | `open`, `proposed`, `rfc`, `accepted`, `landed`, `rejected` … (7) | Decision lifecycle: open -> proposed -> rfc -> accepted -> landed; rejected or deprecated at any stage. open: A question is open with no proposed direction yet… |
 | `code_refs` | `array<ref → code_ref_entry>` |  | Source code files implementing or reflecting this entity. |
 | `implementation` | `string` | `as-is`, `wip`, `to-be`, `unclear` | Whether the element is implemented. Absent means unclear, never as-is: a model states implementation, it is not assumed. as-is: it exists in the system today;… |
 | `delivery_priority` | `string` | `must-have`, `should-have`, `could-have`, `wont-have` | MoSCoW delivery priority for release planning and PRD generation. must-have: required for target release. should-have: important but not critical. could-have:… |
@@ -476,7 +480,7 @@ A change to a relationship (edge) between two entities.
 | --- | --- | --- | --- | --- |
 | `kind` | `string` | ✓ | `add`, `remove`, `redirect`, `modify` | Edge operation: add=create, remove=delete, redirect=change target, modify=change edge properties. |
 | `subject` | `string` | ✓ |  | Source entity typed ref (e.g., CMD005). The entity this relationship originates from. |
-| `predicate` | `string` | ✓ | `relationship`, `transition_rules`, `interaction`, `association`, `produces`, `reacts_to` … (89) | Relationship type. Maps to graph edge label. |
+| `predicate` | `string` | ✓ | `relationship`, `transition_rules`, `interaction`, `association`, `produces`, `reacts_to` … (90) | Relationship type. Maps to graph edge label. |
 | `object` | `string` | ✓ |  | Target entity typed ref (e.g., EVT006). For redirect: current target. |
 | `new_object` | `string` | — |  | For redirect: the new target entity ref. |
 | `edge_properties` | `object` | — |  | Properties on the edge itself (policy, condition, mode for produces/reacts_to). |
@@ -714,6 +718,7 @@ _Source: `schema/v2.8/render.manifest.schema.yaml` · root type `object`_
 | `version` | `string` | — |  | A MIGRATION selector - which point in the model's history to generate from (`AS-IS`, `TO-BE`, or a migration id). It is NOT a slice selector and NOT a schema v… |
 | `processes` | `array<string>` | — |  | Process ids for a target whose tool renders one process per invocation. The target fans out to one run per id, each with its own output folder. Only meaningful… |
 | `stories` | `array<string>` | — |  | SOFT-DEPRECATED (v2.8.10). The same list, under the name the unit carried before it was called a process. Read identically, so a manifest pointing at a model o… |
+| `themes` | `ref → themes` | — |  |  |
 | `formats` | `array<string>` | — |  | Output formats for this target, overriding the manifest's `defaults.formats`. |
 | `slices` | `array<string>` | — |  | Narrow this target to the named slices: it renders once per named slice, into that slice's folder, and never as a whole-model artifact. Only meaningful on `glo… |
 | `per_slice` | `boolean` | — |  | Render this target once per slice the model declares, and never as a whole-model artifact. The dynamic form of `slices:`, and a different statement: `slices:`… |
@@ -721,10 +726,17 @@ _Source: `schema/v2.8/render.manifest.schema.yaml` · root type `object`_
 | `title_from` | `string` | — |  | `kind: per-file` only. Which top-level key of each matched file supplies that instance's title, so the name is read from the model rather than restated in a vi… |
 | `needs` | `array<string>` | — |  | Target ids that must render before this one, because it CONSUMES what they produce. Declaration order is the cheaper rule and the wrong one: it makes a deliver… |
 | `audience` | `array<string>` | — |  | Who opens this target's artifacts, named in the roles the organization itself uses - `QA lead`, `platform team`, `the client's architect`. Free text rather tha… |
+| `dashboard` | `boolean` | — |  | Whether this target's artifacts open on a dashboard: a first screen that says what the artifact is, the few numbers and conclusions it found and where to look… |
 | `view_overrides` | `object` | — |  | View-config keys that override this target's own `view:` file. The strongest of the three composition layers (`defaults.view.<tool>` < the `view:` file < these… |
 | `options` | `object` | — |  | Tool-specific rendering options, for a tool that has nowhere else to put them. Not a general pass-through. Most renderers already take a `view:` config validat… |
 
 _Source: `schema/v2.8/render.manifest.schema.yaml#/$defs/target`_
+
+#### Value definitions
+
+| Definition | Type | Values | Description |
+| --- | --- | --- | --- |
+| `themes` | `array<string>` | `light`, `dark`, `blueprint` | Ordered artifact modes. A target's list replaces defaults.themes. Omission preserves the renderer's defaults and single-theme settings; paired output and gener… |
 
 <a id="tracked-migrations"></a>
 
@@ -961,8 +973,45 @@ _Source: `schema/v2.8/design/arch.schema.yaml` · root type `object`_
 | `system_ref` | `ref → party_ref` | — |  | File-level default for `service.system_ref`: the system party that every service under a root-declared context in this document is a component of, unless the s… |
 | `probes` | `array<ref → probe>` | — |  | Instruments this architecture is read with. A probe is declared here when what it cannot see has to be recorded somewhere other than the prose of whoever last… |
 | `channels` | `array<ref → message_channel>` | — |  | Message channels: the topics producers publish to and the queues consumers read from, each placed on a message broker. A channel is shared by producers and con… |
+| `packages` | `array<ref → package>` | — |  | Third-party packages: the libraries the organization obtains from a supplier or a public registry rather than builds, each declared once in the model. A packag… |
 
 #### Definitions
+
+#### `package`
+
+A third-party package: a library obtained from a supplier or a public registry, at one version. Two versions in use at the same time are two entries, each with its own id. What the package depends on, its vulnerabilities and where each copy is deployed are not stated here.
+
+**Required:** `id`, `name`, `license`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `id` | `ref → package_ref` | ✓ |  | Stable package id (PKG###), making the package a referenceable node. |
+| `name` | `string` | ✓ |  | Package name, as its ecosystem or supplier publishes it (e.g. yaml, Newtonsoft.Json, org.apache.commons:commons-lang3). |
+| `summary` | `string` | — |  | Brief description of what the package provides. |
+| `description` | `string` | — |  | Human-readable description: what the package is used for here and anything a reader needs before changing it. |
+| `ecosystem` | `string` | — |  | The package ecosystem the package is obtained from, written as its Package URL type in lowercase (npm, nuget, maven, pypi, gem, golang, cargo, composer), or `g… |
+| `vendor_ref` | `ref → party_ref` | — |  | The party that supplies the package (PRT###), normally one of `kind: organization`. A reference to a party nobody declares is a cross-reference error. Absent m… |
+| `version` | `string` | — |  | The version this entry describes, written as its ecosystem writes it (4.2.1, 23.10.0, 2.0.0-rc.1, 2024.1). Compared as text, never parsed as a version number.… |
+| `license` | `ref → package_license` | ✓ |  | Required, non-empty license statement; use expression: NOASSERTION when the license is unknown. |
+| `code_refs` | `ref → code_refs` | — |  | Where the package is pinned or carried in the source: a manifest, a lock file, a vendored directory. |
+| `provenance` | `ref → provenance` | — |  | How sure the model is that this package, at this version, is in use, and on what evidence. |
+| `owned_by` | `ref → owned_by` | — |  | The unit accountable for this package: keeping it current and its license in force. |
+| `properties` | `ref → entity_properties` | — |  |  |
+| `tags` | `ref → tags` | — |  |  |
+
+_Source: `schema/v2.8/design/arch.schema.yaml#/$defs/package`_
+
+#### `package_license`
+
+The license statement for this package entry, with at least one member. An unknown license is stated as `expression: NOASSERTION`. Known members describe the documented entitlement; unknown terms and dates are omitted rather than guessed. A license label does not establish a supplier's terms. Where entitlements differ between the places the package is used, each with its own date, no single date…
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `expression` | `string` | — |  | The license as an SPDX license expression (MIT, Apache-2.0, MIT OR Apache-2.0), or a `LicenseRef-` identifier for terms no SPDX identifier names. Use the SPDX… |
+| `terms` | `string` | — |  | The terms of the entitlement in words: its tier, its seat or host count, what renewing it involves. |
+| `expires_on` | `string` | — |  | The calendar date (YYYY-MM-DD) on which the entitlement ends. Absent means no single end date is established, which includes a license that does not expire. |
+
+_Source: `schema/v2.8/design/arch.schema.yaml#/$defs/package_license`_
 
 #### `message_channel`
 
@@ -1095,7 +1144,7 @@ A deployable service or component within a bounded context.
 | `name` | `string` | ✓ |  | Service name (e.g. order-api, payment-worker). |
 | `kind` | `ref → service_kind` | — |  | Architectural component type. Determines applicable contract patterns. |
 | `system_ref` | `ref → party_ref` | — |  | The system party (PRT###) this service is a component of. A service nested under a party is a component of that party and may omit it; naming a different party… |
-| `imports` | `array<ref → service_ref>` | — |  | The libraries this service is built on: a package it imports or a component it embeds, so that its build contains them. Each item names another service, normal… |
+| `imports` | `array<union>` | — |  | The libraries this service is built on: a package it imports or a component it embeds, so that its build contains them. Each item names, by its exact declared… |
 | `uses` | `array<ref → service_ref>` | — |  | The services this one depends on while running, stated at the level of a container diagram ("orders uses payments"): the statement to make before the contracts… |
 | `summary` | `string` | — |  | Brief description of what this service does. |
 | `description` | `string` | — |  | Full description of this service's purpose, responsibilities, and domain role. |
@@ -1962,7 +2011,7 @@ A competency question this domain was created to answer. Questions are first-cla
 | `bounded_context_ref` | `ref → bounded_context_ref` | — |  | The bounded context whose knowledge boundary this competency question defines (v2.7.6, D17). SINGLE-VALUED and EXPLICIT: a competency question is a knowledge r… |
 | `motivated_by` | `array<ref → goal_ref>` | — |  | Goals that motivated this question. Closes the goal→question traceability chain. E.g., goal "Enable real-time order visibility" motivates question "What is the… |
 | `stakeholders` | `array<ref → actor_ref>` | — |  | Actors who need this question answered. Captures the human demand side - who in the organization needs this knowledge and why. |
-| `owner` | `ref → actor_ref` | — |  | Person responsible for driving resolution. Distinct from stakeholders[] (who care about the answer) - owner is who must actually resolve it. |
+| `owner` | `ref → owner_ref` | — |  | A person or role (ACT###) or a team (TM###) who drives resolution. Distinct from stakeholders[] (who care about the answer) - owner is who must actually resolv… |
 | `blocking` | `boolean` | — |  | True if this question blocks downstream work. |
 | `due_date` | `string` | — |  | Target date for resolution (ISO 8601). |
 | `resolution` | `string` | — |  | Answer or decision once the question is resolved. |
@@ -2369,7 +2418,7 @@ A single Infrastructure-as-Code reference: which system defines the resource, an
 | --- | --- | --- | --- | --- |
 | `system` | `string` | ✓ | `terraform`, `opentofu`, `bicep`, `arm`, `cloudformation`, `pulumi` … (14) | The IaC system. Cloud provisioners (terraform/opentofu/bicep/arm/cloudformation/pulumi/crossplane) and on-prem config-management (ansible/puppet/chef/saltstack… |
 | `locator` | `string` | ✓ |  | Where the resource is defined in that system (e.g. module path, `file:resource` address, Ansible role, Helm chart). |
-| `role` | `string` | — |  | Optional role of this reference (e.g. 'defines', 'configures', 'deploys'). |
+| `role` | `string` | — |  | Optional role of this reference (e.g. 'defines', 'configures', 'deploys'). 'planned' means the locator is where the resource is to be defined and it is not def… |
 
 _Source: `schema/v2.8/design/infrastructure.schema.yaml#/$defs/iac_ref`_
 
@@ -2840,7 +2889,7 @@ A Key Performance Indicator - metric with business target. Links operational mea
 | `goal` | `ref → goal_ref` | — |  | Motivation goal this KPI tracks. Closes the goal→KPI→metric traceability chain. |
 | `domain_scope` | `ref → scope_prefix` | — |  | Optional problem-space scope this KPI verifies, as a kebab-case scope slug (e.g. billing, order-mgmt). Matched by name, not resolved as a typed reference: the… |
 | `thresholds` | `object` | — |  | Alert thresholds - when the metric crosses these levels, action is needed. |
-| `owner` | `ref → actor_ref` | — |  | Actor (ACT###) responsible for this KPI. |
+| `owner` | `ref → owner_ref` | — |  | A person or role (ACT###) or a team (TM###) who drives this KPI towards its target. Distinct from owned_by (the unit accountable for it). |
 | `description` | `string` | — |  | Human-readable description. |
 | `properties` | `ref → entity_properties` | — |  |  |
 | `version` | `ref → entity_version` | — |  | KPI version for lifecycle tracking. |
@@ -2991,7 +3040,7 @@ An AS-IS internal-quality defect discovered in the codebase (maintainability / m
 | `effort` | `string` | — | `s`, `m`, `l`, `xl` | Rough remediation effort (t-shirt size). Optional. |
 | `statement` | `string` | ✓ |  | The observation - what is wrong and where, in plain language. |
 | `recommendation` | `string` | — |  | Suggested remediation direction, in prose. The structured fix lives in the linked migration. |
-| `affects` | `object` | — |  | Blueprint entities this finding touches. Links the defect to the domain model. |
+| `affects` | `object` | — |  | Blueprint entities this finding touches. Links the defect to the domain model and to the bounded contexts, services and third-party packages it sits in. |
 | `risk_refs` | `array<ref → risk_ref>` | — |  | Risks this finding rolls up into (finding → risk - first hop of the remediation chain). |
 | `decision_refs` | `array<ref → decision_ref>` | — |  | Decisions that address this finding (finding → decision; usually reached via a risk). |
 | `migration_ref` | `ref → migration_ref` | — |  | The migration that remediates this finding (the TO-BE change - last hop of the chain). |
@@ -3200,9 +3249,9 @@ A business process: a named narrative of actor and operation collaboration. A pr
 | `properties` | `ref → entity_properties` | — |  |  |
 | `tracker_ref` | `ref → tracker_ref` | — |  |  |
 | `initiated_by` | `array<ref → actor_ref>` | — |  | Optional list of actor refs that can initiate this process (human, system, or time). Used for Event Storming lane-start actor stickies. |
-| `activities` | `array<ref → process_activity>` | — |  | Process activities composing this process. Each activity is an asynchronous phase containing synchronous steps. |
-| `trigger` | `object` | — |  | Process start event. |
-| `end_states` | `array<object>` | — |  | Process terminal states with their types. |
+| `activities` | `array<ref → process_activity>` | — |  | Process activities composing this process, listed in execution order. Each activity is an asynchronous phase containing synchronous steps. The main-path activi… |
+| `trigger` | `object` | — |  | Process start event. The process starts at the activity whose `entry_operation` or `steps` hold `operation`, the first listed one where several do, else at the… |
+| `end_states` | `array<object>` | — |  | Process terminal states with their types. Where any end state of the process states `from`, the stated attachments are the whole end routing of the process: ea… |
 | `lanes` | `array<object>` | — |  | Swim lane assignments mapping actors to their operations within this process. |
 | `owned_by` | `ref → owned_by` | — |  | Process-level ownership override. |
 | `tags` | `ref → tags` | — |  |  |
@@ -3229,9 +3278,9 @@ An activity within a process. Entry point into the domain causal chain (produces
 | `next_activities` | `array<ref → process_activity_ref>` | — |  | SOFT-DEPRECATED (v2.8.23). Explicit links to subsequent activities. Use `next`, which names the same successors and can also state the condition under which ea… |
 | `gateway` | `ref → gateway_kind` | — |  | How this activity's outgoing branches relate: `and` takes every branch, `xor` exactly one, `or` one or more. Declared once on the activity that forks, because… |
 | `join` | `object` | — |  | How the branches arriving at this activity converge. Without it a convergence is only inferred from the number of incoming arrows, which cannot tell waiting fo… |
-| `next` | `array<object>` | — |  | Where this activity goes next, and why. Each entry names the following activity and may state the condition under which that branch is taken. Use it in prefere… |
+| `next` | `array<object>` | — |  | Where this activity goes next, and why. Each entry names the following activity and may state the condition under which that branch is taken. A link between tw… |
 | `calls_subprocess` | `ref → process_ref` | — |  | Another process this activity runs as a subprocess. The called process keeps its own identity and its own activities; this activity is the point in the calling… |
-| `path_type` | `string` | — | `happy`, `error`, `compensation` | Process path classification: happy=expected flow, error=exception handling, compensation=rollback/undo. |
+| `path_type` | `string` | — | `happy`, `error`, `compensation` | Process path classification: happy=expected flow, error=exception handling, compensation=rollback/undo. An activity that states none is on the main path, as `h… |
 | `tags` | `ref → tags` | — |  |  |
 
 _Source: `schema/v2.8/design/story.schema.yaml#/$defs/process_activity`_
@@ -3357,17 +3406,20 @@ A business capability - something the business can do or needs to do. Stable and
 | --- | --- | --- | --- | --- |
 | `id` | `ref → capability_ref` | ✓ |  | Unique capability identifier (CAP + NNN). |
 | `name` | `string` | ✓ |  | Capability name in business language (e.g. 'Order Management', 'Payment Processing'). |
+| `kind` | `string` | — | `capability`, `feature` | Classification of this capability. Omission means capability at every depth; no value is inserted. A feature is a narrower capability with CAP identity, nested… |
 | `level` | `integer` | ✓ |  | Hierarchy level: 1=top-level business capability, 2=decomposition of level 1, 3=further decomposition. |
 | `description` | `string` | — |  | What this capability means in business terms. Describe the 'what' without implementation details. |
 | `children` | `array<ref → capability>` | — |  | Sub-capabilities that decompose this capability. Each child is a full capability with its own ID and optional further children. |
-| `operations` | `array<ref → operation_ref>` | — |  | Operations that implement this capability. Links business 'what' to domain 'how'. |
+| `operations` | `array<ref → operation_ref>` | — |  | Operations that realize this capability, stated one by one. A listing is the stated attribution and takes precedence over any module default: an operation list… |
+| `realized_in` | `array<ref → capability_realization_ref>` | — |  | Domains (DMN###) and bounded contexts (BC###) whose operations realize this capability. A domain's operations are those whose document names that domain in its… |
 | `rules` | `array<ref → rule_ref>` | — |  | Rules that govern this capability. |
+| `user_stories` | `array<ref → user_story_ref>` | — |  | The user stories this feature delivers, stated by the feature. Allowed only with `kind: feature`. This is where the link is stated: a story does not name its f… |
 | `concepts` | `array<ref → concept_ref>` | — |  | Domain concepts involved in this capability. |
 | `goal_refs` | `array<ref → goal_ref>` | — |  | Strategic goals this capability supports. |
 | `maturity` | `string` | — | `emerging`, `developing`, `established`, `optimized` | Current maturity: emerging=not yet implemented, developing=partially built, established=fully operational, optimized=continuously improved. |
 | `strategic_importance` | `ref → importance_scale` | — |  | Business strategy importance: critical=core differentiator, high=essential, medium=supporting, low=commodity. |
 | `delivery_priority` | `ref → delivery_priority` | — |  | MoSCoW delivery priority. Orthogonal to strategic_importance: a high-importance capability may be wont-have for current release. |
-| `owner` | `ref → actor_ref` | — |  | Actor (ACT###) responsible for this capability. |
+| `owner` | `ref → owner_ref` | — |  | A person or role (ACT###) or a team (TM###) who drives this capability. Distinct from owned_by (the unit accountable for it). |
 | `version` | `ref → entity_version` | — |  | Capability version for lifecycle tracking. |
 | `owned_by` | `ref → owned_by` | — |  | Capability-level ownership override. |
 | `value_stream_refs` | `array<ref → value_stream_ref>` | — |  | Value streams this capability participates in (convenience back-reference; authoritative direction is value_stream → stages[].capabilities[]). |
@@ -3418,7 +3470,7 @@ An Architecture Decision Record (ADR). Minimum: id, title, summary, date, status
 | `title` | `string` | ✓ |  | Short descriptive title understandable without reading the full rationale. |
 | `summary` | `string` | ✓ |  | One-line summary for listings and quick scanning (≤200 chars). Self-contained. |
 | `date` | `string` | ✓ |  | Date proposed or accepted. Format: YYYY-MM or YYYY-MM-DD. |
-| `status` | `ref → decision_status` | ✓ |  | Lifecycle status: proposed→accepted→landed; rejected or deprecated at any stage. |
+| `status` | `ref → decision_status` | ✓ |  | Lifecycle status: open -> proposed -> rfc -> accepted -> landed; rejected or deprecated at any stage. |
 | `rationale` | `ref → rationale` | ✓ |  | The reasoning behind this decision. Answers 'why' for future readers. |
 | `version` | `ref → entity_version` | — |  | Decision version for individual lifecycle tracking. |
 | `decision_scope` | `string` | — |  | The named scope this decision applies to: a slice (e.g. billing), a cross-cutting area that spans slices (e.g. integrations), or the whole system, named by the… |
@@ -3716,9 +3768,10 @@ A strategic objective the system aims to achieve. Measurable goals link to KPIs;
 | `priority` | `ref → priority_scale` | ✓ |  | Goal priority: critical=must have at launch, high=must have, medium=should have, low=nice to have. |
 | `measure` | `string` | — |  | How achievement is measured (e.g. 'p95 latency < 200ms'). Link to kpi for formal tracking. |
 | `kpi` | `ref → kpi_ref` | — |  | KPI in quality.schema.yaml that formally tracks this goal. Closes the goal→KPI→metric traceability chain. |
+| `goal_relations` | `array<ref → goal_relation>` | — |  | Claims about achievement of this goal and another goal. Absence makes no independence claim. |
 | `assumption_refs` | `array<ref → assumption_ref>` | — |  | Assumptions this goal rests on: if one of them proves wrong, the goal is at risk. The goal names its assumptions and an assumption names none of the goals that… |
 | `examples` | `array<object>` | — |  | Concrete examples illustrating this goal. |
-| `affects` | `object` | — |  | Blueprint entities this goal touches: where it sticks on the domain model, so a story board or a wall can pin the opportunity beside the operation, concept, co… |
+| `affects` | `object` | — |  | Blueprint entities this goal touches: where it sticks on the domain model, so a story board or a wall can pin the opportunity beside the operation, concept, bo… |
 | `version` | `ref → entity_version` | — |  | Goal version for lifecycle tracking. |
 | `owned_by` | `ref → owned_by` | — |  | Goal-level ownership override. |
 | `discovery_stage` | `ref → discovery_stage` | — |  | Epistemic maturity of this goal. |
@@ -3728,6 +3781,23 @@ A strategic objective the system aims to achieve. Measurable goals link to KPIs;
 | `tags` | `ref → tags` | — |  |  |
 
 _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/goal`_
+
+#### `goal_relation` — Goal relation
+
+A source-owned claim, authored at goals[i].goal_relations[j]. Contribution is partial; requires states necessity without sufficiency or temporal order; conflict is symmetric. No transitive claims follow.
+
+**Required:** `target_goal`, `kind`, `rationale`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `target_goal` | `ref → goal_ref` | ✓ |  | Exactly one declared Goal with this exact id, including any scope prefix. Self-targets are errors. |
+| `kind` | `string` | ✓ | `contributes_to`, `requires`, `conflicts_with` | Source contributes to target, needs target achieved, or conflicts with target. Requires cycles warn; contribution loops are legal and silent. |
+| `contribution` | `string` | — | `help`, `hurt` | Partial positive or negative effect on the target. Required only for contributes_to. Effect is independent of certainty. |
+| `rationale` | `string` | ✓ |  | Why the claim holds and the conditions that bound it. |
+| `certainty` | `ref → certainty` | — |  | Confidence in this assertion, independent of goal certainty. Omission is unstated, never confirmed. |
+| `evidence` | `ref → evidence` | — |  | Sources supporting this assertion under the common evidence policy. Goal evidence does not confirm its edges. |
+
+_Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/goal_relation`_
 
 #### `non_goal`
 
@@ -3765,11 +3835,11 @@ An identified threat to the system's goals with probability, severity, and mitig
 | `impact` | `ref → severity_scale` | ✓ |  | Severity if materialized: critical=system failure, high=major degradation, medium=noticeable impact, low=minor inconvenience. |
 | `mitigation` | `string` | ✓ |  | Strategy to prevent or reduce this risk. Should be actionable and specific. |
 | `contingency` | `string` | — |  | Fallback plan if the primary mitigation strategy fails. |
-| `owner` | `ref → actor_ref` | — |  | Individual responsible for risk response. Distinct from owned_by (org unit accountability). |
+| `owner` | `ref → owner_ref` | — |  | A person or role (ACT###) or a team (TM###) who drives the risk response. Distinct from owned_by (org unit accountability). |
 | `status` | `string` | — | `identified`, `open`, `mitigated`, `accepted`, `closed` | Risk lifecycle: identified=logged, open=being mitigated, mitigated=applied, accepted=tolerated, closed=resolved. |
 | `review_date` | `string` | — |  | When this risk should be reassessed (ISO 8601). |
 | `goal_refs` | `array<ref → goal_ref>` | — |  | Goals threatened by this risk. |
-| `affects` | `object` | — |  | Blueprint entities this risk touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, context or stor… |
+| `affects` | `object` | — |  | Blueprint entities this risk touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, bounded context… |
 | `version` | `ref → entity_version` | — |  | Risk version for lifecycle tracking. |
 | `owned_by` | `ref → owned_by` | — |  | Risk-level ownership override. |
 | `discovery_stage` | `ref → discovery_stage` | — |  | Epistemic maturity of this risk. |
@@ -3794,7 +3864,7 @@ Something believed to be true but not yet verified. Carries risk if wrong; conse
 | `consequence` | `string` | ✓ |  | What happens if this assumption is wrong - the risk carried by the assumption. |
 | `domain_scope` | `ref → scope_prefix` | — |  | Optional problem-space scope this assumption applies to, as a kebab-case scope slug (e.g. billing, order-mgmt). Matched by name, not resolved as a typed refere… |
 | `risk_refs` | `array<ref → risk_ref>` | — |  | Risks associated with this assumption being wrong. |
-| `affects` | `object` | — |  | Blueprint entities this assumption bears on: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept or proces… |
+| `affects` | `object` | — |  | Blueprint entities this assumption bears on: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, process,… |
 | `owned_by` | `ref → owned_by` | — |  | Assumption-level ownership override: the unit accountable for confirming or retiring this assumption. |
 | `version` | `ref → entity_version` | — |  | Assumption version for lifecycle tracking. |
 | `discovery_stage` | `ref → discovery_stage` | — |  | Epistemic maturity of this assumption. |
@@ -3845,9 +3915,10 @@ Governance inquiry - an unresolved strategic or stakeholder concern that needs i
 | `goal_refs` | `array<ref → goal_ref>` | — |  | Goals affected by this inquiry. |
 | `risk_refs` | `array<ref → risk_ref>` | — |  | Risks related to this inquiry. |
 | `question_refs` | `array<ref → question_ref>` | — |  | Domain competency questions (QN###) that prompted this governance inquiry. |
+| `finding_refs` | `array<ref → finding_ref>` | — |  | Quality findings (FN###) this inquiry is about or was prompted by. The inquiry owns the link and a finding carries no reference back, so an inquiry that closes… |
 | `stakeholders` | `array<ref → actor_ref>` | — |  | Actors who care about the resolution. |
-| `affects` | `object` | — |  | Blueprint entities this inquiry touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, context or s… |
-| `owner` | `ref → actor_ref` | — |  | Person responsible for driving resolution. |
+| `affects` | `object` | — |  | Blueprint entities this inquiry touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, bounded cont… |
+| `owner` | `ref → owner_ref` | — |  | A person or role (ACT###) or a team (TM###) who drives this inquiry to its resolution. Distinct from owned_by (the unit accountable for it). |
 | `blocking` | `boolean` | — |  | True if this inquiry blocks downstream work. |
 | `due_date` | `string` | — |  | Target date for resolution (ISO 8601). |
 | `resolution` | `string` | — |  | Answer or decision once the inquiry is resolved. |
@@ -4084,7 +4155,7 @@ A roadmap work-breakdown node: an epic, phase, or foundation lane, or a nested s
 | `end_date` | `string` | — |  | Explicit end date (bar right edge). Overrides end_sprint when both are present. |
 | `buffer_end_sprint` | `number` | — |  | Last buffer sprint (committed end → hatched buffer tail). Fractional allowed. |
 | `buffer_end` | `string` | — |  | Explicit buffer right edge. Overrides buffer_end_sprint. |
-| `owned_by` | `ref → owned_by` | — |  | Owning team/department/party (typed org reference). |
+| `owned_by` | `ref → owned_by` | — |  | The accountable unit: a team, department or party by reference, a name for a unit the model does not declare yet, or both. |
 | `executor` | `array<string>` | — |  | Human owner(s) responsible - free-text names/teams, distinct from the typed `owned_by`. |
 | `tracker_ref` | `ref → tracker_ref` | — |  |  |
 | `note` | `string` | — |  | Free-text planning note (e.g. a scheduling caveat). |
