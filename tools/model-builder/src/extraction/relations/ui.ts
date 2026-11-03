@@ -10,7 +10,7 @@ import { resolveModelRefOrPlaceholder } from './modelRef.js';
  * - Screen → Goal (motivated_by[])
  * - Screen → Decision (decisions[])
  * - Screen → Test (validated_by[])
- * - Screen → Story (stories[])
+ * - Screen → Process (processes[])
  * - Action → Screen (screen ref)
  * - Action → Operation (triggers_operations[])
  * - Navigation → Screen (from, to)
@@ -90,10 +90,10 @@ export function extractUIRelations(
         }
       }
 
-      // Screen → Story (stories[])
-      const stories = data.stories as string[] | undefined;
-      if (Array.isArray(stories)) {
-        for (const ref of stories) {
+      // Screen → Process (processes[])
+      const processes = data.processes as string[] | undefined;
+      if (Array.isArray(processes)) {
+        for (const ref of processes) {
           if (typeof ref !== 'string' || !ref) continue;
           const targetId = resolveOrPlaceholder(ref, domain, entities, placeholders);
           relations.push({

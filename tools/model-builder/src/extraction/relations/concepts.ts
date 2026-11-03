@@ -83,11 +83,19 @@ export function extractConceptRelations(
         const sourceConceptId = resolveOrPlaceholder(subjectRef, domain, entities, placeholders);
         const targetConceptId = resolveOrPlaceholder(objectRef, domain, entities, placeholders);
         relations.push({
-          id: `${sourceConceptId}--${RELATION_TYPE.Association}--${targetConceptId}`,
+          // Concept extraction copies the written data.id verbatim to displayId. Entity.id
+          // includes file placement, so it cannot identify a declaration across file moves.
+          id: entity.displayId,
           source_entity_id: sourceConceptId,
           target_entity_id: targetConceptId,
           type: RELATION_TYPE.Association,
           predicate: data.predicate as string | undefined,
+          data: data.cardinality != null ? { cardinality: data.cardinality } : undefined,
+          origin_ref: {
+            ...(entity.fileOrigin !== undefined ? { file: entity.fileOrigin } : {}),
+            declaration_id: entity.displayId,
+            path: `associations[id=${encodeURIComponent(entity.displayId)}]`,
+          },
         });
       }
     }

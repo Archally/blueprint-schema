@@ -70,6 +70,66 @@ function buildOperationsDetailFromActivities(activities: StoryActivityInput[]): 
   return result;
 }
 
+/** What a process's activities (or, without them, its operations) derive: its steps and its order. */
+export interface DerivedProcess {
+  operationsDetail: OperationDetail[];
+  /** Present when the process has activities; absent for a process stated as `operations`. */
+  order?: ProcessOrder;
+}
+
+/** The fields of a process the derivation reads, as the extractor normalizes them. */
+export interface ProcessSource {
+  activities?: unknown;
+  operations?: unknown;
+  trigger?: unknown;
+  end_states?: unknown;
+}
+
+/**
+ * Derive a process's steps (`operationsDetail`) and order from its fields. The extractor builds a
+ * process with it, and a migration replay re-derives a process it changed with it, so both read a
+ * process the same way.
+ *
+ * Activities win over operations when the process states a non-empty list of them; the steps are
+ * then read from each activity's `steps`, or its `entry_operation` where it states none, and the
+ * order is read by `deriveProcessOrder` on the model's schema line.
+ */
+export function deriveProcess(source: ProcessSource, line: ServedSchemaLine): DerivedProcess {
+  const activities = source.activities;
+  if (Array.isArray(activities) && activities.length > 0) {
+    return {
+      operationsDetail: buildOperationsDetailFromActivities(activities as StoryActivityInput[]),
+      order: deriveProcessOrder(activities, source.trigger, source.end_states, line),
+    };
+  }
+  const operations = Array.isArray(source.operations) ? (source.operations as StoryOperationInput[]) : [];
+  return {
+    operationsDetail: operations.map((op, idx) => {
+      const name = op.name ?? op.ref ?? `unnamed-${idx}`;
+      return {
+        name: String(name),
+        operationRef: op.operationRef,
+        component: op.component,
+        resolved: false,
+        position: idx,
+      };
+    }),
+  };
+}
+
+/**
+ * A process's activities as written: each without the `_next` the order derivation adds. Reading
+ * them back through `deriveProcess` yields the same order again.
+ */
+export function activitiesAsWritten(activities: unknown): unknown {
+  if (!Array.isArray(activities)) return activities;
+  return activities.map((activity) => {
+    if (!isRecord(activity) || !('_next' in activity)) return activity;
+    const { _next: _derived, ...written } = activity;
+    return written;
+  });
+}
+
 interface StoryInput {
   id?: string;
   title: string;
@@ -120,30 +180,15 @@ export function extractStory(doc: ParsedBlueprintDocument, line: ServedSchemaLin
     const displayId = s.id ?? s.storyId ?? s.title ?? `story-${i + 1}`;
     const id = makeInternalId(docScope, doc.filePath, displayId);
 
-    let operationsDetail: OperationDetail[];
-    if (s.activities != null && Array.isArray(s.activities) && s.activities.length > 0) {
-      operationsDetail = buildOperationsDetailFromActivities(s.activities);
-    } else {
-      const ops = s.operations ?? [];
-      operationsDetail = ops.map((op, idx) => {
-        const name = op.name ?? op.ref ?? `unnamed-${idx}`;
-        return {
-          name: String(name),
-          operationRef: op.operationRef,
-          component: op.component,
-          resolved: false,
-          position: idx,
-        };
-      });
-    }
-
     // From v2.8.10 these are direct properties; before it they were nested under `process`,
     // which after the rename would have read `process.process`. Normalized here so a consumer
     // reads one shape whichever line the model is on.
     const trigger = s.trigger ?? s.process?.trigger;
     const endStates = s.end_states ?? s.process?.end_states;
-    const order =
-      Array.isArray(s.activities) && s.activities.length > 0 ? deriveProcessOrder(s.activities, trigger, endStates, line) : undefined;
+    const { operationsDetail, order } = deriveProcess(
+      { activities: s.activities, operations: s.operations, trigger, end_states: endStates },
+      line,
+    );
 
     entities.push({
       id,

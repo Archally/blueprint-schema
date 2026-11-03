@@ -38,6 +38,15 @@ export interface Relation {
   type: string;
   predicate?: string;
   data?: Record<string, unknown>;
+  /** Declaration location for authored edges. Legacy JSON may omit this block. */
+  origin_ref?: {
+    /** Supplied project-relative source path; absent for in-memory declarations without a file. */
+    file?: string;
+    /** Exact written declaration ID, without an inferred scope or file prefix. */
+    declaration_id: string;
+    /** ID-keyed selector, with its ID encoded using encodeURIComponent. Not a JSON Pointer. */
+    path: string;
+  };
 }
 
 /**

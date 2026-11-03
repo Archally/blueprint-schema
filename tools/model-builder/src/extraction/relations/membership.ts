@@ -32,12 +32,6 @@ function contextNameOf(entity: Entity): string | null {
   return typeof name === 'string' && name.length > 0 ? name : null;
 }
 
-/** Scope marker injected on domain/arch entities (`scope:` = directory). */
-function scopeOf(entity: Entity): string | null {
-  const scope = getData(entity)._scope;
-  return typeof scope === 'string' && scope.length > 0 ? scope : null;
-}
-
 /** A context/service/party authored typed id (`data.id`), full scope-prefixed form. */
 function typedIdOf(entity: Entity): string | null {
   const id = getData(entity).id;
@@ -45,9 +39,9 @@ function typedIdOf(entity: Entity): string | null {
 }
 
 /**
- * The ref forms an operation can be matched by: the canonical `domainName:operationName` pair,
- * the typed id (`CMD001`) and its scope-prefixed form (`scope.CMD001`). Mirrors resolver
- * `operationRefsOf`.
+ * The ref forms an operation can be matched by: the canonical `domainName:operationName` pair
+ * and the declared id (`CMD001`). Ids are not qualified by scope here; this matches the backend's
+ * `buildContractIndexes` exact-id lookup.
  *
  * A contract ref names an operation by one of these, exactly and in exact case. There is no
  * second, wider tier: a ref that does not match is unbound, and the report says so.
@@ -57,11 +51,7 @@ function operationRefForms(entity: Entity): string[] {
   const domainName = contextNameOf(entity);
   const opName = entity.term ?? entity.displayId;
   if (opName && domainName) forms.push(`${domainName}:${opName}`);
-  if (entity.displayId) {
-    forms.push(entity.displayId);
-    const scope = scopeOf(entity);
-    if (scope) forms.push(`${scope}.${entity.displayId}`);
-  }
+  if (entity.displayId) forms.push(entity.displayId);
   return forms;
 }
 

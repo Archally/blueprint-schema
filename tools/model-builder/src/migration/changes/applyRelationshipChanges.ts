@@ -2,6 +2,7 @@
  * Apply relationship-level migration changes: add, remove, redirect, modify.
  */
 import type { BlueprintModel } from '../../model/types.js';
+import { RELATION_TYPE } from '../../model/relationTypes.js';
 import { resolveRef } from '../../extraction/relations/resolver.js';
 import { MigrationError } from '../migrationError.js';
 import { resolveTargetId } from '../migrationApplyUtils.js';
@@ -90,7 +91,9 @@ export function applyRelationshipChanges(
         const edgeProps = change.edge_properties as Record<string, unknown> | undefined;
         for (const r of matching) {
           r.target_entity_id = newTargetId;
-          r.id = `${sourceId}--${predicate}--${newTargetId}`;
+          if (r.type !== RELATION_TYPE.Association || !r.origin_ref) {
+            r.id = `${sourceId}--${predicate}--${newTargetId}`;
+          }
           if (edgeProps) r.data = { ...(r.data ?? {}), ...edgeProps };
         }
         break;

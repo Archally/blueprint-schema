@@ -25,6 +25,15 @@
  * So a migration that changes nothing the derivation reads changes no relation, and a relationship a
  * migration states by hand is never overwritten by the derivation of an unrelated field.
  *
+ * A process's steps (`operationsDetail`) and order (`_next`, `_start`, `_ends`) are derived from its
+ * activities, and the relation pass draws its `process_orders_operation` edges from those steps. A
+ * process whose activities, operations, trigger or end states the migration changed, and a process
+ * the migration added, is derived again with the extractor's own function, `deriveProcess`, before
+ * the relation pass runs, so its steps and edges are those of a process written in that shape. A
+ * process the migration did not change is left as built. The order is read on the model's schema
+ * line: the `schemaVersion` the model's metadata records, else the line its built processes were
+ * derived on (a process with activities carries `_ends` on the v2.8 line only), else the newest line.
+ *
  * Two kinds of entity are derived too, and follow the same rule. The Contract entities the build
  * extracts from a service's `contracts:` map are re-extracted for a service whose map the migration
  * changed, so a contract a migration adds or extends is a node with edges. The placeholder and code
@@ -41,6 +50,8 @@ import type { BlueprintModel, Entity, Relation } from '../model/types.js';
 import { ENTITY_TYPE } from '../model/entityTypes.js';
 import { buildRelations } from '../extraction/relations/index.js';
 import { annotateEventReach } from '../extraction/entities/eventReach.js';
+import { activitiesAsWritten, deriveProcess } from '../extraction/entities/story.js';
+import { resolveSchemaLine, type ServedSchemaLine } from '../extraction/entities/ownershipDefaults.js';
 import { WRITTEN_IN, writtenFileOf } from './changes/placeAsWritten.js';
 
 /** Entities `buildRelations` creates rather than reads. */
@@ -57,6 +68,10 @@ export interface DerivedState {
   entities: Map<string, Entity>;
   /** Per service id: its contracts and placement as JSON, to see which services a migration changed. */
   services: Map<string, { key: string; state: string }>;
+  /** Per process id: the fields its derivation reads, as JSON, to see which processes a migration changed. */
+  processes: Map<string, string>;
+  /** The schema line a process's order is read on. */
+  line: ServedSchemaLine;
 }
 
 function dataOf(entity: Entity): Record<string, unknown> {
@@ -105,12 +120,68 @@ function servicesOf(model: BlueprintModel): Map<string, { key: string; state: st
   return services;
 }
 
+/** The fields a process's derivation reads, as written. */
+function processSourceOf(process: Entity) {
+  const data = dataOf(process);
+  return {
+    activities: activitiesAsWritten(data.activities),
+    operations: data.operations,
+    trigger: data.trigger,
+    end_states: data.end_states,
+  };
+}
+
+function processesOf(model: BlueprintModel): Map<string, string> {
+  const processes = new Map<string, string>();
+  for (const entity of model.entities) {
+    if (entity.type === ENTITY_TYPE.Process) processes.set(entity.id, JSON.stringify(processSourceOf(entity)));
+  }
+  return processes;
+}
+
+/** The schema line the model's processes were derived on (see the module comment). */
+function processLineOf(model: BlueprintModel): ServedSchemaLine {
+  if (typeof model.metadata?.schemaVersion === 'string') return resolveSchemaLine(model.metadata.schemaVersion);
+  for (const entity of model.entities) {
+    if (entity.type !== ENTITY_TYPE.Process) continue;
+    const data = dataOf(entity);
+    if (!Array.isArray(data.activities) || data.activities.length === 0) continue;
+    return '_ends' in data ? 'v2.8' : 'v2.7';
+  }
+  return resolveSchemaLine(undefined);
+}
+
+/**
+ * Derive again every process whose derivation inputs changed since `before`, or that `before` did
+ * not hold, as the story extractor derives it.
+ */
+function syncProcesses(model: BlueprintModel, before: DerivedState): void {
+  for (const entity of model.entities) {
+    if (entity.type !== ENTITY_TYPE.Process) continue;
+    const source = processSourceOf(entity);
+    if (before.processes.get(entity.id) === JSON.stringify(source)) continue;
+    const data = dataOf(entity);
+    const { operationsDetail, order } = deriveProcess(source, before.line);
+    data.operationsDetail = operationsDetail;
+    delete data._start;
+    delete data._ends;
+    if (order) {
+      data.activities = order.activities;
+      if (order.start) data._start = order.start;
+      if (order.ends) data._ends = order.ends;
+    } else if (source.activities !== undefined) {
+      data.activities = source.activities;
+    }
+    entity.data = data;
+  }
+}
+
 /**
  * Run the build's relation pass over the model's entities. The story pass warns about every step
  * it cannot resolve; the build already said so once for each, so the warnings are held back here
  * rather than repeated for every migration replayed.
  */
-export function deriveFrom(model: BlueprintModel): DerivedState {
+export function deriveFrom(model: BlueprintModel, line: ServedSchemaLine = processLineOf(model)): DerivedState {
   const input = asWritten(model.entities.filter((entity) => !BUILT_TYPES.has(entity.type)));
   const warn = console.warn;
   let built: ReturnType<typeof buildRelations>;
@@ -124,7 +195,7 @@ export function deriveFrom(model: BlueprintModel): DerivedState {
   for (const relation of built.relations) if (!relations.has(relation.id)) relations.set(relation.id, relation);
   const entities = new Map<string, Entity>();
   for (const entity of built.addedEntities) if (!entities.has(entity.id)) entities.set(entity.id, entity);
-  return { relations, entities, services: servicesOf(model) };
+  return { relations, entities, services: servicesOf(model), processes: processesOf(model), line };
 }
 
 /**
@@ -198,6 +269,9 @@ function sameRelation(a: Relation, b: Relation): boolean {
     a.source_entity_id === b.source_entity_id &&
     a.target_entity_id === b.target_entity_id &&
     a.predicate === b.predicate &&
+    a.origin_ref?.file === b.origin_ref?.file &&
+    a.origin_ref?.declaration_id === b.origin_ref?.declaration_id &&
+    a.origin_ref?.path === b.origin_ref?.path &&
     JSON.stringify(a.data ?? null) === JSON.stringify(b.data ?? null)
   );
 }
@@ -207,8 +281,9 @@ function sameRelation(a: Relation, b: Relation): boolean {
  * derive now. Returns the new derivation, to be passed as `before` for the next migration.
  */
 export function rederiveRelations(model: BlueprintModel, before: DerivedState): DerivedState {
+  syncProcesses(model, before);
   syncContracts(model, before.services);
-  const after = deriveFrom(model);
+  const after = deriveFrom(model, before.line);
 
   const relations: Relation[] = [];
   const present = new Set<string>();
