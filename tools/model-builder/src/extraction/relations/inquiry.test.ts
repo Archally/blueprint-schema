@@ -17,6 +17,8 @@ const RISK = makeEntity({ id: 'orders-motivation.yaml-R001', displayId: 'orders.
 const QUESTION = makeEntity({ id: 'orders-domain.yaml-QN001', displayId: 'orders.QN001', type: ENTITY_TYPE.Question, layer: 'design.domain', fileOrigin: 'orders/domain.yaml' });
 const ACTOR1 = makeEntity({ id: 'orders-concepts.yaml-ACT001', displayId: 'orders.ACT001', type: ENTITY_TYPE.Actor, layer: 'design.concepts', fileOrigin: 'orders/concepts.yaml' });
 const ACTOR2 = makeEntity({ id: 'orders-concepts.yaml-ACT002', displayId: 'orders.ACT002', type: ENTITY_TYPE.Actor, layer: 'design.concepts', fileOrigin: 'orders/concepts.yaml' });
+const TEAM = makeEntity({ id: 'orders-organization.yaml-TM001', displayId: 'orders.TM001', type: ENTITY_TYPE.Team, layer: 'organization', fileOrigin: 'organization.yaml' });
+const FINDING = makeEntity({ id: 'orders-quality.yaml-FN001', displayId: 'orders.FN001', type: ENTITY_TYPE.Finding, layer: 'design.quality', fileOrigin: 'quality.yaml' });
 
 describe('extractInquiryRelations', () => {
   it('T03-A08: goal_refs produce InquiryGoal relations', () => {
@@ -74,6 +76,19 @@ describe('extractInquiryRelations', () => {
     const ownerRels = relations.filter((r) => r.type === RELATION_TYPE.InquiryOwner);
     expect(ownerRels).toHaveLength(1);
     expect(ownerRels[0]!.target_entity_id).toBe(ACTOR2.id);
+  });
+
+  it('finding_refs produce InquiryFinding and owner resolves to a team', () => {
+    const inquiry = makeEntity({
+      id: 'orders-motivation.yaml-INQ001', displayId: 'orders.INQ001', type: ENTITY_TYPE.Inquiry,
+      data: { id: 'orders.INQ001', statement: 'Test', finding_refs: ['orders.FN001'], owner: 'orders.TM001' },
+    });
+    const placeholders = new Map<string, Entity>();
+    const relations = extractInquiryRelations([inquiry, FINDING, TEAM], placeholders);
+    expect(relations.map((relation) => [relation.type, relation.target_entity_id])).toEqual([
+      [RELATION_TYPE.InquiryFinding, FINDING.id], [RELATION_TYPE.InquiryOwner, TEAM.id],
+    ]);
+    expect(placeholders.size).toBe(0);
   });
 
   it('T03-A11b: stakeholders produce InquiryStakeholder relations', () => {

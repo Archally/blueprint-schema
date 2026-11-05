@@ -158,6 +158,43 @@ describe('extractValueStreamRelations', () => {
     expect(actorRels[0]!.target_entity_id).toBe(actor.id);
   });
 
+  it('extracts ContextServesValueStream from a context value_stream_ref', () => {
+    const valueStream = makeEntity({
+      id: 'default-value-stream.yaml-VS001',
+      displayId: 'VS001',
+      type: ENTITY_TYPE.ValueStream,
+      data: { id: 'VS001', name: 'Shop & Buy', stages: [] },
+    });
+    const context = makeEntity({
+      id: 'default-arch.yaml-BC001',
+      displayId: 'BC001',
+      type: ENTITY_TYPE.Context,
+      layer: 'design.arch',
+      fileOrigin: 'arch.yaml',
+      data: { id: 'BC001', name: 'Ordering', value_stream_ref: 'VS001' },
+    });
+    const placeholders = new Map<string, Entity>();
+    const relations = extractValueStreamRelations([valueStream, context], placeholders);
+
+    const served = relations.filter((r) => r.type === RELATION_TYPE.ContextServesValueStream);
+    expect(served).toHaveLength(1);
+    expect(served[0]!.source_entity_id).toBe(context.id);
+    expect(served[0]!.target_entity_id).toBe(valueStream.id);
+  });
+
+  it('a context declaring no stream produces no edge', () => {
+    const context = makeEntity({
+      id: 'default-arch.yaml-BC001',
+      displayId: 'BC001',
+      type: ENTITY_TYPE.Context,
+      layer: 'design.arch',
+      fileOrigin: 'arch.yaml',
+      data: { id: 'BC001', name: 'Ordering' },
+    });
+    const placeholders = new Map<string, Entity>();
+    expect(extractValueStreamRelations([context], placeholders)).toHaveLength(0);
+  });
+
   it('returns no relations for VS without refs', () => {
     const valueStream = makeEntity({
       id: 'default-value-stream.yaml-VS001',

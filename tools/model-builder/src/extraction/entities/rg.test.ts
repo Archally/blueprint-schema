@@ -4,7 +4,7 @@ import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import type { ParsedBlueprintDocument } from '../../model/types.js';
 
 const rgDoc: ParsedBlueprintDocument = {
-  filePath: 'infrastructure.yaml',
+  filePath: 'rg.yaml',
   data: {
     version: '1.0.0',
     name: 'Test Infrastructure',
@@ -89,7 +89,7 @@ describe('extractRg', () => {
 
   it('extracts only resources when topology is absent', () => {
     const entities = extractRg({
-      filePath: 'infrastructure.yaml',
+      filePath: 'rg.yaml',
       data: { resources: [{ id: 'a', kind: 'api', name: 'A' }] },
     });
     expect(entities.map((e) => e.type)).toEqual([ENTITY_TYPE.RG]);
@@ -97,7 +97,7 @@ describe('extractRg', () => {
 
   it('extracts only tiers when resources is absent', () => {
     const entities = extractRg({
-      filePath: 'infrastructure.yaml',
+      filePath: 'rg.yaml',
       data: { topology: { tiers: [{ name: 't1' }] } },
     });
     expect(entities.map((e) => e.type)).toEqual([ENTITY_TYPE.DeploymentTier]);
@@ -105,7 +105,7 @@ describe('extractRg', () => {
 
   it('skips resources without an id', () => {
     const entities = extractRg({
-      filePath: 'infrastructure.yaml',
+      filePath: 'rg.yaml',
       data: { resources: [{ id: 'a', kind: 'api' }, { kind: 'api' }] },
     });
     expect(entities.filter((e) => e.type === ENTITY_TYPE.RG)).toHaveLength(1);
@@ -113,7 +113,7 @@ describe('extractRg', () => {
 
   it('skips tiers without a name', () => {
     const entities = extractRg({
-      filePath: 'infrastructure.yaml',
+      filePath: 'rg.yaml',
       data: { topology: { tiers: [{ name: 't1' }, { description: 'unnamed' }] } },
     });
     expect(entities.filter((e) => e.type === ENTITY_TYPE.DeploymentTier)).toHaveLength(1);

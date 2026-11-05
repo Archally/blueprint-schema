@@ -32,10 +32,13 @@ function service(displayId: string, data: Record<string, unknown> = {}): Entity 
   return { id: `svc-arch.yaml-${displayId}`, displayId, type: ENTITY_TYPE.Service, layer: 'design.arch', fileOrigin: 'arch.yaml', data };
 }
 function team(displayId: string): Entity {
-  return { id: `team-${displayId}`, displayId, type: ENTITY_TYPE.Team, layer: 'governance.org', fileOrigin: 'organization.yaml' };
+  return { id: `team-${displayId}`, displayId, type: ENTITY_TYPE.Team, layer: 'governance.org', fileOrigin: 'org.yaml' };
 }
 function scope(displayId: string, data: Record<string, unknown> = {}, fileOrigin = FILE): Entity {
   return { id: `scope-${fileOrigin}-${displayId}`, displayId, type: ENTITY_TYPE.DeploymentScope, layer: 'design.infrastructure', fileOrigin, data };
+}
+function contract(displayId: string, data: Record<string, unknown>): Entity {
+  return { id: `contract-arch.yaml-${displayId}`, displayId, type: ENTITY_TYPE.Contract, layer: 'design.arch', fileOrigin: 'arch.yaml', data };
 }
 function environmentWith(displayId: string, data: Record<string, unknown>): Entity {
   return { id: `p-${FILE}-${displayId}`, displayId, type: ENTITY_TYPE.Environment, layer: 'design.infrastructure', fileOrigin: FILE, data };
@@ -79,6 +82,41 @@ describe('extractInfrastructureRelations', () => {
     expect(rels.filter((r) => r.type === RELATION_TYPE.RealizesType)).toHaveLength(1);
   });
 
+  it('emits Service --deployed_in_environment--> Environment for the typed form, and only for it', () => {
+    // Four servers, one edge. The name and the `x-` escape are not references and resolve to
+    // nothing; the dangling id IS a reference and is reported by the validator, so it is dropped
+    // here rather than told twice. All four in one model, since passing on one says nothing.
+    const rels = extractInfrastructureRelations([
+      service('SVC001', { servers: [
+        { url: 'https://a', environment: 'ENV001' },
+        { url: 'https://b', environment: 'production' },
+        { url: 'https://c', environment: 'x-edge' },
+        { url: 'https://d', environment: 'ENV404' },
+      ] }),
+      environment('ENV001'),
+    ]);
+    const deployed = rels.filter((r) => r.type === RELATION_TYPE.DeployedInEnvironment);
+    expect(deployed).toHaveLength(1);
+    expect(deployed[0]).toMatchObject({
+      source_entity_id: 'svc-arch.yaml-SVC001',
+      target_entity_id: 'p-infrastructure.yaml-ENV001',
+    });
+  });
+
+  it('two servers in one environment are one edge, and a scope prefix is part of the environment id', () => {
+    const rels = extractInfrastructureRelations([
+      service('SVC001', { servers: [
+        { url: 'https://a', environment: 'ENV001' },
+        { url: 'https://b', environment: 'ENV001' },
+      ] }),
+      service('SVC002', { servers: [{ url: 'https://c', environment: 'shop.ENV001' }] }),
+      environment('ENV001'),
+    ]);
+    const deployed = rels.filter((r) => r.type === RELATION_TYPE.DeployedInEnvironment);
+    expect(deployed).toHaveLength(1);
+    expect(deployed[0]!.source_entity_id).toContain('SVC001');
+  });
+
   it('emits Service --needs--> ResourceType and --uses_resource--> InfraResource', () => {
     const rels = extractInfrastructureRelations([
       service('order-api', { needs: [{ type_ref: 'RT001' }], resource_refs: ['IR001'] }),
@@ -87,6 +125,27 @@ describe('extractInfrastructureRelations', () => {
     ]);
     expect(rels.filter((r) => r.type === RELATION_TYPE.Needs)).toHaveLength(1);
     expect(rels.filter((r) => r.type === RELATION_TYPE.UsesResource)).toHaveLength(1);
+  });
+
+  it('emits Contract --contract_broker--> InfraResource from a messaging contract\'s broker_ref', () => {
+    const rels = extractInfrastructureRelations([
+      contract('order-api.asyncapi', { _contractType: 'asyncapi', broker_ref: 'IR006' }),
+      infra('IR006', { kind: 'broker' }),
+      infra('IR007', { kind: 'cache' }),
+    ]);
+    const brokers = rels.filter((r) => r.type === RELATION_TYPE.ContractBroker);
+    expect(brokers.map((r) => [r.source_entity_id, r.target_entity_id])).toEqual([
+      ['contract-arch.yaml-order-api.asyncapi', 'p-infrastructure.yaml-IR006'],
+    ]);
+  });
+
+  it('builds no contract_broker edge from the superseded brokerId, nor from a broker_ref nothing declares', () => {
+    const rels = extractInfrastructureRelations([
+      contract('order-api.asyncapi', { _contractType: 'asyncapi', brokerId: 'IR006' }),
+      contract('stock-api.asyncapi', { _contractType: 'asyncapi', broker_ref: 'IR009' }),
+      infra('IR006', { kind: 'broker' }),
+    ]);
+    expect(rels.filter((r) => r.type === RELATION_TYPE.ContractBroker)).toEqual([]);
   });
 
   it('drops needs/realizes_type when the ResourceType catalog is absent (no profiles loaded)', () => {
@@ -132,7 +191,7 @@ describe('extractInfrastructureRelations', () => {
     expect(rels).toEqual([]);
   });
 
-  it('emits grouped_in from resource.scope_ref — the resource-group-vs-pool case: same resource is BOTH grouped_in + hosted_on', () => {
+  it('emits grouped_in from resource.scope_ref - the RG-vs-pool case: same resource is BOTH grouped_in + hosted_on', () => {
     const rels = extractInfrastructureRelations([
       infra('IR004', { scope_ref: 'DSC002', relations: [{ type: 'hosted_on', target: 'IR002' }] }),
       infra('IR002'),

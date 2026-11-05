@@ -1,7 +1,7 @@
 {
   "name": "@archally/blueprint-schema",
   "version": "2.8.86",
-  "description": "YAML-based schema for digital system modeling — domain-first multi-method specification format",
+  "description": "YAML-based schema for digital system modeling - domain-first multi-method specification format",
   "license": "SEE LICENSE IN LICENSE",
   "author": "Adam Walkowski <adam.walkowski@inperceptic.com>",
   "repository": {
@@ -59,7 +59,7 @@
     "guides:build": "node tools/guide-publisher/dist/cli.js build",
     "guides:pdf": "node tools/guide-publisher/dist/cli.js pdf",
     "guides:check": "node tools/guide-publisher/dist/cli.js check",
-    "test": "vitest run --config tools/model-builder/vitest.config.ts && vitest run --config tools/semantic-checker/vitest.config.ts && vitest run --config tools/renderer/vitest.config.ts && vitest run --config tools/schema-atlas/vitest.config.ts && vitest run --config tools/guide-publisher/vitest.config.ts",
+    "test": "node tools/port/run-test-suites.mjs",
     "prepublishOnly": "npm run build"
   },
   "bin": {
@@ -91,5 +91,75 @@
   },
   "engines": {
     "node": ">=20.0.0"
-  }
+  },
+  "testSuites": [
+    {
+      "name": "model-builder",
+      "argv": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        "tools/model-builder/vitest.config.ts"
+      ]
+    },
+    {
+      "name": "semantic-checker",
+      "argv": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        "tools/semantic-checker/vitest.config.ts"
+      ]
+    },
+    {
+      "name": "renderer",
+      "argv": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        "tools/renderer/vitest.config.ts"
+      ]
+    },
+    {
+      "name": "schema-atlas",
+      "argv": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        "tools/schema-atlas/vitest.config.ts"
+      ]
+    },
+    {
+      "name": "guide-publisher",
+      "argv": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        "tools/guide-publisher/vitest.config.ts"
+      ]
+    },
+    {
+      "name": "contract-surface",
+      "argv": [
+        "node",
+        "--test",
+        "tools/contract-surface/contract-surface.test.mjs"
+      ]
+    },
+    {
+      "name": "schema-update",
+      "argv": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        "tools/schema-update/vitest.config.ts"
+      ]
+    }
+  ]
 }

@@ -65,3 +65,25 @@ describe('extractCapability', () => {
     expect(extractCapability(doc)).toHaveLength(0);
   });
 });
+
+
+describe('capability kind exposure', () => {
+  it('retains scoped CAP identity, explicit kinds and omitted fields through all supported depths', () => {
+    let tree: Record<string, unknown> = { id: 'shop.CAP011', name: 'Leaf', level: 3, kind: 'feature' };
+    for (let position = 10; position >= 1; position--) {
+      tree = { id: `shop.CAP${String(position).padStart(3, '0')}`, name: `Capability ${position}`,
+        level: 1, ...(position === 1 ? { kind: 'capability' } : {}), children: [tree] };
+    }
+    const before = structuredClone(tree);
+    const entities = extractCapability({ filePath: 'shop/capability.yaml', scope: 'shop', data: { capabilities: [tree] } });
+    expect(entities).toHaveLength(11);
+    expect(entities.every(entity => entity.type === ENTITY_TYPE.Capability)).toBe(true);
+    expect(entities[0]!.data?.kind).toBe('capability');
+    expect(Object.hasOwn(entities[1]!.data!, 'kind')).toBe(false);
+    expect(entities[10]!.displayId).toBe('shop.CAP011');
+    expect(entities[10]!.fileOrigin).toBe('shop/capability.yaml');
+    expect(entities[10]!.data?.kind).toBe('feature');
+    expect(JSON.parse(JSON.stringify(entities))[10].data.kind).toBe('feature');
+    expect(tree).toEqual(before);
+  });
+});

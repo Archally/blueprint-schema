@@ -3,7 +3,7 @@ import { extractMotivation } from './motivation.js';
 import type { ParsedBlueprintDocument } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 
-describe('extractMotivation — Inquiry extraction', () => {
+describe('extractMotivation - Inquiry extraction', () => {
   it('T03-A01: minimal inquiry (id + statement) produces Entity with type Inquiry', () => {
     const doc: ParsedBlueprintDocument = {
       data: {
@@ -116,6 +116,49 @@ describe('extractMotivation — Inquiry extraction', () => {
     expect(entities.filter((e) => e.type === ENTITY_TYPE.Risk)).toHaveLength(1);
     expect(entities.filter((e) => e.type === ENTITY_TYPE.Assumption)).toHaveLength(1);
     expect(entities.filter((e) => e.type === ENTITY_TYPE.TradeOff)).toHaveLength(1);
+  });
+});
+
+describe('extractMotivation - Vision extraction (v2.7.7)', () => {
+  it('T03-V01: singular vision produces one Vision entity with synthetic id', () => {
+    const doc: ParsedBlueprintDocument = {
+      data: {
+        version: '1.0.0',
+        vision: {
+          statement: 'Archally turns any domain into a task-fit schema vertical.',
+          aspiration: 'Every domain worth reasoning about becomes a governed model.',
+          advances_goals: ['G001'],
+        },
+      },
+      filePath: 'archally/motivation.yaml',
+      scope: 'archally',
+    };
+    const visions = extractMotivation(doc).filter((e) => e.type === ENTITY_TYPE.Vision);
+    expect(visions).toHaveLength(1);
+    expect(visions[0]!.displayId).toBe('vision');
+    expect(visions[0]!.layer).toBe('governance.motivation');
+    expect(visions[0]!.description).toBe('Archally turns any domain into a task-fit schema vertical.');
+    expect((visions[0]!.data as Record<string, unknown>).advances_goals).toEqual(['G001']);
+  });
+
+  it('T03-V02: absent vision produces no Vision entity (most models)', () => {
+    const doc: ParsedBlueprintDocument = {
+      data: { version: '1.0.0', goals: [{ id: 'G001', statement: 'x', priority: 'high' }] },
+      filePath: 'orders/motivation.yaml',
+      scope: 'orders',
+    };
+    expect(extractMotivation(doc).filter((e) => e.type === ENTITY_TYPE.Vision)).toHaveLength(0);
+  });
+
+  it('T03-V03: vision falls back to aspiration when statement is absent', () => {
+    const doc: ParsedBlueprintDocument = {
+      data: { version: '1.0.0', vision: { aspiration: 'North-star framing only.' } },
+      filePath: 'archally/motivation.yaml',
+      scope: 'archally',
+    };
+    const vision = extractMotivation(doc).find((e) => e.type === ENTITY_TYPE.Vision);
+    expect(vision).toBeDefined();
+    expect(vision!.summary).toBe('North-star framing only.');
   });
 });
 

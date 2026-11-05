@@ -13,7 +13,7 @@ function makeEntity(overrides: Partial<Entity> & { id: string; displayId: string
 }
 
 describe('extractQuestionRelations', () => {
-  it('T03-12: creates answered_by relations to operations of any kind', () => {
+  it('creates answered_by relations to operations of any kind', () => {
     const entities: Entity[] = [
       makeEntity({
         id: 'orders-domain.yaml-QN001',
@@ -57,7 +57,7 @@ describe('extractQuestionRelations', () => {
     expect(relations[0]!.target_entity_id).toBe('orders-domain.yaml-CMD003');
   });
 
-  it('T03-12: creates concept, motivated_by, stakeholder relations', () => {
+  it('creates concept, motivated_by, stakeholder relations', () => {
     const entities: Entity[] = [
       makeEntity({
         id: 'orders-domain.yaml-QN001',
@@ -109,5 +109,12 @@ describe('extractQuestionRelations', () => {
     const placeholder = Array.from(placeholders.values())[0]!;
     expect(placeholder.type).toBe(ENTITY_TYPE.Missing);
     expect(placeholder.displayId).toBe('MISSING001');
+  });
+
+  it('question.owner resolves to a team', () => {
+    const question = makeEntity({ id: 'orders-domain.yaml-QN003', displayId: 'QN003', type: ENTITY_TYPE.Question, data: { id: 'QN003', statement: 'Who decides?', owner: 'TM001' } });
+    const team = makeEntity({ id: 'orders-organization.yaml-TM001', displayId: 'TM001', type: ENTITY_TYPE.Team, layer: 'organization', fileOrigin: 'organization.yaml' });
+    const relations = extractQuestionRelations([question, team], new Map<string, Entity>());
+    expect(relations).toContainEqual(expect.objectContaining({ type: RELATION_TYPE.QuestionOwner, target_entity_id: team.id }));
   });
 });

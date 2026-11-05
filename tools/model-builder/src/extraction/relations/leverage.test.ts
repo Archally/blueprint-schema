@@ -79,24 +79,34 @@ describe('extractLeverageRelations', () => {
     }
   });
 
-  it('normalizes the LP DAG: depends_on and the inverse of enables collapse to one edge', () => {
-    // LP001 enables LP003; LP003 depends_on LP001 — the SAME dependency edge from both sides.
-    const lp001 = lp('LP001', { enables: ['LP003'] });
+  it('reads a leverage dependency from depends_on, dependent to prerequisite', () => {
+    // LP003 depends_on LP001: LP001 must land before LP003 can.
+    const lp001 = lp('LP001', {});
     const lp003 = lp('LP003', { depends_on: ['LP001'] });
     const placeholders = new Map<string, Entity>();
     const relations = extractLeverageRelations([lp001, lp003], placeholders);
 
     const dagEdges = relations.filter((r) => r.type === RELATION_TYPE.LeverageDependsOn);
-    // Both declarations produce id `${LP003}--leverage_depends_on--${LP001}` → the extractor
-    // returns two entries with the same id; buildRelations() dedups them. Assert the direction.
-    expect(dagEdges.length).toBeGreaterThanOrEqual(1);
-    for (const edge of dagEdges) {
-      expect(edge.source_entity_id).toBe(lp003.id); // dependent
-      expect(edge.target_entity_id).toBe(lp001.id); // prerequisite
-      expect(edge.id).toBe(`${lp003.id}--${RELATION_TYPE.LeverageDependsOn}--${lp001.id}`);
-    }
-    // identical ids → a Set collapses them (mirrors buildRelations dedup)
-    expect(new Set(dagEdges.map((edge) => edge.id)).size).toBe(1);
+    expect(dagEdges).toEqual([
+      {
+        id: `${lp003.id}--${RELATION_TYPE.LeverageDependsOn}--${lp001.id}`,
+        source_entity_id: lp003.id,
+        target_entity_id: lp001.id,
+        type: RELATION_TYPE.LeverageDependsOn,
+      },
+    ]);
+  });
+
+  it('draws no dependency from an enables key, so an edge its target does not state is not invented', () => {
+    // LP001 claims to unblock LP003, and LP003 states its own prerequisites without LP001. The
+    // dependent owns the statement, so the graph carries no LP003 -> LP001 edge.
+    const lp001 = lp('LP001', { enables: ['LP003'] });
+    const lp003 = lp('LP003', { depends_on: [] });
+    const placeholders = new Map<string, Entity>();
+    const relations = extractLeverageRelations([lp001, lp003], placeholders);
+
+    expect(relations.filter((r) => r.type === RELATION_TYPE.LeverageDependsOn)).toEqual([]);
+    expect(placeholders.size).toBe(0);
   });
 
   it('creates a Missing placeholder for an unresolvable ref (e.g. an unmodeled fitness function)', () => {

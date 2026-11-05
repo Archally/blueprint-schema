@@ -116,6 +116,12 @@ describe('extractDecisionRelations - declared_impact.direct', () => {
     layer: 'story',
     fileOrigin: 'orders/story.yaml',
   });
+  const IMPACT_TARGETS = [
+    ['bounded_contexts', 'bounded_context', 'Context', 'orders.BC001'],
+    ['services', 'service', 'Service', 'orders.SVC001'],
+    ['infrastructure', 'infrastructure', 'InfraResource', 'orders.IR001'],
+    ['environments', 'environment', 'Environment', 'orders.ENV001'],
+  ] as const;
 
   function impactRelations(direct: Record<string, unknown>, others: Entity[]) {
     const decision = makeEntity({
@@ -148,5 +154,38 @@ describe('extractDecisionRelations - declared_impact.direct', () => {
     expect(relations).toHaveLength(1);
     expect(relations[0]!.target_entity_id).toBe(PROCESS.id);
     expect(relations[0]!.predicate).toBe('story');
+  });
+
+  it.each(IMPACT_TARGETS)('extracts %s as a declared impact edge', (key, predicate, type, ref) => {
+    const target = makeEntity({ id: `target-${ref}`, displayId: ref, type, layer: 'design.arch', fileOrigin: 'arch.yaml' });
+    const { relations, placeholders } = impactRelations({ [key]: [ref] }, [target]);
+    expect(relations).toEqual([expect.objectContaining({ target_entity_id: target.id, predicate })]);
+    expect(placeholders.size).toBe(0);
+  });
+});
+
+describe('extractDecisionRelations - declared_impact.direct.packages (v2.8.84)', () => {
+  const PACKAGE = makeEntity({ id: 'shop.arch.yaml-PKG001', displayId: 'PKG001', type: ENTITY_TYPE.Package, layer: 'design.arch', fileOrigin: 'shop.arch.yaml', data: { id: 'PKG001', name: 'DocumentToolkit' } });
+  const decision = (packages: string[]) => makeEntity({
+    id: 'orders-decisions.yaml-orders.DC001',
+    displayId: 'orders.DC001',
+    type: ENTITY_TYPE.Decision,
+    fileOrigin: 'orders/decisions.yaml',
+    data: { id: 'orders.DC001', title: 'One toolkit version', declared_impact: { direct: { packages } } },
+  });
+
+  it('draws one declared_impact edge with predicate package to each package it lists', () => {
+    const relations = extractDecisionRelations([decision(['PKG001']), PACKAGE], new Map());
+    expect(relations.map((r) => [r.type, r.predicate, r.target_entity_id])).toEqual([
+      [RELATION_TYPE.DeclaredImpact, 'package', PACKAGE.id],
+    ]);
+  });
+
+  it('a package nobody declares, or an id another type declares, is a placeholder rather than an edge', () => {
+    const goal = makeEntity({ id: 'motivation.yaml-PKG777', displayId: 'PKG777', type: ENTITY_TYPE.Goal, layer: 'governance.motivation' });
+    const placeholders = new Map<string, Entity>();
+    const relations = extractDecisionRelations([decision(['PKG098', 'PKG777']), PACKAGE, goal], placeholders);
+    expect(relations.map((r) => r.target_entity_id)).toEqual(['missing-PKG098', 'missing-PKG777']);
+    expect(placeholders.size).toBe(2);
   });
 });

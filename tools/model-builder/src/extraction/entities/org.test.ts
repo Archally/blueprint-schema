@@ -4,7 +4,7 @@ import type { ParsedBlueprintDocument } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 
 function makeDoc(data: Record<string, unknown>): ParsedBlueprintDocument {
-  return { data, filePath: 'organization.yaml', scope: 'orders' };
+  return { data, filePath: 'org.yaml', scope: 'orders' };
 }
 
 describe('extractOrg', () => {

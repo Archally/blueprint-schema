@@ -5,7 +5,7 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
 import type { Entity } from '../../model/types.js';
 
 function makeEntity(overrides: Partial<Entity> & { id: string; displayId: string; type: string }): Entity {
-  return { layer: 'design.story', fileOrigin: 'orders/story.yaml', ...overrides };
+  return { layer: 'design.process', fileOrigin: 'orders/story.yaml', ...overrides };
 }
 
 describe('extractUserStoryRelations', () => {
@@ -85,7 +85,7 @@ describe('extractUserStoryRelations', () => {
 
   it('ignores non-UserStory entities', () => {
     const entities: Entity[] = [
-      makeEntity({ id: 'x', displayId: 'STR001', type: ENTITY_TYPE.Story, data: { actor: 'ACT001' } }),
+      makeEntity({ id: 'x', displayId: 'STR001', type: ENTITY_TYPE.Process, data: { actor: 'ACT001' } }),
     ];
     const placeholders = new Map<string, Entity>();
     const relations = extractUserStoryRelations(entities, placeholders);

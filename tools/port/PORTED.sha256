@@ -1,12 +1,7 @@
-# PORTED.sha256 — port parity manifest (plan D24).
-# SHA-256 over LF-NORMALIZED content, so it holds on Windows and Linux alike.
-# Canonical source: schemas/blueprint/.shared/ in the Archally monorepo.
-# Regenerate with: node scripts/port-parity.mjs --emit
-#
-# The `job` lines below tell the public-side verifier where each manifest prefix lives,
-# relative to tools/. They are DATA, not decoration: without them the verifier would need a
-# hand-maintained copy of this job list, and adding a job here while forgetting it there
-# reports every file of the new job as 'missing from disk'. (Observed, 2026-07-26.)
+# PORTED.sha256 - published tooling integrity manifest.
+# SHA-256 over LF-normalized UTF-8 content.
+# Each job maps a key prefix to its directory relative to the repository root.
+# extras-ok permits additional files; listed files must always match their hashes.
 # job quality-gate tools/quality-gate
 # job semantic-rules tools/semantic-checker/rules extras-ok
 # job next-id tools/next-id
@@ -18,7 +13,7 @@
 # job validator tools/validator/src extras-ok
 # job model-builder tools/model-builder/src extras-ok
 # job model-builder-readme tools/model-builder extras-ok
-# job schema-update tools/schema-update/src extras-ok
+# job schema-update tools/schema-update/src
 # job renderer tools/renderer/src extras-ok
 # job port tools/port
 # job vscode-blueprint-navigation tools/vscode-blueprint extras-ok
@@ -180,6 +175,7 @@ c5fdbba30497480464496445631bc8575d76e6e31537ef2e45f4b27945b9d2e3  build-stamp/sr
 9e0a5e6310692a5d845b4100897a04b5756c64d1ecf77b90a87c1ce298da0d55  coverage-check/scope-runtime.mjs
 0c038a7f6eb49192bfcfb49764787f2bb44c8f671b51e863b818e625444eecc5  contract-surface/README.md
 98e068b60ee62b792f896f047e5a81658be1aab53879bdf3e214df791b4204cc  contract-surface/contract-surface.mjs
+bf0559c73e19c07861c01ddadd4199ee2b70fccd2dc60ed20aaad64d1ae98d55  contract-surface/contract-surface.test.mjs
 5738b4e8bf7db24ee8452055a6e8c178aab603e056d9d063835f83f8b7207c57  entity-query/README.md
 cdd8714410c5f85653982340c80c91a0eba86f1169f37157a13582f0a047e865  entity-query/cli.mjs
 5c5606d248d4e42f118601ce036b15777080008f9d4aad489e6bd4606163455d  entity-query/search.mjs
@@ -848,23 +844,39 @@ c0e9dd0852d08503df9d78859e26f18dfa6e702bb66d4ac22e8399e2fa6c3f66  model-builder/
 cec01c8c32322f070a44eec9f2866c79177bbcff3eefa623a995d32269815c10  model-builder/schemaTypes.ts
 3202ab550ebf932ab9642c4e8bd753203ce8dfcb9f6edacc97b4c0b72e19de0d  model-builder-readme/README.md
 35aa4fa05b34d6ccf736d847a004cae7a46d6489043f9b393fb6b93d63a77dac  schema-update/cli.ts
+ac0095a4f7f51d713495b9ea309d628ee64c6be4357999780607db02c5916cf0  schema-update/model-files.test.ts
 502db1b2f4e6cc335c79f132a0d080e458ad1c9daf44d307255c78f28dc06356  schema-update/model-files.ts
+4dcd9d71bea0dfa705efdb386a10af58e9d51889d0c84621441d09867c2a16d0  schema-update/runner.test.ts
 cf24b0d8752e85b49efd2b1f9fbca79f7989fc4ee90b5fc1e5b47d3918442d81  schema-update/runner.ts
 8e2cd26be9fd238256aea0d229ca4f655baa68f94e0a7d3b48f1e79050b31dad  schema-update/types.ts
+f7b997513706938b975dab71a8c584cce08e794ea4c73f547e12d3375abe70ad  schema-update/updates/001-rename-acronym-schemas.test.ts
 660d403611e651301c3aa0db16ebee036aba423a73ea6ffa074fbbacf2fc44bd  schema-update/updates/001-rename-acronym-schemas.ts
 e8f88429005c8969ea4956a69cb84efe7a58f344b9a248dcf685b05702b911c7  schema-update/updates/002-quality-characteristic-two-level.ts
+09729f84008b0b06ff825fb025500396eb26aa465c688ac96a7ab2aa3d862d3f  schema-update/updates/004-arch-party-ids.test.ts
 3f0b600263a2a6874a0594a910ba39c5dddcdb6192f792a5bc7d78bdf70d6006  schema-update/updates/004-arch-party-ids.ts
+34e5e3caf6ba2b2c55ab28a58402bf9e90e655bd8b3b4caf9c8eff20bad84103  schema-update/updates/005-round-trip.test.ts
+515c39d9956565fa039522296ddb0ae4a3328035f053ec1d79e9dd6809017f3d  schema-update/updates/005-v28-typed-ids.test.ts
 31922c9a0187cd6b7c76e490b3bb0d0ee60dfc43f557cc98e357f38a7dbaa6e0  schema-update/updates/005-v28-typed-ids.ts
+f17fb86f1cfcc573977451e51b9805d9244e1e06c7fe782d283883059d82ba18  schema-update/updates/006-retire-single-letter-bands.test.ts
 39e124f8e2d741f22eb8ce7a14c54858d91e1a488f3296432495d86d2f2dc858  schema-update/updates/006-retire-single-letter-bands.ts
+ef918d18389358f44524da9ba7af7711bb8771b8faeb5927043645cd9e5f8ad0  schema-update/updates/007-story-becomes-process.test.ts
 90ddade788adb252719936126b8683436ee3dd586d751e3b28df7225ad5eb2fd  schema-update/updates/007-story-becomes-process.ts
 12dab0a116f1e0357f26b366cf749d331e58248c2cccc02bea40a3df64c72a64  schema-update/updates/008-arch-root-contexts.ts
+1cc31763e305b5a9e398e0f72b9fb5bf4381b4d263256b6a30f685f82b8ff58a  schema-update/updates/009-domain-registry.test.ts
 236fd015d153afc79c46e8bd609a660dee3d6a624e5f979da3a16b94c0185256  schema-update/updates/009-domain-registry.ts
+c47aa4b586253058b7e7b2daf9cdf53dd83ef3e86e5f6d060df3d6f35781bef7  schema-update/updates/010-retire-watch-item-band.test.ts
 e56b566a02b97c191d0a75ad06260da8629f8b615128f7c64873b9bb763da110  schema-update/updates/010-retire-watch-item-band.ts
+871587adf43107bb39a8c4bb36ee1fdbaf13f2b03ce24a21449501197d6f3d7c  schema-update/updates/011-contract-identity.test.ts
 9dcf2ebe1ab2a2e1510923f606cf9ca2e8b505de24d401c64af48448425124e6  schema-update/updates/011-contract-identity.ts
+5397d918eb7045d0006cc7a2245ecd372a2e9b27774e98117bc62c818f192d30  schema-update/updates/012-next-branches.test.ts
 f1536d859fda84df0baf1f81d4fdbcf738febdab41e896dfe3e8689ffb9c85a3  schema-update/updates/012-next-branches.ts
+9633362299644c91e793bc3dcd742bd2481fd464ca7a137979a57268ec14731a  schema-update/updates/013-handles-to-inprocess-contract.test.ts
 b6578593190e5a829832823ea8f4c0108ee28060241b4e9f4b30b39b3313ef70  schema-update/updates/013-handles-to-inprocess-contract.ts
+2515221c01c44f92e6b698b347a67b71e11b3681d1443a4b8f76af64c8715082  schema-update/updates/014-dispatch-inprocess.test.ts
 151f4bf8a0ba36916256474690db08410d810e9bbd131f324adfc277c29bebb3  schema-update/updates/014-dispatch-inprocess.ts
+a5353ce5751361844c8b373eaa6e714a753d9723b3359b5c0e10af523c9ad5c5  schema-update/updates/015-dependency-type-to-coupling.test.ts
 80e2d132f8440d8254171cb2d5f5d7aebf7987a2dc6ca51a75f8d9f57f5633d9  schema-update/updates/015-dependency-type-to-coupling.ts
+9bb657aef518f12c99d5682635b0bcc39a44cfaf131aa1344627a143e159bc62  schema-update/updates/016-bcc-domain-scope.test.ts
 1e1974511e99dcc22c839088a021a9dc1d30c6c26d8eff17981ef8c87b4481a1  schema-update/updates/016-bcc-domain-scope.ts
 4e5d7f8886b103d6bde3e7463abe4f5995ae2ca4e68a6771340fb2349c179107  renderer/cli-main.ts
 a094e426b79b4f1e5876e7ea0d18ae703a3d40aa6455e5e733b3f6a25540919f  renderer/coverage-gaps.test.ts
@@ -881,6 +893,8 @@ ccb19ee216632c437eaed27ffff6fefd5399047c95cc052d036030604fdef666  renderer/merma
 46ca63750881438dbe8516f67a866e3bf46887f6680090c08e6f3c31cacda6e8  renderer/render.ts
 888b5dfa044cb58a5a69c031135cae5bdad7fdb01728f4a357e7ac0e5125e6eb  renderer/test-fixtures.ts
 7b50cdab52657f1d2967bc7d3214002bb1d82b3924861c3368f45c33e004c34c  renderer/types.ts
+a9f107efd94f7216c500a17a6d823ae278e8873c847816342e74f1ac275f178d  port/run-test-suites.mjs
+91cddfebc6203025606fc08dd152d48b4f840aff0bce4b0664e7c9ddd4f08089  port/run-test-suites.test.mjs
 f78fac92b5d75565c5ab9fa66fc0996f6eb325dc773be1d630996d30dd4cc4bb  port/verify-ported.mjs
 66212df71666cb401837d69f7b3c1f7fb84d7c96dd947b6bed4a97d5565bd149  port/verify-ported.test.mjs
 057e3f59556693c44ce18741c17be1fae84f2b2bdaad42495cc7b78602ba4366  vscode-blueprint-navigation/.gitignore

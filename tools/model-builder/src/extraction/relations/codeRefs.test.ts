@@ -5,7 +5,7 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
 import type { Entity } from '../../model/types.js';
 
 describe('extractCodeRefRelations', () => {
-  it('T03-09: creates CodeFile entities and code_ref relations', () => {
+  it('creates CodeFile entities and code_ref relations', () => {
     const entities: Entity[] = [
       {
         id: 'orders-concepts.yaml-CN001',
@@ -70,6 +70,64 @@ describe('extractCodeRefRelations', () => {
     expect(cn001ToOrderTs).toBeDefined();
     expect((cn001ToOrderTs.data as Record<string, unknown>).path).toBe('src/domain/Order.ts');
     expect((cn001ToOrderTs.data as Record<string, unknown>).line).toBe(10);
+  });
+
+  function conceptWithPaths(paths: string[]): Entity {
+    return {
+      id: 'orders-concepts.yaml-CN001',
+      displayId: 'CN001',
+      type: ENTITY_TYPE.Concept,
+      layer: 'design.concepts',
+      fileOrigin: 'orders/concepts.yaml',
+      data: { code_refs: paths.map(path => ({ path, role: 'implementation' })) },
+    };
+  }
+
+  it('resolves two line fragments on one file to one CodeFile', () => {
+    const paths = ['src/Handler.php#L58-L110', 'src/Handler.php#L194'];
+
+    const { relations, codeFileEntities } = extractCodeRefRelations([conceptWithPaths(paths)]);
+
+    expect(codeFileEntities).toHaveLength(1);
+    expect(codeFileEntities[0]).toMatchObject({
+      id: 'code-file-src-Handler-php',
+      displayId: 'src/Handler.php',
+      summary: 'src/Handler.php',
+      data: { path: 'src/Handler.php' },
+    });
+    expect(relations).toHaveLength(2);
+    expect(relations.map(relation => relation.target_entity_id)).toEqual([
+      'code-file-src-Handler-php', 'code-file-src-Handler-php',
+    ]);
+    expect(relations.map(relation => relation.data)).toEqual(paths.map(path => ({
+      path, role: 'implementation',
+    })));
+  });
+
+  it.each([
+    'src/Handler.php',
+    'src/Handler#helper.php',
+    'org/repository#src/Handler.php',
+    'src/Handler.php#L0',
+    'src/Handler.php#L9-L2',
+    'src/Handler.php#L9007199254740992',
+    'src/Handler.php#L2-extra',
+  ])('preserves a path without a valid terminal line fragment: %s', path => {
+    const { relations, codeFileEntities } = extractCodeRefRelations([conceptWithPaths([path])]);
+
+    expect(codeFileEntities).toHaveLength(1);
+    expect(codeFileEntities[0]).toMatchObject({ displayId: path, summary: path, data: { path } });
+    expect(relations[0]?.data).toEqual({ path, role: 'implementation' });
+  });
+
+  it('preserves the repository prefix when removing a terminal line fragment', () => {
+    const paths = ['org/repository#src/Handler.php#L58-L110', 'org/repository#src/Handler.php#L194'];
+
+    const { relations, codeFileEntities } = extractCodeRefRelations([conceptWithPaths(paths)]);
+
+    expect(codeFileEntities).toHaveLength(1);
+    expect(codeFileEntities[0]?.displayId).toBe('org/repository#src/Handler.php');
+    expect(relations.every(relation => relation.target_entity_id === codeFileEntities[0]?.id)).toBe(true);
   });
 
   it('skips entities without code_refs', () => {

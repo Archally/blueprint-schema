@@ -4,7 +4,7 @@ import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 import type { Entity } from '../../model/types.js';
 
-function rgResource(displayId: string, ownerTeam?: string, fileOrigin = 'infrastructure.yaml'): Entity {
+function rgResource(displayId: string, ownerTeam?: string, fileOrigin = 'rg.yaml'): Entity {
   return {
     id: `rg-${fileOrigin}-${displayId}`,
     displayId,
@@ -15,7 +15,7 @@ function rgResource(displayId: string, ownerTeam?: string, fileOrigin = 'infrast
   };
 }
 
-function deploymentTier(displayId: string, services: string[], fileOrigin = 'infrastructure.yaml'): Entity {
+function deploymentTier(displayId: string, services: string[], fileOrigin = 'rg.yaml'): Entity {
   return {
     id: `tier-${fileOrigin}-${displayId}`,
     displayId,
@@ -32,7 +32,7 @@ function team(displayId: string): Entity {
     displayId,
     type: ENTITY_TYPE.Team,
     layer: 'governance.org',
-    fileOrigin: 'organization.yaml',
+    fileOrigin: 'org.yaml',
   };
 }
 
@@ -60,12 +60,12 @@ describe('extractRgRelations', () => {
 
     expect(contains).toHaveLength(2);
     expect(contains.map((r) => `${r.source_entity_id}→${r.target_entity_id}`).sort()).toEqual([
-      'tier-infrastructure.yaml-data-tier→rg-infrastructure.yaml-commerce-db',
-      'tier-infrastructure.yaml-web-tier→rg-infrastructure.yaml-api-svc',
+      'tier-rg.yaml-data-tier→rg-rg.yaml-commerce-db',
+      'tier-rg.yaml-web-tier→rg-rg.yaml-api-svc',
     ]);
   });
 
-  it('emits Resource --resource_owner_team--> Team when resource.owner.team matches a Team displayId', () => {
+  it('emits Resource --owned-by-team--> Team when resource.owner.team matches a Team displayId', () => {
     const entities: Entity[] = [
       rgResource('api-svc', 'TM001'),
       rgResource('commerce-db', 'TM002'),
@@ -83,7 +83,7 @@ describe('extractRgRelations', () => {
   it('emits Service --deployed-in-tier--> Tier for cross-file arch service ids', () => {
     const entities: Entity[] = [
       deploymentTier('web-tier', ['public-storefront-service', 'api-svc']),
-      rgResource('api-svc'), // also in this tier — covered by contains, not deployed-in
+      rgResource('api-svc'), // also in this tier - covered by contains, not deployed-in
       service('public-storefront-service'),
     ];
 
@@ -93,7 +93,7 @@ describe('extractRgRelations', () => {
     expect(deployedIn).toHaveLength(1);
     expect(deployedIn[0]).toMatchObject({
       source_entity_id: 'svc-arch.yaml-public-storefront-service',
-      target_entity_id: 'tier-infrastructure.yaml-web-tier',
+      target_entity_id: 'tier-rg.yaml-web-tier',
       type: RELATION_TYPE.DeployedInTier,
     });
   });

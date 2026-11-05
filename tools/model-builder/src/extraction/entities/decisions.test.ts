@@ -23,7 +23,7 @@ describe('extractDecisions', () => {
     expect(entities[0]!.id).toBe('orders-decisions.yaml-D001');
   });
 
-  // T04c-08 — BCC v5 (v2.6.3) BusinessDecision extraction
+  // v2.6.3 BusinessDecision extraction
   it('emits BusinessDecision entities from business_decisions[] (BCC v5)', () => {
     const doc: ParsedBlueprintDocument = {
       data: {
@@ -33,7 +33,7 @@ describe('extractDecisions', () => {
             id: 'BD001',
             name: 'Order modifications allowed within 30 minutes',
             description: 'Customers may amend orders within 30 minutes of placement.',
-            bounded_context_ref: 'orders',
+            domain_scope: 'orders',
           },
         ],
       },
@@ -46,7 +46,7 @@ describe('extractDecisions', () => {
     expect(entities[0]!.layer).toBe('governance.decisions');
     expect(entities[0]!.displayId).toBe('BD001');
     expect(entities[0]!.summary).toBe('Order modifications allowed within 30 minutes');
-    expect(entities[0]!.data?.bounded_context_ref).toBe('orders');
+    expect(entities[0]!.data?.domain_scope).toBe('orders');
   });
 
   it('emits Decision and BusinessDecision entities side-by-side from one file', () => {
@@ -57,7 +57,7 @@ describe('extractDecisions', () => {
           { id: 'D001', title: 'ADR Title', date: '2025-01-01', status: 'accepted', rationale: { problem: 'p', chosen: 'c' } },
         ],
         business_decisions: [
-          { id: 'BD001', name: 'Policy Name', description: 'Policy text', bounded_context_ref: 'orders' },
+          { id: 'BD001', name: 'Policy Name', description: 'Policy text', domain_scope: 'orders' },
         ],
       },
       filePath: 'orders/decisions.yaml',
