@@ -14,6 +14,11 @@ operations:
         path: /order-returns/{orderReturnId}
         method: PATCH
         group: orders
+        parameters:
+          - name: orderReturnId
+            type: path
+            required: true
+            schema: orders.MDL003
     name: "UpdateOrderReturnState"
     description: "Update the state of a merchandise return request. Transitions the return through its lifecycle (confirmation, package receipt, completion, denial)."
     delivery_priority: must-have
@@ -29,6 +34,26 @@ operations:
       - path: "PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderReturn/OrderReturn.php"
         role: api-spec
         description: "Declares PATCH /order-returns/{orderReturnId} and names the CQRS class it fronts"
+      - path: src/Adapter/OrderReturn/CommandHandler/UpdateOrderReturnStateHandler.php
+        role: implementation
+        description: Lines 65-71 load and update OrderReturn through its repository, grounding the materializes link.
+      - path: PrestaShop/ps_apiresources#tests/Integration/ApiPlatform/OrderReturnEndpointTest.php
+        role: test
+        description: Lines 89-101 send orderReturnStateId and assert the returned merchandise return. ApiTestCase.php:287-289 delegates PATCH to requestApi; lines 244-251 default its expected status to HTTP_OK and check it.
+    payload:
+      schema: orders.MDL001
+      contentType: application/json
+      required: true
+    responses:
+      - code: "200"
+        type: success
+        description: The merchandise return after its state was updated.
+        schema: orders.MDL002
+        contentType: application/json
+    materializes:
+      - concept: orders.CN007
+        action: update
+    task_type: "user-decision"
 
   # --- Events ---
 

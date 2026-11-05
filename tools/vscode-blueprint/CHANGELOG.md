@@ -3,7 +3,13 @@
 All notable changes to this extension. Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this extension versions independently of `@archally/blueprint-schema`.
 
-## Unreleased
+## 0.6.0
+
+- Decision keys in Confluence page-map YAML navigate to entity declarations in the sibling
+  blueprint model. Hovers show title and status, or identify a missing declaration.
+- Confirmed page IDs link to Confluence using the root hub's site and space binding.
+  Map navigation reads unsaved model and hub buffers and stays separate from blueprint
+  diagnostics and ID completion.
 
 - ID hovers label each declaration's model root when an id occurs across models or versions,
   and use hyphens between the entity name and summary.

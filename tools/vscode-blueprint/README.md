@@ -47,6 +47,21 @@ that gap.
 
 It complements `redhat.vscode-yaml` (schema validation + autocomplete + hover on property *keys*) - install both.
 
+## Confluence page maps
+
+In `**/.confluence/map/**/*.yaml`, use F12 or Ctrl/Cmd+click on the `key:` value of a
+`kind: decision` entry to open its entity declaration in the same project's sibling
+`.blueprint/vN/` or `.blueprint/vN.N/` model. Hover shows the model title and status;
+a missing entity shows "not declared" and has no definition. If several sibling model
+versions declare the ID, navigation offers every match and the hover names their files.
+Open unsaved model buffers participate.
+
+A confirmed numeric `page_id:` links to the Confluence page using `site` and `space_key`
+from the root `_hub.yaml` of that map tree. The site path is preserved; a bare site uses
+`/wiki`. Missing or invalid bindings produce no link. Unsaved hub edits participate.
+Hub keys and other entry kinds do not navigate to model entities. Map files receive
+these navigation providers; blueprint diagnostics and ID completion retain their own scope.
+
 ## Install / run (dev)
 
 ```bash

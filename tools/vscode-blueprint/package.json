@@ -2,7 +2,7 @@
   "name": "archally-blueprint-navigation",
   "displayName": "Archally Blueprint Navigation",
   "description": "Go-to-definition, hover, highlight, and re-index for Archally blueprint IDs (e.g. slice.TYPE### references) across .blueprint YAML files.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publisher": "archally",
   "license": "Apache-2.0",
   "repository": {

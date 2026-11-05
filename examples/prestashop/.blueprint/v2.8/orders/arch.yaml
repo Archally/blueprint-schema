@@ -77,40 +77,35 @@ contexts:
     services:
       - id: prestashop.SVC008
         name: OrderService
-        kind: api
-        summary: REST API for order commands and queries.
+        kind: service
+        summary: In-process order commands, queries and local hooks within the PrestaShop monolith.
         needs:
           - { type_ref: RT001, class: self-hosted, id: prestashop-db }
-        servers:
-          - url: https://api.prestashop.example/v1
-            environment: prestashop.ENV001
-          - url: http://localhost:8080/api
-            environment: development
         contracts:
           scheduledtransfer:
             contract_name: exchange-rates
             slice: international
             read:
               - international.DOC001
+          inprocess:
+            provide:
+              - orders.CMD001 # PlaceOrder
+              - orders.CMD002 # CancelOrder
+              - orders.CMD003 # IssueStandardRefund
+              - orders.QRY001 # GetOrderForViewing
+              - orders.EVT001 # OrderPlaced
+              - orders.EVT002 # OrderCancelled
+              - orders.EVT003 # OrderRefunded
+              - orders.EVT004 # OrderShipped
           openapi:
             contract_name: orders-api
             slice: orders
-            expose:
-              - orders.CMD001
-              - orders.CMD002
-              - orders.CMD003
-              - orders.QRY001
-          asyncapi:
-            contract_name: orders-events
-            slice: orders
-            send:
-              - orders.EVT001
-              - orders.EVT002
-              - orders.EVT003
-              - orders.EVT004
-            brokerId: prestashop-event-bus
+            expose: [orders.CMD023]
         implementation: "as-is"
         code_refs:
           - path: src/Core/Domain/Order/
             role: implementation
             description: Source for this logical module within the PrestaShop PHP monolith; verified in the cited develop checkout a27e912eef9.
+          - path: PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderReturn/OrderReturn.php
+            role: api-spec
+            description: Lines 45-51 expose PATCH /order-returns/{orderReturnId} through UpdateOrderReturnStateCommand. This is an HTTP entry into the in-process Orders module, not a separate deployment.

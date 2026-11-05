@@ -34,7 +34,7 @@ contexts:
     business_model_role: engagement-creator
     evolution: commodity
     # This context declares no operation of its own, so the trait is read from what it IS rather
-    # than from what it does: a party outside the monolith whose one service only `call`s five
+    # than from what it does: a party outside the monolith whose one service only `call`s four
     # operations other contexts own. A context that exists solely to sit on the far side of a
     # system boundary and translate is an interfacer, and nothing else it does is visible here.
     model_traits: [interfacer]
@@ -55,7 +55,7 @@ contexts:
               - admin.QRY001
               - catalog.QRY001
               - catalog.QRY002
-              - orders.QRY001
+              - orders.CMD023
           security_schemes:
             admin_oauth2:
               type: oauth2
@@ -63,7 +63,11 @@ contexts:
                 admin:read: Read access to admin API
                 admin:write: Write access to admin API
         implementation: "unclear"
-        description: "External consumer under ApiIntegrators (PRT003), outside the PrestaShop monolith. The cited PrestaShop source implements the Admin API server and API-client registration, but supplies no implementation reference for this external consumer. Its implementation cannot be established from the cited repositories."
+        description: "External consumer under ApiIntegrators (PRT003), outside the PrestaShop monolith. The sources document generic API clients but provide no implementation of this external consumer. The call to UpdateOrderReturnState is intended (to-be) usage of the documented Admin API, authorized for the Orders example; no cited source proves a deployed integrator makes that call. PrestaShop/docs admin-api/setup-development-environment.md:83-85 requires dedicated, minimally scoped clients for external integrations; ps_apiresources tests/Integration/ApiPlatform/OrderReturnEndpointTest.php:89-101 exercises the supported request and response."
+        code_refs:
+          - path: PrestaShop/docs#admin-api/setup-development-environment.md
+            role: documentation
+            description: Lines 83-85 document minimally scoped dedicated API clients per external integration; they do not establish an implemented Orders consumer. The new Orders call is to-be.
 
   # The mechanism every slice's events rest on, stated once here rather than re-explained in ten
   # slice files. PrestaShop has no domain-event infrastructure: `find src/Core -type d -name Event`
@@ -153,3 +157,40 @@ contexts:
               PrestaShop's hook registry: 1162 hook ids, each with a title and a description,
               980 of them action hooks and 153 display hooks. The first place to check whether a
               hook name an event claims is real.
+      - id: prestashop.SVC013
+        name: InProcessConsumers
+        kind: service
+        system_ref: PRT002
+        summary: The callers and hook listeners inside the PrestaShop process that use these operations, stated as one group because no individual caller is modelled from the code yet.
+        description: "A grouping, not a deployable unit: it stands for every in-process caller of the operations listed under its contracts, so each operation shows who consumes it. It makes no claim that a particular controller or module calls a particular operation."
+        contracts:
+          inprocess:
+            consume:
+              - catalog.EVT001
+              - catalog.EVT002
+              - checkout.CMD009
+              - checkout.CMD010
+              - checkout.QRY001
+              - checkout.EVT004
+              - content.CMD001
+              - content.CMD002
+              - modules.CMD011
+              - modules.CMD012
+              - modules.CMD013
+              - modules.QRY004
+              - modules.EVT001
+              - modules.EVT002
+              - modules.EVT003
+              - modules.EVT004
+              - modules.EVT005
+              - modules.EVT006
+              - modules.EVT007
+              - modules.EVT008
+              - modules.EVT009
+              - orders.CMD001
+              - orders.CMD002
+              - orders.CMD003
+              - orders.QRY001
+              - orders.EVT002
+              - orders.EVT003
+              - orders.EVT004

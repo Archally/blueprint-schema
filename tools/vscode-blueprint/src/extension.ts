@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { isMap, isScalar, LineCounter, parseDocument, visit, type Scalar, type YAMLMap } from 'yaml';
 import {
   buildCodeRefHover,
   codeRefEntryMeta,
@@ -211,6 +212,176 @@ const hoverProvider: vscode.HoverProvider = {
     return new vscode.Hover(md, range);
   },
 };
+
+// Page maps use separate providers, outside blueprint diagnostics and completion.
+const PAGE_MAP_GLOB = '**/.confluence/map/**/*.yaml';
+
+function pageMapPaths(document: vscode.TextDocument): { model: string; hub: string } | undefined {
+  const normalized = document.uri.fsPath.split(path.sep).join('/');
+  const match = normalized.match(/^(.*)\/\.confluence\/map\/(.+)\.yaml$/);
+  if (!match) return undefined;
+  const segments = match[2].split('/');
+  return {
+    model: path.join(match[1], '.blueprint'),
+    hub: segments.length === 1
+      ? path.join(match[1], '.confluence', 'map', '_hub.yaml')
+      : path.join(match[1], '.confluence', 'map', segments[0], '_hub.yaml'),
+  };
+}
+
+function mapScalar(mapping: YAMLMap, name: string): Scalar | undefined {
+  const value = mapping.get(name, true);
+  if (!isScalar(value)) return undefined;
+  return value;
+}
+
+function scalarRange(text: string, scalar: Scalar): vscode.Range | undefined {
+  if (!scalar.range) return undefined;
+  let start = scalar.range[0];
+  let end = scalar.range[1];
+  if (['"', "'"].includes(text[start])) {
+    start += 1;
+    end -= 1;
+  }
+  const lines = new LineCounter();
+  parseDocument(text, { lineCounter: lines });
+  const first = lines.linePos(start);
+  const last = lines.linePos(end);
+  return new vscode.Range(first.line - 1, first.col - 1, last.line - 1, last.col - 1);
+}
+
+function parseMapping(text: string): YAMLMap | undefined {
+  const parsed = parseDocument(text);
+  if (parsed.errors.length > 0) return undefined;
+  if (!isMap(parsed.contents)) return undefined;
+  return parsed.contents;
+}
+
+function decisionKey(document: vscode.TextDocument, position: vscode.Position): { key: string; range: vscode.Range } | undefined {
+  const text = document.getText();
+  const mapping = parseMapping(text);
+  if (!mapping) return undefined;
+  if (mapScalar(mapping, 'kind')?.value !== 'decision') return undefined;
+  const key = mapScalar(mapping, 'key');
+  if (typeof key?.value !== 'string') return undefined;
+  const range = scalarRange(text, key);
+  if (!range) return undefined;
+  if (position.line !== range.start.line) return undefined;
+  if (position.character < range.start.character) return undefined;
+  if (position.character >= range.end.character) return undefined;
+  return { key: key.value, range };
+}
+
+async function currentText(uri: vscode.Uri): Promise<string | undefined> {
+  const overlay = vscode.workspace.textDocuments.find(document => document.uri.fsPath === uri.fsPath);
+  if (overlay) return overlay.getText();
+  try {
+    return Buffer.from(await vscode.workspace.fs.readFile(uri)).toString('utf8');
+  } catch {
+    return undefined;
+  }
+}
+
+interface PageMapDeclaration {
+  location: vscode.Location;
+  title: string;
+  status: string;
+}
+
+async function pageMapDeclarations(document: vscode.TextDocument, key: string): Promise<PageMapDeclaration[]> {
+  const paths = pageMapPaths(document);
+  if (!paths) return [];
+  const files = await vscode.workspace.findFiles(new vscode.RelativePattern(paths.model, 'v*/**/*.{yaml,yml}'), '**/node_modules/**');
+  const overlays = vscode.workspace.textDocuments.map(document => document.uri);
+  const candidates = new Map([...files, ...overlays].map(uri => [uri.fsPath, uri]));
+  const declarations: PageMapDeclaration[] = [];
+  for (const uri of candidates.values()) {
+    const relative = path.relative(paths.model, uri.fsPath).split(path.sep).join('/');
+    if (!/^v\d+(?:\.\d+)*\/.+\.ya?ml$/.test(relative)) continue;
+    const text = await currentText(uri);
+    if (text === undefined) continue;
+    const parsed = parseDocument(text);
+    if (parsed.errors.length > 0) continue;
+    visit(parsed, {
+      Map(_key, mapping) {
+        const identifier = mapScalar(mapping, 'id');
+        if (identifier?.value !== key) return;
+        const range = scalarRange(text, identifier);
+        if (!range) return;
+        const title = mapScalar(mapping, 'title')?.value ?? mapScalar(mapping, 'name')?.value ?? key;
+        const status = mapScalar(mapping, 'status')?.value ?? 'unspecified';
+        declarations.push({ location: new vscode.Location(uri, range), title: String(title), status: String(status) });
+      },
+    });
+  }
+  return declarations;
+}
+
+async function pageMapLinks(document: vscode.TextDocument): Promise<vscode.DocumentLink[]> {
+  const paths = pageMapPaths(document);
+  if (!paths) return [];
+  const text = document.getText();
+  const mapping = parseMapping(text);
+  if (!mapping) return [];
+  const identity = mapScalar(mapping, 'page_id');
+  if (!identity) return [];
+  if (!/^\d+$/.test(String(identity.value ?? ''))) return [];
+  const hubText = await currentText(vscode.Uri.file(paths.hub));
+  if (hubText === undefined) return [];
+  const hub = parseMapping(hubText);
+  if (!hub) return [];
+  if (mapScalar(hub, 'kind')?.value !== 'content-hub') return [];
+  const site = mapScalar(hub, 'site')?.value;
+  const space = mapScalar(hub, 'space_key')?.value;
+  if (typeof site !== 'string') return [];
+  if (typeof space !== 'string') return [];
+  if (!space.trim()) return [];
+  let base: URL;
+  try {
+    base = new URL(site);
+  } catch {
+    return [];
+  }
+  if (!['https:', 'http:'].includes(base.protocol)) return [];
+  base.search = '';
+  base.hash = '';
+  const contextPath = base.pathname.replace(/\/$/, '') || '/wiki';
+  base.pathname = `${contextPath}/spaces/${encodeURIComponent(space)}/pages/${identity.value}`;
+  const range = scalarRange(text, identity);
+  if (!range) return [];
+  return [new vscode.DocumentLink(range, vscode.Uri.parse(base.toString()))];
+}
+
+export function registerPageMapProviders(context: vscode.ExtensionContext): void {
+  const mapSelector = { language: 'yaml', scheme: 'file', pattern: PAGE_MAP_GLOB };
+  context.subscriptions.push(
+    vscode.languages.registerDefinitionProvider(mapSelector, {
+      async provideDefinition(document, position) {
+        const entry = decisionKey(document, position);
+        if (!entry) return undefined;
+        const declarations = await pageMapDeclarations(document, entry.key);
+        if (!declarations.length) return undefined;
+        return declarations.map(declaration => declaration.location);
+      },
+    }),
+    vscode.languages.registerHoverProvider(mapSelector, {
+      async provideHover(document, position) {
+        const entry = decisionKey(document, position);
+        if (!entry) return undefined;
+        const declarations = await pageMapDeclarations(document, entry.key);
+        const markdown = new vscode.MarkdownString();
+        if (!declarations.length) {
+          markdown.appendText(`${entry.key} is not declared in this project's sibling blueprint.`);
+        }
+        for (const declaration of declarations) {
+          markdown.appendText(`${declaration.title}\nStatus: ${declaration.status}\n${declaration.location.uri.fsPath}\n`);
+        }
+        return new vscode.Hover(markdown, entry.range);
+      },
+    }),
+    vscode.languages.registerDocumentLinkProvider(mapSelector, { provideDocumentLinks: pageMapLinks }),
+  );
+}
 
 // ── id-reference completion (type part of a NAME, insert the id) ─────────────────────────────────
 // The schema completes property names and its own enums; it can never complete an id, because the
@@ -672,6 +843,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await vscode.window.showTextDocument(uri, { selection: sel });
     }),
   );
+
+  registerPageMapProviders(context);
 
   // Keep the index fresh.
   const watcher = vscode.workspace.createFileSystemWatcher(currentGlob());
