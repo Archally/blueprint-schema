@@ -14,7 +14,7 @@ import { toCheckableModel } from './adapter.js';
 
 const RULES_DIR = fileURLToPath(new URL('./rules', import.meta.url));
 
-// Fixture: one context (Orders) whose contract EXPOSES CMD001 (→ bound), plus a `misc/` slice
+// Fixture: one context (Orders) whose contract EXPOSES CMD001 by its declared id (→ bound), plus a `misc/` slice
 // whose op/question match no context by name/scope and are referenced by no contract (→ unbound).
 const FILES = new Map<string, string>([
   [
@@ -29,7 +29,7 @@ const FILES = new Map<string, string>([
             contracts:
               openapi:
                 expose:
-                  - orders.CMD001
+                  - CMD001
 `,
   ],
   [
