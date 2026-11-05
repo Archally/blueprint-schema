@@ -21,7 +21,7 @@ jobs:
       - name: Verify ported files against PORTED.sha256
         run: node tools/port/verify-ported.mjs
       - name: Ported-verifier self-tests
-        run: node --test "tools/port/*.test.mjs"
+        run: node --test tools/port/*.test.mjs
       # The YAML examples inside the docs, validated as real models. A worked example is the shape
       # readers copy: when the schema moves and the example does not, the docs teach an invalid
       # model and nothing notices. The regression tests assert the two historical drift shapes
