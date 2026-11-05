@@ -50,7 +50,8 @@ npm run check -- <blueprint-dir> --config .blueprint-lint.yaml
 | `feature-user-stories-exclusive` | error | a declared story is listed by at most one distinct feature across the model |
 | `feature-user-stories-mismatch` | warn | a present feature story list is compared with operation-derived membership; unresolved references are reported separately |
 | `capability-nested-deeper-than-two-levels` | info | reports each capability nested below an L1 and its direct L2 children, reading depth from `children`; deeper capabilities remain schema-valid and are judged independently by realization checks |
-| `capability-realized-nowhere` | info | reports the topmost capability whose realization scope contains no operation: an L1 and its direct L2 children, or any other capability alone. Resolved `operations` listings and effective `realized_in` attribution count; unresolved listings do not |
+| `capability-realized-nowhere` | info | reports the topmost capability whose realization scope contains no operation: an L1 and its direct L2 children, direct feature children included, or any other capability alone. Resolved `operations` listings and effective `realized_in` attribution count; unresolved listings do not |
+| `event-placed-with-producer-capability` | warn | an event placed on a capability is also placed on the capability that realizes its producer command, or on the nearest common parent of several producer capabilities. Events with no capability placement, no placed producer, or producers in separate roots are left unjudged |
 | `unanswered-questions` | info | every Question has an outgoing `answered-by` edge |
 | `dispatch-with-exchange` | warn | no Operation sets `dispatch: in-process` *and* an `exchange` — they are mutually exclusive |
 | `empty-context` | warn | a Context that declares services handles at least one operation (an incoming `handled_by`); a context with no services is a named boundary and is out of scope |

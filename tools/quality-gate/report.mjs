@@ -198,6 +198,11 @@ function renderEntityBlock(entity, modelRoot, focus, schemaNote) {
   return lines;
 }
 
+/** Up to three ids, then how many more; `--json` carries the whole list. @param {string[]} ids */
+function shortList(ids) {
+  return ids.length > 3 ? `${ids.slice(0, 3).join(', ')} and ${ids.length - 3} more` : ids.join(', ');
+}
+
 /**
  * The structure lines of one entity block: fields used against those available, the description's
  * length, and each reference held only in prose with what the schema offers for it.
@@ -219,6 +224,9 @@ function renderEntityStructure(record, schemaNote) {
         : 'the schema has no field for this';
     const written = reference.written !== reference.id ? ` (written ${reference.written})` : '';
     lines.push(`    held only in prose  ${reference.id.padEnd(width)}  ${verdict}${written}`);
+  }
+  for (const reference of record.unresolvedReferences) {
+    lines.push(`    names no declared id  ${reference.written}  did you mean ${shortList(reference.didYouMean)} (in ${reference.in}; advisory)`);
   }
   return lines;
 }
@@ -259,6 +267,22 @@ function renderStructure(structure, modelRoot, limit) {
       lines.push(`    ${heading}  (${record.kind}, ${path.relative(modelRoot, record.file)}): ${record.proseOnlyReferences.map((reference) => reference.id).join(', ')}`);
     }
     if (holding.length > limit) lines.push(`    ... and ${holding.length - limit} more; --json lists every one`);
+  }
+
+  const naming = structure.records
+    .filter((record) => record.unresolvedReferences.length > 0)
+    .sort((a, b) => b.unresolvedReferences.length - a.unresolvedReferences.length);
+  if (naming.length > 0) {
+    lines.push('');
+    lines.push(`  Entities naming ids the model does not declare (${naming.length}) - advisory; each differs from a declared id only by a scope prefix`);
+    for (const record of naming.slice(0, limit)) {
+      const heading = record.entityId ? `${record.entityId} ${record.name}` : record.name;
+      const mentions = record.unresolvedReferences
+        .map((reference) => `${reference.written} (did you mean ${shortList(reference.didYouMean)})`)
+        .join(', ');
+      lines.push(`    ${heading}  (${record.kind}, ${path.relative(modelRoot, record.file)}): ${mentions}`);
+    }
+    if (naming.length > limit) lines.push(`    ... and ${naming.length - limit} more; --json lists every one`);
   }
   return lines;
 }

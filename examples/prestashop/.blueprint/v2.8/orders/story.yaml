@@ -53,7 +53,7 @@ processes:
 
   - id: orders.PRC002
     title: "Cancel and refund"
-    description: "Either Merchant or Administrator may perform both steps: cancel the order and process its refund. Both lanes list these operations because either role may carry them out."
+    description: "Either Merchant or Administrator may cancel the order and choose a standard or partial refund. The refund activities are alternatives, not successive refunds. Both lanes list these operations because either role may carry them out."
     initiated_by: [orders.ACT003, orders.ACT004]
     trigger:
       type: message
@@ -62,19 +62,26 @@ processes:
     end_states:
       - name: "Order cancelled and refunded"
         type: complete
+        from: [orders.PA003, orders.PA012] # Process refund; Process partial refund
         description: "Order cancelled, stock released, refund processed, credit slip generated."
       - name: "Cancellation rejected"
         type: error
         description: "Order is in a non-cancellable state (already shipped or delivered)."
     lanes:
       - actor: orders.ACT003
-        operations: [orders.CMD002, orders.CMD003]
+        operations: [orders.CMD002, orders.CMD003, orders.CMD015] # CancelOrder; IssueStandardRefund; IssuePartialRefund
       - actor: orders.ACT004
-        operations: [orders.CMD002, orders.CMD003]
+        operations: [orders.CMD002, orders.CMD003, orders.CMD015] # CancelOrder; IssueStandardRefund; IssuePartialRefund
     activities:
       - id: orders.PA002
         name: "Cancel order"
         entry_operation: orders.CMD002
+        gateway: xor
+        next:
+          - to: orders.PA003 # Process refund
+            condition: "The employee chooses a standard refund."
+          - to: orders.PA012 # Process partial refund
+            condition: "The employee chooses a partial refund for selected lines and amounts."
         steps:
           - operation_ref: orders.CMD002
             note: "Cancel order, release stock."
@@ -96,10 +103,28 @@ processes:
               counts here, and it is neither a person nor a read but a third case the rule's
               wording does not name - two facts of one transaction, listed in the order a reader
               meets them.
+      - id: orders.PA012 # Process partial refund
+        name: "Process partial refund"
+        description: >
+          Submit the partial refund form on the back-office order view instead of the standard
+          refund form. OrderController.php:992-1016 handles this submission and returns to the
+          order view; PartialRefundFormDataHandler.php:53 dispatches the partial refund command.
+          Both paths belong to the refund phase, but only the selected refund runs.
+        entry_operation: orders.CMD015 # IssuePartialRefund
+        steps:
+          - operation_ref: orders.CMD015 # IssuePartialRefund
+            note: "Refund the selected quantities and amounts, with the form's credit-slip and restock options."
+          - operation_ref: orders.EVT003 # OrderRefunded
+            note: "The partial refund is recorded on the order."
+          - operation_ref: orders.EVT006 # CreditSlipGenerated
+            note: "Sibling fact of the same partial refund transaction, not a consequence of OrderRefunded."
     code_refs:
       - path: "src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php"
         role: implementation
-        description: "Order cancellation and refund actions."
+        description: "Order cancellation and refund actions; lines 992-1016 handle partialRefundAction and 1026 onward standardRefundAction as separate submissions from the order view."
+      - path: "src/Core/Form/IdentifiableObject/DataHandler/PartialRefundFormDataHandler.php"
+        role: implementation
+        description: "Lines 53-65 construct and dispatch IssuePartialRefundCommand with the selected quantities, amounts and refund options."
 
   - id: orders.PRC003
     title: "Manage order products"

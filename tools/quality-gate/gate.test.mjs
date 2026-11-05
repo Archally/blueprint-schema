@@ -685,10 +685,19 @@ describe('entity and file selection', () => {
       'the whole owning concept is selected, not only the attribute');
   });
 
-  test('an id without its scope prefix is accepted when it is unique', () => {
+  test('an id without the prefix it is declared with selects nothing and names the id it may mean', () => {
     const { observations } = collectObservations(fixtureRoot);
-    const { selected } = selectEntity(observations, 'LP01');
-    assert.ok([...selected].every((observation) => observation.entityId === 'shop.LP01'));
+    assert.throws(() => selectEntity(observations, 'LP01'), /--entity LP01 selects nothing measurable\. Did you mean: shop\.LP01\./);
+  });
+
+  test('an id declared without a prefix is selected exactly, beside a prefixed id with the same tail', () => {
+    const observations = /** @type {any[]} */ ([
+      { file: '/m/x.yaml', entityId: 'CN001', entityName: 'Bare', subject: 'Bare' },
+      { file: '/m/a/x.yaml', entityId: 'a.CN001', entityName: 'A', subject: 'A' },
+    ]);
+    const { selected } = selectEntity(observations, 'CN001');
+    assert.deepEqual([...selected].map((observation) => observation.entityId), ['CN001']);
+    assert.throws(() => selectEntity(observations, 'b.CN001'), /Did you mean: CN001, a\.CN001\./);
   });
 
   test('an unknown id refuses and lists the ids that share its prefix', () => {
@@ -697,12 +706,16 @@ describe('entity and file selection', () => {
     assert.throws(() => selectEntity(observations, 'NOPE999'), /selects nothing measurable.*prefixes: .*CN/);
   });
 
-  test('an id that matches several scoped ids refuses as ambiguous', () => {
+  test('an id that several scoped ids end with selects none of them and lists each, then the same-type ids', () => {
     const observations = /** @type {any[]} */ ([
       { file: '/m/a/x.yaml', entityId: 'a.CN001', entityName: 'A', subject: 'A' },
       { file: '/m/b/x.yaml', entityId: 'b.CN001', entityName: 'B', subject: 'B' },
+      { file: '/m/b/x.yaml', entityId: 'b.CN002', entityName: 'C', subject: 'C' },
     ]);
-    assert.throws(() => selectEntity(observations, 'CN001'), /ambiguous.*a\.CN001, b\.CN001/);
+    assert.throws(
+      () => selectEntity(observations, 'CN001'),
+      /selects nothing measurable\. Did you mean: a\.CN001, b\.CN001\. Ids with the prefix CN: a\.CN001, b\.CN001, b\.CN002$/,
+    );
   });
 
   test('--file reads a path relative to the model root, or to the working directory', () => {

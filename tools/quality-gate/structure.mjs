@@ -7,10 +7,13 @@
  *
  *   references held only in prose  ids the entity's description (or a rule's logic) names that no
  *                                  other field of the same entity names, resolved against the ids
- *                                  the model declares. Each is marked with whether the entity's
- *                                  schema type has a field that could hold it, so an authoring gap
- *                                  (move it into that field) reads apart from a schema gap (no
- *                                  field exists for it).
+ *                                  the model declares, by the exact id as written. Each is marked
+ *                                  with whether the entity's schema type has a field that could
+ *                                  hold it, so an authoring gap (move it into that field) reads
+ *                                  apart from a schema gap (no field exists for it). A mention
+ *                                  that names no declared id but differs from one only by a scope
+ *                                  prefix is listed apart, as an unresolved mention with the ids
+ *                                  it may mean.
  *   fields used                    the authored fields an entity uses, out of those its schema type
  *                                  makes available, identity and prose fields excluded.
  *   description length             context beside the two, never a score of its own.
@@ -25,8 +28,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
 import { entriesOf, nameOf, typedIdOf } from './collect.mjs';
-import { entityKeyOf } from './entities.mjs';
-import { ROOT_SLICE } from './slice.mjs';
+import { entityKeyOf, idsDifferingOnlyByPrefix } from './entities.mjs';
 
 /** A token shaped like a typed id: an optional dotted scope, 1-4 capitals, 2-5 digits. */
 const TOKEN_RE = /\b(?:[a-z][a-z0-9-]*\.)*[A-Z]{1,4}\d{2,5}\b/g;
@@ -249,63 +251,41 @@ function patternsOf(schema, file, load, seen, depth) {
 // ── which ids the model declares, and what a token in prose names ───────────
 
 /**
- * Every typed id the model declares, anywhere in any file, keyed by the spellings that resolve to
- * it: the id itself and, for an unscoped id filed in a slice, the id under that slice's scope.
- * @param {Array<{doc: any, slice?: string}>} documents
- * @returns {Map<string, string>}
+ * Every typed id the model declares, anywhere in any file, as written. The folder a file sits in
+ * is not part of an id: `CN001` filed in `catalog/` is declared as `CN001`.
+ * @param {Array<{doc: any}>} documents
+ * @returns {Set<string>}
  */
 export function declaredIdsOf(documents) {
-  /** @type {Map<string, string>} */
-  const declared = new Map();
-  const visit = (/** @type {any} */ node, /** @type {string|undefined} */ slice, /** @type {Set<any>} */ seen) => {
+  /** @type {Set<string>} */
+  const declared = new Set();
+  const visit = (/** @type {any} */ node, /** @type {Set<any>} */ seen) => {
     if (!node || typeof node !== 'object' || seen.has(node)) return;
     seen.add(node);
     if (Array.isArray(node)) {
-      for (const item of node) visit(item, slice, seen);
+      for (const item of node) visit(item, seen);
       return;
     }
     for (const key of ['id', 'x-model-id']) {
       const id = typedIdOf(node[key]);
-      if (!id) continue;
-      declared.set(id, id);
-      if (!id.includes('.') && slice && slice !== ROOT_SLICE && !declared.has(`${slice}.${id}`)) declared.set(`${slice}.${id}`, id);
+      if (id) declared.add(id);
     }
-    for (const value of Object.values(node)) visit(value, slice, seen);
+    for (const value of Object.values(node)) visit(value, seen);
   };
-  for (const { doc, slice } of documents) visit(doc, slice, new Set());
+  for (const { doc } of documents) visit(doc, new Set());
   return declared;
 }
 
 /**
- * A resolver from a token to the id the model declares: under the entity's own scope, then exactly,
- * then by its unscoped tail when exactly one declared id ends with it. Anything else names nothing
- * the model declares and resolves to `undefined`, so a version string or a code that happens to be
- * shaped like an id is never reported.
- * @param {Map<string, string>} declared
- * @returns {(token: string, scope?: string) => string|undefined}
+ * A resolver from a token to the id the model declares as that exact string. A scope prefix and
+ * its dot are part of the id, so `CN001` does not resolve to `catalog.CN001`, nor the reverse.
+ * Anything else names nothing the model declares and resolves to `undefined`, so a version string
+ * or a code that happens to be shaped like an id is never reported as a reference.
+ * @param {Set<string>} declared
+ * @returns {(token: string) => string|undefined}
  */
 export function resolverFor(declared) {
-  /** @type {Map<string, Set<string>>} */
-  const byTail = new Map();
-  for (const canonical of declared.values()) {
-    const tail = canonical.slice(canonical.lastIndexOf('.') + 1);
-    const bucket = byTail.get(tail) ?? new Set();
-    bucket.add(canonical);
-    byTail.set(tail, bucket);
-  }
-  return (token, scope) => {
-    // An unscoped token means the entity's own slice first: a model may declare the same unscoped
-    // id in another slice's file, and an exact match would resolve the prose into that slice.
-    if (scope && !token.includes('.')) {
-      const scoped = declared.get(`${scope}.${token}`);
-      if (scoped) return scoped;
-    }
-    const exact = declared.get(token);
-    if (exact) return exact;
-    if (token.includes('.')) return undefined;
-    const candidates = byTail.get(token);
-    return candidates && candidates.size === 1 ? [...candidates][0] : undefined;
-  };
+  return (token) => (declared.has(token) ? token : undefined);
 }
 
 // ── the per-entity measure ───────────────────────────────────────────────────
@@ -317,6 +297,13 @@ export function resolverFor(declared) {
  * @property {string} in                    the field it was read from
  * @property {boolean|null} schemaHasField  whether a field of the entity's type accepts it; null without a schema
  * @property {string[]} fields              the fields that could hold it
+ */
+
+/**
+ * @typedef {object} UnresolvedReference
+ * @property {string} written               the token as the prose wrote it; the model declares no such id
+ * @property {string} in                    the field it was read from
+ * @property {string[]} didYouMean          the declared ids that differ from it only by a scope prefix, never empty
  */
 
 /**
@@ -332,6 +319,7 @@ export function resolverFor(declared) {
  * @property {number|null} fieldsAvailable
  * @property {number} descriptionLength
  * @property {ProseOnlyReference[]} proseOnlyReferences
+ * @property {UnresolvedReference[]} unresolvedReferences  mentions that name no declared id; advisory, outside every score
  */
 
 /** A value that states something: not absent, not an empty string, list or map. @param {unknown} value */
@@ -369,7 +357,8 @@ export function measureStructure({ documents, schemaIndex, structureSpec }) {
   const identity = new Set(structureSpec.identity_fields ?? []);
   const prose = new Set(structureSpec.prose_fields ?? []);
   const referenceText = structureSpec.reference_text_fields ?? [];
-  const resolve = resolverFor(declaredIdsOf(documents));
+  const declared = declaredIdsOf(documents);
+  const resolve = resolverFor(declared);
 
   /** @type {StructureRecord[]} */
   const records = [];
@@ -378,9 +367,6 @@ export function measureStructure({ documents, schemaIndex, structureSpec }) {
       for (const [key, node] of entriesOf(doc?.[container])) {
         const entityId = typedIdOf(node.id);
         const name = String(nameOf(node, key));
-        const scope = entityId?.includes('.')
-          ? entityId.slice(0, entityId.lastIndexOf('.'))
-          : slice && slice !== ROOT_SLICE ? slice : undefined;
         const containerType = schemaIndex ? schemaIndex.containers.get(container) ?? null : null;
         const available = containerType
           ? containerType.properties.filter((field) => !identity.has(field) && !prose.has(field))
@@ -390,24 +376,36 @@ export function measureStructure({ documents, schemaIndex, structureSpec }) {
         const fieldsUsed = Object.keys(node).filter((field) => isPresent(node[field])
           && !identity.has(field) && !prose.has(field) && (!availableSet || availableSet.has(field)));
 
-        const self = entityId ? resolve(entityId, scope) ?? entityId : undefined;
+        const self = entityId;
         /** @type {Set<string>} */
         const typed = new Set();
         for (const [field, value] of Object.entries(node)) {
           if (identity.has(field) || prose.has(field) || referenceText.includes(field)) continue;
           for (const token of stringsOf(value).flatMap(tokensOf)) {
-            const resolved = resolve(token, scope);
+            const resolved = resolve(token);
             if (resolved) typed.add(resolved);
           }
         }
 
         /** @type {ProseOnlyReference[]} */
         const proseOnlyReferences = [];
+        /** @type {UnresolvedReference[]} */
+        const unresolvedReferences = [];
         const reported = new Set();
+        const unresolvedSeen = new Set();
         for (const field of referenceText) {
           for (const token of stringsOf(node[field]).flatMap(tokensOf)) {
-            const resolved = resolve(token, scope);
-            if (!resolved || resolved === self || typed.has(resolved) || reported.has(resolved)) continue;
+            const resolved = resolve(token);
+            if (!resolved) {
+              // A token no declared id spells is reported only when some declared id differs from
+              // it by a scope prefix alone; any other id-shaped token (a version, a code) is not one.
+              if (unresolvedSeen.has(token)) continue;
+              unresolvedSeen.add(token);
+              const didYouMean = idsDifferingOnlyByPrefix(declared, token);
+              if (didYouMean.length > 0) unresolvedReferences.push({ written: token, in: field, didYouMean });
+              continue;
+            }
+            if (resolved === self || typed.has(resolved) || reported.has(resolved)) continue;
             reported.add(resolved);
             const fields = containerType
               ? [...new Set(containerType.referencePatterns
@@ -437,6 +435,7 @@ export function measureStructure({ documents, schemaIndex, structureSpec }) {
           fieldsAvailable: available ? available.length : null,
           descriptionLength: typeof node.description === 'string' ? node.description.length : 0,
           proseOnlyReferences,
+          unresolvedReferences,
         });
       }
     }
@@ -486,6 +485,7 @@ export function summarizeStructure(records, order = []) {
         withProseOnlyReferences: bucket.filter((record) => record.proseOnlyReferences.length > 0).length,
         proseOnlyReferences: references.length,
         schemaGapReferences: references.filter((reference) => reference.schemaHasField === false).length,
+        unresolvedReferences: bucket.reduce((total, record) => total + record.unresolvedReferences.length, 0),
         fieldsAvailable: availableValues.length === 1 ? availableValues[0] : null,
         fieldsUsed: { median: median(used), max: Math.max(...used), distribution },
         fieldUse,

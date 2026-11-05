@@ -118,7 +118,8 @@ nothing: no threshold, no metric, no effect on the exit code.
 
 | Signal | What it reports |
 |---|---|
-| **references held only in prose** | ids an entity's `description` (or a rule's `logic`) names that no other field of the same entity names. Each token is resolved against the ids the model declares: first under the entity's own scope (`VR008` written in an `international` rule is `international.VR008`), then exactly, then by its unscoped tail when exactly one declared id ends with it. A token shaped like an id that the model does not declare (a version string, a currency code) is ignored, and so is the entity's own id |
+| **references held only in prose** | ids an entity's `description` (or a rule's `logic`) names that no other field of the same entity names. Each token is resolved against the ids the model declares, by the exact id as written: a scope prefix is part of the id, so `VR008` written in an `international` rule does not name `international.VR008`, and the folder a file sits in qualifies nothing. A token shaped like an id that the model does not declare (a version string, a currency code) is ignored, and so is the entity's own id |
+| **unresolved mentions** | tokens in the same prose that name no declared id but differ from one or more declared ids only by a scope prefix (`VR008` where the model declares `international.VR008`, or `catalog.CN014` where it declares `CN014`). Each is listed with those ids as "did you mean" and resolves to none of them. Advisory: outside every score, metric and verdict |
 | **fields used** | the fields an entity fills, out of those its schema type makes available. An empty string, list or map is not a field used |
 | **description length** | context beside the two, never a score of its own |
 
@@ -146,15 +147,19 @@ references are still reported and the available set reads as unknown, with the r
 Where it shows:
 
 - **entity and file mode**: each entity block ends with `fields used: <n> of <available>
-  (<fields>); description <n> chars`, then one `held only in prose` line per reference;
+  (<fields>); description <n> chars`, then one `held only in prose` line per reference and
+  one `names no declared id` line per unresolved mention;
 - **whole-model, patch and slice mode**: a table with one row per kind (entities, entities with
   references held only in prose, those references, how many are schema gaps, fields used
   median and maximum against the available set, description length median and maximum),
-  then the entities holding references only in prose, most first, limited by `--worst`;
+  then the entities holding references only in prose, most first, limited by `--worst`, and
+  the entities naming ids the model does not declare, the same way;
 - **`--json`**: `entities[].structure` (`kind`, `type`, `fieldsUsed`, `fieldsAvailable`,
   `descriptionLength`, `proseOnlyReferences[]` with `id`, `written`, `in`, `schemaHasField`,
-  `fields`) and `runs[].structure` (`schemaRoot`, `schemaSource`, `note`, `kinds[]` with the
-  table's counts, the `fieldsUsed.distribution` and a `fieldUse` count per field).
+  `fields`, and `unresolvedReferences[]` with `written`, `in` and a non-empty `didYouMean[]`)
+  and `runs[].structure` (`schemaRoot`, `schemaSource`, `note`, `kinds[]` with the table's
+  counts, an `unresolvedReferences` count, the `fieldsUsed.distribution` and a `fieldUse` count
+  per field).
 
 Fields used is read with the entity's sources, never maximised. A field is written when a
 source supports it and an empty field stays empty, so a low count on a well-sourced entity is
@@ -205,13 +210,14 @@ a filler value was condemned. The metric table follows, showing only the metrics
 data in the selection.
 
 - `--entity` takes the entity's own id (`catalog.CN001`, `MDL800`) or the id of a part it
-  owns (`CAT813`, a concept attribute). A part selects its owner's block, and its rows
-  are marked `>`. An id without its scope prefix (`CN001`) is accepted when exactly one
-  entity carries it; when several do, the run refuses and lists them.
+  owns (`CAT813`, a concept attribute), matched as the exact string. A part selects its
+  owner's block, and its rows are marked `>`. A scope prefix is part of the id, so `CN001`
+  does not select `catalog.CN001`: the run refuses and lists it under "did you mean".
 - `--file` takes a path relative to the model root (`admin/models.yaml`) or to the working
   directory, so the path an editor reports works as it is.
-- A selection that names nothing refuses with exit 2 and names candidates: ids sharing
-  the requested prefix, or files in the same folder. A file that exists but holds no
+- A selection that names nothing refuses with exit 2, selects none of its candidates and
+  names them: ids that differ from the requested one only by a scope prefix ("did you
+  mean"), then ids sharing its type prefix, or files in the same folder. A file that exists but holds no
   entity the gate observes refuses the same way.
 - Both select inside one model, so they take exactly one model root, and neither combines
   with `--update-baseline`: a ratchet floor is a claim about a whole model or slice.

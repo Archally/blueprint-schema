@@ -24,6 +24,9 @@ const CANDIDATE_LIMIT = 10;
 
 const TYPED_PREFIX_RE = /^(?:[a-z0-9-]+\.)*([A-Z]{1,4})\d/;
 
+/** A scope prefix: a lower-case slice or subdomain name followed by a dot. */
+const SCOPE_PREFIX_RE = /^[a-z][a-z0-9-]*\./;
+
 /**
  * The key that identifies one entity: its typed id within its file, or its name within its file
  * when it has no typed id. The file is part of the key so a duplicated id reads as two entities,
@@ -129,6 +132,28 @@ function typedPrefixOf(id) {
   return TYPED_PREFIX_RE.exec(id)?.[1];
 }
 
+/** An id without its scope prefix, read only to suggest, never to identify. @param {string} id */
+function localPartOf(id) {
+  return SCOPE_PREFIX_RE.test(id) ? id.slice(id.indexOf('.') + 1) : id;
+}
+
+/**
+ * "Did you mean": every id in `ids` that differs from `id` only by a scope prefix, sorted, each
+ * once. An id is its whole string, so `CN001` and `catalog.CN001` are two ids and neither resolves
+ * to the other; the list only tells the reader which ids they may have meant.
+ * @param {Iterable<string>} ids
+ * @param {string} id
+ * @returns {string[]}
+ */
+export function idsDifferingOnlyByPrefix(ids, id) {
+  const wanted = localPartOf(id);
+  const matches = new Set();
+  for (const candidate of ids) {
+    if (candidate !== id && localPartOf(candidate) === wanted) matches.add(candidate);
+  }
+  return [...matches].sort();
+}
+
 /**
  * Every typed id the model's observations name, owners and owned parts alike.
  * @param {import('./collect.mjs').Observation[]} observations
@@ -143,51 +168,44 @@ function knownIds(observations) {
 }
 
 /**
- * Select the entity `--entity <id>` names. The id may be the entity's own (`catalog.CN001`,
- * `MDL800`) or the id of a part it owns (`CAT813`, a concept attribute), which selects the
- * owning entity and marks the part as the focus. A bare id without its scope prefix
- * (`CN001` for `catalog.CN001`) is accepted when exactly one entity carries it.
+ * Select the entity `--entity <id>` names, by the exact id as written. The id may be the entity's
+ * own (`catalog.CN001`, `MDL800`) or the id of a part it owns (`CAT813`, a concept attribute),
+ * which selects the owning entity and marks the part as the focus. A scope prefix is part of the
+ * id: `CN001` does not select `catalog.CN001`.
  *
  * A selection that names nothing refuses, as `--slice` does: a gate that passes over nothing
- * reports a green verdict the caller will believe.
+ * reports a green verdict the caller will believe. The refusal names the ids that differ from the
+ * requested one only by a scope prefix ("did you mean"), then the ids of the same type, and
+ * selects none of them.
  * @param {import('./collect.mjs').Observation[]} observations
  * @param {string} requested
  * @returns {{selected: Set<import('./collect.mjs').Observation>, focus?: string}}
  */
 export function selectEntity(observations, requested) {
   const id = String(requested).trim();
-  const matchesExactly = (/** @type {string|undefined} */ candidate) => candidate === id;
-  const matchesUnscoped = (/** @type {string|undefined} */ candidate) => Boolean(candidate?.endsWith(`.${id}`));
+  const matched = observations.some((observation) => observation.entityId === id || observation.ownedId === id);
 
-  let matchedIds = new Set();
-  for (const matches of [matchesExactly, matchesUnscoped]) {
-    for (const observation of observations) {
-      if (matches(observation.entityId)) matchedIds.add(observation.entityId);
-      if (matches(observation.ownedId)) matchedIds.add(observation.ownedId);
-    }
-    if (matchedIds.size > 0) break;
-  }
-
-  if (matchedIds.size > 1) {
-    throw new Error(`--entity ${id} is ambiguous. It matches: ${[...matchedIds].sort().join(', ')}`);
-  }
-  if (matchedIds.size === 0) {
+  if (!matched) {
     const all = knownIds(observations);
+    const listed = (/** @type {string[]} */ ids) => {
+      const more = ids.length > CANDIDATE_LIMIT ? ` (and ${ids.length - CANDIDATE_LIMIT} more)` : '';
+      return `${ids.slice(0, CANDIDATE_LIMIT).join(', ')}${more}`;
+    };
+    const meant = idsDifferingOnlyByPrefix(all, id);
+    const didYouMean = meant.length > 0 ? ` Did you mean: ${listed(meant)}.` : '';
     const prefix = typedPrefixOf(id);
     const samePrefix = prefix ? all.filter((candidate) => typedPrefixOf(candidate) === prefix) : [];
     if (samePrefix.length > 0) {
-      const shown = samePrefix.slice(0, CANDIDATE_LIMIT).join(', ');
-      const more = samePrefix.length > CANDIDATE_LIMIT ? ` (and ${samePrefix.length - CANDIDATE_LIMIT} more)` : '';
-      throw new Error(`--entity ${id} selects nothing measurable. Ids with the prefix ${prefix}: ${shown}${more}`);
+      throw new Error(`--entity ${id} selects nothing measurable.${didYouMean} Ids with the prefix ${prefix}: ${listed(samePrefix)}`);
     }
     const prefixes = [...new Set(all.map(typedPrefixOf).filter(Boolean))].sort();
     throw new Error(
-      `--entity ${id} selects nothing measurable. This model has ${all.length} typed ids;`
+      `--entity ${id} selects nothing measurable.${didYouMean} This model has ${all.length} typed ids;`
       + ` their prefixes: ${prefixes.join(', ')}`,
     );
   }
 
-  const [matchedId] = matchedIds;
+  const matchedId = id;
   const owningKeys = new Set(
     observations
       .filter((observation) => observation.entityId === matchedId || observation.ownedId === matchedId)

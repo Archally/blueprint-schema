@@ -9,9 +9,6 @@ happy_path:
     validates:
       operations: [orders.CMD001, orders.EVT001]
       rules: [orders.SR001, orders.VR001]
-    contract:
-      kind: openapi
-      file: orders-api
     given:
       description: "Cart with 2 items, both in stock. Delivery and invoice address set."
       state:
@@ -168,6 +165,129 @@ happy_path:
             no handler compares the running total of payments against totalPaidTaxIncl.
           confidence_impact: weakens
     note: "Checked against AddPaymentCommand lines 194-198: the amount need not match the order total, and only a negative amount is refused, as orders.VR002 states."
+
+  - id: orders.TC005
+    name: Cancel unpaid order products from Order Detail
+    summary: An employee submits a valid unpaid-order cancellation and sees the cancellation success message.
+    validates:
+      operations:
+        - orders.CMD002 # CancelOrder
+      ui:
+        screens:
+          - orders.SCR002 # Order Detail
+        actions:
+          - orders.UAC002 # Cancel Order
+    tags: [front-end]
+    given:
+      description: Order Detail shows an unpaid order with cancellable products. The employee has update
+        and delete permission, selects all remaining products and enters valid cancellation
+        quantities.
+    when:
+      operation: orders.CMD002 # CancelOrder
+      description: On Order Detail, submit the cancellation form for the selected products.
+    expected_result:
+      status: success
+      behavior: The employee returns to the same Order Detail page and sees Selected products were
+        successfully canceled.
+    code_refs:
+      - path: src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php
+        role: implementation
+        description: Lines 2073-2096 handle the cancellation form, flash the success message for a valid
+          result and redirect to admin_orders_view.
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php
+          date: 2026-10-29
+          summary: The controller adds the selected-products cancellation success flash only for a submitted
+            valid form and redirects to the same order.
+          confidence_impact: supports
+    note: The unpaid precondition follows the existing modeled cancellation test. This source read
+      supports the UI result, without asserting payment reversal or shipment eligibility from the
+      broad operation description.
+
+  - id: orders.TC006
+    name: Submit a partial refund from Order Detail
+    summary: A valid partial refund returns the employee to the order with its success message.
+    validates:
+      operations:
+        - orders.CMD015 # IssuePartialRefund
+      ui:
+        screens:
+          - orders.SCR002 # Order Detail
+        actions:
+          - orders.UAC003 # Process Refund
+    tags: [front-end]
+    given:
+      description: Order Detail shows a paid order with a refundable line. One unit remains refundable at
+        EUR 10. The employee has update and delete permission and supplies valid credit-slip options.
+    when:
+      operation: orders.CMD015 # IssuePartialRefund
+      description: On Order Detail, submit a partial refund for one remaining unit at EUR 10.
+    expected_result:
+      status: success
+      behavior: The employee returns to the same Order Detail page and sees A partial refund was
+        successfully created.
+    code_refs:
+      - path: src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php
+        role: implementation
+        description: Lines 992-1016 handle the partial-refund form, flash its success message and redirect
+          to admin_orders_view.
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php
+          date: 2026-10-29
+          summary: The partial-refund endpoint distinguishes invalid forms and exceptions from valid results,
+            for which it flashes the partial-refund success message.
+          confidence_impact: supports
+    note: This case covers the partial-refund branch of Process Refund only. It does not claim to cover
+      the standard-refund operation also named by that action, or an external payment transfer.
+
+  - id: orders.TC007
+    name: Save a return status from Return Management
+    summary: An employee changes an existing return status and saves while remaining on its edit page.
+    validates:
+      operations:
+        - orders.CMD023 # UpdateOrderReturnState
+      ui:
+        screens:
+          - orders.SCR003 # Return Management
+        actions:
+          - orders.UAC006 # Update Return Status
+    tags: [front-end]
+    given:
+      description: Return Management is editing an existing merchandise return. The employee has edit
+        permission and chooses an existing noncancelling status different from the current one.
+    when:
+      operation: orders.CMD023 # UpdateOrderReturnState
+      description: On Return Management, choose the target status in Status and click Save and stay.
+    expected_result:
+      status: success
+      behavior: The employee returns to the same return edit page with the selected status saved and the
+        success confirmation parameter conf=4.
+    code_refs:
+      - path: controllers/admin/AdminReturnController.php
+        role: implementation
+        description: Lines 102-111 define the Status selector; lines 133-139 define Save and stay; lines
+          236-280 save the state and redirect back with conf=4.
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: controllers/admin/AdminReturnController.php
+          date: 2026-10-29
+          summary: The legacy controller renders the state selector, saves the selected state and redirects
+            back to that return on Save and stay.
+          confidence_impact: supports
+    note: The legacy back-office controller writes OrderReturn directly rather than dispatching
+      UpdateOrderReturnState. This case uses the operation already named by the action as a domain
+      link. No return-period guard or mail-delivery result is asserted for a status update.
 
 edge_cases:
   - id: orders.EC001
@@ -395,3 +515,48 @@ error_cases:
             Modeler-derived from code. No test asserts the same-status refusal, and none could
             assert the retired one.
           confidence_impact: weakens
+
+  - id: orders.ER004
+    name: Show excessive partial refund quantity on Order Detail
+    summary: A partial-refund quantity above the line remainder returns the employee to the order with a
+      refusal.
+    validates:
+      operations:
+        - orders.CMD015 # IssuePartialRefund
+      rules:
+        - orders.VR004 # A partial refund is positive and never exceeds what is left on a line
+      ui:
+        screens:
+          - orders.SCR002 # Order Detail
+        actions:
+          - orders.UAC003 # Process Refund
+    tags: [front-end]
+    given:
+      description: Order Detail shows a refundable line with exactly 2 units left after earlier refunds or
+        returns. The employee has update and delete permission and uses a positive refund amount.
+    when:
+      operation: orders.CMD015 # IssuePartialRefund
+      description: On Order Detail, submit a partial refund requesting 3 units from that line.
+    expected_result:
+      status: failure
+      behavior: The employee returns to the same Order Detail page with the quantity refusal Please enter
+        a maximum quantity of 2. The partial-refund success message is absent.
+    code_refs:
+      - path: src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php
+        role: implementation
+        description: Lines 1010-1016 flash mapped exceptions and redirect to the order; lines 2366-2369 map
+          QUANTITY_TOO_HIGH with the refundable quantity.
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php
+          date: 2026-10-29
+          summary: The model states the remaining-quantity guard. The controller maps QUANTITY_TOO_HIGH to a
+            message containing the refundable quantity and displays the mapped error after
+            partial-refund exceptions.
+          confidence_impact: supports
+    note: Source-derived and not browser-executed. The guard is the modeled per-line quantity limit, not
+      an invented order-total limit. This read checks the controller error mapping rather than the
+      refund calculator internals.

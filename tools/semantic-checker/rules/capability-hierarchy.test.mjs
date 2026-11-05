@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { capabilityIndex, ancestorsOf, descendantsOf } from './capability-hierarchy.mjs';
 import { capabilityRealizedNowhere } from './capability-realized-nowhere.mjs';
 import { operationRealizesTwoCapabilities } from './operation-realizes-two-capabilities.mjs';
+import { eventPlacedWithProducerCapability } from './event-placed-with-producer-capability.mjs';
 import { capabilityNestedDeeperThanTwoLevels } from './capability-nested-deeper-than-two-levels.mjs';
 function fixture(realized = ['CAP003'], clone = false) {
   const fourth = { id: 'CAP004', name: 'Fourth', level: 4 };
@@ -44,4 +45,49 @@ test('duplicate-id cycles terminate without crediting deeper operations to L1', 
   model.entities[3].data.children = [model.entities[1].data];
   assert.equal(capabilityRealizedNowhere(model, model.entities[0]).ok, false);
   assert.equal(capabilityIndex(model).deeper.size, 2);
+});
+
+test('feature children count in the empty scope of an L1 without changing capability realization edges', () => {
+  const model = fixture([]);
+  model.entities[1].data.kind = 'feature';
+  const finding = capabilityRealizedNowhere(model, model.entities[0]);
+  assert.match(finding.context.scope, /1 sub-capability/);
+  assert.equal(finding.context.reason, 'no capability in it lists an operation or names a module in realized_in');
+});
+
+test('event placement follows its producer capability, common parent, and exact declared ids', () => {
+  const fixtureModel = (eventPlacement) => ({
+    entities: [
+      { id: 'ROOT', type: 'Capability', fileOrigin: 'cap.yaml', data: { id: 'ROOT', children: [{ id: 'CHILD' }, { id: 'SIBLING' }] } },
+      { id: 'CHILD', type: 'Capability', fileOrigin: 'cap.yaml', data: { id: 'CHILD' } },
+      { id: 'SIBLING', type: 'Capability', fileOrigin: 'cap.yaml', data: { id: 'SIBLING' } },
+      { id: 'CMD', type: 'Operation', data: { id: 'CMD' } },
+      { id: 'CMD2', type: 'Operation', data: { id: 'CMD2' } },
+      { id: 'EVT', type: 'Operation', data: { id: 'EVT', kind: 'event' } },
+      { id: 'UNPLACED', type: 'Operation', data: { id: 'UNPLACED' } },
+      { id: 'NOPRODUCER', type: 'Operation', data: { id: 'NOPRODUCER' } },
+    ],
+    relations: [
+      { source: 'CHILD', target: 'CMD', type: 'capability_operation' },
+      { source: 'SIBLING', target: 'CMD2', type: 'capability_operation' },
+      ...(eventPlacement ? [{ source: eventPlacement, target: 'EVT', type: 'capability_operation' }] : []),
+      { source: 'CMD', target: 'EVT', type: 'produces' },
+      { source: 'CMD2', target: 'EVT', type: 'produces' },
+      { source: 'CHILD', target: 'UNPLACED', type: 'capability_operation' },
+      { source: 'CHILD', target: 'NOPRODUCER', type: 'capability_operation' },
+      { source: 'CMD', target: 'NOPRODUCER', type: 'produces' },
+    ],
+  });
+  let model = fixtureModel('ROOT');
+  assert.equal(eventPlacedWithProducerCapability(model, model.entities[5]).ok, true);
+  model = fixtureModel(null);
+  assert.equal(eventPlacedWithProducerCapability(model, model.entities[5]).ok, true);
+  model = fixtureModel('SIBLING');
+  assert.equal(eventPlacedWithProducerCapability(model, model.entities[5]).ok, false);
+  assert.equal(eventPlacedWithProducerCapability(model, model.entities[6]).ok, true);
+  assert.equal(eventPlacedWithProducerCapability(model, model.entities[7]).ok, true);
+  const separateRoots = fixtureModel('ROOT');
+  separateRoots.entities.push({ id: 'OTHER_ROOT', type: 'Capability', fileOrigin: 'cap.yaml', data: { id: 'OTHER_ROOT' } });
+  separateRoots.relations.push({ source: 'OTHER_ROOT', target: 'CMD2', type: 'capability_operation' });
+  assert.equal(eventPlacedWithProducerCapability(separateRoots, separateRoots.entities[5]).ok, true);
 });

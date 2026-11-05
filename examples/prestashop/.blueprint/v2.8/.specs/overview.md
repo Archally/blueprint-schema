@@ -1,6 +1,6 @@
 # PrestaShop-v9
 
-> Generated from blueprint model. 3714 entities, 8019 relations.
+> Generated from blueprint model. 3879 entities, 9369 relations.
 
 ## Context Map
 
@@ -41,6 +41,11 @@ graph LR
     ExternalApiConsumers -->|"contract traffic"| Admin
     ExternalApiConsumers -->|"contract traffic"| Catalog
     ExternalApiConsumers -->|"contract traffic"| Orders
+    PlatformKernel -->|"contract traffic"| Catalog
+    PlatformKernel -->|"contract traffic"| Checkout
+    PlatformKernel -->|"contract traffic"| Content
+    PlatformKernel -->|"contract traffic"| Modules
+    PlatformKernel -->|"contract traffic"| Orders
 ```
 
 > *[Archally Pro](https://archally.pro)* — Interactive Context Map with drag-and-drop, filtering, and detail panels.
@@ -1169,6 +1174,7 @@ graph LR
     orders_CMD036 -->|"initiated by"| orders_ACT001
     orders_CMD001 -->|"produces"| orders_EVT001
     orders_CMD001 -->|"initiated by"| orders_ACT001
+    orders_CMD001 -->|"initiated by"| admin_ACT002
     orders_CMD004 -->|"produces"| orders_EVT005
     orders_CMD004 -->|"reacts to"| orders_EVT001
     orders_CMD004 -->|"initiated by"| orders_ACT003
@@ -1298,10 +1304,19 @@ graph LR
 
 ```mermaid
 graph TD
+    subgraph migrations["migrations"]
+        MIG006["MIG006: defer-order-effects-with-durable-guards"]
+        MIG001["MIG001: Move to the v2.8 line"]
+        MIG002["MIG002: The anchor states its reactions and its risks"]
+        MIG003["MIG003: Each context and each party is declared once"]
+        MIG004["MIG004: A party stops declaring an environment"]
+        MIG005["MIG005: A server names the environment the model declares"]
+    end
     subgraph design_concepts["design.concepts"]
         admin_CN005["admin.CN005: ApiClient"]
         admin_CN006["admin.CN006: WebserviceKey"]
         admin_ACT003["admin.ACT003: ApiIntegrator"]
+        admin_PER002["admin.PER002: Integration developer"]
         admin_CN007["admin.CN007: SqlRequest"]
         admin_CN008["admin.CN008: Configuration"]
         admin_CN009["admin.CN009: Tab"]
@@ -1315,6 +1330,7 @@ graph TD
         admin_CN004["admin.CN004: Security"]
         admin_ACT001["admin.ACT001: SuperAdmin"]
         admin_ACT002["admin.ACT002: ShopOperator"]
+        admin_PER001["admin.PER001: Merchant with a team"]
         admin_EN001["admin.EN001: PermissionLevel"]
         admin_ASC001["admin.ASC001: Every employee is assigned exactly one profile tha"]
         admin_ASC002["admin.ASC002: A profile contains zero or more permission entries"]
@@ -1373,6 +1389,7 @@ graph TD
         content_CN004["content.CN004: ThemeImportSource"]
         content_CN006["content.CN006: MailTemplate"]
         content_ACT002["content.ACT002: StoreDesigner"]
+        content_PER001["content.PER001: Theme designer"]
         content_EN002["content.EN002: ThemeImportSourceType"]
         customers_CN004["customers.CN004: Address"]
         customers_ASC002["customers.ASC002: A customer has one or more addresses for delivery "]
@@ -1385,6 +1402,8 @@ graph TD
         customers_CN003["customers.CN003: Title"]
         customers_ACT001["customers.ACT001: Customer"]
         customers_ACT002["customers.ACT002: CustomerServiceAgent"]
+        customers_PER001["customers.PER001: Registered customer"]
+        customers_PER002["customers.PER002: Salesman"]
         customers_EN001["customers.EN001: Gender"]
         customers_EN002["customers.EN002: PriceDisplayMethod"]
         customers_ASC001["customers.ASC001: Customers are assigned to groups that determine th"]
@@ -1398,6 +1417,7 @@ graph TD
         international_CN002["international.CN002: Language"]
         international_CN003["international.CN003: ExchangeRate"]
         international_ACT001["international.ACT001: LocalizationAdmin"]
+        international_PER001["international.PER001: Translator"]
         international_EN001["international.EN001: CurrencyType"]
         international_ASC001["international.ASC001: Each currency has exactly one exchange rate relati"]
         international_CN007["international.CN007: Tax"]
@@ -1411,12 +1431,13 @@ graph TD
         modules_CN002["modules.CN002: Hook"]
         modules_ACT001["modules.ACT001: StoreAdmin"]
         modules_ACT002["modules.ACT002: ModuleDeveloper"]
+        modules_PER001["modules.PER001: Module developer"]
         modules_EN002["modules.EN002: HookKind"]
         modules_EN001["modules.EN001: ModuleLifecycleState"]
         modules_ASC001["modules.ASC001: A module registers against zero or more hooks. Hoo"]
         orders_CN010["orders.CN010: OrderState"]
         orders_CN011["orders.CN011: OrderMessage"]
-        orders_CN002["orders.CN002: Order"]
+        orders_CN002["orders.CN002: A customer purchase made from a validated cart, with its lines, addresses, carrier, payment, totals and current status."]
         orders_CN003["orders.CN003: OrderLine"]
         orders_CN006["orders.CN006: Invoice"]
         orders_CN005["orders.CN005: PaymentRecord"]
@@ -1425,10 +1446,13 @@ graph TD
         orders_ACT002["orders.ACT002: Technical architect for order processing."]
         orders_ACT003["orders.ACT003: Store owner and operator."]
         orders_ACT004["orders.ACT004: Customer support and tech ops."]
+        orders_PER001["orders.PER001: Guest shopper"]
+        orders_PER002["orders.PER002: Gift buyer"]
+        orders_PER003["orders.PER003: Single-shop merchant"]
         orders_EN001["orders.EN001: OrderStatus"]
         orders_EN002["orders.EN002: PaymentMethod"]
         orders_ASC001["orders.ASC001: Every order depends on a delivery address."]
-        orders_ASC002["orders.ASC002: Payment acceptance on an order triggers invoice ge"]
+        orders_ASC002["orders.ASC002: Entering an order status flagged to issue invoices"]
         orders_CN007["orders.CN007: OrderReturn"]
         orders_CN008["orders.CN008: OrderReturnState"]
         orders_CN009["orders.CN009: CreditSlip"]
@@ -1436,6 +1460,7 @@ graph TD
         shipping_CN002["shipping.CN002: ShippingRange"]
         shipping_CN003["shipping.CN003: CarrierTaxRuleGroup"]
         shipping_ACT001["shipping.ACT001: ShippingManager"]
+        shipping_PER001["shipping.PER001: Logistician"]
         shipping_EN001["shipping.EN001: ShippingMethod"]
         shipping_EN002["shipping.EN002: OutOfRangeBehavior"]
         shipping_ASC001["shipping.ASC001: A carrier has zero or more shipping cost ranges (o"]
@@ -1453,6 +1478,7 @@ graph TD
         shop_CN008["shop.CN008: ShowcaseCard"]
         shop_ACT001["shop.ACT001: StoreAdmin"]
         shop_ACT002["shop.ACT002: MarketingManager"]
+        shop_PER001["shop.PER001: Multistore merchant"]
         shop_ASC001["shop.ASC001: A shop installation may have zero or more physical"]
     end
     subgraph design_domain["design.domain"]
@@ -1809,6 +1835,7 @@ graph TD
         catalog_ERR118["catalog.ERR118: CannotWriteCustomizationField"]
         catalog_ERR119["catalog.ERR119: InvalidProductFeatureValues"]
         catalog_ERR120["catalog.ERR120: ProductPackConstraintViolation"]
+        catalog_QN005["catalog.QN005: Deleting A Product With Pending Orders"]
         catalog_CMD034["catalog.CMD034: AddManufacturer"]
         catalog_CMD035["catalog.CMD035: EditManufacturer"]
         catalog_CMD036["catalog.CMD036: DeleteManufacturer"]
@@ -1884,6 +1911,7 @@ graph TD
         catalog_ERR426["catalog.ERR426: EmptySearchInput"]
         catalog_ERR427["catalog.ERR427: EmptySearch"]
         catalog_QN004["catalog.QN004: Who Can Restock This"]
+        catalog_QN006["catalog.QN006: Duplicate Manufacturer Name"]
         checkout_CMD001["checkout.CMD001: CreateCart"]
         checkout_CMD002["checkout.CMD002: UpdateCartAddresses"]
         checkout_CMD003["checkout.CMD003: UpdateCartCarrier"]
@@ -2211,6 +2239,7 @@ graph TD
         international_ERR019["international.ERR019: TaxRuleWriteFailed"]
         international_ERR020["international.ERR020: TaxRuleBulkDeleteFailed"]
         international_QN001["international.QN001: Which Tax Applies"]
+        international_QN004["international.QN004: Negative Tax Rate"]
         modules_CMD001["modules.CMD001: InstallModule"]
         modules_CMD002["modules.CMD002: UninstallModule"]
         modules_CMD003["modules.CMD003: UpdateModuleStatus"]
@@ -2451,6 +2480,7 @@ graph TD
         shop_QN001["shop.QN001: What A Search Returns"]
         shop_QN002["shop.QN002: Which Shop Serves This Request"]
         shop_QN003["shop.QN003: Where A Shopper Can Walk In"]
+        shop_QN004["shop.QN004: Duplicate Search Engine Server"]
     end
     subgraph design_arch["design.arch"]
         Admin["Admin: Employee accounts, profiles, security, API clients, configuration."]
@@ -2462,14 +2492,12 @@ graph TD
         CatalogService_inprocess["CatalogService.inprocess"]
         CatalogService_shareddata["CatalogService.shareddata"]
         CatalogService_openapi["CatalogService.openapi"]
-        CatalogService_asyncapi["CatalogService.asyncapi"]
         Checkout["Checkout: Cart management, checkout flow, cart rules, promotions, payment orchestration."]
-        CheckoutService["CheckoutService: REST API for cart operations and payment initiation."]
-        CheckoutService_openapi["CheckoutService.openapi"]
-        CheckoutService_asyncapi["CheckoutService.asyncapi"]
+        CheckoutService["CheckoutService: In-process cart commands, queries and local hooks within the PrestaShop monolith."]
+        CheckoutService_inprocess["CheckoutService.inprocess"]
         Content["Content: CMS pages, page categories, themes, email templates, SEO meta."]
-        ContentService["ContentService: REST API for CMS page and theme management."]
-        ContentService_openapi["ContentService.openapi"]
+        ContentService["ContentService: In-process CMS page commands within the PrestaShop monolith."]
+        ContentService_inprocess["ContentService.inprocess"]
         Customers["Customers: Customer accounts, addresses, customer service messaging, titles."]
         CustomerService["CustomerService: REST API for customer account and address management."]
         CustomerService_openapi["CustomerService.openapi"]
@@ -2482,18 +2510,20 @@ graph TD
         ModuleManager_inprocess["ModuleManager.inprocess"]
         ModuleManager_openapi["ModuleManager.openapi"]
         Orders["Orders: Order lifecycle - placement, state management, cancellation, refund, invoice, returns, credit slips."]
-        OrderService["OrderService: REST API for order commands and queries."]
+        OrderService["OrderService: In-process order commands, queries and local hooks within the PrestaShop monolith."]
         OrderService_scheduledtransfer["OrderService.scheduledtransfer"]
+        OrderService_inprocess["OrderService.inprocess"]
         OrderService_openapi["OrderService.openapi"]
-        OrderService_asyncapi["OrderService.asyncapi"]
-        ApiIntegrators["ApiIntegrators: Third-party systems integrating with PrestaShop over the Admin REST API using OAuth2. Not built or operated by PrestaShop; modelled so the dependency on the Admin API surface is visible."]
-        PrestaShop["PrestaShop: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
+        PRT003["PRT003: Third-party systems integrating with PrestaShop over the Admin REST API using OAuth2. Not built or operated by PrestaShop; modelled so the dependency on the Admin API surface is visible."]
+        PRT002["PRT002: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
         ExternalApiConsumers["ExternalApiConsumers: External systems consuming PrestaShop Admin API via OAuth2."]
         AdminApiClient["AdminApiClient: External API consumer using PrestaShop Admin REST API with OAuth2 authentication."]
         AdminApiClient_httpClient["AdminApiClient.httpClient"]
         AdminApiClient_security_schemes["AdminApiClient.security_schemes"]
         PlatformKernel["PlatformKernel: The command bus and hook dispatcher every bounded context executes through. Generic rather than core: it is plumbing shared by all ten domain contexts and carries no domain rule of its own."]
         HookDispatcher["HookDispatcher: Executes hooks synchronously, in-process, and is the only publish-subscribe surface PrestaShop has."]
+        InProcessConsumers["InProcessConsumers: The callers and hook listeners inside the PrestaShop process that use these operations, stated as one group because no individual caller is modelled from the code yet."]
+        InProcessConsumers_inprocess["InProcessConsumers.inprocess"]
         Shipping["Shipping: Carrier configuration, shipping cost calculation, shipment tracking."]
         ShippingService["ShippingService: REST API for carrier management and shipping cost calculation."]
         ShippingService_openapi["ShippingService.openapi"]
@@ -2567,6 +2597,12 @@ graph TD
         checkout_UAC012["checkout.UAC012: Keep this account"]
         checkout_UNV001["checkout.UNV001: Navigate to discount edit form."]
         checkout_UNV002["checkout.UNV002: Navigate from cart to discount list."]
+        checkout_UNV003["checkout.UNV003: Cart to checkout. The cart controller answers a cart request that carries checkout by redirecting to the checkout page before the cart is drawn. The control the shopper clicks is theme markup in the cart's actions partial, cart-detailed-actions.tpl, which the core repository does not ship, so no UI action is named for this edge.
+"]
+        checkout_UNV004["checkout.UNV004: Checkout to confirmation. For a paid cart the payment module that owns the confirming control creates the order and returns the shopper to a confirmation page; the documented payment scenarios all end there, and the redirect itself is the module's code, not core's. For a free cart core offers its own payment option, which posts to the confirmation page with free_order; that page creates the order and redirects to itself. The confirmation page opens only for a cart that has an order and a matching secure key.
+"]
+        checkout_UNV005["checkout.UNV005: Checkout back to the cart. The checkout page checks the cart every time it is drawn and redirects to the cart when any check fails; the cart page then shows the detailed errors. An ajax request is answered instead of redirected.
+"]
         content_SCR001["content.SCR001: Paginated grid of CMS pages with title, category, status, and bulk action controls."]
         content_SCR002["content.SCR002: CMS page add/edit form with localized title, content editor, SEO metadata, category selector, and display toggle."]
         content_SCR003["content.SCR003: Tree view of CMS page categories with breadcrumb navigation, status, and bulk actions."]
@@ -2602,6 +2638,13 @@ graph TD
         customers_UAC007["customers.UAC007: Save this address"]
         customers_UAC008["customers.UAC008: Delete this address"]
         customers_UAC009["customers.UAC009: Sign in"]
+        customers_UAC010["customers.UAC010: Open a customer from the list"]
+        customers_UAC011["customers.UAC011: Add an address for this customer"]
+        customers_UAC012["customers.UAC012: Follow the create-account link"]
+        customers_UAC013["customers.UAC013: Open Addresses"]
+        customers_UAC014["customers.UAC014: Open Information"]
+        customers_UAC015["customers.UAC015: Open Order history"]
+        customers_UAC016["customers.UAC016: Add a new address"]
         customers_UNV001["customers.UNV001: Navigate to customer detail."]
         customers_UNV002["customers.UNV002: Navigate to address form."]
         customers_UNV003["customers.UNV003: AuthController does not handle account creation; it redirects to the registration page, which is why the two are separate screens."]
@@ -2628,6 +2671,7 @@ graph TD
         modules_UAC002["modules.UAC002: Toggle Module Status"]
         modules_UAC003["modules.UAC003: Upload Module"]
         modules_UAC004["modules.UAC004: Toggle Hook Status"]
+        modules_UAC005["modules.UAC005: Open the upload dialog"]
         modules_UNV001["modules.UNV001: Navigate to module upload form."]
         orders_SCR001["orders.SCR001: Back-office order list with search, filters, and bulk actions."]
         orders_SCR002["orders.SCR002: Single order view with line items, payment, shipping, and action buttons."]
@@ -2644,6 +2688,8 @@ graph TD
         orders_UAC007["orders.UAC007: Send a message about this order"]
         orders_UAC008["orders.UAC008: Request a return for these lines"]
         orders_UAC009["orders.UAC009: Open an order from the history"]
+        orders_UAC010["orders.UAC010: Open an order from the list"]
+        orders_UAC011["orders.UAC011: Open a return from the order"]
         orders_UNV001["orders.UNV001: Navigate from order list to order detail."]
         orders_UNV002["orders.UNV002: Navigate from order detail to return management."]
         orders_UNV003["orders.UNV003: The history is an account page served by the orders slice; the hub that links to it belongs to customers, which is why this edge crosses a slice boundary."]
@@ -2786,6 +2832,9 @@ graph TD
         MDL104["MDL104: Lightweight order summary for paginated list views."]
         MDL105["MDL105: Single order line item - product, quantity, unit price, and line total."]
         MDL106["MDL106: Order pricing summary - products total, shipping, discounts, tax, and grand total."]
+        orders_MDL001["orders.MDL001: PATCH body for a merchandise return state change."]
+        orders_MDL002["orders.MDL002: Admin API merchandise return returned after a state change."]
+        orders_MDL003["orders.MDL003: Numeric order return identifier in the Admin API path."]
         MDL400["MDL400: Request body for creating a new carrier with delivery configuration, zone assignments, dimensional constraints, and shop associations."]
         MDL401["MDL401: Full carrier configuration for the back-office editing form including zones, ranges, dimensional constraints, and versioning metadata."]
         MDL402["MDL402: Lightweight carrier summary for paginated back-office list views."]
@@ -2813,6 +2862,7 @@ graph TD
         admin_GL002["admin.GL002: API-first integration"]
         admin_GL003["admin.GL003: Session security"]
         admin_GL004["admin.GL004: SQL self-service"]
+        admin_GL005["admin.GL005: Thin controllers, layered back office"]
         admin_NG001["admin.NG001: No LDAP/Active Directory integration for employee authentication"]
         admin_NG002["admin.NG002: No second authentication factor for employee sign-in"]
         admin_RSK001["admin.RSK001: Privilege escalation risk"]
@@ -2834,6 +2884,7 @@ graph TD
         catalog_RSK002["catalog.RSK002: Every image type multiplies the whole catalog's footprint"]
         catalog_RSK003["catalog.RSK003: Multi-store product data drift"]
         catalog_RSK004["catalog.RSK004: Combinatorial explosion"]
+        catalog_RSK005["catalog.RSK005: A large catalog loses the word-length ranking signal, silently"]
         catalog_ASM001["catalog.ASM001: A shop can run on the built-in index until its merchant chooses to install a search module"]
         catalog_ASM002["catalog.ASM002: The built-in inverted index keeps ranking usefully as the vocabulary grows"]
         catalog_TRO001["catalog.TRO001"]
@@ -2842,6 +2893,7 @@ graph TD
         checkout_GL001["checkout.GL001: Above-average checkout conversion rate"]
         checkout_GL002["checkout.GL002: Measurable promotion campaign effectiveness"]
         checkout_GL003["checkout.GL003: Fast cart rule evaluation"]
+        checkout_GL004["checkout.GL004: Prices are the shop's, not the browser's"]
         checkout_NG001["checkout.NG001: No payment method of any kind is implemented in core"]
         checkout_RSK001["checkout.RSK001: Flash sale checkout latency"]
         checkout_RSK002["checkout.RSK002: Discount stacking exploitation"]
@@ -3017,98 +3069,97 @@ graph TD
         shop_SLO001["shop.SLO001: Search Indexation Latency"]
     end
     subgraph design_rules["design.rules"]
-        admin_SR001["admin.SR001: Employee requires profile assignment"]
-        admin_VR001["admin.VR001: Employee email uniqueness"]
-        admin_VR002["admin.VR002: Password strength policy"]
-        admin_VR003["admin.VR003: Profile deletion requires no assigned employees"]
-        admin_VR004["admin.VR004: Permission matrix consistency"]
-        admin_VR005["admin.VR005: API client scope validation"]
-        admin_VR006["admin.VR006: SQL query safety guard"]
-        admin_VR007["admin.VR007: Business entity addresses must be consistent"]
-        catalog_SR001["catalog.SR001: Product must have valid type configuration"]
-        catalog_SR002["catalog.SR002: Category depth is derived from the parent, never set"]
-        catalog_SR003["catalog.SR003: Root category cannot be deleted"]
-        catalog_CR001["catalog.CR001: Product lifecycle transitions"]
-        catalog_CR002["catalog.CR002: Product type determines combination eligibility"]
-        catalog_VR001["catalog.VR001: Product image dimensions"]
-        catalog_VR002["catalog.VR002: Product deletion safety check"]
-        catalog_VR003["catalog.VR003: Specific price reduction range"]
-        catalog_VR004["catalog.VR004: Combination attribute uniqueness"]
-        catalog_VR005["catalog.VR005: Manufacturer name uniqueness"]
-        checkout_SR001["checkout.SR001: Cart item quantity must be positive"]
-        checkout_SR002["checkout.SR002: Discount reduction value must be valid"]
-        checkout_CR001["checkout.CR001: Cart status transitions"]
-        checkout_CR002["checkout.CR002: Discount stacking priority"]
-        checkout_DR001["checkout.DR001: Cart total derivation"]
-        checkout_VR001["checkout.VR001: Discount date range validity"]
-        checkout_VR002["checkout.VR002: Discount minimum order amount"]
-        checkout_VR003["checkout.VR003: Discount usage limit enforcement"]
-        checkout_VR004["checkout.VR004: Catalog price rule quantity threshold"]
-        checkout_VR005["checkout.VR005: Cannot delete ordered cart"]
-        checkout_TR001["checkout.TR001: Empty to active on product addition"]
-        checkout_TR002["checkout.TR002: Active to checkout-started on checkout initiation"]
-        checkout_TR003["checkout.TR003: Checkout-started to completed on order placement"]
-        checkout_TR004["checkout.TR004: Active to abandoned on timeout"]
-        checkout_TR005["checkout.TR005: Checkout-started to abandoned on timeout"]
-        content_SR001["content.SR001: CMS Category Tree Acyclicity"]
-        content_VR001["content.VR001: CMS Page Requires Category"]
-        content_VR002["content.VR002: Meta Fields No Special Characters"]
-        content_VR003["content.VR003: Only the Root CMS Category Cannot Be Deleted"]
-        content_VR004["content.VR004: Theme Activation Exclusivity"]
-        content_VR005["content.VR005: Active Theme Cannot Be Deleted"]
-        content_VR006["content.VR006: Meta Page Name Uniqueness"]
-        content_TR001["content.TR001: Theme Enable Deactivates Current"]
-        customers_SR001["customers.SR001: One customer account per email per shop"]
-        customers_CR001["customers.CR001: Customer service thread status transitions"]
-        customers_VR001["customers.VR001: Customer email must be valid"]
-        customers_VR002["customers.VR002: Password policy"]
-        customers_VR003["customers.VR003: Guest conversion prerequisites"]
-        customers_VR004["customers.VR004: Customer group discount range"]
-        customers_VR005["customers.VR005: Address required fields per country"]
-        customers_VR006["customers.VR006: GDPR right to erasure"]
-        customers_TR001["customers.TR001: Guest to active on conversion"]
-        customers_TR002["customers.TR002: Active to inactive on disable"]
-        customers_TR003["customers.TR003: Inactive to active on enable"]
-        international_SR001["international.SR001: Unique ISO currency code per shop"]
-        international_VR001["international.VR001: Currency ISO code format"]
-        international_VR002["international.VR002: Default currency cannot be deleted"]
-        international_VR003["international.VR003: Language ISO code uniqueness"]
-        international_VR004["international.VR004: Default language cannot be deleted"]
-        international_VR005["international.VR005: Country ISO code format"]
-        international_VR006["international.VR006: Tax rate must be non-negative"]
-        international_VR007["international.VR007: Exchange rate must be positive"]
-        international_VR008["international.VR008: Tax rule binding uniqueness"]
-        modules_SR001["modules.SR001: Module Must Be Installed for Lifecycle Operations"]
-        modules_VR001["modules.VR001: Module Technical Name Non-Empty"]
-        modules_VR002["modules.VR002: Reset Requires Installed Module"]
-        modules_VR003["modules.VR003: Upgrade Requires Installed Module with Available Update"]
-        modules_TR001["modules.TR001: Module Lifecycle State Machine"]
-        orders_SR001["orders.SR001: Order must have at least one line"]
-        orders_SR002["orders.SR002: Invoice requires paid status"]
-        orders_SR003["orders.SR003: Merchandise return must keep at least one product line"]
-        orders_CR001["orders.CR001: Order status transitions"]
-        orders_DR001["orders.DR001: Estimated delivery from shipping method"]
-        orders_EQ001["orders.EQ001: Order total equals sum of line totals"]
-        orders_VR001["orders.VR001: Shipping address required for physical products"]
-        orders_VR002["orders.VR002: Payment amount must not exceed order total"]
-        orders_VR003["orders.VR003: Return eligibility window"]
-        orders_VR004["orders.VR004: Partial refund constraints"]
-        orders_TR001["orders.TR001: Order state machine transitions"]
-        shipping_SR001["shipping.SR001: Carrier requires at least one zone"]
-        shipping_VR001["shipping.VR001: Carrier name constraints"]
-        shipping_VR002["shipping.VR002: Shipping method must be valid"]
-        shipping_VR003["shipping.VR003: Free shipping disables additional handling fee"]
-        shipping_VR004["shipping.VR004: Ranges must not overlap within a zone"]
-        shipping_VR005["shipping.VR005: Range values must be non-negative"]
-        shipping_VR006["shipping.VR006: Shipment requires valid order and carrier"]
-        shipping_VR007["shipping.VR007: Split shipment requires valid quantities"]
-        shipping_VR008["shipping.VR008: Merge requires compatible shipments"]
-        shipping_VR009["shipping.VR009: Tracking number must not be blank"]
-        shipping_TR001["shipping.TR001: Shipped shipment becomes immutable"]
-        shop_VR001["shop.VR001: Logo file extension validation"]
-        shop_VR002["shop.VR002: Alias search term non-empty"]
-        shop_VR003["shop.VR003: Contact email format"]
-        shop_VR004["shop.VR004: Search engine server uniqueness"]
+        admin_SR001["admin.SR001: One profile per employee, chosen among those the acting employee can access."]
+        admin_VR001["admin.VR001: One employee per email address."]
+        admin_VR002["admin.VR002: Length within the configured bounds, strength at or above the configured score."]
+        admin_VR003["admin.VR003: Reassign every employee before deleting their profile."]
+        admin_VR004["admin.VR004: Permissions use the levels PrestaShop defines, on tabs and modules that exist."]
+        admin_VR005["admin.VR005: Only installed API scopes can be granted."]
+        admin_VR006["admin.VR006: The SQL manager saves read-only SELECT queries only."]
+        admin_VR007["admin.VR007: One default billing address, and one default shipping address unless billing is reused."]
+        catalog_SR001["catalog.SR001: Four product types; changing type removes the old type parts."]
+        catalog_SR002["catalog.SR002: Depth follows the parent; there is no depth limit."]
+        catalog_SR003["catalog.SR003: Shop roots and the global root stay."]
+        catalog_CR001["catalog.CR001: Enabled or disabled; new products start disabled."]
+        catalog_CR002["catalog.CR002: Combinations belong to products of type 'combinations' only."]
+        catalog_VR001["catalog.VR001: Any supported image within the size limit; 800 x 800 is a recommendation."]
+        catalog_VR002["catalog.VR002: No delete while an order for the product is pending."]
+        catalog_VR003["catalog.VR003: Reductions are non-negative, percentages at most 100, and a specific price changes something."]
+        catalog_VR004["catalog.VR004: One combination per attribute set; regeneration is idempotent."]
+        catalog_VR005["catalog.VR005: One manufacturer per name."]
+        checkout_SR001["checkout.SR001: A cart line holds at least one unit, and no fewer than the product's minimal quantity."]
+        checkout_SR002["checkout.SR002: Each discount type has its own reduction constraints."]
+        checkout_CR001["checkout.CR001: Ordered if an order references it; otherwise abandoned after 24 hours, else not ordered."]
+        checkout_CR002["checkout.CR002: Lower priority number first; of two non-combinable vouchers, the better priority stays."]
+        checkout_DR001["checkout.DR001: Products less discounts plus shipping plus wrapping."]
+        checkout_VR001["checkout.VR001: The start is not after the end, and a voucher applies only within its dates."]
+        checkout_VR002["checkout.VR002: The cart's products total reaches the voucher's minimum amount."]
+        checkout_VR003["checkout.VR003: Remaining quantity above zero and per-customer uses within the limit."]
+        checkout_VR004["checkout.VR004: A catalog price rule takes effect from its from-quantity."]
+        checkout_VR005["checkout.VR005: An ordered cart is kept."]
+        checkout_TR003["checkout.TR003: An order on the cart makes it ordered."]
+        checkout_TR004["checkout.TR004: No order 24 hours after creation makes a cart abandoned."]
+        content_SR001["content.SR001: The CMS category tree has no cycle."]
+        content_VR001["content.VR001: Every CMS page sits in a CMS category that exists."]
+        content_VR002["content.VR002: No angle or curly brackets in a meta title or meta description."]
+        content_VR003["content.VR003: The root CMS category stays; any other delete cascades to its subtree."]
+        content_VR004["content.VR004: One active theme per shop; an invalid theme is not enabled."]
+        content_VR005["content.VR005: Enable another theme before deleting the active one."]
+        content_VR006["content.VR006: One meta entry per page."]
+        content_TR001["content.TR001: The previous theme is disabled when another is enabled."]
+        customers_SR001["customers.SR001: One registered account per email in the shops that share customers."]
+        customers_CR001["customers.CR001: Four thread statuses; an employee may move between any of them."]
+        customers_VR001["customers.VR001: Every customer has a valid email address."]
+        customers_VR002["customers.VR002: Storefront: configured length and strength; back office: 5 to 72 characters."]
+        customers_VR003["customers.VR003: A guest is converted only while its email is free among registered customers."]
+        customers_VR004["customers.VR004: Group reductions are percentages from 0 to 100."]
+        customers_VR005["customers.VR005: Required address fields follow the shop list and the country."]
+        customers_VR006["customers.VR006: Erasure anonymizes the customer and keeps the orders, within 30 days."]
+        customers_TR001["customers.TR001: Guest to registered customer on transformation."]
+        customers_TR002["customers.TR002: Disabling makes a customer inactive."]
+        customers_TR003["customers.TR003: Enabling makes a customer active."]
+        international_SR001["international.SR001: One currency per ISO code across all shops; a deleted currency with the code is reused."]
+        international_VR001["international.VR001: Two or three letters; an unofficial currency avoids the CLDR codes."]
+        international_VR002["international.VR002: A shop's default currency stays enabled, assigned to that shop and undeleted."]
+        international_VR003["international.VR003: One language per ISO code."]
+        international_VR004["international.VR004: The default language, and the language in use, stay."]
+        international_VR005["international.VR005: Added countries get a two-letter upper-case code; an edit accepts two or three letters."]
+        international_VR006["international.VR006: A tax rate is zero or more."]
+        international_VR007["international.VR007: An exchange rate is a number above zero."]
+        international_VR008["international.VR008: A 'this tax only' rule is the only rule for its country and state in a group."]
+        modules_SR001["modules.SR001: Only an installed module can be uninstalled, toggled, reset or upgraded."]
+        modules_VR001["modules.VR001: Every module command names a module by a non-empty technical name."]
+        modules_VR002["modules.VR002: Only an installed module can be reset."]
+        modules_VR003["modules.VR003: An upgrade needs an installed module and a newer version."]
+        modules_TR001["modules.TR001: Install moves a module from not installed to installed and enabled."]
+        orders_SR001["orders.SR001: An order comes from a non-empty cart, and each of its lines has a quantity above zero."]
+        orders_SR002["orders.SR002: An order is invoiced once, on entering an invoicing status or on the merchant's request; payment is not a condition."]
+        orders_SR003["orders.SR003: A merchandise return keeps at least one product line."]
+        orders_SR004["orders.SR004: An order keeps at least one line when a product is removed from it."]
+        orders_CR001["orders.CR001: Any existing status may follow any other; only re-assigning the current status is refused."]
+        orders_DR001["orders.DR001: The estimate shown at checkout is the carrier's transit-time text; no date is computed."]
+        orders_EQ001["orders.EQ001: Total = products before discounts - discounts + shipping + gift wrapping, each rounded first."]
+        orders_VR001["orders.VR001: Checkout completes only with a delivery address and an invoice address in enabled countries."]
+        orders_VR002["orders.VR002: A recorded payment is zero or more; a total that differs from the payments is flagged, not refused."]
+        orders_VR003["orders.VR003: Returns are open while enabled, for a paid and shipped order, within the return period after delivery."]
+        orders_VR004["orders.VR004: Per line: refund quantity within what is left, amount above zero, amount capped at quantity times unit price."]
+        orders_TR001["orders.TR001: Default flow: Payment accepted, then Processing in progress; permitted, not enforced."]
+        shipping_SR001["shipping.SR001: A carrier serves at least one zone."]
+        shipping_VR001["shipping.VR001: Required, up to 64 characters, no angle or curly brackets."]
+        shipping_VR002["shipping.VR002: A carrier is priced by weight or by price."]
+        shipping_VR003["shipping.VR003: Free shipping and the handling fee exclude each other."]
+        shipping_VR004["shipping.VR004: Ranges of one zone do not overlap; touching is allowed."]
+        shipping_VR005["shipping.VR005: Range bounds are not negative."]
+        shipping_VR006["shipping.VR006: Existing order, order lines and, on a change, an existing carrier."]
+        shipping_VR007["shipping.VR007: From 1 to the quantity in the source shipment, per product."]
+        shipping_VR008["shipping.VR008: Source and target shipments of a merge belong to one order."]
+        shipping_VR009["shipping.VR009: A tracking number is not empty after trimming."]
+        shipping_VR010["shipping.VR010: A range price is not negative."]
+        shipping_TR001["shipping.TR001: A tracking number makes a shipment shipped; then no split or merge."]
+        shop_VR001["shop.VR001: Header logo: image or svg; mail and invoice logo: image; favicon: ico."]
+        shop_VR002["shop.VR002: No alias entry without a search term or without aliases."]
+        shop_VR003["shop.VR003: An optional contact email that must be valid when present."]
+        shop_VR004["shop.VR004: One referrer entry per search engine server."]
     end
     subgraph design_process["design.process"]
         admin_PRC001["admin.PRC001: Employee Onboarding"]
@@ -3261,11 +3312,15 @@ graph TD
         checkout_TC002["checkout.TC002: Apply a valid voucher code to a cart meeting all conditions."]
         checkout_TC003["checkout.TC003: Create a percentage discount with date range and usage limits."]
         checkout_TC004["checkout.TC004: Create a B2B quantity discount for bulk purchases."]
+        checkout_TC005["checkout.TC005: The shopper changes an existing cart line and sees the updated quantity and cart summary."]
+        checkout_TC006["checkout.TC006: Submitting an eligible voucher refreshes the cart summary without showing a voucher error."]
+        checkout_TC007["checkout.TC007: Choosing an offered carrier refreshes the checkout summary for the selected delivery option."]
         checkout_EC001["checkout.EC001: Attempt to apply a voucher whose validity period has passed."]
         checkout_EC002["checkout.EC002: Customer attempts to use a voucher they have already exhausted."]
         checkout_ER001["checkout.ER001: Attempt to delete a cart that was already converted to an order."]
         checkout_ER002["checkout.ER002: Attempt to create a discount with end date before start date."]
         checkout_ER003["checkout.ER003: Voucher requires EUR 50 minimum but cart total is EUR 30."]
+        checkout_ER004["checkout.ER004: A voucher rejected for expired dates shows its validity error instead of refreshing the cart as a success."]
         content_TC001["content.TC001: Verify that a CMS page can be created with all required fields and assigned to a category."]
         content_TC002["content.TC002: Verify that a CMS page category can be created within the tree hierarchy."]
         content_TC003["content.TC003: Verify that a theme can be imported and activated, deactivating the previous theme."]
@@ -3302,7 +3357,7 @@ graph TD
         international_TC003["international.TC003: Create an empty tax rules group; binding a rate to a country is a second command."]
         international_TC004["international.TC004: A tax rules group gains a per-country rate through AddTaxRule."]
         international_EC001["international.EC001: Attempt to delete the store's default (reference) currency."]
-        international_EC002["international.EC002: Re-binding a rate to a country the group already covers adds nothing and raises nothing."]
+        international_EC002["international.EC002: AddTaxRule adds nothing and raises nothing for a country and state that already has a 'This tax only' rule."]
         international_ER001["international.ER001: Attempt to create a currency with an ISO code outside the two-to-three letter pattern."]
         international_ER002["international.ER002: Neither AddTax nor the Tax object model rejects a rate below zero."]
         international_ER003["international.ER003: BulkUpdateCountryZone checks the zone; AddCountry does not."]
@@ -3318,11 +3373,15 @@ graph TD
         orders_TC002["orders.TC002: Cancelling every product on an unpaid order moves the order to canceled."]
         orders_TC003["orders.TC003: An order with invoicing enabled and no existing invoice gets one."]
         orders_TC004["orders.TC004: A manual payment is recorded against an order."]
+        orders_TC005["orders.TC005: An employee submits a valid unpaid-order cancellation and sees the cancellation success message."]
+        orders_TC006["orders.TC006: A valid partial refund returns the employee to the order with its success message."]
+        orders_TC007["orders.TC007: An employee changes an existing return status and saves while remaining on its edit page."]
         orders_EC001["orders.EC001: A cart cannot take more units of a product than the shop has, so the order never forms."]
         orders_EC002["orders.EC002: Refunding beyond what is left is capped per order line rather than accepted."]
         orders_ER001["orders.ER001: Back-office order creation refuses an unknown payment module."]
         orders_ER002["orders.ER002: A return past PS_ORDER_RETURN_NB_DAYS is refused before the command is reached."]
         orders_ER003["orders.ER003: The only status change PrestaShop refuses is the one to the current status."]
+        orders_ER004["orders.ER004: A partial-refund quantity above the line remainder returns the employee to the order with a refusal."]
         shipping_TC001["shipping.TC001: Create a new carrier with valid configuration including zones, ranges, and shipping method."]
         shipping_TC002["shipping.TC002: Enable free shipping on a carrier, bypassing range-based pricing."]
         shipping_TC003["shipping.TC003: Create a new shipment for an existing order with a valid carrier and product."]
@@ -3483,13 +3542,6 @@ graph TD
         LP005["LP005: Nothing in CI checks that a payment module still satisfies the core's expectations. The contract is a base class plus a hook, so a change to either breaks providers silently.
 "]
     end
-    subgraph migrations["migrations"]
-        MIG001["MIG001: Move to the v2.8 line"]
-        MIG002["MIG002: The anchor states its reactions and its risks"]
-        MIG003["MIG003: Each context and each party is declared once"]
-        MIG004["MIG004: A party stops declaring an environment"]
-        MIG005["MIG005: A server names the environment the model declares"]
-    end
     subgraph governance_org["governance.org"]
         PRT001["PRT001: PrestaShop SA"]
         DPT001["DPT001: Platform Engineering"]
@@ -3586,7 +3638,7 @@ graph TD
         src_Core_Domain_ImageSettings_Command_AddImageTypeCommand_php["src/Core/Domain/ImageSettings/Command/AddImageTypeCommand.php: src/Core/Domain/ImageSettings/Command/AddImageTypeCommand.php"]
         classes_ImageType_php["classes/ImageType.php: classes/ImageType.php"]
         src_Core_Domain_Product_["src/Core/Domain/Product/: src/Core/Domain/Product/"]
-        https___github_com_PrestaShop_docs_blob_9_x_development_architecture_domain_references_product__index_md["https://github.com/PrestaShop/docs/blob/9.x/development/architecture/domain/references/product/_index.md: https://github.com/PrestaShop/docs/blob/9.x/development/architecture/domain/references/product/_index.md"]
+        PrestaShop_docs_development_architecture_domain_references_product_index_md["PrestaShop/docs#development/architecture/domain/references/product/index.md: PrestaShop/docs#development/architecture/domain/references/product/index.md"]
         src_Core_Domain_Combination_["src/Core/Domain/Combination/: src/Core/Domain/Combination/"]
         src_Core_Domain_Product_Image_["src/Core/Domain/Product/Image/: src/Core/Domain/Product/Image/"]
         src_Core_Domain_Product_SpecificPrice_["src/Core/Domain/Product/SpecificPrice/: src/Core/Domain/Product/SpecificPrice/"]
@@ -3676,16 +3728,23 @@ graph TD
         src_Core_Domain_Hook_QueryResult_HookableInfo_php["src/Core/Domain/Hook/QueryResult/HookableInfo.php: src/Core/Domain/Hook/QueryResult/HookableInfo.php"]
         src_Core_Domain_OrderState_["src/Core/Domain/OrderState/: src/Core/Domain/OrderState/"]
         classes_order_OrderState_php["classes/order/OrderState.php: classes/order/OrderState.php"]
+        install_dev_data_xml_order_state_xml["install-dev/data/xml/order_state.xml: install-dev/data/xml/order_state.xml"]
         src_Core_Domain_OrderMessage_["src/Core/Domain/OrderMessage/: src/Core/Domain/OrderMessage/"]
+        classes_order_OrderMessage_php["classes/order/OrderMessage.php: classes/order/OrderMessage.php"]
         src_Core_Domain_Order_["src/Core/Domain/Order/: src/Core/Domain/Order/"]
         classes_order_Order_php["classes/order/Order.php: classes/order/Order.php"]
+        classes_PaymentModule_php["classes/PaymentModule.php: classes/PaymentModule.php"]
         classes_order_OrderDetail_php["classes/order/OrderDetail.php: classes/order/OrderDetail.php"]
         classes_order_OrderInvoice_php["classes/order/OrderInvoice.php: classes/order/OrderInvoice.php"]
         classes_order_OrderPayment_php["classes/order/OrderPayment.php: classes/order/OrderPayment.php"]
+        classes_form_CustomerAddressPersister_php["classes/form/CustomerAddressPersister.php: classes/form/CustomerAddressPersister.php"]
         src_Core_Domain_OrderReturn_["src/Core/Domain/OrderReturn/: src/Core/Domain/OrderReturn/"]
         classes_order_OrderReturn_php["classes/order/OrderReturn.php: classes/order/OrderReturn.php"]
+        controllers_front_OrderFollowController_php["controllers/front/OrderFollowController.php: controllers/front/OrderFollowController.php"]
+        src_Adapter_OrderReturn_CommandHandler_UpdateOrderReturnStateHandler_php["src/Adapter/OrderReturn/CommandHandler/UpdateOrderReturnStateHandler.php: src/Adapter/OrderReturn/CommandHandler/UpdateOrderReturnStateHandler.php"]
         src_Core_Domain_OrderReturnState_["src/Core/Domain/OrderReturnState/: src/Core/Domain/OrderReturnState/"]
         classes_order_OrderReturnState_php["classes/order/OrderReturnState.php: classes/order/OrderReturnState.php"]
+        install_dev_langs_en_data_order_return_state_xml["install-dev/langs/en/data/order_return_state.xml: install-dev/langs/en/data/order_return_state.xml"]
         classes_order_OrderSlip_php["classes/order/OrderSlip.php: classes/order/OrderSlip.php"]
         src_Core_Domain_CreditSlip_["src/Core/Domain/CreditSlip/: src/Core/Domain/CreditSlip/"]
         src_Adapter_Order_Refund_OrderSlipCreator_php["src/Adapter/Order/Refund/OrderSlipCreator.php: src/Adapter/Order/Refund/OrderSlipCreator.php"]
@@ -4715,7 +4774,6 @@ graph TD
         src_Core_Domain_OrderReturnState_Exception_BulkDeleteOrderReturnStateException_php["src/Core/Domain/OrderReturnState/Exception/BulkDeleteOrderReturnStateException.php: src/Core/Domain/OrderReturnState/Exception/BulkDeleteOrderReturnStateException.php"]
         src_Core_Domain_Order_Command_AddOrderFromBackOfficeCommand_php["src/Core/Domain/Order/Command/AddOrderFromBackOfficeCommand.php: src/Core/Domain/Order/Command/AddOrderFromBackOfficeCommand.php"]
         src_Adapter_Order_CommandHandler_AddOrderFromBackOfficeHandler_php["src/Adapter/Order/CommandHandler/AddOrderFromBackOfficeHandler.php: src/Adapter/Order/CommandHandler/AddOrderFromBackOfficeHandler.php"]
-        classes_PaymentModule_php["classes/PaymentModule.php: classes/PaymentModule.php"]
         src_Core_Domain_Order_Command_UpdateOrderStatusCommand_php["src/Core/Domain/Order/Command/UpdateOrderStatusCommand.php: src/Core/Domain/Order/Command/UpdateOrderStatusCommand.php"]
         src_Adapter_Order_CommandHandler_UpdateOrderStatusHandler_php["src/Adapter/Order/CommandHandler/UpdateOrderStatusHandler.php: src/Adapter/Order/CommandHandler/UpdateOrderStatusHandler.php"]
         src_Core_Domain_Order_Command_CancelOrderProductCommand_php["src/Core/Domain/Order/Command/CancelOrderProductCommand.php: src/Core/Domain/Order/Command/CancelOrderProductCommand.php"]
@@ -4773,7 +4831,7 @@ graph TD
         src_Core_Domain_Order_Exception_ReturnProductDisabledException_php["src/Core/Domain/Order/Exception/ReturnProductDisabledException.php: src/Core/Domain/Order/Exception/ReturnProductDisabledException.php"]
         src_Core_Domain_OrderReturn_Command_UpdateOrderReturnStateCommand_php["src/Core/Domain/OrderReturn/Command/UpdateOrderReturnStateCommand.php: src/Core/Domain/OrderReturn/Command/UpdateOrderReturnStateCommand.php"]
         PrestaShop_ps_apiresources_src_ApiPlatform_Resources_OrderReturn_OrderReturn_php["PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderReturn/OrderReturn.php: PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderReturn/OrderReturn.php"]
-        src_Adapter_OrderReturn_CommandHandler_UpdateOrderReturnStateHandler_php["src/Adapter/OrderReturn/CommandHandler/UpdateOrderReturnStateHandler.php: src/Adapter/OrderReturn/CommandHandler/UpdateOrderReturnStateHandler.php"]
+        PrestaShop_ps_apiresources_tests_Integration_ApiPlatform_OrderReturnEndpointTest_php["PrestaShop/ps_apiresources#tests/Integration/ApiPlatform/OrderReturnEndpointTest.php: PrestaShop/ps_apiresources#tests/Integration/ApiPlatform/OrderReturnEndpointTest.php"]
         src_Adapter_OrderReturn_Repository_OrderReturnRepository_php["src/Adapter/OrderReturn/Repository/OrderReturnRepository.php: src/Adapter/OrderReturn/Repository/OrderReturnRepository.php"]
         src_Core_Domain_CreditSlip_Query_GetCreditSlipIdsByDateRange_php["src/Core/Domain/CreditSlip/Query/GetCreditSlipIdsByDateRange.php: src/Core/Domain/CreditSlip/Query/GetCreditSlipIdsByDateRange.php"]
         src_Core_Domain_OrderReturn_Command_DeleteOrderReturnCommand_php["src/Core/Domain/OrderReturn/Command/DeleteOrderReturnCommand.php: src/Core/Domain/OrderReturn/Command/DeleteOrderReturnCommand.php"]
@@ -4914,7 +4972,14 @@ graph TD
         src_Core_Domain_Contact_Exception_ContactNotFoundException_php["src/Core/Domain/Contact/Exception/ContactNotFoundException.php: src/Core/Domain/Contact/Exception/ContactNotFoundException.php"]
         src_Core_Domain_Contact_Exception_ContactConstraintException_php["src/Core/Domain/Contact/Exception/ContactConstraintException.php: src/Core/Domain/Contact/Exception/ContactConstraintException.php"]
         src_Core_Domain_Alias_Exception_AliasConstraintException_php["src/Core/Domain/Alias/Exception/AliasConstraintException.php: src/Core/Domain/Alias/Exception/AliasConstraintException.php"]
+        src_Core_Domain_Employee_["src/Core/Domain/Employee/: src/Core/Domain/Employee/"]
+        src_Core_Domain_Cart_["src/Core/Domain/Cart/: src/Core/Domain/Cart/"]
+        src_Core_Domain_Customer_["src/Core/Domain/Customer/: src/Core/Domain/Customer/"]
+        src_Core_Domain_Currency_["src/Core/Domain/Currency/: src/Core/Domain/Currency/"]
+        PrestaShop_docs_admin_api_setup_development_environment_md["PrestaShop/docs#admin-api/setup-development-environment.md: PrestaShop/docs#admin-api/setup-development-environment.md"]
         src_Core_CommandBus_CommandBusInterface_php["src/Core/CommandBus/CommandBusInterface.php: src/Core/CommandBus/CommandBusInterface.php"]
+        src_Core_Domain_Carrier_["src/Core/Domain/Carrier/: src/Core/Domain/Carrier/"]
+        src_Core_Domain_Shop_["src/Core/Domain/Shop/: src/Core/Domain/Shop/"]
         controllers_front_listing_CategoryController_php["controllers/front/listing/CategoryController.php: controllers/front/listing/CategoryController.php"]
         classes_controller_ProductListingFrontController_php["classes/controller/ProductListingFrontController.php: classes/controller/ProductListingFrontController.php"]
         controllers_front_ProductController_php["controllers/front/ProductController.php: controllers/front/ProductController.php"]
@@ -4928,6 +4993,9 @@ graph TD
         src_Adapter_Cart_CommandHandler_AddCartRuleToCartHandler_php["src/Adapter/Cart/CommandHandler/AddCartRuleToCartHandler.php: src/Adapter/Cart/CommandHandler/AddCartRuleToCartHandler.php"]
         classes_checkout_DeliveryOptionsFinder_php["classes/checkout/DeliveryOptionsFinder.php: classes/checkout/DeliveryOptionsFinder.php"]
         classes_checkout_CheckoutPaymentStep_php["classes/checkout/CheckoutPaymentStep.php: classes/checkout/CheckoutPaymentStep.php"]
+        PrestaShop_docs_modules_concepts_hooks_list_of_hooks_displayExpressCheckout_md["PrestaShop/docs#modules/concepts/hooks/list-of-hooks/displayExpressCheckout.md: PrestaShop/docs#modules/concepts/hooks/list-of-hooks/displayExpressCheckout.md"]
+        PrestaShop_docs_modules_payment__index_md["PrestaShop/docs#modules/payment/_index.md: PrestaShop/docs#modules/payment/_index.md"]
+        classes_checkout_PaymentOptionsFinder_php["classes/checkout/PaymentOptionsFinder.php: classes/checkout/PaymentOptionsFinder.php"]
         controllers_front_CmsController_php["controllers/front/CmsController.php: controllers/front/CmsController.php"]
         controllers_front_AuthController_php["controllers/front/AuthController.php: controllers/front/AuthController.php"]
         classes_form_CustomerLoginForm_php["classes/form/CustomerLoginForm.php: classes/form/CustomerLoginForm.php"]
@@ -4935,11 +5003,19 @@ graph TD
         controllers_front_MyAccountController_php["controllers/front/MyAccountController.php: controllers/front/MyAccountController.php"]
         controllers_front_AddressesController_php["controllers/front/AddressesController.php: controllers/front/AddressesController.php"]
         controllers_front_AddressController_php["controllers/front/AddressController.php: controllers/front/AddressController.php"]
-        classes_form_CustomerAddressPersister_php["classes/form/CustomerAddressPersister.php: classes/form/CustomerAddressPersister.php"]
         controllers_front_IdentityController_php["controllers/front/IdentityController.php: controllers/front/IdentityController.php"]
+        src_Core_Grid_Definition_Factory_CustomerGridDefinitionFactory_php["src/Core/Grid/Definition/Factory/CustomerGridDefinitionFactory.php: src/Core/Grid/Definition/Factory/CustomerGridDefinitionFactory.php"]
+        src_PrestaShopBundle_Resources_views_Admin_Sell_Customer_Blocks_View_addresses_html_twig["src/PrestaShopBundle/Resources/views/Admin/Sell/Customer/Blocks/View/addresses.html.twig: src/PrestaShopBundle/Resources/views/Admin/Sell/Customer/Blocks/View/addresses.html.twig"]
+        tests_Resources_themes_classic_templates_customer_authentication_tpl["tests/Resources/themes/classic/templates/customer/authentication.tpl: tests/Resources/themes/classic/templates/customer/authentication.tpl"]
+        tests_Resources_themes_classic_templates_customer_my_account_tpl["tests/Resources/themes/classic/templates/customer/my-account.tpl: tests/Resources/themes/classic/templates/customer/my-account.tpl"]
+        tests_Resources_themes_classic_templates_customer_addresses_tpl["tests/Resources/themes/classic/templates/customer/addresses.tpl: tests/Resources/themes/classic/templates/customer/addresses.tpl"]
+        src_PrestaShopBundle_Controller_Admin_Improve_Modules_ModuleAbstractController_php["src/PrestaShopBundle/Controller/Admin/Improve/Modules/ModuleAbstractController.php: src/PrestaShopBundle/Controller/Admin/Improve/Modules/ModuleAbstractController.php"]
+        src_PrestaShopBundle_Resources_views_Admin_Module_Includes_modal_import_html_twig["src/PrestaShopBundle/Resources/views/Admin/Module/Includes/modal_import.html.twig: src/PrestaShopBundle/Resources/views/Admin/Module/Includes/modal_import.html.twig"]
+        admin_dev_themes_new_theme_js_pages_module_controller_js["admin-dev/themes/new-theme/js/pages/module/controller.js: admin-dev/themes/new-theme/js/pages/module/controller.js"]
         controllers_front_HistoryController_php["controllers/front/HistoryController.php: controllers/front/HistoryController.php"]
         controllers_front_OrderDetailController_php["controllers/front/OrderDetailController.php: controllers/front/OrderDetailController.php"]
-        controllers_front_OrderFollowController_php["controllers/front/OrderFollowController.php: controllers/front/OrderFollowController.php"]
+        src_Core_Grid_Definition_Factory_OrderGridDefinitionFactory_php["src/Core/Grid/Definition/Factory/OrderGridDefinitionFactory.php: src/Core/Grid/Definition/Factory/OrderGridDefinitionFactory.php"]
+        src_PrestaShopBundle_Resources_views_Admin_Sell_Order_Order_Blocks_View_merchandise_returns_html_twig["src/PrestaShopBundle/Resources/views/Admin/Sell/Order/Order/Blocks/View/merchandise_returns.html.twig: src/PrestaShopBundle/Resources/views/Admin/Sell/Order/Order/Blocks/View/merchandise_returns.html.twig"]
         controllers_front_IndexController_php["controllers/front/IndexController.php: controllers/front/IndexController.php"]
         controllers_front_listing_SearchController_php["controllers/front/listing/SearchController.php: controllers/front/listing/SearchController.php"]
         controllers_front_ContactController_php["controllers/front/ContactController.php: controllers/front/ContactController.php"]
@@ -4962,103 +5038,201 @@ graph TD
         src_Core_Domain_Order_QueryResult_OrderPreview_php["src/Core/Domain/Order/QueryResult/OrderPreview.php: src/Core/Domain/Order/QueryResult/OrderPreview.php"]
         src_Core_Domain_Store_Command_["src/Core/Domain/Store/Command/: src/Core/Domain/Store/Command/"]
         controllers_admin_AdminStoresController_php["controllers/admin/AdminStoresController.php: controllers/admin/AdminStoresController.php"]
+        src_Adapter_Profile_Employee_CommandHandler_EditEmployeeHandler_php["src/Adapter/Profile/Employee/CommandHandler/EditEmployeeHandler.php: src/Adapter/Profile/Employee/CommandHandler/EditEmployeeHandler.php"]
+        tests_Integration_Behaviour_Features_Scenario_Employee_employee_management_feature["tests/Integration/Behaviour/Features/Scenario/Employee/employee_management.feature: tests/Integration/Behaviour/Features/Scenario/Employee/employee_management.feature"]
+        src_Core_Security_PasswordPolicyConfiguration_php["src/Core/Security/PasswordPolicyConfiguration.php: src/Core/Security/PasswordPolicyConfiguration.php"]
+        install_dev_data_xml_configuration_xml["install-dev/data/xml/configuration.xml: install-dev/data/xml/configuration.xml"]
+        src_PrestaShopBundle_Form_Admin_Login_ResetPasswordType_php["src/PrestaShopBundle/Form/Admin/Login/ResetPasswordType.php: src/PrestaShopBundle/Form/Admin/Login/ResetPasswordType.php"]
+        src_Adapter_Profile_CommandHandler_AbstractProfileHandler_php["src/Adapter/Profile/CommandHandler/AbstractProfileHandler.php: src/Adapter/Profile/CommandHandler/AbstractProfileHandler.php"]
+        src_Adapter_Profile_CommandHandler_DeleteProfileHandler_php["src/Adapter/Profile/CommandHandler/DeleteProfileHandler.php: src/Adapter/Profile/CommandHandler/DeleteProfileHandler.php"]
+        src_Adapter_Profile_CommandHandler_BulkDeleteProfileHandler_php["src/Adapter/Profile/CommandHandler/BulkDeleteProfileHandler.php: src/Adapter/Profile/CommandHandler/BulkDeleteProfileHandler.php"]
+        src_Core_Domain_Profile_Exception_FailedToDeleteProfileException_php["src/Core/Domain/Profile/Exception/FailedToDeleteProfileException.php: src/Core/Domain/Profile/Exception/FailedToDeleteProfileException.php"]
+        src_Core_Domain_Profile_Permission_ValueObject_ControllerPermission_php["src/Core/Domain/Profile/Permission/ValueObject/ControllerPermission.php: src/Core/Domain/Profile/Permission/ValueObject/ControllerPermission.php"]
+        src_Core_Domain_Profile_Permission_ValueObject_ModulePermission_php["src/Core/Domain/Profile/Permission/ValueObject/ModulePermission.php: src/Core/Domain/Profile/Permission/ValueObject/ModulePermission.php"]
+        classes_Access_php["classes/Access.php: classes/Access.php"]
+        tests_Integration_Behaviour_Features_Scenario_Profile_profile_permissions_feature["tests/Integration/Behaviour/Features/Scenario/Profile/profile_permissions.feature: tests/Integration/Behaviour/Features/Scenario/Profile/profile_permissions.feature"]
+        src_PrestaShopBundle_Entity_ApiClient_php["src/PrestaShopBundle/Entity/ApiClient.php: src/PrestaShopBundle/Entity/ApiClient.php"]
+        src_Core_ConstraintValidator_InstalledApiResourceScopeValidator_php["src/Core/ConstraintValidator/InstalledApiResourceScopeValidator.php: src/Core/ConstraintValidator/InstalledApiResourceScopeValidator.php"]
+        src_Core_Domain_ApiClient_Exception_ApiClientConstraintException_php["src/Core/Domain/ApiClient/Exception/ApiClientConstraintException.php: src/Core/Domain/ApiClient/Exception/ApiClientConstraintException.php"]
+        tests_Integration_Behaviour_Features_Scenario_ApiClient_api_client_management_feature["tests/Integration/Behaviour/Features/Scenario/ApiClient/api_client_management.feature: tests/Integration/Behaviour/Features/Scenario/ApiClient/api_client_management.feature"]
+        src_Adapter_SqlManager_SqlQueryValidator_php["src/Adapter/SqlManager/SqlQueryValidator.php: src/Adapter/SqlManager/SqlQueryValidator.php"]
+        src_Adapter_SqlManager_CommandHandler_AbstractSqlRequestHandler_php["src/Adapter/SqlManager/CommandHandler/AbstractSqlRequestHandler.php: src/Adapter/SqlManager/CommandHandler/AbstractSqlRequestHandler.php"]
+        src_Adapter_SqlManager_QueryHandler_GetSqlRequestExecutionResultHandler_php["src/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandler.php: src/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandler.php"]
+        tests_Integration_Behaviour_Features_Scenario_Database_sql_manager_feature["tests/Integration/Behaviour/Features/Scenario/Database/sql_manager.feature: tests/Integration/Behaviour/Features/Scenario/Database/sql_manager.feature"]
+        tests_Integration_Behaviour_Features_Scenario_BusinessEntity_business_entity_management_feature["tests/Integration/Behaviour/Features/Scenario/BusinessEntity/business_entity_management.feature: tests/Integration/Behaviour/Features/Scenario/BusinessEntity/business_entity_management.feature"]
         src_Core_Domain_Product_ValueObject_ProductType_php["src/Core/Domain/Product/ValueObject/ProductType.php: src/Core/Domain/Product/ValueObject/ProductType.php"]
+        src_Adapter_Product_Update_ProductTypeUpdater_php["src/Adapter/Product/Update/ProductTypeUpdater.php: src/Adapter/Product/Update/ProductTypeUpdater.php"]
+        src_Adapter_Product_Repository_ProductRepository_php["src/Adapter/Product/Repository/ProductRepository.php: src/Adapter/Product/Repository/ProductRepository.php"]
+        src_Adapter_Product_Validate_ProductValidator_php["src/Adapter/Product/Validate/ProductValidator.php: src/Adapter/Product/Validate/ProductValidator.php"]
+        tests_Integration_Behaviour_Features_Scenario_Product_update_status_feature["tests/Integration/Behaviour/Features/Scenario/Product/update_status.feature: tests/Integration/Behaviour/Features/Scenario/Product/update_status.feature"]
+        tests_Integration_Behaviour_Features_Scenario_Product_Combination_forbidden_actions_feature["tests/Integration/Behaviour/Features/Scenario/Product/Combination/forbidden_actions.feature: tests/Integration/Behaviour/Features/Scenario/Product/Combination/forbidden_actions.feature"]
+        src_Adapter_Product_Image_CommandHandler_AddProductImageHandler_php["src/Adapter/Product/Image/CommandHandler/AddProductImageHandler.php: src/Adapter/Product/Image/CommandHandler/AddProductImageHandler.php"]
+        src_Adapter_Image_ProductImageFileValidator_php["src/Adapter/Image/ProductImageFileValidator.php: src/Adapter/Image/ProductImageFileValidator.php"]
+        src_Adapter_Image_ImageValidator_php["src/Adapter/Image/ImageValidator.php: src/Adapter/Image/ImageValidator.php"]
+        PrestaShop_prestashop_specs_content_1_7_back_office_catalog_products_add_edit_v2_md["PrestaShop/prestashop-specs#content/1.7/back-office/catalog/products/add-edit-v2.md: PrestaShop/prestashop-specs#content/1.7/back-office/catalog/products/add-edit-v2.md"]
+        src_Adapter_Product_ProductDeleter_php["src/Adapter/Product/ProductDeleter.php: src/Adapter/Product/ProductDeleter.php"]
+        src_Core_Domain_ValueObject_Reduction_php["src/Core/Domain/ValueObject/Reduction.php: src/Core/Domain/ValueObject/Reduction.php"]
+        src_Adapter_Product_SpecificPrice_Validate_SpecificPriceValidator_php["src/Adapter/Product/SpecificPrice/Validate/SpecificPriceValidator.php: src/Adapter/Product/SpecificPrice/Validate/SpecificPriceValidator.php"]
+        tests_Integration_Behaviour_Features_Scenario_Product_SpecificPrice_add_specific_price_feature["tests/Integration/Behaviour/Features/Scenario/Product/SpecificPrice/add_specific_price.feature: tests/Integration/Behaviour/Features/Scenario/Product/SpecificPrice/add_specific_price.feature"]
+        tests_Integration_Behaviour_Features_Scenario_Product_Combination_generate_combinations_feature["tests/Integration/Behaviour/Features/Scenario/Product/Combination/generate_combinations.feature: tests/Integration/Behaviour/Features/Scenario/Product/Combination/generate_combinations.feature"]
+        src_Adapter_Manufacturer_Repository_ManufacturerRepository_php["src/Adapter/Manufacturer/Repository/ManufacturerRepository.php: src/Adapter/Manufacturer/Repository/ManufacturerRepository.php"]
+        tests_Integration_Behaviour_Features_Scenario_Cart_Product_add_standard_product_feature["tests/Integration/Behaviour/Features/Scenario/Cart/Product/add_standard_product.feature: tests/Integration/Behaviour/Features/Scenario/Cart/Product/add_standard_product.feature"]
+        src_Adapter_Discount_Validate_DiscountValidator_php["src/Adapter/Discount/Validate/DiscountValidator.php: src/Adapter/Discount/Validate/DiscountValidator.php"]
+        src_Core_Cart_Calculator_php["src/Core/Cart/Calculator.php: src/Core/Cart/Calculator.php"]
+        tests_Integration_Behaviour_Features_Scenario_Discount_FO_discount_validity_date_range_feature["tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_validity_date_range.feature: tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_validity_date_range.feature"]
+        tests_Integration_Behaviour_Features_Scenario_Discount_BO_update_discount_validity_dates_feature["tests/Integration/Behaviour/Features/Scenario/Discount/BO/update_discount_validity_dates.feature: tests/Integration/Behaviour/Features/Scenario/Discount/BO/update_discount_validity_dates.feature"]
         src_Core_Domain_Discount_ValueObject_MinimumAmount_php["src/Core/Domain/Discount/ValueObject/MinimumAmount.php: src/Core/Domain/Discount/ValueObject/MinimumAmount.php"]
         src_Core_Domain_CartRule_Exception_CartRuleConstraintException_php["src/Core/Domain/CartRule/Exception/CartRuleConstraintException.php: src/Core/Domain/CartRule/Exception/CartRuleConstraintException.php"]
-        src_Core_Domain_Customer_ValueObject_Password_php["src/Core/Domain/Customer/ValueObject/Password.php: src/Core/Domain/Customer/ValueObject/Password.php"]
-        src_Core_Security_PasswordPolicyConfiguration_php["src/Core/Security/PasswordPolicyConfiguration.php: src/Core/Security/PasswordPolicyConfiguration.php"]
-        src_Core_Domain_Customer_Exception_CustomerTransformationException_php["src/Core/Domain/Customer/Exception/CustomerTransformationException.php: src/Core/Domain/Customer/Exception/CustomerTransformationException.php"]
-        src_Core_Domain_Module_Exception_ModuleConstraintException_php["src/Core/Domain/Module/Exception/ModuleConstraintException.php: src/Core/Domain/Module/Exception/ModuleConstraintException.php"]
-        src_Core_Domain_Module_Exception_CannotResetModuleException_php["src/Core/Domain/Module/Exception/CannotResetModuleException.php: src/Core/Domain/Module/Exception/CannotResetModuleException.php"]
-        src_Core_Domain_Order_OrderConstraints_php["src/Core/Domain/Order/OrderConstraints.php: src/Core/Domain/Order/OrderConstraints.php"]
-        tests_Integration_Behaviour_Features_Scenario_Employee_employee_management_feature["tests/Integration/Behaviour/Features/Scenario/Employee/employee_management.feature: tests/Integration/Behaviour/Features/Scenario/Employee/employee_management.feature"]
-        tests_Integration_Behaviour_Features_Scenario_Profile_profile_permissions_feature["tests/Integration/Behaviour/Features/Scenario/Profile/profile_permissions.feature: tests/Integration/Behaviour/Features/Scenario/Profile/profile_permissions.feature"]
-        tests_Integration_Behaviour_Features_Scenario_ApiClient_api_client_management_feature["tests/Integration/Behaviour/Features/Scenario/ApiClient/api_client_management.feature: tests/Integration/Behaviour/Features/Scenario/ApiClient/api_client_management.feature"]
-        tests_Integration_Behaviour_Features_Scenario_Security_security_configuration_feature["tests/Integration/Behaviour/Features/Scenario/Security/security_configuration.feature: tests/Integration/Behaviour/Features/Scenario/Security/security_configuration.feature"]
-        tests_Integration_Adapter_SqlManager_QueryHandler_GetSqlRequestExecutionResultHandlerTest_php["tests/Integration/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandlerTest.php: tests/Integration/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandlerTest.php"]
-        src_Adapter_SqlManager_QueryHandler_GetSqlRequestExecutionResultHandler_php["src/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandler.php: src/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandler.php"]
-        src_Adapter_Profile_Employee_CommandHandler_AbstractEmployeeHandler_php["src/Adapter/Profile/Employee/CommandHandler/AbstractEmployeeHandler.php: src/Adapter/Profile/Employee/CommandHandler/AbstractEmployeeHandler.php"]
-        tests_Unit_PrestaShopBundle_Command_EmployeeCreateCommandTest_php["tests/Unit/PrestaShopBundle/Command/EmployeeCreateCommandTest.php: tests/Unit/PrestaShopBundle/Command/EmployeeCreateCommandTest.php"]
-        src_Adapter_Profile_CommandHandler_AbstractProfileHandler_php["src/Adapter/Profile/CommandHandler/AbstractProfileHandler.php: src/Adapter/Profile/CommandHandler/AbstractProfileHandler.php"]
-        tests_Integration_Behaviour_Features_Scenario_Database_sql_manager_feature["tests/Integration/Behaviour/Features/Scenario/Database/sql_manager.feature: tests/Integration/Behaviour/Features/Scenario/Database/sql_manager.feature"]
-        src_Adapter_SqlManager_SqlQueryValidator_php["src/Adapter/SqlManager/SqlQueryValidator.php: src/Adapter/SqlManager/SqlQueryValidator.php"]
-        tests_Integration_Behaviour_Features_Scenario_Product_add_product_feature["tests/Integration/Behaviour/Features/Scenario/Product/add_product.feature: tests/Integration/Behaviour/Features/Scenario/Product/add_product.feature"]
-        tests_Integration_Behaviour_Features_Context_Domain_ProductFeatureContext_php["tests/Integration/Behaviour/Features/Context/Domain/ProductFeatureContext.php: tests/Integration/Behaviour/Features/Context/Domain/ProductFeatureContext.php"]
-        tests_Integration_Behaviour_Features_Scenario_Product_Combination_generate_combinations_feature["tests/Integration/Behaviour/Features/Scenario/Product/Combination/generate_combinations.feature: tests/Integration/Behaviour/Features/Scenario/Product/Combination/generate_combinations.feature"]
-        tests_Integration_Behaviour_Features_Scenario_Category_category_management_feature["tests/Integration/Behaviour/Features/Scenario/Category/category_management.feature: tests/Integration/Behaviour/Features/Scenario/Category/category_management.feature"]
-        tests_Integration_Behaviour_Features_Scenario_Product_SpecificPrice_add_specific_price_feature["tests/Integration/Behaviour/Features/Scenario/Product/SpecificPrice/add_specific_price.feature: tests/Integration/Behaviour/Features/Scenario/Product/SpecificPrice/add_specific_price.feature"]
-        tests_Integration_Behaviour_Features_Scenario_Product_Combination_forbidden_actions_feature["tests/Integration/Behaviour/Features/Scenario/Product/Combination/forbidden_actions.feature: tests/Integration/Behaviour/Features/Scenario/Product/Combination/forbidden_actions.feature"]
-        src_Adapter_Image_ImageValidator_php["src/Adapter/Image/ImageValidator.php: src/Adapter/Image/ImageValidator.php"]
-        src_Adapter_Image_ProductImageFileValidator_php["src/Adapter/Image/ProductImageFileValidator.php: src/Adapter/Image/ProductImageFileValidator.php"]
-        tests_Integration_Behaviour_Features_Scenario_Product_Image_add_image_feature["tests/Integration/Behaviour/Features/Scenario/Product/Image/add_image.feature: tests/Integration/Behaviour/Features/Scenario/Product/Image/add_image.feature"]
-        src_Adapter_Product_ProductDeleter_php["src/Adapter/Product/ProductDeleter.php: src/Adapter/Product/ProductDeleter.php"]
-        tests_Integration_Behaviour_Features_Scenario_Product_delete_product_feature["tests/Integration/Behaviour/Features/Scenario/Product/delete_product.feature: tests/Integration/Behaviour/Features/Scenario/Product/delete_product.feature"]
-        src_Core_Domain_ValueObject_Reduction_php["src/Core/Domain/ValueObject/Reduction.php: src/Core/Domain/ValueObject/Reduction.php"]
-        tests_Unit_Core_Domain_Product_Query_SearchProductsTest_php["tests/Unit/Core/Domain/Product/Query/SearchProductsTest.php: tests/Unit/Core/Domain/Product/Query/SearchProductsTest.php"]
-        tests_Integration_Behaviour_Features_Scenario_Cart_Product_add_standard_product_feature["tests/Integration/Behaviour/Features/Scenario/Cart/Product/add_standard_product.feature: tests/Integration/Behaviour/Features/Scenario/Cart/Product/add_standard_product.feature"]
-        tests_Integration_Behaviour_Features_Scenario_Discount_FO_discount_validity_date_range_feature["tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_validity_date_range.feature: tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_validity_date_range.feature"]
         tests_Integration_Behaviour_Features_Scenario_Discount_FO_discount_with_condition_minimum_amount_feature["tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_condition_minimum_amount.feature: tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_condition_minimum_amount.feature"]
-        tests_Integration_Behaviour_Features_Scenario_Discount_BO_add_discount_with_code_feature["tests/Integration/Behaviour/Features/Scenario/Discount/BO/add_discount_with_code.feature: tests/Integration/Behaviour/Features/Scenario/Discount/BO/add_discount_with_code.feature"]
-        tests_Integration_Behaviour_Features_Scenario_CatalogPriceRule_catalog_price_rules_listing_feature["tests/Integration/Behaviour/Features/Scenario/CatalogPriceRule/catalog_price_rules_listing.feature: tests/Integration/Behaviour/Features/Scenario/CatalogPriceRule/catalog_price_rules_listing.feature"]
         tests_Integration_Behaviour_Features_Scenario_Discount_FO_discount_with_usage_limits_feature["tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_usage_limits.feature: tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_usage_limits.feature"]
+        tests_Integration_Behaviour_Features_Scenario_Discount_BO_add_and_update_discount_quantities_feature["tests/Integration/Behaviour/Features/Scenario/Discount/BO/add_and_update_discount_quantities.feature: tests/Integration/Behaviour/Features/Scenario/Discount/BO/add_and_update_discount_quantities.feature"]
+        src_Adapter_Cart_CommandHandler_DeleteCartHandler_php["src/Adapter/Cart/CommandHandler/DeleteCartHandler.php: src/Adapter/Cart/CommandHandler/DeleteCartHandler.php"]
+        src_Adapter_Cart_CommandHandler_BulkDeleteCartHandler_php["src/Adapter/Cart/CommandHandler/BulkDeleteCartHandler.php: src/Adapter/Cart/CommandHandler/BulkDeleteCartHandler.php"]
         tests_Integration_Behaviour_Features_Scenario_Cart_CartRule_BackOffice_delete_cart_from_bo_feature["tests/Integration/Behaviour/Features/Scenario/Cart/CartRule/BackOffice/delete_cart_from_bo.feature: tests/Integration/Behaviour/Features/Scenario/Cart/CartRule/BackOffice/delete_cart_from_bo.feature"]
-        tests_Integration_Behaviour_Features_Scenario_Discount_BO_update_discount_validity_dates_feature["tests/Integration/Behaviour/Features/Scenario/Discount/BO/update_discount_validity_dates.feature: tests/Integration/Behaviour/Features/Scenario/Discount/BO/update_discount_validity_dates.feature"]
-        src_Adapter_Discount_Validate_DiscountValidator_php["src/Adapter/Discount/Validate/DiscountValidator.php: src/Adapter/Discount/Validate/DiscountValidator.php"]
+        src_Adapter_CMS_Page_CommandHandler_AbstractCmsPageHandler_php["src/Adapter/CMS/Page/CommandHandler/AbstractCmsPageHandler.php: src/Adapter/CMS/Page/CommandHandler/AbstractCmsPageHandler.php"]
         tests_Integration_Behaviour_Features_Scenario_CmsPage_cms_page_management_feature["tests/Integration/Behaviour/Features/Scenario/CmsPage/cms_page_management.feature: tests/Integration/Behaviour/Features/Scenario/CmsPage/cms_page_management.feature"]
+        src_Core_Domain_CmsPageCategory_Command_AbstractCmsPageCategoryCommand_php["src/Core/Domain/CmsPageCategory/Command/AbstractCmsPageCategoryCommand.php: src/Core/Domain/CmsPageCategory/Command/AbstractCmsPageCategoryCommand.php"]
+        classes_Validate_php["classes/Validate.php: classes/Validate.php"]
         tests_Unit_Core_Domain_CmsPageCategory_Command_AddCmsPageCategoryCommandTest_php["tests/Unit/Core/Domain/CmsPageCategory/Command/AddCmsPageCategoryCommandTest.php: tests/Unit/Core/Domain/CmsPageCategory/Command/AddCmsPageCategoryCommandTest.php"]
+        src_Core_Addon_Theme_ThemeValidator_php["src/Core/Addon/Theme/ThemeValidator.php: src/Core/Addon/Theme/ThemeValidator.php"]
+        src_PrestaShopBundle_Resources_views_Admin_Improve_Design_Theme_index_html_twig["src/PrestaShopBundle/Resources/views/Admin/Improve/Design/Theme/index.html.twig: src/PrestaShopBundle/Resources/views/Admin/Improve/Design/Theme/index.html.twig"]
+        src_Core_Domain_Meta_Exception_MetaConstraintException_php["src/Core/Domain/Meta/Exception/MetaConstraintException.php: src/Core/Domain/Meta/Exception/MetaConstraintException.php"]
         tests_Integration_Behaviour_Features_Scenario_Meta_meta_management_feature["tests/Integration/Behaviour/Features/Scenario/Meta/meta_management.feature: tests/Integration/Behaviour/Features/Scenario/Meta/meta_management.feature"]
         tests_Integration_Behaviour_Features_Scenario_Customer_customer_management_feature["tests/Integration/Behaviour/Features/Scenario/Customer/customer_management.feature: tests/Integration/Behaviour/Features/Scenario/Customer/customer_management.feature"]
+        src_Core_Domain_CustomerService_ValueObject_CustomerThreadStatus_php["src/Core/Domain/CustomerService/ValueObject/CustomerThreadStatus.php: src/Core/Domain/CustomerService/ValueObject/CustomerThreadStatus.php"]
+        src_Core_Domain_ValueObject_Email_php["src/Core/Domain/ValueObject/Email.php: src/Core/Domain/ValueObject/Email.php"]
+        src_Core_Domain_Customer_ValueObject_Password_php["src/Core/Domain/Customer/ValueObject/Password.php: src/Core/Domain/Customer/ValueObject/Password.php"]
+        classes_form_CustomerForm_php["classes/form/CustomerForm.php: classes/form/CustomerForm.php"]
+        tests_Unit_Core_Domain_Customer_ValueObject_PasswordTest_php["tests/Unit/Core/Domain/Customer/ValueObject/PasswordTest.php: tests/Unit/Core/Domain/Customer/ValueObject/PasswordTest.php"]
+        src_Core_Domain_Customer_Exception_CustomerTransformationException_php["src/Core/Domain/Customer/Exception/CustomerTransformationException.php: src/Core/Domain/Customer/Exception/CustomerTransformationException.php"]
+        controllers_admin_AdminGroupsController_php["controllers/admin/AdminGroupsController.php: controllers/admin/AdminGroupsController.php"]
+        src_Adapter_Address_AbstractAddressHandler_php["src/Adapter/Address/AbstractAddressHandler.php: src/Adapter/Address/AbstractAddressHandler.php"]
+        src_PrestaShopBundle_Form_Admin_Sell_Address_CustomerAddressType_php["src/PrestaShopBundle/Form/Admin/Sell/Address/CustomerAddressType.php: src/PrestaShopBundle/Form/Admin/Sell/Address/CustomerAddressType.php"]
+        classes_form_CustomerAddressForm_php["classes/form/CustomerAddressForm.php: classes/form/CustomerAddressForm.php"]
+        PrestaShop_docs_modules_concepts_hooks_list_of_hooks_actionDeleteGDPRCustomer_md["PrestaShop/docs#modules/concepts/hooks/list-of-hooks/actionDeleteGDPRCustomer.md: PrestaShop/docs#modules/concepts/hooks/list-of-hooks/actionDeleteGDPRCustomer.md"]
+        src_Adapter_Currency_CommandHandler_CurrencyCommandValidator_php["src/Adapter/Currency/CommandHandler/CurrencyCommandValidator.php: src/Adapter/Currency/CommandHandler/CurrencyCommandValidator.php"]
+        src_Adapter_Currency_CurrencyDataProvider_php["src/Adapter/Currency/CurrencyDataProvider.php: src/Adapter/Currency/CurrencyDataProvider.php"]
+        src_Adapter_Currency_CommandHandler_AddOfficialCurrencyHandler_php["src/Adapter/Currency/CommandHandler/AddOfficialCurrencyHandler.php: src/Adapter/Currency/CommandHandler/AddOfficialCurrencyHandler.php"]
+        src_Adapter_Currency_CommandHandler_AddUnofficialCurrencyHandler_php["src/Adapter/Currency/CommandHandler/AddUnofficialCurrencyHandler.php: src/Adapter/Currency/CommandHandler/AddUnofficialCurrencyHandler.php"]
+        src_Adapter_Currency_CommandHandler_EditUnofficialCurrencyHandler_php["src/Adapter/Currency/CommandHandler/EditUnofficialCurrencyHandler.php: src/Adapter/Currency/CommandHandler/EditUnofficialCurrencyHandler.php"]
+        tests_Integration_Behaviour_Features_Scenario_Currency_currency_management_feature["tests/Integration/Behaviour/Features/Scenario/Currency/currency_management.feature: tests/Integration/Behaviour/Features/Scenario/Currency/currency_management.feature"]
+        tests_Unit_Core_Domain_Currency_ValueObject_CurrencyIsoCodeTest_php["tests/Unit/Core/Domain/Currency/ValueObject/CurrencyIsoCodeTest.php: tests/Unit/Core/Domain/Currency/ValueObject/CurrencyIsoCodeTest.php"]
+        src_Adapter_Currency_CommandHandler_DeleteCurrencyHandler_php["src/Adapter/Currency/CommandHandler/DeleteCurrencyHandler.php: src/Adapter/Currency/CommandHandler/DeleteCurrencyHandler.php"]
+        src_Adapter_Currency_CommandHandler_ToggleCurrencyStatusHandler_php["src/Adapter/Currency/CommandHandler/ToggleCurrencyStatusHandler.php: src/Adapter/Currency/CommandHandler/ToggleCurrencyStatusHandler.php"]
+        src_Adapter_Language_CommandHandler_AddLanguageHandler_php["src/Adapter/Language/CommandHandler/AddLanguageHandler.php: src/Adapter/Language/CommandHandler/AddLanguageHandler.php"]
+        src_Adapter_Language_CommandHandler_EditLanguageHandler_php["src/Adapter/Language/CommandHandler/EditLanguageHandler.php: src/Adapter/Language/CommandHandler/EditLanguageHandler.php"]
+        src_Core_Domain_Language_ValueObject_IsoCode_php["src/Core/Domain/Language/ValueObject/IsoCode.php: src/Core/Domain/Language/ValueObject/IsoCode.php"]
+        tests_Integration_Behaviour_Features_Scenario_Language_language_feature["tests/Integration/Behaviour/Features/Scenario/Language/language.feature: tests/Integration/Behaviour/Features/Scenario/Language/language.feature"]
+        src_Adapter_Language_CommandHandler_AbstractLanguageHandler_php["src/Adapter/Language/CommandHandler/AbstractLanguageHandler.php: src/Adapter/Language/CommandHandler/AbstractLanguageHandler.php"]
+        src_Adapter_Language_CommandHandler_DeleteLanguageHandler_php["src/Adapter/Language/CommandHandler/DeleteLanguageHandler.php: src/Adapter/Language/CommandHandler/DeleteLanguageHandler.php"]
+        src_Adapter_Language_CommandHandler_BulkDeleteLanguagesHandler_php["src/Adapter/Language/CommandHandler/BulkDeleteLanguagesHandler.php: src/Adapter/Language/CommandHandler/BulkDeleteLanguagesHandler.php"]
+        tests_Integration_Behaviour_Features_Scenario_Country_country_management_feature["tests/Integration/Behaviour/Features/Scenario/Country/country_management.feature: tests/Integration/Behaviour/Features/Scenario/Country/country_management.feature"]
+        src_Adapter_Tax_CommandHandler_AddTaxHandler_php["src/Adapter/Tax/CommandHandler/AddTaxHandler.php: src/Adapter/Tax/CommandHandler/AddTaxHandler.php"]
+        controllers_admin_AdminTaxRulesGroupController_php["controllers/admin/AdminTaxRulesGroupController.php: controllers/admin/AdminTaxRulesGroupController.php"]
+        src_Adapter_TaxRulesGroup_CommandHandler_AddTaxRuleHandler_php["src/Adapter/TaxRulesGroup/CommandHandler/AddTaxRuleHandler.php: src/Adapter/TaxRulesGroup/CommandHandler/AddTaxRuleHandler.php"]
+        classes_tax_TaxRulesTaxManager_php["classes/tax/TaxRulesTaxManager.php: classes/tax/TaxRulesTaxManager.php"]
+        src_Adapter_Module_CommandHandler_UninstallModuleHandler_php["src/Adapter/Module/CommandHandler/UninstallModuleHandler.php: src/Adapter/Module/CommandHandler/UninstallModuleHandler.php"]
+        src_Adapter_Module_CommandHandler_UpdateModuleStatusHandler_php["src/Adapter/Module/CommandHandler/UpdateModuleStatusHandler.php: src/Adapter/Module/CommandHandler/UpdateModuleStatusHandler.php"]
+        src_Adapter_Module_CommandHandler_BulkToggleModuleStatusHandler_php["src/Adapter/Module/CommandHandler/BulkToggleModuleStatusHandler.php: src/Adapter/Module/CommandHandler/BulkToggleModuleStatusHandler.php"]
+        tests_Integration_Behaviour_Features_Scenario_Module_uninstall_module_feature["tests/Integration/Behaviour/Features/Scenario/Module/uninstall_module.feature: tests/Integration/Behaviour/Features/Scenario/Module/uninstall_module.feature"]
+        src_Core_Domain_Module_Exception_ModuleConstraintException_php["src/Core/Domain/Module/Exception/ModuleConstraintException.php: src/Core/Domain/Module/Exception/ModuleConstraintException.php"]
+        src_Core_Domain_Module_Exception_CannotResetModuleException_php["src/Core/Domain/Module/Exception/CannotResetModuleException.php: src/Core/Domain/Module/Exception/CannotResetModuleException.php"]
+        src_Adapter_Module_CommandHandler_ResetModuleHandler_php["src/Adapter/Module/CommandHandler/ResetModuleHandler.php: src/Adapter/Module/CommandHandler/ResetModuleHandler.php"]
+        tests_Integration_Behaviour_Features_Scenario_Module_module_feature["tests/Integration/Behaviour/Features/Scenario/Module/module.feature: tests/Integration/Behaviour/Features/Scenario/Module/module.feature"]
+        src_Adapter_Module_CommandHandler_UpgradeModuleHandler_php["src/Adapter/Module/CommandHandler/UpgradeModuleHandler.php: src/Adapter/Module/CommandHandler/UpgradeModuleHandler.php"]
+        src_Adapter_Module_Module_php["src/Adapter/Module/Module.php: src/Adapter/Module/Module.php"]
+        tests_Integration_Behaviour_Features_Scenario_Module_upgrade_module_feature["tests/Integration/Behaviour/Features/Scenario/Module/upgrade_module.feature: tests/Integration/Behaviour/Features/Scenario/Module/upgrade_module.feature"]
+        src_Adapter_Module_CommandHandler_InstallModuleHandler_php["src/Adapter/Module/CommandHandler/InstallModuleHandler.php: src/Adapter/Module/CommandHandler/InstallModuleHandler.php"]
+        tests_Integration_Behaviour_Features_Scenario_Module_install_module_feature["tests/Integration/Behaviour/Features/Scenario/Module/install_module.feature: tests/Integration/Behaviour/Features/Scenario/Module/install_module.feature"]
+        src_Adapter_Order_CommandHandler_GenerateInvoiceHandler_php["src/Adapter/Order/CommandHandler/GenerateInvoiceHandler.php: src/Adapter/Order/CommandHandler/GenerateInvoiceHandler.php"]
+        tests_Integration_Behaviour_Features_Scenario_Order_order_documents_feature["tests/Integration/Behaviour/Features/Scenario/Order/order_documents.feature: tests/Integration/Behaviour/Features/Scenario/Order/order_documents.feature"]
+        tests_Integration_Behaviour_Features_Scenario_OrderReturn_order_return_management_feature["tests/Integration/Behaviour/Features/Scenario/OrderReturn/order_return_management.feature: tests/Integration/Behaviour/Features/Scenario/OrderReturn/order_return_management.feature"]
+        controllers_admin_AdminCarriersController_php["controllers/admin/AdminCarriersController.php: controllers/admin/AdminCarriersController.php"]
+        src_Adapter_Order_OrderAmountUpdater_php["src/Adapter/Order/OrderAmountUpdater.php: src/Adapter/Order/OrderAmountUpdater.php"]
+        classes_checkout_CheckoutAddressesStep_php["classes/checkout/CheckoutAddressesStep.php: classes/checkout/CheckoutAddressesStep.php"]
+        tests_Integration_Behaviour_Features_Scenario_Order_order_add_payment_feature["tests/Integration/Behaviour/Features/Scenario/Order/order_add_payment.feature: tests/Integration/Behaviour/Features/Scenario/Order/order_add_payment.feature"]
+        PrestaShop_prestashop_specs_content_1_7_back_office_customer_service_merchandise_returns_merchandise_returns_listing_md["PrestaShop/prestashop-specs#content/1.7/back-office/customer-service/merchandise-returns/merchandise-returns-listing.md: PrestaShop/prestashop-specs#content/1.7/back-office/customer-service/merchandise-returns/merchandise-returns-listing.md"]
+        src_Core_Domain_Order_ValueObject_OrderDetailRefund_php["src/Core/Domain/Order/ValueObject/OrderDetailRefund.php: src/Core/Domain/Order/ValueObject/OrderDetailRefund.php"]
+        src_Adapter_Order_Refund_OrderRefundCalculator_php["src/Adapter/Order/Refund/OrderRefundCalculator.php: src/Adapter/Order/Refund/OrderRefundCalculator.php"]
+        tests_Integration_Behaviour_Features_Scenario_Order_partial_refund_feature["tests/Integration/Behaviour/Features/Scenario/Order/partial_refund.feature: tests/Integration/Behaviour/Features/Scenario/Order/partial_refund.feature"]
+        tests_Integration_Behaviour_Features_Scenario_Carrier_carrier_management_feature["tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature: tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature"]
+        tests_Integration_Behaviour_Features_Scenario_Carrier_Ranges_carrier_ranges_feature["tests/Integration/Behaviour/Features/Scenario/Carrier/Ranges/carrier_ranges.feature: tests/Integration/Behaviour/Features/Scenario/Carrier/Ranges/carrier_ranges.feature"]
+        src_Adapter_Carrier_Validate_CarrierValidator_php["src/Adapter/Carrier/Validate/CarrierValidator.php: src/Adapter/Carrier/Validate/CarrierValidator.php"]
+        tests_Integration_Behaviour_Features_Scenario_Shipment_shipment_feature["tests/Integration/Behaviour/Features/Scenario/Shipment/shipment.feature: tests/Integration/Behaviour/Features/Scenario/Shipment/shipment.feature"]
+        src_PrestaShopBundle_Form_Admin_Sell_Order_Shipment_ProductSplitType_php["src/PrestaShopBundle/Form/Admin/Sell/Order/Shipment/ProductSplitType.php: src/PrestaShopBundle/Form/Admin/Sell/Order/Shipment/ProductSplitType.php"]
+        src_Adapter_Shipment_ShipmentSplitter_php["src/Adapter/Shipment/ShipmentSplitter.php: src/Adapter/Shipment/ShipmentSplitter.php"]
+        src_Adapter_Shipment_ShipmentMerger_php["src/Adapter/Shipment/ShipmentMerger.php: src/Adapter/Shipment/ShipmentMerger.php"]
+        src_PrestaShopBundle_Controller_Admin_Sell_Order_OrderController_php["src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php: src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php"]
+        src_Adapter_Shipment_QueryHandler_ListAvailableShipmentsForProductHandler_php["src/Adapter/Shipment/QueryHandler/ListAvailableShipmentsForProductHandler.php: src/Adapter/Shipment/QueryHandler/ListAvailableShipmentsForProductHandler.php"]
+        classes_Delivery_php["classes/Delivery.php: classes/Delivery.php"]
+        tests_Unit_Core_Domain_Shop_Command_UploadLogosCommandTest_php["tests/Unit/Core/Domain/Shop/Command/UploadLogosCommandTest.php: tests/Unit/Core/Domain/Shop/Command/UploadLogosCommandTest.php"]
+        classes_Alias_php["classes/Alias.php: classes/Alias.php"]
+        tests_Integration_Behaviour_Features_Scenario_Search_add_alias_feature["tests/Integration/Behaviour/Features/Scenario/Search/add_alias.feature: tests/Integration/Behaviour/Features/Scenario/Search/add_alias.feature"]
+        classes_Contact_php["classes/Contact.php: classes/Contact.php"]
+        src_PrestaShopBundle_Form_Admin_Configure_ShopParameters_Contact_ContactType_php["src/PrestaShopBundle/Form/Admin/Configure/ShopParameters/Contact/ContactType.php: src/PrestaShopBundle/Form/Admin/Configure/ShopParameters/Contact/ContactType.php"]
+        tests_Integration_Behaviour_Features_Scenario_Contact_contact_feature["tests/Integration/Behaviour/Features/Scenario/Contact/contact.feature: tests/Integration/Behaviour/Features/Scenario/Contact/contact.feature"]
+        classes_SearchEngine_php["classes/SearchEngine.php: classes/SearchEngine.php"]
+        src_PrestaShopBundle_Controller_Admin_Configure_AdvancedParameters_EmployeeController_php["src/PrestaShopBundle/Controller/Admin/Configure/AdvancedParameters/EmployeeController.php: src/PrestaShopBundle/Controller/Admin/Configure/AdvancedParameters/EmployeeController.php"]
+        src_PrestaShopBundle_Controller_Admin_Sell_Catalog_Product_ProductController_php["src/PrestaShopBundle/Controller/Admin/Sell/Catalog/Product/ProductController.php: src/PrestaShopBundle/Controller/Admin/Sell/Catalog/Product/ProductController.php"]
+        src_PrestaShopBundle_Controller_Admin_Sell_Order_CartController_php["src/PrestaShopBundle/Controller/Admin/Sell/Order/CartController.php: src/PrestaShopBundle/Controller/Admin/Sell/Order/CartController.php"]
+        src_PrestaShopBundle_Controller_Admin_Improve_Design_CmsPageController_php["src/PrestaShopBundle/Controller/Admin/Improve/Design/CmsPageController.php: src/PrestaShopBundle/Controller/Admin/Improve/Design/CmsPageController.php"]
+        src_PrestaShopBundle_Controller_Admin_Sell_Customer_CustomerController_php["src/PrestaShopBundle/Controller/Admin/Sell/Customer/CustomerController.php: src/PrestaShopBundle/Controller/Admin/Sell/Customer/CustomerController.php"]
+        src_PrestaShopBundle_Controller_Admin_Improve_ModuleController_php["src/PrestaShopBundle/Controller/Admin/Improve/ModuleController.php: src/PrestaShopBundle/Controller/Admin/Improve/ModuleController.php"]
+        src_Core_Form_IdentifiableObject_DataHandler_PartialRefundFormDataHandler_php["src/Core/Form/IdentifiableObject/DataHandler/PartialRefundFormDataHandler.php: src/Core/Form/IdentifiableObject/DataHandler/PartialRefundFormDataHandler.php"]
+        src_PrestaShopBundle_Controller_Admin_Sell_Order_CreditSlipController_php["src/PrestaShopBundle/Controller/Admin/Sell/Order/CreditSlipController.php: src/PrestaShopBundle/Controller/Admin/Sell/Order/CreditSlipController.php"]
+        controllers_front_OrderReturnController_php["controllers/front/OrderReturnController.php: controllers/front/OrderReturnController.php"]
+        src_PrestaShopBundle_Controller_Admin_Improve_Shipping_CarrierController_php["src/PrestaShopBundle/Controller/Admin/Improve/Shipping/CarrierController.php: src/PrestaShopBundle/Controller/Admin/Improve/Shipping/CarrierController.php"]
+        tests_Integration_Behaviour_Features_Scenario_Security_security_configuration_feature["tests/Integration/Behaviour/Features/Scenario/Security/security_configuration.feature: tests/Integration/Behaviour/Features/Scenario/Security/security_configuration.feature"]
+        tests_Integration_Adapter_SqlManager_QueryHandler_GetSqlRequestExecutionResultHandlerTest_php["tests/Integration/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandlerTest.php: tests/Integration/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandlerTest.php"]
+        src_Adapter_Profile_Employee_CommandHandler_AbstractEmployeeHandler_php["src/Adapter/Profile/Employee/CommandHandler/AbstractEmployeeHandler.php: src/Adapter/Profile/Employee/CommandHandler/AbstractEmployeeHandler.php"]
+        tests_Unit_PrestaShopBundle_Command_EmployeeCreateCommandTest_php["tests/Unit/PrestaShopBundle/Command/EmployeeCreateCommandTest.php: tests/Unit/PrestaShopBundle/Command/EmployeeCreateCommandTest.php"]
+        tests_Integration_Behaviour_Features_Scenario_Product_add_product_feature["tests/Integration/Behaviour/Features/Scenario/Product/add_product.feature: tests/Integration/Behaviour/Features/Scenario/Product/add_product.feature"]
+        tests_Integration_Behaviour_Features_Context_Domain_ProductFeatureContext_php["tests/Integration/Behaviour/Features/Context/Domain/ProductFeatureContext.php: tests/Integration/Behaviour/Features/Context/Domain/ProductFeatureContext.php"]
+        tests_Integration_Behaviour_Features_Scenario_Category_category_management_feature["tests/Integration/Behaviour/Features/Scenario/Category/category_management.feature: tests/Integration/Behaviour/Features/Scenario/Category/category_management.feature"]
+        tests_Integration_Behaviour_Features_Scenario_Product_Image_add_image_feature["tests/Integration/Behaviour/Features/Scenario/Product/Image/add_image.feature: tests/Integration/Behaviour/Features/Scenario/Product/Image/add_image.feature"]
+        tests_Integration_Behaviour_Features_Scenario_Product_delete_product_feature["tests/Integration/Behaviour/Features/Scenario/Product/delete_product.feature: tests/Integration/Behaviour/Features/Scenario/Product/delete_product.feature"]
+        tests_Unit_Core_Domain_Product_Query_SearchProductsTest_php["tests/Unit/Core/Domain/Product/Query/SearchProductsTest.php: tests/Unit/Core/Domain/Product/Query/SearchProductsTest.php"]
+        tests_Integration_Behaviour_Features_Scenario_Discount_BO_add_discount_with_code_feature["tests/Integration/Behaviour/Features/Scenario/Discount/BO/add_discount_with_code.feature: tests/Integration/Behaviour/Features/Scenario/Discount/BO/add_discount_with_code.feature"]
+        tests_Integration_Behaviour_Features_Scenario_CatalogPriceRule_catalog_price_rules_listing_feature["tests/Integration/Behaviour/Features/Scenario/CatalogPriceRule/catalog_price_rules_listing.feature: tests/Integration/Behaviour/Features/Scenario/CatalogPriceRule/catalog_price_rules_listing.feature"]
+        themes__core_js_cart_js["themes/_core/js/cart.js: themes/_core/js/cart.js"]
+        themes__core_js_checkout_delivery_js["themes/_core/js/checkout-delivery.js: themes/_core/js/checkout-delivery.js"]
         tests_Integration_Behaviour_Features_Scenario_Address_customer_address_feature["tests/Integration/Behaviour/Features/Scenario/Address/customer_address.feature: tests/Integration/Behaviour/Features/Scenario/Address/customer_address.feature"]
         tests_UI_campaigns_functional_BO_04_customers_01_customers_11_transformGuestToCustomer_ts["tests/UI/campaigns/functional/BO/04_customers/01_customers/11_transformGuestToCustomer.ts: tests/UI/campaigns/functional/BO/04_customers/01_customers/11_transformGuestToCustomer.ts"]
         tests_Integration_Behaviour_Features_Scenario_CustomerService_customer_service_feature["tests/Integration/Behaviour/Features/Scenario/CustomerService/customer_service.feature: tests/Integration/Behaviour/Features/Scenario/CustomerService/customer_service.feature"]
-        tests_Unit_Core_Domain_Customer_ValueObject_PasswordTest_php["tests/Unit/Core/Domain/Customer/ValueObject/PasswordTest.php: tests/Unit/Core/Domain/Customer/ValueObject/PasswordTest.php"]
         src_Adapter_Customer_CommandHandler_AbstractCustomerHandler_php["src/Adapter/Customer/CommandHandler/AbstractCustomerHandler.php: src/Adapter/Customer/CommandHandler/AbstractCustomerHandler.php"]
         tests_Integration_Adapter_Customer_Repository_CustomerRepositoryTest_php["tests/Integration/Adapter/Customer/Repository/CustomerRepositoryTest.php: tests/Integration/Adapter/Customer/Repository/CustomerRepositoryTest.php"]
-        tests_Integration_Behaviour_Features_Scenario_Currency_currency_management_feature["tests/Integration/Behaviour/Features/Scenario/Currency/currency_management.feature: tests/Integration/Behaviour/Features/Scenario/Currency/currency_management.feature"]
-        src_Adapter_Currency_CommandHandler_AddOfficialCurrencyHandler_php["src/Adapter/Currency/CommandHandler/AddOfficialCurrencyHandler.php: src/Adapter/Currency/CommandHandler/AddOfficialCurrencyHandler.php"]
         src_Adapter_Currency_CommandHandler_RefreshExchangeRatesHandler_php["src/Adapter/Currency/CommandHandler/RefreshExchangeRatesHandler.php: src/Adapter/Currency/CommandHandler/RefreshExchangeRatesHandler.php"]
         tests_Integration_Behaviour_Features_Scenario_TaxRulesGroup_tax_rule_group_management_feature["tests/Integration/Behaviour/Features/Scenario/TaxRulesGroup/tax_rule_group_management.feature: tests/Integration/Behaviour/Features/Scenario/TaxRulesGroup/tax_rule_group_management.feature"]
         tests_Integration_Behaviour_Features_Scenario_TaxRulesGroup_tax_rule_management_feature["tests/Integration/Behaviour/Features/Scenario/TaxRulesGroup/tax_rule_management.feature: tests/Integration/Behaviour/Features/Scenario/TaxRulesGroup/tax_rule_management.feature"]
-        src_Adapter_TaxRulesGroup_CommandHandler_AddTaxRuleHandler_php["src/Adapter/TaxRulesGroup/CommandHandler/AddTaxRuleHandler.php: src/Adapter/TaxRulesGroup/CommandHandler/AddTaxRuleHandler.php"]
-        tests_Unit_Core_Domain_Currency_ValueObject_CurrencyIsoCodeTest_php["tests/Unit/Core/Domain/Currency/ValueObject/CurrencyIsoCodeTest.php: tests/Unit/Core/Domain/Currency/ValueObject/CurrencyIsoCodeTest.php"]
-        classes_Validate_php["classes/Validate.php: classes/Validate.php"]
-        src_Adapter_Tax_CommandHandler_AddTaxHandler_php["src/Adapter/Tax/CommandHandler/AddTaxHandler.php: src/Adapter/Tax/CommandHandler/AddTaxHandler.php"]
         tests_Integration_Behaviour_Features_Scenario_Country_bulk_update_country_zone_feature["tests/Integration/Behaviour/Features/Scenario/Country/bulk_update_country_zone.feature: tests/Integration/Behaviour/Features/Scenario/Country/bulk_update_country_zone.feature"]
         src_Adapter_Country_CommandHandler_AddCountryHandler_php["src/Adapter/Country/CommandHandler/AddCountryHandler.php: src/Adapter/Country/CommandHandler/AddCountryHandler.php"]
         src_Core_Domain_Zone_ValueObject_ZoneId_php["src/Core/Domain/Zone/ValueObject/ZoneId.php: src/Core/Domain/Zone/ValueObject/ZoneId.php"]
-        tests_Integration_Behaviour_Features_Scenario_Module_install_module_feature["tests/Integration/Behaviour/Features/Scenario/Module/install_module.feature: tests/Integration/Behaviour/Features/Scenario/Module/install_module.feature"]
-        tests_Integration_Behaviour_Features_Scenario_Module_module_feature["tests/Integration/Behaviour/Features/Scenario/Module/module.feature: tests/Integration/Behaviour/Features/Scenario/Module/module.feature"]
-        tests_Integration_Behaviour_Features_Scenario_Module_upgrade_module_feature["tests/Integration/Behaviour/Features/Scenario/Module/upgrade_module.feature: tests/Integration/Behaviour/Features/Scenario/Module/upgrade_module.feature"]
-        tests_Integration_Behaviour_Features_Scenario_Module_uninstall_module_feature["tests/Integration/Behaviour/Features/Scenario/Module/uninstall_module.feature: tests/Integration/Behaviour/Features/Scenario/Module/uninstall_module.feature"]
         tests_Integration_Behaviour_Features_Scenario_Cart_cart_to_order_feature["tests/Integration/Behaviour/Features/Scenario/Cart/cart_to_order.feature: tests/Integration/Behaviour/Features/Scenario/Cart/cart_to_order.feature"]
         tests_Integration_Behaviour_Features_Scenario_Order_order_cancel_product_feature["tests/Integration/Behaviour/Features/Scenario/Order/order_cancel_product.feature: tests/Integration/Behaviour/Features/Scenario/Order/order_cancel_product.feature"]
         tests_Integration_Behaviour_Features_Scenario_Order_order_from_bo_feature["tests/Integration/Behaviour/Features/Scenario/Order/order_from_bo.feature: tests/Integration/Behaviour/Features/Scenario/Order/order_from_bo.feature"]
-        src_Adapter_Order_CommandHandler_GenerateInvoiceHandler_php["src/Adapter/Order/CommandHandler/GenerateInvoiceHandler.php: src/Adapter/Order/CommandHandler/GenerateInvoiceHandler.php"]
-        tests_Integration_Behaviour_Features_Scenario_Order_order_add_payment_feature["tests/Integration/Behaviour/Features/Scenario/Order/order_add_payment.feature: tests/Integration/Behaviour/Features/Scenario/Order/order_add_payment.feature"]
-        tests_Integration_Behaviour_Features_Scenario_Order_partial_refund_feature["tests/Integration/Behaviour/Features/Scenario/Order/partial_refund.feature: tests/Integration/Behaviour/Features/Scenario/Order/partial_refund.feature"]
-        src_Adapter_Order_Refund_OrderRefundCalculator_php["src/Adapter/Order/Refund/OrderRefundCalculator.php: src/Adapter/Order/Refund/OrderRefundCalculator.php"]
-        tests_Integration_Behaviour_Features_Scenario_Carrier_carrier_management_feature["tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature: tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature"]
-        tests_Integration_Behaviour_Features_Scenario_Shipment_shipment_feature["tests/Integration/Behaviour/Features/Scenario/Shipment/shipment.feature: tests/Integration/Behaviour/Features/Scenario/Shipment/shipment.feature"]
+        controllers_admin_AdminReturnController_php["controllers/admin/AdminReturnController.php: controllers/admin/AdminReturnController.php"]
         tests_Integration_Behaviour_Features_Scenario_Shipment_products_with_different_carriers_feature["tests/Integration/Behaviour/Features/Scenario/Shipment/products_with_different_carriers.feature: tests/Integration/Behaviour/Features/Scenario/Shipment/products_with_different_carriers.feature"]
-        tests_Integration_Behaviour_Features_Scenario_Carrier_Ranges_carrier_ranges_feature["tests/Integration/Behaviour/Features/Scenario/Carrier/Ranges/carrier_ranges.feature: tests/Integration/Behaviour/Features/Scenario/Carrier/Ranges/carrier_ranges.feature"]
         tests_Integration_Behaviour_Features_Scenario_Shop_shop_feature["tests/Integration/Behaviour/Features/Scenario/Shop/shop.feature: tests/Integration/Behaviour/Features/Scenario/Shop/shop.feature"]
-        tests_Integration_Behaviour_Features_Scenario_Search_add_alias_feature["tests/Integration/Behaviour/Features/Scenario/Search/add_alias.feature: tests/Integration/Behaviour/Features/Scenario/Search/add_alias.feature"]
         tests_Integration_Behaviour_Features_Scenario_SearchEngine_search_engine_management_feature["tests/Integration/Behaviour/Features/Scenario/SearchEngine/search_engine_management.feature: tests/Integration/Behaviour/Features/Scenario/SearchEngine/search_engine_management.feature"]
         tests_Unit_PrestaShopBundle_Command_SearchIndexationCommandTest_php["tests/Unit/PrestaShopBundle/Command/SearchIndexationCommandTest.php: tests/Unit/PrestaShopBundle/Command/SearchIndexationCommandTest.php"]
-        tests_Unit_Core_Domain_Shop_Command_UploadLogosCommandTest_php["tests/Unit/Core/Domain/Shop/Command/UploadLogosCommandTest.php: tests/Unit/Core/Domain/Shop/Command/UploadLogosCommandTest.php"]
         app_config_messenger_yml["app/config/messenger.yml: app/config/messenger.yml"]
         src_Core_Domain_Order_Payment_["src/Core/Domain/Order/Payment/: src/Core/Domain/Order/Payment/"]
-        src_Core_Domain_Cart_["src/Core/Domain/Cart/: src/Core/Domain/Cart/"]
+        src_Core_Payment_PaymentOption_php["src/Core/Payment/PaymentOption.php: src/Core/Payment/PaymentOption.php"]
+        classes_controller_FrontController_php["classes/controller/FrontController.php: classes/controller/FrontController.php"]
+        classes_Context_php["classes/Context.php: classes/Context.php"]
         src_Core_Domain_["src/Core/Domain/: src/Core/Domain/"]
-        https___github_com_PrestaShop_docs_blob_9_x_development_architecture_domain__index_md["https://github.com/PrestaShop/docs/blob/9.x/development/architecture/domain/_index.md: https://github.com/PrestaShop/docs/blob/9.x/development/architecture/domain/_index.md"]
+        PrestaShop_docs_development_architecture_domain__index_md["PrestaShop/docs#development/architecture/domain/_index.md: PrestaShop/docs#development/architecture/domain/_index.md"]
         src_PrestaShopBundle_["src/PrestaShopBundle/: src/PrestaShopBundle/"]
-        https___github_com_PrestaShop_docs_blob_9_x_development_architecture_migration_guide__index_md["https://github.com/PrestaShop/docs/blob/9.x/development/architecture/migration-guide/_index.md: https://github.com/PrestaShop/docs/blob/9.x/development/architecture/migration-guide/_index.md"]
+        PrestaShop_docs_development_architecture_migration_guide__index_md["PrestaShop/docs#development/architecture/migration-guide/_index.md: PrestaShop/docs#development/architecture/migration-guide/_index.md"]
+        PrestaShop_docs_development_architecture_migration_guide_strategy_md["PrestaShop/docs#development/architecture/migration-guide/strategy.md: PrestaShop/docs#development/architecture/migration-guide/strategy.md"]
         src_Core_Domain_ApiClient_["src/Core/Domain/ApiClient/: src/Core/Domain/ApiClient/"]
-        https___github_com_PrestaShop_docs_blob_9_x_admin_api__index_md["https://github.com/PrestaShop/docs/blob/9.x/admin-api/_index.md: https://github.com/PrestaShop/docs/blob/9.x/admin-api/_index.md"]
+        PrestaShop_docs_admin_api__index_md["PrestaShop/docs#admin-api/_index.md: PrestaShop/docs#admin-api/_index.md"]
+        install_dev_data_xml_feature_flag_xml["install-dev/data/xml/feature_flag.xml: install-dev/data/xml/feature_flag.xml"]
+        PrestaShop_ps_apiresources_src_ApiPlatform_Resources["PrestaShop/ps_apiresources#src/ApiPlatform/Resources: PrestaShop/ps_apiresources#src/ApiPlatform/Resources"]
         classes_webservice_WebserviceRequest_php["classes/webservice/WebserviceRequest.php: classes/webservice/WebserviceRequest.php"]
         src_Adapter_Hook_HookDispatcher_php["src/Adapter/Hook/HookDispatcher.php: src/Adapter/Hook/HookDispatcher.php"]
         INSTALL_txt["INSTALL.txt: INSTALL.txt"]
-        https___github_com_PrestaShop_docs_blob_9_x_basics_installation_system_requirements_md["https://github.com/PrestaShop/docs/blob/9.x/basics/installation/system-requirements.md: https://github.com/PrestaShop/docs/blob/9.x/basics/installation/system-requirements.md"]
+        PrestaShop_docs_basics_installation_system_requirements_md["PrestaShop/docs#basics/installation/system-requirements.md: PrestaShop/docs#basics/installation/system-requirements.md"]
         _docker_Dockerfile[".docker/Dockerfile: .docker/Dockerfile"]
         _docker_install_database_sh[".docker/install/database.sh: .docker/install/database.sh"]
         app_config_parameters_yml_dist["app/config/parameters.yml.dist: app/config/parameters.yml.dist"]
@@ -5103,6 +5277,18 @@ graph TD
     shipping_CN004 -.->|"association"| shipping_CN005
     shipping_CN004 -.->|"association"| shipping_CN001
     shop_CN001 -.->|"association"| shop_CN002
+    admin_PER002 -.->|"persona_actor"| admin_ACT003
+    admin_PER001 -.->|"persona_actor"| admin_ACT001
+    content_PER001 -.->|"persona_actor"| content_ACT002
+    customers_PER001 -.->|"persona_actor"| customers_ACT001
+    customers_PER002 -.->|"persona_actor"| customers_ACT002
+    international_PER001 -.->|"persona_actor"| international_ACT001
+    modules_PER001 -.->|"persona_actor"| modules_ACT002
+    orders_PER001 -.->|"persona_actor"| orders_ACT001
+    orders_PER002 -.->|"persona_actor"| orders_ACT001
+    orders_PER003 -.->|"persona_actor"| orders_ACT003
+    shipping_PER001 -.->|"persona_actor"| shipping_ACT001
+    shop_PER001 -.->|"persona_actor"| shop_ACT001
     admin_SR001 -.->|"concepts"| admin_CN001
     admin_SR001 -.->|"concepts"| admin_CN002
     admin_VR001 -.->|"concepts"| admin_CN001
@@ -5135,11 +5321,8 @@ graph TD
     checkout_VR003 -.->|"concepts"| checkout_CN004
     checkout_VR004 -.->|"concepts"| checkout_CN006
     checkout_VR005 -.->|"concepts"| checkout_CN001
-    checkout_TR001 -.->|"concept"| checkout_CN001
-    checkout_TR002 -.->|"concept"| checkout_CN001
     checkout_TR003 -.->|"concept"| checkout_CN001
     checkout_TR004 -.->|"concept"| checkout_CN001
-    checkout_TR005 -.->|"concept"| checkout_CN001
     content_SR001 -.->|"concepts"| content_CN002
     content_VR001 -.->|"concepts"| content_CN001
     content_VR002 -.->|"concepts"| content_CN001
@@ -5182,8 +5365,11 @@ graph TD
     orders_SR002 -.->|"concepts"| orders_CN002
     orders_SR002 -.->|"concepts"| orders_CN006
     orders_SR003 -.->|"concepts"| orders_CN007
+    orders_SR004 -.->|"concepts"| orders_CN002
+    orders_SR004 -.->|"concepts"| orders_CN003
     orders_CR001 -.->|"concepts"| orders_CN002
     orders_DR001 -.->|"concepts"| orders_CN002
+    orders_DR001 -.->|"concepts"| shipping_CN001
     orders_EQ001 -.->|"concepts"| orders_CN002
     orders_EQ001 -.->|"concepts"| orders_CN003
     orders_VR001 -.->|"concepts"| orders_CN002
@@ -5194,6 +5380,7 @@ graph TD
     orders_VR003 -.->|"concepts"| orders_CN007
     orders_VR004 -.->|"concepts"| orders_CN002
     orders_VR004 -.->|"concepts"| orders_CN009
+    orders_VR004 -.->|"concepts"| orders_CN003
     orders_TR001 -.->|"concept"| orders_CN002
     shipping_SR001 -.->|"concepts"| shipping_CN001
     shipping_VR001 -.->|"concepts"| shipping_CN001
@@ -5205,6 +5392,7 @@ graph TD
     shipping_VR007 -.->|"concepts"| shipping_CN004
     shipping_VR008 -.->|"concepts"| shipping_CN004
     shipping_VR009 -.->|"concepts"| shipping_CN004
+    shipping_VR010 -.->|"concepts"| shipping_CN002
     shipping_TR001 -.->|"concept"| shipping_CN004
     shop_VR001 -.->|"concepts"| shop_CN001
     shop_VR002 -.->|"concepts"| shop_CN004
@@ -6303,6 +6491,7 @@ graph TD
     international_CMD043 -.->|"produces"| international_EVT030
     international_CMD043 -.->|"initiated_by"| international_ACT002
     international_CMD043 -.->|"materializes"| international_CN008
+    international_CMD034 -.->|"governed_by"| international_VR008
     international_CMD034 -.->|"produces"| international_EVT033
     international_CMD034 -.->|"initiated_by"| international_ACT002
     international_CMD034 -.->|"materializes"| international_CN009
@@ -6399,9 +6588,13 @@ graph TD
     orders_CMD026 -.->|"initiated_by"| orders_ACT004
     orders_CMD027 -.->|"initiated_by"| orders_ACT004
     orders_CMD028 -.->|"initiated_by"| orders_ACT003
+    orders_CMD028 -.->|"materializes"| orders_CN011
     orders_CMD029 -.->|"initiated_by"| orders_ACT003
+    orders_CMD029 -.->|"materializes"| orders_CN011
     orders_CMD030 -.->|"initiated_by"| orders_ACT003
+    orders_CMD030 -.->|"materializes"| orders_CN011
     orders_CMD031 -.->|"initiated_by"| orders_ACT003
+    orders_CMD031 -.->|"materializes"| orders_CN011
     orders_CMD032 -.->|"initiated_by"| orders_ACT004
     orders_CMD033 -.->|"initiated_by"| orders_ACT004
     orders_CMD034 -.->|"initiated_by"| orders_ACT004
@@ -6411,6 +6604,7 @@ graph TD
     orders_CMD001 -.->|"governed_by"| orders_VR001
     orders_CMD001 -.->|"produces"| orders_EVT001
     orders_CMD001 -.->|"initiated_by"| orders_ACT001
+    orders_CMD001 -.->|"initiated_by"| admin_ACT002
     orders_CMD004 -.->|"governed_by"| orders_CR001
     orders_CMD004 -.->|"governed_by"| orders_TR001
     orders_CMD004 -.->|"produces"| orders_EVT005
@@ -6442,7 +6636,7 @@ graph TD
     orders_CMD020 -.->|"governed_by"| orders_SR001
     orders_CMD020 -.->|"produces"| orders_EVT009
     orders_CMD020 -.->|"initiated_by"| orders_ACT003
-    orders_CMD021 -.->|"governed_by"| orders_SR001
+    orders_CMD021 -.->|"governed_by"| orders_SR004
     orders_CMD021 -.->|"produces"| orders_EVT009
     orders_CMD021 -.->|"initiated_by"| orders_ACT003
     orders_CMD022 -.->|"produces"| orders_EVT009
@@ -6474,6 +6668,7 @@ graph TD
     orders_CMD023 -.->|"produces"| orders_EVT010
     orders_CMD023 -.->|"initiated_by"| orders_ACT003
     orders_CMD023 -.->|"initiated_by"| orders_ACT004
+    orders_CMD023 -.->|"materializes"| orders_CN007
     orders_CMD037 -.->|"produces"| orders_EVT011
     orders_CMD037 -.->|"initiated_by"| orders_ACT003
     orders_CMD038 -.->|"produces"| orders_EVT011
@@ -6514,6 +6709,7 @@ graph TD
     shipping_CMD007 -.->|"materializes"| shipping_CN001
     shipping_CMD008 -.->|"governed_by"| shipping_VR004
     shipping_CMD008 -.->|"governed_by"| shipping_VR005
+    shipping_CMD008 -.->|"governed_by"| shipping_VR010
     shipping_CMD008 -.->|"produces"| shipping_EVT006
     shipping_CMD008 -.->|"initiated_by"| shipping_ACT001
     shipping_CMD008 -.->|"materializes"| shipping_CN002
@@ -6702,6 +6898,7 @@ graph TD
     modules_CMD006 -.->|"payload_model"| MDL1903
     modules_CMD008 -.->|"payload_model"| MDL701
     modules_CMD009 -.->|"payload_model"| MDL1905
+    orders_CMD023 -.->|"payload_model"| orders_MDL001
     shop_CMD001 -.->|"payload_model"| MDL900
     shop_QRY002 -.->|"payload_model"| MDL901
     shop_CMD002 -.->|"payload_model"| MDL903
@@ -6730,27 +6927,40 @@ graph TD
     DC001 -.->|"declared_impact"| modules_CN002
     DC001 -.->|"declared_impact"| orders_CMD004
     DC001 -.->|"declared_impact"| orders_EVT005
-    DC002 -.->|"motivation_refs"| catalog_GL001
+    DC001 -.->|"declared_impact"| orders_PRC001
+    DC002 -.->|"motivation_refs"| catalog_RSK005
+    DC002 -.->|"motivation_refs"| catalog_ASM001
     DC002 -.->|"capability_refs"| CAP005
     DC002 -.->|"capability_refs"| CAP018
     DC002 -.->|"declared_impact"| shop_CN005
     DC002 -.->|"declared_impact"| catalog_QRY001
     DC002 -.->|"declared_impact"| shop_CMD014
     DC002 -.->|"declared_impact"| shop_EVT010
-    DC003 -.->|"motivation_refs"| checkout_GL002
-    DC003 -.->|"motivation_refs"| checkout_RSK002
+    DC003 -.->|"motivation_refs"| checkout_ASM001
     DC003 -.->|"capability_refs"| CAP003
-    DC004 -.->|"motivation_refs"| orders_GL001
-    DC004 -.->|"motivation_refs"| checkout_GL001
-    DC004 -.->|"motivation_refs"| orders_RSK003
+    DC003 -.->|"declared_impact"| orders_CMD001
+    DC003 -.->|"declared_impact"| checkout_SCR006
+    DC003 -.->|"declared_impact"| checkout_UAC011
+    DC004 -.->|"motivation_refs"| checkout_GL004
     DC004 -.->|"capability_refs"| CAP001
     DC004 -.->|"capability_refs"| CAP003
-    DC005 -.->|"motivation_refs"| orders_GL003
+    DC004 -.->|"declared_impact"| checkout_CN001
+    DC004 -.->|"declared_impact"| checkout_CMD001
+    DC004 -.->|"declared_impact"| checkout_CMD009
+    DC004 -.->|"declared_impact"| checkout_CMD010
+    DC004 -.->|"declared_impact"| checkout_CMD011
+    DC005 -.->|"motivation_refs"| catalog_TRO001
+    DC005 -.->|"motivation_refs"| admin_INQ002
+    DC005 -.->|"motivation_refs"| shop_INQ001
     DC005 -.->|"capability_refs"| CAP001
     DC005 -.->|"capability_refs"| CAP005
+    DC006 -.->|"motivation_refs"| admin_GL005
     DC006 -.->|"capability_refs"| CAP015
     DC006 -.->|"capability_refs"| CAP016
+    DC007 -.->|"motivation_refs"| admin_GL002
+    DC007 -.->|"motivation_refs"| catalog_GL004
     DC007 -.->|"motivation_refs"| admin_ASM100
+    DC007 -.->|"motivation_refs"| admin_TRO001
     DC007 -.->|"capability_refs"| CAP016
     DC007 -.->|"declared_impact"| admin_CN005
     DC007 -.->|"declared_impact"| admin_CMD021
@@ -6759,9 +6969,18 @@ graph TD
     DC007 -.->|"declared_impact"| admin_CMD024
     DC007 -.->|"declared_impact"| admin_QRY005
     DC007 -.->|"declared_impact"| MDL804
-    DC008 -.->|"motivation_refs"| catalog_GL001
+    DC008 -.->|"motivation_refs"| catalog_INQ001
+    DC008 -.->|"motivation_refs"| checkout_INQ002
+    DC008 -.->|"motivation_refs"| content_INQ001
     DC008 -.->|"capability_refs"| CAP016
     DC008 -.->|"capability_refs"| CAP005
+    DC008 -.->|"declared_impact"| catalog_QRY001
+    DC008 -.->|"declared_impact"| catalog_QRY002
+    DC008 -.->|"declared_impact"| checkout_CMD009
+    DC008 -.->|"declared_impact"| checkout_QRY001
+    DC008 -.->|"declared_impact"| content_QRY001
+    DC009 -.->|"motivation_refs"| admin_ASM100
+    DC009 -.->|"motivation_refs"| admin_TRO001
     DC009 -.->|"capability_refs"| CAP016
     DC009 -.->|"declared_impact"| admin_CN006
     DC009 -.->|"declared_impact"| admin_CMD025
@@ -6773,6 +6992,9 @@ graph TD
     DC009 -.->|"declared_impact"| MDL806
     DC009 -.->|"declared_impact"| MDL1703
     DC009 -.->|"declared_impact"| MDL807
+    DC010 -.->|"motivation_refs"| modules_GL003
+    DC010 -.->|"motivation_refs"| modules_ASM001
+    DC010 -.->|"motivation_refs"| modules_TRO001
     DC010 -.->|"capability_refs"| CAP016
     DC010 -.->|"declared_impact"| modules_CN001
     DC010 -.->|"declared_impact"| modules_CN002
@@ -6783,6 +7005,7 @@ graph TD
     DC010 -.->|"declared_impact"| modules_QRY004
     admin_TC001 -.->|"validates"| admin_VR001
     admin_TC001 -.->|"validates"| admin_VR002
+    admin_TC001 -.->|"validates"| admin_SR001
     admin_TC001 -.->|"validates"| admin_CMD001
     admin_TC001 -.->|"validates"| admin_EVT001
     admin_TC001 -.->|"validates"| admin_CN001
@@ -6828,7 +7051,9 @@ graph TD
     catalog_EC001 -.->|"validates"| catalog_CMD011
     catalog_EC002 -.->|"validates"| catalog_SR002
     catalog_EC002 -.->|"validates"| catalog_CMD025
+    catalog_EC003 -.->|"validates"| catalog_CR002
     catalog_EC003 -.->|"validates"| catalog_CMD011
+    catalog_ER001 -.->|"validates"| catalog_VR001
     catalog_ER001 -.->|"validates"| catalog_CMD016
     catalog_ER002 -.->|"validates"| catalog_CMD003
     catalog_ER003 -.->|"validates"| catalog_VR003
@@ -6849,6 +7074,18 @@ graph TD
     checkout_TC004 -.->|"validates"| checkout_VR004
     checkout_TC004 -.->|"validates"| checkout_CMD021
     checkout_TC004 -.->|"validates"| checkout_EVT010
+    checkout_TC005 -.->|"test_case_act"| checkout_CMD011
+    checkout_TC005 -.->|"validates"| checkout_CMD011
+    checkout_TC005 -.->|"validates"| checkout_SCR005
+    checkout_TC005 -.->|"validates"| checkout_UAC006
+    checkout_TC006 -.->|"test_case_act"| checkout_CMD014
+    checkout_TC006 -.->|"validates"| checkout_CMD014
+    checkout_TC006 -.->|"validates"| checkout_SCR005
+    checkout_TC006 -.->|"validates"| checkout_UAC008
+    checkout_TC007 -.->|"test_case_act"| checkout_CMD004
+    checkout_TC007 -.->|"validates"| checkout_CMD004
+    checkout_TC007 -.->|"validates"| checkout_SCR006
+    checkout_TC007 -.->|"validates"| checkout_UAC010
     checkout_EC001 -.->|"validates"| checkout_VR001
     checkout_EC001 -.->|"validates"| checkout_CMD014
     checkout_EC002 -.->|"validates"| checkout_VR003
@@ -6860,6 +7097,11 @@ graph TD
     checkout_ER002 -.->|"validates"| checkout_CMD016
     checkout_ER003 -.->|"validates"| checkout_VR002
     checkout_ER003 -.->|"validates"| checkout_CMD014
+    checkout_ER004 -.->|"test_case_act"| checkout_CMD014
+    checkout_ER004 -.->|"validates"| checkout_VR001
+    checkout_ER004 -.->|"validates"| checkout_CMD014
+    checkout_ER004 -.->|"validates"| checkout_SCR005
+    checkout_ER004 -.->|"validates"| checkout_UAC008
     content_TC001 -.->|"validates"| content_VR001
     content_TC001 -.->|"validates"| content_VR002
     content_TC001 -.->|"validates"| content_CMD001
@@ -6868,6 +7110,7 @@ graph TD
     content_TC002 -.->|"validates"| content_CMD007
     content_TC002 -.->|"validates"| content_CN002
     content_TC003 -.->|"validates"| content_VR004
+    content_TC003 -.->|"validates"| content_TR001
     content_TC003 -.->|"validates"| content_CMD013
     content_TC003 -.->|"validates"| content_CMD014
     content_TC003 -.->|"validates"| content_CN003
@@ -6899,12 +7142,12 @@ graph TD
     customers_TC002 -.->|"validates"| customers_CMD012
     customers_TC002 -.->|"validates"| customers_EVT007
     customers_TC003 -.->|"validates"| customers_VR003
+    customers_TC003 -.->|"validates"| customers_TR001
     customers_TC003 -.->|"validates"| customers_CMD008
     customers_TC003 -.->|"validates"| customers_EVT004
     customers_TC004 -.->|"validates"| customers_CMD016
     customers_TC004 -.->|"validates"| customers_EVT010
     customers_EC001 -.->|"validates"| customers_SR001
-    customers_EC001 -.->|"validates"| customers_VR001
     customers_EC001 -.->|"validates"| customers_CMD001
     customers_EC002 -.->|"validates"| customers_VR005
     customers_EC002 -.->|"validates"| customers_CMD012
@@ -6926,12 +7169,14 @@ graph TD
     international_TC004 -.->|"validates"| international_CMD034
     international_EC001 -.->|"validates"| international_VR002
     international_EC001 -.->|"validates"| international_CMD003
+    international_EC002 -.->|"validates"| international_VR008
     international_EC002 -.->|"validates"| international_CMD034
     international_ER001 -.->|"validates"| international_VR001
     international_ER001 -.->|"validates"| international_CMD001
     international_ER002 -.->|"validates"| international_CMD023
     international_ER003 -.->|"validates"| international_CMD032
     modules_TC001 -.->|"validates"| modules_VR001
+    modules_TC001 -.->|"validates"| modules_TR001
     modules_TC001 -.->|"validates"| modules_CMD001
     modules_TC001 -.->|"validates"| modules_EVT001
     modules_TC001 -.->|"validates"| modules_CN001
@@ -6971,6 +7216,18 @@ graph TD
     orders_TC004 -.->|"validates"| orders_VR002
     orders_TC004 -.->|"validates"| orders_CMD019
     orders_TC004 -.->|"validates"| orders_EVT008
+    orders_TC005 -.->|"test_case_act"| orders_CMD002
+    orders_TC005 -.->|"validates"| orders_CMD002
+    orders_TC005 -.->|"validates"| orders_SCR002
+    orders_TC005 -.->|"validates"| orders_UAC002
+    orders_TC006 -.->|"test_case_act"| orders_CMD015
+    orders_TC006 -.->|"validates"| orders_CMD015
+    orders_TC006 -.->|"validates"| orders_SCR002
+    orders_TC006 -.->|"validates"| orders_UAC003
+    orders_TC007 -.->|"test_case_act"| orders_CMD023
+    orders_TC007 -.->|"validates"| orders_CMD023
+    orders_TC007 -.->|"validates"| orders_SCR003
+    orders_TC007 -.->|"validates"| orders_UAC006
     orders_EC001 -.->|"validates"| orders_SR001
     orders_EC001 -.->|"validates"| orders_CMD001
     orders_EC002 -.->|"validates"| orders_VR004
@@ -6978,7 +7235,13 @@ graph TD
     orders_ER001 -.->|"validates"| orders_CMD001
     orders_ER002 -.->|"validates"| orders_VR003
     orders_ER002 -.->|"validates"| orders_CMD016
+    orders_ER003 -.->|"validates"| orders_CR001
     orders_ER003 -.->|"validates"| orders_CMD004
+    orders_ER004 -.->|"test_case_act"| orders_CMD015
+    orders_ER004 -.->|"validates"| orders_VR004
+    orders_ER004 -.->|"validates"| orders_CMD015
+    orders_ER004 -.->|"validates"| orders_SCR002
+    orders_ER004 -.->|"validates"| orders_UAC003
     shipping_TC001 -.->|"validates"| shipping_SR001
     shipping_TC001 -.->|"validates"| shipping_VR002
     shipping_TC001 -.->|"validates"| shipping_CMD001
@@ -6994,6 +7257,7 @@ graph TD
     shipping_TC004 -.->|"validates"| shipping_EVT013
     shipping_EC001 -.->|"validates"| shipping_VR004
     shipping_EC001 -.->|"validates"| shipping_CMD008
+    shipping_EC002 -.->|"validates"| shipping_TR001
     shipping_EC002 -.->|"validates"| shipping_CMD015
     shipping_ER001 -.->|"validates"| shipping_SR001
     shipping_ER001 -.->|"validates"| shipping_CMD001
@@ -7027,12 +7291,10 @@ graph TD
     CatalogService -.->|"provides"| CatalogService_inprocess
     CatalogService -.->|"provides"| CatalogService_shareddata
     CatalogService -.->|"provides"| CatalogService_openapi
-    CatalogService -.->|"provides"| CatalogService_asyncapi
     Checkout -.->|"contains"| CheckoutService
-    CheckoutService -.->|"provides"| CheckoutService_openapi
-    CheckoutService -.->|"provides"| CheckoutService_asyncapi
+    CheckoutService -.->|"provides"| CheckoutService_inprocess
     Content -.->|"contains"| ContentService
-    ContentService -.->|"provides"| ContentService_openapi
+    ContentService -.->|"provides"| ContentService_inprocess
     Customers -.->|"contains"| CustomerService
     CustomerService -.->|"provides"| CustomerService_openapi
     International -.->|"contains"| InternationalService
@@ -7043,12 +7305,14 @@ graph TD
     ModuleManager -.->|"provides"| ModuleManager_openapi
     Orders -.->|"contains"| OrderService
     OrderService -.->|"provides"| OrderService_scheduledtransfer
+    OrderService -.->|"provides"| OrderService_inprocess
     OrderService -.->|"provides"| OrderService_openapi
-    OrderService -.->|"provides"| OrderService_asyncapi
     ExternalApiConsumers -.->|"contains"| AdminApiClient
     AdminApiClient -.->|"provides"| AdminApiClient_httpClient
     AdminApiClient -.->|"provides"| AdminApiClient_security_schemes
     PlatformKernel -.->|"contains"| HookDispatcher
+    PlatformKernel -.->|"contains"| InProcessConsumers
+    InProcessConsumers -.->|"provides"| InProcessConsumers_inprocess
     Shipping -.->|"contains"| ShippingService
     ShippingService -.->|"provides"| ShippingService_openapi
     Shop -.->|"contains"| ShopService
@@ -7058,21 +7322,21 @@ graph TD
     AdminService_openapi -.->|"contract_exposes"| admin_CMD010
     AdminService_openapi -.->|"contract_exposes"| admin_QRY001
     AdminService_openapi -.->|"contract_exposes"| admin_CMD021
+    CatalogService_inprocess -.->|"contract_provides"| catalog_EVT001
+    CatalogService_inprocess -.->|"contract_provides"| catalog_EVT002
     CatalogService_inprocess -.->|"contract_consumes"| modules_CMD010
     CatalogService_shareddata -.->|"contract_reads"| shop_DOC001
     CatalogService_openapi -.->|"contract_exposes"| catalog_CMD001
     CatalogService_openapi -.->|"contract_exposes"| catalog_CMD002
     CatalogService_openapi -.->|"contract_exposes"| catalog_QRY001
     CatalogService_openapi -.->|"contract_exposes"| catalog_QRY002
-    CatalogService_asyncapi -.->|"contract_sends"| catalog_EVT001
-    CatalogService_asyncapi -.->|"contract_sends"| catalog_EVT002
-    CheckoutService_openapi -.->|"contract_exposes"| checkout_CMD009
-    CheckoutService_openapi -.->|"contract_exposes"| checkout_CMD010
-    CheckoutService_openapi -.->|"contract_exposes"| checkout_QRY001
-    CheckoutService_asyncapi -.->|"contract_sends"| checkout_EVT004
-    CheckoutService_asyncapi -.->|"contract_receives"| orders_EVT001
-    ContentService_openapi -.->|"contract_exposes"| content_CMD001
-    ContentService_openapi -.->|"contract_exposes"| content_CMD002
+    CheckoutService_inprocess -.->|"contract_provides"| checkout_CMD009
+    CheckoutService_inprocess -.->|"contract_provides"| checkout_CMD010
+    CheckoutService_inprocess -.->|"contract_provides"| checkout_QRY001
+    CheckoutService_inprocess -.->|"contract_provides"| checkout_EVT004
+    CheckoutService_inprocess -.->|"contract_consumes"| orders_EVT001
+    ContentService_inprocess -.->|"contract_provides"| content_CMD001
+    ContentService_inprocess -.->|"contract_provides"| content_CMD002
     CustomerService_openapi -.->|"contract_exposes"| customers_CMD001
     CustomerService_openapi -.->|"contract_exposes"| customers_CMD002
     CustomerService_openapi -.->|"contract_exposes"| customers_CMD012
@@ -7084,23 +7348,73 @@ graph TD
     InternationalService_openapi -.->|"contract_exposes"| international_QRY004
     ModuleManager_inprocess -.->|"contract_provides"| modules_CMD010
     ModuleManager_inprocess -.->|"contract_provides"| modules_CMD011
+    ModuleManager_inprocess -.->|"contract_provides"| modules_CMD012
+    ModuleManager_inprocess -.->|"contract_provides"| modules_CMD013
+    ModuleManager_inprocess -.->|"contract_provides"| modules_QRY004
+    ModuleManager_inprocess -.->|"contract_provides"| modules_EVT001
+    ModuleManager_inprocess -.->|"contract_provides"| modules_EVT002
+    ModuleManager_inprocess -.->|"contract_provides"| modules_EVT003
+    ModuleManager_inprocess -.->|"contract_provides"| modules_EVT004
+    ModuleManager_inprocess -.->|"contract_provides"| modules_EVT005
+    ModuleManager_inprocess -.->|"contract_provides"| modules_EVT006
+    ModuleManager_inprocess -.->|"contract_provides"| modules_EVT007
+    ModuleManager_inprocess -.->|"contract_provides"| modules_EVT008
+    ModuleManager_inprocess -.->|"contract_provides"| modules_EVT009
     ModuleManager_openapi -.->|"contract_exposes"| modules_CMD001
     ModuleManager_openapi -.->|"contract_exposes"| modules_CMD002
     ModuleManager_openapi -.->|"contract_exposes"| modules_QRY001
+    ModuleManager_openapi -.->|"contract_exposes"| modules_CMD003
+    ModuleManager_openapi -.->|"contract_exposes"| modules_CMD004
+    ModuleManager_openapi -.->|"contract_exposes"| modules_CMD005
+    ModuleManager_openapi -.->|"contract_exposes"| modules_CMD006
+    ModuleManager_openapi -.->|"contract_exposes"| modules_CMD007
+    ModuleManager_openapi -.->|"contract_exposes"| modules_CMD008
+    ModuleManager_openapi -.->|"contract_exposes"| modules_CMD009
+    ModuleManager_openapi -.->|"contract_exposes"| modules_QRY002
+    ModuleManager_openapi -.->|"contract_exposes"| modules_QRY003
     OrderService_scheduledtransfer -.->|"contract_reads"| international_DOC001
-    OrderService_openapi -.->|"contract_exposes"| orders_CMD001
-    OrderService_openapi -.->|"contract_exposes"| orders_CMD002
-    OrderService_openapi -.->|"contract_exposes"| orders_CMD003
-    OrderService_openapi -.->|"contract_exposes"| orders_QRY001
-    OrderService_asyncapi -.->|"contract_sends"| orders_EVT001
-    OrderService_asyncapi -.->|"contract_sends"| orders_EVT002
-    OrderService_asyncapi -.->|"contract_sends"| orders_EVT003
-    OrderService_asyncapi -.->|"contract_sends"| orders_EVT004
+    OrderService_inprocess -.->|"contract_provides"| orders_CMD001
+    OrderService_inprocess -.->|"contract_provides"| orders_CMD002
+    OrderService_inprocess -.->|"contract_provides"| orders_CMD003
+    OrderService_inprocess -.->|"contract_provides"| orders_QRY001
+    OrderService_inprocess -.->|"contract_provides"| orders_EVT001
+    OrderService_inprocess -.->|"contract_provides"| orders_EVT002
+    OrderService_inprocess -.->|"contract_provides"| orders_EVT003
+    OrderService_inprocess -.->|"contract_provides"| orders_EVT004
+    OrderService_openapi -.->|"contract_exposes"| orders_CMD023
     AdminApiClient_httpClient -.->|"contract_calls"| admin_CMD021
     AdminApiClient_httpClient -.->|"contract_calls"| admin_QRY001
     AdminApiClient_httpClient -.->|"contract_calls"| catalog_QRY001
     AdminApiClient_httpClient -.->|"contract_calls"| catalog_QRY002
-    AdminApiClient_httpClient -.->|"contract_calls"| orders_QRY001
+    AdminApiClient_httpClient -.->|"contract_calls"| orders_CMD023
+    InProcessConsumers_inprocess -.->|"contract_consumes"| catalog_EVT001
+    InProcessConsumers_inprocess -.->|"contract_consumes"| catalog_EVT002
+    InProcessConsumers_inprocess -.->|"contract_consumes"| checkout_CMD009
+    InProcessConsumers_inprocess -.->|"contract_consumes"| checkout_CMD010
+    InProcessConsumers_inprocess -.->|"contract_consumes"| checkout_QRY001
+    InProcessConsumers_inprocess -.->|"contract_consumes"| checkout_EVT004
+    InProcessConsumers_inprocess -.->|"contract_consumes"| content_CMD001
+    InProcessConsumers_inprocess -.->|"contract_consumes"| content_CMD002
+    InProcessConsumers_inprocess -.->|"contract_consumes"| modules_CMD011
+    InProcessConsumers_inprocess -.->|"contract_consumes"| modules_CMD012
+    InProcessConsumers_inprocess -.->|"contract_consumes"| modules_CMD013
+    InProcessConsumers_inprocess -.->|"contract_consumes"| modules_QRY004
+    InProcessConsumers_inprocess -.->|"contract_consumes"| modules_EVT001
+    InProcessConsumers_inprocess -.->|"contract_consumes"| modules_EVT002
+    InProcessConsumers_inprocess -.->|"contract_consumes"| modules_EVT003
+    InProcessConsumers_inprocess -.->|"contract_consumes"| modules_EVT004
+    InProcessConsumers_inprocess -.->|"contract_consumes"| modules_EVT005
+    InProcessConsumers_inprocess -.->|"contract_consumes"| modules_EVT006
+    InProcessConsumers_inprocess -.->|"contract_consumes"| modules_EVT007
+    InProcessConsumers_inprocess -.->|"contract_consumes"| modules_EVT008
+    InProcessConsumers_inprocess -.->|"contract_consumes"| modules_EVT009
+    InProcessConsumers_inprocess -.->|"contract_consumes"| orders_CMD001
+    InProcessConsumers_inprocess -.->|"contract_consumes"| orders_CMD002
+    InProcessConsumers_inprocess -.->|"contract_consumes"| orders_CMD003
+    InProcessConsumers_inprocess -.->|"contract_consumes"| orders_QRY001
+    InProcessConsumers_inprocess -.->|"contract_consumes"| orders_EVT002
+    InProcessConsumers_inprocess -.->|"contract_consumes"| orders_EVT003
+    InProcessConsumers_inprocess -.->|"contract_consumes"| orders_EVT004
     ShippingService_openapi -.->|"contract_exposes"| shipping_QRY003
     ShopService_shareddata -.->|"contract_writes"| shop_DOC001
     ShopService_openapi -.->|"contract_exposes"| shop_QRY003
@@ -7121,30 +7435,31 @@ graph TD
     Orders -.->|"context_depends_on"| International
     Shipping -.->|"context_depends_on"| International
     Shop -.->|"context_depends_on"| International
-    AdminService -.->|"system_ref"| PrestaShop
-    CatalogService -.->|"system_ref"| PrestaShop
-    CheckoutService -.->|"system_ref"| PrestaShop
-    ContentService -.->|"system_ref"| PrestaShop
-    CustomerService -.->|"system_ref"| PrestaShop
-    InternationalService -.->|"system_ref"| PrestaShop
-    ModuleManager -.->|"system_ref"| PrestaShop
-    OrderService -.->|"system_ref"| PrestaShop
-    AdminApiClient -.->|"system_ref"| ApiIntegrators
-    HookDispatcher -.->|"system_ref"| PrestaShop
-    ShippingService -.->|"system_ref"| PrestaShop
-    ShopService -.->|"system_ref"| PrestaShop
-    Admin -.->|"spans"| PrestaShop
-    Catalog -.->|"spans"| PrestaShop
-    Checkout -.->|"spans"| PrestaShop
-    Content -.->|"spans"| PrestaShop
-    Customers -.->|"spans"| PrestaShop
-    International -.->|"spans"| PrestaShop
-    Modules -.->|"spans"| PrestaShop
-    Orders -.->|"spans"| PrestaShop
-    ExternalApiConsumers -.->|"spans"| ApiIntegrators
-    PlatformKernel -.->|"spans"| PrestaShop
-    Shipping -.->|"spans"| PrestaShop
-    Shop -.->|"spans"| PrestaShop
+    AdminService -.->|"system_ref"| PRT002
+    CatalogService -.->|"system_ref"| PRT002
+    CheckoutService -.->|"system_ref"| PRT002
+    ContentService -.->|"system_ref"| PRT002
+    CustomerService -.->|"system_ref"| PRT002
+    InternationalService -.->|"system_ref"| PRT002
+    ModuleManager -.->|"system_ref"| PRT002
+    OrderService -.->|"system_ref"| PRT002
+    AdminApiClient -.->|"system_ref"| PRT003
+    HookDispatcher -.->|"system_ref"| PRT002
+    InProcessConsumers -.->|"system_ref"| PRT002
+    ShippingService -.->|"system_ref"| PRT002
+    ShopService -.->|"system_ref"| PRT002
+    Admin -.->|"spans"| PRT002
+    Catalog -.->|"spans"| PRT002
+    Checkout -.->|"spans"| PRT002
+    Content -.->|"spans"| PRT002
+    Customers -.->|"spans"| PRT002
+    International -.->|"spans"| PRT002
+    Modules -.->|"spans"| PRT002
+    Orders -.->|"spans"| PRT002
+    ExternalApiConsumers -.->|"spans"| PRT003
+    PlatformKernel -.->|"spans"| PRT002
+    Shipping -.->|"spans"| PRT002
+    Shop -.->|"spans"| PRT002
     admin_PRC001 -.->|"process_orders_operation"| admin_CMD001
     admin_PRC001 -.->|"process_orders_operation"| admin_CMD013
     admin_PRC002 -.->|"process_orders_operation"| admin_CMD021
@@ -7170,8 +7485,9 @@ graph TD
     customers_PRC001 -.->|"process_orders_operation"| customers_CMD001
     customers_PRC001 -.->|"process_orders_operation"| customers_CMD012
     customers_PRC001 -.->|"process_orders_operation"| customers_CMD003
-    customers_PRC002 -.->|"process_orders_operation"| customers_CMD016
+    customers_PRC002 -.->|"process_orders_operation"| customers_QRY011
     customers_PRC002 -.->|"process_orders_operation"| customers_CMD017
+    customers_PRC002 -.->|"process_orders_operation"| customers_CMD016
     international_PRC001 -.->|"process_orders_operation"| international_CMD001
     international_PRC001 -.->|"process_orders_operation"| international_CMD005
     international_PRC001 -.->|"process_orders_operation"| international_CMD006
@@ -7188,6 +7504,9 @@ graph TD
     orders_PRC002 -.->|"process_orders_operation"| orders_CMD002
     orders_PRC002 -.->|"process_orders_operation"| orders_EVT002
     orders_PRC002 -.->|"process_orders_operation"| orders_CMD003
+    orders_PRC002 -.->|"process_orders_operation"| orders_EVT003
+    orders_PRC002 -.->|"process_orders_operation"| orders_EVT006
+    orders_PRC002 -.->|"process_orders_operation"| orders_CMD015
     orders_PRC002 -.->|"process_orders_operation"| orders_EVT003
     orders_PRC002 -.->|"process_orders_operation"| orders_EVT006
     orders_PRC003 -.->|"process_orders_operation"| orders_CMD020
@@ -7363,6 +7682,7 @@ graph TD
     admin_SCR001 -.->|"screen_uses_model"| MDL801
     admin_SCR001 -.->|"screen_motivated_by"| admin_GL001
     admin_SCR002 -.->|"screen_uses_model"| MDL801
+    admin_SCR002 -.->|"screen_process"| admin_PRC001
     admin_SCR003 -.->|"screen_motivated_by"| admin_GL001
     admin_SCR004 -.->|"screen_uses_model"| MDL805
     admin_SCR004 -.->|"screen_motivated_by"| admin_GL002
@@ -7383,13 +7703,16 @@ graph TD
     admin_UAC006 -.->|"action_triggers_operation"| admin_QRY008
     admin_UNV001 -.->|"nav_from"| admin_SCR001
     admin_UNV001 -.->|"nav_to"| admin_SCR002
+    admin_UNV001 -.->|"nav_via_action"| admin_UAC001
     admin_UNV002 -.->|"nav_from"| admin_SCR001
     admin_UNV002 -.->|"nav_to"| admin_SCR003
     catalog_SCR001 -.->|"screen_uses_model"| MDL013
     catalog_SCR001 -.->|"screen_uses_model"| MDL004
+    catalog_SCR001 -.->|"screen_process"| shop_PRC003
     catalog_SCR002 -.->|"screen_uses_model"| MDL003
     catalog_SCR002 -.->|"screen_uses_model"| MDL005
     catalog_SCR002 -.->|"screen_uses_model"| MDL006
+    catalog_SCR002 -.->|"screen_process"| shop_PRC003
     catalog_UAC001 -.->|"action_on_screen"| catalog_SCR001
     catalog_UAC001 -.->|"action_triggers_operation"| catalog_QRY006
     catalog_UAC002 -.->|"action_on_screen"| catalog_SCR002
@@ -7399,18 +7722,24 @@ graph TD
     catalog_UNV001 -.->|"nav_to"| catalog_SCR002
     catalog_UNV002 -.->|"nav_from"| catalog_SCR002
     catalog_UNV002 -.->|"nav_to"| checkout_SCR005
+    catalog_UNV002 -.->|"nav_via_action"| catalog_UAC002
     checkout_SCR001 -.->|"screen_uses_model"| MDL202
     checkout_SCR001 -.->|"screen_motivated_by"| checkout_GL001
+    checkout_SCR001 -.->|"screen_process"| checkout_PRC001
     checkout_SCR002 -.->|"screen_uses_model"| MDL205
     checkout_SCR002 -.->|"screen_motivated_by"| checkout_GL002
     checkout_SCR003 -.->|"screen_uses_model"| MDL205
+    checkout_SCR003 -.->|"screen_process"| checkout_PRC002
     checkout_SCR004 -.->|"screen_uses_model"| MDL207
     checkout_SCR005 -.->|"screen_uses_model"| MDL202
     checkout_SCR005 -.->|"screen_uses_model"| MDL203
+    checkout_SCR005 -.->|"screen_process"| shop_PRC003
     checkout_SCR006 -.->|"screen_uses_model"| MDL202
     checkout_SCR006 -.->|"screen_uses_model"| MDL304
     checkout_SCR006 -.->|"screen_uses_model"| MDL402
+    checkout_SCR006 -.->|"screen_process"| shop_PRC003
     checkout_SCR007 -.->|"screen_uses_model"| MDL103
+    checkout_SCR007 -.->|"screen_process"| shop_PRC003
     checkout_UAC001 -.->|"action_on_screen"| checkout_SCR001
     checkout_UAC001 -.->|"action_triggers_operation"| checkout_CMD009
     checkout_UAC002 -.->|"action_on_screen"| checkout_SCR001
@@ -7437,11 +7766,20 @@ graph TD
     checkout_UAC012 -.->|"action_triggers_operation"| customers_CMD008
     checkout_UNV001 -.->|"nav_from"| checkout_SCR002
     checkout_UNV001 -.->|"nav_to"| checkout_SCR003
+    checkout_UNV001 -.->|"nav_via_action"| checkout_UAC003
     checkout_UNV002 -.->|"nav_from"| checkout_SCR001
     checkout_UNV002 -.->|"nav_to"| checkout_SCR002
+    checkout_UNV003 -.->|"nav_from"| checkout_SCR005
+    checkout_UNV003 -.->|"nav_to"| checkout_SCR006
+    checkout_UNV004 -.->|"nav_from"| checkout_SCR006
+    checkout_UNV004 -.->|"nav_to"| checkout_SCR007
+    checkout_UNV004 -.->|"nav_via_action"| checkout_UAC011
+    checkout_UNV005 -.->|"nav_from"| checkout_SCR006
+    checkout_UNV005 -.->|"nav_to"| checkout_SCR005
     content_SCR001 -.->|"screen_uses_model"| MDL601
     content_SCR001 -.->|"screen_motivated_by"| content_GL001
     content_SCR002 -.->|"screen_uses_model"| MDL601
+    content_SCR002 -.->|"screen_process"| content_PRC001
     content_SCR003 -.->|"screen_uses_model"| MDL603
     content_SCR003 -.->|"screen_motivated_by"| content_GL001
     content_SCR004 -.->|"screen_uses_model"| MDL603
@@ -7465,14 +7803,18 @@ graph TD
     content_UAC006 -.->|"action_triggers_operation"| content_CMD019
     content_UNV001 -.->|"nav_from"| content_SCR001
     content_UNV001 -.->|"nav_to"| content_SCR002
+    content_UNV001 -.->|"nav_via_action"| content_UAC001
     content_UNV002 -.->|"nav_from"| content_SCR003
     content_UNV002 -.->|"nav_to"| content_SCR004
+    content_UNV002 -.->|"nav_via_action"| content_UAC003
     content_UNV003 -.->|"nav_from"| shop_SCR006
     content_UNV003 -.->|"nav_to"| content_SCR007
     customers_SCR001 -.->|"screen_uses_model"| MDL305
     customers_SCR001 -.->|"screen_motivated_by"| customers_GL001
     customers_SCR002 -.->|"screen_uses_model"| MDL302
+    customers_SCR002 -.->|"screen_process"| customers_PRC001
     customers_SCR003 -.->|"screen_uses_model"| MDL307
+    customers_SCR003 -.->|"screen_process"| customers_PRC002
     customers_SCR004 -.->|"screen_uses_model"| MDL304
     customers_SCR004 -.->|"screen_motivated_by"| customers_GL002
     customers_SCR008 -.->|"screen_uses_model"| MDL304
@@ -7497,28 +7839,44 @@ graph TD
     customers_UAC008 -.->|"action_on_screen"| customers_SCR009
     customers_UAC008 -.->|"action_triggers_operation"| customers_CMD014
     customers_UAC009 -.->|"action_on_screen"| customers_SCR005
+    customers_UAC010 -.->|"action_on_screen"| customers_SCR001
+    customers_UAC011 -.->|"action_on_screen"| customers_SCR002
+    customers_UAC012 -.->|"action_on_screen"| customers_SCR005
+    customers_UAC013 -.->|"action_on_screen"| customers_SCR007
+    customers_UAC014 -.->|"action_on_screen"| customers_SCR007
+    customers_UAC015 -.->|"action_on_screen"| customers_SCR007
+    customers_UAC016 -.->|"action_on_screen"| customers_SCR008
     customers_UNV001 -.->|"nav_from"| customers_SCR001
     customers_UNV001 -.->|"nav_to"| customers_SCR002
+    customers_UNV001 -.->|"nav_via_action"| customers_UAC010
     customers_UNV002 -.->|"nav_from"| customers_SCR002
     customers_UNV002 -.->|"nav_to"| customers_SCR004
+    customers_UNV002 -.->|"nav_via_action"| customers_UAC011
     customers_UNV003 -.->|"nav_from"| customers_SCR005
     customers_UNV003 -.->|"nav_to"| customers_SCR006
+    customers_UNV003 -.->|"nav_via_action"| customers_UAC012
     customers_UNV004 -.->|"nav_from"| customers_SCR005
     customers_UNV004 -.->|"nav_to"| customers_SCR007
+    customers_UNV004 -.->|"nav_via_action"| customers_UAC009
     customers_UNV005 -.->|"nav_from"| customers_SCR007
     customers_UNV005 -.->|"nav_to"| customers_SCR008
+    customers_UNV005 -.->|"nav_via_action"| customers_UAC013
     customers_UNV006 -.->|"nav_from"| customers_SCR008
     customers_UNV006 -.->|"nav_to"| customers_SCR009
+    customers_UNV006 -.->|"nav_via_action"| customers_UAC016
     customers_UNV007 -.->|"nav_from"| customers_SCR007
     customers_UNV007 -.->|"nav_to"| customers_SCR010
+    customers_UNV007 -.->|"nav_via_action"| customers_UAC014
     international_SCR001 -.->|"screen_uses_model"| MDL501
     international_SCR001 -.->|"screen_motivated_by"| international_GL001
     international_SCR002 -.->|"screen_uses_model"| MDL501
+    international_SCR002 -.->|"screen_process"| international_PRC001
     international_SCR003 -.->|"screen_uses_model"| MDL506
     international_SCR003 -.->|"screen_motivated_by"| international_GL003
     international_SCR004 -.->|"screen_uses_model"| MDL507
     international_SCR005 -.->|"screen_uses_model"| MDL505
     international_SCR006 -.->|"screen_uses_model"| MDL503
+    international_SCR006 -.->|"screen_process"| international_PRC002
     international_UAC001 -.->|"action_on_screen"| international_SCR001
     international_UAC001 -.->|"action_triggers_operation"| international_CMD001
     international_UAC002 -.->|"action_on_screen"| international_SCR001
@@ -7530,10 +7888,12 @@ graph TD
     international_UAC004 -.->|"action_triggers_operation"| international_CMD011
     international_UNV001 -.->|"nav_from"| international_SCR001
     international_UNV001 -.->|"nav_to"| international_SCR002
+    international_UNV001 -.->|"nav_via_action"| international_UAC001
     international_UNV002 -.->|"nav_from"| international_SCR005
     international_UNV002 -.->|"nav_to"| international_SCR004
     modules_SCR001 -.->|"screen_uses_model"| MDL700
     modules_SCR001 -.->|"screen_motivated_by"| modules_GL001
+    modules_SCR002 -.->|"screen_process"| modules_PRC001
     modules_SCR003 -.->|"screen_uses_model"| MDL702
     modules_SCR003 -.->|"screen_motivated_by"| modules_GL003
     modules_UAC001 -.->|"action_on_screen"| modules_SCR001
@@ -7544,11 +7904,22 @@ graph TD
     modules_UAC003 -.->|"action_triggers_operation"| modules_CMD008
     modules_UAC004 -.->|"action_on_screen"| modules_SCR003
     modules_UAC004 -.->|"action_triggers_operation"| modules_CMD009
+    modules_UAC005 -.->|"action_on_screen"| modules_SCR001
     modules_UNV001 -.->|"nav_from"| modules_SCR001
     modules_UNV001 -.->|"nav_to"| modules_SCR002
+    modules_UNV001 -.->|"nav_via_action"| modules_UAC005
+    orders_SCR001 -.->|"screen_process"| orders_PRC001
+    orders_SCR001 -.->|"screen_process"| orders_PRC002
+    orders_SCR002 -.->|"screen_process"| orders_PRC002
+    orders_SCR002 -.->|"screen_process"| orders_PRC003
+    orders_SCR002 -.->|"screen_process"| orders_PRC004
+    orders_SCR003 -.->|"screen_process"| orders_PRC005
     orders_SCR004 -.->|"screen_uses_model"| MDL104
+    orders_SCR004 -.->|"screen_process"| orders_PRC006
     orders_SCR005 -.->|"screen_uses_model"| MDL103
     orders_SCR005 -.->|"screen_uses_model"| MDL105
+    orders_SCR005 -.->|"screen_process"| orders_PRC006
+    orders_SCR006 -.->|"screen_process"| orders_PRC006
     orders_UAC001 -.->|"action_on_screen"| orders_SCR001
     orders_UAC001 -.->|"action_triggers_operation"| orders_QRY001
     orders_UAC002 -.->|"action_on_screen"| orders_SCR002
@@ -7565,23 +7936,32 @@ graph TD
     orders_UAC007 -.->|"action_on_screen"| orders_SCR005
     orders_UAC008 -.->|"action_on_screen"| orders_SCR005
     orders_UAC009 -.->|"action_on_screen"| orders_SCR004
+    orders_UAC010 -.->|"action_on_screen"| orders_SCR001
+    orders_UAC011 -.->|"action_on_screen"| orders_SCR002
     orders_UNV001 -.->|"nav_from"| orders_SCR001
     orders_UNV001 -.->|"nav_to"| orders_SCR002
+    orders_UNV001 -.->|"nav_via_action"| orders_UAC010
     orders_UNV002 -.->|"nav_from"| orders_SCR002
     orders_UNV002 -.->|"nav_to"| orders_SCR003
+    orders_UNV002 -.->|"nav_via_action"| orders_UAC011
     orders_UNV003 -.->|"nav_from"| customers_SCR007
     orders_UNV003 -.->|"nav_to"| orders_SCR004
+    orders_UNV003 -.->|"nav_via_action"| customers_UAC015
     orders_UNV004 -.->|"nav_from"| orders_SCR004
     orders_UNV004 -.->|"nav_to"| orders_SCR005
+    orders_UNV004 -.->|"nav_via_action"| orders_UAC009
     orders_UNV005 -.->|"nav_from"| orders_SCR005
     orders_UNV005 -.->|"nav_to"| orders_SCR006
+    orders_UNV005 -.->|"nav_via_action"| orders_UAC008
     orders_UNV006 -.->|"nav_from"| orders_SCR006
     orders_UNV006 -.->|"nav_to"| orders_SCR005
     shipping_SCR001 -.->|"screen_uses_model"| MDL402
     shipping_SCR001 -.->|"screen_motivated_by"| shipping_GL002
     shipping_SCR002 -.->|"screen_uses_model"| MDL401
+    shipping_SCR002 -.->|"screen_process"| shipping_PRC001
     shipping_SCR003 -.->|"screen_uses_model"| MDL403
     shipping_SCR003 -.->|"screen_motivated_by"| shipping_GL003
+    shipping_SCR004 -.->|"screen_process"| shipping_PRC002
     shipping_UAC001 -.->|"action_on_screen"| shipping_SCR001
     shipping_UAC001 -.->|"action_triggers_operation"| shipping_CMD001
     shipping_UAC002 -.->|"action_on_screen"| shipping_SCR001
@@ -7600,6 +7980,7 @@ graph TD
     shipping_UAC006 -.->|"action_triggers_operation"| shipping_CMD016
     shipping_UNV001 -.->|"nav_from"| shipping_SCR001
     shipping_UNV001 -.->|"nav_to"| shipping_SCR002
+    shipping_UNV001 -.->|"nav_via_action"| shipping_UAC001
     shipping_UNV002 -.->|"nav_from"| shipping_SCR003
     shipping_UNV002 -.->|"nav_to"| shipping_SCR004
     shop_SCR001 -.->|"screen_uses_model"| MDL900
@@ -7610,6 +7991,8 @@ graph TD
     shop_SCR004 -.->|"screen_uses_model"| MDL1809
     shop_SCR004 -.->|"screen_motivated_by"| shop_GL002
     shop_SCR005 -.->|"screen_uses_model"| MDL907
+    shop_SCR006 -.->|"screen_process"| shop_PRC003
+    shop_SCR007 -.->|"screen_process"| shop_PRC003
     shop_SCR008 -.->|"screen_uses_model"| MDL907
     shop_UAC001 -.->|"action_on_screen"| shop_SCR001
     shop_UAC001 -.->|"action_triggers_operation"| shop_CMD001
@@ -7634,7 +8017,6 @@ graph TD
     admin_QN100 -.->|"question_answered_by"| admin_QRY001
     admin_QN100 -.->|"question_answered_by"| catalog_QRY001
     admin_QN100 -.->|"question_answered_by"| catalog_QRY002
-    admin_QN100 -.->|"question_answered_by"| orders_QRY001
     admin_QN100 -.->|"question_about"| admin_CN005
     admin_QN101 -.->|"question_answered_by"| admin_CMD021
     admin_QN101 -.->|"question_answered_by"| admin_CMD024
@@ -7667,11 +8049,13 @@ graph TD
     catalog_QN002 -.->|"question_answered_by"| catalog_QRY206
     catalog_QN002 -.->|"question_about"| catalog_CN001
     catalog_QN002 -.->|"question_about"| catalog_CN010
+    catalog_QN005 -.->|"question_about"| catalog_CN001
     catalog_QN004 -.->|"question_answered_by"| catalog_QRY108
     catalog_QN004 -.->|"question_answered_by"| catalog_QRY109
     catalog_QN004 -.->|"question_answered_by"| catalog_QRY110
     catalog_QN004 -.->|"question_about"| catalog_CN001
     catalog_QN004 -.->|"question_about"| catalog_CN009
+    catalog_QN006 -.->|"question_about"| catalog_CN008
     checkout_QN001 -.->|"question_answered_by"| checkout_QRY009
     checkout_QN001 -.->|"question_answered_by"| checkout_QRY001
     checkout_QN001 -.->|"question_about"| checkout_CN001
@@ -7733,6 +8117,7 @@ graph TD
     international_QN001 -.->|"question_about"| international_CN007
     international_QN001 -.->|"question_about"| international_CN008
     international_QN001 -.->|"question_about"| international_CN009
+    international_QN004 -.->|"question_about"| international_CN007
     modules_QN001 -.->|"question_answered_by"| modules_QRY002
     modules_QN001 -.->|"question_answered_by"| modules_QRY004
     modules_QN001 -.->|"question_answered_by"| modules_CMD012
@@ -7805,6 +8190,7 @@ graph TD
     shop_QN003 -.->|"question_answered_by"| shop_QRY008
     shop_QN003 -.->|"question_about"| shop_CN002
     shop_QN003 -.->|"question_about"| shop_CN006
+    shop_QN004 -.->|"question_about"| shop_CN003
     admin_US001 -.->|"user_story_actor"| admin_ACT001
     admin_US001 -.->|"user_story_operation"| admin_CMD001
     admin_US001 -.->|"user_story_operation"| admin_CMD002
@@ -8349,6 +8735,7 @@ graph TD
     catalog_RSK004 -.->|"risk_goal"| catalog_GL003
     catalog_ASM001 -.->|"assumption_risk"| catalog_RSK001
     catalog_ASM002 -.->|"assumption_risk"| catalog_RSK001
+    catalog_ASM002 -.->|"assumption_risk"| catalog_RSK005
     checkout_RSK001 -.->|"risk_goal"| checkout_GL001
     checkout_RSK002 -.->|"risk_goal"| checkout_GL002
     checkout_RSK003 -.->|"risk_goal"| checkout_GL003
@@ -8449,6 +8836,7 @@ graph TD
     admin_INQ001 -.->|"inquiry_affects"| admin_CMD021
     admin_INQ001 -.->|"inquiry_affects"| admin_CN005
     admin_INQ001 -.->|"inquiry_affects"| admin_PRC002
+    admin_INQ001 -.->|"inquiry_affects"| AdminService
     admin_INQ002 -.->|"inquiry_affects"| admin_CMD034
     admin_INQ002 -.->|"inquiry_affects"| admin_CN008
     catalog_GL001 -.->|"goal_affects"| catalog_QRY001
@@ -8486,6 +8874,7 @@ graph TD
     catalog_RSK004 -.->|"risk_affects"| catalog_CMD011
     catalog_RSK004 -.->|"risk_affects"| catalog_CN003
     catalog_RSK004 -.->|"risk_affects"| catalog_PRC002
+    catalog_RSK005 -.->|"risk_affects"| catalog_QRY001
     catalog_INQ001 -.->|"inquiry_affects"| catalog_QRY001
     catalog_INQ001 -.->|"inquiry_affects"| catalog_QRY002
     catalog_INQ001 -.->|"inquiry_affects"| catalog_CN001
@@ -8502,6 +8891,11 @@ graph TD
     checkout_GL003 -.->|"goal_affects"| checkout_CMD015
     checkout_GL003 -.->|"goal_affects"| checkout_CN003
     checkout_GL003 -.->|"goal_affects"| checkout_PRC001
+    checkout_GL004 -.->|"goal_affects"| checkout_CMD001
+    checkout_GL004 -.->|"goal_affects"| checkout_CMD009
+    checkout_GL004 -.->|"goal_affects"| checkout_CMD010
+    checkout_GL004 -.->|"goal_affects"| checkout_CMD011
+    checkout_GL004 -.->|"goal_affects"| checkout_CN001
     checkout_RSK001 -.->|"risk_affects"| checkout_CMD009
     checkout_RSK001 -.->|"risk_affects"| checkout_CMD014
     checkout_RSK001 -.->|"risk_affects"| checkout_CN001
@@ -8654,6 +9048,7 @@ graph TD
     modules_INQ001 -.->|"inquiry_affects"| modules_CMD013
     modules_INQ001 -.->|"inquiry_affects"| modules_CN002
     modules_INQ001 -.->|"inquiry_affects"| modules_PRC002
+    modules_INQ001 -.->|"inquiry_affects"| Modules
     modules_INQ002 -.->|"inquiry_affects"| modules_CMD001
     modules_INQ002 -.->|"inquiry_affects"| modules_CN001
     modules_INQ002 -.->|"inquiry_affects"| modules_PRC001
@@ -8751,20 +9146,30 @@ graph TD
     shop_INQ001 -.->|"inquiry_affects"| shop_CMD001
     shop_INQ001 -.->|"inquiry_affects"| shop_CN001
     shop_INQ001 -.->|"inquiry_affects"| shop_PRC001
+    shop_INQ001 -.->|"inquiry_affects"| Shop
     shop_INQ002 -.->|"inquiry_affects"| shop_CMD002
     shop_INQ002 -.->|"inquiry_affects"| shop_QRY003
     shop_INQ002 -.->|"inquiry_affects"| shop_CN002
+    CAP013 -.->|"capability_realized_in"| DMN004
+    CAP014 -.->|"capability_realized_in"| DMN007
+    CAP103 -.->|"capability_realized_in"| DMN001
     CAP005 -.->|"capability_goal"| catalog_GL001
     CAP005 -.->|"capability_goal"| catalog_GL002
+    CAP005 -.->|"capability_realized_in"| DMN002
+    CAP010 -.->|"capability_realized_in"| DMN009
     CAP011 -.->|"capability_goal"| orders_GL002
+    CAP011 -.->|"capability_realized_in"| DMN006
     CAP018 -.->|"capability_goal"| catalog_GL001
     CAP001 -.->|"capability_goal"| orders_GL001
     CAP001 -.->|"capability_goal"| orders_GL003
+    CAP001 -.->|"capability_realized_in"| DMN008
     CAP002 -.->|"capability_goal"| orders_GL001
     CAP003 -.->|"capability_goal"| checkout_GL001
     CAP003 -.->|"capability_goal"| checkout_GL002
+    CAP003 -.->|"capability_realized_in"| DMN003
     CAP004 -.->|"capability_goal"| orders_GL003
     CAP006 -.->|"capability_goal"| orders_GL001
+    CAP007 -.->|"capability_realized_in"| DMN005
     VS001 -.->|"value_stream_capability"| CAP018
     VS001 -.->|"value_stream_capability"| CAP005
     VS001 -.->|"value_stream_capability"| CAP104
@@ -8876,8 +9281,6 @@ graph TD
     LP005 -.->|"leverage_depends_on"| LP002
     AdminService -.->|"deployed_in_environment"| prestashop_ENV001
     CatalogService -.->|"deployed_in_environment"| prestashop_ENV001
-    CheckoutService -.->|"deployed_in_environment"| prestashop_ENV001
-    OrderService -.->|"deployed_in_environment"| prestashop_ENV001
     prestashop_IR004 -.->|"hosted_on"| prestashop_IR005
     prestashop_IR004 -.->|"connects_to"| prestashop_IR001
     prestashop_IR004 -.->|"connects_to"| prestashop_IR002
@@ -8936,7 +9339,28 @@ graph TD
     international_QRY010 -.->|"handled_by"| International
     modules_CMD001 -.->|"handled_by"| Modules
     modules_CMD002 -.->|"handled_by"| Modules
+    modules_CMD003 -.->|"handled_by"| Modules
+    modules_CMD004 -.->|"handled_by"| Modules
+    modules_CMD005 -.->|"handled_by"| Modules
+    modules_CMD006 -.->|"handled_by"| Modules
+    modules_CMD007 -.->|"handled_by"| Modules
+    modules_CMD008 -.->|"handled_by"| Modules
+    modules_EVT001 -.->|"handled_by"| Modules
+    modules_EVT002 -.->|"handled_by"| Modules
+    modules_EVT003 -.->|"handled_by"| Modules
+    modules_EVT004 -.->|"handled_by"| Modules
+    modules_EVT005 -.->|"handled_by"| Modules
+    modules_EVT006 -.->|"handled_by"| Modules
     modules_QRY001 -.->|"handled_by"| Modules
+    modules_CMD009 -.->|"handled_by"| Modules
+    modules_EVT007 -.->|"handled_by"| Modules
+    modules_QRY002 -.->|"handled_by"| Modules
+    modules_QRY003 -.->|"handled_by"| Modules
+    modules_CMD012 -.->|"handled_by"| Modules
+    modules_CMD013 -.->|"handled_by"| Modules
+    modules_EVT008 -.->|"handled_by"| Modules
+    modules_EVT009 -.->|"handled_by"| Modules
+    modules_QRY004 -.->|"handled_by"| Modules
     modules_CMD010 -.->|"handled_by"| Modules
     modules_CMD011 -.->|"handled_by"| Modules
     orders_CMD001 -.->|"handled_by"| Orders
@@ -8947,6 +9371,7 @@ graph TD
     orders_QRY001 -.->|"handled_by"| Orders
     orders_CMD003 -.->|"handled_by"| Orders
     orders_EVT003 -.->|"handled_by"| Orders
+    orders_CMD023 -.->|"handled_by"| Orders
     shipping_QRY003 -.->|"handled_by"| Shipping
     shop_QRY003 -.->|"handled_by"| Shop
     shop_CMD016 -.->|"handled_by"| Shop
@@ -8959,7 +9384,9 @@ graph TD
     catalog_QN001 -.->|"scoped_to"| Catalog
     catalog_QN003 -.->|"scoped_to"| Catalog
     catalog_QN002 -.->|"scoped_to"| Catalog
+    catalog_QN005 -.->|"scoped_to"| Catalog
     catalog_QN004 -.->|"scoped_to"| Catalog
+    catalog_QN006 -.->|"scoped_to"| Catalog
     checkout_QN001 -.->|"scoped_to"| Checkout
     checkout_QN003 -.->|"scoped_to"| Checkout
     checkout_QN002 -.->|"scoped_to"| Checkout
@@ -8973,6 +9400,7 @@ graph TD
     international_QN003 -.->|"scoped_to"| International
     international_QN002 -.->|"scoped_to"| International
     international_QN001 -.->|"scoped_to"| International
+    international_QN004 -.->|"scoped_to"| International
     modules_QN001 -.->|"scoped_to"| Modules
     modules_QN002 -.->|"scoped_to"| Modules
     modules_QN003 -.->|"scoped_to"| Modules
@@ -8988,6 +9416,7 @@ graph TD
     shop_QN001 -.->|"scoped_to"| Shop
     shop_QN002 -.->|"scoped_to"| Shop
     shop_QN003 -.->|"scoped_to"| Shop
+    shop_QN004 -.->|"scoped_to"| Shop
     admin_RC001 -.->|"race_condition_affects"| admin_CMD002
     catalog_PAR001 -.->|"parallelism_operation"| catalog_CMD001
     catalog_ORD001 -.->|"ordering_operation"| catalog_EVT001
@@ -9888,6 +10317,8 @@ graph TD
     shop_EVT014 -.->|"operation_in_domain"| DMN010
     shop_QRY010 -.->|"operation_in_domain"| DMN010
     shop_DOC001 -.->|"operation_in_domain"| DMN010
+    MIG006 -.->|"migration_relates_to_decision"| DC001
+    MIG006 -.->|"migration_relates_to_decision"| DC010
     admin_CN005 -.->|"code_ref"| src_Core_Domain_ApiClient_Command_AddApiClientCommand_php
     admin_CN005 -.->|"code_ref"| src_Core_Domain_ApiClient_Command_ForceApiClientSecretCommand_php
     admin_CN005 -.->|"code_ref"| src_Core_Domain_ApiClient_Command_GenerateApiClientSecretCommand_php
@@ -9932,7 +10363,7 @@ graph TD
     catalog_CN400 -.->|"code_ref"| src_Core_Domain_ImageSettings_Command_AddImageTypeCommand_php
     catalog_CN400 -.->|"code_ref"| classes_ImageType_php
     catalog_CN001 -.->|"code_ref"| src_Core_Domain_Product_
-    catalog_CN001 -.->|"code_ref"| https___github_com_PrestaShop_docs_blob_9_x_development_architecture_domain_references_product__index_md
+    catalog_CN001 -.->|"code_ref"| PrestaShop_docs_development_architecture_domain_references_product_index_md
     catalog_CN003 -.->|"code_ref"| src_Core_Domain_Combination_
     catalog_CN004 -.->|"code_ref"| src_Core_Domain_Product_Image_
     catalog_CN010 -.->|"code_ref"| src_Core_Domain_Product_SpecificPrice_
@@ -10027,16 +10458,26 @@ graph TD
     modules_CN002 -.->|"code_ref"| src_Core_Domain_Hook_QueryResult_HookableInfo_php
     orders_CN010 -.->|"code_ref"| src_Core_Domain_OrderState_
     orders_CN010 -.->|"code_ref"| classes_order_OrderState_php
+    orders_CN010 -.->|"code_ref"| install_dev_data_xml_order_state_xml
     orders_CN011 -.->|"code_ref"| src_Core_Domain_OrderMessage_
+    orders_CN011 -.->|"code_ref"| classes_order_OrderMessage_php
     orders_CN002 -.->|"code_ref"| src_Core_Domain_Order_
     orders_CN002 -.->|"code_ref"| classes_order_Order_php
+    orders_CN002 -.->|"code_ref"| classes_PaymentModule_php
+    orders_CN002 -.->|"code_ref"| install_dev_data_xml_order_state_xml
     orders_CN003 -.->|"code_ref"| classes_order_OrderDetail_php
     orders_CN006 -.->|"code_ref"| classes_order_OrderInvoice_php
+    orders_CN006 -.->|"code_ref"| classes_order_Order_php
     orders_CN005 -.->|"code_ref"| classes_order_OrderPayment_php
+    orders_CN004 -.->|"code_ref"| classes_Address_php
+    orders_CN004 -.->|"code_ref"| classes_form_CustomerAddressPersister_php
     orders_CN007 -.->|"code_ref"| src_Core_Domain_OrderReturn_
     orders_CN007 -.->|"code_ref"| classes_order_OrderReturn_php
+    orders_CN007 -.->|"code_ref"| controllers_front_OrderFollowController_php
+    orders_CN007 -.->|"code_ref"| src_Adapter_OrderReturn_CommandHandler_UpdateOrderReturnStateHandler_php
     orders_CN008 -.->|"code_ref"| src_Core_Domain_OrderReturnState_
     orders_CN008 -.->|"code_ref"| classes_order_OrderReturnState_php
+    orders_CN008 -.->|"code_ref"| install_dev_langs_en_data_order_return_state_xml
     orders_CN009 -.->|"code_ref"| classes_order_OrderSlip_php
     orders_CN009 -.->|"code_ref"| src_Core_Domain_CreditSlip_
     orders_CN009 -.->|"code_ref"| src_Adapter_Order_Refund_OrderSlipCreator_php
@@ -11523,6 +11964,7 @@ graph TD
     orders_ERR027 -.->|"code_ref"| src_Core_Domain_OrderReturnState_Exception_BulkDeleteOrderReturnStateException_php
     orders_CMD001 -.->|"code_ref"| src_Core_Domain_Order_Command_AddOrderFromBackOfficeCommand_php
     orders_CMD001 -.->|"code_ref"| src_Adapter_Order_CommandHandler_AddOrderFromBackOfficeHandler_php
+    orders_CMD001 -.->|"code_ref"| classes_PaymentModule_php
     orders_CMD004 -.->|"code_ref"| classes_PaymentModule_php
     orders_CMD004 -.->|"code_ref"| src_Core_Domain_Order_Command_UpdateOrderStatusCommand_php
     orders_CMD004 -.->|"code_ref"| src_Adapter_Order_CommandHandler_UpdateOrderStatusHandler_php
@@ -11599,6 +12041,8 @@ graph TD
     orders_ERR017 -.->|"code_ref"| src_Core_Domain_Order_Exception_ReturnProductDisabledException_php
     orders_CMD023 -.->|"code_ref"| src_Core_Domain_OrderReturn_Command_UpdateOrderReturnStateCommand_php
     orders_CMD023 -.->|"code_ref"| PrestaShop_ps_apiresources_src_ApiPlatform_Resources_OrderReturn_OrderReturn_php
+    orders_CMD023 -.->|"code_ref"| src_Adapter_OrderReturn_CommandHandler_UpdateOrderReturnStateHandler_php
+    orders_CMD023 -.->|"code_ref"| PrestaShop_ps_apiresources_tests_Integration_ApiPlatform_OrderReturnEndpointTest_php
     orders_EVT010 -.->|"code_ref"| src_Adapter_OrderReturn_CommandHandler_UpdateOrderReturnStateHandler_php
     orders_EVT010 -.->|"code_ref"| classes_ObjectModel_php
     orders_EVT010 -.->|"code_ref"| classes_order_OrderReturn_php
@@ -11815,11 +12259,23 @@ graph TD
     shop_ERR007 -.->|"code_ref"| src_Core_Domain_Contact_Exception_ContactNotFoundException_php
     shop_ERR008 -.->|"code_ref"| src_Core_Domain_Contact_Exception_ContactConstraintException_php
     shop_ERR009 -.->|"code_ref"| src_Core_Domain_Alias_Exception_AliasConstraintException_php
+    AdminService -.->|"code_ref"| src_Core_Domain_Employee_
+    CatalogService -.->|"code_ref"| src_Core_Domain_Product_
+    CheckoutService -.->|"code_ref"| src_Core_Domain_Cart_
+    ContentService -.->|"code_ref"| classes_CMS_php
+    CustomerService -.->|"code_ref"| src_Core_Domain_Customer_
+    InternationalService -.->|"code_ref"| src_Core_Domain_Currency_
+    ModuleManager -.->|"code_ref"| src_Core_Module_ModuleManager_php
+    OrderService -.->|"code_ref"| src_Core_Domain_Order_
+    OrderService -.->|"code_ref"| PrestaShop_ps_apiresources_src_ApiPlatform_Resources_OrderReturn_OrderReturn_php
+    AdminApiClient -.->|"code_ref"| PrestaShop_docs_admin_api_setup_development_environment_md
     HookDispatcher -.->|"code_ref"| src_Core_CommandBus_CommandBusInterface_php
     HookDispatcher -.->|"code_ref"| classes_Hook_php
     HookDispatcher -.->|"code_ref"| src_Adapter_HookManager_php
     HookDispatcher -.->|"code_ref"| classes_ObjectModel_php
     HookDispatcher -.->|"code_ref"| install_dev_data_xml_hook_xml
+    ShippingService -.->|"code_ref"| src_Core_Domain_Carrier_
+    ShopService -.->|"code_ref"| src_Core_Domain_Shop_
     catalog_SCR001 -.->|"code_ref"| controllers_front_listing_CategoryController_php
     catalog_SCR001 -.->|"code_ref"| classes_controller_ProductListingFrontController_php
     catalog_SCR001 -.->|"code_ref"| classes_Category_php
@@ -11846,6 +12302,12 @@ graph TD
     checkout_UAC011 -.->|"code_ref"| classes_checkout_CheckoutPaymentStep_php
     checkout_UAC012 -.->|"code_ref"| controllers_front_OrderConfirmationController_php
     checkout_UAC012 -.->|"code_ref"| classes_Customer_php
+    checkout_UNV003 -.->|"code_ref"| controllers_front_CartController_php
+    checkout_UNV003 -.->|"code_ref"| PrestaShop_docs_modules_concepts_hooks_list_of_hooks_displayExpressCheckout_md
+    checkout_UNV004 -.->|"code_ref"| PrestaShop_docs_modules_payment__index_md
+    checkout_UNV004 -.->|"code_ref"| classes_checkout_PaymentOptionsFinder_php
+    checkout_UNV004 -.->|"code_ref"| controllers_front_OrderConfirmationController_php
+    checkout_UNV005 -.->|"code_ref"| controllers_front_OrderController_php
     content_SCR007 -.->|"code_ref"| controllers_front_CmsController_php
     customers_SCR005 -.->|"code_ref"| controllers_front_AuthController_php
     customers_SCR005 -.->|"code_ref"| classes_form_CustomerLoginForm_php
@@ -11862,6 +12324,17 @@ graph TD
     customers_UAC007 -.->|"code_ref"| controllers_front_AddressController_php
     customers_UAC008 -.->|"code_ref"| controllers_front_AddressController_php
     customers_UAC009 -.->|"code_ref"| classes_form_CustomerLoginForm_php
+    customers_UAC010 -.->|"code_ref"| src_Core_Grid_Definition_Factory_CustomerGridDefinitionFactory_php
+    customers_UAC011 -.->|"code_ref"| src_PrestaShopBundle_Resources_views_Admin_Sell_Customer_Blocks_View_addresses_html_twig
+    customers_UAC012 -.->|"code_ref"| tests_Resources_themes_classic_templates_customer_authentication_tpl
+    customers_UAC012 -.->|"code_ref"| controllers_front_AuthController_php
+    customers_UAC013 -.->|"code_ref"| tests_Resources_themes_classic_templates_customer_my_account_tpl
+    customers_UAC014 -.->|"code_ref"| tests_Resources_themes_classic_templates_customer_my_account_tpl
+    customers_UAC015 -.->|"code_ref"| tests_Resources_themes_classic_templates_customer_my_account_tpl
+    customers_UAC016 -.->|"code_ref"| tests_Resources_themes_classic_templates_customer_addresses_tpl
+    modules_UAC005 -.->|"code_ref"| src_PrestaShopBundle_Controller_Admin_Improve_Modules_ModuleAbstractController_php
+    modules_UAC005 -.->|"code_ref"| src_PrestaShopBundle_Resources_views_Admin_Module_Includes_modal_import_html_twig
+    modules_UAC005 -.->|"code_ref"| admin_dev_themes_new_theme_js_pages_module_controller_js
     orders_SCR004 -.->|"code_ref"| controllers_front_HistoryController_php
     orders_SCR005 -.->|"code_ref"| controllers_front_OrderDetailController_php
     orders_SCR006 -.->|"code_ref"| controllers_front_OrderFollowController_php
@@ -11870,6 +12343,8 @@ graph TD
     orders_UAC008 -.->|"code_ref"| controllers_front_OrderFollowController_php
     orders_UAC008 -.->|"code_ref"| classes_order_OrderReturn_php
     orders_UAC009 -.->|"code_ref"| controllers_front_HistoryController_php
+    orders_UAC010 -.->|"code_ref"| src_Core_Grid_Definition_Factory_OrderGridDefinitionFactory_php
+    orders_UAC011 -.->|"code_ref"| src_PrestaShopBundle_Resources_views_Admin_Sell_Order_Order_Blocks_View_merchandise_returns_html_twig
     shop_SCR006 -.->|"code_ref"| controllers_front_IndexController_php
     shop_SCR006 -.->|"code_ref"| install_dev_data_xml_hook_xml
     shop_SCR007 -.->|"code_ref"| controllers_front_listing_SearchController_php
@@ -12009,6 +12484,9 @@ graph TD
     MDL107 -.->|"code_ref"| src_Core_Domain_Order_Payment_Command_AddPaymentCommand_php
     MDL103 -.->|"code_ref"| src_Core_Domain_Order_QueryResult_OrderForViewing_php
     MDL104 -.->|"code_ref"| src_Core_Domain_Order_QueryResult_OrderPreview_php
+    orders_MDL001 -.->|"code_ref"| PrestaShop_ps_apiresources_src_ApiPlatform_Resources_OrderReturn_OrderReturn_php
+    orders_MDL002 -.->|"code_ref"| PrestaShop_ps_apiresources_src_ApiPlatform_Resources_OrderReturn_OrderReturn_php
+    orders_MDL003 -.->|"code_ref"| PrestaShop_ps_apiresources_src_ApiPlatform_Resources_OrderReturn_OrderReturn_php
     MDL400 -.->|"code_ref"| src_Core_Domain_Carrier_Command_AddCarrierCommand_php
     MDL400 -.->|"code_ref"| src_Adapter_Carrier_CommandHandler_AddCarrierHandler_php
     MDL401 -.->|"code_ref"| src_Core_Domain_Carrier_Query_GetCarrierForEditing_php
@@ -12035,93 +12513,385 @@ graph TD
     MDL1809 -.->|"code_ref"| PrestaShop_ps_apiresources_src_ApiPlatform_Resources_SearchAlias_SearchAlias_php
     MDL1810 -.->|"code_ref"| PrestaShop_ps_apiresources_src_ApiPlatform_Resources_Contact_Contact_php
     MDL1811 -.->|"code_ref"| PrestaShop_ps_apiresources_src_ApiPlatform_Resources_ShowcaseCard_ShowcaseCard_php
+    admin_SR001 -.->|"code_ref"| classes_Employee_php
+    admin_SR001 -.->|"code_ref"| src_Core_Domain_Employee_Command_AddEmployeeCommand_php
+    admin_SR001 -.->|"code_ref"| src_Core_Domain_Employee_Command_EditEmployeeCommand_php
+    admin_SR001 -.->|"code_ref"| src_Adapter_Profile_Employee_CommandHandler_AddEmployeeHandler_php
+    admin_SR001 -.->|"code_ref"| src_Adapter_Profile_Employee_CommandHandler_EditEmployeeHandler_php
+    admin_SR001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Employee_employee_management_feature
+    admin_VR001 -.->|"code_ref"| src_Adapter_Profile_Employee_CommandHandler_AddEmployeeHandler_php
+    admin_VR001 -.->|"code_ref"| src_Adapter_Profile_Employee_CommandHandler_EditEmployeeHandler_php
+    admin_VR002 -.->|"code_ref"| src_Core_Domain_Employee_ValueObject_Password_php
+    admin_VR002 -.->|"code_ref"| src_Core_Domain_Employee_Command_AddEmployeeCommand_php
+    admin_VR002 -.->|"code_ref"| src_Core_Domain_Employee_Command_EditEmployeeCommand_php
+    admin_VR002 -.->|"code_ref"| src_Core_Security_PasswordPolicyConfiguration_php
+    admin_VR002 -.->|"code_ref"| install_dev_data_xml_configuration_xml
+    admin_VR002 -.->|"code_ref"| src_PrestaShopBundle_Form_Admin_Login_ResetPasswordType_php
+    admin_VR003 -.->|"code_ref"| src_Adapter_Profile_CommandHandler_AbstractProfileHandler_php
+    admin_VR003 -.->|"code_ref"| src_Adapter_Profile_CommandHandler_DeleteProfileHandler_php
+    admin_VR003 -.->|"code_ref"| src_Adapter_Profile_CommandHandler_BulkDeleteProfileHandler_php
+    admin_VR003 -.->|"code_ref"| src_Core_Domain_Profile_Exception_FailedToDeleteProfileException_php
+    admin_VR004 -.->|"code_ref"| src_Core_Domain_Profile_Permission_ValueObject_ControllerPermission_php
+    admin_VR004 -.->|"code_ref"| src_Core_Domain_Profile_Permission_ValueObject_ModulePermission_php
+    admin_VR004 -.->|"code_ref"| src_Core_Domain_Profile_Permission_Command_UpdateTabPermissionsCommand_php
+    admin_VR004 -.->|"code_ref"| classes_Access_php
+    admin_VR004 -.->|"code_ref"| src_Adapter_Profile_Permission_CommandHandler_UpdateTabPermissionsHandler_php
+    admin_VR004 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Profile_profile_permissions_feature
+    admin_VR005 -.->|"code_ref"| src_Core_Domain_ApiClient_Command_AddApiClientCommand_php
+    admin_VR005 -.->|"code_ref"| src_Core_Domain_ApiClient_Command_EditApiClientCommand_php
+    admin_VR005 -.->|"code_ref"| src_PrestaShopBundle_Entity_ApiClient_php
+    admin_VR005 -.->|"code_ref"| src_Core_ConstraintValidator_InstalledApiResourceScopeValidator_php
+    admin_VR005 -.->|"code_ref"| src_Core_Domain_ApiClient_Exception_ApiClientConstraintException_php
+    admin_VR005 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_ApiClient_api_client_management_feature
+    admin_VR006 -.->|"code_ref"| classes_RequestSql_php
+    admin_VR006 -.->|"code_ref"| src_Adapter_SqlManager_SqlQueryValidator_php
+    admin_VR006 -.->|"code_ref"| src_Adapter_SqlManager_CommandHandler_AbstractSqlRequestHandler_php
+    admin_VR006 -.->|"code_ref"| src_Adapter_SqlManager_QueryHandler_GetSqlRequestExecutionResultHandler_php
+    admin_VR006 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Database_sql_manager_feature
     admin_VR007 -.->|"code_ref"| src_Core_Domain_BusinessEntity_Command_AddBusinessEntityCommand_php
     admin_VR007 -.->|"code_ref"| src_Core_Domain_BusinessEntity_Exception_BusinessEntityBillingAddressConstraintException_php
+    admin_VR007 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_BusinessEntity_business_entity_management_feature
     catalog_SR001 -.->|"code_ref"| src_Core_Domain_Product_ValueObject_ProductType_php
+    catalog_SR001 -.->|"code_ref"| src_Adapter_Product_Update_ProductTypeUpdater_php
     catalog_SR002 -.->|"code_ref"| classes_Category_php
     catalog_SR002 -.->|"code_ref"| src_Core_Domain_Category_CategorySettings_php
     catalog_SR002 -.->|"code_ref"| src_Core_Domain_Category_Exception_CategoryConstraintException_php
     catalog_SR003 -.->|"code_ref"| src_Core_Domain_Category_Exception_CannotDeleteRootCategoryForShopException_php
     catalog_SR003 -.->|"code_ref"| src_Adapter_Category_CommandHandler_DeleteCategoryHandler_php
+    catalog_SR003 -.->|"code_ref"| classes_Category_php
+    catalog_CR001 -.->|"code_ref"| src_Adapter_Product_Repository_ProductRepository_php
+    catalog_CR001 -.->|"code_ref"| src_Adapter_Product_Validate_ProductValidator_php
+    catalog_CR001 -.->|"code_ref"| src_Core_Domain_Product_Exception_ProductConstraintException_php
+    catalog_CR001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Product_update_status_feature
+    catalog_CR002 -.->|"code_ref"| src_Adapter_Product_Combination_Create_CombinationCreator_php
+    catalog_CR002 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Product_Combination_forbidden_actions_feature
+    catalog_VR001 -.->|"code_ref"| src_Adapter_Product_Image_CommandHandler_AddProductImageHandler_php
+    catalog_VR001 -.->|"code_ref"| src_Adapter_Image_ProductImageFileValidator_php
+    catalog_VR001 -.->|"code_ref"| src_Adapter_Image_ImageValidator_php
+    catalog_VR001 -.->|"code_ref"| classes_ImageManager_php
+    catalog_VR001 -.->|"code_ref"| PrestaShop_prestashop_specs_content_1_7_back_office_catalog_products_add_edit_v2_md
     catalog_VR002 -.->|"code_ref"| src_Core_Domain_Product_Exception_CannotDeleteProductException_php
     catalog_VR002 -.->|"code_ref"| src_Adapter_Product_CommandHandler_DeleteProductHandler_php
+    catalog_VR002 -.->|"code_ref"| src_Adapter_Product_ProductDeleter_php
     catalog_VR003 -.->|"code_ref"| src_Core_Domain_Product_SpecificPrice_Exception_SpecificPriceConstraintException_php
     catalog_VR003 -.->|"code_ref"| src_Core_Domain_Product_SpecificPrice_Command_AddSpecificPriceCommand_php
+    catalog_VR003 -.->|"code_ref"| src_Core_Domain_ValueObject_Reduction_php
+    catalog_VR003 -.->|"code_ref"| src_Adapter_Product_SpecificPrice_Validate_SpecificPriceValidator_php
+    catalog_VR003 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Product_SpecificPrice_add_specific_price_feature
     catalog_VR004 -.->|"code_ref"| src_Core_Domain_Product_Combination_Command_GenerateProductCombinationsCommand_php
     catalog_VR004 -.->|"code_ref"| src_Core_Domain_Product_Combination_Exception_CombinationConstraintException_php
+    catalog_VR004 -.->|"code_ref"| src_Adapter_Product_Combination_Create_CombinationCreator_php
+    catalog_VR004 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Product_Combination_generate_combinations_feature
+    catalog_VR005 -.->|"code_ref"| src_Adapter_Manufacturer_CommandHandler_AddManufacturerHandler_php
+    catalog_VR005 -.->|"code_ref"| classes_Manufacturer_php
+    catalog_VR005 -.->|"code_ref"| src_Adapter_Manufacturer_Repository_ManufacturerRepository_php
     checkout_SR001 -.->|"code_ref"| src_Core_Domain_Cart_Exception_MinimalQuantityException_php
+    checkout_SR001 -.->|"code_ref"| src_Core_Domain_Cart_Command_AddProductToCartCommand_php
+    checkout_SR001 -.->|"code_ref"| src_Core_Domain_Cart_Command_UpdateProductQuantityInCartCommand_php
+    checkout_SR001 -.->|"code_ref"| src_Adapter_Cart_CommandHandler_UpdateProductQuantityInCartHandler_php
+    checkout_SR001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Cart_Product_add_standard_product_feature
     checkout_SR002 -.->|"code_ref"| src_Core_Domain_Discount_Exception_DiscountConstraintException_php
     checkout_SR002 -.->|"code_ref"| src_Core_Domain_Discount_ValueObject_DiscountType_php
+    checkout_SR002 -.->|"code_ref"| src_Adapter_Discount_Validate_DiscountValidator_php
+    checkout_SR002 -.->|"code_ref"| src_Core_Domain_Discount_Command_AddDiscountCommand_php
+    checkout_CR001 -.->|"code_ref"| src_Core_Grid_Query_CartQueryBuilder_php
+    checkout_CR001 -.->|"code_ref"| src_Core_Domain_Cart_CartStatus_php
+    checkout_CR001 -.->|"code_ref"| src_Core_Grid_Data_Factory_CartGridDataFactory_php
+    checkout_CR002 -.->|"code_ref"| classes_Cart_php
+    checkout_CR002 -.->|"code_ref"| classes_CartRule_php
+    checkout_DR001 -.->|"code_ref"| src_Core_Cart_Calculator_php
     checkout_VR001 -.->|"code_ref"| src_Core_Domain_CartRule_Exception_CartRuleValidityException_php
     checkout_VR001 -.->|"code_ref"| src_Core_Domain_Discount_Exception_DiscountConstraintException_php
+    checkout_VR001 -.->|"code_ref"| src_Adapter_Discount_Validate_DiscountValidator_php
+    checkout_VR001 -.->|"code_ref"| src_Core_Domain_Discount_Command_AddDiscountCommand_php
+    checkout_VR001 -.->|"code_ref"| classes_CartRule_php
+    checkout_VR001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Discount_FO_discount_validity_date_range_feature
+    checkout_VR001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Discount_BO_update_discount_validity_dates_feature
     checkout_VR002 -.->|"code_ref"| src_Core_Domain_Discount_ValueObject_MinimumAmount_php
     checkout_VR002 -.->|"code_ref"| src_Core_Domain_CartRule_Exception_CartRuleConstraintException_php
+    checkout_VR002 -.->|"code_ref"| classes_CartRule_php
+    checkout_VR002 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Discount_FO_discount_with_condition_minimum_amount_feature
     checkout_VR003 -.->|"code_ref"| src_Core_Domain_CartRule_Exception_CartRuleConstraintException_php
     checkout_VR003 -.->|"code_ref"| src_Core_Domain_Discount_Exception_DiscountConstraintException_php
+    checkout_VR003 -.->|"code_ref"| classes_CartRule_php
+    checkout_VR003 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Discount_FO_discount_with_usage_limits_feature
+    checkout_VR003 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Discount_BO_add_and_update_discount_quantities_feature
+    checkout_VR004 -.->|"code_ref"| classes_SpecificPriceRule_php
+    checkout_VR004 -.->|"code_ref"| classes_SpecificPrice_php
+    checkout_VR004 -.->|"code_ref"| classes_Product_php
     checkout_VR005 -.->|"code_ref"| src_Core_Domain_Cart_Exception_CannotDeleteOrderedCartException_php
+    checkout_VR005 -.->|"code_ref"| src_Adapter_Cart_CommandHandler_DeleteCartHandler_php
+    checkout_VR005 -.->|"code_ref"| src_Adapter_Cart_CommandHandler_BulkDeleteCartHandler_php
+    checkout_VR005 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Cart_CartRule_BackOffice_delete_cart_from_bo_feature
+    checkout_TR003 -.->|"code_ref"| classes_PaymentModule_php
+    checkout_TR003 -.->|"code_ref"| classes_Cart_php
+    checkout_TR003 -.->|"code_ref"| src_Core_Grid_Query_CartQueryBuilder_php
+    checkout_TR004 -.->|"code_ref"| src_Core_Domain_Cart_CartStatus_php
+    checkout_TR004 -.->|"code_ref"| src_Core_Grid_Query_CartQueryBuilder_php
+    content_SR001 -.->|"code_ref"| classes_CMSCategory_php
+    content_SR001 -.->|"code_ref"| src_Adapter_CMS_PageCategory_CommandHandler_EditCmsPageCategoryHandler_php
+    content_SR001 -.->|"code_ref"| src_Core_Domain_CmsPageCategory_Exception_CmsPageCategoryConstraintException_php
+    content_VR001 -.->|"code_ref"| src_Adapter_CMS_Page_CommandHandler_AddCmsPageHandler_php
+    content_VR001 -.->|"code_ref"| src_Adapter_CMS_Page_CommandHandler_AbstractCmsPageHandler_php
+    content_VR001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_CmsPage_cms_page_management_feature
+    content_VR002 -.->|"code_ref"| src_Core_Domain_CmsPageCategory_Command_AbstractCmsPageCategoryCommand_php
+    content_VR002 -.->|"code_ref"| src_Core_Domain_Meta_Command_AbstractMetaCommand_php
+    content_VR002 -.->|"code_ref"| src_Core_Domain_Meta_Command_AddMetaCommand_php
+    content_VR002 -.->|"code_ref"| classes_CMS_php
+    content_VR002 -.->|"code_ref"| classes_Validate_php
+    content_VR002 -.->|"code_ref"| tests_Unit_Core_Domain_CmsPageCategory_Command_AddCmsPageCategoryCommandTest_php
     content_VR003 -.->|"code_ref"| classes_CMSCategory_php
     content_VR003 -.->|"code_ref"| src_Adapter_CMS_PageCategory_CommandHandler_DeleteCmsPageCategoryHandler_php
+    content_VR004 -.->|"code_ref"| classes_shop_Shop_php
+    content_VR004 -.->|"code_ref"| src_Core_Domain_Theme_CommandHandler_EnableThemeHandler_php
+    content_VR004 -.->|"code_ref"| src_Core_Addon_Theme_ThemeManager_php
+    content_VR004 -.->|"code_ref"| src_Core_Addon_Theme_ThemeValidator_php
+    content_VR005 -.->|"code_ref"| src_Core_Addon_Theme_ThemeManager_php
+    content_VR005 -.->|"code_ref"| src_Core_Domain_Theme_CommandHandler_DeleteThemeHandler_php
+    content_VR005 -.->|"code_ref"| src_PrestaShopBundle_Resources_views_Admin_Improve_Design_Theme_index_html_twig
+    content_VR006 -.->|"code_ref"| src_Adapter_Meta_CommandHandler_AddMetaHandler_php
+    content_VR006 -.->|"code_ref"| src_Adapter_Meta_CommandHandler_EditMetaHandler_php
+    content_VR006 -.->|"code_ref"| src_Core_Domain_Meta_Exception_MetaConstraintException_php
+    content_VR006 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Meta_meta_management_feature
+    content_TR001 -.->|"code_ref"| src_Core_Addon_Theme_ThemeManager_php
     customers_SR001 -.->|"code_ref"| src_Core_Domain_Customer_Exception_DuplicateCustomerEmailException_php
     customers_SR001 -.->|"code_ref"| src_Adapter_Customer_CommandHandler_AddCustomerHandler_php
+    customers_SR001 -.->|"code_ref"| src_Adapter_Customer_CommandHandler_EditCustomerHandler_php
+    customers_SR001 -.->|"code_ref"| classes_Customer_php
+    customers_SR001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Customer_customer_management_feature
+    customers_CR001 -.->|"code_ref"| src_Core_Domain_CustomerService_ValueObject_CustomerThreadStatus_php
+    customers_CR001 -.->|"code_ref"| src_Core_Domain_CustomerService_CommandHandler_UpdateCustomerThreadStatusHandler_php
+    customers_CR001 -.->|"code_ref"| src_Core_Domain_CustomerService_CommandHandler_ReplyToCustomerThreadHandler_php
+    customers_CR001 -.->|"code_ref"| controllers_front_OrderDetailController_php
+    customers_VR001 -.->|"code_ref"| src_Core_Domain_ValueObject_Email_php
+    customers_VR001 -.->|"code_ref"| classes_Customer_php
+    customers_VR001 -.->|"code_ref"| classes_Validate_php
     customers_VR002 -.->|"code_ref"| src_Core_Domain_Customer_ValueObject_Password_php
     customers_VR002 -.->|"code_ref"| src_Core_Security_PasswordPolicyConfiguration_php
+    customers_VR002 -.->|"code_ref"| classes_form_CustomerForm_php
+    customers_VR002 -.->|"code_ref"| classes_Validate_php
+    customers_VR002 -.->|"code_ref"| tests_Unit_Core_Domain_Customer_ValueObject_PasswordTest_php
     customers_VR003 -.->|"code_ref"| src_Core_Domain_Customer_Command_TransformGuestToCustomerCommand_php
     customers_VR003 -.->|"code_ref"| src_Core_Domain_Customer_Exception_CustomerTransformationException_php
+    customers_VR003 -.->|"code_ref"| src_Adapter_Customer_CommandHandler_TransformGuestToCustomerHandler_php
+    customers_VR003 -.->|"code_ref"| classes_Customer_php
+    customers_VR004 -.->|"code_ref"| src_Core_Domain_Customer_Group_Command_AddCustomerGroupCommand_php
+    customers_VR004 -.->|"code_ref"| controllers_admin_AdminGroupsController_php
+    customers_VR004 -.->|"code_ref"| src_Core_Domain_Customer_Group_Command_EditCustomerGroupCommand_php
+    customers_VR004 -.->|"code_ref"| src_Core_Domain_Customer_Group_Exception_GroupConstraintException_php
     customers_VR005 -.->|"code_ref"| src_Core_Domain_Address_Exception_AddressConstraintException_php
     customers_VR005 -.->|"code_ref"| src_Core_Domain_Address_Configuration_AddressConstraint_php
     customers_VR005 -.->|"code_ref"| classes_Address_php
     customers_VR005 -.->|"code_ref"| classes_Country_php
     customers_VR005 -.->|"code_ref"| src_Adapter_Address_CommandHandler_EditCustomerAddressHandler_php
+    customers_VR005 -.->|"code_ref"| src_Adapter_Address_AbstractAddressHandler_php
+    customers_VR005 -.->|"code_ref"| src_PrestaShopBundle_Form_Admin_Sell_Address_CustomerAddressType_php
+    customers_VR005 -.->|"code_ref"| classes_form_CustomerAddressForm_php
+    customers_VR006 -.->|"code_ref"| classes_Customer_php
+    customers_VR006 -.->|"code_ref"| src_Adapter_Customer_CommandHandler_DeleteCustomerHandler_php
+    customers_VR006 -.->|"code_ref"| install_dev_data_xml_hook_xml
+    customers_VR006 -.->|"code_ref"| PrestaShop_docs_modules_concepts_hooks_list_of_hooks_actionDeleteGDPRCustomer_md
+    customers_TR001 -.->|"code_ref"| classes_Customer_php
+    customers_TR001 -.->|"code_ref"| src_Adapter_Customer_CommandHandler_TransformGuestToCustomerHandler_php
+    customers_TR002 -.->|"code_ref"| src_Adapter_Customer_CommandHandler_EditCustomerHandler_php
+    customers_TR002 -.->|"code_ref"| src_Adapter_Customer_CommandHandler_BulkDisableCustomerHandler_php
+    customers_TR002 -.->|"code_ref"| classes_form_CustomerLoginForm_php
+    customers_TR003 -.->|"code_ref"| src_Adapter_Customer_CommandHandler_EditCustomerHandler_php
+    customers_TR003 -.->|"code_ref"| src_Adapter_Customer_CommandHandler_BulkEnableCustomerHandler_php
+    international_SR001 -.->|"code_ref"| src_Adapter_Currency_CommandHandler_CurrencyCommandValidator_php
+    international_SR001 -.->|"code_ref"| src_Adapter_Currency_CurrencyDataProvider_php
+    international_SR001 -.->|"code_ref"| src_Adapter_Currency_CommandHandler_AddOfficialCurrencyHandler_php
+    international_SR001 -.->|"code_ref"| src_Adapter_Currency_CommandHandler_AddUnofficialCurrencyHandler_php
+    international_SR001 -.->|"code_ref"| src_Adapter_Currency_CommandHandler_EditUnofficialCurrencyHandler_php
+    international_SR001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Currency_currency_management_feature
     international_VR001 -.->|"code_ref"| src_Core_Domain_Currency_ValueObject_AlphaIsoCode_php
+    international_VR001 -.->|"code_ref"| src_Adapter_Currency_CommandHandler_CurrencyCommandValidator_php
+    international_VR001 -.->|"code_ref"| tests_Unit_Core_Domain_Currency_ValueObject_CurrencyIsoCodeTest_php
+    international_VR001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Currency_currency_management_feature
+    international_VR002 -.->|"code_ref"| src_Adapter_Currency_CommandHandler_DeleteCurrencyHandler_php
+    international_VR002 -.->|"code_ref"| src_Adapter_Currency_CommandHandler_CurrencyCommandValidator_php
+    international_VR002 -.->|"code_ref"| src_Adapter_Currency_CommandHandler_ToggleCurrencyStatusHandler_php
+    international_VR002 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Currency_currency_management_feature
+    international_VR003 -.->|"code_ref"| src_Adapter_Language_CommandHandler_AddLanguageHandler_php
+    international_VR003 -.->|"code_ref"| src_Adapter_Language_CommandHandler_EditLanguageHandler_php
+    international_VR003 -.->|"code_ref"| src_Core_Domain_Language_ValueObject_IsoCode_php
+    international_VR003 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Language_language_feature
+    international_VR004 -.->|"code_ref"| src_Adapter_Language_CommandHandler_AbstractLanguageHandler_php
+    international_VR004 -.->|"code_ref"| src_Adapter_Language_CommandHandler_DeleteLanguageHandler_php
+    international_VR004 -.->|"code_ref"| src_Adapter_Language_CommandHandler_BulkDeleteLanguagesHandler_php
+    international_VR004 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Language_language_feature
     international_VR005 -.->|"code_ref"| src_Core_Domain_Country_Command_AddCountryCommand_php
+    international_VR005 -.->|"code_ref"| src_Core_Domain_Country_Command_EditCountryCommand_php
+    international_VR005 -.->|"code_ref"| classes_Country_php
+    international_VR005 -.->|"code_ref"| classes_Validate_php
+    international_VR005 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Country_country_management_feature
+    international_VR006 -.->|"code_ref"| classes_tax_Tax_php
+    international_VR006 -.->|"code_ref"| classes_Validate_php
+    international_VR006 -.->|"code_ref"| src_Adapter_Tax_CommandHandler_AddTaxHandler_php
     international_VR007 -.->|"code_ref"| src_Core_Domain_Currency_ValueObject_ExchangeRate_php
+    international_VR007 -.->|"code_ref"| src_Core_Domain_Currency_Command_AbstractAddCurrencyCommand_php
+    international_VR007 -.->|"code_ref"| src_Core_Domain_Currency_Command_AbstractEditCurrencyCommand_php
+    international_VR008 -.->|"code_ref"| classes_tax_TaxRulesGroup_php
+    international_VR008 -.->|"code_ref"| controllers_admin_AdminTaxRulesGroupController_php
+    international_VR008 -.->|"code_ref"| src_Adapter_TaxRulesGroup_CommandHandler_AddTaxRuleHandler_php
+    international_VR008 -.->|"code_ref"| classes_tax_TaxRule_php
+    international_VR008 -.->|"code_ref"| classes_tax_TaxRulesTaxManager_php
     modules_SR001 -.->|"code_ref"| src_Core_Domain_Module_Exception_ModuleNotInstalledException_php
+    modules_SR001 -.->|"code_ref"| src_Adapter_Module_CommandHandler_UninstallModuleHandler_php
+    modules_SR001 -.->|"code_ref"| src_Adapter_Module_CommandHandler_UpdateModuleStatusHandler_php
+    modules_SR001 -.->|"code_ref"| src_Adapter_Module_CommandHandler_BulkToggleModuleStatusHandler_php
+    modules_SR001 -.->|"code_ref"| src_Core_Module_ModuleManager_php
+    modules_SR001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Module_uninstall_module_feature
     modules_VR001 -.->|"code_ref"| src_Core_Domain_Module_ValueObject_ModuleTechnicalName_php
     modules_VR001 -.->|"code_ref"| src_Core_Domain_Module_Exception_ModuleConstraintException_php
     modules_VR002 -.->|"code_ref"| src_Core_Domain_Module_Exception_CannotResetModuleException_php
+    modules_VR002 -.->|"code_ref"| src_Adapter_Module_CommandHandler_ResetModuleHandler_php
+    modules_VR002 -.->|"code_ref"| src_Core_Module_ModuleManager_php
+    modules_VR002 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Module_module_feature
+    modules_VR002 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Module_uninstall_module_feature
     modules_VR003 -.->|"code_ref"| src_Core_Domain_Module_Exception_ModuleAlreadyUpToDateException_php
+    modules_VR003 -.->|"code_ref"| src_Adapter_Module_CommandHandler_UpgradeModuleHandler_php
+    modules_VR003 -.->|"code_ref"| src_Adapter_Module_Module_php
+    modules_VR003 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Module_upgrade_module_feature
     modules_TR001 -.->|"code_ref"| src_Core_Domain_Module_Command_InstallModuleCommand_php
     modules_TR001 -.->|"code_ref"| src_Core_Domain_Module_Command_UpdateModuleStatusCommand_php
     modules_TR001 -.->|"code_ref"| src_Core_Domain_Module_Command_UninstallModuleCommand_php
-    orders_SR001 -.->|"code_ref"| src_Core_Domain_Order_OrderConstraints_php
+    modules_TR001 -.->|"code_ref"| src_Adapter_Module_CommandHandler_InstallModuleHandler_php
+    modules_TR001 -.->|"code_ref"| classes_module_Module_php
+    modules_TR001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Module_install_module_feature
     orders_SR001 -.->|"code_ref"| src_Core_Domain_Order_Exception_InvalidProductQuantityException_php
+    orders_SR001 -.->|"code_ref"| controllers_front_OrderController_php
+    orders_SR001 -.->|"code_ref"| src_Core_Domain_Order_Product_Command_AddProductToOrderCommand_php
+    orders_SR001 -.->|"code_ref"| src_Core_Domain_Order_Product_Command_UpdateProductInOrderCommand_php
     orders_SR002 -.->|"code_ref"| src_Core_Domain_Order_Invoice_Command_GenerateInvoiceCommand_php
-    orders_SR002 -.->|"code_ref"| src_Core_Domain_Order_Invoice_Exception_InvoiceException_php
+    orders_SR002 -.->|"code_ref"| src_Adapter_Order_CommandHandler_GenerateInvoiceHandler_php
+    orders_SR002 -.->|"code_ref"| classes_order_OrderHistory_php
+    orders_SR002 -.->|"code_ref"| install_dev_data_xml_order_state_xml
+    orders_SR002 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Order_order_documents_feature
     orders_SR003 -.->|"code_ref"| src_Adapter_OrderReturn_CommandHandler_DeleteProductFromOrderReturnHandler_php
     orders_SR003 -.->|"code_ref"| src_Adapter_OrderReturn_CommandHandler_BulkDeleteProductsFromOrderReturnHandler_php
     orders_SR003 -.->|"code_ref"| src_Core_Domain_OrderReturn_Exception_CannotDeleteLastProductFromOrderReturnException_php
+    orders_SR003 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_OrderReturn_order_return_management_feature
+    orders_SR004 -.->|"code_ref"| src_Adapter_Order_CommandHandler_DeleteProductFromOrderHandler_php
+    orders_SR004 -.->|"code_ref"| controllers_front_OrderController_php
     orders_CR001 -.->|"code_ref"| src_Core_Domain_Order_Command_UpdateOrderStatusCommand_php
-    orders_CR001 -.->|"code_ref"| src_Core_Domain_Order_Exception_InvalidOrderStateException_php
+    orders_CR001 -.->|"code_ref"| src_Adapter_Order_CommandHandler_UpdateOrderStatusHandler_php
+    orders_DR001 -.->|"code_ref"| classes_Carrier_php
+    orders_DR001 -.->|"code_ref"| controllers_admin_AdminCarriersController_php
+    orders_EQ001 -.->|"code_ref"| src_Core_Cart_Calculator_php
+    orders_EQ001 -.->|"code_ref"| src_Adapter_Order_OrderAmountUpdater_php
+    orders_VR001 -.->|"code_ref"| classes_checkout_CheckoutAddressesStep_php
+    orders_VR001 -.->|"code_ref"| controllers_front_OrderController_php
+    orders_VR001 -.->|"code_ref"| classes_Cart_php
     orders_VR002 -.->|"code_ref"| src_Core_Domain_Order_Payment_Command_AddPaymentCommand_php
     orders_VR002 -.->|"code_ref"| src_Core_Domain_Order_Exception_NegativePaymentAmountException_php
+    orders_VR002 -.->|"code_ref"| src_Adapter_Order_QueryHandler_GetOrderForViewingHandler_php
+    orders_VR002 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Order_order_add_payment_feature
     orders_VR003 -.->|"code_ref"| src_Core_Domain_Order_Command_IssueReturnProductCommand_php
     orders_VR003 -.->|"code_ref"| src_Core_Domain_Order_Exception_ReturnProductDisabledException_php
+    orders_VR003 -.->|"code_ref"| classes_order_Order_php
+    orders_VR003 -.->|"code_ref"| controllers_front_OrderFollowController_php
+    orders_VR003 -.->|"code_ref"| install_dev_data_xml_configuration_xml
+    orders_VR003 -.->|"code_ref"| PrestaShop_prestashop_specs_content_1_7_back_office_customer_service_merchandise_returns_merchandise_returns_listing_md
     orders_VR004 -.->|"code_ref"| src_Core_Domain_Order_Command_IssuePartialRefundCommand_php
-    orders_VR004 -.->|"code_ref"| src_Core_Domain_Order_Exception_InvalidRefundException_php
+    orders_VR004 -.->|"code_ref"| src_Core_Domain_Order_ValueObject_OrderDetailRefund_php
+    orders_VR004 -.->|"code_ref"| src_Adapter_Order_Refund_OrderRefundCalculator_php
+    orders_VR004 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Order_partial_refund_feature
     orders_TR001 -.->|"code_ref"| src_Adapter_Order_CommandHandler_UpdateOrderStatusHandler_php
     orders_TR001 -.->|"code_ref"| src_Core_Domain_Order_Exception_ChangeOrderStatusException_php
+    orders_TR001 -.->|"code_ref"| install_dev_data_xml_order_state_xml
     shipping_SR001 -.->|"code_ref"| src_Core_Domain_Carrier_Command_AddCarrierCommand_php
+    shipping_SR001 -.->|"code_ref"| src_Core_Domain_Carrier_Command_EditCarrierCommand_php
+    shipping_SR001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Carrier_carrier_management_feature
+    shipping_SR001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Carrier_Ranges_carrier_ranges_feature
     shipping_VR001 -.->|"code_ref"| src_Core_Domain_Carrier_Exception_CarrierConstraintException_php
+    shipping_VR001 -.->|"code_ref"| classes_Carrier_php
+    shipping_VR001 -.->|"code_ref"| classes_Validate_php
+    shipping_VR001 -.->|"code_ref"| src_Adapter_Carrier_Validate_CarrierValidator_php
     shipping_VR002 -.->|"code_ref"| src_Core_Domain_Carrier_ValueObject_ShippingMethod_php
+    shipping_VR002 -.->|"code_ref"| classes_Carrier_php
     shipping_VR003 -.->|"code_ref"| src_Core_Domain_Carrier_Exception_CarrierConstraintException_php
+    shipping_VR003 -.->|"code_ref"| src_Adapter_Carrier_Validate_CarrierValidator_php
+    shipping_VR003 -.->|"code_ref"| src_Adapter_Carrier_CommandHandler_EditCarrierHandler_php
+    shipping_VR003 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Carrier_carrier_management_feature
     shipping_VR004 -.->|"code_ref"| src_Core_Domain_Carrier_Exception_CarrierConstraintException_php
+    shipping_VR004 -.->|"code_ref"| src_Core_Domain_Carrier_ValueObject_CarrierRangeZone_php
+    shipping_VR004 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Carrier_Ranges_carrier_ranges_feature
     shipping_VR005 -.->|"code_ref"| src_Core_Domain_Carrier_Exception_CarrierConstraintException_php
+    shipping_VR005 -.->|"code_ref"| src_Core_Domain_Carrier_ValueObject_CarrierRangeZone_php
+    shipping_VR005 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Carrier_Ranges_carrier_ranges_feature
+    shipping_VR006 -.->|"code_ref"| src_Adapter_Shipment_CommandHandler_CreateShipmentHandler_php
+    shipping_VR006 -.->|"code_ref"| src_Adapter_Shipment_CommandHandler_EditShipmentHandler_php
+    shipping_VR006 -.->|"code_ref"| src_Adapter_Shipment_CommandHandler_SwitchShipmentCarrierHandler_php
+    shipping_VR006 -.->|"code_ref"| src_Adapter_Shipment_CommandHandler_AddProductToShipmentHandler_php
+    shipping_VR006 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Shipment_shipment_feature
+    shipping_VR007 -.->|"code_ref"| src_PrestaShopBundle_Form_Admin_Sell_Order_Shipment_ProductSplitType_php
+    shipping_VR007 -.->|"code_ref"| src_Adapter_Shipment_ShipmentSplitter_php
+    shipping_VR008 -.->|"code_ref"| src_Adapter_Shipment_CommandHandler_MergeProductsToShipmentHandler_php
+    shipping_VR008 -.->|"code_ref"| src_Adapter_Shipment_ShipmentMerger_php
+    shipping_VR008 -.->|"code_ref"| src_PrestaShopBundle_Controller_Admin_Sell_Order_OrderController_php
+    shipping_VR008 -.->|"code_ref"| src_Adapter_Shipment_QueryHandler_ListAvailableShipmentsForProductHandler_php
     shipping_VR009 -.->|"code_ref"| src_Core_Domain_Shipment_ValueObject_TrackingNumber_php
     shipping_VR009 -.->|"code_ref"| src_Core_Domain_Shipment_Exception_InvalidShipmentTrackingNumberException_php
+    shipping_VR009 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Shipment_shipment_feature
+    shipping_VR010 -.->|"code_ref"| src_Adapter_Carrier_Repository_CarrierRangeRepository_php
+    shipping_VR010 -.->|"code_ref"| classes_Delivery_php
+    shipping_VR010 -.->|"code_ref"| classes_Validate_php
     shipping_TR001 -.->|"code_ref"| src_Core_Domain_Shipment_Exception_CannotEditShipmentShippedException_php
+    shipping_TR001 -.->|"code_ref"| src_Adapter_Shipment_CommandHandler_FulfillShipmentCommandHandler_php
+    shipping_TR001 -.->|"code_ref"| src_Adapter_Shipment_CommandHandler_SplitShipmentHandler_php
+    shipping_TR001 -.->|"code_ref"| src_Adapter_Shipment_CommandHandler_MergeProductsToShipmentHandler_php
+    shop_VR001 -.->|"code_ref"| src_Core_Domain_Shop_DTO_ShopLogoSettings_php
+    shop_VR001 -.->|"code_ref"| src_Core_Domain_Shop_Command_UploadLogosCommand_php
+    shop_VR001 -.->|"code_ref"| tests_Unit_Core_Domain_Shop_Command_UploadLogosCommandTest_php
+    shop_VR002 -.->|"code_ref"| src_Core_Domain_Alias_Command_AddSearchTermAliasesCommand_php
+    shop_VR002 -.->|"code_ref"| src_Core_Domain_Alias_Command_UpdateSearchTermAliasesCommand_php
+    shop_VR002 -.->|"code_ref"| classes_Alias_php
+    shop_VR002 -.->|"code_ref"| src_Core_Domain_Alias_Exception_AliasConstraintException_php
+    shop_VR002 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Search_add_alias_feature
+    shop_VR003 -.->|"code_ref"| src_Core_Domain_ValueObject_Email_php
+    shop_VR003 -.->|"code_ref"| src_Core_Domain_Contact_Command_AddContactCommand_php
+    shop_VR003 -.->|"code_ref"| classes_Contact_php
+    shop_VR003 -.->|"code_ref"| classes_Validate_php
+    shop_VR003 -.->|"code_ref"| src_PrestaShopBundle_Form_Admin_Configure_ShopParameters_Contact_ContactType_php
+    shop_VR003 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Contact_contact_feature
+    shop_VR004 -.->|"code_ref"| src_Adapter_SearchEngine_CommandHandler_AddSearchEngineHandler_php
+    shop_VR004 -.->|"code_ref"| src_Adapter_SearchEngine_CommandHandler_EditSearchEngineHandler_php
+    shop_VR004 -.->|"code_ref"| classes_SearchEngine_php
+    admin_PRC001 -.->|"code_ref"| src_PrestaShopBundle_Controller_Admin_Configure_AdvancedParameters_EmployeeController_php
+    catalog_PRC001 -.->|"code_ref"| src_PrestaShopBundle_Controller_Admin_Sell_Catalog_Product_ProductController_php
     catalog_US003 -.->|"code_ref"| controllers_front_listing_SearchController_php
     catalog_US003 -.->|"code_ref"| classes_Search_php
     catalog_US009 -.->|"code_ref"| controllers_front_listing_CategoryController_php
     catalog_US010 -.->|"code_ref"| controllers_front_ProductController_php
+    checkout_PRC001 -.->|"code_ref"| controllers_front_CartController_php
+    checkout_PRC001 -.->|"code_ref"| src_PrestaShopBundle_Controller_Admin_Sell_Order_CartController_php
     checkout_US008 -.->|"code_ref"| controllers_front_CartController_php
     checkout_US009 -.->|"code_ref"| controllers_front_CartController_php
     checkout_US010 -.->|"code_ref"| controllers_front_OrderController_php
+    content_PRC001 -.->|"code_ref"| src_PrestaShopBundle_Controller_Admin_Improve_Design_CmsPageController_php
+    customers_PRC001 -.->|"code_ref"| src_PrestaShopBundle_Controller_Admin_Sell_Customer_CustomerController_php
+    customers_PRC001 -.->|"code_ref"| controllers_front_RegistrationController_php
     customers_US007 -.->|"code_ref"| controllers_front_RegistrationController_php
     customers_US008 -.->|"code_ref"| controllers_front_OrderConfirmationController_php
     customers_US009 -.->|"code_ref"| controllers_front_AddressController_php
+    modules_PRC001 -.->|"code_ref"| src_PrestaShopBundle_Controller_Admin_Improve_ModuleController_php
+    orders_PRC001 -.->|"code_ref"| src_PrestaShopBundle_Controller_Admin_Sell_Order_OrderController_php
+    orders_PRC001 -.->|"code_ref"| controllers_front_OrderController_php
+    orders_PRC001 -.->|"code_ref"| classes_PaymentModule_php
+    orders_PRC001 -.->|"code_ref"| classes_order_OrderDetail_php
+    orders_PRC002 -.->|"code_ref"| src_PrestaShopBundle_Controller_Admin_Sell_Order_OrderController_php
+    orders_PRC002 -.->|"code_ref"| src_Core_Form_IdentifiableObject_DataHandler_PartialRefundFormDataHandler_php
+    orders_PRC005 -.->|"code_ref"| src_PrestaShopBundle_Controller_Admin_Sell_Order_CreditSlipController_php
+    orders_PRC005 -.->|"code_ref"| controllers_front_OrderReturnController_php
+    orders_PRC006 -.->|"code_ref"| controllers_front_OrderFollowController_php
+    orders_PRC006 -.->|"code_ref"| install_dev_data_xml_hook_xml
     orders_US007 -.->|"code_ref"| controllers_front_HistoryController_php
     orders_US008 -.->|"code_ref"| controllers_front_OrderFollowController_php
     orders_US008 -.->|"code_ref"| classes_order_OrderReturn_php
+    shipping_PRC001 -.->|"code_ref"| src_PrestaShopBundle_Controller_Admin_Improve_Shipping_CarrierController_php
+    shop_PRC003 -.->|"code_ref"| controllers_front_OrderController_php
+    shop_PRC003 -.->|"code_ref"| classes_PaymentModule_php
     admin_TC001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Employee_employee_management_feature
     admin_TC001 -.->|"code_ref"| src_Adapter_Profile_Employee_CommandHandler_AddEmployeeHandler_php
     admin_TC002 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Profile_profile_permissions_feature
@@ -12171,6 +12941,12 @@ graph TD
     checkout_TC003 -.->|"code_ref"| src_Adapter_Discount_CommandHandler_AddDiscountHandler_php
     checkout_TC004 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_CatalogPriceRule_catalog_price_rules_listing_feature
     checkout_TC004 -.->|"code_ref"| classes_SpecificPrice_php
+    checkout_TC005 -.->|"code_ref"| controllers_front_CartController_php
+    checkout_TC005 -.->|"code_ref"| themes__core_js_cart_js
+    checkout_TC006 -.->|"code_ref"| controllers_front_CartController_php
+    checkout_TC006 -.->|"code_ref"| themes__core_js_cart_js
+    checkout_TC007 -.->|"code_ref"| themes__core_js_checkout_delivery_js
+    checkout_TC007 -.->|"code_ref"| controllers_front_OrderController_php
     checkout_EC001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Discount_FO_discount_validity_date_range_feature
     checkout_EC001 -.->|"code_ref"| src_Core_Domain_CartRule_Exception_CartRuleValidityException_php
     checkout_EC002 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Discount_FO_discount_with_usage_limits_feature
@@ -12181,6 +12957,8 @@ graph TD
     checkout_ER002 -.->|"code_ref"| src_Adapter_Discount_Validate_DiscountValidator_php
     checkout_ER003 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Discount_FO_discount_with_condition_minimum_amount_feature
     checkout_ER003 -.->|"code_ref"| src_Core_Domain_Discount_ValueObject_MinimumAmount_php
+    checkout_ER004 -.->|"code_ref"| controllers_front_CartController_php
+    checkout_ER004 -.->|"code_ref"| themes__core_js_cart_js
     content_TC001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_CmsPage_cms_page_management_feature
     content_TC002 -.->|"code_ref"| src_Adapter_CMS_PageCategory_CommandHandler_AddCmsPageCategoryHandler_php
     content_TC002 -.->|"code_ref"| tests_Unit_Core_Domain_CmsPageCategory_Command_AddCmsPageCategoryCommandTest_php
@@ -12254,6 +13032,9 @@ graph TD
     orders_TC003 -.->|"code_ref"| src_Adapter_Order_CommandHandler_GenerateInvoiceHandler_php
     orders_TC004 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Order_order_add_payment_feature
     orders_TC004 -.->|"code_ref"| src_Core_Domain_Order_Payment_Command_AddPaymentCommand_php
+    orders_TC005 -.->|"code_ref"| src_PrestaShopBundle_Controller_Admin_Sell_Order_OrderController_php
+    orders_TC006 -.->|"code_ref"| src_PrestaShopBundle_Controller_Admin_Sell_Order_OrderController_php
+    orders_TC007 -.->|"code_ref"| controllers_admin_AdminReturnController_php
     orders_EC001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Cart_Product_add_standard_product_feature
     orders_EC001 -.->|"code_ref"| classes_Cart_php
     orders_EC002 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Order_partial_refund_feature
@@ -12265,6 +13046,7 @@ graph TD
     orders_ER002 -.->|"code_ref"| src_Adapter_Order_CommandHandler_IssueReturnProductHandler_php
     orders_ER003 -.->|"code_ref"| src_Adapter_Order_CommandHandler_UpdateOrderStatusHandler_php
     orders_ER003 -.->|"code_ref"| src_Core_Domain_Order_Command_UpdateOrderStatusCommand_php
+    orders_ER004 -.->|"code_ref"| src_PrestaShopBundle_Controller_Admin_Sell_Order_OrderController_php
     shipping_TC001 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Carrier_carrier_management_feature
     shipping_TC002 -.->|"code_ref"| tests_Integration_Behaviour_Features_Scenario_Carrier_carrier_management_feature
     shipping_TC002 -.->|"code_ref"| src_Adapter_Carrier_CommandHandler_ToggleCarrierIsFreeHandler_php
@@ -12300,21 +13082,34 @@ graph TD
     DC001 -.->|"code_ref"| classes_order_OrderHistory_php
     DC001 -.->|"code_ref"| app_config_messenger_yml
     DC003 -.->|"code_ref"| src_Core_Domain_Order_Payment_
+    DC003 -.->|"code_ref"| classes_PaymentModule_php
+    DC003 -.->|"code_ref"| src_Core_Payment_PaymentOption_php
+    DC003 -.->|"code_ref"| PrestaShop_docs_modules_payment__index_md
     DC004 -.->|"code_ref"| src_Core_Domain_Cart_
+    DC004 -.->|"code_ref"| classes_Cart_php
+    DC004 -.->|"code_ref"| classes_controller_FrontController_php
+    DC004 -.->|"code_ref"| controllers_front_CartController_php
+    DC004 -.->|"code_ref"| classes_Context_php
     DC005 -.->|"code_ref"| src_Core_Domain_
-    DC005 -.->|"code_ref"| https___github_com_PrestaShop_docs_blob_9_x_development_architecture_domain__index_md
+    DC005 -.->|"code_ref"| PrestaShop_docs_development_architecture_domain__index_md
     DC006 -.->|"code_ref"| src_PrestaShopBundle_
-    DC006 -.->|"code_ref"| https___github_com_PrestaShop_docs_blob_9_x_development_architecture_migration_guide__index_md
+    DC006 -.->|"code_ref"| PrestaShop_docs_development_architecture_migration_guide__index_md
+    DC006 -.->|"code_ref"| PrestaShop_docs_development_architecture_migration_guide_strategy_md
     DC007 -.->|"code_ref"| src_Core_Domain_ApiClient_
-    DC007 -.->|"code_ref"| https___github_com_PrestaShop_docs_blob_9_x_admin_api__index_md
+    DC007 -.->|"code_ref"| PrestaShop_docs_admin_api__index_md
+    DC007 -.->|"code_ref"| install_dev_data_xml_feature_flag_xml
+    DC007 -.->|"code_ref"| PrestaShop_ps_apiresources_src_ApiPlatform_Resources
     DC009 -.->|"code_ref"| classes_webservice_WebserviceRequest_php
     DC009 -.->|"code_ref"| classes_webservice_WebserviceKey_php
     DC010 -.->|"code_ref"| install_dev_data_xml_hook_xml
     DC010 -.->|"code_ref"| classes_Hook_php
     DC010 -.->|"code_ref"| classes_ObjectModel_php
     DC010 -.->|"code_ref"| src_Adapter_Hook_HookDispatcher_php
+    BD001 -.->|"code_ref"| classes_order_OrderHistory_php
+    BD001 -.->|"code_ref"| app_config_messenger_yml
+    BD014 -.->|"code_ref"| classes_tax_TaxRulesTaxManager_php
     prestashop_IR005 -.->|"code_ref"| INSTALL_txt
-    prestashop_IR005 -.->|"code_ref"| https___github_com_PrestaShop_docs_blob_9_x_basics_installation_system_requirements_md
+    prestashop_IR005 -.->|"code_ref"| PrestaShop_docs_basics_installation_system_requirements_md
     prestashop_IR004 -.->|"code_ref"| _docker_Dockerfile
     prestashop_IR004 -.->|"code_ref"| _docker_install_database_sh
     prestashop_IR001 -.->|"code_ref"| app_config_parameters_yml_dist
@@ -12833,27 +13628,6 @@ graph TD
     international_QRY009 -.->|"handled_by"| International
     international_QRY011 -.->|"handled_by"| International
     international_QRY012 -.->|"handled_by"| International
-    modules_CMD003 -.->|"handled_by"| Modules
-    modules_CMD004 -.->|"handled_by"| Modules
-    modules_CMD005 -.->|"handled_by"| Modules
-    modules_CMD006 -.->|"handled_by"| Modules
-    modules_CMD007 -.->|"handled_by"| Modules
-    modules_CMD008 -.->|"handled_by"| Modules
-    modules_EVT001 -.->|"handled_by"| Modules
-    modules_EVT002 -.->|"handled_by"| Modules
-    modules_EVT003 -.->|"handled_by"| Modules
-    modules_EVT004 -.->|"handled_by"| Modules
-    modules_EVT005 -.->|"handled_by"| Modules
-    modules_EVT006 -.->|"handled_by"| Modules
-    modules_CMD009 -.->|"handled_by"| Modules
-    modules_EVT007 -.->|"handled_by"| Modules
-    modules_QRY002 -.->|"handled_by"| Modules
-    modules_QRY003 -.->|"handled_by"| Modules
-    modules_CMD012 -.->|"handled_by"| Modules
-    modules_CMD013 -.->|"handled_by"| Modules
-    modules_EVT008 -.->|"handled_by"| Modules
-    modules_EVT009 -.->|"handled_by"| Modules
-    modules_QRY004 -.->|"handled_by"| Modules
     orders_CMD017 -.->|"handled_by"| Orders
     orders_CMD018 -.->|"handled_by"| Orders
     orders_CMD019 -.->|"handled_by"| Orders
@@ -12896,7 +13670,6 @@ graph TD
     orders_CMD015 -.->|"handled_by"| Orders
     orders_CMD016 -.->|"handled_by"| Orders
     orders_EVT006 -.->|"handled_by"| Orders
-    orders_CMD023 -.->|"handled_by"| Orders
     orders_EVT010 -.->|"handled_by"| Orders
     orders_EVT011 -.->|"handled_by"| Orders
     orders_QRY004 -.->|"handled_by"| Orders
@@ -13006,6 +13779,11 @@ graph TD
     ExternalApiConsumers -.->|"contract_traffic"| Admin
     ExternalApiConsumers -.->|"contract_traffic"| Catalog
     ExternalApiConsumers -.->|"contract_traffic"| Orders
+    PlatformKernel -.->|"contract_traffic"| Catalog
+    PlatformKernel -.->|"contract_traffic"| Checkout
+    PlatformKernel -.->|"contract_traffic"| Content
+    PlatformKernel -.->|"contract_traffic"| Modules
+    PlatformKernel -.->|"contract_traffic"| Orders
     Admin -.->|"context_uses_concept"| admin_CN005
     Admin -.->|"context_uses_concept"| admin_CN006
     Admin -.->|"context_uses_concept"| admin_CN007
@@ -13063,13 +13841,14 @@ graph TD
     International -.->|"context_uses_concept"| international_CN009
     Modules -.->|"context_uses_concept"| modules_CN001
     Modules -.->|"context_uses_concept"| modules_CN002
+    Orders -.->|"context_uses_concept"| orders_CN011
     Orders -.->|"context_uses_concept"| orders_CN009
+    Orders -.->|"context_uses_concept"| orders_CN007
     Orders -.->|"context_uses_concept"| orders_CN005
     Orders -.->|"context_uses_concept"| orders_CN006
     Orders -.->|"context_uses_concept"| orders_CN002
     Orders -.->|"context_uses_concept"| orders_CN010
     Orders -.->|"context_uses_concept"| orders_CN003
-    Orders -.->|"context_uses_concept"| orders_CN007
     Orders -.->|"context_uses_concept"| orders_CN008
     Shipping -.->|"context_uses_concept"| shipping_CN001
     Shipping -.->|"context_uses_concept"| shipping_CN002
@@ -13087,13 +13866,758 @@ graph TD
     ExternalApiConsumers -.->|"context_uses_concept"| admin_CN005
     ExternalApiConsumers -.->|"context_uses_concept"| admin_CN006
     PlatformKernel -.->|"context_uses_concept"| modules_CN002
+    CAP013 -.->|"capability_operation"| content_CMD001
+    CAP013 -.->|"capability_operation"| content_CMD002
+    CAP013 -.->|"capability_operation"| content_CMD003
+    CAP013 -.->|"capability_operation"| content_CMD004
+    CAP013 -.->|"capability_operation"| content_CMD005
+    CAP013 -.->|"capability_operation"| content_CMD006
+    CAP013 -.->|"capability_operation"| content_CMD007
+    CAP013 -.->|"capability_operation"| content_CMD008
+    CAP013 -.->|"capability_operation"| content_CMD009
+    CAP013 -.->|"capability_operation"| content_CMD010
+    CAP013 -.->|"capability_operation"| content_CMD011
+    CAP013 -.->|"capability_operation"| content_CMD012
+    CAP013 -.->|"capability_operation"| content_EVT001
+    CAP013 -.->|"capability_operation"| content_EVT002
+    CAP013 -.->|"capability_operation"| content_EVT003
+    CAP013 -.->|"capability_operation"| content_EVT004
+    CAP013 -.->|"capability_operation"| content_EVT005
+    CAP013 -.->|"capability_operation"| content_EVT006
+    CAP013 -.->|"capability_operation"| content_EVT007
+    CAP013 -.->|"capability_operation"| content_EVT008
+    CAP013 -.->|"capability_operation"| content_QRY001
+    CAP013 -.->|"capability_operation"| content_QRY002
+    CAP013 -.->|"capability_operation"| content_QRY003
+    CAP013 -.->|"capability_operation"| content_QRY004
+    CAP013 -.->|"capability_operation"| content_QRY005
+    CAP013 -.->|"capability_operation"| content_QRY006
+    CAP013 -.->|"capability_operation"| content_CMD019
+    CAP013 -.->|"capability_operation"| content_EVT015
+    CAP013 -.->|"capability_operation"| content_EVT016
+    CAP013 -.->|"capability_operation"| content_QRY007
+    CAP013 -.->|"capability_operation"| content_QRY008
+    CAP013 -.->|"capability_operation"| content_CMD013
+    CAP013 -.->|"capability_operation"| content_CMD014
+    CAP013 -.->|"capability_operation"| content_CMD015
+    CAP013 -.->|"capability_operation"| content_CMD016
+    CAP013 -.->|"capability_operation"| content_CMD021
+    CAP013 -.->|"capability_operation"| content_EVT009
+    CAP013 -.->|"capability_operation"| content_EVT010
+    CAP013 -.->|"capability_operation"| content_EVT011
+    CAP013 -.->|"capability_operation"| content_EVT012
+    CAP013 -.->|"capability_operation"| content_EVT013
+    CAP014 -.->|"capability_operation"| modules_CMD001
+    CAP014 -.->|"capability_operation"| modules_CMD002
+    CAP014 -.->|"capability_operation"| modules_CMD003
+    CAP014 -.->|"capability_operation"| modules_CMD004
+    CAP014 -.->|"capability_operation"| modules_CMD005
+    CAP014 -.->|"capability_operation"| modules_CMD006
+    CAP014 -.->|"capability_operation"| modules_CMD007
+    CAP014 -.->|"capability_operation"| modules_CMD008
+    CAP014 -.->|"capability_operation"| modules_CMD009
+    CAP014 -.->|"capability_operation"| modules_CMD010
+    CAP014 -.->|"capability_operation"| modules_CMD011
+    CAP014 -.->|"capability_operation"| modules_CMD012
+    CAP014 -.->|"capability_operation"| modules_CMD013
+    CAP014 -.->|"capability_operation"| modules_EVT001
+    CAP014 -.->|"capability_operation"| modules_EVT002
+    CAP014 -.->|"capability_operation"| modules_EVT003
+    CAP014 -.->|"capability_operation"| modules_EVT004
+    CAP014 -.->|"capability_operation"| modules_EVT005
+    CAP014 -.->|"capability_operation"| modules_EVT006
+    CAP014 -.->|"capability_operation"| modules_EVT007
+    CAP014 -.->|"capability_operation"| modules_EVT008
+    CAP014 -.->|"capability_operation"| modules_EVT009
+    CAP014 -.->|"capability_operation"| modules_QRY001
+    CAP014 -.->|"capability_operation"| modules_QRY002
+    CAP014 -.->|"capability_operation"| modules_QRY003
+    CAP014 -.->|"capability_operation"| modules_QRY004
+    CAP015 -.->|"capability_operation"| admin_CMD001
+    CAP015 -.->|"capability_operation"| admin_CMD002
+    CAP015 -.->|"capability_operation"| admin_CMD003
+    CAP015 -.->|"capability_operation"| admin_CMD004
+    CAP015 -.->|"capability_operation"| admin_CMD005
+    CAP015 -.->|"capability_operation"| admin_CMD006
+    CAP015 -.->|"capability_operation"| admin_CMD008
+    CAP015 -.->|"capability_operation"| admin_CMD009
+    CAP015 -.->|"capability_operation"| admin_CMD010
+    CAP015 -.->|"capability_operation"| admin_CMD011
+    CAP015 -.->|"capability_operation"| admin_CMD012
+    CAP015 -.->|"capability_operation"| admin_CMD013
+    CAP015 -.->|"capability_operation"| admin_CMD014
+    CAP015 -.->|"capability_operation"| admin_CMD015
+    CAP015 -.->|"capability_operation"| admin_CMD016
+    CAP015 -.->|"capability_operation"| admin_CMD017
+    CAP015 -.->|"capability_operation"| admin_CMD018
+    CAP015 -.->|"capability_operation"| admin_CMD019
+    CAP015 -.->|"capability_operation"| admin_CMD020
+    CAP015 -.->|"capability_operation"| admin_EVT001
+    CAP015 -.->|"capability_operation"| admin_EVT002
+    CAP015 -.->|"capability_operation"| admin_EVT003
+    CAP015 -.->|"capability_operation"| admin_EVT004
+    CAP015 -.->|"capability_operation"| admin_EVT005
+    CAP015 -.->|"capability_operation"| admin_EVT006
+    CAP015 -.->|"capability_operation"| admin_EVT007
+    CAP015 -.->|"capability_operation"| admin_EVT008
+    CAP015 -.->|"capability_operation"| admin_EVT009
+    CAP015 -.->|"capability_operation"| admin_EVT010
+    CAP015 -.->|"capability_operation"| admin_EVT011
+    CAP015 -.->|"capability_operation"| admin_EVT012
+    CAP015 -.->|"capability_operation"| admin_EVT013
+    CAP015 -.->|"capability_operation"| admin_QRY001
+    CAP015 -.->|"capability_operation"| admin_QRY002
+    CAP015 -.->|"capability_operation"| admin_QRY003
+    CAP015 -.->|"capability_operation"| admin_QRY004
+    CAP016 -.->|"capability_operation"| admin_CMD021
+    CAP016 -.->|"capability_operation"| admin_CMD022
+    CAP016 -.->|"capability_operation"| admin_CMD023
+    CAP016 -.->|"capability_operation"| admin_CMD024
+    CAP016 -.->|"capability_operation"| admin_CMD025
+    CAP016 -.->|"capability_operation"| admin_CMD026
+    CAP016 -.->|"capability_operation"| admin_CMD027
+    CAP016 -.->|"capability_operation"| admin_CMD028
+    CAP016 -.->|"capability_operation"| admin_EVT014
+    CAP016 -.->|"capability_operation"| admin_EVT015
+    CAP016 -.->|"capability_operation"| admin_EVT016
+    CAP016 -.->|"capability_operation"| admin_EVT017
+    CAP016 -.->|"capability_operation"| admin_EVT018
+    CAP016 -.->|"capability_operation"| admin_EVT019
+    CAP016 -.->|"capability_operation"| admin_EVT020
+    CAP016 -.->|"capability_operation"| admin_QRY005
+    CAP016 -.->|"capability_operation"| admin_QRY006
+    CAP017 -.->|"capability_operation"| catalog_CMD204
+    CAP017 -.->|"capability_operation"| catalog_QRY209
+    CAP017 -.->|"capability_operation"| catalog_CMD106
+    CAP017 -.->|"capability_operation"| shop_CMD001
+    CAP017 -.->|"capability_operation"| shop_QRY001
+    CAP017 -.->|"capability_operation"| shop_QRY002
+    CAP103 -.->|"capability_operation"| admin_CMD029
+    CAP103 -.->|"capability_operation"| admin_CMD030
+    CAP103 -.->|"capability_operation"| admin_CMD031
+    CAP103 -.->|"capability_operation"| admin_CMD032
+    CAP103 -.->|"capability_operation"| admin_CMD033
+    CAP103 -.->|"capability_operation"| admin_CMD034
+    CAP103 -.->|"capability_operation"| admin_CMD035
+    CAP103 -.->|"capability_operation"| admin_CMD036
+    CAP103 -.->|"capability_operation"| admin_CMD037
+    CAP103 -.->|"capability_operation"| admin_CMD038
+    CAP103 -.->|"capability_operation"| admin_CMD039
+    CAP103 -.->|"capability_operation"| admin_CMD040
+    CAP103 -.->|"capability_operation"| admin_CMD041
+    CAP103 -.->|"capability_operation"| admin_CMD042
+    CAP103 -.->|"capability_operation"| admin_CMD043
+    CAP103 -.->|"capability_operation"| admin_CMD044
+    CAP103 -.->|"capability_operation"| admin_CMD045
+    CAP103 -.->|"capability_operation"| admin_EVT021
+    CAP103 -.->|"capability_operation"| admin_EVT022
+    CAP103 -.->|"capability_operation"| admin_EVT023
+    CAP103 -.->|"capability_operation"| admin_EVT024
+    CAP103 -.->|"capability_operation"| admin_EVT025
+    CAP103 -.->|"capability_operation"| admin_EVT026
+    CAP103 -.->|"capability_operation"| admin_EVT027
+    CAP103 -.->|"capability_operation"| admin_EVT028
+    CAP103 -.->|"capability_operation"| admin_EVT029
+    CAP103 -.->|"capability_operation"| admin_EVT030
+    CAP103 -.->|"capability_operation"| admin_EVT031
+    CAP103 -.->|"capability_operation"| admin_EVT032
+    CAP103 -.->|"capability_operation"| admin_EVT033
+    CAP103 -.->|"capability_operation"| admin_QRY007
+    CAP103 -.->|"capability_operation"| admin_QRY008
+    CAP103 -.->|"capability_operation"| admin_QRY009
+    CAP103 -.->|"capability_operation"| admin_QRY010
+    CAP103 -.->|"capability_operation"| admin_QRY011
+    CAP103 -.->|"capability_operation"| admin_QRY012
+    CAP103 -.->|"capability_operation"| admin_QRY013
+    CAP103 -.->|"capability_operation"| admin_QRY014
+    CAP103 -.->|"capability_operation"| admin_QRY015
+    CAP005 -.->|"capability_operation"| catalog_CMD025
+    CAP005 -.->|"capability_operation"| catalog_CMD026
+    CAP005 -.->|"capability_operation"| catalog_CMD027
+    CAP005 -.->|"capability_operation"| catalog_CMD028
+    CAP005 -.->|"capability_operation"| catalog_CMD029
+    CAP005 -.->|"capability_operation"| catalog_CMD300
+    CAP005 -.->|"capability_operation"| catalog_CMD301
+    CAP005 -.->|"capability_operation"| catalog_CMD302
+    CAP005 -.->|"capability_operation"| catalog_CMD303
+    CAP005 -.->|"capability_operation"| catalog_CMD304
+    CAP005 -.->|"capability_operation"| catalog_CMD305
+    CAP005 -.->|"capability_operation"| catalog_EVT009
+    CAP005 -.->|"capability_operation"| catalog_EVT010
+    CAP005 -.->|"capability_operation"| catalog_EVT300
+    CAP005 -.->|"capability_operation"| catalog_QRY300
+    CAP005 -.->|"capability_operation"| catalog_QRY301
+    CAP005 -.->|"capability_operation"| catalog_CMD040
+    CAP005 -.->|"capability_operation"| catalog_CMD041
+    CAP005 -.->|"capability_operation"| catalog_CMD417
+    CAP005 -.->|"capability_operation"| catalog_CMD418
+    CAP005 -.->|"capability_operation"| catalog_CMD419
+    CAP005 -.->|"capability_operation"| catalog_CMD420
+    CAP005 -.->|"capability_operation"| catalog_CMD421
+    CAP005 -.->|"capability_operation"| catalog_EVT412
+    CAP005 -.->|"capability_operation"| catalog_QRY409
+    CAP005 -.->|"capability_operation"| catalog_QRY410
+    CAP005 -.->|"capability_operation"| catalog_CMD016
+    CAP005 -.->|"capability_operation"| catalog_CMD017
+    CAP005 -.->|"capability_operation"| catalog_CMD018
+    CAP005 -.->|"capability_operation"| catalog_CMD019
+    CAP005 -.->|"capability_operation"| catalog_CMD020
+    CAP005 -.->|"capability_operation"| catalog_CMD205
+    CAP005 -.->|"capability_operation"| catalog_CMD206
+    CAP005 -.->|"capability_operation"| catalog_EVT006
+    CAP005 -.->|"capability_operation"| catalog_EVT201
+    CAP005 -.->|"capability_operation"| catalog_QRY207
+    CAP005 -.->|"capability_operation"| catalog_QRY208
+    CAP005 -.->|"capability_operation"| catalog_CMD001
+    CAP005 -.->|"capability_operation"| catalog_CMD002
+    CAP005 -.->|"capability_operation"| catalog_CMD003
+    CAP005 -.->|"capability_operation"| catalog_CMD004
+    CAP005 -.->|"capability_operation"| catalog_CMD005
+    CAP005 -.->|"capability_operation"| catalog_CMD006
+    CAP005 -.->|"capability_operation"| catalog_CMD007
+    CAP005 -.->|"capability_operation"| catalog_CMD008
+    CAP005 -.->|"capability_operation"| catalog_CMD009
+    CAP005 -.->|"capability_operation"| catalog_CMD010
+    CAP005 -.->|"capability_operation"| catalog_CMD100
+    CAP005 -.->|"capability_operation"| catalog_CMD101
+    CAP005 -.->|"capability_operation"| catalog_CMD102
+    CAP005 -.->|"capability_operation"| catalog_CMD103
+    CAP005 -.->|"capability_operation"| catalog_CMD104
+    CAP005 -.->|"capability_operation"| catalog_CMD105
+    CAP005 -.->|"capability_operation"| catalog_CMD107
+    CAP005 -.->|"capability_operation"| catalog_EVT001
+    CAP005 -.->|"capability_operation"| catalog_EVT002
+    CAP005 -.->|"capability_operation"| catalog_EVT003
+    CAP005 -.->|"capability_operation"| catalog_EVT008
+    CAP005 -.->|"capability_operation"| catalog_EVT100
+    CAP005 -.->|"capability_operation"| catalog_EVT101
+    CAP005 -.->|"capability_operation"| catalog_QRY001
+    CAP005 -.->|"capability_operation"| catalog_QRY002
+    CAP005 -.->|"capability_operation"| catalog_QRY100
+    CAP005 -.->|"capability_operation"| catalog_QRY103
+    CAP005 -.->|"capability_operation"| catalog_CMD409
+    CAP005 -.->|"capability_operation"| catalog_CMD410
+    CAP005 -.->|"capability_operation"| catalog_CMD411
+    CAP005 -.->|"capability_operation"| catalog_CMD412
+    CAP005 -.->|"capability_operation"| catalog_CMD413
+    CAP005 -.->|"capability_operation"| catalog_CMD414
+    CAP005 -.->|"capability_operation"| catalog_CMD415
+    CAP005 -.->|"capability_operation"| catalog_CMD416
+    CAP005 -.->|"capability_operation"| catalog_EVT406
+    CAP005 -.->|"capability_operation"| catalog_EVT407
+    CAP005 -.->|"capability_operation"| catalog_EVT408
+    CAP005 -.->|"capability_operation"| catalog_EVT409
+    CAP005 -.->|"capability_operation"| catalog_EVT410
+    CAP005 -.->|"capability_operation"| catalog_EVT411
+    CAP005 -.->|"capability_operation"| catalog_QRY404
+    CAP005 -.->|"capability_operation"| catalog_QRY405
+    CAP005 -.->|"capability_operation"| catalog_QRY406
+    CAP005 -.->|"capability_operation"| catalog_QRY407
+    CAP005 -.->|"capability_operation"| catalog_QRY408
+    CAP010 -.->|"capability_operation"| shipping_CMD001
+    CAP010 -.->|"capability_operation"| shipping_CMD002
+    CAP010 -.->|"capability_operation"| shipping_CMD003
+    CAP010 -.->|"capability_operation"| shipping_CMD004
+    CAP010 -.->|"capability_operation"| shipping_CMD005
+    CAP010 -.->|"capability_operation"| shipping_CMD006
+    CAP010 -.->|"capability_operation"| shipping_CMD007
+    CAP010 -.->|"capability_operation"| shipping_CMD008
+    CAP010 -.->|"capability_operation"| shipping_CMD009
+    CAP010 -.->|"capability_operation"| shipping_CMD010
+    CAP010 -.->|"capability_operation"| shipping_EVT001
+    CAP010 -.->|"capability_operation"| shipping_EVT002
+    CAP010 -.->|"capability_operation"| shipping_EVT003
+    CAP010 -.->|"capability_operation"| shipping_EVT004
+    CAP010 -.->|"capability_operation"| shipping_EVT005
+    CAP010 -.->|"capability_operation"| shipping_EVT006
+    CAP010 -.->|"capability_operation"| shipping_EVT007
+    CAP010 -.->|"capability_operation"| shipping_EVT008
+    CAP010 -.->|"capability_operation"| shipping_QRY001
+    CAP010 -.->|"capability_operation"| shipping_QRY002
+    CAP010 -.->|"capability_operation"| shipping_QRY003
+    CAP010 -.->|"capability_operation"| shipping_QRY004
+    CAP010 -.->|"capability_operation"| shipping_CMD011
+    CAP010 -.->|"capability_operation"| shipping_CMD012
+    CAP010 -.->|"capability_operation"| shipping_CMD013
+    CAP010 -.->|"capability_operation"| shipping_CMD014
+    CAP010 -.->|"capability_operation"| shipping_CMD015
+    CAP010 -.->|"capability_operation"| shipping_CMD016
+    CAP010 -.->|"capability_operation"| shipping_CMD017
+    CAP010 -.->|"capability_operation"| shipping_CMD018
+    CAP010 -.->|"capability_operation"| shipping_EVT009
+    CAP010 -.->|"capability_operation"| shipping_EVT010
+    CAP010 -.->|"capability_operation"| shipping_EVT011
+    CAP010 -.->|"capability_operation"| shipping_EVT012
+    CAP010 -.->|"capability_operation"| shipping_EVT013
+    CAP010 -.->|"capability_operation"| shipping_EVT014
+    CAP010 -.->|"capability_operation"| shipping_EVT015
+    CAP010 -.->|"capability_operation"| shipping_QRY005
+    CAP010 -.->|"capability_operation"| shipping_QRY006
+    CAP010 -.->|"capability_operation"| shipping_QRY007
+    CAP010 -.->|"capability_operation"| shipping_QRY008
+    CAP010 -.->|"capability_operation"| shipping_QRY009
+    CAP010 -.->|"capability_operation"| shipping_QRY010
+    CAP010 -.->|"capability_operation"| shipping_QRY011
+    CAP011 -.->|"capability_operation"| international_CMD001
+    CAP011 -.->|"capability_operation"| international_CMD002
+    CAP011 -.->|"capability_operation"| international_CMD003
+    CAP011 -.->|"capability_operation"| international_CMD004
+    CAP011 -.->|"capability_operation"| international_CMD005
+    CAP011 -.->|"capability_operation"| international_CMD006
+    CAP011 -.->|"capability_operation"| international_DOC001
+    CAP011 -.->|"capability_operation"| international_EVT001
+    CAP011 -.->|"capability_operation"| international_EVT002
+    CAP011 -.->|"capability_operation"| international_EVT003
+    CAP011 -.->|"capability_operation"| international_EVT004
+    CAP011 -.->|"capability_operation"| international_EVT005
+    CAP011 -.->|"capability_operation"| international_EVT006
+    CAP011 -.->|"capability_operation"| international_QRY001
+    CAP011 -.->|"capability_operation"| international_QRY002
+    CAP011 -.->|"capability_operation"| international_QRY003
+    CAP011 -.->|"capability_operation"| international_CMD023
+    CAP011 -.->|"capability_operation"| international_CMD024
+    CAP011 -.->|"capability_operation"| international_CMD025
+    CAP011 -.->|"capability_operation"| international_CMD026
+    CAP011 -.->|"capability_operation"| international_CMD027
+    CAP011 -.->|"capability_operation"| international_CMD028
+    CAP011 -.->|"capability_operation"| international_CMD029
+    CAP011 -.->|"capability_operation"| international_CMD030
+    CAP011 -.->|"capability_operation"| international_CMD034
+    CAP011 -.->|"capability_operation"| international_CMD035
+    CAP011 -.->|"capability_operation"| international_CMD036
+    CAP011 -.->|"capability_operation"| international_CMD037
+    CAP011 -.->|"capability_operation"| international_CMD040
+    CAP011 -.->|"capability_operation"| international_CMD041
+    CAP011 -.->|"capability_operation"| international_CMD042
+    CAP011 -.->|"capability_operation"| international_CMD043
+    CAP011 -.->|"capability_operation"| international_EVT023
+    CAP011 -.->|"capability_operation"| international_EVT024
+    CAP011 -.->|"capability_operation"| international_EVT025
+    CAP011 -.->|"capability_operation"| international_EVT026
+    CAP011 -.->|"capability_operation"| international_EVT027
+    CAP011 -.->|"capability_operation"| international_EVT028
+    CAP011 -.->|"capability_operation"| international_EVT029
+    CAP011 -.->|"capability_operation"| international_EVT030
+    CAP011 -.->|"capability_operation"| international_EVT033
+    CAP011 -.->|"capability_operation"| international_EVT034
+    CAP011 -.->|"capability_operation"| international_EVT035
+    CAP011 -.->|"capability_operation"| international_QRY009
+    CAP011 -.->|"capability_operation"| international_QRY010
+    CAP011 -.->|"capability_operation"| international_QRY011
+    CAP011 -.->|"capability_operation"| international_QRY012
+    CAP012 -.->|"capability_operation"| content_CMD017
+    CAP012 -.->|"capability_operation"| international_CMD011
+    CAP012 -.->|"capability_operation"| international_CMD012
+    CAP012 -.->|"capability_operation"| international_CMD013
+    CAP012 -.->|"capability_operation"| international_CMD014
+    CAP012 -.->|"capability_operation"| international_CMD015
+    CAP012 -.->|"capability_operation"| international_CMD016
+    CAP012 -.->|"capability_operation"| international_CMD017
+    CAP012 -.->|"capability_operation"| international_CMD018
+    CAP012 -.->|"capability_operation"| international_CMD019
+    CAP012 -.->|"capability_operation"| international_CMD020
+    CAP012 -.->|"capability_operation"| international_CMD021
+    CAP012 -.->|"capability_operation"| international_CMD022
+    CAP012 -.->|"capability_operation"| international_CMD031
+    CAP012 -.->|"capability_operation"| international_CMD032
+    CAP012 -.->|"capability_operation"| international_CMD033
+    CAP012 -.->|"capability_operation"| international_CMD038
+    CAP012 -.->|"capability_operation"| international_CMD039
+    CAP012 -.->|"capability_operation"| international_EVT011
+    CAP012 -.->|"capability_operation"| international_EVT012
+    CAP012 -.->|"capability_operation"| international_EVT013
+    CAP012 -.->|"capability_operation"| international_EVT014
+    CAP012 -.->|"capability_operation"| international_EVT015
+    CAP012 -.->|"capability_operation"| international_EVT016
+    CAP012 -.->|"capability_operation"| international_EVT017
+    CAP012 -.->|"capability_operation"| international_EVT018
+    CAP012 -.->|"capability_operation"| international_EVT019
+    CAP012 -.->|"capability_operation"| international_EVT020
+    CAP012 -.->|"capability_operation"| international_EVT021
+    CAP012 -.->|"capability_operation"| international_EVT022
+    CAP012 -.->|"capability_operation"| international_EVT031
+    CAP012 -.->|"capability_operation"| international_EVT032
+    CAP012 -.->|"capability_operation"| international_QRY005
+    CAP012 -.->|"capability_operation"| international_QRY006
+    CAP012 -.->|"capability_operation"| international_QRY007
+    CAP012 -.->|"capability_operation"| international_QRY008
+    CAP012 -.->|"capability_operation"| international_CMD007
+    CAP012 -.->|"capability_operation"| international_CMD008
+    CAP012 -.->|"capability_operation"| international_CMD009
+    CAP012 -.->|"capability_operation"| international_CMD010
+    CAP012 -.->|"capability_operation"| international_EVT007
+    CAP012 -.->|"capability_operation"| international_EVT008
+    CAP012 -.->|"capability_operation"| international_EVT009
+    CAP012 -.->|"capability_operation"| international_EVT010
+    CAP012 -.->|"capability_operation"| international_QRY004
+    CAP100 -.->|"capability_operation"| catalog_CMD021
+    CAP100 -.->|"capability_operation"| catalog_CMD022
+    CAP100 -.->|"capability_operation"| catalog_CMD023
+    CAP100 -.->|"capability_operation"| catalog_CMD203
+    CAP100 -.->|"capability_operation"| catalog_EVT007
+    CAP100 -.->|"capability_operation"| catalog_QRY205
+    CAP100 -.->|"capability_operation"| catalog_QRY206
+    CAP100 -.->|"capability_operation"| checkout_CMD014
+    CAP100 -.->|"capability_operation"| checkout_QRY004
+    CAP100 -.->|"capability_operation"| checkout_CMD016
+    CAP100 -.->|"capability_operation"| checkout_CMD017
+    CAP100 -.->|"capability_operation"| checkout_CMD018
+    CAP100 -.->|"capability_operation"| checkout_CMD019
+    CAP100 -.->|"capability_operation"| checkout_CMD020
+    CAP100 -.->|"capability_operation"| checkout_EVT007
+    CAP100 -.->|"capability_operation"| checkout_EVT008
+    CAP100 -.->|"capability_operation"| checkout_EVT009
+    CAP100 -.->|"capability_operation"| checkout_QRY005
+    CAP100 -.->|"capability_operation"| checkout_QRY006
+    CAP100 -.->|"capability_operation"| checkout_CMD021
+    CAP100 -.->|"capability_operation"| checkout_CMD022
+    CAP100 -.->|"capability_operation"| checkout_CMD023
+    CAP100 -.->|"capability_operation"| checkout_EVT010
+    CAP100 -.->|"capability_operation"| checkout_EVT011
+    CAP100 -.->|"capability_operation"| checkout_EVT012
+    CAP100 -.->|"capability_operation"| checkout_QRY007
+    CAP100 -.->|"capability_operation"| checkout_QRY008
+    CAP100 -.->|"capability_operation"| orders_CMD010
+    CAP100 -.->|"capability_operation"| orders_CMD011
+    CAP101 -.->|"capability_operation"| catalog_CMD015
+    CAP101 -.->|"capability_operation"| catalog_QRY201
+    CAP101 -.->|"capability_operation"| catalog_CMD110
+    CAP101 -.->|"capability_operation"| catalog_CMD111
+    CAP101 -.->|"capability_operation"| catalog_CMD112
+    CAP101 -.->|"capability_operation"| catalog_CMD113
+    CAP101 -.->|"capability_operation"| catalog_QRY107
+    CAP101 -.->|"capability_operation"| catalog_QRY108
+    CAP101 -.->|"capability_operation"| catalog_QRY109
+    CAP101 -.->|"capability_operation"| catalog_CMD034
+    CAP101 -.->|"capability_operation"| catalog_CMD035
+    CAP101 -.->|"capability_operation"| catalog_CMD036
+    CAP101 -.->|"capability_operation"| catalog_CMD037
+    CAP101 -.->|"capability_operation"| catalog_CMD038
+    CAP101 -.->|"capability_operation"| catalog_CMD039
+    CAP101 -.->|"capability_operation"| catalog_CMD400
+    CAP101 -.->|"capability_operation"| catalog_CMD401
+    CAP101 -.->|"capability_operation"| catalog_CMD402
+    CAP101 -.->|"capability_operation"| catalog_CMD403
+    CAP101 -.->|"capability_operation"| catalog_CMD404
+    CAP101 -.->|"capability_operation"| catalog_CMD405
+    CAP101 -.->|"capability_operation"| catalog_CMD406
+    CAP101 -.->|"capability_operation"| catalog_CMD407
+    CAP101 -.->|"capability_operation"| catalog_CMD408
+    CAP101 -.->|"capability_operation"| catalog_EVT400
+    CAP101 -.->|"capability_operation"| catalog_EVT401
+    CAP101 -.->|"capability_operation"| catalog_EVT402
+    CAP101 -.->|"capability_operation"| catalog_EVT403
+    CAP101 -.->|"capability_operation"| catalog_EVT404
+    CAP101 -.->|"capability_operation"| catalog_EVT405
+    CAP101 -.->|"capability_operation"| catalog_QRY010
+    CAP101 -.->|"capability_operation"| catalog_QRY011
+    CAP101 -.->|"capability_operation"| catalog_QRY400
+    CAP101 -.->|"capability_operation"| catalog_QRY401
+    CAP101 -.->|"capability_operation"| catalog_QRY402
+    CAP101 -.->|"capability_operation"| catalog_QRY403
+    CAP102 -.->|"capability_operation"| catalog_CMD030
+    CAP102 -.->|"capability_operation"| catalog_CMD031
+    CAP102 -.->|"capability_operation"| catalog_CMD032
+    CAP102 -.->|"capability_operation"| catalog_CMD033
+    CAP102 -.->|"capability_operation"| catalog_CMD306
+    CAP102 -.->|"capability_operation"| catalog_CMD307
+    CAP102 -.->|"capability_operation"| catalog_CMD308
+    CAP102 -.->|"capability_operation"| catalog_CMD309
+    CAP102 -.->|"capability_operation"| catalog_CMD310
+    CAP102 -.->|"capability_operation"| catalog_CMD311
+    CAP102 -.->|"capability_operation"| catalog_CMD312
+    CAP102 -.->|"capability_operation"| catalog_CMD313
+    CAP102 -.->|"capability_operation"| catalog_CMD314
+    CAP102 -.->|"capability_operation"| catalog_CMD315
+    CAP102 -.->|"capability_operation"| catalog_CMD316
+    CAP102 -.->|"capability_operation"| catalog_CMD317
+    CAP102 -.->|"capability_operation"| catalog_CMD318
+    CAP102 -.->|"capability_operation"| catalog_EVT301
+    CAP102 -.->|"capability_operation"| catalog_EVT302
+    CAP102 -.->|"capability_operation"| catalog_EVT303
+    CAP102 -.->|"capability_operation"| catalog_EVT304
+    CAP102 -.->|"capability_operation"| catalog_EVT305
+    CAP102 -.->|"capability_operation"| catalog_EVT306
+    CAP102 -.->|"capability_operation"| catalog_EVT307
+    CAP102 -.->|"capability_operation"| catalog_EVT308
+    CAP102 -.->|"capability_operation"| catalog_QRY007
+    CAP102 -.->|"capability_operation"| catalog_QRY008
+    CAP102 -.->|"capability_operation"| catalog_QRY302
+    CAP102 -.->|"capability_operation"| catalog_QRY303
+    CAP102 -.->|"capability_operation"| catalog_QRY304
+    CAP102 -.->|"capability_operation"| catalog_QRY305
+    CAP102 -.->|"capability_operation"| catalog_CMD011
+    CAP102 -.->|"capability_operation"| catalog_CMD012
+    CAP102 -.->|"capability_operation"| catalog_CMD013
+    CAP102 -.->|"capability_operation"| catalog_CMD014
+    CAP102 -.->|"capability_operation"| catalog_CMD201
+    CAP102 -.->|"capability_operation"| catalog_CMD202
+    CAP102 -.->|"capability_operation"| catalog_EVT004
+    CAP102 -.->|"capability_operation"| catalog_EVT005
+    CAP102 -.->|"capability_operation"| catalog_EVT200
+    CAP102 -.->|"capability_operation"| catalog_QRY003
+    CAP102 -.->|"capability_operation"| catalog_QRY004
+    CAP102 -.->|"capability_operation"| catalog_QRY200
+    CAP102 -.->|"capability_operation"| catalog_QRY202
+    CAP102 -.->|"capability_operation"| catalog_QRY203
+    CAP102 -.->|"capability_operation"| catalog_QRY204
+    CAP102 -.->|"capability_operation"| catalog_CMD108
+    CAP102 -.->|"capability_operation"| catalog_CMD109
+    CAP102 -.->|"capability_operation"| catalog_QRY104
+    CAP102 -.->|"capability_operation"| catalog_QRY105
+    CAP102 -.->|"capability_operation"| catalog_QRY106
+    CAP001 -.->|"capability_operation"| orders_CMD017
+    CAP001 -.->|"capability_operation"| orders_CMD018
+    CAP001 -.->|"capability_operation"| orders_CMD019
+    CAP001 -.->|"capability_operation"| orders_EVT007
+    CAP001 -.->|"capability_operation"| orders_EVT008
+    CAP001 -.->|"capability_operation"| orders_CMD024
+    CAP001 -.->|"capability_operation"| orders_CMD025
+    CAP001 -.->|"capability_operation"| orders_CMD026
+    CAP001 -.->|"capability_operation"| orders_CMD027
+    CAP001 -.->|"capability_operation"| orders_CMD032
+    CAP001 -.->|"capability_operation"| orders_CMD033
+    CAP001 -.->|"capability_operation"| orders_CMD034
+    CAP001 -.->|"capability_operation"| orders_CMD035
+    CAP001 -.->|"capability_operation"| orders_QRY005
+    CAP001 -.->|"capability_operation"| orders_QRY009
+    CAP001 -.->|"capability_operation"| orders_CMD001
+    CAP001 -.->|"capability_operation"| orders_CMD002
+    CAP001 -.->|"capability_operation"| orders_CMD004
+    CAP001 -.->|"capability_operation"| orders_CMD005
+    CAP001 -.->|"capability_operation"| orders_CMD006
+    CAP001 -.->|"capability_operation"| orders_CMD007
+    CAP001 -.->|"capability_operation"| orders_CMD008
+    CAP001 -.->|"capability_operation"| orders_CMD009
+    CAP001 -.->|"capability_operation"| orders_CMD012
+    CAP001 -.->|"capability_operation"| orders_CMD014
+    CAP001 -.->|"capability_operation"| orders_EVT001
+    CAP001 -.->|"capability_operation"| orders_EVT002
+    CAP001 -.->|"capability_operation"| orders_EVT004
+    CAP001 -.->|"capability_operation"| orders_EVT005
+    CAP001 -.->|"capability_operation"| orders_QRY001
+    CAP001 -.->|"capability_operation"| orders_QRY002
+    CAP001 -.->|"capability_operation"| orders_QRY003
+    CAP001 -.->|"capability_operation"| orders_CMD020
+    CAP001 -.->|"capability_operation"| orders_CMD021
+    CAP001 -.->|"capability_operation"| orders_CMD022
+    CAP001 -.->|"capability_operation"| orders_EVT009
+    CAP001 -.->|"capability_operation"| orders_CMD003
+    CAP001 -.->|"capability_operation"| orders_CMD015
+    CAP001 -.->|"capability_operation"| orders_CMD016
+    CAP001 -.->|"capability_operation"| orders_EVT003
+    CAP001 -.->|"capability_operation"| orders_EVT006
+    CAP001 -.->|"capability_operation"| orders_CMD023
+    CAP001 -.->|"capability_operation"| orders_CMD037
+    CAP001 -.->|"capability_operation"| orders_CMD038
+    CAP001 -.->|"capability_operation"| orders_CMD039
+    CAP001 -.->|"capability_operation"| orders_CMD040
+    CAP001 -.->|"capability_operation"| orders_EVT010
+    CAP001 -.->|"capability_operation"| orders_EVT011
+    CAP001 -.->|"capability_operation"| orders_QRY004
+    CAP001 -.->|"capability_operation"| orders_QRY007
+    CAP001 -.->|"capability_operation"| orders_QRY008
+    CAP002 -.->|"capability_operation"| checkout_QRY001
+    CAP002 -.->|"capability_operation"| checkout_QRY009
+    CAP002 -.->|"capability_operation"| checkout_CMD011
+    CAP002 -.->|"capability_operation"| checkout_CMD012
+    CAP002 -.->|"capability_operation"| checkout_CMD014
+    CAP002 -.->|"capability_operation"| checkout_CMD015
+    CAP003 -.->|"capability_operation"| checkout_CMD001
+    CAP003 -.->|"capability_operation"| checkout_CMD002
+    CAP003 -.->|"capability_operation"| checkout_CMD003
+    CAP003 -.->|"capability_operation"| checkout_CMD004
+    CAP003 -.->|"capability_operation"| checkout_CMD005
+    CAP003 -.->|"capability_operation"| checkout_CMD006
+    CAP003 -.->|"capability_operation"| checkout_CMD007
+    CAP003 -.->|"capability_operation"| checkout_CMD008
+    CAP003 -.->|"capability_operation"| checkout_EVT001
+    CAP003 -.->|"capability_operation"| checkout_EVT002
+    CAP003 -.->|"capability_operation"| checkout_EVT003
+    CAP003 -.->|"capability_operation"| checkout_QRY002
+    CAP003 -.->|"capability_operation"| checkout_QRY003
+    CAP003 -.->|"capability_operation"| checkout_CMD009
+    CAP003 -.->|"capability_operation"| checkout_CMD010
+    CAP003 -.->|"capability_operation"| checkout_CMD013
+    CAP003 -.->|"capability_operation"| checkout_EVT004
+    CAP003 -.->|"capability_operation"| checkout_EVT005
+    CAP003 -.->|"capability_operation"| checkout_EVT006
+    CAP003 -.->|"capability_operation"| orders_CMD001
+    CAP004 -.->|"capability_operation"| catalog_CMD200
+    CAP004 -.->|"capability_operation"| catalog_CMD114
+    CAP004 -.->|"capability_operation"| catalog_QRY110
+    CAP004 -.->|"capability_operation"| catalog_QRY111
+    CAP006 -.->|"capability_operation"| admin_CMD007
+    CAP006 -.->|"capability_operation"| content_CMD018
+    CAP006 -.->|"capability_operation"| content_CMD021
+    CAP006 -.->|"capability_operation"| content_EVT014
+    CAP006 -.->|"capability_operation"| content_EVT017
+    CAP006 -.->|"capability_operation"| content_QRY009
+    CAP006 -.->|"capability_operation"| content_QRY010
+    CAP006 -.->|"capability_operation"| orders_CMD028
+    CAP006 -.->|"capability_operation"| orders_CMD029
+    CAP006 -.->|"capability_operation"| orders_CMD030
+    CAP006 -.->|"capability_operation"| orders_CMD031
+    CAP006 -.->|"capability_operation"| orders_CMD036
+    CAP006 -.->|"capability_operation"| orders_QRY006
+    CAP006 -.->|"capability_operation"| orders_CMD013
+    CAP007 -.->|"capability_operation"| customers_CMD001
+    CAP007 -.->|"capability_operation"| customers_CMD002
+    CAP007 -.->|"capability_operation"| customers_CMD003
+    CAP007 -.->|"capability_operation"| customers_CMD004
+    CAP007 -.->|"capability_operation"| customers_CMD005
+    CAP007 -.->|"capability_operation"| customers_CMD006
+    CAP007 -.->|"capability_operation"| customers_CMD007
+    CAP007 -.->|"capability_operation"| customers_CMD008
+    CAP007 -.->|"capability_operation"| customers_CMD028
+    CAP007 -.->|"capability_operation"| customers_EVT001
+    CAP007 -.->|"capability_operation"| customers_EVT002
+    CAP007 -.->|"capability_operation"| customers_EVT003
+    CAP007 -.->|"capability_operation"| customers_EVT004
+    CAP007 -.->|"capability_operation"| customers_EVT016
+    CAP007 -.->|"capability_operation"| customers_QRY001
+    CAP007 -.->|"capability_operation"| customers_QRY002
+    CAP007 -.->|"capability_operation"| customers_QRY003
+    CAP007 -.->|"capability_operation"| customers_QRY004
+    CAP007 -.->|"capability_operation"| customers_QRY005
+    CAP007 -.->|"capability_operation"| customers_QRY006
+    CAP007 -.->|"capability_operation"| customers_QRY007
+    CAP007 -.->|"capability_operation"| customers_CMD009
+    CAP007 -.->|"capability_operation"| customers_CMD010
+    CAP007 -.->|"capability_operation"| customers_CMD011
+    CAP007 -.->|"capability_operation"| customers_EVT005
+    CAP007 -.->|"capability_operation"| customers_EVT006
+    CAP007 -.->|"capability_operation"| customers_EVT017
+    CAP007 -.->|"capability_operation"| customers_QRY008
+    CAP007 -.->|"capability_operation"| customers_CMD020
+    CAP007 -.->|"capability_operation"| customers_CMD021
+    CAP007 -.->|"capability_operation"| customers_CMD022
+    CAP007 -.->|"capability_operation"| customers_CMD029
+    CAP007 -.->|"capability_operation"| customers_EVT013
+    CAP007 -.->|"capability_operation"| customers_EVT014
+    CAP007 -.->|"capability_operation"| customers_EVT018
+    CAP007 -.->|"capability_operation"| customers_QRY013
+    CAP008 -.->|"capability_operation"| customers_CMD012
+    CAP008 -.->|"capability_operation"| customers_CMD013
+    CAP008 -.->|"capability_operation"| customers_CMD014
+    CAP008 -.->|"capability_operation"| customers_CMD015
+    CAP008 -.->|"capability_operation"| customers_CMD023
+    CAP008 -.->|"capability_operation"| customers_CMD024
+    CAP008 -.->|"capability_operation"| customers_CMD025
+    CAP008 -.->|"capability_operation"| customers_CMD026
+    CAP008 -.->|"capability_operation"| customers_CMD027
+    CAP008 -.->|"capability_operation"| customers_EVT007
+    CAP008 -.->|"capability_operation"| customers_EVT008
+    CAP008 -.->|"capability_operation"| customers_EVT009
+    CAP008 -.->|"capability_operation"| customers_EVT015
+    CAP008 -.->|"capability_operation"| customers_QRY009
+    CAP008 -.->|"capability_operation"| customers_QRY010
+    CAP008 -.->|"capability_operation"| customers_QRY014
+    CAP009 -.->|"capability_operation"| customers_CMD016
+    CAP009 -.->|"capability_operation"| customers_CMD017
+    CAP009 -.->|"capability_operation"| customers_CMD018
+    CAP009 -.->|"capability_operation"| customers_CMD019
+    CAP009 -.->|"capability_operation"| customers_EVT010
+    CAP009 -.->|"capability_operation"| customers_EVT011
+    CAP009 -.->|"capability_operation"| customers_EVT012
+    CAP009 -.->|"capability_operation"| customers_EVT019
+    CAP009 -.->|"capability_operation"| customers_QRY011
+    CAP009 -.->|"capability_operation"| customers_QRY012
+    CAP018 -.->|"capability_operation"| catalog_QRY005
+    CAP018 -.->|"capability_operation"| catalog_QRY006
+    CAP018 -.->|"capability_operation"| catalog_QRY001
+    CAP018 -.->|"capability_operation"| catalog_QRY009
+    CAP018 -.->|"capability_operation"| catalog_QRY101
+    CAP018 -.->|"capability_operation"| catalog_QRY102
+    CAP018 -.->|"capability_operation"| content_CMD019
+    CAP018 -.->|"capability_operation"| content_CMD020
+    CAP018 -.->|"capability_operation"| shop_CMD006
+    CAP018 -.->|"capability_operation"| shop_CMD010
+    CAP018 -.->|"capability_operation"| shop_CMD011
+    CAP104 -.->|"capability_operation"| shop_CMD002
+    CAP104 -.->|"capability_operation"| shop_CMD003
+    CAP104 -.->|"capability_operation"| shop_CMD004
+    CAP104 -.->|"capability_operation"| shop_CMD005
+    CAP104 -.->|"capability_operation"| shop_QRY003
+    admin_PRC001 -.->|"process_supports_capability"| CAP015
+    admin_PRC002 -.->|"process_supports_capability"| CAP016
+    admin_PRC003 -.->|"process_supports_capability"| CAP015
+    admin_UC001 -.->|"use_case_supports_capability"| CAP015
+    admin_UC002 -.->|"use_case_supports_capability"| CAP016
+    catalog_PRC001 -.->|"process_supports_capability"| CAP005
+    catalog_PRC002 -.->|"process_supports_capability"| CAP102
+    catalog_PRC003 -.->|"process_supports_capability"| CAP005
+    catalog_UC001 -.->|"use_case_supports_capability"| CAP005
+    catalog_UC002 -.->|"use_case_supports_capability"| CAP003
+    catalog_UC002 -.->|"use_case_supports_capability"| CAP018
+    catalog_UC003 -.->|"use_case_supports_capability"| CAP102
+    checkout_PRC001 -.->|"process_supports_capability"| CAP100
+    checkout_PRC001 -.->|"process_supports_capability"| CAP002
+    checkout_PRC001 -.->|"process_supports_capability"| CAP003
+    checkout_PRC002 -.->|"process_supports_capability"| CAP100
+    checkout_UC001 -.->|"use_case_supports_capability"| CAP003
+    checkout_UC002 -.->|"use_case_supports_capability"| CAP003
+    checkout_UC003 -.->|"use_case_supports_capability"| CAP100
+    checkout_UC003 -.->|"use_case_supports_capability"| CAP002
+    checkout_UC003 -.->|"use_case_supports_capability"| CAP003
+    checkout_UC004 -.->|"use_case_supports_capability"| CAP100
+    checkout_UC005 -.->|"use_case_supports_capability"| CAP001
+    checkout_UC005 -.->|"use_case_supports_capability"| CAP002
+    checkout_UC005 -.->|"use_case_supports_capability"| CAP003
+    checkout_UC005 -.->|"use_case_supports_capability"| CAP007
+    content_PRC001 -.->|"process_supports_capability"| CAP013
+    content_PRC001 -.->|"process_supports_capability"| CAP018
+    content_PRC002 -.->|"process_supports_capability"| CAP013
+    content_PRC002 -.->|"process_supports_capability"| CAP012
+    content_UC001 -.->|"use_case_supports_capability"| CAP013
+    content_UC002 -.->|"use_case_supports_capability"| CAP013
+    content_UC002 -.->|"use_case_supports_capability"| CAP006
+    customers_PRC001 -.->|"process_supports_capability"| CAP007
+    customers_PRC001 -.->|"process_supports_capability"| CAP008
+    customers_PRC002 -.->|"process_supports_capability"| CAP009
+    customers_UC001 -.->|"use_case_supports_capability"| CAP007
+    customers_UC002 -.->|"use_case_supports_capability"| CAP008
+    customers_UC003 -.->|"use_case_supports_capability"| CAP009
+    international_PRC001 -.->|"process_supports_capability"| CAP011
+    international_PRC002 -.->|"process_supports_capability"| CAP011
+    international_UC001 -.->|"use_case_supports_capability"| CAP011
+    international_UC002 -.->|"use_case_supports_capability"| CAP011
+    modules_PRC001 -.->|"process_supports_capability"| CAP014
+    modules_PRC002 -.->|"process_supports_capability"| CAP014
+    modules_UC001 -.->|"use_case_supports_capability"| CAP014
+    modules_UC002 -.->|"use_case_supports_capability"| CAP014
+    orders_PRC001 -.->|"process_supports_capability"| CAP001
+    orders_PRC001 -.->|"process_supports_capability"| CAP003
+    orders_PRC002 -.->|"process_supports_capability"| CAP001
+    orders_PRC003 -.->|"process_supports_capability"| CAP001
+    orders_PRC004 -.->|"process_supports_capability"| CAP001
+    orders_PRC005 -.->|"process_supports_capability"| CAP001
+    orders_PRC006 -.->|"process_supports_capability"| CAP001
+    orders_UC001 -.->|"use_case_supports_capability"| CAP001
+    orders_UC001 -.->|"use_case_supports_capability"| CAP003
+    orders_UC002 -.->|"use_case_supports_capability"| CAP001
+    orders_UC003 -.->|"use_case_supports_capability"| CAP001
+    orders_UC004 -.->|"use_case_supports_capability"| CAP001
+    orders_UC005 -.->|"use_case_supports_capability"| CAP001
+    shipping_PRC001 -.->|"process_supports_capability"| CAP010
+    shipping_PRC002 -.->|"process_supports_capability"| CAP010
+    shipping_UC001 -.->|"use_case_supports_capability"| CAP010
+    shipping_UC002 -.->|"use_case_supports_capability"| CAP010
+    shop_PRC001 -.->|"process_supports_capability"| CAP017
+    shop_PRC002 -.->|"process_supports_capability"| CAP018
+    shop_PRC003 -.->|"process_supports_capability"| CAP100
+    shop_PRC003 -.->|"process_supports_capability"| CAP001
+    shop_PRC003 -.->|"process_supports_capability"| CAP002
+    shop_PRC003 -.->|"process_supports_capability"| CAP003
+    shop_PRC003 -.->|"process_supports_capability"| CAP018
+    shop_UC001 -.->|"use_case_supports_capability"| CAP017
 ```
 
 > *[Archally Pro](https://archally.pro)* — Interactive Entity Graph with force-directed layout, layer filtering, node search, and relation inspector.
 
 ## Entity Catalog
 
-**3714 entities** across 56 types.
+**3879 entities** across 57 types.
 
 | ID | Type | Name | Layer | Source |
 |----|------|------|-------|--------|
@@ -13140,7 +14664,7 @@ graph TD
 | international.ASC007 | Association | Each TaxRule is scoped to exactly one Zone. | design.concepts | international/taxation.concepts.yaml |
 | modules.ASC001 | Association | A module registers against zero or more hooks. Hook-module b | design.concepts | modules/concepts.yaml |
 | orders.ASC001 | Association | Every order depends on a delivery address. | design.concepts | orders/order.concepts.yaml |
-| orders.ASC002 | Association | Payment acceptance on an order triggers invoice generation. | design.concepts | orders/order.concepts.yaml |
+| orders.ASC002 | Association | Entering an order status flagged to issue invoices, Payment  | design.concepts | orders/order.concepts.yaml |
 | shipping.ASC001 | Association | A carrier has zero or more shipping cost ranges (one per zon | design.concepts | shipping/carrier.concepts.yaml |
 | shipping.ASC002 | Association | A shipment contains one or more product lines with quantitie | design.concepts | shipping/shipment.concepts.yaml |
 | shipping.ASC003 | Association | Each shipment is assigned to exactly one carrier. Carrier ca | design.concepts | shipping/shipment.concepts.yaml |
@@ -13218,17 +14742,20 @@ graph TD
 | CAP105 | Capability | Merchandising & Fulfilment | governance.capability | sell-and-fulfill.capability.yaml |
 | CAP106 | Capability | Customer-Facing Commerce | governance.capability | shop-and-buy.capability.yaml |
 | CAP107 | Capability | Platform Operation & Extension | governance.capability | configure-and-scale.capability.yaml |
-| catalog.CR001 | ClassificationRule | Product lifecycle transitions | design.rules | catalog/rules.yaml |
-| catalog.CR002 | ClassificationRule | Product type determines combination eligibility | design.rules | catalog/rules.yaml |
-| checkout.CR001 | ClassificationRule | Cart status transitions | design.rules | checkout/rules.yaml |
-| checkout.CR002 | ClassificationRule | Discount stacking priority | design.rules | checkout/rules.yaml |
-| customers.CR001 | ClassificationRule | Customer service thread status transitions | design.rules | customers/rules.yaml |
-| orders.CR001 | ClassificationRule | Order status transitions | design.rules | orders/rules.yaml |
+| catalog.CR001 | ClassificationRule | Enabled or disabled; new products start disabled. | design.rules | catalog/rules.yaml |
+| catalog.CR002 | ClassificationRule | Combinations belong to products of type 'combinations' only. | design.rules | catalog/rules.yaml |
+| checkout.CR001 | ClassificationRule | Ordered if an order references it; otherwise abandoned after 24 hours, else not ordered. | design.rules | checkout/rules.yaml |
+| checkout.CR002 | ClassificationRule | Lower priority number first; of two non-combinable vouchers, the better priority stays. | design.rules | checkout/rules.yaml |
+| customers.CR001 | ClassificationRule | Four thread statuses; an employee may move between any of them. | design.rules | customers/rules.yaml |
+| orders.CR001 | ClassificationRule | Any existing status may follow any other; only re-assigning the current status is refused. | design.rules | orders/rules.yaml |
 | .docker/Dockerfile | CodeFile | .docker/Dockerfile | code |  |
 | .docker/install/database.sh | CodeFile | .docker/install/database.sh | code |  |
+| admin-dev/themes/new-theme/js/pages/module/controller.js | CodeFile | admin-dev/themes/new-theme/js/pages/module/controller.js | code |  |
 | app/config/messenger.yml | CodeFile | app/config/messenger.yml | code |  |
 | app/config/parameters.yml.dist | CodeFile | app/config/parameters.yml.dist | code |  |
+| classes/Access.php | CodeFile | classes/Access.php | code |  |
 | classes/Address.php | CodeFile | classes/Address.php | code |  |
+| classes/Alias.php | CodeFile | classes/Alias.php | code |  |
 | classes/Attachment.php | CodeFile | classes/Attachment.php | code |  |
 | classes/AttributeGroup.php | CodeFile | classes/AttributeGroup.php | code |  |
 | classes/cache/CacheMemcached.php | CodeFile | classes/cache/CacheMemcached.php | code |  |
@@ -13236,23 +14763,31 @@ graph TD
 | classes/Cart.php | CodeFile | classes/Cart.php | code |  |
 | classes/CartRule.php | CodeFile | classes/CartRule.php | code |  |
 | classes/Category.php | CodeFile | classes/Category.php | code |  |
+| classes/checkout/CheckoutAddressesStep.php | CodeFile | classes/checkout/CheckoutAddressesStep.php | code |  |
 | classes/checkout/CheckoutDeliveryStep.php | CodeFile | classes/checkout/CheckoutDeliveryStep.php | code |  |
 | classes/checkout/CheckoutPaymentStep.php | CodeFile | classes/checkout/CheckoutPaymentStep.php | code |  |
 | classes/checkout/CheckoutProcess.php | CodeFile | classes/checkout/CheckoutProcess.php | code |  |
 | classes/checkout/DeliveryOptionsFinder.php | CodeFile | classes/checkout/DeliveryOptionsFinder.php | code |  |
+| classes/checkout/PaymentOptionsFinder.php | CodeFile | classes/checkout/PaymentOptionsFinder.php | code |  |
 | classes/CMS.php | CodeFile | classes/CMS.php | code |  |
 | classes/CMSCategory.php | CodeFile | classes/CMSCategory.php | code |  |
 | classes/Combination.php | CodeFile | classes/Combination.php | code |  |
+| classes/Contact.php | CodeFile | classes/Contact.php | code |  |
+| classes/Context.php | CodeFile | classes/Context.php | code |  |
+| classes/controller/FrontController.php | CodeFile | classes/controller/FrontController.php | code |  |
 | classes/controller/ProductListingFrontController.php | CodeFile | classes/controller/ProductListingFrontController.php | code |  |
 | classes/Country.php | CodeFile | classes/Country.php | code |  |
 | classes/Currency.php | CodeFile | classes/Currency.php | code |  |
 | classes/Customer.php | CodeFile | classes/Customer.php | code |  |
 | classes/CustomerMessage.php | CodeFile | classes/CustomerMessage.php | code |  |
 | classes/CustomerThread.php | CodeFile | classes/CustomerThread.php | code |  |
+| classes/Delivery.php | CodeFile | classes/Delivery.php | code |  |
 | classes/Employee.php | CodeFile | classes/Employee.php | code |  |
 | classes/Feature.php | CodeFile | classes/Feature.php | code |  |
 | classes/FeatureValue.php | CodeFile | classes/FeatureValue.php | code |  |
+| classes/form/CustomerAddressForm.php | CodeFile | classes/form/CustomerAddressForm.php | code |  |
 | classes/form/CustomerAddressPersister.php | CodeFile | classes/form/CustomerAddressPersister.php | code |  |
+| classes/form/CustomerForm.php | CodeFile | classes/form/CustomerForm.php | code |  |
 | classes/form/CustomerLoginForm.php | CodeFile | classes/form/CustomerLoginForm.php | code |  |
 | classes/form/CustomerPersister.php | CodeFile | classes/form/CustomerPersister.php | code |  |
 | classes/Gender.php | CodeFile | classes/Gender.php | code |  |
@@ -13271,6 +14806,7 @@ graph TD
 | classes/order/OrderDetail.php | CodeFile | classes/order/OrderDetail.php | code |  |
 | classes/order/OrderHistory.php | CodeFile | classes/order/OrderHistory.php | code |  |
 | classes/order/OrderInvoice.php | CodeFile | classes/order/OrderInvoice.php | code |  |
+| classes/order/OrderMessage.php | CodeFile | classes/order/OrderMessage.php | code |  |
 | classes/order/OrderPayment.php | CodeFile | classes/order/OrderPayment.php | code |  |
 | classes/order/OrderReturn.php | CodeFile | classes/order/OrderReturn.php | code |  |
 | classes/order/OrderReturnState.php | CodeFile | classes/order/OrderReturnState.php | code |  |
@@ -13285,6 +14821,7 @@ graph TD
 | classes/QuickAccess.php | CodeFile | classes/QuickAccess.php | code |  |
 | classes/RequestSql.php | CodeFile | classes/RequestSql.php | code |  |
 | classes/Search.php | CodeFile | classes/Search.php | code |  |
+| classes/SearchEngine.php | CodeFile | classes/SearchEngine.php | code |  |
 | classes/shop/Shop.php | CodeFile | classes/shop/Shop.php | code |  |
 | classes/shop/ShopGroup.php | CodeFile | classes/shop/ShopGroup.php | code |  |
 | classes/SpecificPrice.php | CodeFile | classes/SpecificPrice.php | code |  |
@@ -13297,13 +14834,18 @@ graph TD
 | classes/tax/Tax.php | CodeFile | classes/tax/Tax.php | code |  |
 | classes/tax/TaxRule.php | CodeFile | classes/tax/TaxRule.php | code |  |
 | classes/tax/TaxRulesGroup.php | CodeFile | classes/tax/TaxRulesGroup.php | code |  |
+| classes/tax/TaxRulesTaxManager.php | CodeFile | classes/tax/TaxRulesTaxManager.php | code |  |
 | classes/Validate.php | CodeFile | classes/Validate.php | code |  |
 | classes/webservice/WebserviceKey.php | CodeFile | classes/webservice/WebserviceKey.php | code |  |
 | classes/webservice/WebserviceRequest.php | CodeFile | classes/webservice/WebserviceRequest.php | code |  |
 | classes/Zone.php | CodeFile | classes/Zone.php | code |  |
 | composer.json | CodeFile | composer.json | code |  |
 | config/db_slave_server.inc.php | CodeFile | config/db_slave_server.inc.php | code |  |
+| controllers/admin/AdminCarriersController.php | CodeFile | controllers/admin/AdminCarriersController.php | code |  |
+| controllers/admin/AdminGroupsController.php | CodeFile | controllers/admin/AdminGroupsController.php | code |  |
+| controllers/admin/AdminReturnController.php | CodeFile | controllers/admin/AdminReturnController.php | code |  |
 | controllers/admin/AdminStoresController.php | CodeFile | controllers/admin/AdminStoresController.php | code |  |
+| controllers/admin/AdminTaxRulesGroupController.php | CodeFile | controllers/admin/AdminTaxRulesGroupController.php | code |  |
 | controllers/front/AddressController.php | CodeFile | controllers/front/AddressController.php | code |  |
 | controllers/front/AddressesController.php | CodeFile | controllers/front/AddressesController.php | code |  |
 | controllers/front/AuthController.php | CodeFile | controllers/front/AuthController.php | code |  |
@@ -13320,17 +14862,30 @@ graph TD
 | controllers/front/OrderController.php | CodeFile | controllers/front/OrderController.php | code |  |
 | controllers/front/OrderDetailController.php | CodeFile | controllers/front/OrderDetailController.php | code |  |
 | controllers/front/OrderFollowController.php | CodeFile | controllers/front/OrderFollowController.php | code |  |
+| controllers/front/OrderReturnController.php | CodeFile | controllers/front/OrderReturnController.php | code |  |
 | controllers/front/ProductController.php | CodeFile | controllers/front/ProductController.php | code |  |
 | controllers/front/RegistrationController.php | CodeFile | controllers/front/RegistrationController.php | code |  |
 | download | CodeFile | download | code |  |
-| https://github.com/PrestaShop/docs/blob/9.x/admin-api/_index.md | CodeFile | https://github.com/PrestaShop/docs/blob/9.x/admin-api/_index.md | code |  |
-| https://github.com/PrestaShop/docs/blob/9.x/basics/installation/system-requirements.md | CodeFile | https://github.com/PrestaShop/docs/blob/9.x/basics/installation/system-requirements.md | code |  |
-| https://github.com/PrestaShop/docs/blob/9.x/development/architecture/domain/_index.md | CodeFile | https://github.com/PrestaShop/docs/blob/9.x/development/architecture/domain/_index.md | code |  |
-| https://github.com/PrestaShop/docs/blob/9.x/development/architecture/domain/references/product/_index.md | CodeFile | https://github.com/PrestaShop/docs/blob/9.x/development/architecture/domain/references/product/_index.md | code |  |
-| https://github.com/PrestaShop/docs/blob/9.x/development/architecture/migration-guide/_index.md | CodeFile | https://github.com/PrestaShop/docs/blob/9.x/development/architecture/migration-guide/_index.md | code |  |
 | img | CodeFile | img | code |  |
+| install-dev/data/xml/configuration.xml | CodeFile | install-dev/data/xml/configuration.xml | code |  |
+| install-dev/data/xml/feature_flag.xml | CodeFile | install-dev/data/xml/feature_flag.xml | code |  |
 | install-dev/data/xml/hook.xml | CodeFile | install-dev/data/xml/hook.xml | code |  |
+| install-dev/data/xml/order_state.xml | CodeFile | install-dev/data/xml/order_state.xml | code |  |
+| install-dev/langs/en/data/order_return_state.xml | CodeFile | install-dev/langs/en/data/order_return_state.xml | code |  |
 | INSTALL.txt | CodeFile | INSTALL.txt | code |  |
+| PrestaShop/docs#admin-api/_index.md | CodeFile | PrestaShop/docs#admin-api/_index.md | code |  |
+| PrestaShop/docs#admin-api/setup-development-environment.md | CodeFile | PrestaShop/docs#admin-api/setup-development-environment.md | code |  |
+| PrestaShop/docs#basics/installation/system-requirements.md | CodeFile | PrestaShop/docs#basics/installation/system-requirements.md | code |  |
+| PrestaShop/docs#development/architecture/domain/_index.md | CodeFile | PrestaShop/docs#development/architecture/domain/_index.md | code |  |
+| PrestaShop/docs#development/architecture/domain/references/product/index.md | CodeFile | PrestaShop/docs#development/architecture/domain/references/product/index.md | code |  |
+| PrestaShop/docs#development/architecture/migration-guide/_index.md | CodeFile | PrestaShop/docs#development/architecture/migration-guide/_index.md | code |  |
+| PrestaShop/docs#development/architecture/migration-guide/strategy.md | CodeFile | PrestaShop/docs#development/architecture/migration-guide/strategy.md | code |  |
+| PrestaShop/docs#modules/concepts/hooks/list-of-hooks/actionDeleteGDPRCustomer.md | CodeFile | PrestaShop/docs#modules/concepts/hooks/list-of-hooks/actionDeleteGDPRCustomer.md | code |  |
+| PrestaShop/docs#modules/concepts/hooks/list-of-hooks/displayExpressCheckout.md | CodeFile | PrestaShop/docs#modules/concepts/hooks/list-of-hooks/displayExpressCheckout.md | code |  |
+| PrestaShop/docs#modules/payment/_index.md | CodeFile | PrestaShop/docs#modules/payment/_index.md | code |  |
+| PrestaShop/prestashop-specs#content/1.7/back-office/catalog/products/add-edit-v2.md | CodeFile | PrestaShop/prestashop-specs#content/1.7/back-office/catalog/products/add-edit-v2.md | code |  |
+| PrestaShop/prestashop-specs#content/1.7/back-office/customer-service/merchandise-returns/merchandise-returns-listing.md | CodeFile | PrestaShop/prestashop-specs#content/1.7/back-office/customer-service/merchandise-returns/merchandise-returns-listing.md | code |  |
+| PrestaShop/ps_apiresources#src/ApiPlatform/Resources | CodeFile | PrestaShop/ps_apiresources#src/ApiPlatform/Resources | code |  |
 | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/Address.php | CodeFile | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/Address.php | code |  |
 | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/BulkAddresses.php | CodeFile | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/BulkAddresses.php | code |  |
 | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/CartAddress.php | CodeFile | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Address/CartAddress.php | code |  |
@@ -13430,6 +14985,8 @@ graph TD
 | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Zone/BulkDeleteZones.php | CodeFile | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Zone/BulkDeleteZones.php | code |  |
 | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Zone/BulkUpdateStatusZone.php | CodeFile | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Zone/BulkUpdateStatusZone.php | code |  |
 | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Zone/Zone.php | CodeFile | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Zone/Zone.php | code |  |
+| PrestaShop/ps_apiresources#tests/Integration/ApiPlatform/OrderReturnEndpointTest.php | CodeFile | PrestaShop/ps_apiresources#tests/Integration/ApiPlatform/OrderReturnEndpointTest.php | code |  |
+| src/Adapter/Address/AbstractAddressHandler.php | CodeFile | src/Adapter/Address/AbstractAddressHandler.php | code |  |
 | src/Adapter/Address/CommandHandler/AddCustomerAddressHandler.php | CodeFile | src/Adapter/Address/CommandHandler/AddCustomerAddressHandler.php | code |  |
 | src/Adapter/Address/CommandHandler/AddManufacturerAddressHandler.php | CodeFile | src/Adapter/Address/CommandHandler/AddManufacturerAddressHandler.php | code |  |
 | src/Adapter/Address/CommandHandler/BulkDeleteAddressHandler.php | CodeFile | src/Adapter/Address/CommandHandler/BulkDeleteAddressHandler.php | code |  |
@@ -13470,9 +15027,12 @@ graph TD
 | src/Adapter/Carrier/CommandHandler/ToggleCarrierStatusHandler.php | CodeFile | src/Adapter/Carrier/CommandHandler/ToggleCarrierStatusHandler.php | code |  |
 | src/Adapter/Carrier/Repository/CarrierRangeRepository.php | CodeFile | src/Adapter/Carrier/Repository/CarrierRangeRepository.php | code |  |
 | src/Adapter/Carrier/Repository/CarrierRepository.php | CodeFile | src/Adapter/Carrier/Repository/CarrierRepository.php | code |  |
+| src/Adapter/Carrier/Validate/CarrierValidator.php | CodeFile | src/Adapter/Carrier/Validate/CarrierValidator.php | code |  |
 | src/Adapter/Cart/CommandHandler/AddCartRuleToCartHandler.php | CodeFile | src/Adapter/Cart/CommandHandler/AddCartRuleToCartHandler.php | code |  |
 | src/Adapter/Cart/CommandHandler/AddProductToCartHandler.php | CodeFile | src/Adapter/Cart/CommandHandler/AddProductToCartHandler.php | code |  |
+| src/Adapter/Cart/CommandHandler/BulkDeleteCartHandler.php | CodeFile | src/Adapter/Cart/CommandHandler/BulkDeleteCartHandler.php | code |  |
 | src/Adapter/Cart/CommandHandler/CreateEmptyCustomerCartHandler.php | CodeFile | src/Adapter/Cart/CommandHandler/CreateEmptyCustomerCartHandler.php | code |  |
+| src/Adapter/Cart/CommandHandler/DeleteCartHandler.php | CodeFile | src/Adapter/Cart/CommandHandler/DeleteCartHandler.php | code |  |
 | src/Adapter/Cart/CommandHandler/RemoveProductFromCartHandler.php | CodeFile | src/Adapter/Cart/CommandHandler/RemoveProductFromCartHandler.php | code |  |
 | src/Adapter/Cart/CommandHandler/SendCartToCustomerHandler.php | CodeFile | src/Adapter/Cart/CommandHandler/SendCartToCustomerHandler.php | code |  |
 | src/Adapter/Cart/CommandHandler/UpdateProductQuantityInCartHandler.php | CodeFile | src/Adapter/Cart/CommandHandler/UpdateProductQuantityInCartHandler.php | code |  |
@@ -13496,6 +15056,7 @@ graph TD
 | src/Adapter/Category/QueryHandler/GetCategoriesTreeHandler.php | CodeFile | src/Adapter/Category/QueryHandler/GetCategoriesTreeHandler.php | code |  |
 | src/Adapter/Category/QueryHandler/GetCategoryForEditingHandler.php | CodeFile | src/Adapter/Category/QueryHandler/GetCategoryForEditingHandler.php | code |  |
 | src/Adapter/Category/QueryHandler/GetCategoryIsEnabledHandler.php | CodeFile | src/Adapter/Category/QueryHandler/GetCategoryIsEnabledHandler.php | code |  |
+| src/Adapter/CMS/Page/CommandHandler/AbstractCmsPageHandler.php | CodeFile | src/Adapter/CMS/Page/CommandHandler/AbstractCmsPageHandler.php | code |  |
 | src/Adapter/CMS/Page/CommandHandler/AddCmsPageHandler.php | CodeFile | src/Adapter/CMS/Page/CommandHandler/AddCmsPageHandler.php | code |  |
 | src/Adapter/CMS/Page/CommandHandler/DeleteCmsPageHandler.php | CodeFile | src/Adapter/CMS/Page/CommandHandler/DeleteCmsPageHandler.php | code |  |
 | src/Adapter/CMS/Page/CommandHandler/EditCmsPageHandler.php | CodeFile | src/Adapter/CMS/Page/CommandHandler/EditCmsPageHandler.php | code |  |
@@ -13506,7 +15067,13 @@ graph TD
 | src/Adapter/Contact/CommandHandler/EditContactHandler.php | CodeFile | src/Adapter/Contact/CommandHandler/EditContactHandler.php | code |  |
 | src/Adapter/Country/CommandHandler/AddCountryHandler.php | CodeFile | src/Adapter/Country/CommandHandler/AddCountryHandler.php | code |  |
 | src/Adapter/Currency/CommandHandler/AddOfficialCurrencyHandler.php | CodeFile | src/Adapter/Currency/CommandHandler/AddOfficialCurrencyHandler.php | code |  |
+| src/Adapter/Currency/CommandHandler/AddUnofficialCurrencyHandler.php | CodeFile | src/Adapter/Currency/CommandHandler/AddUnofficialCurrencyHandler.php | code |  |
+| src/Adapter/Currency/CommandHandler/CurrencyCommandValidator.php | CodeFile | src/Adapter/Currency/CommandHandler/CurrencyCommandValidator.php | code |  |
+| src/Adapter/Currency/CommandHandler/DeleteCurrencyHandler.php | CodeFile | src/Adapter/Currency/CommandHandler/DeleteCurrencyHandler.php | code |  |
+| src/Adapter/Currency/CommandHandler/EditUnofficialCurrencyHandler.php | CodeFile | src/Adapter/Currency/CommandHandler/EditUnofficialCurrencyHandler.php | code |  |
 | src/Adapter/Currency/CommandHandler/RefreshExchangeRatesHandler.php | CodeFile | src/Adapter/Currency/CommandHandler/RefreshExchangeRatesHandler.php | code |  |
+| src/Adapter/Currency/CommandHandler/ToggleCurrencyStatusHandler.php | CodeFile | src/Adapter/Currency/CommandHandler/ToggleCurrencyStatusHandler.php | code |  |
+| src/Adapter/Currency/CurrencyDataProvider.php | CodeFile | src/Adapter/Currency/CurrencyDataProvider.php | code |  |
 | src/Adapter/Customer/CommandHandler/AbstractCustomerHandler.php | CodeFile | src/Adapter/Customer/CommandHandler/AbstractCustomerHandler.php | code |  |
 | src/Adapter/Customer/CommandHandler/AddCustomerHandler.php | CodeFile | src/Adapter/Customer/CommandHandler/AddCustomerHandler.php | code |  |
 | src/Adapter/Customer/CommandHandler/BulkDeleteCustomerHandler.php | CodeFile | src/Adapter/Customer/CommandHandler/BulkDeleteCustomerHandler.php | code |  |
@@ -13550,6 +15117,11 @@ graph TD
 | src/Adapter/HookManager.php | CodeFile | src/Adapter/HookManager.php | code |  |
 | src/Adapter/Image/ImageValidator.php | CodeFile | src/Adapter/Image/ImageValidator.php | code |  |
 | src/Adapter/Image/ProductImageFileValidator.php | CodeFile | src/Adapter/Image/ProductImageFileValidator.php | code |  |
+| src/Adapter/Language/CommandHandler/AbstractLanguageHandler.php | CodeFile | src/Adapter/Language/CommandHandler/AbstractLanguageHandler.php | code |  |
+| src/Adapter/Language/CommandHandler/AddLanguageHandler.php | CodeFile | src/Adapter/Language/CommandHandler/AddLanguageHandler.php | code |  |
+| src/Adapter/Language/CommandHandler/BulkDeleteLanguagesHandler.php | CodeFile | src/Adapter/Language/CommandHandler/BulkDeleteLanguagesHandler.php | code |  |
+| src/Adapter/Language/CommandHandler/DeleteLanguageHandler.php | CodeFile | src/Adapter/Language/CommandHandler/DeleteLanguageHandler.php | code |  |
+| src/Adapter/Language/CommandHandler/EditLanguageHandler.php | CodeFile | src/Adapter/Language/CommandHandler/EditLanguageHandler.php | code |  |
 | src/Adapter/Localization/LocalizationConfiguration.php | CodeFile | src/Adapter/Localization/LocalizationConfiguration.php | code |  |
 | src/Adapter/MailTemplate/CommandHandler/EditEmailBodyTemplateHandler.php | CodeFile | src/Adapter/MailTemplate/CommandHandler/EditEmailBodyTemplateHandler.php | code |  |
 | src/Adapter/MailTemplate/QueryHandler/GetEmailBodyTemplateForEditingHandler.php | CodeFile | src/Adapter/MailTemplate/QueryHandler/GetEmailBodyTemplateForEditingHandler.php | code |  |
@@ -13562,8 +15134,16 @@ graph TD
 | src/Adapter/Manufacturer/CommandHandler/DeleteManufacturerLogoImageHandler.php | CodeFile | src/Adapter/Manufacturer/CommandHandler/DeleteManufacturerLogoImageHandler.php | code |  |
 | src/Adapter/Manufacturer/CommandHandler/EditManufacturerHandler.php | CodeFile | src/Adapter/Manufacturer/CommandHandler/EditManufacturerHandler.php | code |  |
 | src/Adapter/Manufacturer/CommandHandler/ToggleManufacturerStatusHandler.php | CodeFile | src/Adapter/Manufacturer/CommandHandler/ToggleManufacturerStatusHandler.php | code |  |
+| src/Adapter/Manufacturer/Repository/ManufacturerRepository.php | CodeFile | src/Adapter/Manufacturer/Repository/ManufacturerRepository.php | code |  |
 | src/Adapter/Meta/CommandHandler/AddMetaHandler.php | CodeFile | src/Adapter/Meta/CommandHandler/AddMetaHandler.php | code |  |
 | src/Adapter/Meta/CommandHandler/EditMetaHandler.php | CodeFile | src/Adapter/Meta/CommandHandler/EditMetaHandler.php | code |  |
+| src/Adapter/Module/CommandHandler/BulkToggleModuleStatusHandler.php | CodeFile | src/Adapter/Module/CommandHandler/BulkToggleModuleStatusHandler.php | code |  |
+| src/Adapter/Module/CommandHandler/InstallModuleHandler.php | CodeFile | src/Adapter/Module/CommandHandler/InstallModuleHandler.php | code |  |
+| src/Adapter/Module/CommandHandler/ResetModuleHandler.php | CodeFile | src/Adapter/Module/CommandHandler/ResetModuleHandler.php | code |  |
+| src/Adapter/Module/CommandHandler/UninstallModuleHandler.php | CodeFile | src/Adapter/Module/CommandHandler/UninstallModuleHandler.php | code |  |
+| src/Adapter/Module/CommandHandler/UpdateModuleStatusHandler.php | CodeFile | src/Adapter/Module/CommandHandler/UpdateModuleStatusHandler.php | code |  |
+| src/Adapter/Module/CommandHandler/UpgradeModuleHandler.php | CodeFile | src/Adapter/Module/CommandHandler/UpgradeModuleHandler.php | code |  |
+| src/Adapter/Module/Module.php | CodeFile | src/Adapter/Module/Module.php | code |  |
 | src/Adapter/Order/CommandHandler/AddOrderFromBackOfficeHandler.php | CodeFile | src/Adapter/Order/CommandHandler/AddOrderFromBackOfficeHandler.php | code |  |
 | src/Adapter/Order/CommandHandler/AddProductToOrderHandler.php | CodeFile | src/Adapter/Order/CommandHandler/AddProductToOrderHandler.php | code |  |
 | src/Adapter/Order/CommandHandler/CancelOrderProductHandler.php | CodeFile | src/Adapter/Order/CommandHandler/CancelOrderProductHandler.php | code |  |
@@ -13575,6 +15155,7 @@ graph TD
 | src/Adapter/Order/CommandHandler/UpdateOrderShippingDetailsHandler.php | CodeFile | src/Adapter/Order/CommandHandler/UpdateOrderShippingDetailsHandler.php | code |  |
 | src/Adapter/Order/CommandHandler/UpdateOrderStatusHandler.php | CodeFile | src/Adapter/Order/CommandHandler/UpdateOrderStatusHandler.php | code |  |
 | src/Adapter/Order/CommandHandler/UpdateProductInOrderHandler.php | CodeFile | src/Adapter/Order/CommandHandler/UpdateProductInOrderHandler.php | code |  |
+| src/Adapter/Order/OrderAmountUpdater.php | CodeFile | src/Adapter/Order/OrderAmountUpdater.php | code |  |
 | src/Adapter/Order/QueryHandler/GetOrderForViewingHandler.php | CodeFile | src/Adapter/Order/QueryHandler/GetOrderForViewingHandler.php | code |  |
 | src/Adapter/Order/Refund/OrderRefundCalculator.php | CodeFile | src/Adapter/Order/Refund/OrderRefundCalculator.php | code |  |
 | src/Adapter/Order/Refund/OrderSlipCreator.php | CodeFile | src/Adapter/Order/Refund/OrderSlipCreator.php | code |  |
@@ -13610,6 +15191,7 @@ graph TD
 | src/Adapter/Product/FeatureValue/CommandHandler/SetProductFeatureValuesHandler.php | CodeFile | src/Adapter/Product/FeatureValue/CommandHandler/SetProductFeatureValuesHandler.php | code |  |
 | src/Adapter/Product/FeatureValue/QueryHandler/GetProductFeatureValuesHandler.php | CodeFile | src/Adapter/Product/FeatureValue/QueryHandler/GetProductFeatureValuesHandler.php | code |  |
 | src/Adapter/Product/Grid/Data/Factory/ProductGridDataFactoryDecorator.php | CodeFile | src/Adapter/Product/Grid/Data/Factory/ProductGridDataFactoryDecorator.php | code |  |
+| src/Adapter/Product/Image/CommandHandler/AddProductImageHandler.php | CodeFile | src/Adapter/Product/Image/CommandHandler/AddProductImageHandler.php | code |  |
 | src/Adapter/Product/Image/Repository/ProductImageRepository.php | CodeFile | src/Adapter/Product/Image/Repository/ProductImageRepository.php | code |  |
 | src/Adapter/Product/Pack/CommandHandler/SetPackProductsHandler.php | CodeFile | src/Adapter/Product/Pack/CommandHandler/SetPackProductsHandler.php | code |  |
 | src/Adapter/Product/Pack/QueryHandler/GetPackedProductsHandler.php | CodeFile | src/Adapter/Product/Pack/QueryHandler/GetPackedProductsHandler.php | code |  |
@@ -13617,8 +15199,10 @@ graph TD
 | src/Adapter/Product/QueryHandler/GetProductForEditingHandler.php | CodeFile | src/Adapter/Product/QueryHandler/GetProductForEditingHandler.php | code |  |
 | src/Adapter/Product/QueryHandler/GetProductSupplierOptionsHandler.php | CodeFile | src/Adapter/Product/QueryHandler/GetProductSupplierOptionsHandler.php | code |  |
 | src/Adapter/Product/QueryHandler/SearchProductsHandler.php | CodeFile | src/Adapter/Product/QueryHandler/SearchProductsHandler.php | code |  |
+| src/Adapter/Product/Repository/ProductRepository.php | CodeFile | src/Adapter/Product/Repository/ProductRepository.php | code |  |
 | src/Adapter/Product/Shop/CommandHandler/SetProductShopsHandler.php | CodeFile | src/Adapter/Product/Shop/CommandHandler/SetProductShopsHandler.php | code |  |
 | src/Adapter/Product/SpecificPrice/Repository/SpecificPriceRepository.php | CodeFile | src/Adapter/Product/SpecificPrice/Repository/SpecificPriceRepository.php | code |  |
+| src/Adapter/Product/SpecificPrice/Validate/SpecificPriceValidator.php | CodeFile | src/Adapter/Product/SpecificPrice/Validate/SpecificPriceValidator.php | code |  |
 | src/Adapter/Product/Stock/CommandHandler/UpdateProductStockAvailableHandler.php | CodeFile | src/Adapter/Product/Stock/CommandHandler/UpdateProductStockAvailableHandler.php | code |  |
 | src/Adapter/Product/Stock/QueryHandler/GetCombinationStockMovementsHandler.php | CodeFile | src/Adapter/Product/Stock/QueryHandler/GetCombinationStockMovementsHandler.php | code |  |
 | src/Adapter/Product/Stock/QueryHandler/GetProductStockMovementsHandler.php | CodeFile | src/Adapter/Product/Stock/QueryHandler/GetProductStockMovementsHandler.php | code |  |
@@ -13631,10 +15215,15 @@ graph TD
 | src/Adapter/Product/Supplier/QueryHandler/GetAssociatedSuppliersHandler.php | CodeFile | src/Adapter/Product/Supplier/QueryHandler/GetAssociatedSuppliersHandler.php | code |  |
 | src/Adapter/Product/Update/ProductDuplicator.php | CodeFile | src/Adapter/Product/Update/ProductDuplicator.php | code |  |
 | src/Adapter/Product/Update/ProductIndexationUpdater.php | CodeFile | src/Adapter/Product/Update/ProductIndexationUpdater.php | code |  |
+| src/Adapter/Product/Update/ProductTypeUpdater.php | CodeFile | src/Adapter/Product/Update/ProductTypeUpdater.php | code |  |
+| src/Adapter/Product/Validate/ProductValidator.php | CodeFile | src/Adapter/Product/Validate/ProductValidator.php | code |  |
 | src/Adapter/Product/VirtualProduct/Repository/VirtualProductFileRepository.php | CodeFile | src/Adapter/Product/VirtualProduct/Repository/VirtualProductFileRepository.php | code |  |
 | src/Adapter/Profile/CommandHandler/AbstractProfileHandler.php | CodeFile | src/Adapter/Profile/CommandHandler/AbstractProfileHandler.php | code |  |
+| src/Adapter/Profile/CommandHandler/BulkDeleteProfileHandler.php | CodeFile | src/Adapter/Profile/CommandHandler/BulkDeleteProfileHandler.php | code |  |
+| src/Adapter/Profile/CommandHandler/DeleteProfileHandler.php | CodeFile | src/Adapter/Profile/CommandHandler/DeleteProfileHandler.php | code |  |
 | src/Adapter/Profile/Employee/CommandHandler/AbstractEmployeeHandler.php | CodeFile | src/Adapter/Profile/Employee/CommandHandler/AbstractEmployeeHandler.php | code |  |
 | src/Adapter/Profile/Employee/CommandHandler/AddEmployeeHandler.php | CodeFile | src/Adapter/Profile/Employee/CommandHandler/AddEmployeeHandler.php | code |  |
+| src/Adapter/Profile/Employee/CommandHandler/EditEmployeeHandler.php | CodeFile | src/Adapter/Profile/Employee/CommandHandler/EditEmployeeHandler.php | code |  |
 | src/Adapter/Profile/Employee/CommandHandler/ToggleEmployeeStatusHandler.php | CodeFile | src/Adapter/Profile/Employee/CommandHandler/ToggleEmployeeStatusHandler.php | code |  |
 | src/Adapter/Profile/Permission/CommandHandler/UpdateModulePermissionsHandler.php | CodeFile | src/Adapter/Profile/Permission/CommandHandler/UpdateModulePermissionsHandler.php | code |  |
 | src/Adapter/Profile/Permission/CommandHandler/UpdateTabPermissionsHandler.php | CodeFile | src/Adapter/Profile/Permission/CommandHandler/UpdateTabPermissionsHandler.php | code |  |
@@ -13653,7 +15242,11 @@ graph TD
 | src/Adapter/Shipment/CommandHandler/MergeProductsToShipmentHandler.php | CodeFile | src/Adapter/Shipment/CommandHandler/MergeProductsToShipmentHandler.php | code |  |
 | src/Adapter/Shipment/CommandHandler/SplitShipmentHandler.php | CodeFile | src/Adapter/Shipment/CommandHandler/SplitShipmentHandler.php | code |  |
 | src/Adapter/Shipment/CommandHandler/SwitchShipmentCarrierHandler.php | CodeFile | src/Adapter/Shipment/CommandHandler/SwitchShipmentCarrierHandler.php | code |  |
+| src/Adapter/Shipment/QueryHandler/ListAvailableShipmentsForProductHandler.php | CodeFile | src/Adapter/Shipment/QueryHandler/ListAvailableShipmentsForProductHandler.php | code |  |
+| src/Adapter/Shipment/ShipmentMerger.php | CodeFile | src/Adapter/Shipment/ShipmentMerger.php | code |  |
+| src/Adapter/Shipment/ShipmentSplitter.php | CodeFile | src/Adapter/Shipment/ShipmentSplitter.php | code |  |
 | src/Adapter/Shop/CommandHandler/UploadLogosHandler.php | CodeFile | src/Adapter/Shop/CommandHandler/UploadLogosHandler.php | code |  |
+| src/Adapter/SqlManager/CommandHandler/AbstractSqlRequestHandler.php | CodeFile | src/Adapter/SqlManager/CommandHandler/AbstractSqlRequestHandler.php | code |  |
 | src/Adapter/SqlManager/CommandHandler/AddSqlRequestHandler.php | CodeFile | src/Adapter/SqlManager/CommandHandler/AddSqlRequestHandler.php | code |  |
 | src/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandler.php | CodeFile | src/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandler.php | code |  |
 | src/Adapter/SqlManager/SqlQueryValidator.php | CodeFile | src/Adapter/SqlManager/SqlQueryValidator.php | code |  |
@@ -13683,7 +15276,10 @@ graph TD
 | src/Adapter/Title/CommandHandler/DeleteTitleHandler.php | CodeFile | src/Adapter/Title/CommandHandler/DeleteTitleHandler.php | code |  |
 | src/Adapter/Title/CommandHandler/EditTitleHandler.php | CodeFile | src/Adapter/Title/CommandHandler/EditTitleHandler.php | code |  |
 | src/Core/Addon/Theme/ThemeManager.php | CodeFile | src/Core/Addon/Theme/ThemeManager.php | code |  |
+| src/Core/Addon/Theme/ThemeValidator.php | CodeFile | src/Core/Addon/Theme/ThemeValidator.php | code |  |
+| src/Core/Cart/Calculator.php | CodeFile | src/Core/Cart/Calculator.php | code |  |
 | src/Core/CommandBus/CommandBusInterface.php | CodeFile | src/Core/CommandBus/CommandBusInterface.php | code |  |
+| src/Core/ConstraintValidator/InstalledApiResourceScopeValidator.php | CodeFile | src/Core/ConstraintValidator/InstalledApiResourceScopeValidator.php | code |  |
 | src/Core/Domain/ | CodeFile | src/Core/Domain/ | code |  |
 | src/Core/Domain/Address/AddressSettings.php | CodeFile | src/Core/Domain/Address/AddressSettings.php | code |  |
 | src/Core/Domain/Address/Command/AbstractEditAddressCommand.php | CodeFile | src/Core/Domain/Address/Command/AbstractEditAddressCommand.php | code |  |
@@ -13726,6 +15322,7 @@ graph TD
 | src/Core/Domain/ApiClient/Command/EditApiClientCommand.php | CodeFile | src/Core/Domain/ApiClient/Command/EditApiClientCommand.php | code |  |
 | src/Core/Domain/ApiClient/Command/ForceApiClientSecretCommand.php | CodeFile | src/Core/Domain/ApiClient/Command/ForceApiClientSecretCommand.php | code |  |
 | src/Core/Domain/ApiClient/Command/GenerateApiClientSecretCommand.php | CodeFile | src/Core/Domain/ApiClient/Command/GenerateApiClientSecretCommand.php | code |  |
+| src/Core/Domain/ApiClient/Exception/ApiClientConstraintException.php | CodeFile | src/Core/Domain/ApiClient/Exception/ApiClientConstraintException.php | code |  |
 | src/Core/Domain/ApiClient/Query/GetApiClientForEditing.php | CodeFile | src/Core/Domain/ApiClient/Query/GetApiClientForEditing.php | code |  |
 | src/Core/Domain/Attachment/ | CodeFile | src/Core/Domain/Attachment/ | code |  |
 | src/Core/Domain/Attachment/Command/ | CodeFile | src/Core/Domain/Attachment/Command/ | code |  |
@@ -13783,6 +15380,7 @@ graph TD
 | src/Core/Domain/BusinessEntity/Query/GetPendingBusinessEntitiesCount.php | CodeFile | src/Core/Domain/BusinessEntity/Query/GetPendingBusinessEntitiesCount.php | code |  |
 | src/Core/Domain/BusinessEntity/QueryResult/BusinessEntityForViewing.php | CodeFile | src/Core/Domain/BusinessEntity/QueryResult/BusinessEntityForViewing.php | code |  |
 | src/Core/Domain/BusinessEntity/ValueObject/BusinessEntityBillingAddress.php | CodeFile | src/Core/Domain/BusinessEntity/ValueObject/BusinessEntityBillingAddress.php | code |  |
+| src/Core/Domain/Carrier/ | CodeFile | src/Core/Domain/Carrier/ | code |  |
 | src/Core/Domain/Carrier/Command/AddCarrierCommand.php | CodeFile | src/Core/Domain/Carrier/Command/AddCarrierCommand.php | code |  |
 | src/Core/Domain/Carrier/Command/BulkDeleteCarrierCommand.php | CodeFile | src/Core/Domain/Carrier/Command/BulkDeleteCarrierCommand.php | code |  |
 | src/Core/Domain/Carrier/Command/BulkToggleCarrierStatusCommand.php | CodeFile | src/Core/Domain/Carrier/Command/BulkToggleCarrierStatusCommand.php | code |  |
@@ -13892,6 +15490,7 @@ graph TD
 | src/Core/Domain/CmsPage/QueryResult/EditableCmsPage.php | CodeFile | src/Core/Domain/CmsPage/QueryResult/EditableCmsPage.php | code |  |
 | src/Core/Domain/CmsPage/ValueObject/CmsPageId.php | CodeFile | src/Core/Domain/CmsPage/ValueObject/CmsPageId.php | code |  |
 | src/Core/Domain/CmsPageCategory/Command/AbstractBulkCmsPageCategoryCommand.php | CodeFile | src/Core/Domain/CmsPageCategory/Command/AbstractBulkCmsPageCategoryCommand.php | code |  |
+| src/Core/Domain/CmsPageCategory/Command/AbstractCmsPageCategoryCommand.php | CodeFile | src/Core/Domain/CmsPageCategory/Command/AbstractCmsPageCategoryCommand.php | code |  |
 | src/Core/Domain/CmsPageCategory/Command/AddCmsPageCategoryCommand.php | CodeFile | src/Core/Domain/CmsPageCategory/Command/AddCmsPageCategoryCommand.php | code |  |
 | src/Core/Domain/CmsPageCategory/Command/BulkDeleteCmsPageCategoryCommand.php | CodeFile | src/Core/Domain/CmsPageCategory/Command/BulkDeleteCmsPageCategoryCommand.php | code |  |
 | src/Core/Domain/CmsPageCategory/Command/BulkDisableCmsPageCategoryCommand.php | CodeFile | src/Core/Domain/CmsPageCategory/Command/BulkDisableCmsPageCategoryCommand.php | code |  |
@@ -13945,6 +15544,7 @@ graph TD
 | src/Core/Domain/Country/ValueObject/CountryZipCodeFormat.php | CodeFile | src/Core/Domain/Country/ValueObject/CountryZipCodeFormat.php | code |  |
 | src/Core/Domain/CreditSlip/ | CodeFile | src/Core/Domain/CreditSlip/ | code |  |
 | src/Core/Domain/CreditSlip/Query/GetCreditSlipIdsByDateRange.php | CodeFile | src/Core/Domain/CreditSlip/Query/GetCreditSlipIdsByDateRange.php | code |  |
+| src/Core/Domain/Currency/ | CodeFile | src/Core/Domain/Currency/ | code |  |
 | src/Core/Domain/Currency/Command/AbstractAddCurrencyCommand.php | CodeFile | src/Core/Domain/Currency/Command/AbstractAddCurrencyCommand.php | code |  |
 | src/Core/Domain/Currency/Command/AbstractEditCurrencyCommand.php | CodeFile | src/Core/Domain/Currency/Command/AbstractEditCurrencyCommand.php | code |  |
 | src/Core/Domain/Currency/Command/AddCurrencyCommand.php | CodeFile | src/Core/Domain/Currency/Command/AddCurrencyCommand.php | code |  |
@@ -13962,6 +15562,7 @@ graph TD
 | src/Core/Domain/Currency/ValueObject/AlphaIsoCode.php | CodeFile | src/Core/Domain/Currency/ValueObject/AlphaIsoCode.php | code |  |
 | src/Core/Domain/Currency/ValueObject/ExchangeRate.php | CodeFile | src/Core/Domain/Currency/ValueObject/ExchangeRate.php | code |  |
 | src/Core/Domain/Currency/ValueObject/Precision.php | CodeFile | src/Core/Domain/Currency/ValueObject/Precision.php | code |  |
+| src/Core/Domain/Customer/ | CodeFile | src/Core/Domain/Customer/ | code |  |
 | src/Core/Domain/Customer/Command/AddCustomerCommand.php | CodeFile | src/Core/Domain/Customer/Command/AddCustomerCommand.php | code |  |
 | src/Core/Domain/Customer/Command/BulkDeleteCustomerCommand.php | CodeFile | src/Core/Domain/Customer/Command/BulkDeleteCustomerCommand.php | code |  |
 | src/Core/Domain/Customer/Command/BulkDisableCustomerCommand.php | CodeFile | src/Core/Domain/Customer/Command/BulkDisableCustomerCommand.php | code |  |
@@ -14005,6 +15606,7 @@ graph TD
 | src/Core/Domain/CustomerService/Query/GetCustomerServiceSignature.php | CodeFile | src/Core/Domain/CustomerService/Query/GetCustomerServiceSignature.php | code |  |
 | src/Core/Domain/CustomerService/Query/GetCustomerThreadForViewing.php | CodeFile | src/Core/Domain/CustomerService/Query/GetCustomerThreadForViewing.php | code |  |
 | src/Core/Domain/CustomerService/Repository/CustomerThreadRepository.php | CodeFile | src/Core/Domain/CustomerService/Repository/CustomerThreadRepository.php | code |  |
+| src/Core/Domain/CustomerService/ValueObject/CustomerThreadStatus.php | CodeFile | src/Core/Domain/CustomerService/ValueObject/CustomerThreadStatus.php | code |  |
 | src/Core/Domain/Discount/Command/AddDiscountCommand.php | CodeFile | src/Core/Domain/Discount/Command/AddDiscountCommand.php | code |  |
 | src/Core/Domain/Discount/Command/BulkDeleteDiscountsCommand.php | CodeFile | src/Core/Domain/Discount/Command/BulkDeleteDiscountsCommand.php | code |  |
 | src/Core/Domain/Discount/Command/BulkUpdateDiscountsStatusCommand.php | CodeFile | src/Core/Domain/Discount/Command/BulkUpdateDiscountsStatusCommand.php | code |  |
@@ -14026,6 +15628,7 @@ graph TD
 | src/Core/Domain/Discount/ValueObject/DiscountId.php | CodeFile | src/Core/Domain/Discount/ValueObject/DiscountId.php | code |  |
 | src/Core/Domain/Discount/ValueObject/DiscountType.php | CodeFile | src/Core/Domain/Discount/ValueObject/DiscountType.php | code |  |
 | src/Core/Domain/Discount/ValueObject/MinimumAmount.php | CodeFile | src/Core/Domain/Discount/ValueObject/MinimumAmount.php | code |  |
+| src/Core/Domain/Employee/ | CodeFile | src/Core/Domain/Employee/ | code |  |
 | src/Core/Domain/Employee/Command/AddEmployeeCommand.php | CodeFile | src/Core/Domain/Employee/Command/AddEmployeeCommand.php | code |  |
 | src/Core/Domain/Employee/Command/BulkDeleteEmployeeCommand.php | CodeFile | src/Core/Domain/Employee/Command/BulkDeleteEmployeeCommand.php | code |  |
 | src/Core/Domain/Employee/Command/BulkUpdateEmployeeStatusCommand.php | CodeFile | src/Core/Domain/Employee/Command/BulkUpdateEmployeeStatusCommand.php | code |  |
@@ -14121,6 +15724,7 @@ graph TD
 | src/Core/Domain/Language/Command/EditLanguageCommand.php | CodeFile | src/Core/Domain/Language/Command/EditLanguageCommand.php | code |  |
 | src/Core/Domain/Language/Command/ToggleLanguageStatusCommand.php | CodeFile | src/Core/Domain/Language/Command/ToggleLanguageStatusCommand.php | code |  |
 | src/Core/Domain/Language/Query/GetLanguageForEditing.php | CodeFile | src/Core/Domain/Language/Query/GetLanguageForEditing.php | code |  |
+| src/Core/Domain/Language/ValueObject/IsoCode.php | CodeFile | src/Core/Domain/Language/ValueObject/IsoCode.php | code |  |
 | src/Core/Domain/MailTemplate/Command/EditEmailBodyTemplateCommand.php | CodeFile | src/Core/Domain/MailTemplate/Command/EditEmailBodyTemplateCommand.php | code |  |
 | src/Core/Domain/MailTemplate/Command/GenerateThemeMailTemplatesCommand.php | CodeFile | src/Core/Domain/MailTemplate/Command/GenerateThemeMailTemplatesCommand.php | code |  |
 | src/Core/Domain/MailTemplate/CommandHandler/GenerateThemeMailTemplatesHandler.php | CodeFile | src/Core/Domain/MailTemplate/CommandHandler/GenerateThemeMailTemplatesHandler.php | code |  |
@@ -14148,6 +15752,7 @@ graph TD
 | src/Core/Domain/Meta/Command/AbstractMetaCommand.php | CodeFile | src/Core/Domain/Meta/Command/AbstractMetaCommand.php | code |  |
 | src/Core/Domain/Meta/Command/AddMetaCommand.php | CodeFile | src/Core/Domain/Meta/Command/AddMetaCommand.php | code |  |
 | src/Core/Domain/Meta/Command/EditMetaCommand.php | CodeFile | src/Core/Domain/Meta/Command/EditMetaCommand.php | code |  |
+| src/Core/Domain/Meta/Exception/MetaConstraintException.php | CodeFile | src/Core/Domain/Meta/Exception/MetaConstraintException.php | code |  |
 | src/Core/Domain/Meta/Query/GetMetaForEditing.php | CodeFile | src/Core/Domain/Meta/Query/GetMetaForEditing.php | code |  |
 | src/Core/Domain/Meta/Query/GetPagesForLayoutCustomization.php | CodeFile | src/Core/Domain/Meta/Query/GetPagesForLayoutCustomization.php | code |  |
 | src/Core/Domain/Meta/QueryResult/EditableMeta.php | CodeFile | src/Core/Domain/Meta/QueryResult/EditableMeta.php | code |  |
@@ -14228,7 +15833,6 @@ graph TD
 | src/Core/Domain/Order/Invoice/Command/UpdateInvoiceNoteCommand.php | CodeFile | src/Core/Domain/Order/Invoice/Command/UpdateInvoiceNoteCommand.php | code |  |
 | src/Core/Domain/Order/Invoice/Exception/InvoiceException.php | CodeFile | src/Core/Domain/Order/Invoice/Exception/InvoiceException.php | code |  |
 | src/Core/Domain/Order/Invoice/Exception/InvoiceNotFoundException.php | CodeFile | src/Core/Domain/Order/Invoice/Exception/InvoiceNotFoundException.php | code |  |
-| src/Core/Domain/Order/OrderConstraints.php | CodeFile | src/Core/Domain/Order/OrderConstraints.php | code |  |
 | src/Core/Domain/Order/Payment/ | CodeFile | src/Core/Domain/Order/Payment/ | code |  |
 | src/Core/Domain/Order/Payment/Command/AddPaymentCommand.php | CodeFile | src/Core/Domain/Order/Payment/Command/AddPaymentCommand.php | code |  |
 | src/Core/Domain/Order/Payment/Exception/PaymentException.php | CodeFile | src/Core/Domain/Order/Payment/Exception/PaymentException.php | code |  |
@@ -14240,6 +15844,7 @@ graph TD
 | src/Core/Domain/Order/Query/GetOrderProductsForViewing.php | CodeFile | src/Core/Domain/Order/Query/GetOrderProductsForViewing.php | code |  |
 | src/Core/Domain/Order/QueryResult/OrderForViewing.php | CodeFile | src/Core/Domain/Order/QueryResult/OrderForViewing.php | code |  |
 | src/Core/Domain/Order/QueryResult/OrderPreview.php | CodeFile | src/Core/Domain/Order/QueryResult/OrderPreview.php | code |  |
+| src/Core/Domain/Order/ValueObject/OrderDetailRefund.php | CodeFile | src/Core/Domain/Order/ValueObject/OrderDetailRefund.php | code |  |
 | src/Core/Domain/OrderMessage/ | CodeFile | src/Core/Domain/OrderMessage/ | code |  |
 | src/Core/Domain/OrderMessage/Command/AddOrderMessageCommand.php | CodeFile | src/Core/Domain/OrderMessage/Command/AddOrderMessageCommand.php | code |  |
 | src/Core/Domain/OrderMessage/Command/BulkDeleteOrderMessageCommand.php | CodeFile | src/Core/Domain/OrderMessage/Command/BulkDeleteOrderMessageCommand.php | code |  |
@@ -14455,9 +16060,12 @@ graph TD
 | src/Core/Domain/Profile/Command/BulkDeleteProfileCommand.php | CodeFile | src/Core/Domain/Profile/Command/BulkDeleteProfileCommand.php | code |  |
 | src/Core/Domain/Profile/Command/DeleteProfileCommand.php | CodeFile | src/Core/Domain/Profile/Command/DeleteProfileCommand.php | code |  |
 | src/Core/Domain/Profile/Command/EditProfileCommand.php | CodeFile | src/Core/Domain/Profile/Command/EditProfileCommand.php | code |  |
+| src/Core/Domain/Profile/Exception/FailedToDeleteProfileException.php | CodeFile | src/Core/Domain/Profile/Exception/FailedToDeleteProfileException.php | code |  |
 | src/Core/Domain/Profile/Permission/Command/UpdateModulePermissionsCommand.php | CodeFile | src/Core/Domain/Profile/Permission/Command/UpdateModulePermissionsCommand.php | code |  |
 | src/Core/Domain/Profile/Permission/Command/UpdateTabPermissionsCommand.php | CodeFile | src/Core/Domain/Profile/Permission/Command/UpdateTabPermissionsCommand.php | code |  |
 | src/Core/Domain/Profile/Permission/Query/GetPermissionsForConfiguration.php | CodeFile | src/Core/Domain/Profile/Permission/Query/GetPermissionsForConfiguration.php | code |  |
+| src/Core/Domain/Profile/Permission/ValueObject/ControllerPermission.php | CodeFile | src/Core/Domain/Profile/Permission/ValueObject/ControllerPermission.php | code |  |
+| src/Core/Domain/Profile/Permission/ValueObject/ModulePermission.php | CodeFile | src/Core/Domain/Profile/Permission/ValueObject/ModulePermission.php | code |  |
 | src/Core/Domain/Profile/ProfileSettings.php | CodeFile | src/Core/Domain/Profile/ProfileSettings.php | code |  |
 | src/Core/Domain/Profile/Query/GetProfileForEditing.php | CodeFile | src/Core/Domain/Profile/Query/GetProfileForEditing.php | code |  |
 | src/Core/Domain/QuickAccess/Command/AddQuickAccessCommand.php | CodeFile | src/Core/Domain/QuickAccess/Command/AddQuickAccessCommand.php | code |  |
@@ -14519,6 +16127,7 @@ graph TD
 | src/Core/Domain/Shipment/ValueObject/OrderDetailQuantity.php | CodeFile | src/Core/Domain/Shipment/ValueObject/OrderDetailQuantity.php | code |  |
 | src/Core/Domain/Shipment/ValueObject/ShipmentId.php | CodeFile | src/Core/Domain/Shipment/ValueObject/ShipmentId.php | code |  |
 | src/Core/Domain/Shipment/ValueObject/TrackingNumber.php | CodeFile | src/Core/Domain/Shipment/ValueObject/TrackingNumber.php | code |  |
+| src/Core/Domain/Shop/ | CodeFile | src/Core/Domain/Shop/ | code |  |
 | src/Core/Domain/Shop/Command/UploadLogosCommand.php | CodeFile | src/Core/Domain/Shop/Command/UploadLogosCommand.php | code |  |
 | src/Core/Domain/Shop/DTO/ShopLogoSettings.php | CodeFile | src/Core/Domain/Shop/DTO/ShopLogoSettings.php | code |  |
 | src/Core/Domain/Shop/Query/GetLogosPaths.php | CodeFile | src/Core/Domain/Shop/Query/GetLogosPaths.php | code |  |
@@ -14654,6 +16263,7 @@ graph TD
 | src/Core/Domain/Title/Exception/TitleImageUploadingException.php | CodeFile | src/Core/Domain/Title/Exception/TitleImageUploadingException.php | code |  |
 | src/Core/Domain/Title/Exception/TitleNotFoundException.php | CodeFile | src/Core/Domain/Title/Exception/TitleNotFoundException.php | code |  |
 | src/Core/Domain/Title/Query/GetTitleForEditing.php | CodeFile | src/Core/Domain/Title/Query/GetTitleForEditing.php | code |  |
+| src/Core/Domain/ValueObject/Email.php | CodeFile | src/Core/Domain/ValueObject/Email.php | code |  |
 | src/Core/Domain/ValueObject/Reduction.php | CodeFile | src/Core/Domain/ValueObject/Reduction.php | code |  |
 | src/Core/Domain/Webservice/Command/AddWebserviceKeyCommand.php | CodeFile | src/Core/Domain/Webservice/Command/AddWebserviceKeyCommand.php | code |  |
 | src/Core/Domain/Webservice/Command/BulkDeleteWebserviceKeyCommand.php | CodeFile | src/Core/Domain/Webservice/Command/BulkDeleteWebserviceKeyCommand.php | code |  |
@@ -14671,17 +16281,32 @@ graph TD
 | src/Core/ExtraProperty/Definition/ExtraPropertyDefinition.php | CodeFile | src/Core/ExtraProperty/Definition/ExtraPropertyDefinition.php | code |  |
 | src/Core/ExtraProperty/Definition/ExtraPropertyDefinitionRepository.php | CodeFile | src/Core/ExtraProperty/Definition/ExtraPropertyDefinitionRepository.php | code |  |
 | src/Core/Form/Handler.php | CodeFile | src/Core/Form/Handler.php | code |  |
+| src/Core/Form/IdentifiableObject/DataHandler/PartialRefundFormDataHandler.php | CodeFile | src/Core/Form/IdentifiableObject/DataHandler/PartialRefundFormDataHandler.php | code |  |
 | src/Core/Form/IdentifiableObject/Handler/FormHandler.php | CodeFile | src/Core/Form/IdentifiableObject/Handler/FormHandler.php | code |  |
 | src/Core/Grid/Data/Factory/CartGridDataFactory.php | CodeFile | src/Core/Grid/Data/Factory/CartGridDataFactory.php | code |  |
+| src/Core/Grid/Definition/Factory/CustomerGridDefinitionFactory.php | CodeFile | src/Core/Grid/Definition/Factory/CustomerGridDefinitionFactory.php | code |  |
+| src/Core/Grid/Definition/Factory/OrderGridDefinitionFactory.php | CodeFile | src/Core/Grid/Definition/Factory/OrderGridDefinitionFactory.php | code |  |
 | src/Core/Grid/Query/CartQueryBuilder.php | CodeFile | src/Core/Grid/Query/CartQueryBuilder.php | code |  |
 | src/Core/MailTemplate/FolderThemeCatalog.php | CodeFile | src/Core/MailTemplate/FolderThemeCatalog.php | code |  |
 | src/Core/Module/HookRepository.php | CodeFile | src/Core/Module/HookRepository.php | code |  |
 | src/Core/Module/ModuleManager.php | CodeFile | src/Core/Module/ModuleManager.php | code |  |
+| src/Core/Payment/PaymentOption.php | CodeFile | src/Core/Payment/PaymentOption.php | code |  |
 | src/Core/Repository/AbstractObjectModelRepository.php | CodeFile | src/Core/Repository/AbstractObjectModelRepository.php | code |  |
 | src/Core/Security/PasswordPolicyConfiguration.php | CodeFile | src/Core/Security/PasswordPolicyConfiguration.php | code |  |
 | src/PrestaShopBundle/ | CodeFile | src/PrestaShopBundle/ | code |  |
+| src/PrestaShopBundle/Controller/Admin/Configure/AdvancedParameters/EmployeeController.php | CodeFile | src/PrestaShopBundle/Controller/Admin/Configure/AdvancedParameters/EmployeeController.php | code |  |
 | src/PrestaShopBundle/Controller/Admin/Configure/AdvancedParameters/PerformanceController.php | CodeFile | src/PrestaShopBundle/Controller/Admin/Configure/AdvancedParameters/PerformanceController.php | code |  |
+| src/PrestaShopBundle/Controller/Admin/Improve/Design/CmsPageController.php | CodeFile | src/PrestaShopBundle/Controller/Admin/Improve/Design/CmsPageController.php | code |  |
+| src/PrestaShopBundle/Controller/Admin/Improve/ModuleController.php | CodeFile | src/PrestaShopBundle/Controller/Admin/Improve/ModuleController.php | code |  |
+| src/PrestaShopBundle/Controller/Admin/Improve/Modules/ModuleAbstractController.php | CodeFile | src/PrestaShopBundle/Controller/Admin/Improve/Modules/ModuleAbstractController.php | code |  |
+| src/PrestaShopBundle/Controller/Admin/Improve/Shipping/CarrierController.php | CodeFile | src/PrestaShopBundle/Controller/Admin/Improve/Shipping/CarrierController.php | code |  |
 | src/PrestaShopBundle/Controller/Admin/Sell/Catalog/CategoryController.php | CodeFile | src/PrestaShopBundle/Controller/Admin/Sell/Catalog/CategoryController.php | code |  |
+| src/PrestaShopBundle/Controller/Admin/Sell/Catalog/Product/ProductController.php | CodeFile | src/PrestaShopBundle/Controller/Admin/Sell/Catalog/Product/ProductController.php | code |  |
+| src/PrestaShopBundle/Controller/Admin/Sell/Customer/CustomerController.php | CodeFile | src/PrestaShopBundle/Controller/Admin/Sell/Customer/CustomerController.php | code |  |
+| src/PrestaShopBundle/Controller/Admin/Sell/Order/CartController.php | CodeFile | src/PrestaShopBundle/Controller/Admin/Sell/Order/CartController.php | code |  |
+| src/PrestaShopBundle/Controller/Admin/Sell/Order/CreditSlipController.php | CodeFile | src/PrestaShopBundle/Controller/Admin/Sell/Order/CreditSlipController.php | code |  |
+| src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php | CodeFile | src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php | code |  |
+| src/PrestaShopBundle/Entity/ApiClient.php | CodeFile | src/PrestaShopBundle/Entity/ApiClient.php | code |  |
 | src/PrestaShopBundle/Entity/B2B/BusinessEntity.php | CodeFile | src/PrestaShopBundle/Entity/B2B/BusinessEntity.php | code |  |
 | src/PrestaShopBundle/Entity/Employee/Employee.php | CodeFile | src/PrestaShopBundle/Entity/Employee/Employee.php | code |  |
 | src/PrestaShopBundle/Entity/Enum/BusinessEntityStatus.php | CodeFile | src/PrestaShopBundle/Entity/Enum/BusinessEntityStatus.php | code |  |
@@ -14689,13 +16314,22 @@ graph TD
 | src/PrestaShopBundle/Entity/Shipment.php | CodeFile | src/PrestaShopBundle/Entity/Shipment.php | code |  |
 | src/PrestaShopBundle/Event/ModuleManagementEvent.php | CodeFile | src/PrestaShopBundle/Event/ModuleManagementEvent.php | code |  |
 | src/PrestaShopBundle/EventListener/Admin/EmployeeSessionSubscriber.php | CodeFile | src/PrestaShopBundle/EventListener/Admin/EmployeeSessionSubscriber.php | code |  |
+| src/PrestaShopBundle/Form/Admin/Configure/ShopParameters/Contact/ContactType.php | CodeFile | src/PrestaShopBundle/Form/Admin/Configure/ShopParameters/Contact/ContactType.php | code |  |
+| src/PrestaShopBundle/Form/Admin/Login/ResetPasswordType.php | CodeFile | src/PrestaShopBundle/Form/Admin/Login/ResetPasswordType.php | code |  |
+| src/PrestaShopBundle/Form/Admin/Sell/Address/CustomerAddressType.php | CodeFile | src/PrestaShopBundle/Form/Admin/Sell/Address/CustomerAddressType.php | code |  |
+| src/PrestaShopBundle/Form/Admin/Sell/Order/Shipment/ProductSplitType.php | CodeFile | src/PrestaShopBundle/Form/Admin/Sell/Order/Shipment/ProductSplitType.php | code |  |
 | src/PrestaShopBundle/Resources/config/services/bundle/form/form_handler.yml | CodeFile | src/PrestaShopBundle/Resources/config/services/bundle/form/form_handler.yml | code |  |
+| src/PrestaShopBundle/Resources/views/Admin/Improve/Design/Theme/index.html.twig | CodeFile | src/PrestaShopBundle/Resources/views/Admin/Improve/Design/Theme/index.html.twig | code |  |
+| src/PrestaShopBundle/Resources/views/Admin/Module/Includes/modal_import.html.twig | CodeFile | src/PrestaShopBundle/Resources/views/Admin/Module/Includes/modal_import.html.twig | code |  |
+| src/PrestaShopBundle/Resources/views/Admin/Sell/Customer/Blocks/View/addresses.html.twig | CodeFile | src/PrestaShopBundle/Resources/views/Admin/Sell/Customer/Blocks/View/addresses.html.twig | code |  |
+| src/PrestaShopBundle/Resources/views/Admin/Sell/Order/Order/Blocks/View/merchandise_returns.html.twig | CodeFile | src/PrestaShopBundle/Resources/views/Admin/Sell/Order/Order/Blocks/View/merchandise_returns.html.twig | code |  |
 | src/PrestaShopBundle/Security/Admin/EmployeePasswordResetter.php | CodeFile | src/PrestaShopBundle/Security/Admin/EmployeePasswordResetter.php | code |  |
 | tests/Integration/Adapter/Customer/Repository/CustomerRepositoryTest.php | CodeFile | tests/Integration/Adapter/Customer/Repository/CustomerRepositoryTest.php | code |  |
 | tests/Integration/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandlerTest.php | CodeFile | tests/Integration/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandlerTest.php | code |  |
 | tests/Integration/Behaviour/Features/Context/Domain/ProductFeatureContext.php | CodeFile | tests/Integration/Behaviour/Features/Context/Domain/ProductFeatureContext.php | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Address/customer_address.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Address/customer_address.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/ApiClient/api_client_management.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/ApiClient/api_client_management.feature | code |  |
+| tests/Integration/Behaviour/Features/Scenario/BusinessEntity/business_entity_management.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/BusinessEntity/business_entity_management.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Carrier/Ranges/carrier_ranges.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Carrier/Ranges/carrier_ranges.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Cart/cart_to_order.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Cart/cart_to_order.feature | code |  |
@@ -14704,17 +16338,21 @@ graph TD
 | tests/Integration/Behaviour/Features/Scenario/CatalogPriceRule/catalog_price_rules_listing.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/CatalogPriceRule/catalog_price_rules_listing.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Category/category_management.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Category/category_management.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/CmsPage/cms_page_management.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/CmsPage/cms_page_management.feature | code |  |
+| tests/Integration/Behaviour/Features/Scenario/Contact/contact.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Contact/contact.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Country/bulk_update_country_zone.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Country/bulk_update_country_zone.feature | code |  |
+| tests/Integration/Behaviour/Features/Scenario/Country/country_management.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Country/country_management.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Currency/currency_management.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Currency/currency_management.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Customer/customer_management.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Customer/customer_management.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/CustomerService/customer_service.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/CustomerService/customer_service.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Database/sql_manager.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Database/sql_manager.feature | code |  |
+| tests/Integration/Behaviour/Features/Scenario/Discount/BO/add_and_update_discount_quantities.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Discount/BO/add_and_update_discount_quantities.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Discount/BO/add_discount_with_code.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Discount/BO/add_discount_with_code.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Discount/BO/update_discount_validity_dates.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Discount/BO/update_discount_validity_dates.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_validity_date_range.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_validity_date_range.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_condition_minimum_amount.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_condition_minimum_amount.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_usage_limits.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_usage_limits.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Employee/employee_management.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Employee/employee_management.feature | code |  |
+| tests/Integration/Behaviour/Features/Scenario/Language/language.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Language/language.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Meta/meta_management.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Meta/meta_management.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Module/install_module.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Module/install_module.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Module/module.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Module/module.feature | code |  |
@@ -14722,14 +16360,17 @@ graph TD
 | tests/Integration/Behaviour/Features/Scenario/Module/upgrade_module.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Module/upgrade_module.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Order/order_add_payment.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Order/order_add_payment.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Order/order_cancel_product.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Order/order_cancel_product.feature | code |  |
+| tests/Integration/Behaviour/Features/Scenario/Order/order_documents.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Order/order_documents.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Order/order_from_bo.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Order/order_from_bo.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Order/partial_refund.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Order/partial_refund.feature | code |  |
+| tests/Integration/Behaviour/Features/Scenario/OrderReturn/order_return_management.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/OrderReturn/order_return_management.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Product/add_product.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Product/add_product.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Product/Combination/forbidden_actions.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Product/Combination/forbidden_actions.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Product/Combination/generate_combinations.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Product/Combination/generate_combinations.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Product/delete_product.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Product/delete_product.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Product/Image/add_image.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Product/Image/add_image.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Product/SpecificPrice/add_specific_price.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Product/SpecificPrice/add_specific_price.feature | code |  |
+| tests/Integration/Behaviour/Features/Scenario/Product/update_status.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Product/update_status.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Profile/profile_permissions.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Profile/profile_permissions.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/Search/add_alias.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Search/add_alias.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/SearchEngine/search_engine_management.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/SearchEngine/search_engine_management.feature | code |  |
@@ -14739,6 +16380,9 @@ graph TD
 | tests/Integration/Behaviour/Features/Scenario/Shop/shop.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/Shop/shop.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/TaxRulesGroup/tax_rule_group_management.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/TaxRulesGroup/tax_rule_group_management.feature | code |  |
 | tests/Integration/Behaviour/Features/Scenario/TaxRulesGroup/tax_rule_management.feature | CodeFile | tests/Integration/Behaviour/Features/Scenario/TaxRulesGroup/tax_rule_management.feature | code |  |
+| tests/Resources/themes/classic/templates/customer/addresses.tpl | CodeFile | tests/Resources/themes/classic/templates/customer/addresses.tpl | code |  |
+| tests/Resources/themes/classic/templates/customer/authentication.tpl | CodeFile | tests/Resources/themes/classic/templates/customer/authentication.tpl | code |  |
+| tests/Resources/themes/classic/templates/customer/my-account.tpl | CodeFile | tests/Resources/themes/classic/templates/customer/my-account.tpl | code |  |
 | tests/UI/campaigns/functional/BO/04_customers/01_customers/11_transformGuestToCustomer.ts | CodeFile | tests/UI/campaigns/functional/BO/04_customers/01_customers/11_transformGuestToCustomer.ts | code |  |
 | tests/Unit/Core/Domain/CmsPageCategory/Command/AddCmsPageCategoryCommandTest.php | CodeFile | tests/Unit/Core/Domain/CmsPageCategory/Command/AddCmsPageCategoryCommandTest.php | code |  |
 | tests/Unit/Core/Domain/Currency/ValueObject/CurrencyIsoCodeTest.php | CodeFile | tests/Unit/Core/Domain/Currency/ValueObject/CurrencyIsoCodeTest.php | code |  |
@@ -14747,6 +16391,8 @@ graph TD
 | tests/Unit/Core/Domain/Shop/Command/UploadLogosCommandTest.php | CodeFile | tests/Unit/Core/Domain/Shop/Command/UploadLogosCommandTest.php | code |  |
 | tests/Unit/PrestaShopBundle/Command/EmployeeCreateCommandTest.php | CodeFile | tests/Unit/PrestaShopBundle/Command/EmployeeCreateCommandTest.php | code |  |
 | tests/Unit/PrestaShopBundle/Command/SearchIndexationCommandTest.php | CodeFile | tests/Unit/PrestaShopBundle/Command/SearchIndexationCommandTest.php | code |  |
+| themes/_core/js/cart.js | CodeFile | themes/_core/js/cart.js | code |  |
+| themes/_core/js/checkout-delivery.js | CodeFile | themes/_core/js/checkout-delivery.js | code |  |
 | upload | CodeFile | upload | code |  |
 | checkout.CMP001 | Compliance | Promotion Transparency | design.quality | checkout/quality.yaml |
 | customers.CMP001 | Compliance | GDPR Data Subject Rights | design.quality | customers/quality.yaml |
@@ -14814,7 +16460,7 @@ graph TD
 | international.CN009 | Concept | TaxRule | design.concepts | international/taxation.concepts.yaml |
 | modules.CN001 | Concept | Module | design.concepts | modules/concepts.yaml |
 | modules.CN002 | Concept | Hook | design.concepts | modules/concepts.yaml |
-| orders.CN002 | Concept | Order | design.concepts | orders/order.concepts.yaml |
+| orders.CN002 | Concept | A customer purchase made from a validated cart, with its lines, addresses, carrier, payment, totals and current status. | design.concepts | orders/order.concepts.yaml |
 | orders.CN003 | Concept | OrderLine | design.concepts | orders/order.concepts.yaml |
 | orders.CN004 | Concept | ShippingAddress | design.concepts | orders/order.concepts.yaml |
 | orders.CN005 | Concept | PaymentRecord | design.concepts | orders/order.concepts.yaml |
@@ -14853,19 +16499,18 @@ graph TD
 | AdminApiClient.security_schemes | Contract |  | design.arch | prestashop.arch.yaml |
 | AdminService.openapi | Contract |  | design.arch | admin/arch.yaml |
 | AdminService.security_schemes | Contract |  | design.arch | admin/arch.yaml |
-| CatalogService.asyncapi | Contract |  | design.arch | catalog/arch.yaml |
 | CatalogService.inprocess | Contract |  | design.arch | catalog/arch.yaml |
 | CatalogService.openapi | Contract |  | design.arch | catalog/arch.yaml |
 | CatalogService.shareddata | Contract |  | design.arch | catalog/arch.yaml |
-| CheckoutService.asyncapi | Contract |  | design.arch | checkout/arch.yaml |
-| CheckoutService.openapi | Contract |  | design.arch | checkout/arch.yaml |
-| ContentService.openapi | Contract |  | design.arch | content/arch.yaml |
+| CheckoutService.inprocess | Contract |  | design.arch | checkout/arch.yaml |
+| ContentService.inprocess | Contract |  | design.arch | content/arch.yaml |
 | CustomerService.openapi | Contract |  | design.arch | customers/arch.yaml |
+| InProcessConsumers.inprocess | Contract |  | design.arch | prestashop.arch.yaml |
 | InternationalService.openapi | Contract |  | design.arch | international/arch.yaml |
 | InternationalService.scheduledtransfer | Contract |  | design.arch | international/arch.yaml |
 | ModuleManager.inprocess | Contract |  | design.arch | modules/arch.yaml |
 | ModuleManager.openapi | Contract |  | design.arch | modules/arch.yaml |
-| OrderService.asyncapi | Contract |  | design.arch | orders/arch.yaml |
+| OrderService.inprocess | Contract |  | design.arch | orders/arch.yaml |
 | OrderService.openapi | Contract |  | design.arch | orders/arch.yaml |
 | OrderService.scheduledtransfer | Contract |  | design.arch | orders/arch.yaml |
 | ShippingService.openapi | Contract |  | design.arch | shipping/arch.yaml |
@@ -14888,8 +16533,8 @@ graph TD
 | DPT103 | Department | Quality Council | governance.org | organization.yaml |
 | data-tier | DeploymentTier | The state: the shared relational database, the media tree and the optional shared cache. Adding a front server does not add one of these. | design.infrastructure | infrastructure.yaml |
 | web-tier | DeploymentTier | The stateless front: the PHP application and the host serving it. This is the tier the scale guide multiplies when a shop grows. | design.infrastructure | infrastructure.yaml |
-| checkout.DR001 | DerivationRule | Cart total derivation | design.rules | checkout/rules.yaml |
-| orders.DR001 | DerivationRule | Estimated delivery from shipping method | design.rules | orders/rules.yaml |
+| checkout.DR001 | DerivationRule | Products less discounts plus shipping plus wrapping. | design.rules | checkout/rules.yaml |
+| orders.DR001 | DerivationRule | The estimate shown at checkout is the carrier's transit-time text; no date is computed. | design.rules | orders/rules.yaml |
 | DMN001 | Domain | admin | blueprint | blueprint.yaml |
 | DMN002 | Domain | catalog | blueprint | blueprint.yaml |
 | DMN003 | Domain | checkout | blueprint | blueprint.yaml |
@@ -14945,7 +16590,7 @@ graph TD
 | prestashop.ENV001 | Environment | production | design.infrastructure | infrastructure.yaml |
 | prestashop.ENV002 | Environment | staging | design.infrastructure | infrastructure.yaml |
 | prestashop.ENV100 | Environment | development | design.infrastructure | infrastructure.yaml |
-| orders.EQ001 | EquivalenceRule | Order total equals sum of line totals | design.rules | orders/rules.yaml |
+| orders.EQ001 | EquivalenceRule | Total = products before discounts - discounts + shipping + gift wrapping, each rounded first. | design.rules | orders/rules.yaml |
 | admin.ERR001 | Error | EmployeeNotFound | design.domain | admin/identity.domain.yaml |
 | admin.ERR002 | Error | ProfileNotFound | design.domain | admin/identity.domain.yaml |
 | admin.ERR003 | Error | ProfileInUse | design.domain | admin/identity.domain.yaml |
@@ -15220,6 +16865,7 @@ graph TD
 | admin.GL002 | Goal | API-first integration | governance.motivation | admin/motivation.yaml |
 | admin.GL003 | Goal | Session security | governance.motivation | admin/motivation.yaml |
 | admin.GL004 | Goal | SQL self-service | governance.motivation | admin/motivation.yaml |
+| admin.GL005 | Goal | Thin controllers, layered back office | governance.motivation | admin/motivation.yaml |
 | catalog.GL001 | Goal | Search answered from the inverted index | governance.motivation | catalog/motivation.yaml |
 | catalog.GL002 | Goal | Facets are a core contract filled by a module | governance.motivation | catalog/motivation.yaml |
 | catalog.GL003 | Goal | Responsive catalog back-office | governance.motivation | catalog/motivation.yaml |
@@ -15228,6 +16874,7 @@ graph TD
 | checkout.GL001 | Goal | Above-average checkout conversion rate | governance.motivation | checkout/motivation.yaml |
 | checkout.GL002 | Goal | Measurable promotion campaign effectiveness | governance.motivation | checkout/motivation.yaml |
 | checkout.GL003 | Goal | Fast cart rule evaluation | governance.motivation | checkout/motivation.yaml |
+| checkout.GL004 | Goal | Prices are the shop's, not the browser's | governance.motivation | checkout/motivation.yaml |
 | content.GL001 | Goal | CMS content management efficiency | governance.motivation | content/motivation.yaml |
 | content.GL002 | Goal | SEO metadata coverage | governance.motivation | content/motivation.yaml |
 | content.GL003 | Goal | Brand consistency via themes | governance.motivation | content/motivation.yaml |
@@ -15342,6 +16989,7 @@ graph TD
 | MIG003 | Migration | Each context and each party is declared once | migrations | migrations.yaml |
 | MIG004 | Migration | A party stops declaring an environment | migrations | migrations.yaml |
 | MIG005 | Migration | A server names the environment the model declares | migrations | migrations.yaml |
+| MIG006 | Migration | defer-order-effects-with-durable-guards | migrations | .migrations/006-defer-order-effects.migration.yaml |
 | MS002 | Milestone | Proposed: faceted product search | governance.roadmap | roadmap.yaml |
 | MS003 | Milestone | Proposed: stock reservation at checkout and asynchronous order side effects | governance.roadmap | roadmap.yaml |
 | MS100 | Milestone | PrestaShop 9.0.0 | governance.roadmap | roadmap.yaml |
@@ -15474,6 +17122,9 @@ graph TD
 | MDL905 | Models | SEO referrer search engine details for the back-office edit form. | design.models | shop/models.yaml |
 | MDL906 | Models | Request body for both alias writes: POST /search-aliases and PUT /search-aliases/{searchTerm}. The unit is a search term together with its whole alias list, never a single alias, because PrestaShop stores no alias identity a route could address. Renamed from CreateAliasPayload on 2026-09-19: it was never create-only, and its three scalar properties described a shape neither the command nor the route has. | design.models | shop/models.yaml |
 | MDL907 | Models | Contact department details for the back-office edit form. Represents a 'Contact Us' form category. | design.models | shop/models.yaml |
+| orders.MDL001 | Models | PATCH body for a merchandise return state change. | design.models | orders/models.yaml |
+| orders.MDL002 | Models | Admin API merchandise return returned after a state change. | design.models | orders/models.yaml |
+| orders.MDL003 | Models | Numeric order return identifier in the Admin API path. | design.models | orders/models.yaml |
 | admin.NG001 | NonGoal | No LDAP/Active Directory integration for employee authentication | governance.motivation | admin/motivation.yaml |
 | admin.NG002 | NonGoal | No second authentication factor for employee sign-in | governance.motivation | admin/motivation.yaml |
 | catalog.NG001 | NonGoal | No built-in B2B tiered/volume pricing engine | governance.motivation | catalog/motivation.yaml |
@@ -16189,11 +17840,23 @@ graph TD
 | shop.QRY008 | Operation | GetContactForEditing | design.domain | shop/domain.yaml |
 | shop.QRY009 | Operation | GetNotificationLastElements | design.domain | shop/domain.yaml |
 | shop.QRY010 | Operation | GetShowcaseCardIsClosed | design.domain | shop/domain.yaml |
-| ApiIntegrators | Party | Third-party systems integrating with PrestaShop over the Admin REST API using OAuth2. Not built or operated by PrestaShop; modelled so the dependency on the Admin API surface is visible. | design.arch | prestashop.arch.yaml |
-| PrestaShop | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | prestashop.arch.yaml |
 | PRT001 | Party | PrestaShop SA | governance.org | organization.yaml |
+| PRT002 | Party | PrestaShop v9 monolith with CQRS domain layer and Symfony framework. | design.arch | prestashop.arch.yaml |
+| PRT003 | Party | Third-party systems integrating with PrestaShop over the Admin REST API using OAuth2. Not built or operated by PrestaShop; modelled so the dependency on the Admin API surface is visible. | design.arch | prestashop.arch.yaml |
 | PRT100 | Party | The PrestaShop Project | governance.org | organization.yaml |
 | PRT101 | Party | PrestaShop Partner and Expert Network | governance.org | organization.yaml |
+| admin.PER001 | Persona | Merchant with a team | design.concepts | admin/identity.concepts.yaml |
+| admin.PER002 | Persona | Integration developer | design.concepts | admin/api.concepts.yaml |
+| content.PER001 | Persona | Theme designer | design.concepts | content/theme.concepts.yaml |
+| customers.PER001 | Persona | Registered customer | design.concepts | customers/customer.concepts.yaml |
+| customers.PER002 | Persona | Salesman | design.concepts | customers/customer.concepts.yaml |
+| international.PER001 | Persona | Translator | design.concepts | international/localization.concepts.yaml |
+| modules.PER001 | Persona | Module developer | design.concepts | modules/concepts.yaml |
+| orders.PER001 | Persona | Guest shopper | design.concepts | orders/order.concepts.yaml |
+| orders.PER002 | Persona | Gift buyer | design.concepts | orders/order.concepts.yaml |
+| orders.PER003 | Persona | Single-shop merchant | design.concepts | orders/order.concepts.yaml |
+| shipping.PER001 | Persona | Logistician | design.concepts | shipping/carrier.concepts.yaml |
+| shop.PER001 | Persona | Multistore merchant | design.concepts | shop/concepts.yaml |
 | admin.PRC001 | Process | Employee Onboarding | design.process | admin/story.yaml |
 | admin.PRC002 | Process | API Integration Setup | design.process | admin/story.yaml |
 | admin.PRC003 | Process | Security Session Cleanup | design.process | admin/story.yaml |
@@ -16230,6 +17893,8 @@ graph TD
 | catalog.QN002 | Question | What A Product Costs This Shopper | design.domain | catalog/pricing.domain.yaml |
 | catalog.QN003 | Question | Which Variants Can Be Bought | design.domain | catalog/combination.domain.yaml |
 | catalog.QN004 | Question | Who Can Restock This | design.domain | catalog/supply-chain.domain.yaml |
+| catalog.QN005 | Question | Deleting A Product With Pending Orders | design.domain | catalog/product-core.domain.yaml |
+| catalog.QN006 | Question | Duplicate Manufacturer Name | design.domain | catalog/supply-chain.domain.yaml |
 | checkout.QN001 | Question | What This Cart Costs | design.domain | checkout/cart-core.domain.yaml |
 | checkout.QN002 | Question | Which Discounts This Cart Earns | design.domain | checkout/cart-rules.domain.yaml |
 | checkout.QN003 | Question | Whether A Cart Can Become An Order | design.domain | checkout/cart-core.domain.yaml |
@@ -16243,6 +17908,7 @@ graph TD
 | international.QN001 | Question | Which Tax Applies | design.domain | international/taxation.domain.yaml |
 | international.QN002 | Question | Where We Sell | design.domain | international/geography.domain.yaml |
 | international.QN003 | Question | What A Price Converts To | design.domain | international/currency.domain.yaml |
+| international.QN004 | Question | Negative Tax Rate | design.domain | international/taxation.domain.yaml |
 | modules.QN001 | Question | Who Listens To A Hook | design.domain | modules/domain.yaml |
 | modules.QN002 | Question | What State A Module Is In | design.domain | modules/domain.yaml |
 | modules.QN003 | Question | What Happens When A Hook Fires | design.domain | modules/domain.yaml |
@@ -16258,6 +17924,7 @@ graph TD
 | shop.QN001 | Question | What A Search Returns | design.domain | shop/domain.yaml |
 | shop.QN002 | Question | Which Shop Serves This Request | design.domain | shop/domain.yaml |
 | shop.QN003 | Question | Where A Shopper Can Walk In | design.domain | shop/domain.yaml |
+| shop.QN004 | Question | Duplicate Search Engine Server | design.domain | shop/domain.yaml |
 | catalog.RES001 | Resilience | Search Index Recovery | design.quality | catalog/quality.yaml |
 | admin.RSK001 | Risk | Privilege escalation risk | governance.motivation | admin/motivation.yaml |
 | admin.RSK002 | Risk | The SQL guard runs at save time, the query runs with write rights | governance.motivation | admin/motivation.yaml |
@@ -16266,6 +17933,7 @@ graph TD
 | catalog.RSK002 | Risk | Every image type multiplies the whole catalog's footprint | governance.motivation | catalog/motivation.yaml |
 | catalog.RSK003 | Risk | Multi-store product data drift | governance.motivation | catalog/motivation.yaml |
 | catalog.RSK004 | Risk | Combinatorial explosion | governance.motivation | catalog/motivation.yaml |
+| catalog.RSK005 | Risk | A large catalog loses the word-length ranking signal, silently | governance.motivation | catalog/motivation.yaml |
 | checkout.RSK001 | Risk | Flash sale checkout latency | governance.motivation | checkout/motivation.yaml |
 | checkout.RSK002 | Risk | Discount stacking exploitation | governance.motivation | checkout/motivation.yaml |
 | checkout.RSK003 | Risk | Cart rule evaluation scalability | governance.motivation | checkout/motivation.yaml |
@@ -16355,13 +18023,14 @@ graph TD
 | AdminApiClient | Service | External API consumer using PrestaShop Admin REST API with OAuth2 authentication. | design.arch | prestashop.arch.yaml |
 | AdminService | Service | REST API for employee, security, and configuration management. | design.arch | admin/arch.yaml |
 | CatalogService | Service | REST API for product and category management. | design.arch | catalog/arch.yaml |
-| CheckoutService | Service | REST API for cart operations and payment initiation. | design.arch | checkout/arch.yaml |
-| ContentService | Service | REST API for CMS page and theme management. | design.arch | content/arch.yaml |
+| CheckoutService | Service | In-process cart commands, queries and local hooks within the PrestaShop monolith. | design.arch | checkout/arch.yaml |
+| ContentService | Service | In-process CMS page commands within the PrestaShop monolith. | design.arch | content/arch.yaml |
 | CustomerService | Service | REST API for customer account and address management. | design.arch | customers/arch.yaml |
 | HookDispatcher | Service | Executes hooks synchronously, in-process, and is the only publish-subscribe surface PrestaShop has. | design.arch | prestashop.arch.yaml |
+| InProcessConsumers | Service | The callers and hook listeners inside the PrestaShop process that use these operations, stated as one group because no individual caller is modelled from the code yet. | design.arch | prestashop.arch.yaml |
 | InternationalService | Service | REST API for currency, tax, country, and language management. | design.arch | international/arch.yaml |
 | ModuleManager | Service | Module lifecycle orchestrator with hook execution pipeline. | design.arch | modules/arch.yaml |
-| OrderService | Service | REST API for order commands and queries. | design.arch | orders/arch.yaml |
+| OrderService | Service | In-process order commands, queries and local hooks within the PrestaShop monolith. | design.arch | orders/arch.yaml |
 | ShippingService | Service | REST API for carrier management and shipping cost calculation. | design.arch | shipping/arch.yaml |
 | ShopService | Service | REST API for multi-store and shop configuration. | design.arch | shop/arch.yaml |
 | admin.SLO001 | SLO | API Client Administration Latency | design.quality | admin/quality.yaml |
@@ -16384,20 +18053,21 @@ graph TD
 | SLO001 | SLO | Order API Availability | design.quality | orders/quality.yaml |
 | SLO002 | SLO | Order Query Response Time | design.quality | orders/quality.yaml |
 | SLO003 | SLO | Refund Processing SLO | design.quality | orders/quality.yaml |
-| admin.SR001 | StructuralRule | Employee requires profile assignment | design.rules | admin/rules.yaml |
-| catalog.SR001 | StructuralRule | Product must have valid type configuration | design.rules | catalog/rules.yaml |
-| catalog.SR002 | StructuralRule | Category depth is derived from the parent, never set | design.rules | catalog/rules.yaml |
-| catalog.SR003 | StructuralRule | Root category cannot be deleted | design.rules | catalog/rules.yaml |
-| checkout.SR001 | StructuralRule | Cart item quantity must be positive | design.rules | checkout/rules.yaml |
-| checkout.SR002 | StructuralRule | Discount reduction value must be valid | design.rules | checkout/rules.yaml |
-| content.SR001 | StructuralRule | CMS Category Tree Acyclicity | design.rules | content/rules.yaml |
-| customers.SR001 | StructuralRule | One customer account per email per shop | design.rules | customers/rules.yaml |
-| international.SR001 | StructuralRule | Unique ISO currency code per shop | design.rules | international/rules.yaml |
-| modules.SR001 | StructuralRule | Module Must Be Installed for Lifecycle Operations | design.rules | modules/rules.yaml |
-| orders.SR001 | StructuralRule | Order must have at least one line | design.rules | orders/rules.yaml |
-| orders.SR002 | StructuralRule | Invoice requires paid status | design.rules | orders/rules.yaml |
-| orders.SR003 | StructuralRule | Merchandise return must keep at least one product line | design.rules | orders/rules.yaml |
-| shipping.SR001 | StructuralRule | Carrier requires at least one zone | design.rules | shipping/rules.yaml |
+| admin.SR001 | StructuralRule | One profile per employee, chosen among those the acting employee can access. | design.rules | admin/rules.yaml |
+| catalog.SR001 | StructuralRule | Four product types; changing type removes the old type parts. | design.rules | catalog/rules.yaml |
+| catalog.SR002 | StructuralRule | Depth follows the parent; there is no depth limit. | design.rules | catalog/rules.yaml |
+| catalog.SR003 | StructuralRule | Shop roots and the global root stay. | design.rules | catalog/rules.yaml |
+| checkout.SR001 | StructuralRule | A cart line holds at least one unit, and no fewer than the product's minimal quantity. | design.rules | checkout/rules.yaml |
+| checkout.SR002 | StructuralRule | Each discount type has its own reduction constraints. | design.rules | checkout/rules.yaml |
+| content.SR001 | StructuralRule | The CMS category tree has no cycle. | design.rules | content/rules.yaml |
+| customers.SR001 | StructuralRule | One registered account per email in the shops that share customers. | design.rules | customers/rules.yaml |
+| international.SR001 | StructuralRule | One currency per ISO code across all shops; a deleted currency with the code is reused. | design.rules | international/rules.yaml |
+| modules.SR001 | StructuralRule | Only an installed module can be uninstalled, toggled, reset or upgraded. | design.rules | modules/rules.yaml |
+| orders.SR001 | StructuralRule | An order comes from a non-empty cart, and each of its lines has a quantity above zero. | design.rules | orders/rules.yaml |
+| orders.SR002 | StructuralRule | An order is invoiced once, on entering an invoicing status or on the merchant's request; payment is not a condition. | design.rules | orders/rules.yaml |
+| orders.SR003 | StructuralRule | A merchandise return keeps at least one product line. | design.rules | orders/rules.yaml |
+| orders.SR004 | StructuralRule | An order keeps at least one line when a product is removed from it. | design.rules | orders/rules.yaml |
+| shipping.SR001 | StructuralRule | A carrier serves at least one zone. | design.rules | shipping/rules.yaml |
 | SDM001 | Subdomain | api | blueprint | blueprint.yaml |
 | SDM002 | Subdomain | config | blueprint | blueprint.yaml |
 | SDM003 | Subdomain | identity | blueprint | blueprint.yaml |
@@ -16473,10 +18143,14 @@ graph TD
 | checkout.ER001 | TestCase | Attempt to delete a cart that was already converted to an order. | governance.tests | checkout/test-cases.yaml |
 | checkout.ER002 | TestCase | Attempt to create a discount with end date before start date. | governance.tests | checkout/test-cases.yaml |
 | checkout.ER003 | TestCase | Voucher requires EUR 50 minimum but cart total is EUR 30. | governance.tests | checkout/test-cases.yaml |
+| checkout.ER004 | TestCase | A voucher rejected for expired dates shows its validity error instead of refreshing the cart as a success. | governance.tests | checkout/test-cases.yaml |
 | checkout.TC001 | TestCase | Add an in-stock product to an empty cart. | governance.tests | checkout/test-cases.yaml |
 | checkout.TC002 | TestCase | Apply a valid voucher code to a cart meeting all conditions. | governance.tests | checkout/test-cases.yaml |
 | checkout.TC003 | TestCase | Create a percentage discount with date range and usage limits. | governance.tests | checkout/test-cases.yaml |
 | checkout.TC004 | TestCase | Create a B2B quantity discount for bulk purchases. | governance.tests | checkout/test-cases.yaml |
+| checkout.TC005 | TestCase | The shopper changes an existing cart line and sees the updated quantity and cart summary. | governance.tests | checkout/test-cases.yaml |
+| checkout.TC006 | TestCase | Submitting an eligible voucher refreshes the cart summary without showing a voucher error. | governance.tests | checkout/test-cases.yaml |
+| checkout.TC007 | TestCase | Choosing an offered carrier refreshes the checkout summary for the selected delivery option. | governance.tests | checkout/test-cases.yaml |
 | content.EC001 | TestCase | Verify that setting a category's parent to one of its descendants is rejected. | governance.tests | content/test-cases.yaml |
 | content.EC002 | TestCase | Enabling the active theme does not error, but it is a re-activation rather than a no-op. | governance.tests | content/test-cases.yaml |
 | content.ER001 | TestCase | A category with children and pages is deleted along with all of them; category id 1 is refused. | governance.tests | content/test-cases.yaml |
@@ -16497,7 +18171,7 @@ graph TD
 | customers.TC003 | TestCase | Convert a guest account to registered customer. | governance.tests | customers/test-cases.yaml |
 | customers.TC004 | TestCase | Agent replies to an open service thread. | governance.tests | customers/test-cases.yaml |
 | international.EC001 | TestCase | Attempt to delete the store's default (reference) currency. | governance.tests | international/test-cases.yaml |
-| international.EC002 | TestCase | Re-binding a rate to a country the group already covers adds nothing and raises nothing. | governance.tests | international/test-cases.yaml |
+| international.EC002 | TestCase | AddTaxRule adds nothing and raises nothing for a country and state that already has a 'This tax only' rule. | governance.tests | international/test-cases.yaml |
 | international.ER001 | TestCase | Attempt to create a currency with an ISO code outside the two-to-three letter pattern. | governance.tests | international/test-cases.yaml |
 | international.ER002 | TestCase | Neither AddTax nor the Tax object model rejects a rate below zero. | governance.tests | international/test-cases.yaml |
 | international.ER003 | TestCase | BulkUpdateCountryZone checks the zone; AddCountry does not. | governance.tests | international/test-cases.yaml |
@@ -16518,10 +18192,14 @@ graph TD
 | orders.ER001 | TestCase | Back-office order creation refuses an unknown payment module. | governance.tests | orders/test-cases.yaml |
 | orders.ER002 | TestCase | A return past PS_ORDER_RETURN_NB_DAYS is refused before the command is reached. | governance.tests | orders/test-cases.yaml |
 | orders.ER003 | TestCase | The only status change PrestaShop refuses is the one to the current status. | governance.tests | orders/test-cases.yaml |
+| orders.ER004 | TestCase | A partial-refund quantity above the line remainder returns the employee to the order with a refusal. | governance.tests | orders/test-cases.yaml |
 | orders.TC001 | TestCase | A validated cart becomes an order. | governance.tests | orders/test-cases.yaml |
 | orders.TC002 | TestCase | Cancelling every product on an unpaid order moves the order to canceled. | governance.tests | orders/test-cases.yaml |
 | orders.TC003 | TestCase | An order with invoicing enabled and no existing invoice gets one. | governance.tests | orders/test-cases.yaml |
 | orders.TC004 | TestCase | A manual payment is recorded against an order. | governance.tests | orders/test-cases.yaml |
+| orders.TC005 | TestCase | An employee submits a valid unpaid-order cancellation and sees the cancellation success message. | governance.tests | orders/test-cases.yaml |
+| orders.TC006 | TestCase | A valid partial refund returns the employee to the order with its success message. | governance.tests | orders/test-cases.yaml |
+| orders.TC007 | TestCase | An employee changes an existing return status and saves while remaining on its edit page. | governance.tests | orders/test-cases.yaml |
 | shipping.EC001 | TestCase | Attempt to set carrier ranges with overlapping brackets within the same zone. | governance.tests | shipping/test-cases.yaml |
 | shipping.EC002 | TestCase | A shipment with a tracking number cannot be split. | governance.tests | shipping/test-cases.yaml |
 | shipping.ER001 | TestCase | Attempt to create a carrier with an empty zone list. | governance.tests | shipping/test-cases.yaml |
@@ -16549,18 +18227,15 @@ graph TD
 | orders.TRO002 | TradeOff |  | governance.motivation | orders/motivation.yaml |
 | shipping.TRO001 | TradeOff |  | governance.motivation | shipping/motivation.yaml |
 | shop.TRO001 | TradeOff |  | governance.motivation | shop/motivation.yaml |
-| checkout.TR001 | TransitionRule | Empty to active on product addition | design.rules | checkout/rules.yaml |
-| checkout.TR002 | TransitionRule | Active to checkout-started on checkout initiation | design.rules | checkout/rules.yaml |
-| checkout.TR003 | TransitionRule | Checkout-started to completed on order placement | design.rules | checkout/rules.yaml |
-| checkout.TR004 | TransitionRule | Active to abandoned on timeout | design.rules | checkout/rules.yaml |
-| checkout.TR005 | TransitionRule | Checkout-started to abandoned on timeout | design.rules | checkout/rules.yaml |
-| content.TR001 | TransitionRule | Theme Enable Deactivates Current | design.rules | content/rules.yaml |
-| customers.TR001 | TransitionRule | Guest to active on conversion | design.rules | customers/rules.yaml |
-| customers.TR002 | TransitionRule | Active to inactive on disable | design.rules | customers/rules.yaml |
-| customers.TR003 | TransitionRule | Inactive to active on enable | design.rules | customers/rules.yaml |
-| modules.TR001 | TransitionRule | Module Lifecycle State Machine | design.rules | modules/rules.yaml |
-| orders.TR001 | TransitionRule | Order state machine transitions | design.rules | orders/rules.yaml |
-| shipping.TR001 | TransitionRule | Shipped shipment becomes immutable | design.rules | shipping/rules.yaml |
+| checkout.TR003 | TransitionRule | An order on the cart makes it ordered. | design.rules | checkout/rules.yaml |
+| checkout.TR004 | TransitionRule | No order 24 hours after creation makes a cart abandoned. | design.rules | checkout/rules.yaml |
+| content.TR001 | TransitionRule | The previous theme is disabled when another is enabled. | design.rules | content/rules.yaml |
+| customers.TR001 | TransitionRule | Guest to registered customer on transformation. | design.rules | customers/rules.yaml |
+| customers.TR002 | TransitionRule | Disabling makes a customer inactive. | design.rules | customers/rules.yaml |
+| customers.TR003 | TransitionRule | Enabling makes a customer active. | design.rules | customers/rules.yaml |
+| modules.TR001 | TransitionRule | Install moves a module from not installed to installed and enabled. | design.rules | modules/rules.yaml |
+| orders.TR001 | TransitionRule | Default flow: Payment accepted, then Processing in progress; permitted, not enforced. | design.rules | orders/rules.yaml |
+| shipping.TR001 | TransitionRule | A tracking number makes a shipment shipped; then no split or merge. | design.rules | shipping/rules.yaml |
 | admin.UAC001 | UIAction | Add Employee | design.ui | admin/interactions.yaml |
 | admin.UAC002 | UIAction | Toggle Employee Status | design.ui | admin/interactions.yaml |
 | admin.UAC003 | UIAction | Save Tab Permissions | design.ui | admin/interactions.yaml |
@@ -16597,6 +18272,13 @@ graph TD
 | customers.UAC007 | UIAction | Save this address | design.ui | customers/interactions.yaml |
 | customers.UAC008 | UIAction | Delete this address | design.ui | customers/interactions.yaml |
 | customers.UAC009 | UIAction | Sign in | design.ui | customers/interactions.yaml |
+| customers.UAC010 | UIAction | Open a customer from the list | design.ui | customers/interactions.yaml |
+| customers.UAC011 | UIAction | Add an address for this customer | design.ui | customers/interactions.yaml |
+| customers.UAC012 | UIAction | Follow the create-account link | design.ui | customers/interactions.yaml |
+| customers.UAC013 | UIAction | Open Addresses | design.ui | customers/interactions.yaml |
+| customers.UAC014 | UIAction | Open Information | design.ui | customers/interactions.yaml |
+| customers.UAC015 | UIAction | Open Order history | design.ui | customers/interactions.yaml |
+| customers.UAC016 | UIAction | Add a new address | design.ui | customers/interactions.yaml |
 | international.UAC001 | UIAction | Add Currency | design.ui | international/interactions.yaml |
 | international.UAC002 | UIAction | Refresh Exchange Rates | design.ui | international/interactions.yaml |
 | international.UAC003 | UIAction | Save Tax Rules Group | design.ui | international/interactions.yaml |
@@ -16605,6 +18287,7 @@ graph TD
 | modules.UAC002 | UIAction | Toggle Module Status | design.ui | modules/interactions.yaml |
 | modules.UAC003 | UIAction | Upload Module | design.ui | modules/interactions.yaml |
 | modules.UAC004 | UIAction | Toggle Hook Status | design.ui | modules/interactions.yaml |
+| modules.UAC005 | UIAction | Open the upload dialog | design.ui | modules/interactions.yaml |
 | orders.UAC001 | UIAction | Filter Orders | design.ui | orders/interactions.yaml |
 | orders.UAC002 | UIAction | Cancel Order | design.ui | orders/interactions.yaml |
 | orders.UAC003 | UIAction | Process Refund | design.ui | orders/interactions.yaml |
@@ -16614,6 +18297,8 @@ graph TD
 | orders.UAC007 | UIAction | Send a message about this order | design.ui | orders/interactions.yaml |
 | orders.UAC008 | UIAction | Request a return for these lines | design.ui | orders/interactions.yaml |
 | orders.UAC009 | UIAction | Open an order from the history | design.ui | orders/interactions.yaml |
+| orders.UAC010 | UIAction | Open an order from the list | design.ui | orders/interactions.yaml |
+| orders.UAC011 | UIAction | Open a return from the order | design.ui | orders/interactions.yaml |
 | shipping.UAC001 | UIAction | Add Carrier | design.ui | shipping/interactions.yaml |
 | shipping.UAC002 | UIAction | Bulk Toggle Carrier Status | design.ui | shipping/interactions.yaml |
 | shipping.UAC003 | UIAction | Save Carrier | design.ui | shipping/interactions.yaml |
@@ -16630,6 +18315,12 @@ graph TD
 | catalog.UNV002 | UINavigation | Add-to-cart is a link to the cart page, not an in-page form post, so adding a product is also a navigation. Link::getAddToCartURL line 366. | design.ui | catalog/interactions.yaml |
 | checkout.UNV001 | UINavigation | Navigate to discount edit form. | design.ui | checkout/interactions.yaml |
 | checkout.UNV002 | UINavigation | Navigate from cart to discount list. | design.ui | checkout/interactions.yaml |
+| checkout.UNV003 | UINavigation | Cart to checkout. The cart controller answers a cart request that carries checkout by redirecting to the checkout page before the cart is drawn. The control the shopper clicks is theme markup in the cart's actions partial, cart-detailed-actions.tpl, which the core repository does not ship, so no UI action is named for this edge.
+ | design.ui | checkout/interactions.yaml |
+| checkout.UNV004 | UINavigation | Checkout to confirmation. For a paid cart the payment module that owns the confirming control creates the order and returns the shopper to a confirmation page; the documented payment scenarios all end there, and the redirect itself is the module's code, not core's. For a free cart core offers its own payment option, which posts to the confirmation page with free_order; that page creates the order and redirects to itself. The confirmation page opens only for a cart that has an order and a matching secure key.
+ | design.ui | checkout/interactions.yaml |
+| checkout.UNV005 | UINavigation | Checkout back to the cart. The checkout page checks the cart every time it is drawn and redirects to the cart when any check fails; the cart page then shows the detailed errors. An ajax request is answered instead of redirected.
+ | design.ui | checkout/interactions.yaml |
 | content.UNV001 | UINavigation | Navigate to CMS page editor. | design.ui | content/interactions.yaml |
 | content.UNV002 | UINavigation | Navigate to CMS category editor. | design.ui | content/interactions.yaml |
 | content.UNV003 | UINavigation | The footer block that carries these links is the ps_linklist module, not core, so a shop with that module removed has CMS pages nothing links to. | design.ui | content/interactions.yaml |
@@ -16750,63 +18441,64 @@ graph TD
 | shop.US002 | UserStory | manage search term aliases to map customer search variants to canonical terms | design.process | shop/story.yaml |
 | shop.US003 | UserStory | configure SEO referrer search engines for analytics tracking | design.process | shop/story.yaml |
 | shop.US004 | UserStory | manage 'Contact Us' form departments | design.process | shop/story.yaml |
-| admin.VR001 | ValidationRule | Employee email uniqueness | design.rules | admin/rules.yaml |
-| admin.VR002 | ValidationRule | Password strength policy | design.rules | admin/rules.yaml |
-| admin.VR003 | ValidationRule | Profile deletion requires no assigned employees | design.rules | admin/rules.yaml |
-| admin.VR004 | ValidationRule | Permission matrix consistency | design.rules | admin/rules.yaml |
-| admin.VR005 | ValidationRule | API client scope validation | design.rules | admin/rules.yaml |
-| admin.VR006 | ValidationRule | SQL query safety guard | design.rules | admin/rules.yaml |
-| admin.VR007 | ValidationRule | Business entity addresses must be consistent | design.rules | admin/rules.yaml |
-| catalog.VR001 | ValidationRule | Product image dimensions | design.rules | catalog/rules.yaml |
-| catalog.VR002 | ValidationRule | Product deletion safety check | design.rules | catalog/rules.yaml |
-| catalog.VR003 | ValidationRule | Specific price reduction range | design.rules | catalog/rules.yaml |
-| catalog.VR004 | ValidationRule | Combination attribute uniqueness | design.rules | catalog/rules.yaml |
-| catalog.VR005 | ValidationRule | Manufacturer name uniqueness | design.rules | catalog/rules.yaml |
-| checkout.VR001 | ValidationRule | Discount date range validity | design.rules | checkout/rules.yaml |
-| checkout.VR002 | ValidationRule | Discount minimum order amount | design.rules | checkout/rules.yaml |
-| checkout.VR003 | ValidationRule | Discount usage limit enforcement | design.rules | checkout/rules.yaml |
-| checkout.VR004 | ValidationRule | Catalog price rule quantity threshold | design.rules | checkout/rules.yaml |
-| checkout.VR005 | ValidationRule | Cannot delete ordered cart | design.rules | checkout/rules.yaml |
-| content.VR001 | ValidationRule | CMS Page Requires Category | design.rules | content/rules.yaml |
-| content.VR002 | ValidationRule | Meta Fields No Special Characters | design.rules | content/rules.yaml |
-| content.VR003 | ValidationRule | Only the Root CMS Category Cannot Be Deleted | design.rules | content/rules.yaml |
-| content.VR004 | ValidationRule | Theme Activation Exclusivity | design.rules | content/rules.yaml |
-| content.VR005 | ValidationRule | Active Theme Cannot Be Deleted | design.rules | content/rules.yaml |
-| content.VR006 | ValidationRule | Meta Page Name Uniqueness | design.rules | content/rules.yaml |
-| customers.VR001 | ValidationRule | Customer email must be valid | design.rules | customers/rules.yaml |
-| customers.VR002 | ValidationRule | Password policy | design.rules | customers/rules.yaml |
-| customers.VR003 | ValidationRule | Guest conversion prerequisites | design.rules | customers/rules.yaml |
-| customers.VR004 | ValidationRule | Customer group discount range | design.rules | customers/rules.yaml |
-| customers.VR005 | ValidationRule | Address required fields per country | design.rules | customers/rules.yaml |
-| customers.VR006 | ValidationRule | GDPR right to erasure | design.rules | customers/rules.yaml |
-| international.VR001 | ValidationRule | Currency ISO code format | design.rules | international/rules.yaml |
-| international.VR002 | ValidationRule | Default currency cannot be deleted | design.rules | international/rules.yaml |
-| international.VR003 | ValidationRule | Language ISO code uniqueness | design.rules | international/rules.yaml |
-| international.VR004 | ValidationRule | Default language cannot be deleted | design.rules | international/rules.yaml |
-| international.VR005 | ValidationRule | Country ISO code format | design.rules | international/rules.yaml |
-| international.VR006 | ValidationRule | Tax rate must be non-negative | design.rules | international/rules.yaml |
-| international.VR007 | ValidationRule | Exchange rate must be positive | design.rules | international/rules.yaml |
-| international.VR008 | ValidationRule | Tax rule binding uniqueness | design.rules | international/rules.yaml |
-| modules.VR001 | ValidationRule | Module Technical Name Non-Empty | design.rules | modules/rules.yaml |
-| modules.VR002 | ValidationRule | Reset Requires Installed Module | design.rules | modules/rules.yaml |
-| modules.VR003 | ValidationRule | Upgrade Requires Installed Module with Available Update | design.rules | modules/rules.yaml |
-| orders.VR001 | ValidationRule | Shipping address required for physical products | design.rules | orders/rules.yaml |
-| orders.VR002 | ValidationRule | Payment amount must not exceed order total | design.rules | orders/rules.yaml |
-| orders.VR003 | ValidationRule | Return eligibility window | design.rules | orders/rules.yaml |
-| orders.VR004 | ValidationRule | Partial refund constraints | design.rules | orders/rules.yaml |
-| shipping.VR001 | ValidationRule | Carrier name constraints | design.rules | shipping/rules.yaml |
-| shipping.VR002 | ValidationRule | Shipping method must be valid | design.rules | shipping/rules.yaml |
-| shipping.VR003 | ValidationRule | Free shipping disables additional handling fee | design.rules | shipping/rules.yaml |
-| shipping.VR004 | ValidationRule | Ranges must not overlap within a zone | design.rules | shipping/rules.yaml |
-| shipping.VR005 | ValidationRule | Range values must be non-negative | design.rules | shipping/rules.yaml |
-| shipping.VR006 | ValidationRule | Shipment requires valid order and carrier | design.rules | shipping/rules.yaml |
-| shipping.VR007 | ValidationRule | Split shipment requires valid quantities | design.rules | shipping/rules.yaml |
-| shipping.VR008 | ValidationRule | Merge requires compatible shipments | design.rules | shipping/rules.yaml |
-| shipping.VR009 | ValidationRule | Tracking number must not be blank | design.rules | shipping/rules.yaml |
-| shop.VR001 | ValidationRule | Logo file extension validation | design.rules | shop/rules.yaml |
-| shop.VR002 | ValidationRule | Alias search term non-empty | design.rules | shop/rules.yaml |
-| shop.VR003 | ValidationRule | Contact email format | design.rules | shop/rules.yaml |
-| shop.VR004 | ValidationRule | Search engine server uniqueness | design.rules | shop/rules.yaml |
+| admin.VR001 | ValidationRule | One employee per email address. | design.rules | admin/rules.yaml |
+| admin.VR002 | ValidationRule | Length within the configured bounds, strength at or above the configured score. | design.rules | admin/rules.yaml |
+| admin.VR003 | ValidationRule | Reassign every employee before deleting their profile. | design.rules | admin/rules.yaml |
+| admin.VR004 | ValidationRule | Permissions use the levels PrestaShop defines, on tabs and modules that exist. | design.rules | admin/rules.yaml |
+| admin.VR005 | ValidationRule | Only installed API scopes can be granted. | design.rules | admin/rules.yaml |
+| admin.VR006 | ValidationRule | The SQL manager saves read-only SELECT queries only. | design.rules | admin/rules.yaml |
+| admin.VR007 | ValidationRule | One default billing address, and one default shipping address unless billing is reused. | design.rules | admin/rules.yaml |
+| catalog.VR001 | ValidationRule | Any supported image within the size limit; 800 x 800 is a recommendation. | design.rules | catalog/rules.yaml |
+| catalog.VR002 | ValidationRule | No delete while an order for the product is pending. | design.rules | catalog/rules.yaml |
+| catalog.VR003 | ValidationRule | Reductions are non-negative, percentages at most 100, and a specific price changes something. | design.rules | catalog/rules.yaml |
+| catalog.VR004 | ValidationRule | One combination per attribute set; regeneration is idempotent. | design.rules | catalog/rules.yaml |
+| catalog.VR005 | ValidationRule | One manufacturer per name. | design.rules | catalog/rules.yaml |
+| checkout.VR001 | ValidationRule | The start is not after the end, and a voucher applies only within its dates. | design.rules | checkout/rules.yaml |
+| checkout.VR002 | ValidationRule | The cart's products total reaches the voucher's minimum amount. | design.rules | checkout/rules.yaml |
+| checkout.VR003 | ValidationRule | Remaining quantity above zero and per-customer uses within the limit. | design.rules | checkout/rules.yaml |
+| checkout.VR004 | ValidationRule | A catalog price rule takes effect from its from-quantity. | design.rules | checkout/rules.yaml |
+| checkout.VR005 | ValidationRule | An ordered cart is kept. | design.rules | checkout/rules.yaml |
+| content.VR001 | ValidationRule | Every CMS page sits in a CMS category that exists. | design.rules | content/rules.yaml |
+| content.VR002 | ValidationRule | No angle or curly brackets in a meta title or meta description. | design.rules | content/rules.yaml |
+| content.VR003 | ValidationRule | The root CMS category stays; any other delete cascades to its subtree. | design.rules | content/rules.yaml |
+| content.VR004 | ValidationRule | One active theme per shop; an invalid theme is not enabled. | design.rules | content/rules.yaml |
+| content.VR005 | ValidationRule | Enable another theme before deleting the active one. | design.rules | content/rules.yaml |
+| content.VR006 | ValidationRule | One meta entry per page. | design.rules | content/rules.yaml |
+| customers.VR001 | ValidationRule | Every customer has a valid email address. | design.rules | customers/rules.yaml |
+| customers.VR002 | ValidationRule | Storefront: configured length and strength; back office: 5 to 72 characters. | design.rules | customers/rules.yaml |
+| customers.VR003 | ValidationRule | A guest is converted only while its email is free among registered customers. | design.rules | customers/rules.yaml |
+| customers.VR004 | ValidationRule | Group reductions are percentages from 0 to 100. | design.rules | customers/rules.yaml |
+| customers.VR005 | ValidationRule | Required address fields follow the shop list and the country. | design.rules | customers/rules.yaml |
+| customers.VR006 | ValidationRule | Erasure anonymizes the customer and keeps the orders, within 30 days. | design.rules | customers/rules.yaml |
+| international.VR001 | ValidationRule | Two or three letters; an unofficial currency avoids the CLDR codes. | design.rules | international/rules.yaml |
+| international.VR002 | ValidationRule | A shop's default currency stays enabled, assigned to that shop and undeleted. | design.rules | international/rules.yaml |
+| international.VR003 | ValidationRule | One language per ISO code. | design.rules | international/rules.yaml |
+| international.VR004 | ValidationRule | The default language, and the language in use, stay. | design.rules | international/rules.yaml |
+| international.VR005 | ValidationRule | Added countries get a two-letter upper-case code; an edit accepts two or three letters. | design.rules | international/rules.yaml |
+| international.VR006 | ValidationRule | A tax rate is zero or more. | design.rules | international/rules.yaml |
+| international.VR007 | ValidationRule | An exchange rate is a number above zero. | design.rules | international/rules.yaml |
+| international.VR008 | ValidationRule | A 'this tax only' rule is the only rule for its country and state in a group. | design.rules | international/rules.yaml |
+| modules.VR001 | ValidationRule | Every module command names a module by a non-empty technical name. | design.rules | modules/rules.yaml |
+| modules.VR002 | ValidationRule | Only an installed module can be reset. | design.rules | modules/rules.yaml |
+| modules.VR003 | ValidationRule | An upgrade needs an installed module and a newer version. | design.rules | modules/rules.yaml |
+| orders.VR001 | ValidationRule | Checkout completes only with a delivery address and an invoice address in enabled countries. | design.rules | orders/rules.yaml |
+| orders.VR002 | ValidationRule | A recorded payment is zero or more; a total that differs from the payments is flagged, not refused. | design.rules | orders/rules.yaml |
+| orders.VR003 | ValidationRule | Returns are open while enabled, for a paid and shipped order, within the return period after delivery. | design.rules | orders/rules.yaml |
+| orders.VR004 | ValidationRule | Per line: refund quantity within what is left, amount above zero, amount capped at quantity times unit price. | design.rules | orders/rules.yaml |
+| shipping.VR001 | ValidationRule | Required, up to 64 characters, no angle or curly brackets. | design.rules | shipping/rules.yaml |
+| shipping.VR002 | ValidationRule | A carrier is priced by weight or by price. | design.rules | shipping/rules.yaml |
+| shipping.VR003 | ValidationRule | Free shipping and the handling fee exclude each other. | design.rules | shipping/rules.yaml |
+| shipping.VR004 | ValidationRule | Ranges of one zone do not overlap; touching is allowed. | design.rules | shipping/rules.yaml |
+| shipping.VR005 | ValidationRule | Range bounds are not negative. | design.rules | shipping/rules.yaml |
+| shipping.VR006 | ValidationRule | Existing order, order lines and, on a change, an existing carrier. | design.rules | shipping/rules.yaml |
+| shipping.VR007 | ValidationRule | From 1 to the quantity in the source shipment, per product. | design.rules | shipping/rules.yaml |
+| shipping.VR008 | ValidationRule | Source and target shipments of a merge belong to one order. | design.rules | shipping/rules.yaml |
+| shipping.VR009 | ValidationRule | A tracking number is not empty after trimming. | design.rules | shipping/rules.yaml |
+| shipping.VR010 | ValidationRule | A range price is not negative. | design.rules | shipping/rules.yaml |
+| shop.VR001 | ValidationRule | Header logo: image or svg; mail and invoice logo: image; favicon: ico. | design.rules | shop/rules.yaml |
+| shop.VR002 | ValidationRule | No alias entry without a search term or without aliases. | design.rules | shop/rules.yaml |
+| shop.VR003 | ValidationRule | An optional contact email that must be valid when present. | design.rules | shop/rules.yaml |
+| shop.VR004 | ValidationRule | One referrer entry per search engine server. | design.rules | shop/rules.yaml |
 | VS001 | ValueStream | Shop & Buy | governance.value-stream | value-stream.yaml |
 | VS002 | ValueStream | Sell & Fulfill | governance.value-stream | value-stream.yaml |
 | VS003 | ValueStream | Configure & Scale | governance.value-stream | value-stream.yaml |
@@ -16830,52 +18522,53 @@ graph TD
 
 | Type | Count |
 |------|-------|
-| CodeFile | 1524 |
+| CodeFile | 1646 |
 | Operation | 700 |
 | Error | 258 |
-| Models | 127 |
-| TestCase | 92 |
+| Models | 130 |
+| TestCase | 100 |
 | Concept | 85 |
+| UIAction | 73 |
 | UserStory | 68 |
-| UIAction | 63 |
 | Screen | 59 |
-| ValidationRule | 57 |
+| ValidationRule | 58 |
+| Question | 41 |
 | KPI | 39 |
-| Question | 37 |
-| Goal | 35 |
+| Goal | 37 |
+| UINavigation | 34 |
 | Subdomain | 33 |
-| UINavigation | 31 |
-| Risk | 30 |
+| Risk | 31 |
 | Association | 28 |
 | Process | 27 |
 | UseCase | 27 |
 | Capability | 26 |
 | Enumeration | 22 |
-| Contract | 22 |
+| Contract | 21 |
 | Actor | 20 |
 | Dynamics | 20 |
 | SLO | 20 |
 | Inquiry | 19 |
 | NonGoal | 15 |
+| StructuralRule | 15 |
 | BusinessDecision | 15 |
 | Team | 15 |
 | WorkItem | 15 |
 | Assumption | 14 |
-| StructuralRule | 14 |
+| Service | 13 |
+| Persona | 12 |
 | Context | 12 |
-| Service | 12 |
 | Metric | 12 |
-| TransitionRule | 12 |
 | FitnessFunction | 12 |
 | TradeOff | 11 |
 | Domain | 10 |
 | Decision | 10 |
+| TransitionRule | 9 |
 | Binding | 9 |
+| Migration | 6 |
 | ClassificationRule | 6 |
 | InfraResource | 6 |
 | Party | 5 |
 | LeveragePoint | 5 |
-| Migration | 5 |
 | Department | 5 |
 | Milestone | 5 |
 | Security | 4 |
@@ -16889,7 +18582,7 @@ graph TD
 
 ## Relations
 
-**8019 relations** discovered.
+**9369 relations** discovered.
 
 | Source | Type | Target |
 |--------|------|--------|
@@ -16929,6 +18622,13 @@ graph TD
 | customers.UAC007 (UIAction) | action_on_screen | customers.SCR009 (Screen) |
 | customers.UAC008 (UIAction) | action_on_screen | customers.SCR009 (Screen) |
 | customers.UAC009 (UIAction) | action_on_screen | customers.SCR005 (Screen) |
+| customers.UAC010 (UIAction) | action_on_screen | customers.SCR001 (Screen) |
+| customers.UAC011 (UIAction) | action_on_screen | customers.SCR002 (Screen) |
+| customers.UAC012 (UIAction) | action_on_screen | customers.SCR005 (Screen) |
+| customers.UAC013 (UIAction) | action_on_screen | customers.SCR007 (Screen) |
+| customers.UAC014 (UIAction) | action_on_screen | customers.SCR007 (Screen) |
+| customers.UAC015 (UIAction) | action_on_screen | customers.SCR007 (Screen) |
+| customers.UAC016 (UIAction) | action_on_screen | customers.SCR008 (Screen) |
 | international.UAC001 (UIAction) | action_on_screen | international.SCR001 (Screen) |
 | international.UAC002 (UIAction) | action_on_screen | international.SCR001 (Screen) |
 | international.UAC003 (UIAction) | action_on_screen | international.SCR006 (Screen) |
@@ -16937,6 +18637,7 @@ graph TD
 | modules.UAC002 (UIAction) | action_on_screen | modules.SCR001 (Screen) |
 | modules.UAC003 (UIAction) | action_on_screen | modules.SCR002 (Screen) |
 | modules.UAC004 (UIAction) | action_on_screen | modules.SCR003 (Screen) |
+| modules.UAC005 (UIAction) | action_on_screen | modules.SCR001 (Screen) |
 | orders.UAC001 (UIAction) | action_on_screen | orders.SCR001 (Screen) |
 | orders.UAC002 (UIAction) | action_on_screen | orders.SCR002 (Screen) |
 | orders.UAC003 (UIAction) | action_on_screen | orders.SCR002 (Screen) |
@@ -16946,6 +18647,8 @@ graph TD
 | orders.UAC007 (UIAction) | action_on_screen | orders.SCR005 (Screen) |
 | orders.UAC008 (UIAction) | action_on_screen | orders.SCR005 (Screen) |
 | orders.UAC009 (UIAction) | action_on_screen | orders.SCR004 (Screen) |
+| orders.UAC010 (UIAction) | action_on_screen | orders.SCR001 (Screen) |
+| orders.UAC011 (UIAction) | action_on_screen | orders.SCR002 (Screen) |
 | shipping.UAC001 (UIAction) | action_on_screen | shipping.SCR001 (Screen) |
 | shipping.UAC002 (UIAction) | action_on_screen | shipping.SCR001 (Screen) |
 | shipping.UAC003 (UIAction) | action_on_screen | shipping.SCR002 (Screen) |
@@ -17052,6 +18755,7 @@ graph TD
 | shop.CN001 (Concept) | association | shop.CN002 (Concept) |
 | catalog.ASM001 (Assumption) | assumption_risk | catalog.RSK001 (Risk) |
 | catalog.ASM002 (Assumption) | assumption_risk | catalog.RSK001 (Risk) |
+| catalog.ASM002 (Assumption) | assumption_risk | catalog.RSK005 (Risk) |
 | checkout.ASM001 (Assumption) | assumption_risk | checkout.RSK001 (Risk) |
 | customers.ASM001 (Assumption) | assumption_risk | customers.RSK002 (Risk) |
 | international.ASM001 (Assumption) | assumption_risk | international.RSK001 (Risk) |
@@ -17089,6 +18793,688 @@ graph TD
 | CAP003 (Capability) | capability_goal | checkout.GL002 (Goal) |
 | CAP004 (Capability) | capability_goal | orders.GL003 (Goal) |
 | CAP006 (Capability) | capability_goal | orders.GL001 (Goal) |
+| CAP013 (Capability) | capability_operation | content.CMD001 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD002 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD003 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD004 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD005 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD006 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD007 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD008 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD009 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD010 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD011 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD012 (Operation) |
+| CAP013 (Capability) | capability_operation | content.EVT001 (Operation) |
+| CAP013 (Capability) | capability_operation | content.EVT002 (Operation) |
+| CAP013 (Capability) | capability_operation | content.EVT003 (Operation) |
+| CAP013 (Capability) | capability_operation | content.EVT004 (Operation) |
+| CAP013 (Capability) | capability_operation | content.EVT005 (Operation) |
+| CAP013 (Capability) | capability_operation | content.EVT006 (Operation) |
+| CAP013 (Capability) | capability_operation | content.EVT007 (Operation) |
+| CAP013 (Capability) | capability_operation | content.EVT008 (Operation) |
+| CAP013 (Capability) | capability_operation | content.QRY001 (Operation) |
+| CAP013 (Capability) | capability_operation | content.QRY002 (Operation) |
+| CAP013 (Capability) | capability_operation | content.QRY003 (Operation) |
+| CAP013 (Capability) | capability_operation | content.QRY004 (Operation) |
+| CAP013 (Capability) | capability_operation | content.QRY005 (Operation) |
+| CAP013 (Capability) | capability_operation | content.QRY006 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD019 (Operation) |
+| CAP013 (Capability) | capability_operation | content.EVT015 (Operation) |
+| CAP013 (Capability) | capability_operation | content.EVT016 (Operation) |
+| CAP013 (Capability) | capability_operation | content.QRY007 (Operation) |
+| CAP013 (Capability) | capability_operation | content.QRY008 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD013 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD014 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD015 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD016 (Operation) |
+| CAP013 (Capability) | capability_operation | content.CMD021 (Operation) |
+| CAP013 (Capability) | capability_operation | content.EVT009 (Operation) |
+| CAP013 (Capability) | capability_operation | content.EVT010 (Operation) |
+| CAP013 (Capability) | capability_operation | content.EVT011 (Operation) |
+| CAP013 (Capability) | capability_operation | content.EVT012 (Operation) |
+| CAP013 (Capability) | capability_operation | content.EVT013 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.CMD001 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.CMD002 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.CMD003 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.CMD004 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.CMD005 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.CMD006 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.CMD007 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.CMD008 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.CMD009 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.CMD010 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.CMD011 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.CMD012 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.CMD013 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.EVT001 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.EVT002 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.EVT003 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.EVT004 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.EVT005 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.EVT006 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.EVT007 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.EVT008 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.EVT009 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.QRY001 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.QRY002 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.QRY003 (Operation) |
+| CAP014 (Capability) | capability_operation | modules.QRY004 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD001 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD002 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD003 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD004 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD005 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD006 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD008 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD009 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD010 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD011 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD012 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD013 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD014 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD015 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD016 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD017 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD018 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD019 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.CMD020 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.EVT001 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.EVT002 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.EVT003 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.EVT004 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.EVT005 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.EVT006 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.EVT007 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.EVT008 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.EVT009 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.EVT010 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.EVT011 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.EVT012 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.EVT013 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.QRY001 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.QRY002 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.QRY003 (Operation) |
+| CAP015 (Capability) | capability_operation | admin.QRY004 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.CMD021 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.CMD022 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.CMD023 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.CMD024 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.CMD025 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.CMD026 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.CMD027 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.CMD028 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.EVT014 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.EVT015 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.EVT016 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.EVT017 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.EVT018 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.EVT019 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.EVT020 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.QRY005 (Operation) |
+| CAP016 (Capability) | capability_operation | admin.QRY006 (Operation) |
+| CAP017 (Capability) | capability_operation | catalog.CMD204 (Operation) |
+| CAP017 (Capability) | capability_operation | catalog.QRY209 (Operation) |
+| CAP017 (Capability) | capability_operation | catalog.CMD106 (Operation) |
+| CAP017 (Capability) | capability_operation | shop.CMD001 (Operation) |
+| CAP017 (Capability) | capability_operation | shop.QRY001 (Operation) |
+| CAP017 (Capability) | capability_operation | shop.QRY002 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD029 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD030 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD031 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD032 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD033 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD034 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD035 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD036 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD037 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD038 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD039 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD040 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD041 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD042 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD043 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD044 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.CMD045 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.EVT021 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.EVT022 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.EVT023 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.EVT024 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.EVT025 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.EVT026 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.EVT027 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.EVT028 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.EVT029 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.EVT030 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.EVT031 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.EVT032 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.EVT033 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.QRY007 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.QRY008 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.QRY009 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.QRY010 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.QRY011 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.QRY012 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.QRY013 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.QRY014 (Operation) |
+| CAP103 (Capability) | capability_operation | admin.QRY015 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD025 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD026 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD027 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD028 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD029 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD300 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD301 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD302 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD303 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD304 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD305 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT009 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT010 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT300 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.QRY300 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.QRY301 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD040 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD041 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD417 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD418 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD419 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD420 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD421 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT412 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.QRY409 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.QRY410 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD016 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD017 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD018 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD019 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD020 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD205 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD206 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT006 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT201 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.QRY207 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.QRY208 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD001 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD002 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD003 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD004 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD005 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD006 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD007 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD008 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD009 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD010 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD100 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD101 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD102 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD103 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD104 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD105 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD107 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT001 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT002 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT003 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT008 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT100 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT101 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.QRY001 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.QRY002 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.QRY100 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.QRY103 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD409 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD410 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD411 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD412 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD413 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD414 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD415 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.CMD416 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT406 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT407 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT408 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT409 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT410 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.EVT411 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.QRY404 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.QRY405 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.QRY406 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.QRY407 (Operation) |
+| CAP005 (Capability) | capability_operation | catalog.QRY408 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD001 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD002 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD003 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD004 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD005 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD006 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD007 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD008 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD009 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD010 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.EVT001 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.EVT002 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.EVT003 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.EVT004 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.EVT005 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.EVT006 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.EVT007 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.EVT008 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.QRY001 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.QRY002 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.QRY003 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.QRY004 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD011 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD012 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD013 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD014 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD015 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD016 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD017 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.CMD018 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.EVT009 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.EVT010 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.EVT011 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.EVT012 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.EVT013 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.EVT014 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.EVT015 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.QRY005 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.QRY006 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.QRY007 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.QRY008 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.QRY009 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.QRY010 (Operation) |
+| CAP010 (Capability) | capability_operation | shipping.QRY011 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD001 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD002 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD003 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD004 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD005 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD006 (Operation) |
+| CAP011 (Capability) | capability_operation | international.DOC001 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT001 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT002 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT003 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT004 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT005 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT006 (Operation) |
+| CAP011 (Capability) | capability_operation | international.QRY001 (Operation) |
+| CAP011 (Capability) | capability_operation | international.QRY002 (Operation) |
+| CAP011 (Capability) | capability_operation | international.QRY003 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD023 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD024 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD025 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD026 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD027 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD028 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD029 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD030 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD034 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD035 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD036 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD037 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD040 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD041 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD042 (Operation) |
+| CAP011 (Capability) | capability_operation | international.CMD043 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT023 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT024 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT025 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT026 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT027 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT028 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT029 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT030 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT033 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT034 (Operation) |
+| CAP011 (Capability) | capability_operation | international.EVT035 (Operation) |
+| CAP011 (Capability) | capability_operation | international.QRY009 (Operation) |
+| CAP011 (Capability) | capability_operation | international.QRY010 (Operation) |
+| CAP011 (Capability) | capability_operation | international.QRY011 (Operation) |
+| CAP011 (Capability) | capability_operation | international.QRY012 (Operation) |
+| CAP012 (Capability) | capability_operation | content.CMD017 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD011 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD012 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD013 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD014 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD015 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD016 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD017 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD018 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD019 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD020 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD021 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD022 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD031 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD032 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD033 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD038 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD039 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT011 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT012 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT013 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT014 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT015 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT016 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT017 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT018 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT019 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT020 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT021 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT022 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT031 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT032 (Operation) |
+| CAP012 (Capability) | capability_operation | international.QRY005 (Operation) |
+| CAP012 (Capability) | capability_operation | international.QRY006 (Operation) |
+| CAP012 (Capability) | capability_operation | international.QRY007 (Operation) |
+| CAP012 (Capability) | capability_operation | international.QRY008 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD007 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD008 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD009 (Operation) |
+| CAP012 (Capability) | capability_operation | international.CMD010 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT007 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT008 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT009 (Operation) |
+| CAP012 (Capability) | capability_operation | international.EVT010 (Operation) |
+| CAP012 (Capability) | capability_operation | international.QRY004 (Operation) |
+| CAP100 (Capability) | capability_operation | catalog.CMD021 (Operation) |
+| CAP100 (Capability) | capability_operation | catalog.CMD022 (Operation) |
+| CAP100 (Capability) | capability_operation | catalog.CMD023 (Operation) |
+| CAP100 (Capability) | capability_operation | catalog.CMD203 (Operation) |
+| CAP100 (Capability) | capability_operation | catalog.EVT007 (Operation) |
+| CAP100 (Capability) | capability_operation | catalog.QRY205 (Operation) |
+| CAP100 (Capability) | capability_operation | catalog.QRY206 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.CMD014 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.QRY004 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.CMD016 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.CMD017 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.CMD018 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.CMD019 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.CMD020 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.EVT007 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.EVT008 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.EVT009 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.QRY005 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.QRY006 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.CMD021 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.CMD022 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.CMD023 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.EVT010 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.EVT011 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.EVT012 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.QRY007 (Operation) |
+| CAP100 (Capability) | capability_operation | checkout.QRY008 (Operation) |
+| CAP100 (Capability) | capability_operation | orders.CMD010 (Operation) |
+| CAP100 (Capability) | capability_operation | orders.CMD011 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD015 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.QRY201 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD110 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD111 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD112 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD113 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.QRY107 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.QRY108 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.QRY109 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD034 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD035 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD036 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD037 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD038 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD039 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD400 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD401 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD402 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD403 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD404 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD405 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD406 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD407 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.CMD408 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.EVT400 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.EVT401 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.EVT402 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.EVT403 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.EVT404 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.EVT405 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.QRY010 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.QRY011 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.QRY400 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.QRY401 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.QRY402 (Operation) |
+| CAP101 (Capability) | capability_operation | catalog.QRY403 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD030 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD031 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD032 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD033 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD306 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD307 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD308 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD309 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD310 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD311 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD312 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD313 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD314 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD315 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD316 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD317 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD318 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.EVT301 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.EVT302 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.EVT303 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.EVT304 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.EVT305 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.EVT306 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.EVT307 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.EVT308 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.QRY007 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.QRY008 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.QRY302 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.QRY303 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.QRY304 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.QRY305 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD011 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD012 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD013 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD014 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD201 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD202 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.EVT004 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.EVT005 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.EVT200 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.QRY003 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.QRY004 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.QRY200 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.QRY202 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.QRY203 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.QRY204 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD108 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.CMD109 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.QRY104 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.QRY105 (Operation) |
+| CAP102 (Capability) | capability_operation | catalog.QRY106 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD017 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD018 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD019 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.EVT007 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.EVT008 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD024 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD025 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD026 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD027 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD032 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD033 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD034 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD035 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.QRY005 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.QRY009 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD001 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD002 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD004 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD005 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD006 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD007 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD008 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD009 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD012 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD014 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.EVT001 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.EVT002 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.EVT004 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.EVT005 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.QRY001 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.QRY002 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.QRY003 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD020 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD021 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD022 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.EVT009 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD003 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD015 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD016 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.EVT003 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.EVT006 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD023 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD037 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD038 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD039 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.CMD040 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.EVT010 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.EVT011 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.QRY004 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.QRY007 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.QRY008 (Operation) |
+| CAP002 (Capability) | capability_operation | checkout.QRY001 (Operation) |
+| CAP002 (Capability) | capability_operation | checkout.QRY009 (Operation) |
+| CAP002 (Capability) | capability_operation | checkout.CMD011 (Operation) |
+| CAP002 (Capability) | capability_operation | checkout.CMD012 (Operation) |
+| CAP002 (Capability) | capability_operation | checkout.CMD014 (Operation) |
+| CAP002 (Capability) | capability_operation | checkout.CMD015 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.CMD001 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.CMD002 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.CMD003 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.CMD004 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.CMD005 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.CMD006 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.CMD007 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.CMD008 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.EVT001 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.EVT002 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.EVT003 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.QRY002 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.QRY003 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.CMD009 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.CMD010 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.CMD013 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.EVT004 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.EVT005 (Operation) |
+| CAP003 (Capability) | capability_operation | checkout.EVT006 (Operation) |
+| CAP003 (Capability) | capability_operation | orders.CMD001 (Operation) |
+| CAP004 (Capability) | capability_operation | catalog.CMD200 (Operation) |
+| CAP004 (Capability) | capability_operation | catalog.CMD114 (Operation) |
+| CAP004 (Capability) | capability_operation | catalog.QRY110 (Operation) |
+| CAP004 (Capability) | capability_operation | catalog.QRY111 (Operation) |
+| CAP006 (Capability) | capability_operation | admin.CMD007 (Operation) |
+| CAP006 (Capability) | capability_operation | content.CMD018 (Operation) |
+| CAP006 (Capability) | capability_operation | content.CMD021 (Operation) |
+| CAP006 (Capability) | capability_operation | content.EVT014 (Operation) |
+| CAP006 (Capability) | capability_operation | content.EVT017 (Operation) |
+| CAP006 (Capability) | capability_operation | content.QRY009 (Operation) |
+| CAP006 (Capability) | capability_operation | content.QRY010 (Operation) |
+| CAP006 (Capability) | capability_operation | orders.CMD028 (Operation) |
+| CAP006 (Capability) | capability_operation | orders.CMD029 (Operation) |
+| CAP006 (Capability) | capability_operation | orders.CMD030 (Operation) |
+| CAP006 (Capability) | capability_operation | orders.CMD031 (Operation) |
+| CAP006 (Capability) | capability_operation | orders.CMD036 (Operation) |
+| CAP006 (Capability) | capability_operation | orders.QRY006 (Operation) |
+| CAP006 (Capability) | capability_operation | orders.CMD013 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.CMD001 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.CMD002 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.CMD003 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.CMD004 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.CMD005 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.CMD006 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.CMD007 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.CMD008 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.CMD028 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.EVT001 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.EVT002 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.EVT003 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.EVT004 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.EVT016 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.QRY001 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.QRY002 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.QRY003 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.QRY004 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.QRY005 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.QRY006 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.QRY007 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.CMD009 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.CMD010 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.CMD011 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.EVT005 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.EVT006 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.EVT017 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.QRY008 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.CMD020 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.CMD021 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.CMD022 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.CMD029 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.EVT013 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.EVT014 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.EVT018 (Operation) |
+| CAP007 (Capability) | capability_operation | customers.QRY013 (Operation) |
+| CAP008 (Capability) | capability_operation | customers.CMD012 (Operation) |
+| CAP008 (Capability) | capability_operation | customers.CMD013 (Operation) |
+| CAP008 (Capability) | capability_operation | customers.CMD014 (Operation) |
+| CAP008 (Capability) | capability_operation | customers.CMD015 (Operation) |
+| CAP008 (Capability) | capability_operation | customers.CMD023 (Operation) |
+| CAP008 (Capability) | capability_operation | customers.CMD024 (Operation) |
+| CAP008 (Capability) | capability_operation | customers.CMD025 (Operation) |
+| CAP008 (Capability) | capability_operation | customers.CMD026 (Operation) |
+| CAP008 (Capability) | capability_operation | customers.CMD027 (Operation) |
+| CAP008 (Capability) | capability_operation | customers.EVT007 (Operation) |
+| CAP008 (Capability) | capability_operation | customers.EVT008 (Operation) |
+| CAP008 (Capability) | capability_operation | customers.EVT009 (Operation) |
+| CAP008 (Capability) | capability_operation | customers.EVT015 (Operation) |
+| CAP008 (Capability) | capability_operation | customers.QRY009 (Operation) |
+| CAP008 (Capability) | capability_operation | customers.QRY010 (Operation) |
+| CAP008 (Capability) | capability_operation | customers.QRY014 (Operation) |
+| CAP009 (Capability) | capability_operation | customers.CMD016 (Operation) |
+| CAP009 (Capability) | capability_operation | customers.CMD017 (Operation) |
+| CAP009 (Capability) | capability_operation | customers.CMD018 (Operation) |
+| CAP009 (Capability) | capability_operation | customers.CMD019 (Operation) |
+| CAP009 (Capability) | capability_operation | customers.EVT010 (Operation) |
+| CAP009 (Capability) | capability_operation | customers.EVT011 (Operation) |
+| CAP009 (Capability) | capability_operation | customers.EVT012 (Operation) |
+| CAP009 (Capability) | capability_operation | customers.EVT019 (Operation) |
+| CAP009 (Capability) | capability_operation | customers.QRY011 (Operation) |
+| CAP009 (Capability) | capability_operation | customers.QRY012 (Operation) |
+| CAP018 (Capability) | capability_operation | catalog.QRY005 (Operation) |
+| CAP018 (Capability) | capability_operation | catalog.QRY006 (Operation) |
+| CAP018 (Capability) | capability_operation | catalog.QRY001 (Operation) |
+| CAP018 (Capability) | capability_operation | catalog.QRY009 (Operation) |
+| CAP018 (Capability) | capability_operation | catalog.QRY101 (Operation) |
+| CAP018 (Capability) | capability_operation | catalog.QRY102 (Operation) |
+| CAP018 (Capability) | capability_operation | content.CMD019 (Operation) |
+| CAP018 (Capability) | capability_operation | content.CMD020 (Operation) |
+| CAP018 (Capability) | capability_operation | shop.CMD006 (Operation) |
+| CAP018 (Capability) | capability_operation | shop.CMD010 (Operation) |
+| CAP018 (Capability) | capability_operation | shop.CMD011 (Operation) |
+| CAP104 (Capability) | capability_operation | shop.CMD002 (Operation) |
+| CAP104 (Capability) | capability_operation | shop.CMD003 (Operation) |
+| CAP104 (Capability) | capability_operation | shop.CMD004 (Operation) |
+| CAP104 (Capability) | capability_operation | shop.CMD005 (Operation) |
+| CAP104 (Capability) | capability_operation | shop.QRY003 (Operation) |
+| CAP013 (Capability) | capability_realized_in | DMN004 (Domain) |
+| CAP014 (Capability) | capability_realized_in | DMN007 (Domain) |
+| CAP103 (Capability) | capability_realized_in | DMN001 (Domain) |
+| CAP005 (Capability) | capability_realized_in | DMN002 (Domain) |
+| CAP010 (Capability) | capability_realized_in | DMN009 (Domain) |
+| CAP011 (Capability) | capability_realized_in | DMN006 (Domain) |
+| CAP001 (Capability) | capability_realized_in | DMN008 (Domain) |
+| CAP003 (Capability) | capability_realized_in | DMN003 (Domain) |
+| CAP007 (Capability) | capability_realized_in | DMN005 (Domain) |
 | DC001 (Decision) | capability_refs | CAP001 (Capability) |
 | DC002 (Decision) | capability_refs | CAP005 (Capability) |
 | DC002 (Decision) | capability_refs | CAP018 (Capability) |
@@ -17148,7 +19534,7 @@ graph TD
 | catalog.CN400 (Concept) | code_ref | src/Core/Domain/ImageSettings/Command/AddImageTypeCommand.php (CodeFile) |
 | catalog.CN400 (Concept) | code_ref | classes/ImageType.php (CodeFile) |
 | catalog.CN001 (Concept) | code_ref | src/Core/Domain/Product/ (CodeFile) |
-| catalog.CN001 (Concept) | code_ref | https://github.com/PrestaShop/docs/blob/9.x/development/architecture/domain/references/product/_index.md (CodeFile) |
+| catalog.CN001 (Concept) | code_ref | PrestaShop/docs#development/architecture/domain/references/product/index.md (CodeFile) |
 | catalog.CN003 (Concept) | code_ref | src/Core/Domain/Combination/ (CodeFile) |
 | catalog.CN004 (Concept) | code_ref | src/Core/Domain/Product/Image/ (CodeFile) |
 | catalog.CN010 (Concept) | code_ref | src/Core/Domain/Product/SpecificPrice/ (CodeFile) |
@@ -17243,16 +19629,26 @@ graph TD
 | modules.CN002 (Concept) | code_ref | src/Core/Domain/Hook/QueryResult/HookableInfo.php (CodeFile) |
 | orders.CN010 (Concept) | code_ref | src/Core/Domain/OrderState/ (CodeFile) |
 | orders.CN010 (Concept) | code_ref | classes/order/OrderState.php (CodeFile) |
+| orders.CN010 (Concept) | code_ref | install-dev/data/xml/order_state.xml (CodeFile) |
 | orders.CN011 (Concept) | code_ref | src/Core/Domain/OrderMessage/ (CodeFile) |
+| orders.CN011 (Concept) | code_ref | classes/order/OrderMessage.php (CodeFile) |
 | orders.CN002 (Concept) | code_ref | src/Core/Domain/Order/ (CodeFile) |
 | orders.CN002 (Concept) | code_ref | classes/order/Order.php (CodeFile) |
+| orders.CN002 (Concept) | code_ref | classes/PaymentModule.php (CodeFile) |
+| orders.CN002 (Concept) | code_ref | install-dev/data/xml/order_state.xml (CodeFile) |
 | orders.CN003 (Concept) | code_ref | classes/order/OrderDetail.php (CodeFile) |
 | orders.CN006 (Concept) | code_ref | classes/order/OrderInvoice.php (CodeFile) |
+| orders.CN006 (Concept) | code_ref | classes/order/Order.php (CodeFile) |
 | orders.CN005 (Concept) | code_ref | classes/order/OrderPayment.php (CodeFile) |
+| orders.CN004 (Concept) | code_ref | classes/Address.php (CodeFile) |
+| orders.CN004 (Concept) | code_ref | classes/form/CustomerAddressPersister.php (CodeFile) |
 | orders.CN007 (Concept) | code_ref | src/Core/Domain/OrderReturn/ (CodeFile) |
 | orders.CN007 (Concept) | code_ref | classes/order/OrderReturn.php (CodeFile) |
+| orders.CN007 (Concept) | code_ref | controllers/front/OrderFollowController.php (CodeFile) |
+| orders.CN007 (Concept) | code_ref | src/Adapter/OrderReturn/CommandHandler/UpdateOrderReturnStateHandler.php (CodeFile) |
 | orders.CN008 (Concept) | code_ref | src/Core/Domain/OrderReturnState/ (CodeFile) |
 | orders.CN008 (Concept) | code_ref | classes/order/OrderReturnState.php (CodeFile) |
+| orders.CN008 (Concept) | code_ref | install-dev/langs/en/data/order_return_state.xml (CodeFile) |
 | orders.CN009 (Concept) | code_ref | classes/order/OrderSlip.php (CodeFile) |
 | orders.CN009 (Concept) | code_ref | src/Core/Domain/CreditSlip/ (CodeFile) |
 | orders.CN009 (Concept) | code_ref | src/Adapter/Order/Refund/OrderSlipCreator.php (CodeFile) |
@@ -18739,6 +21135,7 @@ graph TD
 | orders.ERR027 (Error) | code_ref | src/Core/Domain/OrderReturnState/Exception/BulkDeleteOrderReturnStateException.php (CodeFile) |
 | orders.CMD001 (Operation) | code_ref | src/Core/Domain/Order/Command/AddOrderFromBackOfficeCommand.php (CodeFile) |
 | orders.CMD001 (Operation) | code_ref | src/Adapter/Order/CommandHandler/AddOrderFromBackOfficeHandler.php (CodeFile) |
+| orders.CMD001 (Operation) | code_ref | classes/PaymentModule.php (CodeFile) |
 | orders.CMD004 (Operation) | code_ref | classes/PaymentModule.php (CodeFile) |
 | orders.CMD004 (Operation) | code_ref | src/Core/Domain/Order/Command/UpdateOrderStatusCommand.php (CodeFile) |
 | orders.CMD004 (Operation) | code_ref | src/Adapter/Order/CommandHandler/UpdateOrderStatusHandler.php (CodeFile) |
@@ -18815,6 +21212,8 @@ graph TD
 | orders.ERR017 (Error) | code_ref | src/Core/Domain/Order/Exception/ReturnProductDisabledException.php (CodeFile) |
 | orders.CMD023 (Operation) | code_ref | src/Core/Domain/OrderReturn/Command/UpdateOrderReturnStateCommand.php (CodeFile) |
 | orders.CMD023 (Operation) | code_ref | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderReturn/OrderReturn.php (CodeFile) |
+| orders.CMD023 (Operation) | code_ref | src/Adapter/OrderReturn/CommandHandler/UpdateOrderReturnStateHandler.php (CodeFile) |
+| orders.CMD023 (Operation) | code_ref | PrestaShop/ps_apiresources#tests/Integration/ApiPlatform/OrderReturnEndpointTest.php (CodeFile) |
 | orders.EVT010 (Operation) | code_ref | src/Adapter/OrderReturn/CommandHandler/UpdateOrderReturnStateHandler.php (CodeFile) |
 | orders.EVT010 (Operation) | code_ref | classes/ObjectModel.php (CodeFile) |
 | orders.EVT010 (Operation) | code_ref | classes/order/OrderReturn.php (CodeFile) |
@@ -19031,11 +21430,23 @@ graph TD
 | shop.ERR007 (Error) | code_ref | src/Core/Domain/Contact/Exception/ContactNotFoundException.php (CodeFile) |
 | shop.ERR008 (Error) | code_ref | src/Core/Domain/Contact/Exception/ContactConstraintException.php (CodeFile) |
 | shop.ERR009 (Error) | code_ref | src/Core/Domain/Alias/Exception/AliasConstraintException.php (CodeFile) |
+| AdminService (Service) | code_ref | src/Core/Domain/Employee/ (CodeFile) |
+| CatalogService (Service) | code_ref | src/Core/Domain/Product/ (CodeFile) |
+| CheckoutService (Service) | code_ref | src/Core/Domain/Cart/ (CodeFile) |
+| ContentService (Service) | code_ref | classes/CMS.php (CodeFile) |
+| CustomerService (Service) | code_ref | src/Core/Domain/Customer/ (CodeFile) |
+| InternationalService (Service) | code_ref | src/Core/Domain/Currency/ (CodeFile) |
+| ModuleManager (Service) | code_ref | src/Core/Module/ModuleManager.php (CodeFile) |
+| OrderService (Service) | code_ref | src/Core/Domain/Order/ (CodeFile) |
+| OrderService (Service) | code_ref | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderReturn/OrderReturn.php (CodeFile) |
+| AdminApiClient (Service) | code_ref | PrestaShop/docs#admin-api/setup-development-environment.md (CodeFile) |
 | HookDispatcher (Service) | code_ref | src/Core/CommandBus/CommandBusInterface.php (CodeFile) |
 | HookDispatcher (Service) | code_ref | classes/Hook.php (CodeFile) |
 | HookDispatcher (Service) | code_ref | src/Adapter/HookManager.php (CodeFile) |
 | HookDispatcher (Service) | code_ref | classes/ObjectModel.php (CodeFile) |
 | HookDispatcher (Service) | code_ref | install-dev/data/xml/hook.xml (CodeFile) |
+| ShippingService (Service) | code_ref | src/Core/Domain/Carrier/ (CodeFile) |
+| ShopService (Service) | code_ref | src/Core/Domain/Shop/ (CodeFile) |
 | catalog.SCR001 (Screen) | code_ref | controllers/front/listing/CategoryController.php (CodeFile) |
 | catalog.SCR001 (Screen) | code_ref | classes/controller/ProductListingFrontController.php (CodeFile) |
 | catalog.SCR001 (Screen) | code_ref | classes/Category.php (CodeFile) |
@@ -19062,6 +21473,12 @@ graph TD
 | checkout.UAC011 (UIAction) | code_ref | classes/checkout/CheckoutPaymentStep.php (CodeFile) |
 | checkout.UAC012 (UIAction) | code_ref | controllers/front/OrderConfirmationController.php (CodeFile) |
 | checkout.UAC012 (UIAction) | code_ref | classes/Customer.php (CodeFile) |
+| checkout.UNV003 (UINavigation) | code_ref | controllers/front/CartController.php (CodeFile) |
+| checkout.UNV003 (UINavigation) | code_ref | PrestaShop/docs#modules/concepts/hooks/list-of-hooks/displayExpressCheckout.md (CodeFile) |
+| checkout.UNV004 (UINavigation) | code_ref | PrestaShop/docs#modules/payment/_index.md (CodeFile) |
+| checkout.UNV004 (UINavigation) | code_ref | classes/checkout/PaymentOptionsFinder.php (CodeFile) |
+| checkout.UNV004 (UINavigation) | code_ref | controllers/front/OrderConfirmationController.php (CodeFile) |
+| checkout.UNV005 (UINavigation) | code_ref | controllers/front/OrderController.php (CodeFile) |
 | content.SCR007 (Screen) | code_ref | controllers/front/CmsController.php (CodeFile) |
 | customers.SCR005 (Screen) | code_ref | controllers/front/AuthController.php (CodeFile) |
 | customers.SCR005 (Screen) | code_ref | classes/form/CustomerLoginForm.php (CodeFile) |
@@ -19078,6 +21495,17 @@ graph TD
 | customers.UAC007 (UIAction) | code_ref | controllers/front/AddressController.php (CodeFile) |
 | customers.UAC008 (UIAction) | code_ref | controllers/front/AddressController.php (CodeFile) |
 | customers.UAC009 (UIAction) | code_ref | classes/form/CustomerLoginForm.php (CodeFile) |
+| customers.UAC010 (UIAction) | code_ref | src/Core/Grid/Definition/Factory/CustomerGridDefinitionFactory.php (CodeFile) |
+| customers.UAC011 (UIAction) | code_ref | src/PrestaShopBundle/Resources/views/Admin/Sell/Customer/Blocks/View/addresses.html.twig (CodeFile) |
+| customers.UAC012 (UIAction) | code_ref | tests/Resources/themes/classic/templates/customer/authentication.tpl (CodeFile) |
+| customers.UAC012 (UIAction) | code_ref | controllers/front/AuthController.php (CodeFile) |
+| customers.UAC013 (UIAction) | code_ref | tests/Resources/themes/classic/templates/customer/my-account.tpl (CodeFile) |
+| customers.UAC014 (UIAction) | code_ref | tests/Resources/themes/classic/templates/customer/my-account.tpl (CodeFile) |
+| customers.UAC015 (UIAction) | code_ref | tests/Resources/themes/classic/templates/customer/my-account.tpl (CodeFile) |
+| customers.UAC016 (UIAction) | code_ref | tests/Resources/themes/classic/templates/customer/addresses.tpl (CodeFile) |
+| modules.UAC005 (UIAction) | code_ref | src/PrestaShopBundle/Controller/Admin/Improve/Modules/ModuleAbstractController.php (CodeFile) |
+| modules.UAC005 (UIAction) | code_ref | src/PrestaShopBundle/Resources/views/Admin/Module/Includes/modal_import.html.twig (CodeFile) |
+| modules.UAC005 (UIAction) | code_ref | admin-dev/themes/new-theme/js/pages/module/controller.js (CodeFile) |
 | orders.SCR004 (Screen) | code_ref | controllers/front/HistoryController.php (CodeFile) |
 | orders.SCR005 (Screen) | code_ref | controllers/front/OrderDetailController.php (CodeFile) |
 | orders.SCR006 (Screen) | code_ref | controllers/front/OrderFollowController.php (CodeFile) |
@@ -19086,6 +21514,8 @@ graph TD
 | orders.UAC008 (UIAction) | code_ref | controllers/front/OrderFollowController.php (CodeFile) |
 | orders.UAC008 (UIAction) | code_ref | classes/order/OrderReturn.php (CodeFile) |
 | orders.UAC009 (UIAction) | code_ref | controllers/front/HistoryController.php (CodeFile) |
+| orders.UAC010 (UIAction) | code_ref | src/Core/Grid/Definition/Factory/OrderGridDefinitionFactory.php (CodeFile) |
+| orders.UAC011 (UIAction) | code_ref | src/PrestaShopBundle/Resources/views/Admin/Sell/Order/Order/Blocks/View/merchandise_returns.html.twig (CodeFile) |
 | shop.SCR006 (Screen) | code_ref | controllers/front/IndexController.php (CodeFile) |
 | shop.SCR006 (Screen) | code_ref | install-dev/data/xml/hook.xml (CodeFile) |
 | shop.SCR007 (Screen) | code_ref | controllers/front/listing/SearchController.php (CodeFile) |
@@ -19225,6 +21655,9 @@ graph TD
 | MDL107 (Models) | code_ref | src/Core/Domain/Order/Payment/Command/AddPaymentCommand.php (CodeFile) |
 | MDL103 (Models) | code_ref | src/Core/Domain/Order/QueryResult/OrderForViewing.php (CodeFile) |
 | MDL104 (Models) | code_ref | src/Core/Domain/Order/QueryResult/OrderPreview.php (CodeFile) |
+| orders.MDL001 (Models) | code_ref | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderReturn/OrderReturn.php (CodeFile) |
+| orders.MDL002 (Models) | code_ref | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderReturn/OrderReturn.php (CodeFile) |
+| orders.MDL003 (Models) | code_ref | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/OrderReturn/OrderReturn.php (CodeFile) |
 | MDL400 (Models) | code_ref | src/Core/Domain/Carrier/Command/AddCarrierCommand.php (CodeFile) |
 | MDL400 (Models) | code_ref | src/Adapter/Carrier/CommandHandler/AddCarrierHandler.php (CodeFile) |
 | MDL401 (Models) | code_ref | src/Core/Domain/Carrier/Query/GetCarrierForEditing.php (CodeFile) |
@@ -19251,93 +21684,385 @@ graph TD
 | MDL1809 (Models) | code_ref | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/SearchAlias/SearchAlias.php (CodeFile) |
 | MDL1810 (Models) | code_ref | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/Contact/Contact.php (CodeFile) |
 | MDL1811 (Models) | code_ref | PrestaShop/ps_apiresources#src/ApiPlatform/Resources/ShowcaseCard/ShowcaseCard.php (CodeFile) |
+| admin.SR001 (StructuralRule) | code_ref | classes/Employee.php (CodeFile) |
+| admin.SR001 (StructuralRule) | code_ref | src/Core/Domain/Employee/Command/AddEmployeeCommand.php (CodeFile) |
+| admin.SR001 (StructuralRule) | code_ref | src/Core/Domain/Employee/Command/EditEmployeeCommand.php (CodeFile) |
+| admin.SR001 (StructuralRule) | code_ref | src/Adapter/Profile/Employee/CommandHandler/AddEmployeeHandler.php (CodeFile) |
+| admin.SR001 (StructuralRule) | code_ref | src/Adapter/Profile/Employee/CommandHandler/EditEmployeeHandler.php (CodeFile) |
+| admin.SR001 (StructuralRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Employee/employee_management.feature (CodeFile) |
+| admin.VR001 (ValidationRule) | code_ref | src/Adapter/Profile/Employee/CommandHandler/AddEmployeeHandler.php (CodeFile) |
+| admin.VR001 (ValidationRule) | code_ref | src/Adapter/Profile/Employee/CommandHandler/EditEmployeeHandler.php (CodeFile) |
+| admin.VR002 (ValidationRule) | code_ref | src/Core/Domain/Employee/ValueObject/Password.php (CodeFile) |
+| admin.VR002 (ValidationRule) | code_ref | src/Core/Domain/Employee/Command/AddEmployeeCommand.php (CodeFile) |
+| admin.VR002 (ValidationRule) | code_ref | src/Core/Domain/Employee/Command/EditEmployeeCommand.php (CodeFile) |
+| admin.VR002 (ValidationRule) | code_ref | src/Core/Security/PasswordPolicyConfiguration.php (CodeFile) |
+| admin.VR002 (ValidationRule) | code_ref | install-dev/data/xml/configuration.xml (CodeFile) |
+| admin.VR002 (ValidationRule) | code_ref | src/PrestaShopBundle/Form/Admin/Login/ResetPasswordType.php (CodeFile) |
+| admin.VR003 (ValidationRule) | code_ref | src/Adapter/Profile/CommandHandler/AbstractProfileHandler.php (CodeFile) |
+| admin.VR003 (ValidationRule) | code_ref | src/Adapter/Profile/CommandHandler/DeleteProfileHandler.php (CodeFile) |
+| admin.VR003 (ValidationRule) | code_ref | src/Adapter/Profile/CommandHandler/BulkDeleteProfileHandler.php (CodeFile) |
+| admin.VR003 (ValidationRule) | code_ref | src/Core/Domain/Profile/Exception/FailedToDeleteProfileException.php (CodeFile) |
+| admin.VR004 (ValidationRule) | code_ref | src/Core/Domain/Profile/Permission/ValueObject/ControllerPermission.php (CodeFile) |
+| admin.VR004 (ValidationRule) | code_ref | src/Core/Domain/Profile/Permission/ValueObject/ModulePermission.php (CodeFile) |
+| admin.VR004 (ValidationRule) | code_ref | src/Core/Domain/Profile/Permission/Command/UpdateTabPermissionsCommand.php (CodeFile) |
+| admin.VR004 (ValidationRule) | code_ref | classes/Access.php (CodeFile) |
+| admin.VR004 (ValidationRule) | code_ref | src/Adapter/Profile/Permission/CommandHandler/UpdateTabPermissionsHandler.php (CodeFile) |
+| admin.VR004 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Profile/profile_permissions.feature (CodeFile) |
+| admin.VR005 (ValidationRule) | code_ref | src/Core/Domain/ApiClient/Command/AddApiClientCommand.php (CodeFile) |
+| admin.VR005 (ValidationRule) | code_ref | src/Core/Domain/ApiClient/Command/EditApiClientCommand.php (CodeFile) |
+| admin.VR005 (ValidationRule) | code_ref | src/PrestaShopBundle/Entity/ApiClient.php (CodeFile) |
+| admin.VR005 (ValidationRule) | code_ref | src/Core/ConstraintValidator/InstalledApiResourceScopeValidator.php (CodeFile) |
+| admin.VR005 (ValidationRule) | code_ref | src/Core/Domain/ApiClient/Exception/ApiClientConstraintException.php (CodeFile) |
+| admin.VR005 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/ApiClient/api_client_management.feature (CodeFile) |
+| admin.VR006 (ValidationRule) | code_ref | classes/RequestSql.php (CodeFile) |
+| admin.VR006 (ValidationRule) | code_ref | src/Adapter/SqlManager/SqlQueryValidator.php (CodeFile) |
+| admin.VR006 (ValidationRule) | code_ref | src/Adapter/SqlManager/CommandHandler/AbstractSqlRequestHandler.php (CodeFile) |
+| admin.VR006 (ValidationRule) | code_ref | src/Adapter/SqlManager/QueryHandler/GetSqlRequestExecutionResultHandler.php (CodeFile) |
+| admin.VR006 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Database/sql_manager.feature (CodeFile) |
 | admin.VR007 (ValidationRule) | code_ref | src/Core/Domain/BusinessEntity/Command/AddBusinessEntityCommand.php (CodeFile) |
 | admin.VR007 (ValidationRule) | code_ref | src/Core/Domain/BusinessEntity/Exception/BusinessEntityBillingAddressConstraintException.php (CodeFile) |
+| admin.VR007 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/BusinessEntity/business_entity_management.feature (CodeFile) |
 | catalog.SR001 (StructuralRule) | code_ref | src/Core/Domain/Product/ValueObject/ProductType.php (CodeFile) |
+| catalog.SR001 (StructuralRule) | code_ref | src/Adapter/Product/Update/ProductTypeUpdater.php (CodeFile) |
 | catalog.SR002 (StructuralRule) | code_ref | classes/Category.php (CodeFile) |
 | catalog.SR002 (StructuralRule) | code_ref | src/Core/Domain/Category/CategorySettings.php (CodeFile) |
 | catalog.SR002 (StructuralRule) | code_ref | src/Core/Domain/Category/Exception/CategoryConstraintException.php (CodeFile) |
 | catalog.SR003 (StructuralRule) | code_ref | src/Core/Domain/Category/Exception/CannotDeleteRootCategoryForShopException.php (CodeFile) |
 | catalog.SR003 (StructuralRule) | code_ref | src/Adapter/Category/CommandHandler/DeleteCategoryHandler.php (CodeFile) |
+| catalog.SR003 (StructuralRule) | code_ref | classes/Category.php (CodeFile) |
+| catalog.CR001 (ClassificationRule) | code_ref | src/Adapter/Product/Repository/ProductRepository.php (CodeFile) |
+| catalog.CR001 (ClassificationRule) | code_ref | src/Adapter/Product/Validate/ProductValidator.php (CodeFile) |
+| catalog.CR001 (ClassificationRule) | code_ref | src/Core/Domain/Product/Exception/ProductConstraintException.php (CodeFile) |
+| catalog.CR001 (ClassificationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Product/update_status.feature (CodeFile) |
+| catalog.CR002 (ClassificationRule) | code_ref | src/Adapter/Product/Combination/Create/CombinationCreator.php (CodeFile) |
+| catalog.CR002 (ClassificationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Product/Combination/forbidden_actions.feature (CodeFile) |
+| catalog.VR001 (ValidationRule) | code_ref | src/Adapter/Product/Image/CommandHandler/AddProductImageHandler.php (CodeFile) |
+| catalog.VR001 (ValidationRule) | code_ref | src/Adapter/Image/ProductImageFileValidator.php (CodeFile) |
+| catalog.VR001 (ValidationRule) | code_ref | src/Adapter/Image/ImageValidator.php (CodeFile) |
+| catalog.VR001 (ValidationRule) | code_ref | classes/ImageManager.php (CodeFile) |
+| catalog.VR001 (ValidationRule) | code_ref | PrestaShop/prestashop-specs#content/1.7/back-office/catalog/products/add-edit-v2.md (CodeFile) |
 | catalog.VR002 (ValidationRule) | code_ref | src/Core/Domain/Product/Exception/CannotDeleteProductException.php (CodeFile) |
 | catalog.VR002 (ValidationRule) | code_ref | src/Adapter/Product/CommandHandler/DeleteProductHandler.php (CodeFile) |
+| catalog.VR002 (ValidationRule) | code_ref | src/Adapter/Product/ProductDeleter.php (CodeFile) |
 | catalog.VR003 (ValidationRule) | code_ref | src/Core/Domain/Product/SpecificPrice/Exception/SpecificPriceConstraintException.php (CodeFile) |
 | catalog.VR003 (ValidationRule) | code_ref | src/Core/Domain/Product/SpecificPrice/Command/AddSpecificPriceCommand.php (CodeFile) |
+| catalog.VR003 (ValidationRule) | code_ref | src/Core/Domain/ValueObject/Reduction.php (CodeFile) |
+| catalog.VR003 (ValidationRule) | code_ref | src/Adapter/Product/SpecificPrice/Validate/SpecificPriceValidator.php (CodeFile) |
+| catalog.VR003 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Product/SpecificPrice/add_specific_price.feature (CodeFile) |
 | catalog.VR004 (ValidationRule) | code_ref | src/Core/Domain/Product/Combination/Command/GenerateProductCombinationsCommand.php (CodeFile) |
 | catalog.VR004 (ValidationRule) | code_ref | src/Core/Domain/Product/Combination/Exception/CombinationConstraintException.php (CodeFile) |
+| catalog.VR004 (ValidationRule) | code_ref | src/Adapter/Product/Combination/Create/CombinationCreator.php (CodeFile) |
+| catalog.VR004 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Product/Combination/generate_combinations.feature (CodeFile) |
+| catalog.VR005 (ValidationRule) | code_ref | src/Adapter/Manufacturer/CommandHandler/AddManufacturerHandler.php (CodeFile) |
+| catalog.VR005 (ValidationRule) | code_ref | classes/Manufacturer.php (CodeFile) |
+| catalog.VR005 (ValidationRule) | code_ref | src/Adapter/Manufacturer/Repository/ManufacturerRepository.php (CodeFile) |
 | checkout.SR001 (StructuralRule) | code_ref | src/Core/Domain/Cart/Exception/MinimalQuantityException.php (CodeFile) |
+| checkout.SR001 (StructuralRule) | code_ref | src/Core/Domain/Cart/Command/AddProductToCartCommand.php (CodeFile) |
+| checkout.SR001 (StructuralRule) | code_ref | src/Core/Domain/Cart/Command/UpdateProductQuantityInCartCommand.php (CodeFile) |
+| checkout.SR001 (StructuralRule) | code_ref | src/Adapter/Cart/CommandHandler/UpdateProductQuantityInCartHandler.php (CodeFile) |
+| checkout.SR001 (StructuralRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Cart/Product/add_standard_product.feature (CodeFile) |
 | checkout.SR002 (StructuralRule) | code_ref | src/Core/Domain/Discount/Exception/DiscountConstraintException.php (CodeFile) |
 | checkout.SR002 (StructuralRule) | code_ref | src/Core/Domain/Discount/ValueObject/DiscountType.php (CodeFile) |
+| checkout.SR002 (StructuralRule) | code_ref | src/Adapter/Discount/Validate/DiscountValidator.php (CodeFile) |
+| checkout.SR002 (StructuralRule) | code_ref | src/Core/Domain/Discount/Command/AddDiscountCommand.php (CodeFile) |
+| checkout.CR001 (ClassificationRule) | code_ref | src/Core/Grid/Query/CartQueryBuilder.php (CodeFile) |
+| checkout.CR001 (ClassificationRule) | code_ref | src/Core/Domain/Cart/CartStatus.php (CodeFile) |
+| checkout.CR001 (ClassificationRule) | code_ref | src/Core/Grid/Data/Factory/CartGridDataFactory.php (CodeFile) |
+| checkout.CR002 (ClassificationRule) | code_ref | classes/Cart.php (CodeFile) |
+| checkout.CR002 (ClassificationRule) | code_ref | classes/CartRule.php (CodeFile) |
+| checkout.DR001 (DerivationRule) | code_ref | src/Core/Cart/Calculator.php (CodeFile) |
 | checkout.VR001 (ValidationRule) | code_ref | src/Core/Domain/CartRule/Exception/CartRuleValidityException.php (CodeFile) |
 | checkout.VR001 (ValidationRule) | code_ref | src/Core/Domain/Discount/Exception/DiscountConstraintException.php (CodeFile) |
+| checkout.VR001 (ValidationRule) | code_ref | src/Adapter/Discount/Validate/DiscountValidator.php (CodeFile) |
+| checkout.VR001 (ValidationRule) | code_ref | src/Core/Domain/Discount/Command/AddDiscountCommand.php (CodeFile) |
+| checkout.VR001 (ValidationRule) | code_ref | classes/CartRule.php (CodeFile) |
+| checkout.VR001 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_validity_date_range.feature (CodeFile) |
+| checkout.VR001 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Discount/BO/update_discount_validity_dates.feature (CodeFile) |
 | checkout.VR002 (ValidationRule) | code_ref | src/Core/Domain/Discount/ValueObject/MinimumAmount.php (CodeFile) |
 | checkout.VR002 (ValidationRule) | code_ref | src/Core/Domain/CartRule/Exception/CartRuleConstraintException.php (CodeFile) |
+| checkout.VR002 (ValidationRule) | code_ref | classes/CartRule.php (CodeFile) |
+| checkout.VR002 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_condition_minimum_amount.feature (CodeFile) |
 | checkout.VR003 (ValidationRule) | code_ref | src/Core/Domain/CartRule/Exception/CartRuleConstraintException.php (CodeFile) |
 | checkout.VR003 (ValidationRule) | code_ref | src/Core/Domain/Discount/Exception/DiscountConstraintException.php (CodeFile) |
+| checkout.VR003 (ValidationRule) | code_ref | classes/CartRule.php (CodeFile) |
+| checkout.VR003 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_usage_limits.feature (CodeFile) |
+| checkout.VR003 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Discount/BO/add_and_update_discount_quantities.feature (CodeFile) |
+| checkout.VR004 (ValidationRule) | code_ref | classes/SpecificPriceRule.php (CodeFile) |
+| checkout.VR004 (ValidationRule) | code_ref | classes/SpecificPrice.php (CodeFile) |
+| checkout.VR004 (ValidationRule) | code_ref | classes/Product.php (CodeFile) |
 | checkout.VR005 (ValidationRule) | code_ref | src/Core/Domain/Cart/Exception/CannotDeleteOrderedCartException.php (CodeFile) |
+| checkout.VR005 (ValidationRule) | code_ref | src/Adapter/Cart/CommandHandler/DeleteCartHandler.php (CodeFile) |
+| checkout.VR005 (ValidationRule) | code_ref | src/Adapter/Cart/CommandHandler/BulkDeleteCartHandler.php (CodeFile) |
+| checkout.VR005 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Cart/CartRule/BackOffice/delete_cart_from_bo.feature (CodeFile) |
+| checkout.TR003 (TransitionRule) | code_ref | classes/PaymentModule.php (CodeFile) |
+| checkout.TR003 (TransitionRule) | code_ref | classes/Cart.php (CodeFile) |
+| checkout.TR003 (TransitionRule) | code_ref | src/Core/Grid/Query/CartQueryBuilder.php (CodeFile) |
+| checkout.TR004 (TransitionRule) | code_ref | src/Core/Domain/Cart/CartStatus.php (CodeFile) |
+| checkout.TR004 (TransitionRule) | code_ref | src/Core/Grid/Query/CartQueryBuilder.php (CodeFile) |
+| content.SR001 (StructuralRule) | code_ref | classes/CMSCategory.php (CodeFile) |
+| content.SR001 (StructuralRule) | code_ref | src/Adapter/CMS/PageCategory/CommandHandler/EditCmsPageCategoryHandler.php (CodeFile) |
+| content.SR001 (StructuralRule) | code_ref | src/Core/Domain/CmsPageCategory/Exception/CmsPageCategoryConstraintException.php (CodeFile) |
+| content.VR001 (ValidationRule) | code_ref | src/Adapter/CMS/Page/CommandHandler/AddCmsPageHandler.php (CodeFile) |
+| content.VR001 (ValidationRule) | code_ref | src/Adapter/CMS/Page/CommandHandler/AbstractCmsPageHandler.php (CodeFile) |
+| content.VR001 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/CmsPage/cms_page_management.feature (CodeFile) |
+| content.VR002 (ValidationRule) | code_ref | src/Core/Domain/CmsPageCategory/Command/AbstractCmsPageCategoryCommand.php (CodeFile) |
+| content.VR002 (ValidationRule) | code_ref | src/Core/Domain/Meta/Command/AbstractMetaCommand.php (CodeFile) |
+| content.VR002 (ValidationRule) | code_ref | src/Core/Domain/Meta/Command/AddMetaCommand.php (CodeFile) |
+| content.VR002 (ValidationRule) | code_ref | classes/CMS.php (CodeFile) |
+| content.VR002 (ValidationRule) | code_ref | classes/Validate.php (CodeFile) |
+| content.VR002 (ValidationRule) | code_ref | tests/Unit/Core/Domain/CmsPageCategory/Command/AddCmsPageCategoryCommandTest.php (CodeFile) |
 | content.VR003 (ValidationRule) | code_ref | classes/CMSCategory.php (CodeFile) |
 | content.VR003 (ValidationRule) | code_ref | src/Adapter/CMS/PageCategory/CommandHandler/DeleteCmsPageCategoryHandler.php (CodeFile) |
+| content.VR004 (ValidationRule) | code_ref | classes/shop/Shop.php (CodeFile) |
+| content.VR004 (ValidationRule) | code_ref | src/Core/Domain/Theme/CommandHandler/EnableThemeHandler.php (CodeFile) |
+| content.VR004 (ValidationRule) | code_ref | src/Core/Addon/Theme/ThemeManager.php (CodeFile) |
+| content.VR004 (ValidationRule) | code_ref | src/Core/Addon/Theme/ThemeValidator.php (CodeFile) |
+| content.VR005 (ValidationRule) | code_ref | src/Core/Addon/Theme/ThemeManager.php (CodeFile) |
+| content.VR005 (ValidationRule) | code_ref | src/Core/Domain/Theme/CommandHandler/DeleteThemeHandler.php (CodeFile) |
+| content.VR005 (ValidationRule) | code_ref | src/PrestaShopBundle/Resources/views/Admin/Improve/Design/Theme/index.html.twig (CodeFile) |
+| content.VR006 (ValidationRule) | code_ref | src/Adapter/Meta/CommandHandler/AddMetaHandler.php (CodeFile) |
+| content.VR006 (ValidationRule) | code_ref | src/Adapter/Meta/CommandHandler/EditMetaHandler.php (CodeFile) |
+| content.VR006 (ValidationRule) | code_ref | src/Core/Domain/Meta/Exception/MetaConstraintException.php (CodeFile) |
+| content.VR006 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Meta/meta_management.feature (CodeFile) |
+| content.TR001 (TransitionRule) | code_ref | src/Core/Addon/Theme/ThemeManager.php (CodeFile) |
 | customers.SR001 (StructuralRule) | code_ref | src/Core/Domain/Customer/Exception/DuplicateCustomerEmailException.php (CodeFile) |
 | customers.SR001 (StructuralRule) | code_ref | src/Adapter/Customer/CommandHandler/AddCustomerHandler.php (CodeFile) |
+| customers.SR001 (StructuralRule) | code_ref | src/Adapter/Customer/CommandHandler/EditCustomerHandler.php (CodeFile) |
+| customers.SR001 (StructuralRule) | code_ref | classes/Customer.php (CodeFile) |
+| customers.SR001 (StructuralRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Customer/customer_management.feature (CodeFile) |
+| customers.CR001 (ClassificationRule) | code_ref | src/Core/Domain/CustomerService/ValueObject/CustomerThreadStatus.php (CodeFile) |
+| customers.CR001 (ClassificationRule) | code_ref | src/Core/Domain/CustomerService/CommandHandler/UpdateCustomerThreadStatusHandler.php (CodeFile) |
+| customers.CR001 (ClassificationRule) | code_ref | src/Core/Domain/CustomerService/CommandHandler/ReplyToCustomerThreadHandler.php (CodeFile) |
+| customers.CR001 (ClassificationRule) | code_ref | controllers/front/OrderDetailController.php (CodeFile) |
+| customers.VR001 (ValidationRule) | code_ref | src/Core/Domain/ValueObject/Email.php (CodeFile) |
+| customers.VR001 (ValidationRule) | code_ref | classes/Customer.php (CodeFile) |
+| customers.VR001 (ValidationRule) | code_ref | classes/Validate.php (CodeFile) |
 | customers.VR002 (ValidationRule) | code_ref | src/Core/Domain/Customer/ValueObject/Password.php (CodeFile) |
 | customers.VR002 (ValidationRule) | code_ref | src/Core/Security/PasswordPolicyConfiguration.php (CodeFile) |
+| customers.VR002 (ValidationRule) | code_ref | classes/form/CustomerForm.php (CodeFile) |
+| customers.VR002 (ValidationRule) | code_ref | classes/Validate.php (CodeFile) |
+| customers.VR002 (ValidationRule) | code_ref | tests/Unit/Core/Domain/Customer/ValueObject/PasswordTest.php (CodeFile) |
 | customers.VR003 (ValidationRule) | code_ref | src/Core/Domain/Customer/Command/TransformGuestToCustomerCommand.php (CodeFile) |
 | customers.VR003 (ValidationRule) | code_ref | src/Core/Domain/Customer/Exception/CustomerTransformationException.php (CodeFile) |
+| customers.VR003 (ValidationRule) | code_ref | src/Adapter/Customer/CommandHandler/TransformGuestToCustomerHandler.php (CodeFile) |
+| customers.VR003 (ValidationRule) | code_ref | classes/Customer.php (CodeFile) |
+| customers.VR004 (ValidationRule) | code_ref | src/Core/Domain/Customer/Group/Command/AddCustomerGroupCommand.php (CodeFile) |
+| customers.VR004 (ValidationRule) | code_ref | controllers/admin/AdminGroupsController.php (CodeFile) |
+| customers.VR004 (ValidationRule) | code_ref | src/Core/Domain/Customer/Group/Command/EditCustomerGroupCommand.php (CodeFile) |
+| customers.VR004 (ValidationRule) | code_ref | src/Core/Domain/Customer/Group/Exception/GroupConstraintException.php (CodeFile) |
 | customers.VR005 (ValidationRule) | code_ref | src/Core/Domain/Address/Exception/AddressConstraintException.php (CodeFile) |
 | customers.VR005 (ValidationRule) | code_ref | src/Core/Domain/Address/Configuration/AddressConstraint.php (CodeFile) |
 | customers.VR005 (ValidationRule) | code_ref | classes/Address.php (CodeFile) |
 | customers.VR005 (ValidationRule) | code_ref | classes/Country.php (CodeFile) |
 | customers.VR005 (ValidationRule) | code_ref | src/Adapter/Address/CommandHandler/EditCustomerAddressHandler.php (CodeFile) |
+| customers.VR005 (ValidationRule) | code_ref | src/Adapter/Address/AbstractAddressHandler.php (CodeFile) |
+| customers.VR005 (ValidationRule) | code_ref | src/PrestaShopBundle/Form/Admin/Sell/Address/CustomerAddressType.php (CodeFile) |
+| customers.VR005 (ValidationRule) | code_ref | classes/form/CustomerAddressForm.php (CodeFile) |
+| customers.VR006 (ValidationRule) | code_ref | classes/Customer.php (CodeFile) |
+| customers.VR006 (ValidationRule) | code_ref | src/Adapter/Customer/CommandHandler/DeleteCustomerHandler.php (CodeFile) |
+| customers.VR006 (ValidationRule) | code_ref | install-dev/data/xml/hook.xml (CodeFile) |
+| customers.VR006 (ValidationRule) | code_ref | PrestaShop/docs#modules/concepts/hooks/list-of-hooks/actionDeleteGDPRCustomer.md (CodeFile) |
+| customers.TR001 (TransitionRule) | code_ref | classes/Customer.php (CodeFile) |
+| customers.TR001 (TransitionRule) | code_ref | src/Adapter/Customer/CommandHandler/TransformGuestToCustomerHandler.php (CodeFile) |
+| customers.TR002 (TransitionRule) | code_ref | src/Adapter/Customer/CommandHandler/EditCustomerHandler.php (CodeFile) |
+| customers.TR002 (TransitionRule) | code_ref | src/Adapter/Customer/CommandHandler/BulkDisableCustomerHandler.php (CodeFile) |
+| customers.TR002 (TransitionRule) | code_ref | classes/form/CustomerLoginForm.php (CodeFile) |
+| customers.TR003 (TransitionRule) | code_ref | src/Adapter/Customer/CommandHandler/EditCustomerHandler.php (CodeFile) |
+| customers.TR003 (TransitionRule) | code_ref | src/Adapter/Customer/CommandHandler/BulkEnableCustomerHandler.php (CodeFile) |
+| international.SR001 (StructuralRule) | code_ref | src/Adapter/Currency/CommandHandler/CurrencyCommandValidator.php (CodeFile) |
+| international.SR001 (StructuralRule) | code_ref | src/Adapter/Currency/CurrencyDataProvider.php (CodeFile) |
+| international.SR001 (StructuralRule) | code_ref | src/Adapter/Currency/CommandHandler/AddOfficialCurrencyHandler.php (CodeFile) |
+| international.SR001 (StructuralRule) | code_ref | src/Adapter/Currency/CommandHandler/AddUnofficialCurrencyHandler.php (CodeFile) |
+| international.SR001 (StructuralRule) | code_ref | src/Adapter/Currency/CommandHandler/EditUnofficialCurrencyHandler.php (CodeFile) |
+| international.SR001 (StructuralRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Currency/currency_management.feature (CodeFile) |
 | international.VR001 (ValidationRule) | code_ref | src/Core/Domain/Currency/ValueObject/AlphaIsoCode.php (CodeFile) |
+| international.VR001 (ValidationRule) | code_ref | src/Adapter/Currency/CommandHandler/CurrencyCommandValidator.php (CodeFile) |
+| international.VR001 (ValidationRule) | code_ref | tests/Unit/Core/Domain/Currency/ValueObject/CurrencyIsoCodeTest.php (CodeFile) |
+| international.VR001 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Currency/currency_management.feature (CodeFile) |
+| international.VR002 (ValidationRule) | code_ref | src/Adapter/Currency/CommandHandler/DeleteCurrencyHandler.php (CodeFile) |
+| international.VR002 (ValidationRule) | code_ref | src/Adapter/Currency/CommandHandler/CurrencyCommandValidator.php (CodeFile) |
+| international.VR002 (ValidationRule) | code_ref | src/Adapter/Currency/CommandHandler/ToggleCurrencyStatusHandler.php (CodeFile) |
+| international.VR002 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Currency/currency_management.feature (CodeFile) |
+| international.VR003 (ValidationRule) | code_ref | src/Adapter/Language/CommandHandler/AddLanguageHandler.php (CodeFile) |
+| international.VR003 (ValidationRule) | code_ref | src/Adapter/Language/CommandHandler/EditLanguageHandler.php (CodeFile) |
+| international.VR003 (ValidationRule) | code_ref | src/Core/Domain/Language/ValueObject/IsoCode.php (CodeFile) |
+| international.VR003 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Language/language.feature (CodeFile) |
+| international.VR004 (ValidationRule) | code_ref | src/Adapter/Language/CommandHandler/AbstractLanguageHandler.php (CodeFile) |
+| international.VR004 (ValidationRule) | code_ref | src/Adapter/Language/CommandHandler/DeleteLanguageHandler.php (CodeFile) |
+| international.VR004 (ValidationRule) | code_ref | src/Adapter/Language/CommandHandler/BulkDeleteLanguagesHandler.php (CodeFile) |
+| international.VR004 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Language/language.feature (CodeFile) |
 | international.VR005 (ValidationRule) | code_ref | src/Core/Domain/Country/Command/AddCountryCommand.php (CodeFile) |
+| international.VR005 (ValidationRule) | code_ref | src/Core/Domain/Country/Command/EditCountryCommand.php (CodeFile) |
+| international.VR005 (ValidationRule) | code_ref | classes/Country.php (CodeFile) |
+| international.VR005 (ValidationRule) | code_ref | classes/Validate.php (CodeFile) |
+| international.VR005 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Country/country_management.feature (CodeFile) |
+| international.VR006 (ValidationRule) | code_ref | classes/tax/Tax.php (CodeFile) |
+| international.VR006 (ValidationRule) | code_ref | classes/Validate.php (CodeFile) |
+| international.VR006 (ValidationRule) | code_ref | src/Adapter/Tax/CommandHandler/AddTaxHandler.php (CodeFile) |
 | international.VR007 (ValidationRule) | code_ref | src/Core/Domain/Currency/ValueObject/ExchangeRate.php (CodeFile) |
+| international.VR007 (ValidationRule) | code_ref | src/Core/Domain/Currency/Command/AbstractAddCurrencyCommand.php (CodeFile) |
+| international.VR007 (ValidationRule) | code_ref | src/Core/Domain/Currency/Command/AbstractEditCurrencyCommand.php (CodeFile) |
+| international.VR008 (ValidationRule) | code_ref | classes/tax/TaxRulesGroup.php (CodeFile) |
+| international.VR008 (ValidationRule) | code_ref | controllers/admin/AdminTaxRulesGroupController.php (CodeFile) |
+| international.VR008 (ValidationRule) | code_ref | src/Adapter/TaxRulesGroup/CommandHandler/AddTaxRuleHandler.php (CodeFile) |
+| international.VR008 (ValidationRule) | code_ref | classes/tax/TaxRule.php (CodeFile) |
+| international.VR008 (ValidationRule) | code_ref | classes/tax/TaxRulesTaxManager.php (CodeFile) |
 | modules.SR001 (StructuralRule) | code_ref | src/Core/Domain/Module/Exception/ModuleNotInstalledException.php (CodeFile) |
+| modules.SR001 (StructuralRule) | code_ref | src/Adapter/Module/CommandHandler/UninstallModuleHandler.php (CodeFile) |
+| modules.SR001 (StructuralRule) | code_ref | src/Adapter/Module/CommandHandler/UpdateModuleStatusHandler.php (CodeFile) |
+| modules.SR001 (StructuralRule) | code_ref | src/Adapter/Module/CommandHandler/BulkToggleModuleStatusHandler.php (CodeFile) |
+| modules.SR001 (StructuralRule) | code_ref | src/Core/Module/ModuleManager.php (CodeFile) |
+| modules.SR001 (StructuralRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Module/uninstall_module.feature (CodeFile) |
 | modules.VR001 (ValidationRule) | code_ref | src/Core/Domain/Module/ValueObject/ModuleTechnicalName.php (CodeFile) |
 | modules.VR001 (ValidationRule) | code_ref | src/Core/Domain/Module/Exception/ModuleConstraintException.php (CodeFile) |
 | modules.VR002 (ValidationRule) | code_ref | src/Core/Domain/Module/Exception/CannotResetModuleException.php (CodeFile) |
+| modules.VR002 (ValidationRule) | code_ref | src/Adapter/Module/CommandHandler/ResetModuleHandler.php (CodeFile) |
+| modules.VR002 (ValidationRule) | code_ref | src/Core/Module/ModuleManager.php (CodeFile) |
+| modules.VR002 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Module/module.feature (CodeFile) |
+| modules.VR002 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Module/uninstall_module.feature (CodeFile) |
 | modules.VR003 (ValidationRule) | code_ref | src/Core/Domain/Module/Exception/ModuleAlreadyUpToDateException.php (CodeFile) |
+| modules.VR003 (ValidationRule) | code_ref | src/Adapter/Module/CommandHandler/UpgradeModuleHandler.php (CodeFile) |
+| modules.VR003 (ValidationRule) | code_ref | src/Adapter/Module/Module.php (CodeFile) |
+| modules.VR003 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Module/upgrade_module.feature (CodeFile) |
 | modules.TR001 (TransitionRule) | code_ref | src/Core/Domain/Module/Command/InstallModuleCommand.php (CodeFile) |
 | modules.TR001 (TransitionRule) | code_ref | src/Core/Domain/Module/Command/UpdateModuleStatusCommand.php (CodeFile) |
 | modules.TR001 (TransitionRule) | code_ref | src/Core/Domain/Module/Command/UninstallModuleCommand.php (CodeFile) |
-| orders.SR001 (StructuralRule) | code_ref | src/Core/Domain/Order/OrderConstraints.php (CodeFile) |
+| modules.TR001 (TransitionRule) | code_ref | src/Adapter/Module/CommandHandler/InstallModuleHandler.php (CodeFile) |
+| modules.TR001 (TransitionRule) | code_ref | classes/module/Module.php (CodeFile) |
+| modules.TR001 (TransitionRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Module/install_module.feature (CodeFile) |
 | orders.SR001 (StructuralRule) | code_ref | src/Core/Domain/Order/Exception/InvalidProductQuantityException.php (CodeFile) |
+| orders.SR001 (StructuralRule) | code_ref | controllers/front/OrderController.php (CodeFile) |
+| orders.SR001 (StructuralRule) | code_ref | src/Core/Domain/Order/Product/Command/AddProductToOrderCommand.php (CodeFile) |
+| orders.SR001 (StructuralRule) | code_ref | src/Core/Domain/Order/Product/Command/UpdateProductInOrderCommand.php (CodeFile) |
 | orders.SR002 (StructuralRule) | code_ref | src/Core/Domain/Order/Invoice/Command/GenerateInvoiceCommand.php (CodeFile) |
-| orders.SR002 (StructuralRule) | code_ref | src/Core/Domain/Order/Invoice/Exception/InvoiceException.php (CodeFile) |
+| orders.SR002 (StructuralRule) | code_ref | src/Adapter/Order/CommandHandler/GenerateInvoiceHandler.php (CodeFile) |
+| orders.SR002 (StructuralRule) | code_ref | classes/order/OrderHistory.php (CodeFile) |
+| orders.SR002 (StructuralRule) | code_ref | install-dev/data/xml/order_state.xml (CodeFile) |
+| orders.SR002 (StructuralRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Order/order_documents.feature (CodeFile) |
 | orders.SR003 (StructuralRule) | code_ref | src/Adapter/OrderReturn/CommandHandler/DeleteProductFromOrderReturnHandler.php (CodeFile) |
 | orders.SR003 (StructuralRule) | code_ref | src/Adapter/OrderReturn/CommandHandler/BulkDeleteProductsFromOrderReturnHandler.php (CodeFile) |
 | orders.SR003 (StructuralRule) | code_ref | src/Core/Domain/OrderReturn/Exception/CannotDeleteLastProductFromOrderReturnException.php (CodeFile) |
+| orders.SR003 (StructuralRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/OrderReturn/order_return_management.feature (CodeFile) |
+| orders.SR004 (StructuralRule) | code_ref | src/Adapter/Order/CommandHandler/DeleteProductFromOrderHandler.php (CodeFile) |
+| orders.SR004 (StructuralRule) | code_ref | controllers/front/OrderController.php (CodeFile) |
 | orders.CR001 (ClassificationRule) | code_ref | src/Core/Domain/Order/Command/UpdateOrderStatusCommand.php (CodeFile) |
-| orders.CR001 (ClassificationRule) | code_ref | src/Core/Domain/Order/Exception/InvalidOrderStateException.php (CodeFile) |
+| orders.CR001 (ClassificationRule) | code_ref | src/Adapter/Order/CommandHandler/UpdateOrderStatusHandler.php (CodeFile) |
+| orders.DR001 (DerivationRule) | code_ref | classes/Carrier.php (CodeFile) |
+| orders.DR001 (DerivationRule) | code_ref | controllers/admin/AdminCarriersController.php (CodeFile) |
+| orders.EQ001 (EquivalenceRule) | code_ref | src/Core/Cart/Calculator.php (CodeFile) |
+| orders.EQ001 (EquivalenceRule) | code_ref | src/Adapter/Order/OrderAmountUpdater.php (CodeFile) |
+| orders.VR001 (ValidationRule) | code_ref | classes/checkout/CheckoutAddressesStep.php (CodeFile) |
+| orders.VR001 (ValidationRule) | code_ref | controllers/front/OrderController.php (CodeFile) |
+| orders.VR001 (ValidationRule) | code_ref | classes/Cart.php (CodeFile) |
 | orders.VR002 (ValidationRule) | code_ref | src/Core/Domain/Order/Payment/Command/AddPaymentCommand.php (CodeFile) |
 | orders.VR002 (ValidationRule) | code_ref | src/Core/Domain/Order/Exception/NegativePaymentAmountException.php (CodeFile) |
+| orders.VR002 (ValidationRule) | code_ref | src/Adapter/Order/QueryHandler/GetOrderForViewingHandler.php (CodeFile) |
+| orders.VR002 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Order/order_add_payment.feature (CodeFile) |
 | orders.VR003 (ValidationRule) | code_ref | src/Core/Domain/Order/Command/IssueReturnProductCommand.php (CodeFile) |
 | orders.VR003 (ValidationRule) | code_ref | src/Core/Domain/Order/Exception/ReturnProductDisabledException.php (CodeFile) |
+| orders.VR003 (ValidationRule) | code_ref | classes/order/Order.php (CodeFile) |
+| orders.VR003 (ValidationRule) | code_ref | controllers/front/OrderFollowController.php (CodeFile) |
+| orders.VR003 (ValidationRule) | code_ref | install-dev/data/xml/configuration.xml (CodeFile) |
+| orders.VR003 (ValidationRule) | code_ref | PrestaShop/prestashop-specs#content/1.7/back-office/customer-service/merchandise-returns/merchandise-returns-listing.md (CodeFile) |
 | orders.VR004 (ValidationRule) | code_ref | src/Core/Domain/Order/Command/IssuePartialRefundCommand.php (CodeFile) |
-| orders.VR004 (ValidationRule) | code_ref | src/Core/Domain/Order/Exception/InvalidRefundException.php (CodeFile) |
+| orders.VR004 (ValidationRule) | code_ref | src/Core/Domain/Order/ValueObject/OrderDetailRefund.php (CodeFile) |
+| orders.VR004 (ValidationRule) | code_ref | src/Adapter/Order/Refund/OrderRefundCalculator.php (CodeFile) |
+| orders.VR004 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Order/partial_refund.feature (CodeFile) |
 | orders.TR001 (TransitionRule) | code_ref | src/Adapter/Order/CommandHandler/UpdateOrderStatusHandler.php (CodeFile) |
 | orders.TR001 (TransitionRule) | code_ref | src/Core/Domain/Order/Exception/ChangeOrderStatusException.php (CodeFile) |
+| orders.TR001 (TransitionRule) | code_ref | install-dev/data/xml/order_state.xml (CodeFile) |
 | shipping.SR001 (StructuralRule) | code_ref | src/Core/Domain/Carrier/Command/AddCarrierCommand.php (CodeFile) |
+| shipping.SR001 (StructuralRule) | code_ref | src/Core/Domain/Carrier/Command/EditCarrierCommand.php (CodeFile) |
+| shipping.SR001 (StructuralRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature (CodeFile) |
+| shipping.SR001 (StructuralRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Carrier/Ranges/carrier_ranges.feature (CodeFile) |
 | shipping.VR001 (ValidationRule) | code_ref | src/Core/Domain/Carrier/Exception/CarrierConstraintException.php (CodeFile) |
+| shipping.VR001 (ValidationRule) | code_ref | classes/Carrier.php (CodeFile) |
+| shipping.VR001 (ValidationRule) | code_ref | classes/Validate.php (CodeFile) |
+| shipping.VR001 (ValidationRule) | code_ref | src/Adapter/Carrier/Validate/CarrierValidator.php (CodeFile) |
 | shipping.VR002 (ValidationRule) | code_ref | src/Core/Domain/Carrier/ValueObject/ShippingMethod.php (CodeFile) |
+| shipping.VR002 (ValidationRule) | code_ref | classes/Carrier.php (CodeFile) |
 | shipping.VR003 (ValidationRule) | code_ref | src/Core/Domain/Carrier/Exception/CarrierConstraintException.php (CodeFile) |
+| shipping.VR003 (ValidationRule) | code_ref | src/Adapter/Carrier/Validate/CarrierValidator.php (CodeFile) |
+| shipping.VR003 (ValidationRule) | code_ref | src/Adapter/Carrier/CommandHandler/EditCarrierHandler.php (CodeFile) |
+| shipping.VR003 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature (CodeFile) |
 | shipping.VR004 (ValidationRule) | code_ref | src/Core/Domain/Carrier/Exception/CarrierConstraintException.php (CodeFile) |
+| shipping.VR004 (ValidationRule) | code_ref | src/Core/Domain/Carrier/ValueObject/CarrierRangeZone.php (CodeFile) |
+| shipping.VR004 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Carrier/Ranges/carrier_ranges.feature (CodeFile) |
 | shipping.VR005 (ValidationRule) | code_ref | src/Core/Domain/Carrier/Exception/CarrierConstraintException.php (CodeFile) |
+| shipping.VR005 (ValidationRule) | code_ref | src/Core/Domain/Carrier/ValueObject/CarrierRangeZone.php (CodeFile) |
+| shipping.VR005 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Carrier/Ranges/carrier_ranges.feature (CodeFile) |
+| shipping.VR006 (ValidationRule) | code_ref | src/Adapter/Shipment/CommandHandler/CreateShipmentHandler.php (CodeFile) |
+| shipping.VR006 (ValidationRule) | code_ref | src/Adapter/Shipment/CommandHandler/EditShipmentHandler.php (CodeFile) |
+| shipping.VR006 (ValidationRule) | code_ref | src/Adapter/Shipment/CommandHandler/SwitchShipmentCarrierHandler.php (CodeFile) |
+| shipping.VR006 (ValidationRule) | code_ref | src/Adapter/Shipment/CommandHandler/AddProductToShipmentHandler.php (CodeFile) |
+| shipping.VR006 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Shipment/shipment.feature (CodeFile) |
+| shipping.VR007 (ValidationRule) | code_ref | src/PrestaShopBundle/Form/Admin/Sell/Order/Shipment/ProductSplitType.php (CodeFile) |
+| shipping.VR007 (ValidationRule) | code_ref | src/Adapter/Shipment/ShipmentSplitter.php (CodeFile) |
+| shipping.VR008 (ValidationRule) | code_ref | src/Adapter/Shipment/CommandHandler/MergeProductsToShipmentHandler.php (CodeFile) |
+| shipping.VR008 (ValidationRule) | code_ref | src/Adapter/Shipment/ShipmentMerger.php (CodeFile) |
+| shipping.VR008 (ValidationRule) | code_ref | src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php (CodeFile) |
+| shipping.VR008 (ValidationRule) | code_ref | src/Adapter/Shipment/QueryHandler/ListAvailableShipmentsForProductHandler.php (CodeFile) |
 | shipping.VR009 (ValidationRule) | code_ref | src/Core/Domain/Shipment/ValueObject/TrackingNumber.php (CodeFile) |
 | shipping.VR009 (ValidationRule) | code_ref | src/Core/Domain/Shipment/Exception/InvalidShipmentTrackingNumberException.php (CodeFile) |
+| shipping.VR009 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Shipment/shipment.feature (CodeFile) |
+| shipping.VR010 (ValidationRule) | code_ref | src/Adapter/Carrier/Repository/CarrierRangeRepository.php (CodeFile) |
+| shipping.VR010 (ValidationRule) | code_ref | classes/Delivery.php (CodeFile) |
+| shipping.VR010 (ValidationRule) | code_ref | classes/Validate.php (CodeFile) |
 | shipping.TR001 (TransitionRule) | code_ref | src/Core/Domain/Shipment/Exception/CannotEditShipmentShippedException.php (CodeFile) |
+| shipping.TR001 (TransitionRule) | code_ref | src/Adapter/Shipment/CommandHandler/FulfillShipmentCommandHandler.php (CodeFile) |
+| shipping.TR001 (TransitionRule) | code_ref | src/Adapter/Shipment/CommandHandler/SplitShipmentHandler.php (CodeFile) |
+| shipping.TR001 (TransitionRule) | code_ref | src/Adapter/Shipment/CommandHandler/MergeProductsToShipmentHandler.php (CodeFile) |
+| shop.VR001 (ValidationRule) | code_ref | src/Core/Domain/Shop/DTO/ShopLogoSettings.php (CodeFile) |
+| shop.VR001 (ValidationRule) | code_ref | src/Core/Domain/Shop/Command/UploadLogosCommand.php (CodeFile) |
+| shop.VR001 (ValidationRule) | code_ref | tests/Unit/Core/Domain/Shop/Command/UploadLogosCommandTest.php (CodeFile) |
+| shop.VR002 (ValidationRule) | code_ref | src/Core/Domain/Alias/Command/AddSearchTermAliasesCommand.php (CodeFile) |
+| shop.VR002 (ValidationRule) | code_ref | src/Core/Domain/Alias/Command/UpdateSearchTermAliasesCommand.php (CodeFile) |
+| shop.VR002 (ValidationRule) | code_ref | classes/Alias.php (CodeFile) |
+| shop.VR002 (ValidationRule) | code_ref | src/Core/Domain/Alias/Exception/AliasConstraintException.php (CodeFile) |
+| shop.VR002 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Search/add_alias.feature (CodeFile) |
+| shop.VR003 (ValidationRule) | code_ref | src/Core/Domain/ValueObject/Email.php (CodeFile) |
+| shop.VR003 (ValidationRule) | code_ref | src/Core/Domain/Contact/Command/AddContactCommand.php (CodeFile) |
+| shop.VR003 (ValidationRule) | code_ref | classes/Contact.php (CodeFile) |
+| shop.VR003 (ValidationRule) | code_ref | classes/Validate.php (CodeFile) |
+| shop.VR003 (ValidationRule) | code_ref | src/PrestaShopBundle/Form/Admin/Configure/ShopParameters/Contact/ContactType.php (CodeFile) |
+| shop.VR003 (ValidationRule) | code_ref | tests/Integration/Behaviour/Features/Scenario/Contact/contact.feature (CodeFile) |
+| shop.VR004 (ValidationRule) | code_ref | src/Adapter/SearchEngine/CommandHandler/AddSearchEngineHandler.php (CodeFile) |
+| shop.VR004 (ValidationRule) | code_ref | src/Adapter/SearchEngine/CommandHandler/EditSearchEngineHandler.php (CodeFile) |
+| shop.VR004 (ValidationRule) | code_ref | classes/SearchEngine.php (CodeFile) |
+| admin.PRC001 (Process) | code_ref | src/PrestaShopBundle/Controller/Admin/Configure/AdvancedParameters/EmployeeController.php (CodeFile) |
+| catalog.PRC001 (Process) | code_ref | src/PrestaShopBundle/Controller/Admin/Sell/Catalog/Product/ProductController.php (CodeFile) |
 | catalog.US003 (UserStory) | code_ref | controllers/front/listing/SearchController.php (CodeFile) |
 | catalog.US003 (UserStory) | code_ref | classes/Search.php (CodeFile) |
 | catalog.US009 (UserStory) | code_ref | controllers/front/listing/CategoryController.php (CodeFile) |
 | catalog.US010 (UserStory) | code_ref | controllers/front/ProductController.php (CodeFile) |
+| checkout.PRC001 (Process) | code_ref | controllers/front/CartController.php (CodeFile) |
+| checkout.PRC001 (Process) | code_ref | src/PrestaShopBundle/Controller/Admin/Sell/Order/CartController.php (CodeFile) |
 | checkout.US008 (UserStory) | code_ref | controllers/front/CartController.php (CodeFile) |
 | checkout.US009 (UserStory) | code_ref | controllers/front/CartController.php (CodeFile) |
 | checkout.US010 (UserStory) | code_ref | controllers/front/OrderController.php (CodeFile) |
+| content.PRC001 (Process) | code_ref | src/PrestaShopBundle/Controller/Admin/Improve/Design/CmsPageController.php (CodeFile) |
+| customers.PRC001 (Process) | code_ref | src/PrestaShopBundle/Controller/Admin/Sell/Customer/CustomerController.php (CodeFile) |
+| customers.PRC001 (Process) | code_ref | controllers/front/RegistrationController.php (CodeFile) |
 | customers.US007 (UserStory) | code_ref | controllers/front/RegistrationController.php (CodeFile) |
 | customers.US008 (UserStory) | code_ref | controllers/front/OrderConfirmationController.php (CodeFile) |
 | customers.US009 (UserStory) | code_ref | controllers/front/AddressController.php (CodeFile) |
+| modules.PRC001 (Process) | code_ref | src/PrestaShopBundle/Controller/Admin/Improve/ModuleController.php (CodeFile) |
+| orders.PRC001 (Process) | code_ref | src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php (CodeFile) |
+| orders.PRC001 (Process) | code_ref | controllers/front/OrderController.php (CodeFile) |
+| orders.PRC001 (Process) | code_ref | classes/PaymentModule.php (CodeFile) |
+| orders.PRC001 (Process) | code_ref | classes/order/OrderDetail.php (CodeFile) |
+| orders.PRC002 (Process) | code_ref | src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php (CodeFile) |
+| orders.PRC002 (Process) | code_ref | src/Core/Form/IdentifiableObject/DataHandler/PartialRefundFormDataHandler.php (CodeFile) |
+| orders.PRC005 (Process) | code_ref | src/PrestaShopBundle/Controller/Admin/Sell/Order/CreditSlipController.php (CodeFile) |
+| orders.PRC005 (Process) | code_ref | controllers/front/OrderReturnController.php (CodeFile) |
+| orders.PRC006 (Process) | code_ref | controllers/front/OrderFollowController.php (CodeFile) |
+| orders.PRC006 (Process) | code_ref | install-dev/data/xml/hook.xml (CodeFile) |
 | orders.US007 (UserStory) | code_ref | controllers/front/HistoryController.php (CodeFile) |
 | orders.US008 (UserStory) | code_ref | controllers/front/OrderFollowController.php (CodeFile) |
 | orders.US008 (UserStory) | code_ref | classes/order/OrderReturn.php (CodeFile) |
+| shipping.PRC001 (Process) | code_ref | src/PrestaShopBundle/Controller/Admin/Improve/Shipping/CarrierController.php (CodeFile) |
+| shop.PRC003 (Process) | code_ref | controllers/front/OrderController.php (CodeFile) |
+| shop.PRC003 (Process) | code_ref | classes/PaymentModule.php (CodeFile) |
 | admin.TC001 (TestCase) | code_ref | tests/Integration/Behaviour/Features/Scenario/Employee/employee_management.feature (CodeFile) |
 | admin.TC001 (TestCase) | code_ref | src/Adapter/Profile/Employee/CommandHandler/AddEmployeeHandler.php (CodeFile) |
 | admin.TC002 (TestCase) | code_ref | tests/Integration/Behaviour/Features/Scenario/Profile/profile_permissions.feature (CodeFile) |
@@ -19387,6 +22112,12 @@ graph TD
 | checkout.TC003 (TestCase) | code_ref | src/Adapter/Discount/CommandHandler/AddDiscountHandler.php (CodeFile) |
 | checkout.TC004 (TestCase) | code_ref | tests/Integration/Behaviour/Features/Scenario/CatalogPriceRule/catalog_price_rules_listing.feature (CodeFile) |
 | checkout.TC004 (TestCase) | code_ref | classes/SpecificPrice.php (CodeFile) |
+| checkout.TC005 (TestCase) | code_ref | controllers/front/CartController.php (CodeFile) |
+| checkout.TC005 (TestCase) | code_ref | themes/_core/js/cart.js (CodeFile) |
+| checkout.TC006 (TestCase) | code_ref | controllers/front/CartController.php (CodeFile) |
+| checkout.TC006 (TestCase) | code_ref | themes/_core/js/cart.js (CodeFile) |
+| checkout.TC007 (TestCase) | code_ref | themes/_core/js/checkout-delivery.js (CodeFile) |
+| checkout.TC007 (TestCase) | code_ref | controllers/front/OrderController.php (CodeFile) |
 | checkout.EC001 (TestCase) | code_ref | tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_validity_date_range.feature (CodeFile) |
 | checkout.EC001 (TestCase) | code_ref | src/Core/Domain/CartRule/Exception/CartRuleValidityException.php (CodeFile) |
 | checkout.EC002 (TestCase) | code_ref | tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_usage_limits.feature (CodeFile) |
@@ -19397,6 +22128,8 @@ graph TD
 | checkout.ER002 (TestCase) | code_ref | src/Adapter/Discount/Validate/DiscountValidator.php (CodeFile) |
 | checkout.ER003 (TestCase) | code_ref | tests/Integration/Behaviour/Features/Scenario/Discount/FO/discount_with_condition_minimum_amount.feature (CodeFile) |
 | checkout.ER003 (TestCase) | code_ref | src/Core/Domain/Discount/ValueObject/MinimumAmount.php (CodeFile) |
+| checkout.ER004 (TestCase) | code_ref | controllers/front/CartController.php (CodeFile) |
+| checkout.ER004 (TestCase) | code_ref | themes/_core/js/cart.js (CodeFile) |
 | content.TC001 (TestCase) | code_ref | tests/Integration/Behaviour/Features/Scenario/CmsPage/cms_page_management.feature (CodeFile) |
 | content.TC002 (TestCase) | code_ref | src/Adapter/CMS/PageCategory/CommandHandler/AddCmsPageCategoryHandler.php (CodeFile) |
 | content.TC002 (TestCase) | code_ref | tests/Unit/Core/Domain/CmsPageCategory/Command/AddCmsPageCategoryCommandTest.php (CodeFile) |
@@ -19470,6 +22203,9 @@ graph TD
 | orders.TC003 (TestCase) | code_ref | src/Adapter/Order/CommandHandler/GenerateInvoiceHandler.php (CodeFile) |
 | orders.TC004 (TestCase) | code_ref | tests/Integration/Behaviour/Features/Scenario/Order/order_add_payment.feature (CodeFile) |
 | orders.TC004 (TestCase) | code_ref | src/Core/Domain/Order/Payment/Command/AddPaymentCommand.php (CodeFile) |
+| orders.TC005 (TestCase) | code_ref | src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php (CodeFile) |
+| orders.TC006 (TestCase) | code_ref | src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php (CodeFile) |
+| orders.TC007 (TestCase) | code_ref | controllers/admin/AdminReturnController.php (CodeFile) |
 | orders.EC001 (TestCase) | code_ref | tests/Integration/Behaviour/Features/Scenario/Cart/Product/add_standard_product.feature (CodeFile) |
 | orders.EC001 (TestCase) | code_ref | classes/Cart.php (CodeFile) |
 | orders.EC002 (TestCase) | code_ref | tests/Integration/Behaviour/Features/Scenario/Order/partial_refund.feature (CodeFile) |
@@ -19481,6 +22217,7 @@ graph TD
 | orders.ER002 (TestCase) | code_ref | src/Adapter/Order/CommandHandler/IssueReturnProductHandler.php (CodeFile) |
 | orders.ER003 (TestCase) | code_ref | src/Adapter/Order/CommandHandler/UpdateOrderStatusHandler.php (CodeFile) |
 | orders.ER003 (TestCase) | code_ref | src/Core/Domain/Order/Command/UpdateOrderStatusCommand.php (CodeFile) |
+| orders.ER004 (TestCase) | code_ref | src/PrestaShopBundle/Controller/Admin/Sell/Order/OrderController.php (CodeFile) |
 | shipping.TC001 (TestCase) | code_ref | tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature (CodeFile) |
 | shipping.TC002 (TestCase) | code_ref | tests/Integration/Behaviour/Features/Scenario/Carrier/carrier_management.feature (CodeFile) |
 | shipping.TC002 (TestCase) | code_ref | src/Adapter/Carrier/CommandHandler/ToggleCarrierIsFreeHandler.php (CodeFile) |
@@ -19516,21 +22253,34 @@ graph TD
 | DC001 (Decision) | code_ref | classes/order/OrderHistory.php (CodeFile) |
 | DC001 (Decision) | code_ref | app/config/messenger.yml (CodeFile) |
 | DC003 (Decision) | code_ref | src/Core/Domain/Order/Payment/ (CodeFile) |
+| DC003 (Decision) | code_ref | classes/PaymentModule.php (CodeFile) |
+| DC003 (Decision) | code_ref | src/Core/Payment/PaymentOption.php (CodeFile) |
+| DC003 (Decision) | code_ref | PrestaShop/docs#modules/payment/_index.md (CodeFile) |
 | DC004 (Decision) | code_ref | src/Core/Domain/Cart/ (CodeFile) |
+| DC004 (Decision) | code_ref | classes/Cart.php (CodeFile) |
+| DC004 (Decision) | code_ref | classes/controller/FrontController.php (CodeFile) |
+| DC004 (Decision) | code_ref | controllers/front/CartController.php (CodeFile) |
+| DC004 (Decision) | code_ref | classes/Context.php (CodeFile) |
 | DC005 (Decision) | code_ref | src/Core/Domain/ (CodeFile) |
-| DC005 (Decision) | code_ref | https://github.com/PrestaShop/docs/blob/9.x/development/architecture/domain/_index.md (CodeFile) |
+| DC005 (Decision) | code_ref | PrestaShop/docs#development/architecture/domain/_index.md (CodeFile) |
 | DC006 (Decision) | code_ref | src/PrestaShopBundle/ (CodeFile) |
-| DC006 (Decision) | code_ref | https://github.com/PrestaShop/docs/blob/9.x/development/architecture/migration-guide/_index.md (CodeFile) |
+| DC006 (Decision) | code_ref | PrestaShop/docs#development/architecture/migration-guide/_index.md (CodeFile) |
+| DC006 (Decision) | code_ref | PrestaShop/docs#development/architecture/migration-guide/strategy.md (CodeFile) |
 | DC007 (Decision) | code_ref | src/Core/Domain/ApiClient/ (CodeFile) |
-| DC007 (Decision) | code_ref | https://github.com/PrestaShop/docs/blob/9.x/admin-api/_index.md (CodeFile) |
+| DC007 (Decision) | code_ref | PrestaShop/docs#admin-api/_index.md (CodeFile) |
+| DC007 (Decision) | code_ref | install-dev/data/xml/feature_flag.xml (CodeFile) |
+| DC007 (Decision) | code_ref | PrestaShop/ps_apiresources#src/ApiPlatform/Resources (CodeFile) |
 | DC009 (Decision) | code_ref | classes/webservice/WebserviceRequest.php (CodeFile) |
 | DC009 (Decision) | code_ref | classes/webservice/WebserviceKey.php (CodeFile) |
 | DC010 (Decision) | code_ref | install-dev/data/xml/hook.xml (CodeFile) |
 | DC010 (Decision) | code_ref | classes/Hook.php (CodeFile) |
 | DC010 (Decision) | code_ref | classes/ObjectModel.php (CodeFile) |
 | DC010 (Decision) | code_ref | src/Adapter/Hook/HookDispatcher.php (CodeFile) |
+| BD001 (BusinessDecision) | code_ref | classes/order/OrderHistory.php (CodeFile) |
+| BD001 (BusinessDecision) | code_ref | app/config/messenger.yml (CodeFile) |
+| BD014 (BusinessDecision) | code_ref | classes/tax/TaxRulesTaxManager.php (CodeFile) |
 | prestashop.IR005 (InfraResource) | code_ref | INSTALL.txt (CodeFile) |
-| prestashop.IR005 (InfraResource) | code_ref | https://github.com/PrestaShop/docs/blob/9.x/basics/installation/system-requirements.md (CodeFile) |
+| prestashop.IR005 (InfraResource) | code_ref | PrestaShop/docs#basics/installation/system-requirements.md (CodeFile) |
 | prestashop.IR004 (InfraResource) | code_ref | .docker/Dockerfile (CodeFile) |
 | prestashop.IR004 (InfraResource) | code_ref | .docker/install/database.sh (CodeFile) |
 | prestashop.IR001 (InfraResource) | code_ref | app/config/parameters.yml.dist (CodeFile) |
@@ -19551,11 +22301,8 @@ graph TD
 | orders.CMP001 (Compliance) | compliance_concept | orders.CN004 (Concept) |
 | orders.CMP002 (Compliance) | compliance_concept | orders.CN002 (Concept) |
 | orders.CMP002 (Compliance) | compliance_concept | orders.CN007 (Concept) |
-| checkout.TR001 (TransitionRule) | concept | checkout.CN001 (Concept) |
-| checkout.TR002 (TransitionRule) | concept | checkout.CN001 (Concept) |
 | checkout.TR003 (TransitionRule) | concept | checkout.CN001 (Concept) |
 | checkout.TR004 (TransitionRule) | concept | checkout.CN001 (Concept) |
-| checkout.TR005 (TransitionRule) | concept | checkout.CN001 (Concept) |
 | content.TR001 (TransitionRule) | concept | content.CN003 (Concept) |
 | customers.TR001 (TransitionRule) | concept | customers.CN001 (Concept) |
 | customers.TR002 (TransitionRule) | concept | customers.CN001 (Concept) |
@@ -19632,8 +22379,11 @@ graph TD
 | orders.SR002 (StructuralRule) | concepts | orders.CN002 (Concept) |
 | orders.SR002 (StructuralRule) | concepts | orders.CN006 (Concept) |
 | orders.SR003 (StructuralRule) | concepts | orders.CN007 (Concept) |
+| orders.SR004 (StructuralRule) | concepts | orders.CN002 (Concept) |
+| orders.SR004 (StructuralRule) | concepts | orders.CN003 (Concept) |
 | orders.CR001 (ClassificationRule) | concepts | orders.CN002 (Concept) |
 | orders.DR001 (DerivationRule) | concepts | orders.CN002 (Concept) |
+| orders.DR001 (DerivationRule) | concepts | shipping.CN001 (Concept) |
 | orders.EQ001 (EquivalenceRule) | concepts | orders.CN002 (Concept) |
 | orders.EQ001 (EquivalenceRule) | concepts | orders.CN003 (Concept) |
 | orders.VR001 (ValidationRule) | concepts | orders.CN002 (Concept) |
@@ -19644,6 +22394,7 @@ graph TD
 | orders.VR003 (ValidationRule) | concepts | orders.CN007 (Concept) |
 | orders.VR004 (ValidationRule) | concepts | orders.CN002 (Concept) |
 | orders.VR004 (ValidationRule) | concepts | orders.CN009 (Concept) |
+| orders.VR004 (ValidationRule) | concepts | orders.CN003 (Concept) |
 | shipping.SR001 (StructuralRule) | concepts | shipping.CN001 (Concept) |
 | shipping.VR001 (ValidationRule) | concepts | shipping.CN001 (Concept) |
 | shipping.VR002 (ValidationRule) | concepts | shipping.CN001 (Concept) |
@@ -19654,6 +22405,7 @@ graph TD
 | shipping.VR007 (ValidationRule) | concepts | shipping.CN004 (Concept) |
 | shipping.VR008 (ValidationRule) | concepts | shipping.CN004 (Concept) |
 | shipping.VR009 (ValidationRule) | concepts | shipping.CN004 (Concept) |
+| shipping.VR010 (ValidationRule) | concepts | shipping.CN002 (Concept) |
 | shop.VR001 (ValidationRule) | concepts | shop.CN001 (Concept) |
 | shop.VR002 (ValidationRule) | concepts | shop.CN004 (Concept) |
 | shop.VR003 (ValidationRule) | concepts | shop.CN006 (Concept) |
@@ -19671,6 +22423,7 @@ graph TD
 | Orders (Context) | contains | OrderService (Service) |
 | ExternalApiConsumers (Context) | contains | AdminApiClient (Service) |
 | PlatformKernel (Context) | contains | HookDispatcher (Service) |
+| PlatformKernel (Context) | contains | InProcessConsumers (Service) |
 | Shipping (Context) | contains | ShippingService (Service) |
 | Shop (Context) | contains | ShopService (Service) |
 | web-tier (DeploymentTier) | contains | prestashop.IR004 (InfraResource) |
@@ -19782,13 +22535,14 @@ graph TD
 | International (Context) | context_uses_concept | international.CN009 (Concept) |
 | Modules (Context) | context_uses_concept | modules.CN001 (Concept) |
 | Modules (Context) | context_uses_concept | modules.CN002 (Concept) |
+| Orders (Context) | context_uses_concept | orders.CN011 (Concept) |
 | Orders (Context) | context_uses_concept | orders.CN009 (Concept) |
+| Orders (Context) | context_uses_concept | orders.CN007 (Concept) |
 | Orders (Context) | context_uses_concept | orders.CN005 (Concept) |
 | Orders (Context) | context_uses_concept | orders.CN006 (Concept) |
 | Orders (Context) | context_uses_concept | orders.CN002 (Concept) |
 | Orders (Context) | context_uses_concept | orders.CN010 (Concept) |
 | Orders (Context) | context_uses_concept | orders.CN003 (Concept) |
-| Orders (Context) | context_uses_concept | orders.CN007 (Concept) |
 | Orders (Context) | context_uses_concept | orders.CN008 (Concept) |
 | Shipping (Context) | context_uses_concept | shipping.CN001 (Concept) |
 | Shipping (Context) | context_uses_concept | shipping.CN002 (Concept) |
@@ -19810,8 +22564,37 @@ graph TD
 | AdminApiClient.httpClient (Contract) | contract_calls | admin.QRY001 (Operation) |
 | AdminApiClient.httpClient (Contract) | contract_calls | catalog.QRY001 (Operation) |
 | AdminApiClient.httpClient (Contract) | contract_calls | catalog.QRY002 (Operation) |
-| AdminApiClient.httpClient (Contract) | contract_calls | orders.QRY001 (Operation) |
+| AdminApiClient.httpClient (Contract) | contract_calls | orders.CMD023 (Operation) |
 | CatalogService.inprocess (Contract) | contract_consumes | modules.CMD010 (Operation) |
+| CheckoutService.inprocess (Contract) | contract_consumes | orders.EVT001 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | catalog.EVT001 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | catalog.EVT002 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | checkout.CMD009 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | checkout.CMD010 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | checkout.QRY001 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | checkout.EVT004 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | content.CMD001 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | content.CMD002 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | modules.CMD011 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | modules.CMD012 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | modules.CMD013 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | modules.QRY004 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | modules.EVT001 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | modules.EVT002 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | modules.EVT003 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | modules.EVT004 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | modules.EVT005 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | modules.EVT006 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | modules.EVT007 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | modules.EVT008 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | modules.EVT009 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | orders.CMD001 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | orders.CMD002 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | orders.CMD003 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | orders.QRY001 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | orders.EVT002 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | orders.EVT003 (Operation) |
+| InProcessConsumers.inprocess (Contract) | contract_consumes | orders.EVT004 (Operation) |
 | AdminService.openapi (Contract) | contract_exposes | admin.CMD001 (Operation) |
 | AdminService.openapi (Contract) | contract_exposes | admin.CMD010 (Operation) |
 | AdminService.openapi (Contract) | contract_exposes | admin.QRY001 (Operation) |
@@ -19820,11 +22603,6 @@ graph TD
 | CatalogService.openapi (Contract) | contract_exposes | catalog.CMD002 (Operation) |
 | CatalogService.openapi (Contract) | contract_exposes | catalog.QRY001 (Operation) |
 | CatalogService.openapi (Contract) | contract_exposes | catalog.QRY002 (Operation) |
-| CheckoutService.openapi (Contract) | contract_exposes | checkout.CMD009 (Operation) |
-| CheckoutService.openapi (Contract) | contract_exposes | checkout.CMD010 (Operation) |
-| CheckoutService.openapi (Contract) | contract_exposes | checkout.QRY001 (Operation) |
-| ContentService.openapi (Contract) | contract_exposes | content.CMD001 (Operation) |
-| ContentService.openapi (Contract) | contract_exposes | content.CMD002 (Operation) |
 | CustomerService.openapi (Contract) | contract_exposes | customers.CMD001 (Operation) |
 | CustomerService.openapi (Contract) | contract_exposes | customers.CMD002 (Operation) |
 | CustomerService.openapi (Contract) | contract_exposes | customers.CMD012 (Operation) |
@@ -19836,25 +22614,51 @@ graph TD
 | ModuleManager.openapi (Contract) | contract_exposes | modules.CMD001 (Operation) |
 | ModuleManager.openapi (Contract) | contract_exposes | modules.CMD002 (Operation) |
 | ModuleManager.openapi (Contract) | contract_exposes | modules.QRY001 (Operation) |
-| OrderService.openapi (Contract) | contract_exposes | orders.CMD001 (Operation) |
-| OrderService.openapi (Contract) | contract_exposes | orders.CMD002 (Operation) |
-| OrderService.openapi (Contract) | contract_exposes | orders.CMD003 (Operation) |
-| OrderService.openapi (Contract) | contract_exposes | orders.QRY001 (Operation) |
+| ModuleManager.openapi (Contract) | contract_exposes | modules.CMD003 (Operation) |
+| ModuleManager.openapi (Contract) | contract_exposes | modules.CMD004 (Operation) |
+| ModuleManager.openapi (Contract) | contract_exposes | modules.CMD005 (Operation) |
+| ModuleManager.openapi (Contract) | contract_exposes | modules.CMD006 (Operation) |
+| ModuleManager.openapi (Contract) | contract_exposes | modules.CMD007 (Operation) |
+| ModuleManager.openapi (Contract) | contract_exposes | modules.CMD008 (Operation) |
+| ModuleManager.openapi (Contract) | contract_exposes | modules.CMD009 (Operation) |
+| ModuleManager.openapi (Contract) | contract_exposes | modules.QRY002 (Operation) |
+| ModuleManager.openapi (Contract) | contract_exposes | modules.QRY003 (Operation) |
+| OrderService.openapi (Contract) | contract_exposes | orders.CMD023 (Operation) |
 | ShippingService.openapi (Contract) | contract_exposes | shipping.QRY003 (Operation) |
 | ShopService.openapi (Contract) | contract_exposes | shop.QRY003 (Operation) |
 | ShopService.openapi (Contract) | contract_exposes | shop.CMD016 (Operation) |
+| CatalogService.inprocess (Contract) | contract_provides | catalog.EVT001 (Operation) |
+| CatalogService.inprocess (Contract) | contract_provides | catalog.EVT002 (Operation) |
+| CheckoutService.inprocess (Contract) | contract_provides | checkout.CMD009 (Operation) |
+| CheckoutService.inprocess (Contract) | contract_provides | checkout.CMD010 (Operation) |
+| CheckoutService.inprocess (Contract) | contract_provides | checkout.QRY001 (Operation) |
+| CheckoutService.inprocess (Contract) | contract_provides | checkout.EVT004 (Operation) |
+| ContentService.inprocess (Contract) | contract_provides | content.CMD001 (Operation) |
+| ContentService.inprocess (Contract) | contract_provides | content.CMD002 (Operation) |
 | ModuleManager.inprocess (Contract) | contract_provides | modules.CMD010 (Operation) |
 | ModuleManager.inprocess (Contract) | contract_provides | modules.CMD011 (Operation) |
+| ModuleManager.inprocess (Contract) | contract_provides | modules.CMD012 (Operation) |
+| ModuleManager.inprocess (Contract) | contract_provides | modules.CMD013 (Operation) |
+| ModuleManager.inprocess (Contract) | contract_provides | modules.QRY004 (Operation) |
+| ModuleManager.inprocess (Contract) | contract_provides | modules.EVT001 (Operation) |
+| ModuleManager.inprocess (Contract) | contract_provides | modules.EVT002 (Operation) |
+| ModuleManager.inprocess (Contract) | contract_provides | modules.EVT003 (Operation) |
+| ModuleManager.inprocess (Contract) | contract_provides | modules.EVT004 (Operation) |
+| ModuleManager.inprocess (Contract) | contract_provides | modules.EVT005 (Operation) |
+| ModuleManager.inprocess (Contract) | contract_provides | modules.EVT006 (Operation) |
+| ModuleManager.inprocess (Contract) | contract_provides | modules.EVT007 (Operation) |
+| ModuleManager.inprocess (Contract) | contract_provides | modules.EVT008 (Operation) |
+| ModuleManager.inprocess (Contract) | contract_provides | modules.EVT009 (Operation) |
+| OrderService.inprocess (Contract) | contract_provides | orders.CMD001 (Operation) |
+| OrderService.inprocess (Contract) | contract_provides | orders.CMD002 (Operation) |
+| OrderService.inprocess (Contract) | contract_provides | orders.CMD003 (Operation) |
+| OrderService.inprocess (Contract) | contract_provides | orders.QRY001 (Operation) |
+| OrderService.inprocess (Contract) | contract_provides | orders.EVT001 (Operation) |
+| OrderService.inprocess (Contract) | contract_provides | orders.EVT002 (Operation) |
+| OrderService.inprocess (Contract) | contract_provides | orders.EVT003 (Operation) |
+| OrderService.inprocess (Contract) | contract_provides | orders.EVT004 (Operation) |
 | CatalogService.shareddata (Contract) | contract_reads | shop.DOC001 (Operation) |
 | OrderService.scheduledtransfer (Contract) | contract_reads | international.DOC001 (Operation) |
-| CheckoutService.asyncapi (Contract) | contract_receives | orders.EVT001 (Operation) |
-| CatalogService.asyncapi (Contract) | contract_sends | catalog.EVT001 (Operation) |
-| CatalogService.asyncapi (Contract) | contract_sends | catalog.EVT002 (Operation) |
-| CheckoutService.asyncapi (Contract) | contract_sends | checkout.EVT004 (Operation) |
-| OrderService.asyncapi (Contract) | contract_sends | orders.EVT001 (Operation) |
-| OrderService.asyncapi (Contract) | contract_sends | orders.EVT002 (Operation) |
-| OrderService.asyncapi (Contract) | contract_sends | orders.EVT003 (Operation) |
-| OrderService.asyncapi (Contract) | contract_sends | orders.EVT004 (Operation) |
 | Catalog (Context) | contract_traffic | Modules (Context) |
 | Catalog (Context) | contract_traffic | Shop (Context) |
 | Checkout (Context) | contract_traffic | Orders (Context) |
@@ -19862,16 +22666,30 @@ graph TD
 | ExternalApiConsumers (Context) | contract_traffic | Admin (Context) |
 | ExternalApiConsumers (Context) | contract_traffic | Catalog (Context) |
 | ExternalApiConsumers (Context) | contract_traffic | Orders (Context) |
+| PlatformKernel (Context) | contract_traffic | Catalog (Context) |
+| PlatformKernel (Context) | contract_traffic | Checkout (Context) |
+| PlatformKernel (Context) | contract_traffic | Content (Context) |
+| PlatformKernel (Context) | contract_traffic | Modules (Context) |
+| PlatformKernel (Context) | contract_traffic | Orders (Context) |
 | InternationalService.scheduledtransfer (Contract) | contract_writes | international.DOC001 (Operation) |
 | ShopService.shareddata (Contract) | contract_writes | shop.DOC001 (Operation) |
 | DC001 (Decision) | declared_impact | orders.CN002 (Concept) |
 | DC001 (Decision) | declared_impact | modules.CN002 (Concept) |
 | DC001 (Decision) | declared_impact | orders.CMD004 (Operation) |
 | DC001 (Decision) | declared_impact | orders.EVT005 (Operation) |
+| DC001 (Decision) | declared_impact | orders.PRC001 (Process) |
 | DC002 (Decision) | declared_impact | shop.CN005 (Concept) |
 | DC002 (Decision) | declared_impact | catalog.QRY001 (Operation) |
 | DC002 (Decision) | declared_impact | shop.CMD014 (Operation) |
 | DC002 (Decision) | declared_impact | shop.EVT010 (Operation) |
+| DC003 (Decision) | declared_impact | orders.CMD001 (Operation) |
+| DC003 (Decision) | declared_impact | checkout.SCR006 (Screen) |
+| DC003 (Decision) | declared_impact | checkout.UAC011 (UIAction) |
+| DC004 (Decision) | declared_impact | checkout.CN001 (Concept) |
+| DC004 (Decision) | declared_impact | checkout.CMD001 (Operation) |
+| DC004 (Decision) | declared_impact | checkout.CMD009 (Operation) |
+| DC004 (Decision) | declared_impact | checkout.CMD010 (Operation) |
+| DC004 (Decision) | declared_impact | checkout.CMD011 (Operation) |
 | DC007 (Decision) | declared_impact | admin.CN005 (Concept) |
 | DC007 (Decision) | declared_impact | admin.CMD021 (Operation) |
 | DC007 (Decision) | declared_impact | admin.CMD022 (Operation) |
@@ -19879,6 +22697,11 @@ graph TD
 | DC007 (Decision) | declared_impact | admin.CMD024 (Operation) |
 | DC007 (Decision) | declared_impact | admin.QRY005 (Operation) |
 | DC007 (Decision) | declared_impact | MDL804 (Models) |
+| DC008 (Decision) | declared_impact | catalog.QRY001 (Operation) |
+| DC008 (Decision) | declared_impact | catalog.QRY002 (Operation) |
+| DC008 (Decision) | declared_impact | checkout.CMD009 (Operation) |
+| DC008 (Decision) | declared_impact | checkout.QRY001 (Operation) |
+| DC008 (Decision) | declared_impact | content.QRY001 (Operation) |
 | DC009 (Decision) | declared_impact | admin.CN006 (Concept) |
 | DC009 (Decision) | declared_impact | admin.CMD025 (Operation) |
 | DC009 (Decision) | declared_impact | admin.CMD026 (Operation) |
@@ -19898,8 +22721,6 @@ graph TD
 | DC010 (Decision) | declared_impact | modules.QRY004 (Operation) |
 | AdminService (Service) | deployed_in_environment | prestashop.ENV001 (Environment) |
 | CatalogService (Service) | deployed_in_environment | prestashop.ENV001 (Environment) |
-| CheckoutService (Service) | deployed_in_environment | prestashop.ENV001 (Environment) |
-| OrderService (Service) | deployed_in_environment | prestashop.ENV001 (Environment) |
 | DPT001 (Department) | dept_has_team | TM001 (Team) |
 | DPT001 (Department) | dept_has_team | TM002 (Team) |
 | DPT001 (Department) | dept_has_team | TM003 (Team) |
@@ -20012,6 +22833,11 @@ graph TD
 | checkout.GL003 (Goal) | goal_affects | checkout.CMD015 (Operation) |
 | checkout.GL003 (Goal) | goal_affects | checkout.CN003 (Concept) |
 | checkout.GL003 (Goal) | goal_affects | checkout.PRC001 (Process) |
+| checkout.GL004 (Goal) | goal_affects | checkout.CMD001 (Operation) |
+| checkout.GL004 (Goal) | goal_affects | checkout.CMD009 (Operation) |
+| checkout.GL004 (Goal) | goal_affects | checkout.CMD010 (Operation) |
+| checkout.GL004 (Goal) | goal_affects | checkout.CMD011 (Operation) |
+| checkout.GL004 (Goal) | goal_affects | checkout.CN001 (Concept) |
 | content.GL001 (Goal) | goal_affects | content.CMD001 (Operation) |
 | content.GL001 (Goal) | goal_affects | content.CMD002 (Operation) |
 | content.GL001 (Goal) | goal_affects | content.CMD007 (Operation) |
@@ -20198,6 +23024,7 @@ graph TD
 | international.CMD007 (Operation) | governed_by | international.VR003 (ValidationRule) |
 | international.CMD009 (Operation) | governed_by | international.VR004 (ValidationRule) |
 | international.CMD023 (Operation) | governed_by | international.VR006 (ValidationRule) |
+| international.CMD034 (Operation) | governed_by | international.VR008 (ValidationRule) |
 | modules.CMD001 (Operation) | governed_by | modules.VR001 (ValidationRule) |
 | modules.CMD001 (Operation) | governed_by | modules.TR001 (TransitionRule) |
 | modules.CMD002 (Operation) | governed_by | modules.SR001 (StructuralRule) |
@@ -20219,7 +23046,7 @@ graph TD
 | orders.CMD002 (Operation) | governed_by | orders.CR001 (ClassificationRule) |
 | orders.CMD005 (Operation) | governed_by | orders.CR001 (ClassificationRule) |
 | orders.CMD020 (Operation) | governed_by | orders.SR001 (StructuralRule) |
-| orders.CMD021 (Operation) | governed_by | orders.SR001 (StructuralRule) |
+| orders.CMD021 (Operation) | governed_by | orders.SR004 (StructuralRule) |
 | orders.CMD003 (Operation) | governed_by | orders.VR002 (ValidationRule) |
 | orders.CMD015 (Operation) | governed_by | orders.VR002 (ValidationRule) |
 | orders.CMD015 (Operation) | governed_by | orders.VR004 (ValidationRule) |
@@ -20235,6 +23062,7 @@ graph TD
 | shipping.CMD007 (Operation) | governed_by | shipping.VR003 (ValidationRule) |
 | shipping.CMD008 (Operation) | governed_by | shipping.VR004 (ValidationRule) |
 | shipping.CMD008 (Operation) | governed_by | shipping.VR005 (ValidationRule) |
+| shipping.CMD008 (Operation) | governed_by | shipping.VR010 (ValidationRule) |
 | shipping.CMD009 (Operation) | governed_by | shipping.SR001 (StructuralRule) |
 | shipping.CMD011 (Operation) | governed_by | shipping.VR006 (ValidationRule) |
 | shipping.CMD012 (Operation) | governed_by | shipping.VR006 (ValidationRule) |
@@ -20271,7 +23099,28 @@ graph TD
 | international.QRY010 (Operation) | handled_by | International (Context) |
 | modules.CMD001 (Operation) | handled_by | Modules (Context) |
 | modules.CMD002 (Operation) | handled_by | Modules (Context) |
+| modules.CMD003 (Operation) | handled_by | Modules (Context) |
+| modules.CMD004 (Operation) | handled_by | Modules (Context) |
+| modules.CMD005 (Operation) | handled_by | Modules (Context) |
+| modules.CMD006 (Operation) | handled_by | Modules (Context) |
+| modules.CMD007 (Operation) | handled_by | Modules (Context) |
+| modules.CMD008 (Operation) | handled_by | Modules (Context) |
+| modules.EVT001 (Operation) | handled_by | Modules (Context) |
+| modules.EVT002 (Operation) | handled_by | Modules (Context) |
+| modules.EVT003 (Operation) | handled_by | Modules (Context) |
+| modules.EVT004 (Operation) | handled_by | Modules (Context) |
+| modules.EVT005 (Operation) | handled_by | Modules (Context) |
+| modules.EVT006 (Operation) | handled_by | Modules (Context) |
 | modules.QRY001 (Operation) | handled_by | Modules (Context) |
+| modules.CMD009 (Operation) | handled_by | Modules (Context) |
+| modules.EVT007 (Operation) | handled_by | Modules (Context) |
+| modules.QRY002 (Operation) | handled_by | Modules (Context) |
+| modules.QRY003 (Operation) | handled_by | Modules (Context) |
+| modules.CMD012 (Operation) | handled_by | Modules (Context) |
+| modules.CMD013 (Operation) | handled_by | Modules (Context) |
+| modules.EVT008 (Operation) | handled_by | Modules (Context) |
+| modules.EVT009 (Operation) | handled_by | Modules (Context) |
+| modules.QRY004 (Operation) | handled_by | Modules (Context) |
 | modules.CMD010 (Operation) | handled_by | Modules (Context) |
 | modules.CMD011 (Operation) | handled_by | Modules (Context) |
 | orders.CMD001 (Operation) | handled_by | Orders (Context) |
@@ -20282,6 +23131,7 @@ graph TD
 | orders.QRY001 (Operation) | handled_by | Orders (Context) |
 | orders.CMD003 (Operation) | handled_by | Orders (Context) |
 | orders.EVT003 (Operation) | handled_by | Orders (Context) |
+| orders.CMD023 (Operation) | handled_by | Orders (Context) |
 | shipping.QRY003 (Operation) | handled_by | Shipping (Context) |
 | shop.QRY003 (Operation) | handled_by | Shop (Context) |
 | shop.CMD016 (Operation) | handled_by | Shop (Context) |
@@ -20788,27 +23638,6 @@ graph TD
 | international.QRY009 (Operation) | handled_by | International (Context) |
 | international.QRY011 (Operation) | handled_by | International (Context) |
 | international.QRY012 (Operation) | handled_by | International (Context) |
-| modules.CMD003 (Operation) | handled_by | Modules (Context) |
-| modules.CMD004 (Operation) | handled_by | Modules (Context) |
-| modules.CMD005 (Operation) | handled_by | Modules (Context) |
-| modules.CMD006 (Operation) | handled_by | Modules (Context) |
-| modules.CMD007 (Operation) | handled_by | Modules (Context) |
-| modules.CMD008 (Operation) | handled_by | Modules (Context) |
-| modules.EVT001 (Operation) | handled_by | Modules (Context) |
-| modules.EVT002 (Operation) | handled_by | Modules (Context) |
-| modules.EVT003 (Operation) | handled_by | Modules (Context) |
-| modules.EVT004 (Operation) | handled_by | Modules (Context) |
-| modules.EVT005 (Operation) | handled_by | Modules (Context) |
-| modules.EVT006 (Operation) | handled_by | Modules (Context) |
-| modules.CMD009 (Operation) | handled_by | Modules (Context) |
-| modules.EVT007 (Operation) | handled_by | Modules (Context) |
-| modules.QRY002 (Operation) | handled_by | Modules (Context) |
-| modules.QRY003 (Operation) | handled_by | Modules (Context) |
-| modules.CMD012 (Operation) | handled_by | Modules (Context) |
-| modules.CMD013 (Operation) | handled_by | Modules (Context) |
-| modules.EVT008 (Operation) | handled_by | Modules (Context) |
-| modules.EVT009 (Operation) | handled_by | Modules (Context) |
-| modules.QRY004 (Operation) | handled_by | Modules (Context) |
 | orders.CMD017 (Operation) | handled_by | Orders (Context) |
 | orders.CMD018 (Operation) | handled_by | Orders (Context) |
 | orders.CMD019 (Operation) | handled_by | Orders (Context) |
@@ -20851,7 +23680,6 @@ graph TD
 | orders.CMD015 (Operation) | handled_by | Orders (Context) |
 | orders.CMD016 (Operation) | handled_by | Orders (Context) |
 | orders.EVT006 (Operation) | handled_by | Orders (Context) |
-| orders.CMD023 (Operation) | handled_by | Orders (Context) |
 | orders.EVT010 (Operation) | handled_by | Orders (Context) |
 | orders.EVT011 (Operation) | handled_by | Orders (Context) |
 | orders.QRY004 (Operation) | handled_by | Orders (Context) |
@@ -21192,6 +24020,7 @@ graph TD
 | orders.CMD035 (Operation) | initiated_by | orders.ACT004 (Actor) |
 | orders.CMD036 (Operation) | initiated_by | orders.ACT001 (Actor) |
 | orders.CMD001 (Operation) | initiated_by | orders.ACT001 (Actor) |
+| orders.CMD001 (Operation) | initiated_by | admin.ACT002 (Actor) |
 | orders.CMD004 (Operation) | initiated_by | orders.ACT003 (Actor) |
 | orders.CMD004 (Operation) | initiated_by | orders.ACT004 (Actor) |
 | orders.CMD002 (Operation) | initiated_by | orders.ACT003 (Actor) |
@@ -21262,6 +24091,7 @@ graph TD
 | admin.INQ001 (Inquiry) | inquiry_affects | admin.CMD021 (Operation) |
 | admin.INQ001 (Inquiry) | inquiry_affects | admin.CN005 (Concept) |
 | admin.INQ001 (Inquiry) | inquiry_affects | admin.PRC002 (Process) |
+| admin.INQ001 (Inquiry) | inquiry_affects | AdminService (Service) |
 | admin.INQ002 (Inquiry) | inquiry_affects | admin.CMD034 (Operation) |
 | admin.INQ002 (Inquiry) | inquiry_affects | admin.CN008 (Concept) |
 | catalog.INQ001 (Inquiry) | inquiry_affects | catalog.QRY001 (Operation) |
@@ -21292,6 +24122,7 @@ graph TD
 | modules.INQ001 (Inquiry) | inquiry_affects | modules.CMD013 (Operation) |
 | modules.INQ001 (Inquiry) | inquiry_affects | modules.CN002 (Concept) |
 | modules.INQ001 (Inquiry) | inquiry_affects | modules.PRC002 (Process) |
+| modules.INQ001 (Inquiry) | inquiry_affects | Modules (Context) |
 | modules.INQ002 (Inquiry) | inquiry_affects | modules.CMD001 (Operation) |
 | modules.INQ002 (Inquiry) | inquiry_affects | modules.CN001 (Concept) |
 | modules.INQ002 (Inquiry) | inquiry_affects | modules.PRC001 (Process) |
@@ -21309,6 +24140,7 @@ graph TD
 | shop.INQ001 (Inquiry) | inquiry_affects | shop.CMD001 (Operation) |
 | shop.INQ001 (Inquiry) | inquiry_affects | shop.CN001 (Concept) |
 | shop.INQ001 (Inquiry) | inquiry_affects | shop.PRC001 (Process) |
+| shop.INQ001 (Inquiry) | inquiry_affects | Shop (Context) |
 | shop.INQ002 (Inquiry) | inquiry_affects | shop.CMD002 (Operation) |
 | shop.INQ002 (Inquiry) | inquiry_affects | shop.QRY003 (Operation) |
 | shop.INQ002 (Inquiry) | inquiry_affects | shop.CN002 (Concept) |
@@ -21683,9 +24515,14 @@ graph TD
 | modules.CMD009 (Operation) | materializes | modules.CN002 (Concept) |
 | modules.CMD012 (Operation) | materializes | modules.CN002 (Concept) |
 | modules.CMD013 (Operation) | materializes | modules.CN002 (Concept) |
+| orders.CMD028 (Operation) | materializes | orders.CN011 (Concept) |
+| orders.CMD029 (Operation) | materializes | orders.CN011 (Concept) |
+| orders.CMD030 (Operation) | materializes | orders.CN011 (Concept) |
+| orders.CMD031 (Operation) | materializes | orders.CN011 (Concept) |
 | orders.CMD003 (Operation) | materializes | orders.CN009 (Concept) |
 | orders.CMD015 (Operation) | materializes | orders.CN009 (Concept) |
 | orders.CMD016 (Operation) | materializes | orders.CN009 (Concept) |
+| orders.CMD023 (Operation) | materializes | orders.CN007 (Concept) |
 | shipping.CMD001 (Operation) | materializes | shipping.CN001 (Concept) |
 | shipping.CMD002 (Operation) | materializes | shipping.CN001 (Concept) |
 | shipping.CMD003 (Operation) | materializes | shipping.CN001 (Concept) |
@@ -21753,6 +24590,8 @@ graph TD
 | shop.MT100 (Metric) | metric_measures | shop.CN005 (Concept) |
 | shop.MT101 (Metric) | metric_measures | shop.CMD014 (Operation) |
 | shop.MT101 (Metric) | metric_measures | shop.CN005 (Concept) |
+| MIG006 (Migration) | migration_relates_to_decision | DC001 (Decision) |
+| MIG006 (Migration) | migration_relates_to_decision | DC010 (Decision) |
 | MS100 (Milestone) | milestone_deliverable | CAP016 (Capability) |
 | MS100 (Milestone) | milestone_deliverable | CAP015 (Capability) |
 | MS100 (Milestone) | milestone_deliverable | admin.CMD021 (Operation) |
@@ -21778,21 +24617,35 @@ graph TD
 | MS003 (Milestone) | milestone_dependency | MS102 (Milestone) |
 | DC001 (Decision) | motivation_refs | orders.GL003 (Goal) |
 | DC001 (Decision) | motivation_refs | orders.RSK001 (Risk) |
-| DC002 (Decision) | motivation_refs | catalog.GL001 (Goal) |
-| DC003 (Decision) | motivation_refs | checkout.GL002 (Goal) |
-| DC003 (Decision) | motivation_refs | checkout.RSK002 (Risk) |
-| DC004 (Decision) | motivation_refs | orders.GL001 (Goal) |
-| DC004 (Decision) | motivation_refs | checkout.GL001 (Goal) |
-| DC004 (Decision) | motivation_refs | orders.RSK003 (Risk) |
-| DC005 (Decision) | motivation_refs | orders.GL003 (Goal) |
+| DC002 (Decision) | motivation_refs | catalog.RSK005 (Risk) |
+| DC002 (Decision) | motivation_refs | catalog.ASM001 (Assumption) |
+| DC003 (Decision) | motivation_refs | checkout.ASM001 (Assumption) |
+| DC004 (Decision) | motivation_refs | checkout.GL004 (Goal) |
+| DC005 (Decision) | motivation_refs | catalog.TRO001 (TradeOff) |
+| DC005 (Decision) | motivation_refs | admin.INQ002 (Inquiry) |
+| DC005 (Decision) | motivation_refs | shop.INQ001 (Inquiry) |
+| DC006 (Decision) | motivation_refs | admin.GL005 (Goal) |
+| DC007 (Decision) | motivation_refs | admin.GL002 (Goal) |
+| DC007 (Decision) | motivation_refs | catalog.GL004 (Goal) |
 | DC007 (Decision) | motivation_refs | admin.ASM100 (Assumption) |
-| DC008 (Decision) | motivation_refs | catalog.GL001 (Goal) |
+| DC007 (Decision) | motivation_refs | admin.TRO001 (TradeOff) |
+| DC008 (Decision) | motivation_refs | catalog.INQ001 (Inquiry) |
+| DC008 (Decision) | motivation_refs | checkout.INQ002 (Inquiry) |
+| DC008 (Decision) | motivation_refs | content.INQ001 (Inquiry) |
+| DC009 (Decision) | motivation_refs | admin.ASM100 (Assumption) |
+| DC009 (Decision) | motivation_refs | admin.TRO001 (TradeOff) |
+| DC010 (Decision) | motivation_refs | modules.GL003 (Goal) |
+| DC010 (Decision) | motivation_refs | modules.ASM001 (Assumption) |
+| DC010 (Decision) | motivation_refs | modules.TRO001 (TradeOff) |
 | admin.UNV001 (UINavigation) | nav_from | admin.SCR001 (Screen) |
 | admin.UNV002 (UINavigation) | nav_from | admin.SCR001 (Screen) |
 | catalog.UNV001 (UINavigation) | nav_from | catalog.SCR001 (Screen) |
 | catalog.UNV002 (UINavigation) | nav_from | catalog.SCR002 (Screen) |
 | checkout.UNV001 (UINavigation) | nav_from | checkout.SCR002 (Screen) |
 | checkout.UNV002 (UINavigation) | nav_from | checkout.SCR001 (Screen) |
+| checkout.UNV003 (UINavigation) | nav_from | checkout.SCR005 (Screen) |
+| checkout.UNV004 (UINavigation) | nav_from | checkout.SCR006 (Screen) |
+| checkout.UNV005 (UINavigation) | nav_from | checkout.SCR006 (Screen) |
 | content.UNV001 (UINavigation) | nav_from | content.SCR001 (Screen) |
 | content.UNV002 (UINavigation) | nav_from | content.SCR003 (Screen) |
 | content.UNV003 (UINavigation) | nav_from | shop.SCR006 (Screen) |
@@ -21824,6 +24677,9 @@ graph TD
 | catalog.UNV002 (UINavigation) | nav_to | checkout.SCR005 (Screen) |
 | checkout.UNV001 (UINavigation) | nav_to | checkout.SCR003 (Screen) |
 | checkout.UNV002 (UINavigation) | nav_to | checkout.SCR002 (Screen) |
+| checkout.UNV003 (UINavigation) | nav_to | checkout.SCR006 (Screen) |
+| checkout.UNV004 (UINavigation) | nav_to | checkout.SCR007 (Screen) |
+| checkout.UNV005 (UINavigation) | nav_to | checkout.SCR005 (Screen) |
 | content.UNV001 (UINavigation) | nav_to | content.SCR002 (Screen) |
 | content.UNV002 (UINavigation) | nav_to | content.SCR004 (Screen) |
 | content.UNV003 (UINavigation) | nav_to | content.SCR007 (Screen) |
@@ -21849,6 +24705,27 @@ graph TD
 | shop.UNV002 (UINavigation) | nav_to | catalog.SCR001 (Screen) |
 | shop.UNV003 (UINavigation) | nav_to | shop.SCR007 (Screen) |
 | shop.UNV004 (UINavigation) | nav_to | catalog.SCR002 (Screen) |
+| admin.UNV001 (UINavigation) | nav_via_action | admin.UAC001 (UIAction) |
+| catalog.UNV002 (UINavigation) | nav_via_action | catalog.UAC002 (UIAction) |
+| checkout.UNV001 (UINavigation) | nav_via_action | checkout.UAC003 (UIAction) |
+| checkout.UNV004 (UINavigation) | nav_via_action | checkout.UAC011 (UIAction) |
+| content.UNV001 (UINavigation) | nav_via_action | content.UAC001 (UIAction) |
+| content.UNV002 (UINavigation) | nav_via_action | content.UAC003 (UIAction) |
+| customers.UNV001 (UINavigation) | nav_via_action | customers.UAC010 (UIAction) |
+| customers.UNV002 (UINavigation) | nav_via_action | customers.UAC011 (UIAction) |
+| customers.UNV003 (UINavigation) | nav_via_action | customers.UAC012 (UIAction) |
+| customers.UNV004 (UINavigation) | nav_via_action | customers.UAC009 (UIAction) |
+| customers.UNV005 (UINavigation) | nav_via_action | customers.UAC013 (UIAction) |
+| customers.UNV006 (UINavigation) | nav_via_action | customers.UAC016 (UIAction) |
+| customers.UNV007 (UINavigation) | nav_via_action | customers.UAC014 (UIAction) |
+| international.UNV001 (UINavigation) | nav_via_action | international.UAC001 (UIAction) |
+| modules.UNV001 (UINavigation) | nav_via_action | modules.UAC005 (UIAction) |
+| orders.UNV001 (UINavigation) | nav_via_action | orders.UAC010 (UIAction) |
+| orders.UNV002 (UINavigation) | nav_via_action | orders.UAC011 (UIAction) |
+| orders.UNV003 (UINavigation) | nav_via_action | customers.UAC015 (UIAction) |
+| orders.UNV004 (UINavigation) | nav_via_action | orders.UAC009 (UIAction) |
+| orders.UNV005 (UINavigation) | nav_via_action | orders.UAC008 (UIAction) |
+| shipping.UNV001 (UINavigation) | nav_via_action | shipping.UAC001 (UIAction) |
 | admin.CMD021 (Operation) | operation_in_domain | DMN001 (Domain) |
 | admin.EVT014 (Operation) | operation_in_domain | DMN001 (Domain) |
 | admin.CMD022 (Operation) | operation_in_domain | DMN001 (Domain) |
@@ -22751,6 +25628,7 @@ graph TD
 | modules.CMD006 (Operation) | payload_model | MDL1903 (Models) |
 | modules.CMD008 (Operation) | payload_model | MDL701 (Models) |
 | modules.CMD009 (Operation) | payload_model | MDL1905 (Models) |
+| orders.CMD023 (Operation) | payload_model | orders.MDL001 (Models) |
 | shop.CMD001 (Operation) | payload_model | MDL900 (Models) |
 | shop.QRY002 (Operation) | payload_model | MDL901 (Models) |
 | shop.CMD002 (Operation) | payload_model | MDL903 (Models) |
@@ -22772,6 +25650,18 @@ graph TD
 | shop.QRY008 (Operation) | payload_model | MDL907 (Models) |
 | shop.CMD018 (Operation) | payload_model | MDL1811 (Models) |
 | shop.QRY010 (Operation) | payload_model | MDL1811 (Models) |
+| admin.PER002 (Persona) | persona_actor | admin.ACT003 (Actor) |
+| admin.PER001 (Persona) | persona_actor | admin.ACT001 (Actor) |
+| content.PER001 (Persona) | persona_actor | content.ACT002 (Actor) |
+| customers.PER001 (Persona) | persona_actor | customers.ACT001 (Actor) |
+| customers.PER002 (Persona) | persona_actor | customers.ACT002 (Actor) |
+| international.PER001 (Persona) | persona_actor | international.ACT001 (Actor) |
+| modules.PER001 (Persona) | persona_actor | modules.ACT002 (Actor) |
+| orders.PER001 (Persona) | persona_actor | orders.ACT001 (Actor) |
+| orders.PER002 (Persona) | persona_actor | orders.ACT001 (Actor) |
+| orders.PER003 (Persona) | persona_actor | orders.ACT003 (Actor) |
+| shipping.PER001 (Persona) | persona_actor | shipping.ACT001 (Actor) |
+| shop.PER001 (Persona) | persona_actor | shop.ACT001 (Actor) |
 | orders.PRC006 (Process) | process_calls_subprocess | orders.PRC005 (Process) |
 | admin.PRC001 (Process) | process_orders_operation | admin.CMD001 (Operation) |
 | admin.PRC001 (Process) | process_orders_operation | admin.CMD013 (Operation) |
@@ -22798,8 +25688,9 @@ graph TD
 | customers.PRC001 (Process) | process_orders_operation | customers.CMD001 (Operation) |
 | customers.PRC001 (Process) | process_orders_operation | customers.CMD012 (Operation) |
 | customers.PRC001 (Process) | process_orders_operation | customers.CMD003 (Operation) |
-| customers.PRC002 (Process) | process_orders_operation | customers.CMD016 (Operation) |
+| customers.PRC002 (Process) | process_orders_operation | customers.QRY011 (Operation) |
 | customers.PRC002 (Process) | process_orders_operation | customers.CMD017 (Operation) |
+| customers.PRC002 (Process) | process_orders_operation | customers.CMD016 (Operation) |
 | international.PRC001 (Process) | process_orders_operation | international.CMD001 (Operation) |
 | international.PRC001 (Process) | process_orders_operation | international.CMD005 (Operation) |
 | international.PRC001 (Process) | process_orders_operation | international.CMD006 (Operation) |
@@ -22816,6 +25707,9 @@ graph TD
 | orders.PRC002 (Process) | process_orders_operation | orders.CMD002 (Operation) |
 | orders.PRC002 (Process) | process_orders_operation | orders.EVT002 (Operation) |
 | orders.PRC002 (Process) | process_orders_operation | orders.CMD003 (Operation) |
+| orders.PRC002 (Process) | process_orders_operation | orders.EVT003 (Operation) |
+| orders.PRC002 (Process) | process_orders_operation | orders.EVT006 (Operation) |
+| orders.PRC002 (Process) | process_orders_operation | orders.CMD015 (Operation) |
 | orders.PRC002 (Process) | process_orders_operation | orders.EVT003 (Operation) |
 | orders.PRC002 (Process) | process_orders_operation | orders.EVT006 (Operation) |
 | orders.PRC003 (Process) | process_orders_operation | orders.CMD020 (Operation) |
@@ -22847,6 +25741,43 @@ graph TD
 | shop.PRC003 (Process) | process_orders_operation | checkout.CMD004 (Operation) |
 | shop.PRC003 (Process) | process_orders_operation | checkout.EVT002 (Operation) |
 | shop.PRC003 (Process) | process_orders_operation | orders.EVT001 (Operation) |
+| admin.PRC001 (Process) | process_supports_capability | CAP015 (Capability) |
+| admin.PRC002 (Process) | process_supports_capability | CAP016 (Capability) |
+| admin.PRC003 (Process) | process_supports_capability | CAP015 (Capability) |
+| catalog.PRC001 (Process) | process_supports_capability | CAP005 (Capability) |
+| catalog.PRC002 (Process) | process_supports_capability | CAP102 (Capability) |
+| catalog.PRC003 (Process) | process_supports_capability | CAP005 (Capability) |
+| checkout.PRC001 (Process) | process_supports_capability | CAP100 (Capability) |
+| checkout.PRC001 (Process) | process_supports_capability | CAP002 (Capability) |
+| checkout.PRC001 (Process) | process_supports_capability | CAP003 (Capability) |
+| checkout.PRC002 (Process) | process_supports_capability | CAP100 (Capability) |
+| content.PRC001 (Process) | process_supports_capability | CAP013 (Capability) |
+| content.PRC001 (Process) | process_supports_capability | CAP018 (Capability) |
+| content.PRC002 (Process) | process_supports_capability | CAP013 (Capability) |
+| content.PRC002 (Process) | process_supports_capability | CAP012 (Capability) |
+| customers.PRC001 (Process) | process_supports_capability | CAP007 (Capability) |
+| customers.PRC001 (Process) | process_supports_capability | CAP008 (Capability) |
+| customers.PRC002 (Process) | process_supports_capability | CAP009 (Capability) |
+| international.PRC001 (Process) | process_supports_capability | CAP011 (Capability) |
+| international.PRC002 (Process) | process_supports_capability | CAP011 (Capability) |
+| modules.PRC001 (Process) | process_supports_capability | CAP014 (Capability) |
+| modules.PRC002 (Process) | process_supports_capability | CAP014 (Capability) |
+| orders.PRC001 (Process) | process_supports_capability | CAP001 (Capability) |
+| orders.PRC001 (Process) | process_supports_capability | CAP003 (Capability) |
+| orders.PRC002 (Process) | process_supports_capability | CAP001 (Capability) |
+| orders.PRC003 (Process) | process_supports_capability | CAP001 (Capability) |
+| orders.PRC004 (Process) | process_supports_capability | CAP001 (Capability) |
+| orders.PRC005 (Process) | process_supports_capability | CAP001 (Capability) |
+| orders.PRC006 (Process) | process_supports_capability | CAP001 (Capability) |
+| shipping.PRC001 (Process) | process_supports_capability | CAP010 (Capability) |
+| shipping.PRC002 (Process) | process_supports_capability | CAP010 (Capability) |
+| shop.PRC001 (Process) | process_supports_capability | CAP017 (Capability) |
+| shop.PRC002 (Process) | process_supports_capability | CAP018 (Capability) |
+| shop.PRC003 (Process) | process_supports_capability | CAP100 (Capability) |
+| shop.PRC003 (Process) | process_supports_capability | CAP001 (Capability) |
+| shop.PRC003 (Process) | process_supports_capability | CAP002 (Capability) |
+| shop.PRC003 (Process) | process_supports_capability | CAP003 (Capability) |
+| shop.PRC003 (Process) | process_supports_capability | CAP018 (Capability) |
 | admin.CMD021 (Operation) | produces | admin.EVT014 (Operation) |
 | admin.CMD022 (Operation) | produces | admin.EVT015 (Operation) |
 | admin.CMD023 (Operation) | produces | admin.EVT016 (Operation) |
@@ -23167,20 +26098,19 @@ graph TD
 | CatalogService (Service) | provides | CatalogService.inprocess (Contract) |
 | CatalogService (Service) | provides | CatalogService.shareddata (Contract) |
 | CatalogService (Service) | provides | CatalogService.openapi (Contract) |
-| CatalogService (Service) | provides | CatalogService.asyncapi (Contract) |
-| CheckoutService (Service) | provides | CheckoutService.openapi (Contract) |
-| CheckoutService (Service) | provides | CheckoutService.asyncapi (Contract) |
-| ContentService (Service) | provides | ContentService.openapi (Contract) |
+| CheckoutService (Service) | provides | CheckoutService.inprocess (Contract) |
+| ContentService (Service) | provides | ContentService.inprocess (Contract) |
 | CustomerService (Service) | provides | CustomerService.openapi (Contract) |
 | InternationalService (Service) | provides | InternationalService.scheduledtransfer (Contract) |
 | InternationalService (Service) | provides | InternationalService.openapi (Contract) |
 | ModuleManager (Service) | provides | ModuleManager.inprocess (Contract) |
 | ModuleManager (Service) | provides | ModuleManager.openapi (Contract) |
 | OrderService (Service) | provides | OrderService.scheduledtransfer (Contract) |
+| OrderService (Service) | provides | OrderService.inprocess (Contract) |
 | OrderService (Service) | provides | OrderService.openapi (Contract) |
-| OrderService (Service) | provides | OrderService.asyncapi (Contract) |
 | AdminApiClient (Service) | provides | AdminApiClient.httpClient (Contract) |
 | AdminApiClient (Service) | provides | AdminApiClient.security_schemes (Contract) |
+| InProcessConsumers (Service) | provides | InProcessConsumers.inprocess (Contract) |
 | ShippingService (Service) | provides | ShippingService.openapi (Contract) |
 | ShopService (Service) | provides | ShopService.shareddata (Contract) |
 | ShopService (Service) | provides | ShopService.openapi (Contract) |
@@ -23200,8 +26130,10 @@ graph TD
 | catalog.QN003 (Question) | question_about | catalog.CN003 (Concept) |
 | catalog.QN002 (Question) | question_about | catalog.CN001 (Concept) |
 | catalog.QN002 (Question) | question_about | catalog.CN010 (Concept) |
+| catalog.QN005 (Question) | question_about | catalog.CN001 (Concept) |
 | catalog.QN004 (Question) | question_about | catalog.CN001 (Concept) |
 | catalog.QN004 (Question) | question_about | catalog.CN009 (Concept) |
+| catalog.QN006 (Question) | question_about | catalog.CN008 (Concept) |
 | checkout.QN001 (Question) | question_about | checkout.CN001 (Concept) |
 | checkout.QN001 (Question) | question_about | checkout.CN002 (Concept) |
 | checkout.QN003 (Question) | question_about | checkout.CN001 (Concept) |
@@ -23225,6 +26157,7 @@ graph TD
 | international.QN001 (Question) | question_about | international.CN007 (Concept) |
 | international.QN001 (Question) | question_about | international.CN008 (Concept) |
 | international.QN001 (Question) | question_about | international.CN009 (Concept) |
+| international.QN004 (Question) | question_about | international.CN007 (Concept) |
 | modules.QN001 (Question) | question_about | modules.CN001 (Concept) |
 | modules.QN001 (Question) | question_about | modules.CN002 (Concept) |
 | modules.QN002 (Question) | question_about | modules.CN001 (Concept) |
@@ -23249,13 +26182,13 @@ graph TD
 | shop.QN002 (Question) | question_about | shop.CN001 (Concept) |
 | shop.QN003 (Question) | question_about | shop.CN002 (Concept) |
 | shop.QN003 (Question) | question_about | shop.CN006 (Concept) |
+| shop.QN004 (Question) | question_about | shop.CN003 (Concept) |
 | admin.QN003 (Question) | question_answered_by | admin.QRY005 (Operation) |
 | admin.QN003 (Question) | question_answered_by | admin.QRY006 (Operation) |
 | admin.QN003 (Question) | question_answered_by | admin.CMD024 (Operation) |
 | admin.QN100 (Question) | question_answered_by | admin.QRY001 (Operation) |
 | admin.QN100 (Question) | question_answered_by | catalog.QRY001 (Operation) |
 | admin.QN100 (Question) | question_answered_by | catalog.QRY002 (Operation) |
-| admin.QN100 (Question) | question_answered_by | orders.QRY001 (Operation) |
 | admin.QN101 (Question) | question_answered_by | admin.CMD021 (Operation) |
 | admin.QN101 (Question) | question_answered_by | admin.CMD024 (Operation) |
 | admin.QN101 (Question) | question_answered_by | admin.QRY005 (Operation) |
@@ -23762,6 +26695,7 @@ graph TD
 | catalog.RSK004 (Risk) | risk_affects | catalog.CMD011 (Operation) |
 | catalog.RSK004 (Risk) | risk_affects | catalog.CN003 (Concept) |
 | catalog.RSK004 (Risk) | risk_affects | catalog.PRC002 (Process) |
+| catalog.RSK005 (Risk) | risk_affects | catalog.QRY001 (Operation) |
 | checkout.RSK001 (Risk) | risk_affects | checkout.CMD009 (Operation) |
 | checkout.RSK001 (Risk) | risk_affects | checkout.CMD014 (Operation) |
 | checkout.RSK001 (Risk) | risk_affects | checkout.CN001 (Concept) |
@@ -23945,7 +26879,9 @@ graph TD
 | catalog.QN001 (Question) | scoped_to | Catalog (Context) |
 | catalog.QN003 (Question) | scoped_to | Catalog (Context) |
 | catalog.QN002 (Question) | scoped_to | Catalog (Context) |
+| catalog.QN005 (Question) | scoped_to | Catalog (Context) |
 | catalog.QN004 (Question) | scoped_to | Catalog (Context) |
+| catalog.QN006 (Question) | scoped_to | Catalog (Context) |
 | checkout.QN001 (Question) | scoped_to | Checkout (Context) |
 | checkout.QN003 (Question) | scoped_to | Checkout (Context) |
 | checkout.QN002 (Question) | scoped_to | Checkout (Context) |
@@ -23959,6 +26895,7 @@ graph TD
 | international.QN003 (Question) | scoped_to | International (Context) |
 | international.QN002 (Question) | scoped_to | International (Context) |
 | international.QN001 (Question) | scoped_to | International (Context) |
+| international.QN004 (Question) | scoped_to | International (Context) |
 | modules.QN001 (Question) | scoped_to | Modules (Context) |
 | modules.QN002 (Question) | scoped_to | Modules (Context) |
 | modules.QN003 (Question) | scoped_to | Modules (Context) |
@@ -23974,6 +26911,7 @@ graph TD
 | shop.QN001 (Question) | scoped_to | Shop (Context) |
 | shop.QN002 (Question) | scoped_to | Shop (Context) |
 | shop.QN003 (Question) | scoped_to | Shop (Context) |
+| shop.QN004 (Question) | scoped_to | Shop (Context) |
 | admin.SCR001 (Screen) | screen_motivated_by | admin.GL001 (Goal) |
 | admin.SCR003 (Screen) | screen_motivated_by | admin.GL001 (Goal) |
 | admin.SCR004 (Screen) | screen_motivated_by | admin.GL002 (Goal) |
@@ -23996,6 +26934,33 @@ graph TD
 | shop.SCR001 (Screen) | screen_motivated_by | shop.GL001 (Goal) |
 | shop.SCR003 (Screen) | screen_motivated_by | shop.GL003 (Goal) |
 | shop.SCR004 (Screen) | screen_motivated_by | shop.GL002 (Goal) |
+| admin.SCR002 (Screen) | screen_process | admin.PRC001 (Process) |
+| catalog.SCR001 (Screen) | screen_process | shop.PRC003 (Process) |
+| catalog.SCR002 (Screen) | screen_process | shop.PRC003 (Process) |
+| checkout.SCR001 (Screen) | screen_process | checkout.PRC001 (Process) |
+| checkout.SCR003 (Screen) | screen_process | checkout.PRC002 (Process) |
+| checkout.SCR005 (Screen) | screen_process | shop.PRC003 (Process) |
+| checkout.SCR006 (Screen) | screen_process | shop.PRC003 (Process) |
+| checkout.SCR007 (Screen) | screen_process | shop.PRC003 (Process) |
+| content.SCR002 (Screen) | screen_process | content.PRC001 (Process) |
+| customers.SCR002 (Screen) | screen_process | customers.PRC001 (Process) |
+| customers.SCR003 (Screen) | screen_process | customers.PRC002 (Process) |
+| international.SCR002 (Screen) | screen_process | international.PRC001 (Process) |
+| international.SCR006 (Screen) | screen_process | international.PRC002 (Process) |
+| modules.SCR002 (Screen) | screen_process | modules.PRC001 (Process) |
+| orders.SCR001 (Screen) | screen_process | orders.PRC001 (Process) |
+| orders.SCR001 (Screen) | screen_process | orders.PRC002 (Process) |
+| orders.SCR002 (Screen) | screen_process | orders.PRC002 (Process) |
+| orders.SCR002 (Screen) | screen_process | orders.PRC003 (Process) |
+| orders.SCR002 (Screen) | screen_process | orders.PRC004 (Process) |
+| orders.SCR003 (Screen) | screen_process | orders.PRC005 (Process) |
+| orders.SCR004 (Screen) | screen_process | orders.PRC006 (Process) |
+| orders.SCR005 (Screen) | screen_process | orders.PRC006 (Process) |
+| orders.SCR006 (Screen) | screen_process | orders.PRC006 (Process) |
+| shipping.SCR002 (Screen) | screen_process | shipping.PRC001 (Process) |
+| shipping.SCR004 (Screen) | screen_process | shipping.PRC002 (Process) |
+| shop.SCR006 (Screen) | screen_process | shop.PRC003 (Process) |
+| shop.SCR007 (Screen) | screen_process | shop.PRC003 (Process) |
 | admin.SCR001 (Screen) | screen_uses_model | MDL801 (Models) |
 | admin.SCR002 (Screen) | screen_uses_model | MDL801 (Models) |
 | admin.SCR004 (Screen) | screen_uses_model | MDL805 (Models) |
@@ -24092,18 +27057,18 @@ graph TD
 | shipping.SLO002 (SLO) | slo_operation | shipping.CMD011 (Operation) |
 | shipping.SLO002 (SLO) | slo_operation | shipping.CMD013 (Operation) |
 | shop.SLO001 (SLO) | slo_operation | shop.CMD014 (Operation) |
-| Admin (Context) | spans | PrestaShop (Party) |
-| Catalog (Context) | spans | PrestaShop (Party) |
-| Checkout (Context) | spans | PrestaShop (Party) |
-| Content (Context) | spans | PrestaShop (Party) |
-| Customers (Context) | spans | PrestaShop (Party) |
-| International (Context) | spans | PrestaShop (Party) |
-| Modules (Context) | spans | PrestaShop (Party) |
-| Orders (Context) | spans | PrestaShop (Party) |
-| ExternalApiConsumers (Context) | spans | ApiIntegrators (Party) |
-| PlatformKernel (Context) | spans | PrestaShop (Party) |
-| Shipping (Context) | spans | PrestaShop (Party) |
-| Shop (Context) | spans | PrestaShop (Party) |
+| Admin (Context) | spans | PRT002 (Party) |
+| Catalog (Context) | spans | PRT002 (Party) |
+| Checkout (Context) | spans | PRT002 (Party) |
+| Content (Context) | spans | PRT002 (Party) |
+| Customers (Context) | spans | PRT002 (Party) |
+| International (Context) | spans | PRT002 (Party) |
+| Modules (Context) | spans | PRT002 (Party) |
+| Orders (Context) | spans | PRT002 (Party) |
+| ExternalApiConsumers (Context) | spans | PRT003 (Party) |
+| PlatformKernel (Context) | spans | PRT002 (Party) |
+| Shipping (Context) | spans | PRT002 (Party) |
+| Shop (Context) | spans | PRT002 (Party) |
 | SDM001 (Subdomain) | subdomain_of_domain | DMN001 (Domain) |
 | SDM002 (Subdomain) | subdomain_of_domain | DMN001 (Domain) |
 | SDM003 (Subdomain) | subdomain_of_domain | DMN001 (Domain) |
@@ -24137,18 +27102,27 @@ graph TD
 | SDM031 (Subdomain) | subdomain_of_domain | DMN008 (Domain) |
 | SDM032 (Subdomain) | subdomain_of_domain | DMN009 (Domain) |
 | SDM033 (Subdomain) | subdomain_of_domain | DMN009 (Domain) |
-| AdminService (Service) | system_ref | PrestaShop (Party) |
-| CatalogService (Service) | system_ref | PrestaShop (Party) |
-| CheckoutService (Service) | system_ref | PrestaShop (Party) |
-| ContentService (Service) | system_ref | PrestaShop (Party) |
-| CustomerService (Service) | system_ref | PrestaShop (Party) |
-| InternationalService (Service) | system_ref | PrestaShop (Party) |
-| ModuleManager (Service) | system_ref | PrestaShop (Party) |
-| OrderService (Service) | system_ref | PrestaShop (Party) |
-| AdminApiClient (Service) | system_ref | ApiIntegrators (Party) |
-| HookDispatcher (Service) | system_ref | PrestaShop (Party) |
-| ShippingService (Service) | system_ref | PrestaShop (Party) |
-| ShopService (Service) | system_ref | PrestaShop (Party) |
+| AdminService (Service) | system_ref | PRT002 (Party) |
+| CatalogService (Service) | system_ref | PRT002 (Party) |
+| CheckoutService (Service) | system_ref | PRT002 (Party) |
+| ContentService (Service) | system_ref | PRT002 (Party) |
+| CustomerService (Service) | system_ref | PRT002 (Party) |
+| InternationalService (Service) | system_ref | PRT002 (Party) |
+| ModuleManager (Service) | system_ref | PRT002 (Party) |
+| OrderService (Service) | system_ref | PRT002 (Party) |
+| AdminApiClient (Service) | system_ref | PRT003 (Party) |
+| HookDispatcher (Service) | system_ref | PRT002 (Party) |
+| InProcessConsumers (Service) | system_ref | PRT002 (Party) |
+| ShippingService (Service) | system_ref | PRT002 (Party) |
+| ShopService (Service) | system_ref | PRT002 (Party) |
+| checkout.TC005 (TestCase) | test_case_act | checkout.CMD011 (Operation) |
+| checkout.TC006 (TestCase) | test_case_act | checkout.CMD014 (Operation) |
+| checkout.TC007 (TestCase) | test_case_act | checkout.CMD004 (Operation) |
+| checkout.ER004 (TestCase) | test_case_act | checkout.CMD014 (Operation) |
+| orders.TC005 (TestCase) | test_case_act | orders.CMD002 (Operation) |
+| orders.TC006 (TestCase) | test_case_act | orders.CMD015 (Operation) |
+| orders.TC007 (TestCase) | test_case_act | orders.CMD023 (Operation) |
+| orders.ER004 (TestCase) | test_case_act | orders.CMD015 (Operation) |
 | orders.CN002 (Concept) | transition_rules | orders.TR001 (TransitionRule) |
 | admin.UC001 (UseCase) | use_case_actor | admin.ACT001 (Actor) |
 | admin.UC002 (UseCase) | use_case_actor | admin.ACT003 (Actor) |
@@ -24292,6 +27266,41 @@ graph TD
 | orders.UC005 (UseCase) | use_case_screen | orders.SCR006 (Screen) |
 | orders.UC005 (UseCase) | use_case_screen | orders.SCR006 (Screen) |
 | orders.UC005 (UseCase) | use_case_secondary_actor | orders.ACT004 (Actor) |
+| admin.UC001 (UseCase) | use_case_supports_capability | CAP015 (Capability) |
+| admin.UC002 (UseCase) | use_case_supports_capability | CAP016 (Capability) |
+| catalog.UC001 (UseCase) | use_case_supports_capability | CAP005 (Capability) |
+| catalog.UC002 (UseCase) | use_case_supports_capability | CAP003 (Capability) |
+| catalog.UC002 (UseCase) | use_case_supports_capability | CAP018 (Capability) |
+| catalog.UC003 (UseCase) | use_case_supports_capability | CAP102 (Capability) |
+| checkout.UC001 (UseCase) | use_case_supports_capability | CAP003 (Capability) |
+| checkout.UC002 (UseCase) | use_case_supports_capability | CAP003 (Capability) |
+| checkout.UC003 (UseCase) | use_case_supports_capability | CAP100 (Capability) |
+| checkout.UC003 (UseCase) | use_case_supports_capability | CAP002 (Capability) |
+| checkout.UC003 (UseCase) | use_case_supports_capability | CAP003 (Capability) |
+| checkout.UC004 (UseCase) | use_case_supports_capability | CAP100 (Capability) |
+| checkout.UC005 (UseCase) | use_case_supports_capability | CAP001 (Capability) |
+| checkout.UC005 (UseCase) | use_case_supports_capability | CAP002 (Capability) |
+| checkout.UC005 (UseCase) | use_case_supports_capability | CAP003 (Capability) |
+| checkout.UC005 (UseCase) | use_case_supports_capability | CAP007 (Capability) |
+| content.UC001 (UseCase) | use_case_supports_capability | CAP013 (Capability) |
+| content.UC002 (UseCase) | use_case_supports_capability | CAP013 (Capability) |
+| content.UC002 (UseCase) | use_case_supports_capability | CAP006 (Capability) |
+| customers.UC001 (UseCase) | use_case_supports_capability | CAP007 (Capability) |
+| customers.UC002 (UseCase) | use_case_supports_capability | CAP008 (Capability) |
+| customers.UC003 (UseCase) | use_case_supports_capability | CAP009 (Capability) |
+| international.UC001 (UseCase) | use_case_supports_capability | CAP011 (Capability) |
+| international.UC002 (UseCase) | use_case_supports_capability | CAP011 (Capability) |
+| modules.UC001 (UseCase) | use_case_supports_capability | CAP014 (Capability) |
+| modules.UC002 (UseCase) | use_case_supports_capability | CAP014 (Capability) |
+| orders.UC001 (UseCase) | use_case_supports_capability | CAP001 (Capability) |
+| orders.UC001 (UseCase) | use_case_supports_capability | CAP003 (Capability) |
+| orders.UC002 (UseCase) | use_case_supports_capability | CAP001 (Capability) |
+| orders.UC003 (UseCase) | use_case_supports_capability | CAP001 (Capability) |
+| orders.UC004 (UseCase) | use_case_supports_capability | CAP001 (Capability) |
+| orders.UC005 (UseCase) | use_case_supports_capability | CAP001 (Capability) |
+| shipping.UC001 (UseCase) | use_case_supports_capability | CAP010 (Capability) |
+| shipping.UC002 (UseCase) | use_case_supports_capability | CAP010 (Capability) |
+| shop.UC001 (UseCase) | use_case_supports_capability | CAP017 (Capability) |
 | admin.UC001 (UseCase) | use_case_user_story | admin.US001 (UserStory) |
 | admin.UC001 (UseCase) | use_case_user_story | admin.US002 (UserStory) |
 | admin.UC002 (UseCase) | use_case_user_story | admin.US003 (UserStory) |
@@ -24601,6 +27610,7 @@ graph TD
 | orders.US002 (UserStory) | user_story_use_case | orders.UC002 (UseCase) |
 | admin.TC001 (TestCase) | validates | admin.VR001 (ValidationRule) |
 | admin.TC001 (TestCase) | validates | admin.VR002 (ValidationRule) |
+| admin.TC001 (TestCase) | validates | admin.SR001 (StructuralRule) |
 | admin.TC001 (TestCase) | validates | admin.CMD001 (Operation) |
 | admin.TC001 (TestCase) | validates | admin.EVT001 (Operation) |
 | admin.TC001 (TestCase) | validates | admin.CN001 (Concept) |
@@ -24646,7 +27656,9 @@ graph TD
 | catalog.EC001 (TestCase) | validates | catalog.CMD011 (Operation) |
 | catalog.EC002 (TestCase) | validates | catalog.SR002 (StructuralRule) |
 | catalog.EC002 (TestCase) | validates | catalog.CMD025 (Operation) |
+| catalog.EC003 (TestCase) | validates | catalog.CR002 (ClassificationRule) |
 | catalog.EC003 (TestCase) | validates | catalog.CMD011 (Operation) |
+| catalog.ER001 (TestCase) | validates | catalog.VR001 (ValidationRule) |
 | catalog.ER001 (TestCase) | validates | catalog.CMD016 (Operation) |
 | catalog.ER002 (TestCase) | validates | catalog.CMD003 (Operation) |
 | catalog.ER003 (TestCase) | validates | catalog.VR003 (ValidationRule) |
@@ -24667,6 +27679,15 @@ graph TD
 | checkout.TC004 (TestCase) | validates | checkout.VR004 (ValidationRule) |
 | checkout.TC004 (TestCase) | validates | checkout.CMD021 (Operation) |
 | checkout.TC004 (TestCase) | validates | checkout.EVT010 (Operation) |
+| checkout.TC005 (TestCase) | validates | checkout.CMD011 (Operation) |
+| checkout.TC005 (TestCase) | validates | checkout.SCR005 (Screen) |
+| checkout.TC005 (TestCase) | validates | checkout.UAC006 (UIAction) |
+| checkout.TC006 (TestCase) | validates | checkout.CMD014 (Operation) |
+| checkout.TC006 (TestCase) | validates | checkout.SCR005 (Screen) |
+| checkout.TC006 (TestCase) | validates | checkout.UAC008 (UIAction) |
+| checkout.TC007 (TestCase) | validates | checkout.CMD004 (Operation) |
+| checkout.TC007 (TestCase) | validates | checkout.SCR006 (Screen) |
+| checkout.TC007 (TestCase) | validates | checkout.UAC010 (UIAction) |
 | checkout.EC001 (TestCase) | validates | checkout.VR001 (ValidationRule) |
 | checkout.EC001 (TestCase) | validates | checkout.CMD014 (Operation) |
 | checkout.EC002 (TestCase) | validates | checkout.VR003 (ValidationRule) |
@@ -24678,6 +27699,10 @@ graph TD
 | checkout.ER002 (TestCase) | validates | checkout.CMD016 (Operation) |
 | checkout.ER003 (TestCase) | validates | checkout.VR002 (ValidationRule) |
 | checkout.ER003 (TestCase) | validates | checkout.CMD014 (Operation) |
+| checkout.ER004 (TestCase) | validates | checkout.VR001 (ValidationRule) |
+| checkout.ER004 (TestCase) | validates | checkout.CMD014 (Operation) |
+| checkout.ER004 (TestCase) | validates | checkout.SCR005 (Screen) |
+| checkout.ER004 (TestCase) | validates | checkout.UAC008 (UIAction) |
 | content.TC001 (TestCase) | validates | content.VR001 (ValidationRule) |
 | content.TC001 (TestCase) | validates | content.VR002 (ValidationRule) |
 | content.TC001 (TestCase) | validates | content.CMD001 (Operation) |
@@ -24686,6 +27711,7 @@ graph TD
 | content.TC002 (TestCase) | validates | content.CMD007 (Operation) |
 | content.TC002 (TestCase) | validates | content.CN002 (Concept) |
 | content.TC003 (TestCase) | validates | content.VR004 (ValidationRule) |
+| content.TC003 (TestCase) | validates | content.TR001 (TransitionRule) |
 | content.TC003 (TestCase) | validates | content.CMD013 (Operation) |
 | content.TC003 (TestCase) | validates | content.CMD014 (Operation) |
 | content.TC003 (TestCase) | validates | content.CN003 (Concept) |
@@ -24717,12 +27743,12 @@ graph TD
 | customers.TC002 (TestCase) | validates | customers.CMD012 (Operation) |
 | customers.TC002 (TestCase) | validates | customers.EVT007 (Operation) |
 | customers.TC003 (TestCase) | validates | customers.VR003 (ValidationRule) |
+| customers.TC003 (TestCase) | validates | customers.TR001 (TransitionRule) |
 | customers.TC003 (TestCase) | validates | customers.CMD008 (Operation) |
 | customers.TC003 (TestCase) | validates | customers.EVT004 (Operation) |
 | customers.TC004 (TestCase) | validates | customers.CMD016 (Operation) |
 | customers.TC004 (TestCase) | validates | customers.EVT010 (Operation) |
 | customers.EC001 (TestCase) | validates | customers.SR001 (StructuralRule) |
-| customers.EC001 (TestCase) | validates | customers.VR001 (ValidationRule) |
 | customers.EC001 (TestCase) | validates | customers.CMD001 (Operation) |
 | customers.EC002 (TestCase) | validates | customers.VR005 (ValidationRule) |
 | customers.EC002 (TestCase) | validates | customers.CMD012 (Operation) |
@@ -24744,12 +27770,14 @@ graph TD
 | international.TC004 (TestCase) | validates | international.CMD034 (Operation) |
 | international.EC001 (TestCase) | validates | international.VR002 (ValidationRule) |
 | international.EC001 (TestCase) | validates | international.CMD003 (Operation) |
+| international.EC002 (TestCase) | validates | international.VR008 (ValidationRule) |
 | international.EC002 (TestCase) | validates | international.CMD034 (Operation) |
 | international.ER001 (TestCase) | validates | international.VR001 (ValidationRule) |
 | international.ER001 (TestCase) | validates | international.CMD001 (Operation) |
 | international.ER002 (TestCase) | validates | international.CMD023 (Operation) |
 | international.ER003 (TestCase) | validates | international.CMD032 (Operation) |
 | modules.TC001 (TestCase) | validates | modules.VR001 (ValidationRule) |
+| modules.TC001 (TestCase) | validates | modules.TR001 (TransitionRule) |
 | modules.TC001 (TestCase) | validates | modules.CMD001 (Operation) |
 | modules.TC001 (TestCase) | validates | modules.EVT001 (Operation) |
 | modules.TC001 (TestCase) | validates | modules.CN001 (Concept) |
@@ -24789,6 +27817,15 @@ graph TD
 | orders.TC004 (TestCase) | validates | orders.VR002 (ValidationRule) |
 | orders.TC004 (TestCase) | validates | orders.CMD019 (Operation) |
 | orders.TC004 (TestCase) | validates | orders.EVT008 (Operation) |
+| orders.TC005 (TestCase) | validates | orders.CMD002 (Operation) |
+| orders.TC005 (TestCase) | validates | orders.SCR002 (Screen) |
+| orders.TC005 (TestCase) | validates | orders.UAC002 (UIAction) |
+| orders.TC006 (TestCase) | validates | orders.CMD015 (Operation) |
+| orders.TC006 (TestCase) | validates | orders.SCR002 (Screen) |
+| orders.TC006 (TestCase) | validates | orders.UAC003 (UIAction) |
+| orders.TC007 (TestCase) | validates | orders.CMD023 (Operation) |
+| orders.TC007 (TestCase) | validates | orders.SCR003 (Screen) |
+| orders.TC007 (TestCase) | validates | orders.UAC006 (UIAction) |
 | orders.EC001 (TestCase) | validates | orders.SR001 (StructuralRule) |
 | orders.EC001 (TestCase) | validates | orders.CMD001 (Operation) |
 | orders.EC002 (TestCase) | validates | orders.VR004 (ValidationRule) |
@@ -24796,7 +27833,12 @@ graph TD
 | orders.ER001 (TestCase) | validates | orders.CMD001 (Operation) |
 | orders.ER002 (TestCase) | validates | orders.VR003 (ValidationRule) |
 | orders.ER002 (TestCase) | validates | orders.CMD016 (Operation) |
+| orders.ER003 (TestCase) | validates | orders.CR001 (ClassificationRule) |
 | orders.ER003 (TestCase) | validates | orders.CMD004 (Operation) |
+| orders.ER004 (TestCase) | validates | orders.VR004 (ValidationRule) |
+| orders.ER004 (TestCase) | validates | orders.CMD015 (Operation) |
+| orders.ER004 (TestCase) | validates | orders.SCR002 (Screen) |
+| orders.ER004 (TestCase) | validates | orders.UAC003 (UIAction) |
 | shipping.TC001 (TestCase) | validates | shipping.SR001 (StructuralRule) |
 | shipping.TC001 (TestCase) | validates | shipping.VR002 (ValidationRule) |
 | shipping.TC001 (TestCase) | validates | shipping.CMD001 (Operation) |
@@ -24812,6 +27854,7 @@ graph TD
 | shipping.TC004 (TestCase) | validates | shipping.EVT013 (Operation) |
 | shipping.EC001 (TestCase) | validates | shipping.VR004 (ValidationRule) |
 | shipping.EC001 (TestCase) | validates | shipping.CMD008 (Operation) |
+| shipping.EC002 (TestCase) | validates | shipping.TR001 (TransitionRule) |
 | shipping.EC002 (TestCase) | validates | shipping.CMD015 (Operation) |
 | shipping.ER001 (TestCase) | validates | shipping.SR001 (StructuralRule) |
 | shipping.ER001 (TestCase) | validates | shipping.CMD001 (Operation) |
@@ -24917,67 +27960,75 @@ graph TD
 
 | Relation Type | Count |
 |---------------|-------|
-| code_ref | 2443 |
+| code_ref | 2807 |
 | handled_by | 700 |
 | operation_in_domain | 700 |
+| capability_operation | 673 |
 | raises_error | 316 |
 | produces | 315 |
-| initiated_by | 312 |
-| materializes | 284 |
-| validates | 239 |
-| goal_affects | 166 |
+| initiated_by | 313 |
+| materializes | 289 |
+| validates | 273 |
+| goal_affects | 171 |
 | user_story_operation | 152 |
-| risk_affects | 126 |
-| governed_by | 118 |
-| question_answered_by | 114 |
-| payload_model | 96 |
-| concepts | 95 |
+| risk_affects | 127 |
+| governed_by | 120 |
+| question_answered_by | 113 |
+| concepts | 100 |
+| payload_model | 97 |
 | owned_by | 87 |
-| context_uses_concept | 81 |
+| context_uses_concept | 82 |
+| process_orders_operation | 78 |
 | use_case_operation | 77 |
-| process_orders_operation | 74 |
+| action_on_screen | 73 |
+| question_about | 69 |
 | user_story_actor | 68 |
 | action_triggers_operation | 66 |
-| question_about | 65 |
-| action_on_screen | 63 |
+| inquiry_affects | 56 |
 | screen_uses_model | 53 |
-| inquiry_affects | 53 |
+| declared_impact | 46 |
 | use_case_actor | 43 |
 | error_related_rule | 42 |
+| scoped_to | 41 |
 | user_story_test_case | 39 |
 | kpi_goal | 39 |
 | use_case_user_story | 38 |
-| scoped_to | 37 |
+| process_supports_capability | 37 |
+| use_case_supports_capability | 35 |
+| nav_from | 34 |
+| nav_to | 34 |
 | subdomain_of_domain | 33 |
-| declared_impact | 32 |
+| contract_exposes | 32 |
 | value_stream_capability | 32 |
-| contract_exposes | 31 |
-| nav_from | 31 |
-| nav_to | 31 |
 | risk_goal | 31 |
 | metric_measures | 31 |
+| contract_provides | 30 |
+| contract_consumes | 30 |
 | slo_operation | 29 |
 | association | 28 |
 | reacts_to | 28 |
-| provides | 22 |
+| screen_process | 27 |
+| motivation_refs | 22 |
 | screen_motivated_by | 22 |
+| provides | 21 |
+| nav_via_action | 21 |
 | roadmap_value_stream | 19 |
 | milestone_deliverable | 19 |
+| contains | 18 |
 | inquiry_goal | 18 |
 | binds | 18 |
-| contains | 17 |
 | context_depends_on | 16 |
 | use_case_screen | 16 |
 | capability_refs | 15 |
 | dept_has_team | 15 |
 | org_contains_team | 15 |
 | race_condition_affects | 15 |
-| concept | 12 |
-| system_ref | 12 |
+| system_ref | 13 |
+| persona_actor | 12 |
 | spans | 12 |
 | roadmap_advances_goal | 12 |
 | value_stream_goal | 12 |
-| motivation_refs | 11 |
+| contract_traffic | 12 |
 | interacts_with | 11 |
 | capability_goal | 11 |
 | context_serves_value_stream | 11 |
@@ -24985,18 +28036,19 @@ graph TD
 | security_operation | 10 |
 | context_realizes_domain | 10 |
 | context_covers_domain | 10 |
+| concept | 9 |
+| assumption_risk | 9 |
+| capability_realized_in | 9 |
 | value_stream_kpi | 9 |
 | kpi_metric | 9 |
-| assumption_risk | 8 |
+| test_case_act | 8 |
 | leverage_decision | 8 |
 | leverage_capability | 8 |
-| contract_sends | 7 |
 | roadmap_realizes_decision | 7 |
 | work_item_milestone | 7 |
 | roadmap_user_story | 7 |
 | leverage_advances_goal | 7 |
 | leverage_value_stream | 7 |
-| contract_traffic | 7 |
 | relationship | 6 |
 | work_item_child | 6 |
 | value_stream_actor | 6 |
@@ -25010,7 +28062,6 @@ graph TD
 | milestone_dependency | 4 |
 | inquiry_stakeholder | 4 |
 | inquiry_risk | 4 |
-| deployed_in_environment | 4 |
 | parallelism_operation | 4 |
 | slo_metric | 4 |
 | compliance_concept | 4 |
@@ -25022,21 +28073,20 @@ graph TD
 | requires | 2 |
 | contract_reads | 2 |
 | contract_writes | 2 |
-| contract_provides | 2 |
 | roadmap_mitigates_risk | 2 |
 | work_item_dependency | 2 |
 | inquiry_owner | 2 |
+| deployed_in_environment | 2 |
 | attaches_to | 2 |
+| migration_relates_to_decision | 2 |
 | transition_rules | 1 |
-| contract_consumes | 1 |
-| contract_receives | 1 |
 | process_calls_subprocess | 1 |
 | use_case_secondary_actor | 1 |
 | leverage_realized_by | 1 |
 
 ## Coverage Gaps
 
-### Orphan Entities (106)
+### Orphan Entities (102)
 
 Entities with no incoming or outgoing relations:
 
@@ -25098,10 +28148,8 @@ Entities with no incoming or outgoing relations:
 - **admin.NG001** (NonGoal) — No LDAP/Active Directory integration for employee authentication
 - **admin.NG002** (NonGoal) — No second authentication factor for employee sign-in
 - **admin.ASM001** (Assumption) — PHP 8.1+ is the minimum supported runtime
-- **admin.TRO001** (TradeOff) — no description
 - **catalog.NG001** (NonGoal) — No built-in B2B tiered/volume pricing engine
 - **catalog.NG002** (NonGoal) — No AI-powered product recommendations in core
-- **catalog.TRO001** (TradeOff) — no description
 - **checkout.NG001** (NonGoal) — No payment method of any kind is implemented in core
 - **checkout.TRO001** (TradeOff) — no description
 - **content.NG001** (NonGoal) — No visual page builder or WYSIWYG block editor in core
@@ -25113,8 +28161,6 @@ Entities with no incoming or outgoing relations:
 - **international.NG001** (NonGoal) — No automatic regulatory compliance monitoring
 - **international.TRO001** (TradeOff) — no description
 - **modules.NG001** (NonGoal) — No containerized or sandboxed module isolation
-- **modules.ASM001** (Assumption) — Third-party modules may hook into any public class or method
-- **modules.TRO001** (TradeOff) — no description
 - **orders.NG001** (NonGoal) — PrestaShop will not implement its own payment gateway
 - **orders.NG002** (NonGoal) — No real-time inventory sync with physical POS
 - **orders.ASM003** (Assumption) — EU VAT rates will not change more than twice per year
@@ -25147,17 +28193,10 @@ Entities with no incoming or outgoing relations:
 - **MIG004** (Migration) — A party stops declaring an environment
 - **MIG005** (Migration) — A server names the environment the model declares
 
-### Untested Rules (12)
+### Untested Rules (5)
 
-- **checkout.TR001** — Empty to active on product addition
-- **checkout.TR002** — Active to checkout-started on checkout initiation
-- **checkout.TR003** — Checkout-started to completed on order placement
-- **checkout.TR004** — Active to abandoned on timeout
-- **checkout.TR005** — Checkout-started to abandoned on timeout
-- **content.TR001** — Theme Enable Deactivates Current
-- **customers.TR001** — Guest to active on conversion
-- **customers.TR002** — Active to inactive on disable
-- **customers.TR003** — Inactive to active on enable
-- **modules.TR001** — Module Lifecycle State Machine
-- **orders.TR001** — Order state machine transitions
-- **shipping.TR001** — Shipped shipment becomes immutable
+- **checkout.TR003** — An order on the cart makes it ordered.
+- **checkout.TR004** — No order 24 hours after creation makes a cart abandoned.
+- **customers.TR002** — Disabling makes a customer inactive.
+- **customers.TR003** — Enabling makes a customer active.
+- **orders.TR001** — Default flow: Payment accepted, then Processing in progress; permitted, not enforced.

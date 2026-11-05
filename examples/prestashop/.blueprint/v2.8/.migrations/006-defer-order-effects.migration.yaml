@@ -1,0 +1,572 @@
+migration:
+  id: MIG006
+  name: defer-order-effects-with-durable-guards
+  date: 2026-10-30
+  status: pending
+  description: "Unbuilt hypothesis A: durable order-local outbox, deferred mail/PDF/eligible
+    after-hooks, and three proposed failure guards."
+  related_decisions:
+    - DC001
+    - DC010
+    - DC011
+  rationale: LP001 (Move the order side effects off the request that places the order) motivates the
+    hypothesis. Preserve synchronous vetoes, payment, stock, invoice issuance and transactional
+    correctness. orders.SR002 (An order gets its invoice on an invoicing status or on request)
+    remains unchanged. No runtime measurement is claimed.
+  tags:
+    - orders
+    - hypothesis
+    - unbuilt
+    - alternative-a
+changes:
+  entities:
+    - kind: add
+      entity_type: operation
+      target: orders.CMD041
+      after:
+        id: orders.CMD041
+        name: Record Order Effects
+        kind: command
+        task_type: automated
+        description: "Unbuilt: within the same database transaction as the order write, append immutable
+          mail, PDF and eligible after-hook intents keyed by order, effect kind and version. Roll
+          back both order and intents on failure; payment, stock, invoice numbering and before-hook
+          vetoes remain synchronous."
+        implementation: to-be
+        idempotent: true
+        idempotency_key: order_id:effect_kind:effect_version
+        produces:
+          operations:
+            - orders.EVT012
+        governed_by:
+          - rule: orders.SR005
+        provenance: &a1
+          discovery_stage: hypothesis
+          certainty: speculative
+      reason: Proposed durable deferred effects; no implementation evidence exists.
+    - kind: add
+      entity_type: operation
+      target: orders.CMD042
+      after:
+        id: orders.CMD042
+        name: Deliver Order Confirmation
+        kind: command
+        task_type: automated
+        description: "Unbuilt: after the request returns, drain committed confirmation intents with a stable
+          provider idempotency key. A provider acknowledgement is accepted delivery, not proof of
+          inbox receipt; persist delivery receipt and reconcile ambiguous outcomes before retry."
+        implementation: to-be
+        idempotent: true
+        idempotency_key: order_id:effect_kind:effect_version
+        reacts_to:
+          - operation: orders.EVT012
+            policy: Durable intent is committed; execution occurs after the placement request returns.
+        governed_by:
+          - rule: orders.SR005
+        provenance: *a1
+      reason: Proposed durable deferred effects; no implementation evidence exists.
+    - kind: add
+      entity_type: operation
+      target: orders.CMD043
+      after:
+        id: orders.CMD043
+        name: Render Order Invoice PDF
+        kind: command
+        task_type: automated
+        description: "Unbuilt: after the request returns, render the PDF for the already issued invoice.
+          Preserve the invoice issuance and numbering rule; never allocate a second invoice during
+          retry."
+        implementation: to-be
+        idempotent: true
+        idempotency_key: order_id:effect_kind:effect_version
+        reacts_to:
+          - operation: orders.EVT012
+            policy: Durable intent is committed; execution occurs after the placement request returns.
+        governed_by:
+          - rule: orders.SR005
+        provenance: *a1
+      reason: Proposed durable deferred effects; no implementation evidence exists.
+    - kind: add
+      entity_type: operation
+      target: orders.CMD044
+      after:
+        id: orders.CMD044
+        name: Run Eligible Order After Hooks
+        kind: command
+        task_type: automated
+        description: "Unbuilt: after the request returns, execute only explicitly opted-in notification
+          after-hooks with immutable order snapshots. Reject deferral for hooks that veto, return
+          values, mutate the order transaction, or depend on request context; uncategorized hooks
+          stay synchronous."
+        implementation: to-be
+        idempotent: true
+        idempotency_key: order_id:effect_kind:effect_version
+        reacts_to:
+          - operation: orders.EVT012
+            policy: Durable intent is committed; execution occurs after the placement request returns.
+        governed_by:
+          - rule: orders.SR005
+        provenance: *a1
+      reason: Proposed durable deferred effects; no implementation evidence exists.
+    - kind: add
+      entity_type: operation
+      target: orders.CMD045
+      after:
+        id: orders.CMD045
+        name: Recover Order Effects
+        kind: command
+        task_type: automated
+        description: "Unbuilt: lease durable intents; retry transient failures with bounded exponential
+          backoff (1 min, 5 min, 30 min), then dead-letter and alert after three attempts. Reconcile
+          committed orders with missing accepted confirmations every minute; replay only unresolved
+          effects using their original keys."
+        implementation: to-be
+        idempotent: true
+        idempotency_key: order_id:effect_kind:effect_version
+        reacts_to:
+          - operation: orders.EVT012
+            policy: Durable intent is committed; execution occurs after the placement request returns.
+        governed_by:
+          - rule: orders.SR005
+        provenance: *a1
+      reason: Proposed durable deferred effects; no implementation evidence exists.
+    - kind: add
+      entity_type: operation
+      target: orders.EVT012
+      after:
+        id: orders.EVT012
+        name: Order Effects Recorded
+        kind: event
+        description: Unbuilt durable intent record committed atomically with the order, not a promise of
+          delivery or an asynchronous reinterpretation of the existing OrderPlaced hook.
+        implementation: to-be
+        provenance: *a1
+      reason: Name durability separately from the synchronous order hook.
+    - kind: add
+      entity_type: service
+      target: OrderEffectsWorker
+      after:
+        id: prestashop.SVC014
+        name: OrderEffectsWorker
+        _context: Orders
+        kind: worker
+        summary: Unbuilt local Orders outbox worker, drained after the request.
+        description: Proposed worker in the Orders module and deployment unit; durable work shares the order
+          database transaction. Requires an independently scheduled drain after the request, not a
+          synchronous function call. No separate broker or service deployment is proposed in A.
+        implementation: to-be
+        contracts:
+          inprocess:
+            provide:
+              - orders.CMD042
+              - orders.CMD043
+              - orders.CMD044
+              - orders.CMD045
+            consume:
+              - orders.EVT012
+        provenance: *a1
+      reason: Separate request ownership from deferred execution while retaining one deployment.
+    - kind: add
+      entity_type: risk
+      target: orders.RSK005
+      after:
+        id: orders.RSK005
+        statement: Order confirmation arrives late
+        description: Deferred drain backlog or slow mail provider delays confirmation after order commit.
+        likelihood: medium
+        impact: high
+        mitigation: Monitor oldest intent age and prioritize confirmation intents; alert Orders operations
+          on latency breach.
+        contingency: Orders operations reconcile the unresolved effect ledger before manual replay.
+        owner: orders.ACT002
+        status: identified
+        affects:
+          operation_refs:
+            - orders.CMD042
+          process_refs:
+            - orders.PRC001
+        discovery_stage: hypothesis
+        certainty: speculative
+      reason: Negative branch of moving order effects out of the request.
+    - kind: add
+      entity_type: slo
+      target: orders.SLO001
+      after:
+        id: orders.SLO001
+        name: Proposed confirmation freshness
+        target: "Proposed target: 99% of committed orders receive provider-acknowledged confirmation within
+          120 seconds over a rolling day."
+        window: Proposed acceptance suite; rolling day after instrumentation exists.
+        operations:
+          - orders.CMD042
+        description: Unmeasured proposal; guard acceptance requires runtime evidence.
+        breach:
+          action: Monitor oldest intent age and prioritize confirmation intents; alert Orders operations on
+            latency breach.
+          notification: Orders operations (orders.ACT002)
+        provenance: *a1
+      reason: Propose a measurable guard, not a measured improvement.
+    - kind: add
+      entity_type: fitness-function
+      target: orders.FF001
+      after:
+        id: orders.FF001
+        name: Inject delayed mail and check confirmation freshness
+        scope: operation
+        assertion: All 100 orders commit without waiting for mail; at least 99 provider acknowledgements
+          occur within 120 seconds of commit.
+        description: Proposed failure-injection check; has not been executed.
+        severity: error
+        verifies:
+          slos:
+            - orders.SLO001
+        properties:
+          failure_injection: Throttle the mail provider and pause the drain for 60 seconds while submitting
+            100 orders.
+          expected_result: All 100 orders commit without waiting for mail; at least 99 provider
+            acknowledgements occur within 120 seconds of commit.
+          evidence_needed: Timestamped commit, drain and provider acknowledgement traces under an agreed load;
+            no runtime run performed.
+        provenance: *a1
+      reason: Make the missing evidence explicit.
+    - kind: add
+      entity_type: risk
+      target: orders.RSK006
+      after:
+        id: orders.RSK006
+        statement: Committed order has no delivered confirmation
+        description: Worker crash or persistent provider failure occurs after the order commits and before
+          confirmation is acknowledged.
+        likelihood: medium
+        impact: high
+        mitigation: Atomic outbox, bounded retries, dead-letter alerting and minute-by-minute
+          order-to-receipt reconciliation retain unresolved work.
+        contingency: Orders operations reconcile the unresolved effect ledger before manual replay.
+        owner: orders.ACT002
+        status: identified
+        affects:
+          operation_refs:
+            - orders.CMD045
+          process_refs:
+            - orders.PRC001
+        discovery_stage: hypothesis
+        certainty: speculative
+      reason: Negative branch of moving order effects out of the request.
+    - kind: add
+      entity_type: slo
+      target: orders.SLO002
+      after:
+        id: orders.SLO002
+        name: Proposed missing confirmation recovery
+        target: "Proposed target: every missing acknowledgement is detected within 60 seconds; every
+          exhausted intent is dead-lettered and alerted within 40 minutes; after provider recovery
+          every unresolved intent is reconciled within 5 minutes."
+        window: Proposed acceptance suite; rolling day after instrumentation exists.
+        operations:
+          - orders.CMD045
+        description: Unmeasured proposal; guard acceptance requires runtime evidence.
+        breach:
+          action: Atomic outbox, bounded retries, dead-letter alerting and minute-by-minute order-to-receipt
+            reconciliation retain unresolved work.
+          notification: Orders operations (orders.ACT002)
+        provenance: *a1
+      reason: Propose a measurable guard, not a measured improvement.
+    - kind: add
+      entity_type: fitness-function
+      target: orders.FF002
+      after:
+        id: orders.FF002
+        name: Crash after commit and reconcile missing confirmation
+        scope: operation
+        assertion: The committed order retains its intent; reconciliation detects the gap within 60 seconds;
+          dead letter and alert occur within 40 minutes; original-key replay reconciles the missing
+          acknowledgement within 5 minutes of restoration.
+        description: Proposed failure-injection check; has not been executed.
+        severity: error
+        verifies:
+          slos:
+            - orders.SLO002
+        properties:
+          failure_injection: Kill the worker after commit, then reject every provider attempt through retry
+            exhaustion; restore the provider and replay the dead letter.
+          expected_result: The committed order retains its intent; reconciliation detects the gap within 60
+            seconds; dead letter and alert occur within 40 minutes; original-key replay reconciles
+            the missing acknowledgement within 5 minutes of restoration.
+          evidence_needed: Crash and rollback tests proving atomicity, retry ledger, dead-letter alert
+            receipts, restart recovery and provider acceptance evidence; no test run performed.
+        provenance: *a1
+      reason: Make the missing evidence explicit.
+    - kind: add
+      entity_type: risk
+      target: orders.RSK007
+      after:
+        id: orders.RSK007
+        statement: Confirmation is sent twice
+        description: At-least-once retry redelivers an intent after provider acceptance but before the local
+          acknowledgement is persisted.
+        likelihood: medium
+        impact: high
+        mitigation: Unique durable effect key, consumer deduplication and provider idempotency or acceptance
+          lookup prevent blind resends after ambiguous outcomes.
+        contingency: Orders operations reconcile the unresolved effect ledger before manual replay.
+        owner: orders.ACT002
+        status: identified
+        affects:
+          operation_refs:
+            - orders.CMD042
+          process_refs:
+            - orders.PRC001
+        discovery_stage: hypothesis
+        certainty: speculative
+      reason: Negative branch of moving order effects out of the request.
+    - kind: add
+      entity_type: slo
+      target: orders.SLO003
+      after:
+        id: orders.SLO003
+        name: Proposed duplicate confirmation prevention
+        target: "Proposed target: zero duplicate provider-accepted confirmations per order, effect kind and
+          version across 10000 redeliveries in the failure-injection acceptance suite."
+        window: Proposed acceptance suite; rolling day after instrumentation exists.
+        operations:
+          - orders.CMD042
+        description: Unmeasured proposal; guard acceptance requires runtime evidence.
+        breach:
+          action: Unique durable effect key, consumer deduplication and provider idempotency or acceptance
+            lookup prevent blind resends after ambiguous outcomes.
+          notification: Orders operations (orders.ACT002)
+        provenance: *a1
+      reason: Propose a measurable guard, not a measured improvement.
+    - kind: add
+      entity_type: fitness-function
+      target: orders.FF003
+      after:
+        id: orders.FF003
+        name: Redeliver after provider acceptance without double send
+        scope: operation
+        assertion: Exactly one provider-accepted confirmation exists for the key; duplicate attempts neither
+          resend nor allocate another invoice.
+        description: Proposed failure-injection check; has not been executed.
+        severity: error
+        verifies:
+          slos:
+            - orders.SLO003
+        properties:
+          failure_injection: Crash between provider acceptance and local receipt persistence, then redeliver
+            the same effect key 10000 times.
+          expected_result: Exactly one provider-accepted confirmation exists for the key; duplicate attempts
+            neither resend nor allocate another invoice.
+          evidence_needed: Provider idempotency or acceptance-lookup contract and crash-window traces; if
+            neither exists, safe retry is blocked pending manual reconciliation. No exactly-once
+            inbox-delivery claim or measured result.
+        provenance: *a1
+      reason: Make the missing evidence explicit.
+    - kind: add
+      entity_type: rule
+      target: orders.SR005
+      after:
+        id: orders.SR005
+        name: Order effects are durable before request completion
+        description: "Proposed order-only policy: defer mail, PDF rendering and opted-in notification
+          after-hooks after atomic durable recording."
+        modality: obligatory
+        logic:
+          when: an order placement transaction commits
+          then: the same transaction persists its deferred-effect intents; execution starts after the request
+            returns
+        scope: Order placement only
+        concepts:
+          - orders.CN002
+        implementation: to-be
+        provenance: *a1
+      reason: Refine the proposed order lifecycle without changing the platform hook contract.
+    - kind: add
+      entity_type: decision
+      target: DC011
+      after:
+        id: DC011
+        title: Record order effects atomically and drain them after the request
+        summary: Unbuilt Orders-only refinement of the event-driven lifecycle proposal.
+        date: 2026-10-30
+        status: proposed
+        decision_scope: orders
+        description: Future-only supersession of the unbuilt order proposal. Platform hooks retain their
+          synchronous contract; no historical mandate for synchronous PDF rendering is invented.
+        rationale:
+          problem: Order placement waits for mail, PDF and extension effects.
+          options:
+            - "A: Orders-local transactional outbox and scheduled worker"
+            - "B: separately deployed effect service behind a broker"
+          chosen: A is the selected demonstration hypothesis; it minimizes new operational dependencies while
+            preserving durable intent. It is not accepted implementation architecture.
+        links:
+          supersedes:
+            - DC001
+          related:
+            - DC010
+        owned_by:
+          team: TM001
+        discovery_stage: hypothesis
+        certainty: speculative
+      reason: Narrow order-scoped replacement only in the future.
+  properties:
+    - kind: append
+      target: OrderService
+      entity_type: service
+      property: contracts.inprocess.provide
+      value: orders.CMD041
+    - kind: append
+      target: OrderService
+      entity_type: service
+      property: contracts.inprocess.provide
+      value: orders.EVT012
+    - kind: set
+      entity_type: decision
+      target: DC001
+      property: status
+      value: deprecated
+      old_value: proposed
+    - kind: append
+      entity_type: decision
+      target: DC001
+      property: links.superseded_by
+      value: DC011
+    - kind: set
+      entity_type: use-case
+      target: orders.UC001
+      property: main_scenario
+      value:
+        - step: 1
+          action: Shopper reviews cart contents and totals.
+          emotion: neutral
+        - step: 2
+          action: Shopper enters shipping address.
+          emotion: neutral
+        - step: 3
+          action: Synchronously validate cart, payment, stock and order invariants and run all veto hooks.
+          operation: orders.CMD001
+        - step: 4
+          action: Shopper selects payment method and confirms.
+          emotion: satisfied
+        - step: 5
+          action: Write order and its existing synchronous OrderPlaced hook; do not move veto or
+            transaction-dependent hooks.
+          operation: orders.EVT001
+          emotion: delighted
+        - step: 6
+          action: Before commit, record deferred-effect intents in the order transaction; commit both or
+            neither.
+          operation: orders.CMD041
+        - step: 7
+          action: After commit return order success; confirmation and PDF remain pending.
+        - step: 8
+          action: After the request, deliver confirmation from the committed outbox.
+          operation: orders.CMD042
+        - step: 9
+          action: Render the PDF for the already issued invoice out of the request.
+          operation: orders.CMD043
+        - step: 10
+          action: Run explicitly eligible after-hooks out of the request.
+          operation: orders.CMD044
+      old_value:
+        - step: 1
+          action: Shopper reviews cart contents and totals.
+          emotion: neutral
+        - step: 2
+          action: Shopper enters shipping address.
+          emotion: neutral
+        - step: 3
+          action: System validates stock availability.
+          operation: orders.CMD001
+        - step: 4
+          action: Shopper selects payment method and confirms.
+          emotion: satisfied
+        - step: 5
+          action: System creates order and emits OrderPlaced.
+          operation: orders.EVT001
+          emotion: delighted
+    - kind: set
+      entity_type: use-case
+      target: orders.UC001
+      property: extensions
+      value:
+        - &a2
+          step: 3
+          condition: Insufficient stock for one or more items.
+          action: System displays stock error and suggests alternatives.
+        - &a3
+          step: 4
+          condition: Payment declined by gateway.
+          action: System displays payment error and asks to retry or choose another method.
+        - step: 8
+          condition: Order confirmation arrives late
+          action: Monitor oldest intent age and prioritize confirmation intents; alert Orders operations on
+            latency breach.
+          operation: orders.CMD045
+        - step: 8
+          condition: Committed order has no delivered confirmation
+          action: Atomic outbox, bounded retries, dead-letter alerting and minute-by-minute order-to-receipt
+            reconciliation retain unresolved work.
+          operation: orders.CMD045
+        - step: 8
+          condition: Confirmation is sent twice
+          action: Unique durable effect key, consumer deduplication and provider idempotency or acceptance
+            lookup prevent blind resends after ambiguous outcomes.
+          operation: orders.CMD045
+      old_value:
+        - *a2
+        - *a3
+    - kind: set
+      entity_type: process
+      target: orders.PRC001
+      property: activities
+      value:
+        - id: orders.PA001
+          name: Submit order
+          entry_operation: orders.CMD001
+          steps:
+            - operation_ref: orders.CMD001
+              note: Synchronously validate veto hooks, payment, stock and order invariants; stage order writes.
+            - operation_ref: orders.EVT001
+              note: actionValidateOrder fires once the orders are written.
+            - operation_ref: orders.CMD041
+              note: Record intents in the same transaction as the order; rollback both on failure.
+            - operation_ref: orders.EVT012
+              note: Commit durable work, then return request success.
+            - operation_ref: orders.CMD042
+              note: Worker drains after the request; mail accepted asynchronously.
+            - operation_ref: orders.CMD043
+              note: Render the already issued invoice PDF after the request.
+            - operation_ref: orders.CMD044
+              note: Run only explicitly eligible notification hooks after the request.
+            - operation_ref: orders.CMD045
+              note: Retry, dead-letter and reconcile unresolved work with original keys.
+      old_value:
+        - id: orders.PA001
+          name: Submit order
+          entry_operation: orders.CMD001
+          steps:
+            - operation_ref: orders.CMD001
+              note: PaymentModule::validateOrder checks the cart, creates one order per package and records the
+                payment when the status counts as validated.
+            - operation_ref: orders.EVT001
+              note: actionValidateOrder fires once the orders are written.
+  relationships:
+    - kind: add
+      subject: orders.RSK005
+      predicate: related_to
+      object: orders.SLO001
+      description: The proposed requirement guards this risk; mitigation is stated on the risk.
+    - kind: add
+      subject: orders.RSK006
+      predicate: related_to
+      object: orders.SLO002
+      description: The proposed requirement guards this risk; mitigation is stated on the risk.
+    - kind: add
+      subject: orders.RSK007
+      predicate: related_to
+      object: orders.SLO003
+      description: The proposed requirement guards this risk; mitigation is stated on the risk.
+rollback:
+  automatic: true
+  data_loss: false

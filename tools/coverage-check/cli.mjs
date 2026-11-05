@@ -40,6 +40,9 @@ import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
+import { runChangeScope, scopeOptions } from "./scope-runtime.mjs";
+import { formatChangeScope } from "./change-scope.mjs";
+import { getSchemaForFile } from "./scope-routing.mjs";
 import { analyzeCoverage } from "./analyze.mjs";
 import {
   createRefChecker,
@@ -50,7 +53,7 @@ import {
 } from "./code-root.mjs";
 
 const USAGE =
-  "usage: coverage-check <path...> --model <dir> [--audit] [--code-root <dir>] [--strict] [--json] [--no-suffix]";
+  "usage: coverage-check <path...> --model <dir> [--audit] [--code-root <dir>] [--strict] [--json] [--no-suffix]\n       coverage-check --model <dir> --change-scope --range <base>..<head> [--code-root <dir>] [--format markdown|json] [--allow-suffix] [--strict]";
 
 function fail(message) {
   console.error(`coverage-check: ${message}\n${USAGE}`);
@@ -67,15 +70,23 @@ function parseArgs(argv) {
     strict: false,
     json: false,
     suffix: true,
+    "change-scope": false,
+    "allow-suffix": false,
   };
   for (let i = 0; i < argv.length; i++) {
     const token = argv[i];
-    if (token === "--audit") args.audit = true;
+    if (token === "--change-scope") args["change-scope"] = true;
+    else if (token === "--allow-suffix") args["allow-suffix"] = true;
+    else if (["--range", "--format", "--model", "--code-root"].includes(token)) {
+      const value = argv[++i];
+      if (!value || value.startsWith("--")) fail(`${token} requires a value`);
+      const key = token === "--code-root" ? "codeRoot" : token.slice(2);
+      args[key] = value;
+    }
+    else if (token === "--audit") args.audit = true;
     else if (token === "--strict") args.strict = true;
     else if (token === "--json") args.json = true;
     else if (token === "--no-suffix") args.suffix = false;
-    else if (token === "--model") args.model = argv[++i];
-    else if (token === "--code-root") args.codeRoot = argv[++i];
     else if (token === "--help" || token === "-h") { console.log(USAGE); process.exit(0); }
     else if (token.startsWith("-")) fail(`unknown flag: ${token}`);
     else args.paths.push(token);
@@ -205,6 +216,17 @@ function readDeclarations(modelDir) {
 }
 
 const args = parseArgs(process.argv.slice(2));
+if (args["change-scope"]) {
+  try {
+    const options = scopeOptions(args.paths, { ...args, "code-root": args.codeRoot ?? undefined });
+    const modelDir = resolve(args.model);
+    const resolution = resolveCodeRoots({ modelDir, ...readDeclarations(modelDir), codeRootFlag: args.codeRoot === null ? null : resolve(args.codeRoot), mapping: readMapping(), home: homedir() }, io);
+    const { report, exitCode } = runChangeScope({ modelDir, resolution, schemaForFile: getSchemaForFile, options });
+    console.log(options.format === "json" ? JSON.stringify(report, null, 2) : formatChangeScope(report));
+    process.exit(exitCode);
+  } catch (error) { fail(error.message ?? String(error)); }
+}
+if (args.range !== undefined || args["allow-suffix"]) fail("--range and --allow-suffix require --change-scope");
 if (args.paths.length === 0 && !args.audit) fail("give at least one path, or --audit to check every code_ref");
 if (!existsSync(args.model)) fail(`model directory not found: ${args.model}`);
 const codeRootFlag = args.codeRoot === null ? null : resolve(args.codeRoot);

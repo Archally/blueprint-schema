@@ -149,6 +149,7 @@ inquiries:
       operation_refs: [modules.CMD013]
       concept_refs: [modules.CN002]
       process_refs: [modules.PRC002]
+      bounded_context_refs: [prestashop.BC007]
     goal_refs:
       - modules.GL003
     blocking: false

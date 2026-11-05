@@ -207,11 +207,25 @@ function resolveSchemaSource(modelDir, version) {
   }
 
   if (!version) return null;
-  // Convention: a checkout that already holds the schemas. Searched from the model outwards (a spec
-  // repo standing on its own), then from this file, then from the working directory.
-  const found =
-    findSchemaRoot(version, modelDir) ??
-    findSchemaRoot(version, __dirname) ??
+  // A copied model can sit below an unrelated, older schema checkout. Prefer the validator's
+  // shipped version over that external discovery; explicit paths above remain authoritative.
+  const fromModel = findSchemaRoot(version, modelDir);
+  const fromSelf = findSchemaRoot(version, __dirname);
+  if (fromModel && fromSelf) {
+    const ownSchema = fs.realpathSync(fromSelf);
+    const modelSchema = fs.realpathSync(fromModel);
+    const ownCheckout = path.resolve(ownSchema,
+      path.basename(path.dirname(ownSchema)) === "blueprint" ? "../../.." : "../..");
+    const relative = path.relative(ownCheckout, modelSchema);
+    if (relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+      return {
+        root: fromSelf,
+        source: "layout discovery",
+        note: `NOTE  schema discovery: using "${fromSelf}" instead of external "${fromModel}"; select it explicitly with --schemas to override.`,
+      };
+    }
+  }
+  const found = fromModel ?? fromSelf ??
     findSchemaRoot(version, process.cwd());
   return found ? { root: found, source: "layout discovery" } : null;
 }
@@ -281,6 +295,7 @@ function parseArgs(argv) {
       );
     }
     args.schemas = resolved.root;
+    args.schemaNote = resolved.note;
   } else {
     // An explicit --schemas may name a DIRECTORY OF VERSIONS or a version root, exactly as every
     // other source may. It used to be passed straight through: a container resolved to nothing,
@@ -328,6 +343,7 @@ function main() {
 
   console.log(`${cyan("Model:")}     ${result.modelPath}`);
   console.log(`${cyan("Schemas:")}   ${args.schemas}`);
+  if (args.schemaNote) console.log(args.schemaNote);
   console.log(
     `${cyan("Version:")}   ${
       args.schemaVersion ? `${args.schemaVersion.major}.${args.schemaVersion.minor}` : yellow("undetermined")

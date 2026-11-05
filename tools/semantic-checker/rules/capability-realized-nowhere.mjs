@@ -1,5 +1,5 @@
 /**
- * A capability whose subtree - an L1 and its direct children, or any other capability alone - realizes no operation,
+ * A capability whose subtree - an L1 and its direct children (including features), or any other capability alone - realizes no operation,
  * reported once at the topmost such capability.
  *
  * A capability realizes an operation where the model graph draws a `capability_operation` edge from
@@ -25,6 +25,22 @@ const MODULE_TYPES = new Set(['Domain', 'Context']);
 const MODULE_MEMBERSHIP = new Set(['operation_in_domain', 'handled_by']);
 
 const cache = new WeakMap();
+
+/**
+ * A capability's realization scope: itself, an L1's direct children, and the features declared
+ * directly under it at any depth. A feature is a capability too, so a level-2 capability whose
+ * operations all sit on its features realizes them through those features.
+ *
+ * @param {ReturnType<typeof capabilityIndex>} index
+ * @param {string} capabilityId
+ */
+function scopeOf(index, capabilityId) {
+  const scope = new Set(descendantsOf(index, capabilityId));
+  for (const [child, place] of index.deeper) {
+    if (place.parent === capabilityId && index.byId.get(child)?.data?.kind === 'feature') scope.add(child);
+  }
+  return [...scope];
+}
 
 /**
  * Per model: which capabilities have an empty subtree, what each states, and how many operations
@@ -53,10 +69,20 @@ function realizationIndex(model) {
 
   /** @type {Map<string, boolean>} */
   const emptySubtree = new Map();
-  for (const capability of index.capabilities) {
-    const members = [capability.id, ...descendantsOf(index, capability.id)];
-    emptySubtree.set(capability.id, members.every((id) => !(index.operationsByCapability.get(id)?.size)));
-  }
+  /** @type {Set<string>} capabilities being judged, so a capability nested under itself ends the walk */
+  const judging = new Set();
+  /** @param {string} id */
+  const isEmpty = (id) => {
+    const known = emptySubtree.get(id);
+    if (known !== undefined) return known;
+    if (judging.has(id)) return true;
+    judging.add(id);
+    const empty = !(index.operationsByCapability.get(id)?.size) && scopeOf(index, id).every(isEmpty);
+    judging.delete(id);
+    emptySubtree.set(id, empty);
+    return empty;
+  };
+  for (const capability of index.capabilities) isEmpty(capability.id);
 
   const built = { index, modulesByCapability, operationsByModule, emptySubtree };
   cache.set(model, built);
@@ -121,7 +147,8 @@ export const capabilityRealizedNowhere = (model, subject) => {
     if (state.emptySubtree.get(ancestor)) return { ok: true };
   }
 
-  const descendants = [...descendantsOf(state.index, subject.id)];
+  const descendants = scopeOf(state.index, subject.id);
+  const hasFeatureChild = descendants.some((id) => state.index.byId.get(id)?.data?.kind === 'feature');
   const level = subject.data?.level;
   return {
     ok: false,
@@ -133,8 +160,8 @@ export const capabilityRealizedNowhere = (model, subject) => {
         descendants.length === 0
           ? 'and it has no sub-capabilities'
           : descendants.length === 1
-            ? 'nor does its 1 sub-capability'
-            : `nor does any of its ${descendants.length} sub-capabilities`,
+            ? `nor does its 1 sub-capability${hasFeatureChild ? ' (a feature)' : ''}`
+            : `nor does any of its ${descendants.length} sub-capabilities${hasFeatureChild ? ' (including features)' : ''}`,
       reason: reasons(state, [subject.id, ...descendants]),
     },
   };

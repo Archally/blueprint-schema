@@ -9,9 +9,6 @@ happy_path:
     validates:
       operations: [checkout.CMD009, checkout.EVT004]
       rules: [checkout.SR001]
-    contract:
-      kind: openapi
-      file: checkout-api
     given:
       description: "Product SKU-001 in stock (qty: 10). Cart is empty."
       state:
@@ -156,6 +153,139 @@ happy_path:
             Modeler-derived for the threshold half. Nothing asserts that a 100-unit threshold
             takes effect at 100 units and not below.
           confidence_impact: weakens
+
+  - id: checkout.TC005
+    name: Change cart quantity from the shopping cart
+    summary: The shopper changes an existing cart line and sees the updated quantity and cart summary.
+    validates:
+      operations:
+        - checkout.CMD011 # UpdateProductQuantityInCart
+      ui:
+        screens:
+          - checkout.SCR005 # Shopping cart
+        actions:
+          - checkout.UAC006 # Change a line's quantity
+    tags: [front-end]
+    given:
+      description: The Shopping cart page holds one ordinary product at quantity 1, with at least 3 units
+        available and minimum quantity 1. The shop sells normally and the request has a valid token.
+    when:
+      operation: checkout.CMD011 # UpdateProductQuantityInCart
+      description: On Shopping cart, change the line quantity from 1 to 2 using the quantity control.
+    expected_result:
+      status: success
+      behavior: The cart line shows quantity 2 and the cart summary refreshes for that quantity without an
+        availability error.
+    code_refs:
+      - path: controllers/front/CartController.php
+        role: implementation
+        description: Lines 114-147 return the updated quantity and presented cart; lines 497-506 call updateQty.
+      - path: themes/_core/js/cart.js
+        role: implementation
+        description: Lines 10-68 replace cart totals and summary fragments after updateCart.
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: controllers/front/CartController.php; themes/_core/js/cart.js
+          date: 2026-10-29
+          summary: The controller updates the legacy cart and returns its quantity; the theme refreshes cart
+            summary fragments. The action and operation link is the existing model mapping.
+          confidence_impact: supports
+    note: Source-derived UI specification, not an executed browser test. Core theme fragments support
+      the summary refresh; the installed theme quantity-control markup is not present in this
+      checkout.
+
+  - id: checkout.TC006
+    name: Apply a valid voucher from the shopping cart
+    summary: Submitting an eligible voucher refreshes the cart summary without showing a voucher error.
+    validates:
+      operations:
+        - checkout.CMD014 # ApplyCartRuleToCart
+      ui:
+        screens:
+          - checkout.SCR005 # Shopping cart
+        actions:
+          - checkout.UAC008 # Enter a voucher code
+    tags: [front-end]
+    given:
+      description: The Shopping cart page has products and an unapplied voucher that satisfies its dates,
+        minimum amount and usage conditions. Cart rules are enabled and the request has a valid token.
+    when:
+      operation: checkout.CMD014 # ApplyCartRuleToCart
+      description: On Shopping cart, enter the eligible voucher code and submit the voucher form.
+    expected_result:
+      status: success
+      behavior: The cart summary refreshes with the applied voucher and its resulting totals. The
+        submission does not take the voucher-error branch.
+    code_refs:
+      - path: controllers/front/CartController.php
+        role: implementation
+        description: Lines 235-265 check and attach the voucher; lines 125-139 return the presented cart on
+          success.
+      - path: themes/_core/js/cart.js
+        role: implementation
+        description: Lines 156-188 submit the voucher form, display a refusal or emit updateCart; lines
+          27-56 refresh the summary.
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: controllers/front/CartController.php; themes/_core/js/cart.js
+          date: 2026-10-29
+          summary: The successful validity branch adds the cart rule and the theme emits updateCart rather
+            than displaying the error branch.
+          confidence_impact: supports
+    note: Source-derived, not browser-executed. The storefront uses Cart::addCartRule directly; its
+      operation reference follows the existing action mapping rather than claiming command-bus
+      dispatch.
+
+  - id: checkout.TC007
+    name: Choose delivery and refresh the checkout summary
+    summary: Choosing an offered carrier refreshes the checkout summary for the selected delivery option.
+    validates:
+      operations:
+        - checkout.CMD004 # UpdateCartDeliverySettings
+      ui:
+        screens:
+          - checkout.SCR006 # Checkout
+        actions:
+          - checkout.UAC010 # Choose a delivery option
+    tags: [front-end]
+    given:
+      description: The Checkout page is on its shipping step for a nonvirtual cart, with a valid delivery
+        address and two offered delivery options. The payment-step refresh flag is absent.
+    when:
+      operation: checkout.CMD004 # UpdateCartDeliverySettings
+      description: On Checkout, select the other offered delivery option.
+    expected_result:
+      status: success
+      behavior: The newly chosen option remains selected and the checkout summary is replaced by the
+        returned preview. The normal update stays on the checkout page.
+    code_refs:
+      - path: themes/_core/js/checkout-delivery.js
+        role: implementation
+        description: Lines 16-46 serialize the delivery form on input change, post it and replace the
+          summary with resp.preview.
+      - path: controllers/front/OrderController.php
+        role: implementation
+        description: Lines 223-237 render the checkout cart-summary preview; lines 270-272 pass the request
+          to the checkout process.
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: themes/_core/js/checkout-delivery.js; controllers/front/OrderController.php
+          date: 2026-10-29
+          summary: The theme posts the shipping form when an input changes, replaces the summary, and emits
+            updatedDeliveryForm. The controller supplies the preview.
+          confidence_impact: supports
+    note: Source-derived UI expectation. The existing model maps delivery choice to
+      UpdateCartDeliverySettings; the controller delegates persistence to the checkout process, whose
+      internals are outside this source read. No gift or recyclable-option assertion is added.
 
 edge_cases:
   - id: checkout.EC001
@@ -321,3 +451,53 @@ error_cases:
             directions. The scenario's discount is free-shipping rather than percentage; the
             minimum-amount condition it exercises is the same one.
           confidence_impact: supports
+
+  - id: checkout.ER004
+    name: Show an expired voucher refusal in the shopping cart
+    summary: A voucher rejected for expired dates shows its validity error instead of refreshing the
+      cart as a success.
+    validates:
+      operations:
+        - checkout.CMD014 # ApplyCartRuleToCart
+      rules:
+        - checkout.VR001 # A voucher starts no later than it ends and applies only within its dates
+      ui:
+        screens:
+          - checkout.SCR005 # Shopping cart
+        actions:
+          - checkout.UAC008 # Enter a voucher code
+    tags: [front-end]
+    given:
+      description: On Shopping cart, an existing voucher has expired and otherwise qualifies. The cart
+        controller validity check returns the expiry error described by the model. The request has a
+        valid token.
+    when:
+      operation: checkout.CMD014 # ApplyCartRuleToCart
+      description: Enter the expired voucher code in the Shopping cart voucher form and submit it.
+    expected_result:
+      status: failure
+      behavior: The voucher error area becomes visible with the first validity error from the response.
+        The voucher is not attached and the successful updateCart branch is not emitted for this
+        submission.
+    code_refs:
+      - path: controllers/front/CartController.php
+        role: implementation
+        description: Lines 250-255 put a checkValidity refusal into errors instead of calling addCartRule;
+          lines 144-147 return those errors.
+      - path: themes/_core/js/cart.js
+        role: implementation
+        description: Lines 173-185 show .js-error, write resp.errors[0] to .js-error-text and return before
+          updateCart.
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+      evidence:
+        - kind: codebase-analysis
+          source: controllers/front/CartController.php; themes/_core/js/cart.js
+          date: 2026-10-29
+          summary: The model states the expiry rule. The controller forwards any checkValidity error and the
+            theme visibly renders that error. This read proves error propagation, not the date
+            comparison inside checkValidity.
+          confidence_impact: supports
+    note: The expiry premise is supplied by the modeled rule; its date-comparison implementation was not
+      read in this bounded task. No exact localized expiry wording or HTTP failure status is asserted.

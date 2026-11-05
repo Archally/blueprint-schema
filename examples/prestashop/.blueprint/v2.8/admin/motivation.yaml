@@ -229,6 +229,7 @@ inquiries:
       operation_refs: [admin.CMD021]
       concept_refs: [admin.CN005]
       process_refs: [admin.PRC002]
+      service_refs: [prestashop.SVC001]
     goal_refs:
       - admin.GL002
     blocking: false

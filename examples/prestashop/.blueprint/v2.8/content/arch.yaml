@@ -39,17 +39,15 @@ contexts:
     services:
       - id: prestashop.SVC004
         name: ContentService
-        kind: api
-        summary: REST API for CMS page and theme management.
+        kind: service
+        summary: In-process CMS page commands within the PrestaShop monolith.
         needs:
           - { type_ref: RT002, class: self-hosted, id: prestashop-assets }
         contracts:
-          openapi:
-            contract_name: content-api
-            slice: content
-            expose:
-              - content.CMD001
-              - content.CMD002
+          inprocess:
+            provide:
+              - content.CMD001 # AddCmsPage
+              - content.CMD002 # EditCmsPage
         implementation: "as-is"
         code_refs:
           - path: classes/CMS.php

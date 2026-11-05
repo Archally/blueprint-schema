@@ -4,7 +4,7 @@ rules:
     severity: info
     description: >-
       An L1 capability that realizes no operation, and none of its direct L2 children realizes
-      one either, or an L2 capability that realizes no operation. Deeper capabilities are judged
+      one either, including direct feature children, or an L2 capability that realizes no operation. Deeper capabilities are judged
       independently and contribute nothing to an L1 or L2. A capability realizes an
       operation where it lists the operation under `operations`, or where its `realized_in` names
       the operation's domain or a bounded context that handles it and no capability lists the

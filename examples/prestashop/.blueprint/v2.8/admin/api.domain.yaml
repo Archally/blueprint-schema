@@ -440,7 +440,7 @@ questions:
     category: compliance
     priority: critical
     bounded_context_ref: prestashop.BC009
-    answered_by: [admin.QRY001, catalog.QRY001, catalog.QRY002, orders.QRY001]
+    answered_by: [admin.QRY001, catalog.QRY001, catalog.QRY002]
     concepts: [admin.CN005]
     resolved: true
     resolution: >

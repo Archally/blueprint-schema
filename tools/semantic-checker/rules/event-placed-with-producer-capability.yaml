@@ -1,0 +1,16 @@
+engineVersion: "0.1"
+rules:
+  - id: event-placed-with-producer-capability
+    severity: warn
+    description: >-
+      An event placed on a capability must also be placed on the capability that realizes its
+      producer command, or the nearest common parent of multiple producer capabilities. Events
+      with no capability placement, no placed producer, or producers in separate roots are left
+      unjudged. Override per-project via .blueprint-lint.yaml.
+    find:
+      entity_type: Operation
+    check:
+      custom:
+        module: ./event-placed-with-producer-capability.mjs
+        export: eventPlacedWithProducerCapability
+    message: 'Event "{event}" ({event_name}) is placed away from its producer capability; expected {expected}. Place the event with its producer command.'

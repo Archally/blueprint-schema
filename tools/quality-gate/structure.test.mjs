@@ -16,7 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { locateSchemaRoot, loadSchemaIndex, resolverFor, measureStructure } from './structure.mjs';
+import { locateSchemaRoot, loadSchemaIndex, declaredIdsOf, resolverFor, measureStructure } from './structure.mjs';
 import { collectObservations } from './collect.mjs';
 import { loadSpec } from './config.mjs';
 
@@ -145,7 +145,7 @@ validation:
       certainty: confirmed
   - id: shop.VR003
     name: Stock is reserved before payment
-    description: "Payment starts only once the order's lines hold their stock (CN002)."
+    description: "Payment starts only once the order's lines (shop.CN001) hold their stock (CN002)."
     concepts: []
 `,
   'decisions.yaml': `
@@ -235,10 +235,51 @@ describe('references held only in prose', () => {
     assert.deepEqual(entity.structure.proseOnlyReferences, []);
   });
 
-  test('an unscoped id resolves to the declared id in the entity\'s own slice, and names the field that could hold it', () => {
+  test('a full id held only in prose names the field that could hold it', () => {
     const { entity } = entityJson('shop.VR003');
     assert.deepEqual(entity.structure.proseOnlyReferences, [
-      { id: 'shop.CN002', written: 'CN002', in: 'description', schemaHasField: true, fields: ['concepts'] },
+      { id: 'shop.CN001', written: 'shop.CN001', in: 'description', schemaHasField: true, fields: ['concepts'] },
+    ]);
+  });
+});
+
+describe('mentions in prose that name no declared id', () => {
+  test('an id written without the prefix it is declared with resolves to nothing and is reported with what it may mean', () => {
+    const { entity } = entityJson('shop.VR003');
+    assert.ok(!entity.structure.proseOnlyReferences.some((reference) => reference.id === 'shop.CN002'),
+      'CN002 and shop.CN002 are two ids; the folder the rule is filed in does not qualify a mention');
+    assert.deepEqual(entity.structure.unresolvedReferences, [
+      { written: 'CN002', in: 'description', didYouMean: ['shop.CN002'] },
+    ]);
+  });
+
+  test('a token shaped like an id with no declared id that differs from it only by a prefix is not reported', () => {
+    const { entity } = entityJson('shop.VR002');
+    assert.deepEqual(entity.structure.unresolvedReferences, []);
+  });
+
+  test('mentions that resolve exactly leave the list empty', () => {
+    const { entity } = entityJson('BD001');
+    assert.deepEqual(entity.structure.unresolvedReferences, []);
+  });
+
+  test('a prefixed mention of an id declared without one is reported too, and the entity\'s own id written short is no exception', () => {
+    const documents = [
+      { file: '/m/decisions.yaml', doc: { business_decisions: [{ id: 'BD001', name: 'Priced once', description: 'See shop.BD001 and DC001.' }] } },
+      { file: '/m/shop/rules.yaml', slice: 'shop', doc: { validation: [{ id: 'shop.VR001', name: 'Positive', description: 'VR001 holds; shop.BD001 is not an id.' }] } },
+      { file: '/m/decisions2.yaml', doc: { decisions: [{ id: 'DC001', title: 'Priced' }] } },
+    ];
+    const records = measureStructure({
+      documents,
+      schemaIndex: null,
+      structureSpec: { containers: ['business_decisions', 'validation'], identity_fields: ['id', 'name'], prose_fields: ['description'], reference_text_fields: ['description'] },
+    });
+    const byId = Object.fromEntries(records.map((record) => [record.entityId, record]));
+    assert.deepEqual(byId.BD001.unresolvedReferences, [{ written: 'shop.BD001', in: 'description', didYouMean: ['BD001'] }]);
+    assert.deepEqual(byId.BD001.proseOnlyReferences.map((reference) => reference.id), ['DC001']);
+    assert.deepEqual(byId['shop.VR001'].unresolvedReferences, [
+      { written: 'VR001', in: 'description', didYouMean: ['shop.VR001'] },
+      { written: 'shop.BD001', in: 'description', didYouMean: ['BD001'] },
     ]);
   });
 });
@@ -312,7 +353,27 @@ describe('the whole-model report counts per kind', () => {
     assert.match(stdout, /fields used: 2 of 4 \(domain_scope, tags\); description \d+ chars/);
     assert.match(stdout, /held only in prose\s+shop\.VR001\s+the schema has no field for this/);
     const rule = runCli([modelRoot, '--entity', 'shop.VR003']).stdout;
-    assert.match(rule, /held only in prose\s+shop\.CN002\s+a field can hold it: concepts/);
+    assert.match(rule, /held only in prose\s+shop\.CN001\s+a field can hold it: concepts/);
+    assert.match(rule, /names no declared id\s+CN002\s+did you mean shop\.CN002/);
+  });
+
+  test('the per-kind rows count the unresolved mentions and the whole-model report lists their entities', () => {
+    const { stdout } = runCli([modelRoot, '--json']);
+    const [run] = JSON.parse(stdout).runs;
+    const byKind = Object.fromEntries(run.structure.kinds.map((kind) => [kind.kind, kind]));
+    assert.equal(byKind.validation.unresolvedReferences, 1);
+    assert.equal(byKind.business_decisions.unresolvedReferences, 0);
+    const text = runCli([modelRoot]).stdout;
+    assert.match(text, /Entities naming ids the model does not declare \(1\)/);
+    assert.match(text, /shop\.VR003 .*CN002 \(did you mean shop\.CN002\)/);
+  });
+
+  test('unresolved mentions sit outside every score and verdict', () => {
+    const { code, stdout } = runCli([modelRoot, '--json', '--strict']);
+    const [run] = JSON.parse(stdout).runs;
+    const { spec } = loadSpec();
+    assert.deepEqual(run.metrics.map((metric) => metric.id), Object.keys(spec.metrics));
+    assert.equal(code, run.ok ? 0 : 1, 'the exit code follows the metrics alone');
   });
 });
 
@@ -368,17 +429,24 @@ describe('where the schema comes from', () => {
     }
   });
 
-  test('a token resolves exactly, then within the entity\'s slice, and otherwise not at all', () => {
-    const resolve = resolverFor(new Map([['shop.CN002', 'shop.CN002'], ['DC001', 'DC001']]));
-    assert.equal(resolve('DC001', 'shop'), 'DC001');
-    assert.equal(resolve('CN002', 'shop'), 'shop.CN002');
-    assert.equal(resolve('CN009', 'shop'), undefined);
+  test('a token resolves only to the id the model declares as that exact string', () => {
+    const resolve = resolverFor(new Set(['shop.CN002', 'DC001']));
+    assert.equal(resolve('DC001'), 'DC001');
+    assert.equal(resolve('shop.CN002'), 'shop.CN002');
+    assert.equal(resolve('CN002'), undefined, 'no unique-tail match');
+    assert.equal(resolve('CN009'), undefined);
   });
 
-  test('an unscoped token prefers the entity\'s own slice over the same id declared unscoped in another slice', () => {
+  test('an unscoped token resolves to the unscoped id, and a scoped one to its own scope only', () => {
     // `orders/quality.yaml` declares `KPI001` without a scope; `admin/quality.yaml` declares `admin.KPI001`.
-    const resolve = resolverFor(new Map([['KPI001', 'KPI001'], ['orders.KPI001', 'KPI001'], ['admin.KPI001', 'admin.KPI001']]));
-    assert.equal(resolve('KPI001', 'admin'), 'admin.KPI001');
-    assert.equal(resolve('KPI001', 'orders'), 'KPI001');
+    const resolve = resolverFor(new Set(['KPI001', 'admin.KPI001']));
+    assert.equal(resolve('KPI001'), 'KPI001');
+    assert.equal(resolve('admin.KPI001'), 'admin.KPI001');
+    assert.equal(resolve('orders.KPI001'), undefined, 'the folder an id is filed in is not part of it');
+  });
+
+  test('an id filed in a slice without a prefix is declared once, as written', () => {
+    const declared = declaredIdsOf([{ doc: { kpis: [{ id: 'KPI001' }] }, slice: 'orders' }]);
+    assert.deepEqual([...declared], ['KPI001']);
   });
 });

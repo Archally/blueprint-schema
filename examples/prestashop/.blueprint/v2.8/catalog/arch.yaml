@@ -74,6 +74,9 @@ contexts:
             environment: development
         contracts:
           inprocess:
+            provide:
+              - catalog.EVT001 # ProductCreated
+              - catalog.EVT002 # ProductUpdated
             # Catalog code calls the dispatcher at each extension point, which is the same act as
             # the open-host-service the context declares above: exposing a hook IS calling
             # `Hook::exec` where the extension belongs.
@@ -94,13 +97,6 @@ contexts:
               - catalog.CMD002
               - catalog.QRY001
               - catalog.QRY002
-          asyncapi:
-            contract_name: catalog-events
-            slice: catalog
-            send:
-              - catalog.EVT001
-              - catalog.EVT002
-            brokerId: prestashop-event-bus
         implementation: "as-is"
         code_refs:
           - path: src/Core/Domain/Product/

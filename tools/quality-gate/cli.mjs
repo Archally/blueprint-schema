@@ -177,6 +177,7 @@ function structureJson(record) {
     fieldsAvailable: record.fieldsAvailable,
     descriptionLength: record.descriptionLength,
     proseOnlyReferences: record.proseOnlyReferences,
+    unresolvedReferences: record.unresolvedReferences,
   };
 }
 

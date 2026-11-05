@@ -10,9 +10,6 @@ happy_path:
       operations: [content.CMD001]
       rules: [content.VR001, content.VR002]
       concepts: [content.CN001]
-    contract:
-      kind: openapi
-      file: content-api
     given:
       description: "A CMS page category exists."
       state:

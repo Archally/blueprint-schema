@@ -75,31 +75,19 @@ contexts:
     services:
       - id: prestashop.SVC003
         name: CheckoutService
-        kind: api
-        summary: REST API for cart operations and payment initiation.
+        kind: service
+        summary: In-process cart commands, queries and local hooks within the PrestaShop monolith.
         needs:
           - { type_ref: RT001, class: self-hosted, id: prestashop-db }
-        servers:
-          - url: https://api.prestashop.example/v1
-            environment: prestashop.ENV001
-          - url: http://localhost:8080/api
-            environment: development
         contracts:
-          openapi:
-            contract_name: checkout-api
-            slice: checkout
-            expose:
-              - checkout.CMD009
-              - checkout.CMD010
-              - checkout.QRY001
-          asyncapi:
-            contract_name: checkout-events
-            slice: checkout
-            send:
-              - checkout.EVT004
-            receive:
-              - orders.EVT001
-            brokerId: prestashop-event-bus
+          inprocess:
+            provide:
+              - checkout.CMD009 # AddProductToCart
+              - checkout.CMD010 # RemoveProductFromCart
+              - checkout.QRY001 # GetCartForViewing
+              - checkout.EVT004 # CartProductsUpdated
+            consume:
+              - orders.EVT001 # OrderPlaced
         implementation: "as-is"
         code_refs:
           - path: src/Core/Domain/Cart/
