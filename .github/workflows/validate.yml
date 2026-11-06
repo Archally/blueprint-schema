@@ -29,7 +29,7 @@ jobs:
       - name: Validate YAML examples embedded in docs
         run: npm run doc-snippets
       - name: Doc-snippet gate self-tests
-        run: node --test "tools/doc-snippet-validate/*.test.mjs"
+        run: node --test tools/doc-snippet-validate/*.test.mjs
       # Blueprint Schema Atlas drift check — ADVISORY first (DEC-ATL-20). Reports stale
       # generated docs without failing the build; flip `continue-on-error` to false to
       # enforce once output stability is proven.
