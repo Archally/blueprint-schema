@@ -535,7 +535,7 @@ Blueprint Schema is the open foundation of the [Archally](https://archally.pro) 
 
 **For AI-augmented teams:** Archally MCP servers expose blueprint models as structured grounding for AI agents — deterministic graph queries against a validated domain model, not retrieval over unstructured documents. Agents get typed entities, traced relationships, and governance constraints at inference time. The same model that serves human understanding serves machine reasoning.
 
-The schema itself is Apache 2.0-licensed and can be used independently of Archally tooling. The value-add reference tooling (model-builder, semantic-checker, renderer, schema-update, schema-atlas) is source-available under the Functional Source License — free for internal, educational, and professional-services use, but not for building a competing product. See [License](#license).
+The schema itself is Apache 2.0-licensed and can be used independently of Archally tooling. The value-add reference tooling (model-builder, semantic-checker, renderer, schema-update) is source-available under the Functional Source License - free for internal, educational, and professional-services use, but not for building a competing product. See [License](#license).
 
 ### Archally Pro
 
@@ -562,7 +562,7 @@ This repository is **dual-licensed** — see [LICENSE](./LICENSE) for the author
 
 | Part | License | You may |
 | --- | --- | --- |
-| Schema, examples, docs, reference validator, VS Code extension, AI agent kit | [Apache 2.0](./LICENSE-APACHE) | Use freely, including in commercial and proprietary products. The format is meant to be adopted. |
-| Tooling — `model-builder`, `semantic-checker`, `renderer`, `schema-update`, `schema-atlas` | [FSL-1.1-ALv2](./LICENSE-FSL) | Use for any Permitted Purpose (internal use, non-commercial education/research, professional services). **Not** for a Competing Use. Each version converts to Apache 2.0 two years after its release. |
+| Schema, examples, docs, Schema Atlas generator, reference validator, VS Code extension, AI agent kit | [Apache 2.0](./LICENSE-APACHE) | Use freely, including in commercial and proprietary products. The format is meant to be adopted. |
+| Tooling - `model-builder`, `semantic-checker`, `renderer`, `schema-update` | [FSL-1.1-ALv2](./LICENSE-FSL) | Use for any Permitted Purpose (internal use, non-commercial education/research, professional services). **Not** for a Competing Use. Each version converts to Apache 2.0 two years after its release. |
 
 For a commercial license covering a Competing Use, contact adam.walkowski@inperceptic.com. "Archally" and "Blueprint" are trademarks — see [TRADEMARKS.md](./TRADEMARKS.md).

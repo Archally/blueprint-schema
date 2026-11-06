@@ -19,6 +19,8 @@ The following are licensed under the Apache License, Version 2.0
   - docs/              documentation, including the Schema Atlas
   - tools/validator/   the reference conformance validator
   - tools/doc-snippet-validate/  validates the YAML examples inside the docs
+  - tools/schema-atlas/  generates the Schema Atlas in docs/ from the schema;
+                       it reads no model
   - tools/port/        verifies the shipped files against the manifest published
                        with them; it describes no blueprint and reads no model
   - tools/vscode-blueprint/   the editor navigation extension
@@ -49,7 +51,6 @@ with an Apache 2.0 future grant (full text: ./LICENSE-FSL, SPDX: FSL-1.1-ALv2):
   - tools/build-stamp/         build identity for generated artifacts
   - tools/renderer/            markdown and Mermaid documents
   - tools/schema-update/       versioned model migrations
-  - tools/schema-atlas/        the generated schema reference
   - tools/guide-publisher/     the guide atlas, built for publication
 
 You may use, modify, and redistribute this code for any Permitted Purpose —
@@ -68,7 +69,8 @@ Where the line falls
 --------------------
 
 Apache-2.0 covers the FORMAT and what is needed to adopt it: the schema, the
-worked examples, the documentation, the reference validator that answers whether
+worked examples, the documentation and the tool that generates the Schema Atlas
+from the schema, the reference validator that answers whether
 a model is legal, the checker that keeps the documented examples honest, and the
 tool that verifies this distribution's own integrity, and the AI agent kit
 that helps a reader author a model. A schema whose only

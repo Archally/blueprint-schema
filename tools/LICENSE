@@ -17,6 +17,8 @@ Apache License, Version 2.0 - see ../LICENSE-APACHE
 
   - validator/              the reference conformance validator
   - doc-snippet-validate/   validates the YAML examples inside the docs
+  - schema-atlas/           generates the Schema Atlas in ../docs/ from the
+                            schema; it reads no model
   - port/                   verifies the shipped files against the manifest
                             published with them; it describes no blueprint and
                             reads no model
@@ -39,7 +41,6 @@ Functional Source License 1.1 (ALv2 Future License) - see ../LICENSE-FSL
   - build-stamp/            build identity for generated artifacts
   - renderer/               markdown and Mermaid documents
   - schema-update/          versioned model migrations
-  - schema-atlas/           the generated schema reference
   - guide-publisher/        the guide atlas, built for publication
 
   Free for any Permitted Purpose (internal use, non-commercial education and
