@@ -35,7 +35,7 @@ Argument: `$ARGUMENTS` - path to the blueprint directory (e.g. `.blueprint/v2.8`
    ```
 
    Run a missing prerequisite only with the user's consent (`install` fetches npm dependencies,
-   `run build` compiles the TypeScript tools; Node 20 or later).
+   `run build` compiles the TypeScript tools; Node 22 or later).
 
 3. **Run the trio** with absolute paths. `npm --prefix` runs each script from the schema root, so a
    relative path, or a configuration file the tool looks for in the working directory, would resolve

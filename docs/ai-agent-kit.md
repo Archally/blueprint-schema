@@ -8,7 +8,7 @@ this repository's own validator, semantic checker and quality gate.
 
 ## Prepare the clone
 
-Node 20 or later. Once, in the repository root:
+Node 22 or later. Once, in the repository root:
 
 ```bash
 npm install

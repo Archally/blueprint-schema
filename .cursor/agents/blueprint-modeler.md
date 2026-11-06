@@ -103,7 +103,7 @@ The table shows the form you type inside the schema repository; from another pro
 gate work after the install alone (both are plain `.mjs`); the checker, model builder, renderer, schema
 update, atlas and guide publisher run compiled output that `npm run build` produces locally. A clone
 does not carry that output, so a checker that fails with `Cannot find module .../dist/cli.js` needs the
-build, not a model fix. Both steps need Node 20 or later; `npm install` fetches the repository's
+build, not a model fix. Both steps need Node 22 or later; `npm install` fetches the repository's
 dependencies, so run it only with the user's consent.
 
 **When to reach for what:** run the **trio** (validate → check → quality) after every batch of edits -

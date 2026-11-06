@@ -27,7 +27,7 @@ All three tools are npm scripts of the public schema repository, so every run na
 
 Prerequisites, once per schema root and only with the user's consent: `npm --prefix "$SCHEMA_ROOT" install`
 (fetches the repository's npm dependencies), then `npm --prefix "$SCHEMA_ROOT" run build` (compiles the
-semantic checker and the other TypeScript tools locally). Both need Node 20 or later. The validator and
+semantic checker and the other TypeScript tools locally). Both need Node 22 or later. The validator and
 the quality gate run after the install alone.
 
 ## How to run

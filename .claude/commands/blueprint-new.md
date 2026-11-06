@@ -43,7 +43,7 @@ the rest, if present, is the product name.
 
    A missing prerequisite is not a modeling error. Tell the user which command is missing and run it
    only with their consent: `install` fetches the repository's npm dependencies, `run build` compiles
-   its TypeScript tools locally. Both need Node 20 or later.
+   its TypeScript tools locally. Both need Node 22 or later.
 
 3. **Create two files** (the minimal valid blueprint):
 
