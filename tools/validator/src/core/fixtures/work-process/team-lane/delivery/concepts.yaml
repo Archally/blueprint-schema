@@ -1,0 +1,10 @@
+version: "1.0.0"
+scope: delivery
+concepts:
+  - id: delivery.CN001
+    name: Specification
+    description: "What the development team builds from: the item, its scope and its acceptance."
+actors:
+  - id: delivery.ACT001
+    name: UX Designer
+    type: human

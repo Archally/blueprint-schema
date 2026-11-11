@@ -1,0 +1,18 @@
+version: "1.0.0"
+name: Order stories
+scope: orders
+processes:
+  - id: orders.PRC001
+    title: Place an order
+    trigger:
+      type: message
+      operation: orders.CMD001
+    lanes:
+      - actor: orders.ACT001
+        operations: [orders.CMD001]
+    activities:
+      - id: orders.PA001
+        name: Place the order
+        entry_operation: orders.CMD001
+        triggered_by: [orders.ACT001]
+    implementation: as-is

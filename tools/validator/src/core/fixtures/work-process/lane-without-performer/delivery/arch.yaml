@@ -1,0 +1,7 @@
+version: "1.0.0"
+name: Delivery tools
+scope: delivery
+parties:
+  - id: delivery.PRT010
+    name: Issue tracker
+    kind: system

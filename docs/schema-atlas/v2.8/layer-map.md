@@ -67,7 +67,7 @@ graph LR
     blueprint_schema_yaml -->|1| governance_roadmap_schema_yaml
     blueprint_schema_yaml -->|1| governance_test_cases_schema_yaml
     blueprint_schema_yaml -->|1| governance_value_stream_schema_yaml
-    blueprint_schema_yaml -->|19| metamodel_schema_yaml
+    blueprint_schema_yaml -->|20| metamodel_schema_yaml
     blueprint_schema_yaml -->|1| migration_schema_yaml
     migration_schema_yaml -->|9| metamodel_schema_yaml
     migrations_schema_yaml -->|6| metamodel_schema_yaml
@@ -88,7 +88,7 @@ What & how: domain model, behavior, contracts, and quality attributes.
 | [`design/models.schema.yaml`](./entity-catalog.md#design-models) | Blueprint Models | 6 | 6 | Design Plane: Reusable data model definitions (schemas, fields, parameters) with optional concept back-references. Foll… |
 | [`design/quality.schema.yaml`](./entity-catalog.md#design-quality) | Blueprint Quality | 14 | 11 | Design Plane: Non-functional requirements as first-class entities. Covers metrics, KPIs, SLOs, SLAs, security, complian… |
 | [`design/rules.schema.yaml`](./entity-catalog.md#design-rules) | Blueprint Rules | 11 | 3 | Design Plane - Layer 2: Business rules. Structural invariants, classification, derivation, equivalence, validation, and… |
-| [`design/story.schema.yaml`](./entity-catalog.md#design-story) | Blueprint Process | 11 | 5 | Design Plane - Layer 4: Business processes expressing logical operation sequences, actor interactions, and side effects… |
+| [`design/story.schema.yaml`](./entity-catalog.md#design-story) | Blueprint Process | 11 | 10 | Design Plane - Layer 4: Business processes expressing logical operation sequences, actor interactions, and side effects… |
 
 ### Design Plane — reference dependencies
 
@@ -107,7 +107,7 @@ graph LR
         design_story_schema_yaml["story"]
     end
     metamodel_schema_yaml(["metamodel"])
-    design_arch_schema_yaml -->|81| metamodel_schema_yaml
+    design_arch_schema_yaml -->|82| metamodel_schema_yaml
     design_concepts_schema_yaml -->|44| metamodel_schema_yaml
     design_domain_schema_yaml -->|56| metamodel_schema_yaml
     design_dynamics_schema_yaml -->|29| metamodel_schema_yaml
@@ -116,7 +116,7 @@ graph LR
     design_models_schema_yaml -->|14| metamodel_schema_yaml
     design_quality_schema_yaml -->|88| metamodel_schema_yaml
     design_rules_schema_yaml -->|26| metamodel_schema_yaml
-    design_story_schema_yaml -->|66| metamodel_schema_yaml
+    design_story_schema_yaml -->|78| metamodel_schema_yaml
 ```
 
 ## Governance Plane
@@ -152,7 +152,7 @@ graph LR
     governance_capability_schema_yaml -->|23| metamodel_schema_yaml
     governance_decisions_schema_yaml -->|50| metamodel_schema_yaml
     governance_leverage_schema_yaml -->|29| metamodel_schema_yaml
-    governance_motivation_schema_yaml -->|111| metamodel_schema_yaml
+    governance_motivation_schema_yaml -->|112| metamodel_schema_yaml
     governance_organization_schema_yaml -->|21| metamodel_schema_yaml
     governance_roadmap_schema_yaml -->|38| metamodel_schema_yaml
     governance_test_cases_schema_yaml -->|40| metamodel_schema_yaml

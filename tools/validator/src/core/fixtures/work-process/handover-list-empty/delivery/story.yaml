@@ -1,0 +1,81 @@
+version: "1.0.0"
+name: Delivery processes
+scope: delivery
+processes:
+  - id: delivery.PRC001
+    title: Refine and specify an item
+    describes: organization
+    implementation: as-is
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: documentation
+          summary: Observed in the issue tracker's item history.
+    lanes:
+      - team: TM001
+        activities: [delivery.PA001, delivery.PA003, delivery.PA004]
+      - team: TM002
+        actor: delivery.ACT001
+        activities: [delivery.PA002]
+    activities:
+      - id: delivery.PA001
+        name: Refine the item
+        inputs:
+          - name: Raw request
+        outputs:
+          - name: Specification draft
+            concept: delivery.CN001
+        tools:
+          - name: Jira
+            party: delivery.PRT010
+        gateway: xor
+        next:
+          - to: delivery.PA002
+            condition: the item needs UX design
+          - to: delivery.PA003
+            condition: the item needs no UX design
+        hands_over_to: []
+      - id: delivery.PA002
+        name: Design the item
+        tools:
+          - name: A design tool
+        next:
+          - to: delivery.PA003
+        hands_over_to:
+          - activity: delivery.PA003
+            team: TM001
+        provenance:
+          discovery_stage: hypothesis
+          certainty: speculative
+          evidence:
+            - kind: interview
+              summary: One product manager.
+      - id: delivery.PA003
+        name: Specify the item
+        join: {mode: xor}
+        outputs:
+          - name: Agreed specification
+            concept: delivery.CN001
+        next:
+          - to: delivery.PA004
+      - id: delivery.PA004
+        name: Hand over to development
+        hands_over_to:
+          - process: delivery.PRC002
+            name: the development process
+    end_states:
+      - name: Handed over
+        type: complete
+        from: [delivery.PA004]
+  - id: delivery.PRC002
+    title: Build the item
+    lanes:
+      - team: TM003
+        activities: [delivery.PA005]
+    activities:
+      - id: delivery.PA005
+        name: Build the item
+        hands_over_to:
+          - team: TM001
+          - name: the release train

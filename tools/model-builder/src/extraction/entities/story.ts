@@ -82,6 +82,7 @@ export interface ProcessSource {
   activities?: unknown;
   operations?: unknown;
   trigger?: unknown;
+  triggers?: unknown;
   end_states?: unknown;
 }
 
@@ -93,13 +94,15 @@ export interface ProcessSource {
  * Activities win over operations when the process states a non-empty list of them; the steps are
  * then read from each activity's `steps`, or its `entry_operation` where it states none, and the
  * order is read by `deriveProcessOrder` on the model's schema line.
+ * Plural starts are also derived when the activity list is empty, retaining unresolved targets.
  */
 export function deriveProcess(source: ProcessSource, line: ServedSchemaLine): DerivedProcess {
   const activities = source.activities;
-  if (Array.isArray(activities) && activities.length > 0) {
+  if ((Array.isArray(activities) && activities.length > 0) || source.triggers !== undefined) {
+    const records = Array.isArray(activities) ? activities : [];
     return {
-      operationsDetail: buildOperationsDetailFromActivities(activities as StoryActivityInput[]),
-      order: deriveProcessOrder(activities, source.trigger, source.end_states, line),
+      operationsDetail: buildOperationsDetailFromActivities(records as StoryActivityInput[]),
+      order: deriveProcessOrder(records, source.trigger, source.end_states, line, source.triggers),
     };
   }
   const operations = Array.isArray(source.operations) ? (source.operations as StoryOperationInput[]) : [];
@@ -140,6 +143,7 @@ interface StoryInput {
   activities?: StoryActivityInput[];
   /** BPMN-style process metadata, direct properties from v2.8.10 - preserved as-is. */
   trigger?: unknown;
+  triggers?: unknown;
   end_states?: unknown;
   lanes?: unknown;
   /** The same three nested, which is how every model on an earlier schema line carries them. */
@@ -186,7 +190,7 @@ export function extractStory(doc: ParsedBlueprintDocument, line: ServedSchemaLin
     const trigger = s.trigger ?? s.process?.trigger;
     const endStates = s.end_states ?? s.process?.end_states;
     const { operationsDetail, order } = deriveProcess(
-      { activities: s.activities, operations: s.operations, trigger, end_states: endStates },
+      { activities: s.activities, operations: s.operations, trigger, triggers: s.triggers, end_states: endStates },
       line,
     );
 
@@ -214,8 +218,10 @@ export function extractStory(doc: ParsedBlueprintDocument, line: ServedSchemaLin
         // Where the process starts and which activity reaches each end state, by the conventions
         // `deriveProcessOrder` states; derived on the v2.8 line only, so absent before it.
         ...(order?.start ? { _start: order.start } : {}),
+        ...(order?.starts ? { _starts: order.starts } : {}),
         ...(order?.ends ? { _ends: order.ends } : {}),
         trigger,
+        ...(s.triggers !== undefined ? { triggers: s.triggers } : {}),
         end_states: endStates,
         lanes: s.lanes ?? s.process?.lanes,
         // This extractor names every field it keeps, so a field it does not name is DROPPED - which
@@ -313,6 +319,16 @@ export interface ProcessStart {
   origin: 'trigger-operation' | 'first-listed';
 }
 
+/** One ordered start attachment. Invalid plural targets remain visible and never gain a fallback. */
+export interface ProcessStartAttachment {
+  /** Stable within the process while the authored start positions remain unchanged. */
+  id: string;
+  to?: string;
+  origin: ProcessStart['origin'] | 'stated';
+  resolved: boolean;
+  trigger?: unknown;
+}
+
 /**
  * One declared end state and the activities that lead to it (`_ends`). `from` is empty where no
  * stated link and no convention attaches an activity to it. `origin` says where a non-empty `from`
@@ -329,10 +345,11 @@ export interface ProcessEnd {
 /** Where an end state's attachment comes from: the model's `from`, or the end convention. */
 export type EndOrigin = 'stated' | 'convention';
 
-/** A process's activities with their derived successors, and its derived start and end attachments. */
+/** A process's activities, ordered start attachments and legacy singleton adapter. */
 export interface ProcessOrder {
   activities: unknown[];
   start?: ProcessStart;
+  starts?: ProcessStartAttachment[];
   ends?: ProcessEnd[];
 }
 
@@ -411,12 +428,17 @@ function holdsOperation(activity: ActivityRecord, operation: string): boolean {
  *
  * On v2.6 and v2.7, whose published text says nothing of list order, only the stated successors are
  * derived and neither `_start` nor `_ends` is.
+ *
+ * A plural `triggers` field replaces the singleton start convention on v2.8. Its targets resolve
+ * only against exact ids occurring once in this process. Every entry remains in `_starts`, even
+ * where unresolved. Plural processes use stated successors only, never inferred list order.
  */
 export function deriveProcessOrder(
   activities: unknown[],
   trigger: unknown,
   endStates: unknown,
   line: ServedSchemaLine,
+  triggers?: unknown,
 ): ProcessOrder {
   const successors = new Map<ActivityRecord, NormalisedBranch[]>();
   for (const activity of activities) {
@@ -446,7 +468,8 @@ export function deriveProcessOrder(
     }),
   );
 
-  if (!mainLinked) {
+  const plural = triggers !== undefined;
+  if (!plural && !mainLinked) {
     for (let index = 0; index + 1 < main.length; index++) {
       const to = idOf(main[index + 1]!);
       if (to === undefined) continue;
@@ -459,12 +482,42 @@ export function deriveProcessOrder(
   const holder = operation === undefined ? undefined : records.find((activity) => holdsOperation(activity, operation) && idOf(activity) !== undefined);
   const firstMain = main.find((activity) => idOf(activity) !== undefined);
   let start: ProcessStart | undefined;
-  if (!mainLinked && firstMain) {
+  if (!plural && !mainLinked && firstMain) {
     start = { to: idOf(firstMain)!, origin: operation !== undefined && holdsOperation(firstMain, operation) ? 'trigger-operation' : 'first-listed' };
-  } else if (holder) {
+  } else if (!plural && holder) {
     start = { to: idOf(holder)!, origin: 'trigger-operation' };
-  } else if (firstMain) {
+  } else if (!plural && firstMain) {
     start = { to: idOf(firstMain)!, origin: 'first-listed' };
+  }
+
+  const activityCounts = new Map<string, number>();
+  for (const activity of records) {
+    const id = idOf(activity);
+    if (id === undefined) {
+      continue;
+    }
+    activityCounts.set(id, (activityCounts.get(id) ?? 0) + 1);
+  }
+  let starts: ProcessStartAttachment[] = [];
+  if (plural) {
+    const entries = Array.isArray(triggers) ? triggers : [];
+    starts = entries.map((entry, position) => {
+      const to = isRecord(entry) && typeof entry.to === 'string' ? entry.to : undefined;
+      return {
+        id: `start-${position + 1}`,
+        ...(to !== undefined ? { to } : {}),
+        origin: 'stated',
+        resolved: to !== undefined && activityCounts.get(to) === 1,
+        trigger: entry,
+      };
+    });
+  } else if (start) {
+    starts = [{
+      id: 'start-1',
+      ...start,
+      resolved: activityCounts.get(start.to) === 1,
+      ...(trigger !== undefined ? { trigger } : {}),
+    }];
   }
 
   const declaredEnds = (Array.isArray(endStates) ? endStates : [])
@@ -505,5 +558,5 @@ export function deriveProcessOrder(
       : { ...base, from: [] };
   });
 
-  return { activities: withSuccessors(), ...(start ? { start } : {}), ends };
+  return { activities: withSuccessors(), ...(start ? { start } : {}), starts, ends };
 }

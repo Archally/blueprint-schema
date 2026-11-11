@@ -1,0 +1,11 @@
+version: "1.0.0"
+name: Delivery processes
+scope: delivery
+processes:
+  - id: delivery.PRC001
+    title: Design an item
+    lanes:
+      - team: TM002
+    activities:
+      - id: delivery.PA001
+        name: Design the item

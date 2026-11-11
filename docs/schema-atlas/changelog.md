@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 34 |
-| Additive (minor) | 268 |
+| Additive (minor) | 277 |
 | Clarification (patch) | 0 |
-| **Total changes** | 302 |
+| **Total changes** | 311 |
 
 ## ⚠ Breaking changes
 
@@ -244,7 +244,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` — Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (244)
+## Added (253)
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` — New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
@@ -630,6 +630,27 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/story.schema.yaml#/$defs/process_activity` — New definition `process_activity` added to `design/story.schema.yaml`.
   - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/process_activity`_
 
+- [additive] `design/story.schema.yaml#/$defs/process_artifact` — New definition `process_artifact` added to `design/story.schema.yaml`.
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/process_artifact`_
+
+- [additive] `design/story.schema.yaml#/$defs/process_handover` — New definition `process_handover` added to `design/story.schema.yaml`.
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/process_handover`_
+
+- [additive] `design/story.schema.yaml#/$defs/process_start` — New definition `process_start` added to `design/story.schema.yaml`.
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/process_start`_
+
+- [additive] `design/story.schema.yaml#/$defs/process_tool` — New definition `process_tool` added to `design/story.schema.yaml`.
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/process_tool`_
+
+- [additive] `design/story.schema.yaml#/$defs/process_trigger` — New definition `process_trigger` added to `design/story.schema.yaml`.
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/process_trigger`_
+
+- [additive] `design/story.schema.yaml#/$defs/process_trigger_type` — New definition `process_trigger_type` added to `design/story.schema.yaml`.
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/process_trigger_type`_
+
+- [additive] `design/story.schema.yaml#/$defs/stated_name` — New definition `stated_name` added to `design/story.schema.yaml`.
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/stated_name`_
+
 - [additive] `design/story.schema.yaml#/$defs/use_case/properties/alternative_flows` — Property `alternative_flows` added (optional).
   - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/use_case/properties/alternative_flows`_
 
@@ -903,6 +924,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `metamodel.schema.yaml#/$defs/package_ref` — New definition `package_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/package_ref`_
 
+- [additive] `metamodel.schema.yaml#/$defs/party_kind` — New definition `party_kind` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/party_kind`_
+
 - [additive] `metamodel.schema.yaml#/$defs/persona_ref` — New definition `persona_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/persona_ref`_
 
@@ -914,6 +938,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `metamodel.schema.yaml#/$defs/process_activity_ref` — New definition `process_activity_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/process_activity_ref`_
+
+- [additive] `metamodel.schema.yaml#/$defs/process_describes` — New definition `process_describes` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/process_describes`_
 
 - [additive] `metamodel.schema.yaml#/$defs/process_ref` — New definition `process_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/process_ref`_

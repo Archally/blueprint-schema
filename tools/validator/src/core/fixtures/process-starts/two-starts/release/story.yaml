@@ -1,0 +1,24 @@
+version: "1.0.0"
+name: Release stories
+scope: release
+processes:
+  - id: release.PRC001
+    title: Release a change
+    description: A change reaches production, whichever side of the system is ready first.
+    triggers:
+      - type: manual
+        to: release.PA001
+        description: The backend is ready first
+      - type: manual
+        to: release.PA002
+        description: The frontend is ready first
+    activities:
+      - id: release.PA001
+        name: Ship the backend first
+        next: [{to: release.PA003}]
+      - id: release.PA002
+        name: Ship the frontend first
+        next: [{to: release.PA003}]
+      - id: release.PA003
+        name: Verify the release
+        join: {mode: xor}

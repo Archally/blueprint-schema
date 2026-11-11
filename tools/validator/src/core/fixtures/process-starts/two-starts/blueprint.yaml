@@ -1,0 +1,5 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Service Release
+description: >-
+  A process with two alternative starts, each into its own first activity; the routes meet at an exclusive join.

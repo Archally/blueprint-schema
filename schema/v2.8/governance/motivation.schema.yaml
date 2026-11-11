@@ -672,7 +672,7 @@ $defs:
         description: "Actors who care about the resolution."
       affects:
         type: object
-        description: "Blueprint entities this inquiry touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, bounded context, service, package, capability or story it is about."
+        description: "Blueprint entities this inquiry touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, bounded context, service, package, capability, story or process activity it is about."
         additionalProperties: false
         properties:
           operation_refs:
@@ -719,6 +719,18 @@ $defs:
             items:
               $ref: "../metamodel.schema.yaml#/$defs/process_ref"
             description: "Business processes affected, for a concern about a flow as a whole rather than one of its operations."
+          process_activity_refs:
+            type: array
+            title: Process activities
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/process_activity_ref"
+            description: >
+              Process activities (PA###) this inquiry is about, for an open question about one step
+              of a flow: who does it, what it takes or produces, whether it happens at all. Each is
+              the exact id its process declares, so it names one activity only where no other
+              process declares the same id. An id no process declares is a cross-reference error.
+            examples:
+              - [PA004, delivery.PA002]
           capability_refs:
             type: array
             title: Capabilities

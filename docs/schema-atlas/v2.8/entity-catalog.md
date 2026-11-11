@@ -121,6 +121,7 @@ A slice folder - `name` is the kebab-case subfolder under the blueprint root. A 
 | --- | --- | --- | --- | --- |
 | `name` | `string` | ✓ |  | Slice folder name (kebab-case); matches the subfolder under the blueprint root. |
 | `description` | `string` | — |  | What this slice is about - its business or technical responsibility. |
+| `describes` | `ref → process_describes` | — |  | What the processes in this slice are a model of. `organization` marks a slice that holds how an organization works rather than a part of the system: it declare… |
 | `type` | `ref → subdomain_kind` | — |  | SOFT-DEPRECATED (v2.8.6). Slice nature, as a region of the problem space. A slice is a folder, and its nature belongs to the domain it holds: declare `type` on… |
 | `complexity` | `ref → complexity_pattern` | — |  | Dominant problem-type of the slice: crud / presentation / transformation / integration / cdc / concurrency / state-management. The implementation-complexity ax… |
 | `model_traits` | `array<ref → model_traits_item>` | — |  | Behavioural archetype(s) of the slice (Wirfs-Brock role stereotypes). |
@@ -342,6 +343,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `ui_action_ref` | `string` |  | Reference to a UI action (e.g. UAC001 or orders.UAC001). |
 | `ui_nav_ref` | `string` |  | Reference to a UI navigation element (e.g. UNV001 or orders.UNV001). |
 | `party_ref` | `string` |  | Reference to a party, system or organizational (e.g. PRT001 or billing.PRT001). A party is one node however many documents declare it: declarations fold on the… |
+| `party_kind` | `string` | `system`, `organization` | What a party is: system=a technical system, organization=a business unit or company. |
 | `department_ref` | `string` |  | Reference to an organizational department (e.g. DPT001 or billing.DPT001). |
 | `team_ref` | `string` |  | Reference to a team (e.g. TM001 or billing.TM001). |
 | `owner_ref` | `union` |  | Who drives an item: a person or role (ACT###) or a team (TM###). Distinct from `owned_by`, the unit accountable for the item and the file-level default; an ite… |
@@ -350,6 +352,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `service_ref` | `string` |  | Reference to an architecture service (e.g. SVC001 or shop.SVC001). |
 | `package_ref` | `string` |  | Reference to a third-party package by its typed id (e.g. PKG001 or platform.PKG001): a library the organization obtains from a supplier or a public registry ra… |
 | `process_ref` | `string` |  | Reference to a business process (e.g. PRC001 or orders.PRC001). |
+| `process_describes` | `string` | `system`, `organization` | What a process is a model of. system: how the modelled system runs the process; its activities name the operations the domain declares. organization: how the p… |
 | `question_ref` | `string` |  | Reference to a domain competency question (e.g. QN001 or billing.QN001). Questions are first-class entities representing knowledge requirements of a bounded co… |
 | `x_model_id` | `string` |  | Model identifier as JSON Schema x-extension (e.g. MDL001 or orders.MDL001). |
 | `service_kind` | `string` | `service`, `worker`, `api`, `webapp`, `cli`, `library` … (7) | Architectural component type: service=backend, worker=job processor, api=endpoint, webapp=frontend, cli=command-line, library=a library the organization builds… |
@@ -1042,7 +1045,7 @@ A system or organizational party. In the nested form it carries the bounded cont
 | `id` | `ref → party_ref` | ✓ |  | Stable party id (PRT###) - makes the party a first-class, referenceable graph node. MUST reconcile with the org-layer PRT### when the party is also modelled th… |
 | `name` | `string` | ✓ |  | Party name (unique within this architecture document). |
 | `version` | `ref → entity_version` | — |  | Party version for lifecycle tracking. |
-| `kind` | `string` | — | `system`, `organization` | Party type: system=technical system, organization=business unit or company. |
+| `kind` | `ref → party_kind` | — |  | Party type: system=technical system, organization=business unit or company. |
 | `contexts` | `array<ref → context>` | — |  | Bounded contexts whose services are components of this party (nested form). Optional: a party declared whole carries none, and its contexts are then derived fr… |
 | `description` | `string` | — |  | Human-readable description. |
 | `properties` | `ref → entity_properties` | — |  |  |
@@ -3235,7 +3238,7 @@ _Source: `schema/v2.8/design/story.schema.yaml` · root type `object`_
 
 #### `process`
 
-A business process: a named narrative of actor and operation collaboration. A process DESCRIBES the modelled system, so its activities point at operations the domain already declares. For behaviour someone intends but the model does not yet contain, use `use_case`.
+A business process: a named narrative of who does what, in which order. A process DESCRIBES something that exists, and `describes` says what. A process that describes the modelled system names, on each activity, the operation the domain already declares. A process that describes an organization states how its people work: lanes for its teams, what each activity takes and produces, the tools it us…
 
 **Required:** `id`, `title`
 
@@ -3245,24 +3248,58 @@ A business process: a named narrative of actor and operation collaboration. A pr
 | `title` | `string` | ✓ |  | Process title in imperative or actor-goal form. |
 | `processUri` | `string` | — |  | Optional URI to the process source (e.g. Jira, Linear, GitHub issue). |
 | `status` | `string` | — |  | Process status (e.g. draft, approved, implemented). |
+| `describes` | `ref → process_describes` | — |  | What this process is a model of: `system` or `organization`. Absent means the value its slice states in `layout.slices`, and `system` where the slice states no… |
+| `provenance` | `ref → provenance` | — |  | How sure the model is that the process runs as written, and on what evidence. Absent states nothing: it is not a claim that the process is fact. An open questi… |
 | `description` | `string` | — |  | Narrative description of this process's context and goal. |
 | `properties` | `ref → entity_properties` | — |  |  |
 | `tracker_ref` | `ref → tracker_ref` | — |  |  |
 | `initiated_by` | `array<ref → actor_ref>` | — |  | Optional list of actor refs that can initiate this process (human, system, or time). Used for Event Storming lane-start actor stickies. |
 | `activities` | `array<ref → process_activity>` | — |  | Process activities composing this process, listed in execution order. Each activity is an asynchronous phase containing synchronous steps. The main-path activi… |
-| `trigger` | `object` | — |  | Process start event. The process starts at the activity whose `entry_operation` or `steps` hold `operation`, the first listed one where several do, else at the… |
+| `trigger` | `ref → process_trigger` | — |  | Process start event, for a process with one start. The process starts at the activity whose `entry_operation` or `steps` hold `operation`, the first listed one… |
+| `triggers` | `array<ref → process_start>` | — |  | Alternative start events of this process. Each start leads to the activity its `to` names, and any one of them starts the process. Several starts may lead to t… |
 | `end_states` | `array<object>` | — |  | Process terminal states with their types. Where any end state of the process states `from`, the stated attachments are the whole end routing of the process: ea… |
-| `lanes` | `array<object>` | — |  | Swim lane assignments mapping actors to their operations within this process. |
+| `lanes` | `array<object>` | — |  | Swim lanes: who performs which part of this process. A lane names an actor (a role), a team, or both, the role and the team that staffs it, and lists the opera… |
 | `owned_by` | `ref → owned_by` | — |  | Process-level ownership override. |
 | `tags` | `ref → tags` | — |  |  |
 | `code_refs` | `ref → code_refs` | — |  |  |
-| `implementation` | `ref → implementation` | — |  | Whether the system runs this process yet. Absent means unclear. Not on user_story or use_case, which state intent and carry their own delivery state. |
+| `implementation` | `ref → implementation` | — |  | Whether the process is practised yet: for a process that describes the system, whether the system runs it; for one that describes an organization, whether the… |
 
 _Source: `schema/v2.8/design/story.schema.yaml#/$defs/process`_
 
+#### `process_trigger`
+
+The single start event of a process: how it is started, and by which operation or schedule. Its entry activity follows from `operation`, as the process's `trigger` describes.
+
+**Required:** `type`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `type` | `ref → process_trigger_type` | ✓ |  |  |
+| `operation` | `ref → operation_ref` | — |  | Triggering operation. A message or signal start names the operation that carries it. |
+| `schedule` | `string` | — |  | When a timer trigger fires (for timer type): an ISO 8601 date or date-time, an ISO 8601 duration, an ISO 8601 repeating interval, or a cron expression. |
+| `description` | `string` | — |  | Human-readable trigger description. |
+
+_Source: `schema/v2.8/design/story.schema.yaml#/$defs/process_trigger`_
+
+#### `process_start`
+
+One alternative start event of a process: how it is started and the activity it leads to. The start carries the same fields as a single `trigger` and also names its entry activity in `to`.
+
+**Required:** `type`, `to`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `type` | `ref → process_trigger_type` | ✓ |  |  |
+| `operation` | `ref → operation_ref` | — |  | Triggering operation. A message or signal start names the operation that carries it. The entry activity is `to`, whichever activity holds the operation. |
+| `schedule` | `string` | — |  | When a timer trigger fires (for timer type): an ISO 8601 date or date-time, an ISO 8601 duration, an ISO 8601 repeating interval, or a cron expression. |
+| `description` | `string` | — |  | Human-readable trigger description. |
+| `to` | `ref → process_activity_ref` | ✓ |  | The activity this start leads to: the `id` of an activity of this process, written as the activity writes it. Several starts may name the same activity. |
+
+_Source: `schema/v2.8/design/story.schema.yaml#/$defs/process_start`_
+
 #### `process_activity`
 
-An activity within a process. Entry point into the domain causal chain (produces/reacts_to). An activity names the operation it begins at once that operation is modelled, and that anchoring is what makes a process a description of the domain rather than a proposal about it.
+An activity within a process. In a process that describes the system, it is the entry point into the domain causal chain (produces/reacts_to): it names the operation it begins at once that operation is modelled, and that anchoring is what makes the process a description of the domain rather than a proposal about it. In a process that describes an organization, it is a piece of work people do: it…
 
 **Required:** `id`, `name`
 
@@ -3281,9 +3318,53 @@ An activity within a process. Entry point into the domain causal chain (produces
 | `next` | `array<object>` | — |  | Where this activity goes next, and why. Each entry names the following activity and may state the condition under which that branch is taken. A link between tw… |
 | `calls_subprocess` | `ref → process_ref` | — |  | Another process this activity runs as a subprocess. The called process keeps its own identity and its own activities; this activity is the point in the calling… |
 | `path_type` | `string` | — | `happy`, `error`, `compensation` | Process path classification: happy=expected flow, error=exception handling, compensation=rollback/undo. An activity that states none is on the main path, as `h… |
+| `inputs` | `array<ref → process_artifact>` | — |  | What this activity takes to do its work: a request, a document, a draft. |
+| `outputs` | `array<ref → process_artifact>` | — |  | What this activity produces: a document, a decision record, a specification. |
+| `tools` | `array<ref → process_tool>` | — |  | The tools people use to do this activity: an issue tracker, a design tool, a spreadsheet. |
+| `hands_over_to` | `array<ref → process_handover>` | — |  | Where this activity hands its work over, one entry per receiver. Towards another activity of this process, the lanes and the order already state the handover,… |
+| `provenance` | `ref → provenance` | — |  | How sure the model is that this activity happens as written, and on what evidence. Absent states nothing: it is not a claim that the activity is fact. An open… |
 | `tags` | `ref → tags` | — |  |  |
 
 _Source: `schema/v2.8/design/story.schema.yaml#/$defs/process_activity`_
+
+#### `process_artifact`
+
+Something an activity takes or produces, named as the source states it. A name alone is a complete statement for an artifact the model does not declare; `concept` names the concept it is, where the model declares one.
+
+**Required:** `name`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `name` | `ref → stated_name` | ✓ |  | The artifact as the source names it, for example "Specification draft". |
+| `concept` | `ref → concept_ref` | — |  | The concept this artifact is, where the model declares one. |
+
+_Source: `schema/v2.8/design/story.schema.yaml#/$defs/process_artifact`_
+
+#### `process_tool`
+
+A tool people use to do an activity, named as the source states it. A name alone is a complete statement for a tool the model does not declare; `party` names it where the model declares it as a system party.
+
+**Required:** `name`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `name` | `ref → stated_name` | ✓ |  | The tool as the source names it, for example "Jira". |
+| `party` | `ref → party_ref` | — |  | The party this tool is: a party of `kind: system`. |
+
+_Source: `schema/v2.8/design/story.schema.yaml#/$defs/process_tool`_
+
+#### `process_handover`
+
+One receiver of an activity's work. `activity` names an activity of the same process; `process` names another process the work goes on in; `team` names the team that receives it; `name` names a receiver as the source states it. An entry names at least one of them, and never an activity and another process together. Beside `activity`, `team` is the team of the receiving activity's lane.
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `activity` | `ref → process_activity_ref` | — |  | The receiving activity of this process, by the `id` it declares. |
+| `process` | `ref → process_ref` | — |  | The process the work goes on in. |
+| `team` | `ref → team_ref` | — |  | The team that receives the work. |
+| `name` | `ref → stated_name` | — |  | The receiver as the source names it, for one the model does not declare. |
+
+_Source: `schema/v2.8/design/story.schema.yaml#/$defs/process_handover`_
 
 #### `user_story`
 
@@ -3368,6 +3449,13 @@ Use case - a scenario-level requirement describing actor interaction with the sy
 | `code_refs` | `ref → code_refs` | — |  |  |
 
 _Source: `schema/v2.8/design/story.schema.yaml#/$defs/use_case`_
+
+#### Value definitions
+
+| Definition | Type | Values | Description |
+| --- | --- | --- | --- |
+| `process_trigger_type` | `string` | `message`, `timer`, `signal`, `manual`, `conditional` | BPMN-compatible start event type. |
+| `stated_name` | `string` |  | A name as the source states it, for something the model may not declare. It contains at least one non-space character and is never a typed id: write a declared… |
 
 ## Governance Plane
 

@@ -1,0 +1,9 @@
+version: "1.0.0"
+scope: delivery
+inquiries:
+  - id: delivery.INQ001
+    statement: Who approves the agreed specification?
+    category: organizational
+    status: open
+    affects:
+      process_activity_refs: [delivery.PA001]

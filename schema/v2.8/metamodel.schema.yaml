@@ -462,6 +462,12 @@ $defs:
       without an id folds on its name within its scope and the fold is reported as a guess; a scalar
       two declarations state differently is reported and never resolved.
 
+  party_kind:
+    type: string
+    enum: [system, organization]
+    x-vocabulary-distinct: "Names what a party IS, which is a different question from what a process is a model of."
+    description: "What a party is: system=a technical system, organization=a business unit or company."
+
   department_ref:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?DPT\\d{3}$"
@@ -549,6 +555,21 @@ $defs:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?PRC\\d{3}$"
     description: "Reference to a business process (e.g. PRC001 or orders.PRC001)."
+
+  process_describes:
+    type: string
+    enum: [system, organization]
+    x-vocabulary-distinct: "Names what a process is a model of, which is a different question from what a region's subject matter is."
+    description: >
+      What a process is a model of.
+      system: how the modelled system runs the process; its activities name the operations the
+      domain declares.
+      organization: how the people of an organization do the work, with the teams that do it,
+      what each activity takes and produces, the tools it uses and where the work is handed over;
+      its activities need no operation.
+      Distinct from `modeling_space`, which names what a region's subject matter is: a process
+      that describes an organization may be about the business the product serves or about
+      producing the product.
 
   question_ref:
     type: string

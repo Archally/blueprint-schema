@@ -324,6 +324,44 @@ operations:
     code_refs:
       - path: "src/Core/Domain/Order/Query/GetOrderProductsForViewing.php"
         role: implementation
+  checkOrderCart:
+    id: orders.QRY010
+    kind: query
+    name: CheckOrderCart
+    dispatch: inprocess
+    description: Read the cart checks applicable to the entry path; storefront checks
+      cover products and enabled address countries.
+    governed_by:
+      - rule: orders.SR001
+      - rule: orders.VR001
+    implementation: as-is
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+    code_refs:
+      - path: controllers/front/OrderController.php
+        role: implementation
+        description: "Inferred read phase: lines 280-295 check products and enabled
+          countries before checkout."
+      - path: classes/PaymentModule.php
+        role: implementation
+        description: "Inferred read phase of validateOrder: cart already ordered or
+          payment module inactive refuses creation."
+  reviewCheckout:
+    id: orders.QRY011
+    kind: query
+    name: ReviewCheckout
+    dispatch: inprocess
+    description: Read the cart summary before confirming the storefront order.
+    implementation: as-is
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+    code_refs:
+      - path: controllers/front/OrderController.php
+        role: implementation
+        description: Inferred storefront read phase before the final confirmation
+          described by orders.PRC001.
 
 errors:
   orderNotFound:

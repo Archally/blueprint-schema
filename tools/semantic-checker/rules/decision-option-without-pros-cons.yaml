@@ -1,0 +1,20 @@
+engineVersion: "0.1"
+rules:
+  - id: decision-option-without-pros-cons
+    severity: warn
+    description: >-
+      A current decision with stated options needs explicit advantages and disadvantages for
+      every option. String options and options without at least one nonblank string in each
+      of pros and cons are incomplete. Report once per decision, naming incomplete option
+      model-order letters (A through Z, AA, AB) and names. Decisions without options are silent. Deprecated and superseded
+      decisions, and decisions with a nonempty links.superseded_by reference, are not examined:
+      their analysis is history. Choices hidden in prose still need manual review. This warning
+      does not change schema validity or invent missing analysis. Override per project through
+      .blueprint-lint.yaml.
+    find:
+      entity_type: Decision
+    check:
+      custom:
+        module: ./decision-option-without-pros-cons.mjs
+        export: decisionOptionWithoutProsCons
+    message: 'Decision {subject} "{subject_name}": options {incomplete_options} lack nonblank pros or cons. Record each option as a named rationale.options object with at least one nonblank string in both pros and cons; do not invent analysis.'

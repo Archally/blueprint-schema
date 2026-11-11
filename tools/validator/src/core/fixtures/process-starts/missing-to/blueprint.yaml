@@ -1,0 +1,5 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Service Release
+description: >-
+  A start that names no activity.

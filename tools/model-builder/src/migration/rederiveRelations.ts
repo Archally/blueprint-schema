@@ -25,9 +25,9 @@
  * So a migration that changes nothing the derivation reads changes no relation, and a relationship a
  * migration states by hand is never overwritten by the derivation of an unrelated field.
  *
- * A process's steps (`operationsDetail`) and order (`_next`, `_start`, `_ends`) are derived from its
+ * A process's steps (`operationsDetail`) and order (`_next`, `_start`, `_starts`, `_ends`) are derived from its
  * activities, and the relation pass draws its `process_orders_operation` edges from those steps. A
- * process whose activities, operations, trigger or end states the migration changed, and a process
+ * process whose activities, operations, trigger, triggers or end states the migration changed, and a process
  * the migration added, is derived again with the extractor's own function, `deriveProcess`, before
  * the relation pass runs, so its steps and edges are those of a process written in that shape. A
  * process the migration did not change is left as built. The order is read on the model's schema
@@ -127,6 +127,7 @@ function processSourceOf(process: Entity) {
     activities: activitiesAsWritten(data.activities),
     operations: data.operations,
     trigger: data.trigger,
+    triggers: data.triggers,
     end_states: data.end_states,
   };
 }
@@ -164,10 +165,12 @@ function syncProcesses(model: BlueprintModel, before: DerivedState): void {
     const { operationsDetail, order } = deriveProcess(source, before.line);
     data.operationsDetail = operationsDetail;
     delete data._start;
+    delete data._starts;
     delete data._ends;
     if (order) {
       data.activities = order.activities;
       if (order.start) data._start = order.start;
+      if (order.starts) data._starts = order.starts;
       if (order.ends) data._ends = order.ends;
     } else if (source.activities !== undefined) {
       data.activities = source.activities;

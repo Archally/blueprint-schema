@@ -1,0 +1,11 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Product Company
+description: >-
+  An inquiry names an activity without the scope prefix its declaration carries.
+layout:
+  mode: slices
+  slices:
+    - name: delivery
+      description: How the product, UX and development teams take an item from request to build.
+      describes: organization

@@ -1,0 +1,17 @@
+engineVersion: "0.1"
+rules:
+  - id: process-starts
+    severity: error
+    description: >-
+      Each alternative start must name exactly one activity of its own process by its exact
+      authored id. Missing, malformed, undeclared, foreign and ambiguous targets are reported
+      with the start identity and source path. Plural starts never inherit a fallback target.
+      Omitted and legacy singular triggers retain their existing behavior. This rule reads the
+      plural attachments derived on the v2.8 line; schema validation separately checks shape.
+    find:
+      entity_type: Process
+    check:
+      custom:
+        module: ./process-starts.mjs
+        export: processStarts
+    message: 'Process "{displayId}" has {count} invalid alternative start declaration(s): {starts}.'

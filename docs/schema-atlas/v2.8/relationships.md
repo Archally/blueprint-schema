@@ -90,7 +90,7 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub â€
 
 | Schema file | Inbound refs |
 | --- | --- |
-| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 830 |
+| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 845 |
 | [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | 1 |
 | [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | 1 |
 | [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | 1 |
@@ -121,9 +121,9 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub â€
 | `blueprint.schema.yaml` | `governance/roadmap.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `governance/test-cases.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `governance/value-stream.schema.yaml` | 1 |
-| `blueprint.schema.yaml` | `metamodel.schema.yaml` | 19 |
+| `blueprint.schema.yaml` | `metamodel.schema.yaml` | 20 |
 | `blueprint.schema.yaml` | `migration.schema.yaml` | 1 |
-| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 81 |
+| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 82 |
 | `design/concepts.schema.yaml` | `metamodel.schema.yaml` | 44 |
 | `design/domain.schema.yaml` | `metamodel.schema.yaml` | 56 |
 | `design/dynamics.schema.yaml` | `metamodel.schema.yaml` | 29 |
@@ -132,11 +132,11 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub â€
 | `design/models.schema.yaml` | `metamodel.schema.yaml` | 14 |
 | `design/quality.schema.yaml` | `metamodel.schema.yaml` | 88 |
 | `design/rules.schema.yaml` | `metamodel.schema.yaml` | 26 |
-| `design/story.schema.yaml` | `metamodel.schema.yaml` | 66 |
+| `design/story.schema.yaml` | `metamodel.schema.yaml` | 78 |
 | `governance/capability.schema.yaml` | `metamodel.schema.yaml` | 23 |
 | `governance/decisions.schema.yaml` | `metamodel.schema.yaml` | 50 |
 | `governance/leverage.schema.yaml` | `metamodel.schema.yaml` | 29 |
-| `governance/motivation.schema.yaml` | `metamodel.schema.yaml` | 111 |
+| `governance/motivation.schema.yaml` | `metamodel.schema.yaml` | 112 |
 | `governance/organization.schema.yaml` | `metamodel.schema.yaml` | 21 |
 | `governance/roadmap.schema.yaml` | `metamodel.schema.yaml` | 38 |
 | `governance/test-cases.schema.yaml` | `metamodel.schema.yaml` | 40 |

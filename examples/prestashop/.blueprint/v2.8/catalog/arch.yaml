@@ -102,3 +102,4 @@ contexts:
           - path: src/Core/Domain/Product/
             role: implementation
             description: Source for this logical module within the PrestaShop PHP monolith; verified in the cited develop checkout a27e912eef9.
+        resource_refs: [prestashop.IR004, prestashop.IR003]

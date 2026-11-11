@@ -341,6 +341,32 @@ actors:
       - "Process refunds and cancellations"
       - "Investigate order processing errors"
       - "Escalate technical issues to engineering"
+  - id: orders.ACT005
+    name: Order application
+    type: system
+    description: The front office and back office pass a checked cart to order creation.
+    implementation: as-is
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+    code_refs:
+      - path: controllers/front/OrderController.php
+        role: implementation
+        description: Actor inferred from the order-placement responsibilities already
+          cited by orders.PRC001.
+  - id: orders.ACT006
+    name: Payment module
+    type: system
+    description: Validates the cart, writes orders and applies their initial payment state.
+    implementation: as-is
+    provenance:
+      discovery_stage: exploring
+      certainty: probable
+    code_refs:
+      - path: classes/PaymentModule.php
+        role: implementation
+        description: Actor inferred from the order-placement responsibilities already
+          cited by orders.PRC001.
 
 enumerations:
   - id: orders.EN001

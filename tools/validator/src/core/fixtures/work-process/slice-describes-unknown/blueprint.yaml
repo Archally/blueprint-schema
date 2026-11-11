@@ -1,0 +1,10 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Product Company
+description: >-
+  A slice with an undefined describes value.
+layout:
+  mode: slices
+  slices:
+    - name: delivery
+      describes: people

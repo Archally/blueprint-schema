@@ -521,9 +521,48 @@ changes:
       target: orders.PRC001
       property: activities
       value:
+        - id: orders.PA013
+          name: Check cart for order creation
+          description: Apply the entry path's cart checks; storefront checks include product availability and
+            enabled countries.
+          entry_operation: orders.QRY010
+          gateway: xor
+          next:
+            - to: orders.PA014
+              condition: The storefront checks pass and the shopper is placing the order.
+            - to: orders.PA015
+              condition: A back-office employee is preparing the order.
+          _next:
+            - to: orders.PA014
+              condition: The storefront checks pass and the shopper is placing the order.
+              origin: stated
+            - to: orders.PA015
+              condition: A back-office employee is preparing the order.
+              origin: stated
+        - id: orders.PA014
+          name: Review and confirm checkout
+          description: The shopper reviews the summary and confirms the storefront order.
+          entry_operation: orders.QRY011
+          next:
+            - to: orders.PA001
+          _next:
+            - to: orders.PA001
+              origin: stated
+        - id: orders.PA015
+          name: Review back-office cart
+          description: The employee loads the cart's totals, addresses and carrier for order creation.
+          entry_operation: checkout.QRY002
+          next:
+            - to: orders.PA001
+          _next:
+            - to: orders.PA001
+              origin: stated
         - id: orders.PA001
-          name: Submit order
+          name: Create orders
+          description: Validate the submitted cart and write one order per package, with stock and payment effects.
           entry_operation: orders.CMD001
+          join:
+            mode: xor
           steps:
             - operation_ref: orders.CMD001
               note: Synchronously validate veto hooks, payment, stock and order invariants; stage order writes.
@@ -541,16 +580,89 @@ changes:
               note: Run only explicitly eligible notification hooks after the request.
             - operation_ref: orders.CMD045
               note: Retry, dead-letter and reconcile unresolved work with original keys.
+          next:
+            - to: orders.PA016
+              condition: Order creation succeeded and the module named an initial state.
+          _next:
+            - to: orders.PA016
+              condition: Order creation succeeded and the module named an initial state.
+              origin: stated
+        - id: orders.PA016
+          name: Apply the initial order state
+          description: Apply the module's state, replaced by Payment error when a validated payment amount
+            differs from the cart total.
+          entry_operation: orders.CMD004
+          steps:
+            - operation_ref: orders.CMD004
+              note: Apply the initial state, including Payment error on the documented amount mismatch.
+            - operation_ref: orders.EVT005
+              note: Publish the state transition.
       old_value:
+        - id: orders.PA013
+          name: Check cart for order creation
+          description: Apply the entry path's cart checks; storefront checks include product availability and
+            enabled countries.
+          entry_operation: orders.QRY010
+          gateway: xor
+          next:
+            - to: orders.PA014
+              condition: The storefront checks pass and the shopper is placing the order.
+            - to: orders.PA015
+              condition: A back-office employee is preparing the order.
+          _next:
+            - to: orders.PA014
+              condition: The storefront checks pass and the shopper is placing the order.
+              origin: stated
+            - to: orders.PA015
+              condition: A back-office employee is preparing the order.
+              origin: stated
+        - id: orders.PA014
+          name: Review and confirm checkout
+          description: The shopper reviews the summary and confirms the storefront order.
+          entry_operation: orders.QRY011
+          next:
+            - to: orders.PA001
+          _next:
+            - to: orders.PA001
+              origin: stated
+        - id: orders.PA015
+          name: Review back-office cart
+          description: The employee loads the cart's totals, addresses and carrier for order creation.
+          entry_operation: checkout.QRY002
+          next:
+            - to: orders.PA001
+          _next:
+            - to: orders.PA001
+              origin: stated
         - id: orders.PA001
-          name: Submit order
+          name: Create orders
+          description: Validate the submitted cart and write one order per package, with stock and payment effects.
           entry_operation: orders.CMD001
+          join:
+            mode: xor
           steps:
             - operation_ref: orders.CMD001
-              note: PaymentModule::validateOrder checks the cart, creates one order per package and records the
-                payment when the status counts as validated.
+              note: Refuse an already ordered cart or inactive module; otherwise write orders, decrease stock and
+                record payment for a validated status.
             - operation_ref: orders.EVT001
               note: actionValidateOrder fires once the orders are written.
+          next:
+            - to: orders.PA016
+              condition: Order creation succeeded and the module named an initial state.
+          _next:
+            - to: orders.PA016
+              condition: Order creation succeeded and the module named an initial state.
+              origin: stated
+        - id: orders.PA016
+          name: Apply the initial order state
+          description: Apply the module's state, replaced by Payment error when a validated payment amount
+            differs from the cart total.
+          entry_operation: orders.CMD004
+          steps:
+            - operation_ref: orders.CMD004
+              note: Apply the initial state, including Payment error on the documented amount mismatch.
+            - operation_ref: orders.EVT005
+              note: Publish the state transition.
   relationships:
     - kind: add
       subject: orders.RSK005

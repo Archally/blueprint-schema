@@ -817,3 +817,114 @@ describe('a v2.8 process runs its activities in listed order unless it states ot
     expect(nextOf(model('2.8.73'))).toEqual({ SA001: [order('SA002')], SA002: undefined });
   });
 });
+
+describe('alternative process start attachments', () => {
+  const activities = [
+    { id: 'PA001', entry_operation: 'orders.CMD001', next: [{ to: 'PA003' }] },
+    { id: 'PA002', entry_operation: 'orders.CMD002', next: [{ to: 'PA003' }] },
+    { id: 'PA003', entry_operation: 'orders.CMD003', join: { mode: 'xor' } },
+  ];
+  function extracted(fields: Record<string, unknown>, line: 'v2.8' | 'v2.7' | 'v2.6' = 'v2.8') {
+    const document = {
+      filePath: 'orders/story.yaml',
+      scope: 'orders',
+      data: { processes: [{ id: 'PRC001', title: 'Alternative entries', activities, ...fields }] },
+    } as ParsedBlueprintDocument;
+    return extractStory(document, line)[0]!.data as Record<string, unknown>;
+  }
+
+  it('preserves distinct ordered starts and their shared continuation through node serialization', () => {
+    const triggers = [
+      { type: 'manual', to: 'PA001', description: 'Backend first' },
+      { type: 'timer', to: 'PA002', schedule: 'P1D' },
+    ];
+    const data = JSON.parse(JSON.stringify(extracted({ triggers })));
+    expect(data.triggers).toEqual(triggers);
+    expect(data._start).toBeUndefined();
+    expect(data._starts).toEqual(triggers.map((trigger, position) => ({
+      id: `start-${position + 1}`,
+      to: trigger.to,
+      origin: 'stated',
+      resolved: true,
+      trigger,
+    })));
+    expect(data.activities.map((activity: Record<string, unknown>) => activity._next)).toEqual([
+      [{ to: 'PA003', origin: 'stated' }],
+      [{ to: 'PA003', origin: 'stated' }],
+      undefined,
+    ]);
+    expect(data.activities[2].join).toEqual({ mode: 'xor' });
+  });
+
+  it('keeps two different starts at a shared target with different identities', () => {
+    const data = extracted({ triggers: [{ type: 'manual', to: 'PA001' }, { type: 'timer', to: 'PA001' }] });
+    expect(data._starts).toMatchObject([
+      { id: 'start-1', to: 'PA001', resolved: true },
+      { id: 'start-2', to: 'PA001', resolved: true },
+    ]);
+  });
+
+  it.each([
+    ['missing', { type: 'manual' }],
+    ['malformed', { type: 'manual', to: 42 }],
+    ['foreign', { type: 'manual', to: 'PA099' }],
+  ])('keeps a %s target unresolved without falling back', (_name, trigger) => {
+    const data = extracted({ triggers: [trigger] });
+    expect(data._starts).toMatchObject([{ id: 'start-1', origin: 'stated', resolved: false }]);
+    expect(data._start).toBeUndefined();
+  });
+
+  it('does not choose either activity when an exact target is declared twice', () => {
+    const data = extracted({ activities: [activities[0], activities[0]], triggers: [{ type: 'manual', to: 'PA001' }] });
+    expect(data._starts).toMatchObject([{ to: 'PA001', resolved: false }]);
+  });
+
+  it('does not chain plural entries when no successors are stated', () => {
+    const data = extracted({
+      activities: [{ id: 'PA001' }, { id: 'PA002' }],
+      triggers: [{ type: 'manual', to: 'PA001' }, { type: 'timer', to: 'PA002' }],
+    });
+    expect(data.activities).toEqual([{ id: 'PA001' }, { id: 'PA002' }]);
+  });
+
+  it('allows an explicit error-path entry and keeps a stated cycle', () => {
+    const data = extracted({
+      activities: [{ id: 'PA001', path_type: 'error', next: [{ to: 'PA001' }] }],
+      triggers: [{ type: 'signal', to: 'PA001' }],
+    });
+    expect(data._starts).toMatchObject([{ to: 'PA001', resolved: true }]);
+    expect(data.activities).toMatchObject([{ _next: [{ to: 'PA001', origin: 'stated' }] }]);
+  });
+
+  it('keeps a target unresolved when no activities exist', () => {
+    const data = extracted({ activities: [], triggers: [{ type: 'manual', to: 'PA001' }] });
+    expect(data._starts).toMatchObject([{ to: 'PA001', resolved: false }]);
+    expect(data._start).toBeUndefined();
+  });
+
+  it('normalizes a legacy trigger while retaining its singleton adapter', () => {
+    const trigger = { type: 'message', operation: 'orders.CMD002' };
+    const data = extracted({ trigger });
+    expect(data._start).toEqual({ to: 'PA002', origin: 'trigger-operation' });
+    expect(data._starts).toEqual([{ id: 'start-1', to: 'PA002', origin: 'trigger-operation', resolved: true, trigger }]);
+  });
+
+  it('retains the implied singleton when no trigger is stated', () => {
+    const data = extracted({});
+    expect(data._starts).toEqual([{ id: 'start-1', to: 'PA001', origin: 'first-listed', resolved: true }]);
+  });
+
+  it('has no start where neither a main activity nor a trigger is stated', () => {
+    const data = extracted({ activities: [{ id: 'PA001', path_type: 'error' }] });
+    expect(data._starts).toEqual([]);
+    expect(data._start).toBeUndefined();
+  });
+
+  it.each(['v2.6', 'v2.7'] as const)('derives no start on %s and still preserves nested legacy metadata', (line) => {
+    const trigger = { type: 'manual' };
+    const data = extracted({ process: { trigger } }, line);
+    expect(data.trigger).toEqual(trigger);
+    expect(data._start).toBeUndefined();
+    expect(data._starts).toBeUndefined();
+  });
+});

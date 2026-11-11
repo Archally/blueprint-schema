@@ -61,13 +61,23 @@ $defs:
   process:
     type: object
     description: >
-      A business process: a named narrative of actor and operation collaboration. A process
-      DESCRIBES the modelled system, so its activities point at operations the domain already
-      declares. For behaviour someone intends but the model does not yet contain, use `use_case`.
+      A business process: a named narrative of who does what, in which order. A process DESCRIBES
+      something that exists, and `describes` says what. A process that describes the modelled
+      system names, on each activity, the operation the domain already declares. A process that
+      describes an organization states how its people work: lanes for its teams, what each
+      activity takes and produces, the tools it uses and where the work is handed over; its
+      activities need no operation. For behaviour someone intends but the model does not yet
+      contain, use `use_case`.
     additionalProperties: false
     required:
       - id
       - title
+    # One start form or the other, never both. Reported at `/trigger`, the single start that the
+    # `triggers` list replaces and the key to remove.
+    dependentSchemas:
+      triggers:
+        properties:
+          trigger: false
     properties:
       id:
         $ref: "../metamodel.schema.yaml#/$defs/process_ref"
@@ -81,6 +91,17 @@ $defs:
       status:
         type: string
         description: "Process status (e.g. draft, approved, implemented)."
+      describes:
+        $ref: "../metamodel.schema.yaml#/$defs/process_describes"
+        description: >
+          What this process is a model of: `system` or `organization`. Absent means the value its
+          slice states in `layout.slices`, and `system` where the slice states none.
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          How sure the model is that the process runs as written, and on what evidence. Absent
+          states nothing: it is not a claim that the process is fact. An open question about the
+          process is an inquiry whose `affects` names it.
       description:
         type: string
         description: "Narrative description of this process's context and goal."
@@ -105,28 +126,26 @@ $defs:
         items:
           $ref: "#/$defs/process_activity"
       trigger:
-        type: object
+        $ref: "#/$defs/process_trigger"
         description: >
-          Process start event. The process starts at the activity whose `entry_operation` or
-          `steps` hold `operation`, the first listed one where several do, else at the first listed
-          main-path activity. In a process none of whose main-path activities states a main-path
-          successor, it starts at the first listed main-path activity.
-        required: [type]
-        additionalProperties: false
-        properties:
-          type:
-            type: string
-            enum: [message, timer, signal, manual, conditional]
-            description: "BPMN-compatible start event type."
-          operation:
-            $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
-            description: "Triggering operation (required for message/signal types)."
-          schedule:
-            type: string
-            description: "When a timer trigger fires (for timer type): an ISO 8601 date or date-time, an ISO 8601 duration, an ISO 8601 repeating interval, or a cron expression."
-          description:
-            type: string
-            description: "Human-readable trigger description."
+          Process start event, for a process with one start. The process starts at the activity
+          whose `entry_operation` or `steps` hold `operation`, the first listed one where several
+          do, else at the first listed main-path activity. In a process none of whose main-path
+          activities states a main-path successor, it starts at the first listed main-path
+          activity. A process with several alternative starts states `triggers` instead; a process
+          states one of the two, never both.
+      triggers:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        description: >
+          Alternative start events of this process. Each start leads to the activity its `to`
+          names, and any one of them starts the process. Several starts may lead to the same
+          activity. Where starts lead to different activities, those activities state their own
+          successors (`next`, with `join` where routes meet); starts are never chained to one
+          another by list order. A process states `triggers` or `trigger`, never both.
+        items:
+          $ref: "#/$defs/process_start"
       end_states:
         type: array
         description: >
@@ -167,20 +186,39 @@ $defs:
                 $ref: "../metamodel.schema.yaml#/$defs/process_activity_ref"
       lanes:
         type: array
-        description: "Swim lane assignments mapping actors to their operations within this process."
+        description: >
+          Swim lanes: who performs which part of this process. A lane names an actor (a role), a
+          team, or both, the role and the team that staffs it, and lists the operations and the
+          activities placed in it.
         items:
           type: object
-          required: [actor]
           additionalProperties: false
+          anyOf:
+            - required: [actor]
+            - required: [team]
           properties:
             actor:
               $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
-              description: "Actor responsible for operations in this lane."
+              description: "The actor (a role) who performs the work in this lane."
+            team:
+              $ref: "../metamodel.schema.yaml#/$defs/team_ref"
+              description: >
+                The team that performs the work in this lane. Beside `actor`, the team that staffs
+                that role.
             operations:
               type: array
               items:
                 $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
-              description: "Operations assigned to this actor's lane."
+              description: "Operations assigned to this lane."
+            activities:
+              type: array
+              uniqueItems: true
+              items:
+                $ref: "../metamodel.schema.yaml#/$defs/process_activity_ref"
+              description: >
+                Activities of this process placed in this lane, each the `id` the activity
+                declares. It places an activity that names no operation, which is how the work
+                of an organization is usually written.
       owned_by:
         $ref: "../metamodel.schema.yaml#/$defs/owned_by"
         description: "Process-level ownership override."
@@ -191,14 +229,73 @@ $defs:
 
       implementation:
         $ref: "../metamodel.schema.yaml#/$defs/implementation"
-        description: "Whether the system runs this process yet. Absent means unclear. Not on user_story or use_case, which state intent and carry their own delivery state."
+        description: >
+          Whether the process is practised yet: for a process that describes the system, whether
+          the system runs it; for one that describes an organization, whether the organization
+          works this way. Absent means unclear. Not on user_story or use_case, which state intent
+          and carry their own delivery state.
+
+  process_trigger_type:
+    type: string
+    enum: [message, timer, signal, manual, conditional]
+    description: "BPMN-compatible start event type."
+
+  process_trigger:
+    type: object
+    description: >
+      The single start event of a process: how it is started, and by which operation or schedule.
+      Its entry activity follows from `operation`, as the process's `trigger` describes.
+    required: [type]
+    additionalProperties: false
+    properties:
+      type:
+        $ref: "#/$defs/process_trigger_type"
+      operation:
+        $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Triggering operation. A message or signal start names the operation that carries it."
+      schedule:
+        type: string
+        description: "When a timer trigger fires (for timer type): an ISO 8601 date or date-time, an ISO 8601 duration, an ISO 8601 repeating interval, or a cron expression."
+      description:
+        type: string
+        description: "Human-readable trigger description."
+
+  process_start:
+    type: object
+    description: >
+      One alternative start event of a process: how it is started and the activity it leads to.
+      The start carries the same fields as a single `trigger` and also names its entry activity in
+      `to`.
+    required: [type, to]
+    additionalProperties: false
+    properties:
+      type:
+        $ref: "#/$defs/process_trigger_type"
+      operation:
+        $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: "Triggering operation. A message or signal start names the operation that carries it. The entry activity is `to`, whichever activity holds the operation."
+      schedule:
+        type: string
+        description: "When a timer trigger fires (for timer type): an ISO 8601 date or date-time, an ISO 8601 duration, an ISO 8601 repeating interval, or a cron expression."
+      description:
+        type: string
+        description: "Human-readable trigger description."
+      to:
+        $ref: "../metamodel.schema.yaml#/$defs/process_activity_ref"
+        description: >
+          The activity this start leads to: the `id` of an activity of this process, written as the
+          activity writes it. Several starts may name the same activity.
+
   process_activity:
     type: object
     description: >
-      An activity within a process. Entry point into the domain causal chain
-      (produces/reacts_to). An activity names the operation it begins at once that operation is
-      modelled, and that anchoring is what makes a process a description of the domain rather
-      than a proposal about it.
+      An activity within a process. In a process that describes the system, it is the entry
+      point into the domain causal chain (produces/reacts_to): it names the operation it begins
+      at once that operation is modelled, and that anchoring is what makes the process a
+      description of the domain rather than a proposal about it. In a process that describes an
+      organization, it is a piece of work people do: it states what it takes and produces, the
+      tools it uses and where it hands the work over, and names an operation only where the
+      system takes part.
     additionalProperties: false
     required: [id, name]
     properties:
@@ -321,8 +418,116 @@ $defs:
         type: string
         enum: [happy, error, compensation]
         description: "Process path classification: happy=expected flow, error=exception handling, compensation=rollback/undo. An activity that states none is on the main path, as `happy`."
+      inputs:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "#/$defs/process_artifact"
+        description: "What this activity takes to do its work: a request, a document, a draft."
+      outputs:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "#/$defs/process_artifact"
+        description: "What this activity produces: a document, a decision record, a specification."
+      tools:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "#/$defs/process_tool"
+        description: "The tools people use to do this activity: an issue tracker, a design tool, a spreadsheet."
+      hands_over_to:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items:
+          $ref: "#/$defs/process_handover"
+        description: >
+          Where this activity hands its work over, one entry per receiver. Towards another
+          activity of this process, the lanes and the order already state the handover, and an
+          entry repeats one of them so the YAML shows it; where a gateway follows, an entry names
+          the activity its branch leads to. Towards work outside the process, an entry names the
+          receiving process, team or receiver.
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          How sure the model is that this activity happens as written, and on what evidence.
+          Absent states nothing: it is not a claim that the activity is fact. An open question
+          about the activity is an inquiry whose `affects` names it.
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
+
+  stated_name:
+    type: string
+    pattern: "\\S"
+    not:
+      pattern: "^([a-z][a-z0-9-]*\\.)?[A-Z]{1,4}\\d{3,}$"
+    description: >
+      A name as the source states it, for something the model may not declare. It contains at
+      least one non-space character and is never a typed id: write a declared element as its
+      reference key instead.
+
+  process_artifact:
+    type: object
+    description: >
+      Something an activity takes or produces, named as the source states it. A name alone is a
+      complete statement for an artifact the model does not declare; `concept` names the concept
+      it is, where the model declares one.
+    additionalProperties: false
+    required: [name]
+    properties:
+      name:
+        $ref: "#/$defs/stated_name"
+        description: "The artifact as the source names it, for example \"Specification draft\"."
+      concept:
+        $ref: "../metamodel.schema.yaml#/$defs/concept_ref"
+        description: "The concept this artifact is, where the model declares one."
+
+  process_tool:
+    type: object
+    description: >
+      A tool people use to do an activity, named as the source states it. A name alone is a
+      complete statement for a tool the model does not declare; `party` names it where the model
+      declares it as a system party.
+    additionalProperties: false
+    required: [name]
+    properties:
+      name:
+        $ref: "#/$defs/stated_name"
+        description: "The tool as the source names it, for example \"Jira\"."
+      party:
+        $ref: "../metamodel.schema.yaml#/$defs/party_ref"
+        description: "The party this tool is: a party of `kind: system`."
+
+  process_handover:
+    type: object
+    description: >
+      One receiver of an activity's work. `activity` names an activity of the same process;
+      `process` names another process the work goes on in; `team` names the team that receives
+      it; `name` names a receiver as the source states it. An entry names at least one of them,
+      and never an activity and another process together. Beside `activity`, `team` is the team
+      of the receiving activity's lane.
+    additionalProperties: false
+    anyOf:
+      - required: [activity]
+      - required: [process]
+      - required: [team]
+      - required: [name]
+    not:
+      required: [activity, process]
+    properties:
+      activity:
+        $ref: "../metamodel.schema.yaml#/$defs/process_activity_ref"
+        description: "The receiving activity of this process, by the `id` it declares."
+      process:
+        $ref: "../metamodel.schema.yaml#/$defs/process_ref"
+        description: "The process the work goes on in."
+      team:
+        $ref: "../metamodel.schema.yaml#/$defs/team_ref"
+        description: "The team that receives the work."
+      name:
+        $ref: "#/$defs/stated_name"
+        description: "The receiver as the source names it, for one the model does not declare."
 
   # ---------------------------------------------------------------------------
   # User Story (v2.5)

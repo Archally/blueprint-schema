@@ -96,9 +96,11 @@ const INDEX = /^\[\d+\]$/;
 /**
  * The space a declaration is unique in, as the key the duplicate pass indexes it by.
  *
- * - A process or story activity is unique within its parent. Every reference the schema admits to
- *   one is written on an activity of the same parent, and every consumer resolves it there, so the
- *   same activity id under two parents names two activities.
+ * - A process or story activity is unique within its parent. A reference to one written inside a
+ *   process names an activity of the same parent, and every consumer resolves it there, so the same
+ *   activity id under two parents names two activities. A reference written outside any process (an
+ *   inquiry's `affects.process_activity_refs`) resolves by its exact string across the model, like
+ *   any other reference, and names one activity only where one parent declares that id.
  * - A bare concept attribute is unique within its bounded context on a line that says so
  *   (`deriveIdSpaces`); the context is the declaring document's `scope:`, else its folder.
  * - Every other id is unique across the model, compared as declared, so a scope prefix partitions

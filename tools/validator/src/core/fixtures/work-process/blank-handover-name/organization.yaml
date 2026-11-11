@@ -1,0 +1,11 @@
+version: "1.0.0"
+parties:
+  - id: PRT001
+    name: Product Company
+    teams:
+      - id: TM001
+        name: Product Team
+      - id: TM002
+        name: UX Team
+      - id: TM003
+        name: Development Team

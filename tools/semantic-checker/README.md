@@ -63,6 +63,7 @@ npm run check -- <blueprint-dir> --config .blueprint-lint.yaml
 | `goal-requires-cycle` | warn | reports each cyclic group of two or more goals connected by `requires`, with sorted goal ids and one deterministic cycle witness; contribution and mixed-kind loops do not count. Mutual necessity is legal and implies neither sufficiency nor temporal order |
 | `undescribed-event` | warn | every event Operation carries prose (`description` \| `statement` \| `summary`) — catches the asymmetric `one_of` pair, where only the happy-path half is described |
 | `decision-asserted-without-evidence` | warn | every Decision marked `certainty: confirmed` cites `evidence[]` — an evidentiary claim with no source. Speculative/probable decisions are exempt by design |
+| `decision-option-without-pros-cons` | warn | reports a current decision whose stated options lack at least one nonblank pro and one nonblank con each, once per decision, naming the incomplete options; decisions without options, deprecated and superseded decisions are silent |
 | `evidence-source-credentials` | warn | reports absolute evidence source URLs containing a username or password in `evidence` or `provenance.evidence`, including test cases; one finding per entity names all affected item paths without repeating the URLs or credentials |
 | `user-story-use-case-back-reference` | warn |
 | `user-story-without-acceptance-criteria` | info | every UserStory has `acceptance_criteria` — without them nothing can be derived into a test case |
@@ -143,6 +144,7 @@ Severities: `error` (fails), `warn`, `info`, `off`.
 | `process-end-state-unreachable` | warn | every end state a process declares is produced by an operation one of its own activities runs |
 | `process-end-state-unattached` | info | reports each process end state with no activity attached through `from` or the end convention; a `from` id attaches only when it names exactly one activity of that process. One finding per process; silent before v2.8 and for processes without activities |
 | `process-listed-order-against-causality` | warn | reports a v2.8 process running in listed order when a main-path activity reacts to an event produced only later in the list, or adjacent main-path activities react to the same event; one finding per process. State `next` links or correct the listed order |
+| `process-starts` | error | each alternative start in a process's `triggers` names exactly one activity of its own process by its exact id; a missing, malformed, undeclared, foreign or ambiguous target is reported with the start and its source path. A single `trigger` keeps its own start routing |
 | `sent-event-without-receiver` | warn | every integration event a contract `send`s is `receive`d by at least one other contract |
 | `use-case-step-action-operation-disagrees` | warn | a use-case step naming both a UI action and an operation agrees with that action's `triggers_operations` |
 | `use-case-step-action-screen-disagrees` | warn | a use-case step naming both a UI action and a screen agrees with that action's own `screen` |

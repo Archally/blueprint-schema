@@ -363,8 +363,7 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/entity_version"
         description: "Party version for lifecycle tracking."
       kind:
-        type: string
-        enum: [system, organization]
+        $ref: "../metamodel.schema.yaml#/$defs/party_kind"
         description: "Party type: system=technical system, organization=business unit or company."
       contexts:
         type: array

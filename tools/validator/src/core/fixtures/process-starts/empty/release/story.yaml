@@ -1,0 +1,13 @@
+version: "1.0.0"
+name: Release stories
+scope: release
+processes:
+  - id: release.PRC001
+    title: Release a change
+    description: A change reaches production, whichever side of the system is ready first.
+    triggers: []
+    activities:
+      - id: release.PA001
+        name: Prepare the release
+      - id: release.PA002
+        name: Verify the release

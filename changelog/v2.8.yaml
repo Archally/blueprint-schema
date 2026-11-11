@@ -5,6 +5,109 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.88"
+    date: "2026-11-11"
+    step: "a process can describe how an organization works"
+    summary: |
+      A process may state describes, system or organization: whether it is a model of how the
+      system runs it or of how the people of an organization do the work. A slice of
+      layout.slices may state the same field, and a process that states none takes its slice's
+      value, else system. The two values are one shared definition, process_describes. An
+      unknown is not a value: it is an open inquiry that affects the element.
+
+      A lane names an actor, a team or both, and may list the activities placed in it; a lane
+      names at least one of actor and team. An activity may state its inputs and outputs, each a
+      name with an optional concept, the tools it uses, each a name with an optional party, and
+      hands_over_to, a non-empty list of receivers, each naming at least one of an activity of
+      the same process, another process, a team and a name, and never an activity and a process
+      together. A name has a non-space character and is never a typed id. A process and an
+      activity may state provenance, the shared definition design entities already use; absent
+      provenance states nothing. An inquiry's affects may name process activities in
+      process_activity_refs. Every new reference resolves by its exact id, and an id nothing
+      declares is a cross-reference error.
+
+      The descriptions of process, process_activity and implementation read correctly for both
+      kinds of process. A party's kind moves to the shared definition party_kind; its values and
+      its acceptance are unchanged.
+
+      BACKWARD only: existing valid documents remain valid, and a process that states none of
+      the new fields keeps its meaning. Older closed schemas reject a process, activity, lane,
+      slice or inquiry carrying the new fields. No instance migration is required.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/metamodel.schema.yaml#/$defs/process_describes"
+        notes: "system or organization: what a process is a model of."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/process"
+        notes: "Optional describes and provenance; a lane takes an optional team and activities beside an optional actor, at least one of actor and team."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/process_activity"
+        notes: "Optional inputs, outputs, tools, hands_over_to and provenance."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/process_handover"
+        notes: "One receiver: activity, process, team or name, at least one, never activity with process."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/process_artifact"
+        notes: "An input or output: a required name and an optional concept."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/process_tool"
+        notes: "A tool: a required name and an optional party."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/stated_name"
+        notes: "A name as the source states it: a non-space character, never a typed id."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/blueprint.schema.yaml#/$defs/slice"
+        notes: "Optional describes, inherited by the slice's processes."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry"
+        notes: "affects.process_activity_refs."
+      - kind: change
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/party"
+        notes: "kind references the shared definition party_kind; accepted documents unchanged."
+  - version: "2.8.87"
+    date: "2026-11-09"
+    step: "a process has several alternative starts"
+    summary: |
+      A process may state its alternative starts in an optional triggers list, beside the single
+      trigger. Each start carries the fields of a trigger (type, operation, schedule, description)
+      and names the activity it leads to in a required to, an activity reference. The list is
+      never empty and never repeats a start. Several starts may lead to the same activity. A
+      process states triggers or trigger, never both; the refusal is reported at trigger. Each
+      to is the exact id the activity declares, and an undeclared activity is a cross-reference
+      error. The activity must belong to the same process; schema validation resolves the id
+      across the model and does not check that. Starts are not chained to one another by list order: where they
+      lead to different activities, those activities state their successors, with join where
+      the routes meet. The start type vocabulary is one shared definition,
+      process_trigger_type, read by both forms.
+
+      The single trigger keeps its fields, its acceptance and its start routing; its operation
+      description no longer reads as a requirement the schema never enforced.
+
+      BACKWARD only: existing valid process documents remain valid. Older closed schemas reject
+      a process carrying triggers. No instance migration is required.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/process"
+        notes: "Optional non-empty unique triggers list of process_start, each requiring type and an activity reference in to; refused together with trigger."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/process_start"
+        notes: "One alternative start: the trigger fields plus a required to."
+      - kind: change
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/process_trigger"
+        notes: "The single trigger moves to a reusable definition and its type enum to process_trigger_type; accepted documents unchanged."
   - version: "2.8.86"
     date: "2026-10-30"
     step: "a feature lists its user stories"

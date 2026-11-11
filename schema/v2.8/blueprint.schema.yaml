@@ -430,6 +430,14 @@ $defs:
       description:
         type: string
         description: "What this slice is about - its business or technical responsibility."
+      describes:
+        $ref: "metamodel.schema.yaml#/$defs/process_describes"
+        description: >
+          What the processes in this slice are a model of. `organization` marks a slice that holds
+          how an organization works rather than a part of the system: it declares no bounded
+          context, service or operation, so it is not a part of the system's structure, and each of
+          its processes describes the organization unless the process states its own `describes`.
+          Absent means `system`. A slice written as a bare name states none.
       type:
         $ref: "metamodel.schema.yaml#/$defs/subdomain_kind"
         description: >

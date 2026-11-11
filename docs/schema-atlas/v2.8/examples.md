@@ -90,6 +90,8 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects/properties/package_refs/examples/0`: `["PKG001"]`
 
+- `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects/properties/process_activity_refs/examples/0`: `["PA004","delivery.PA002"]`
+
 - `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects/properties/capability_refs/examples/0`: `["CAP001","billing.CAP002"]`
 
 - `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/owner/examples/0`: `"ACT001"`
@@ -104,9 +106,7 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/governance/roadmap.schema.yaml#/properties/cadence/properties/anchor_start/examples/0`: `"2026-07-01"`
 
-- `schema/v2.8/governance/roadmap.schema.yaml#/properties/cadence/properties/sprint_length_days/examples/0`: `14`
-
-_… and 59 more (listed first 50 for readability)._
+_… and 60 more (listed first 50 for readability)._
 
 ## Reference example models
 

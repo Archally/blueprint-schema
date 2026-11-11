@@ -15,7 +15,7 @@ import { resolveRefDetailed } from './resolver.js';
  *   - `operation_total`: the distinct operations it holds, realized by any capability or by none;
  *   - `origins`: the sorted distinct `origin` values (`module`, `operation`) of the contributing
  *     `capability_operation` edges;
- *   - `via_trigger` (process only): whether the operation its `trigger` names is one of the
+ *   - `via_trigger` (process only): whether any operation its starts name is one of the
  *     contributing operations.
  *
  * Both counts are over distinct resolved Operation targets: an operation the process orders twice
@@ -64,7 +64,7 @@ export function extractCapabilitySupportRelations(entities: Entity[], relations:
   const out: Relation[] = [];
 
   for (const [processId, operations] of operationsOf(RELATION_TYPE.ProcessOrdersOperation, ENTITY_TYPE.Process)) {
-    const trigger = triggerOperation(entities, entityById, processId);
+    const triggers = triggerOperations(entities, entityById, processId);
     for (const support of supportOf(operations, capabilitiesByOperation)) {
       out.push({
         id: `${processId}--${RELATION_TYPE.ProcessSupportsCapability}--${support.capabilityId}`,
@@ -75,7 +75,7 @@ export function extractCapabilitySupportRelations(entities: Entity[], relations:
           operation_count: support.operations.size,
           operation_total: operations.size,
           origins: support.origins,
-          via_trigger: trigger !== undefined && support.operations.has(trigger),
+          via_trigger: triggers.some((trigger) => support.operations.has(trigger)),
         },
       });
     }
@@ -125,17 +125,32 @@ function supportOf(operations: Set<string>, capabilitiesByOperation: Map<string,
 }
 
 /**
- * The Operation a process's `trigger.operation` names, resolved by the same shared rule its steps
- * are, or undefined where it names none, several entities, or something that is not an operation.
+ * Every declared start operation, resolved by the same exact-reference rule as the process steps.
+ * Unresolved, ambiguous and non-operation references confer no trigger attribution.
  */
-function triggerOperation(entities: Entity[], entityById: Map<string, Entity>, processId: string): string | undefined {
+function triggerOperations(entities: Entity[], entityById: Map<string, Entity>, processId: string): string[] {
   const process = entityById.get(processId);
-  const trigger = (process?.data as { trigger?: unknown } | undefined)?.trigger;
-  const ref = trigger && typeof trigger === 'object' ? (trigger as { operation?: unknown }).operation : undefined;
-  if (typeof ref !== 'string' || ref.length === 0) return undefined;
-  const resolution = resolveRefDetailed(ref, entities);
-  if (resolution.status !== 'resolved') return undefined;
-  return entityById.get(resolution.handle)?.type === ENTITY_TYPE.Operation ? resolution.handle : undefined;
+  const data = process?.data as { trigger?: unknown; triggers?: unknown } | undefined;
+  let triggers: unknown[] = [data?.trigger];
+  if (data?.triggers !== undefined) {
+    triggers = Array.isArray(data.triggers) ? data.triggers : [];
+  }
+  const operations: string[] = [];
+  for (const trigger of triggers) {
+    const reference = trigger && typeof trigger === 'object' ? (trigger as { operation?: unknown }).operation : undefined;
+    if (typeof reference !== 'string' || reference.length === 0) {
+      continue;
+    }
+    const resolution = resolveRefDetailed(reference, entities);
+    if (resolution.status !== 'resolved') {
+      continue;
+    }
+    if (entityById.get(resolution.handle)?.type !== ENTITY_TYPE.Operation) {
+      continue;
+    }
+    operations.push(resolution.handle);
+  }
+  return operations;
 }
 
 function compare(a: string, b: string): number {

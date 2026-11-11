@@ -1,6 +1,6 @@
 # PrestaShop-v9
 
-> Generated from blueprint model. 3879 entities, 9369 relations.
+> Generated from blueprint model. 3883 entities, 9389 relations.
 
 ## Context Map
 
@@ -1446,6 +1446,8 @@ graph TD
         orders_ACT002["orders.ACT002: Technical architect for order processing."]
         orders_ACT003["orders.ACT003: Store owner and operator."]
         orders_ACT004["orders.ACT004: Customer support and tech ops."]
+        orders_ACT005["orders.ACT005: Order application"]
+        orders_ACT006["orders.ACT006: Payment module"]
         orders_PER001["orders.PER001: Guest shopper"]
         orders_PER002["orders.PER002: Gift buyer"]
         orders_PER003["orders.PER003: Single-shop merchant"]
@@ -2329,6 +2331,8 @@ graph TD
         orders_QRY001["orders.QRY001: GetOrderForViewing"]
         orders_QRY002["orders.QRY002: GetOrderPreview"]
         orders_QRY003["orders.QRY003: GetOrderProducts"]
+        orders_QRY010["orders.QRY010: CheckOrderCart"]
+        orders_QRY011["orders.QRY011: ReviewCheckout"]
         orders_ERR003["orders.ERR003: OrderNotFound"]
         orders_ERR004["orders.ERR004: InvalidStateTransition"]
         orders_ERR008["orders.ERR008: OrderConstraintViolation"]
@@ -3738,6 +3742,7 @@ graph TD
         classes_order_OrderInvoice_php["classes/order/OrderInvoice.php: classes/order/OrderInvoice.php"]
         classes_order_OrderPayment_php["classes/order/OrderPayment.php: classes/order/OrderPayment.php"]
         classes_form_CustomerAddressPersister_php["classes/form/CustomerAddressPersister.php: classes/form/CustomerAddressPersister.php"]
+        controllers_front_OrderController_php["controllers/front/OrderController.php: controllers/front/OrderController.php"]
         src_Core_Domain_OrderReturn_["src/Core/Domain/OrderReturn/: src/Core/Domain/OrderReturn/"]
         classes_order_OrderReturn_php["classes/order/OrderReturn.php: classes/order/OrderReturn.php"]
         controllers_front_OrderFollowController_php["controllers/front/OrderFollowController.php: controllers/front/OrderFollowController.php"]
@@ -4986,7 +4991,6 @@ graph TD
         src_Adapter_Presenter_Product_ProductLazyArray_php["src/Adapter/Presenter/Product/ProductLazyArray.php: src/Adapter/Presenter/Product/ProductLazyArray.php"]
         classes_Link_php["classes/Link.php: classes/Link.php"]
         controllers_front_CartController_php["controllers/front/CartController.php: controllers/front/CartController.php"]
-        controllers_front_OrderController_php["controllers/front/OrderController.php: controllers/front/OrderController.php"]
         classes_checkout_CheckoutProcess_php["classes/checkout/CheckoutProcess.php: classes/checkout/CheckoutProcess.php"]
         classes_checkout_CheckoutDeliveryStep_php["classes/checkout/CheckoutDeliveryStep.php: classes/checkout/CheckoutDeliveryStep.php"]
         controllers_front_OrderConfirmationController_php["controllers/front/OrderConfirmationController.php: controllers/front/OrderConfirmationController.php"]
@@ -6632,6 +6636,8 @@ graph TD
     orders_CMD013 -.->|"initiated_by"| orders_ACT004
     orders_CMD014 -.->|"produces"| orders_EVT004
     orders_CMD014 -.->|"initiated_by"| orders_ACT003
+    orders_QRY010 -.->|"governed_by"| orders_SR001
+    orders_QRY010 -.->|"governed_by"| orders_VR001
     orders_ERR004 -.->|"error_related_rule"| orders_CR001
     orders_CMD020 -.->|"governed_by"| orders_SR001
     orders_CMD020 -.->|"produces"| orders_EVT009
@@ -7499,8 +7505,13 @@ graph TD
     modules_PRC001 -.->|"process_orders_operation"| modules_QRY001
     modules_PRC002 -.->|"process_orders_operation"| modules_CMD003
     modules_PRC002 -.->|"process_orders_operation"| modules_CMD006
+    orders_PRC001 -.->|"process_orders_operation"| orders_QRY010
+    orders_PRC001 -.->|"process_orders_operation"| orders_QRY011
+    orders_PRC001 -.->|"process_orders_operation"| checkout_QRY002
     orders_PRC001 -.->|"process_orders_operation"| orders_CMD001
     orders_PRC001 -.->|"process_orders_operation"| orders_EVT001
+    orders_PRC001 -.->|"process_orders_operation"| orders_CMD004
+    orders_PRC001 -.->|"process_orders_operation"| orders_EVT005
     orders_PRC002 -.->|"process_orders_operation"| orders_CMD002
     orders_PRC002 -.->|"process_orders_operation"| orders_EVT002
     orders_PRC002 -.->|"process_orders_operation"| orders_CMD003
@@ -9280,6 +9291,8 @@ graph TD
     LP005 -.->|"leverage_capability"| CAP014
     LP005 -.->|"leverage_depends_on"| LP002
     AdminService -.->|"deployed_in_environment"| prestashop_ENV001
+    CatalogService -.->|"uses_resource"| prestashop_IR004
+    CatalogService -.->|"uses_resource"| prestashop_IR003
     CatalogService -.->|"deployed_in_environment"| prestashop_ENV001
     prestashop_IR004 -.->|"hosted_on"| prestashop_IR005
     prestashop_IR004 -.->|"connects_to"| prestashop_IR001
@@ -10211,6 +10224,8 @@ graph TD
     orders_QRY001 -.->|"operation_in_domain"| DMN008
     orders_QRY002 -.->|"operation_in_domain"| DMN008
     orders_QRY003 -.->|"operation_in_domain"| DMN008
+    orders_QRY010 -.->|"operation_in_domain"| DMN008
+    orders_QRY011 -.->|"operation_in_domain"| DMN008
     orders_CMD020 -.->|"operation_in_domain"| DMN008
     orders_CMD021 -.->|"operation_in_domain"| DMN008
     orders_CMD022 -.->|"operation_in_domain"| DMN008
@@ -10471,6 +10486,8 @@ graph TD
     orders_CN005 -.->|"code_ref"| classes_order_OrderPayment_php
     orders_CN004 -.->|"code_ref"| classes_Address_php
     orders_CN004 -.->|"code_ref"| classes_form_CustomerAddressPersister_php
+    orders_ACT005 -.->|"code_ref"| controllers_front_OrderController_php
+    orders_ACT006 -.->|"code_ref"| classes_PaymentModule_php
     orders_CN007 -.->|"code_ref"| src_Core_Domain_OrderReturn_
     orders_CN007 -.->|"code_ref"| classes_order_OrderReturn_php
     orders_CN007 -.->|"code_ref"| controllers_front_OrderFollowController_php
@@ -11993,6 +12010,9 @@ graph TD
     orders_QRY001 -.->|"code_ref"| src_Adapter_Order_QueryHandler_GetOrderForViewingHandler_php
     orders_QRY002 -.->|"code_ref"| src_Core_Domain_Order_Query_GetOrderPreview_php
     orders_QRY003 -.->|"code_ref"| src_Core_Domain_Order_Query_GetOrderProductsForViewing_php
+    orders_QRY010 -.->|"code_ref"| controllers_front_OrderController_php
+    orders_QRY010 -.->|"code_ref"| classes_PaymentModule_php
+    orders_QRY011 -.->|"code_ref"| controllers_front_OrderController_php
     orders_ERR003 -.->|"code_ref"| src_Core_Domain_Order_Exception_OrderNotFoundException_php
     orders_ERR004 -.->|"code_ref"| src_Core_Domain_Order_Exception_ChangeOrderStatusException_php
     orders_ERR004 -.->|"code_ref"| src_Core_Domain_Order_Exception_InvalidOrderStateException_php
@@ -13663,6 +13683,8 @@ graph TD
     orders_EVT005 -.->|"handled_by"| Orders
     orders_QRY002 -.->|"handled_by"| Orders
     orders_QRY003 -.->|"handled_by"| Orders
+    orders_QRY010 -.->|"handled_by"| Orders
+    orders_QRY011 -.->|"handled_by"| Orders
     orders_CMD020 -.->|"handled_by"| Orders
     orders_CMD021 -.->|"handled_by"| Orders
     orders_CMD022 -.->|"handled_by"| Orders
@@ -14398,6 +14420,8 @@ graph TD
     CAP001 -.->|"capability_operation"| orders_QRY001
     CAP001 -.->|"capability_operation"| orders_QRY002
     CAP001 -.->|"capability_operation"| orders_QRY003
+    CAP001 -.->|"capability_operation"| orders_QRY010
+    CAP001 -.->|"capability_operation"| orders_QRY011
     CAP001 -.->|"capability_operation"| orders_CMD020
     CAP001 -.->|"capability_operation"| orders_CMD021
     CAP001 -.->|"capability_operation"| orders_CMD022
@@ -14617,7 +14641,7 @@ graph TD
 
 ## Entity Catalog
 
-**3879 entities** across 57 types.
+**3883 entities** across 57 types.
 
 | ID | Type | Name | Layer | Source |
 |----|------|------|-------|--------|
@@ -14638,6 +14662,8 @@ graph TD
 | orders.ACT002 | Actor | Technical architect for order processing. | design.concepts | orders/order.concepts.yaml |
 | orders.ACT003 | Actor | Store owner and operator. | design.concepts | orders/order.concepts.yaml |
 | orders.ACT004 | Actor | Customer support and tech ops. | design.concepts | orders/order.concepts.yaml |
+| orders.ACT005 | Actor | Order application | design.concepts | orders/order.concepts.yaml |
+| orders.ACT006 | Actor | Payment module | design.concepts | orders/order.concepts.yaml |
 | shipping.ACT001 | Actor | ShippingManager | design.concepts | shipping/carrier.concepts.yaml |
 | shop.ACT001 | Actor | StoreAdmin | design.concepts | shop/concepts.yaml |
 | shop.ACT002 | Actor | MarketingManager | design.concepts | shop/concepts.yaml |
@@ -17753,6 +17779,8 @@ graph TD
 | orders.QRY007 | Operation | GetOrderReturnForEditing | design.domain | orders/returns.domain.yaml |
 | orders.QRY008 | Operation | GetOrderReturnProducts | design.domain | orders/returns.domain.yaml |
 | orders.QRY009 | Operation | GetOrderReturnStateForEditing | design.domain | orders/order-admin.domain.yaml |
+| orders.QRY010 | Operation | CheckOrderCart | design.domain | orders/order-core.domain.yaml |
+| orders.QRY011 | Operation | ReviewCheckout | design.domain | orders/order-core.domain.yaml |
 | shipping.CMD001 | Operation | AddCarrier | design.domain | shipping/carrier.domain.yaml |
 | shipping.CMD002 | Operation | EditCarrier | design.domain | shipping/carrier.domain.yaml |
 | shipping.CMD003 | Operation | DeleteCarrier | design.domain | shipping/carrier.domain.yaml |
@@ -18523,7 +18551,7 @@ graph TD
 | Type | Count |
 |------|-------|
 | CodeFile | 1646 |
-| Operation | 700 |
+| Operation | 702 |
 | Error | 258 |
 | Models | 130 |
 | TestCase | 100 |
@@ -18542,9 +18570,9 @@ graph TD
 | Process | 27 |
 | UseCase | 27 |
 | Capability | 26 |
+| Actor | 22 |
 | Enumeration | 22 |
 | Contract | 21 |
-| Actor | 20 |
 | Dynamics | 20 |
 | SLO | 20 |
 | Inquiry | 19 |
@@ -18582,7 +18610,7 @@ graph TD
 
 ## Relations
 
-**9369 relations** discovered.
+**9389 relations** discovered.
 
 | Source | Type | Target |
 |--------|------|--------|
@@ -19325,6 +19353,8 @@ graph TD
 | CAP001 (Capability) | capability_operation | orders.QRY001 (Operation) |
 | CAP001 (Capability) | capability_operation | orders.QRY002 (Operation) |
 | CAP001 (Capability) | capability_operation | orders.QRY003 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.QRY010 (Operation) |
+| CAP001 (Capability) | capability_operation | orders.QRY011 (Operation) |
 | CAP001 (Capability) | capability_operation | orders.CMD020 (Operation) |
 | CAP001 (Capability) | capability_operation | orders.CMD021 (Operation) |
 | CAP001 (Capability) | capability_operation | orders.CMD022 (Operation) |
@@ -19642,6 +19672,8 @@ graph TD
 | orders.CN005 (Concept) | code_ref | classes/order/OrderPayment.php (CodeFile) |
 | orders.CN004 (Concept) | code_ref | classes/Address.php (CodeFile) |
 | orders.CN004 (Concept) | code_ref | classes/form/CustomerAddressPersister.php (CodeFile) |
+| orders.ACT005 (Actor) | code_ref | controllers/front/OrderController.php (CodeFile) |
+| orders.ACT006 (Actor) | code_ref | classes/PaymentModule.php (CodeFile) |
 | orders.CN007 (Concept) | code_ref | src/Core/Domain/OrderReturn/ (CodeFile) |
 | orders.CN007 (Concept) | code_ref | classes/order/OrderReturn.php (CodeFile) |
 | orders.CN007 (Concept) | code_ref | controllers/front/OrderFollowController.php (CodeFile) |
@@ -21164,6 +21196,9 @@ graph TD
 | orders.QRY001 (Operation) | code_ref | src/Adapter/Order/QueryHandler/GetOrderForViewingHandler.php (CodeFile) |
 | orders.QRY002 (Operation) | code_ref | src/Core/Domain/Order/Query/GetOrderPreview.php (CodeFile) |
 | orders.QRY003 (Operation) | code_ref | src/Core/Domain/Order/Query/GetOrderProductsForViewing.php (CodeFile) |
+| orders.QRY010 (Operation) | code_ref | controllers/front/OrderController.php (CodeFile) |
+| orders.QRY010 (Operation) | code_ref | classes/PaymentModule.php (CodeFile) |
+| orders.QRY011 (Operation) | code_ref | controllers/front/OrderController.php (CodeFile) |
 | orders.ERR003 (Error) | code_ref | src/Core/Domain/Order/Exception/OrderNotFoundException.php (CodeFile) |
 | orders.ERR004 (Error) | code_ref | src/Core/Domain/Order/Exception/ChangeOrderStatusException.php (CodeFile) |
 | orders.ERR004 (Error) | code_ref | src/Core/Domain/Order/Exception/InvalidOrderStateException.php (CodeFile) |
@@ -23045,6 +23080,8 @@ graph TD
 | orders.CMD004 (Operation) | governed_by | orders.TR001 (TransitionRule) |
 | orders.CMD002 (Operation) | governed_by | orders.CR001 (ClassificationRule) |
 | orders.CMD005 (Operation) | governed_by | orders.CR001 (ClassificationRule) |
+| orders.QRY010 (Operation) | governed_by | orders.SR001 (StructuralRule) |
+| orders.QRY010 (Operation) | governed_by | orders.VR001 (ValidationRule) |
 | orders.CMD020 (Operation) | governed_by | orders.SR001 (StructuralRule) |
 | orders.CMD021 (Operation) | governed_by | orders.SR004 (StructuralRule) |
 | orders.CMD003 (Operation) | governed_by | orders.VR002 (ValidationRule) |
@@ -23673,6 +23710,8 @@ graph TD
 | orders.EVT005 (Operation) | handled_by | Orders (Context) |
 | orders.QRY002 (Operation) | handled_by | Orders (Context) |
 | orders.QRY003 (Operation) | handled_by | Orders (Context) |
+| orders.QRY010 (Operation) | handled_by | Orders (Context) |
+| orders.QRY011 (Operation) | handled_by | Orders (Context) |
 | orders.CMD020 (Operation) | handled_by | Orders (Context) |
 | orders.CMD021 (Operation) | handled_by | Orders (Context) |
 | orders.CMD022 (Operation) | handled_by | Orders (Context) |
@@ -25320,6 +25359,8 @@ graph TD
 | orders.QRY001 (Operation) | operation_in_domain | DMN008 (Domain) |
 | orders.QRY002 (Operation) | operation_in_domain | DMN008 (Domain) |
 | orders.QRY003 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.QRY010 (Operation) | operation_in_domain | DMN008 (Domain) |
+| orders.QRY011 (Operation) | operation_in_domain | DMN008 (Domain) |
 | orders.CMD020 (Operation) | operation_in_domain | DMN008 (Domain) |
 | orders.CMD021 (Operation) | operation_in_domain | DMN008 (Domain) |
 | orders.CMD022 (Operation) | operation_in_domain | DMN008 (Domain) |
@@ -25702,8 +25743,13 @@ graph TD
 | modules.PRC001 (Process) | process_orders_operation | modules.QRY001 (Operation) |
 | modules.PRC002 (Process) | process_orders_operation | modules.CMD003 (Operation) |
 | modules.PRC002 (Process) | process_orders_operation | modules.CMD006 (Operation) |
+| orders.PRC001 (Process) | process_orders_operation | orders.QRY010 (Operation) |
+| orders.PRC001 (Process) | process_orders_operation | orders.QRY011 (Operation) |
+| orders.PRC001 (Process) | process_orders_operation | checkout.QRY002 (Operation) |
 | orders.PRC001 (Process) | process_orders_operation | orders.CMD001 (Operation) |
 | orders.PRC001 (Process) | process_orders_operation | orders.EVT001 (Operation) |
+| orders.PRC001 (Process) | process_orders_operation | orders.CMD004 (Operation) |
+| orders.PRC001 (Process) | process_orders_operation | orders.EVT005 (Operation) |
 | orders.PRC002 (Process) | process_orders_operation | orders.CMD002 (Operation) |
 | orders.PRC002 (Process) | process_orders_operation | orders.EVT002 (Operation) |
 | orders.PRC002 (Process) | process_orders_operation | orders.CMD003 (Operation) |
@@ -27608,6 +27654,8 @@ graph TD
 | customers.US004 (UserStory) | user_story_use_case | customers.UC003 (UseCase) |
 | orders.US001 (UserStory) | user_story_use_case | orders.UC001 (UseCase) |
 | orders.US002 (UserStory) | user_story_use_case | orders.UC002 (UseCase) |
+| CatalogService (Service) | uses_resource | prestashop.IR004 (InfraResource) |
+| CatalogService (Service) | uses_resource | prestashop.IR003 (InfraResource) |
 | admin.TC001 (TestCase) | validates | admin.VR001 (ValidationRule) |
 | admin.TC001 (TestCase) | validates | admin.VR002 (ValidationRule) |
 | admin.TC001 (TestCase) | validates | admin.SR001 (StructuralRule) |
@@ -27960,10 +28008,10 @@ graph TD
 
 | Relation Type | Count |
 |---------------|-------|
-| code_ref | 2807 |
-| handled_by | 700 |
-| operation_in_domain | 700 |
-| capability_operation | 673 |
+| code_ref | 2812 |
+| handled_by | 702 |
+| operation_in_domain | 702 |
+| capability_operation | 675 |
 | raises_error | 316 |
 | produces | 315 |
 | initiated_by | 313 |
@@ -27972,13 +28020,13 @@ graph TD
 | goal_affects | 171 |
 | user_story_operation | 152 |
 | risk_affects | 127 |
-| governed_by | 120 |
+| governed_by | 122 |
 | question_answered_by | 113 |
 | concepts | 100 |
 | payload_model | 97 |
 | owned_by | 87 |
+| process_orders_operation | 83 |
 | context_uses_concept | 82 |
-| process_orders_operation | 78 |
 | use_case_operation | 77 |
 | action_on_screen | 73 |
 | question_about | 69 |
@@ -28077,6 +28125,7 @@ graph TD
 | work_item_dependency | 2 |
 | inquiry_owner | 2 |
 | deployed_in_environment | 2 |
+| uses_resource | 2 |
 | attaches_to | 2 |
 | migration_relates_to_decision | 2 |
 | transition_rules | 1 |
