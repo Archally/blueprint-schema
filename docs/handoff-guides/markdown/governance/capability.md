@@ -3,7 +3,7 @@
 Use this guide when you need to describe **what the business can do**, independent of team names,
 systems, or specific process steps.
 
-This guide is about stable business abilities — the **what**, not the **how**.
+This guide is about stable business abilities - the **what**, not the **how**.
 
 ## Knowledge area
 
@@ -12,7 +12,7 @@ This guide helps with **what the business needs to be able to do**. Technically,
 
 ## Main entities in this guide
 
-- `capability` — a stable business ability the organization needs, independent of current teams or
+- `capability` - a stable business ability the organization needs, independent of current teams or
   tools.
   - Often confused with: a process or a `value_stream`. A capability is what the business must be
     able to do, not the step-by-step flow or sequence.

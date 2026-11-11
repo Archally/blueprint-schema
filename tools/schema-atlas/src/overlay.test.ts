@@ -7,15 +7,14 @@ import { loadOverlays, indexOverlays, OverlayError } from './overlay.js';
 import { PolicyReporter } from './policy.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(here, '../../..');
-const overlaysDir = path.join(repoRoot, 'tools', 'schema-atlas', 'overlays');
+const overlaysDir = path.resolve(here, '../overlays');
 
 function tempDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'atlas-overlay-'));
 }
 
-describe('overlay loading + guard (VAL-ATL-006)', () => {
-  it('loads the repo overlays and indexes them by target', () => {
+describe('overlay loading + guard', () => {
+  it('loads the tool overlays and indexes them by target', () => {
     const policy = new PolicyReporter();
     const overlays = loadOverlays(overlaysDir, 'v2.7', policy);
     expect(overlays.length).toBeGreaterThan(0);

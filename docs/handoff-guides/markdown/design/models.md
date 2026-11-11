@@ -13,11 +13,11 @@ structures and data representations**.
 
 ## Main entities in this guide
 
-- `components` — the container that holds the reusable model pieces for this guide.
-- `schema` — a reusable data shape inside `components.schemas`.
-- `x-field` — a reusable single field definition used in many shapes.
-- `x-parameter` — a reusable operation parameter, such as a path, query, or header input.
-- `represents` — an optional mapping that says which business `concept` a model shape stands for.
+- `components` - the container that holds the reusable model pieces for this guide.
+- `schema` - a reusable data shape inside `components.schemas`.
+- `x-field` - a reusable single field definition used in many shapes.
+- `x-parameter` - a reusable operation parameter, such as a path, query, or header input.
+- `represents` - an optional mapping that says which business `concept` a model shape stands for.
   - Often confused with: `concept` in the Concepts guide. Models describe the information shape;
     concepts describe the business meaning.
 

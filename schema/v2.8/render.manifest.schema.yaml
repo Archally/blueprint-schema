@@ -208,6 +208,16 @@ $defs:
           one. A `#section` suffix selects one named entry from a file's `views:` map
           (`gantt.view.yaml#checkout`), so one file can hold every view a renderer needs: the file's
           top-level keys are shared by all of them, and each section carries only what is its own.
+      views_by_slice:
+        type: object
+        minProperties: 1
+        additionalProperties:
+          type: string
+          minLength: 1
+        description: >
+          A view reference per slice, keyed by the canonical slice name. A run narrowed to a listed
+          slice uses that view in place of `view:`, in the same `<file>#<section>` form. An unlisted
+          slice and a whole-project run keep `view:`.
       manifest:
         type: string
         description: >

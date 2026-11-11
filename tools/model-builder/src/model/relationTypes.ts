@@ -163,6 +163,10 @@ export const RELATION_TYPE = {
   ProcessOrdersOperation: 'process_orders_operation',
   // story.schema: an activity runs another process as a subprocess (process → process)
   ProcessCallsSubprocess: 'process_calls_subprocess',
+  ProcessLaneTeam: 'process_lane_team',
+  ActivityUsesTool: 'activity_uses_tool',
+  ActivityArtifactConcept: 'activity_artifact_concept',
+  ActivityHandsOverTo: 'activity_hands_over_to',
   // org.schema: party structurally contains department
   OrgContainsDept: 'org_contains_dept',
   // org.schema: department has team

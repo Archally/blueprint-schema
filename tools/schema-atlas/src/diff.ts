@@ -1,10 +1,10 @@
 /**
- * Structural schema diff (Step 04) — classify what changed between two versions.
+ * Structural schema diff - classify what changed between two versions.
  *
- * Conservative by default (DEC-ATL-19): changes are `add`/`remove` unless a rename
+ * Conservative by default: changes are `add`/`remove` unless a rename
  * is explicitly annotated via a changelog overlay. Semver impact is inferred
  * conservatively (a change that COULD break consumers is `major`). The diff is
- * structural truth; human rationale attaches separately as overlay notes (DEC-ATL-17).
+ * structural truth; human rationale attaches separately as overlay notes.
  */
 import type {
   AtlasModel,
@@ -28,23 +28,9 @@ export interface RenameAnnotation {
 }
 
 /**
- * The EFFECTIVE shape of a property: what it accepts, after following `$ref`.
- *
- * DEC-ATL-19 made this diff conservative on purpose: without a resolver it could not tell
- * "the contract changed" from "the same contract moved into `$defs`", so it reported a type
- * change and declined to compare enums across a ref boundary. That was the right call for a
- * tool that could not look. It also produced three false "breaking" entries on the v2.6 -> v2.7
- * path, where `repository` and `model_traits` are byte-identical after resolution and
- * `complexity` merely GAINED an enum value. A differ that reports refactors as breakage is one
- * readers learn to ignore, and then it stops catching the real thing.
- *
- * So: labels stay schema-faithful for RENDERING (the catalog still shows `ref -> x`, which is
- * what the schema says), and COMPARISON happens on the resolved shape. The two questions are
- * different and only the second one is about breakage.
- *
- * Resolution walks the model already in memory - no file reads - and is bounded: a chain longer
- * than MAX_REF_DEPTH, or one that leaves the model, resolves to the unresolved label, which
- * restores exactly the old conservative behaviour for that property.
+ * Comparison follows in-memory $ref targets for up to MAX_REF_DEPTH links.
+ * Unresolved references retain their declared labels for conservative comparison.
+ * Rendering uses the declared labels; comparison uses the resolved shapes.
  */
 const MAX_REF_DEPTH = 8;
 
@@ -235,7 +221,7 @@ export function diffModels(
     const toContainers = containersOf(toFile);
     for (const [ptr, toC] of toContainers) {
       const fromC = fromContainers.get(ptr);
-      if (!fromC) continue; // container is new/removed — covered by def add/remove
+      if (!fromC) continue; // container is new/removed - covered by def add/remove
       diffProperties(rel, ptr, fromC, toC, from.version, to.version, changes, from, to);
     }
   }
@@ -275,7 +261,7 @@ function diffProperties(
       scope: 'property',
       target: label(name),
       semver: p.required ? 'major' : 'minor',
-      summary: `Property \`${name}\` added${p.required ? ' (required — breaking)' : ' (optional)'}.`,
+      summary: `Property \`${name}\` added${p.required ? ' (required - breaking)' : ' (optional)'}.`,
       provenance: { schema: [sourceRef(toV, rel, p.pointer)] },
     });
   }
@@ -319,10 +305,7 @@ function diffProperties(
       });
     }
 
-    // Compare the RESOLVED shapes. `fp.type.label` says how the schema is WRITTEN
-    // (`ref -> complexity_pattern`); the effective shape says what it ACCEPTS. Only the second
-    // can break a consumer, and extracting an inline definition into `$defs` changes only the
-    // first. See the effectiveShape comment for why this supersedes the conservative rule.
+    // Compare resolved shapes while retaining declared labels for rendering.
     const fromShape = effectiveShape(fromModel, rel, fp.type, fp.enumValues);
     const toShape = effectiveShape(toModel, rel, tp.type, tp.enumValues);
 
@@ -337,10 +320,8 @@ function diffProperties(
       });
     }
 
-    // Enums are compared on the RESOLVED values, so an enum that moved into a shared def is
-    // still diffed on its merits. When either side could not be resolved the old conservative
-    // rule applies unchanged: compare only if BOTH sides declare an inline enum, since a
-    // half-resolved comparison would claim values were removed when they merely moved.
+    // Compare resolved enum values. If resolution fails on either side,
+    // compare only enums declared inline on both sides.
     const bothResolved = fromShape.resolved && toShape.resolved;
     const enumChange = bothResolved
       ? diffEnum(fromShape.enumValues, toShape.enumValues)

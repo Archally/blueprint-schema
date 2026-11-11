@@ -25,7 +25,7 @@ rules:
       matched state, which it would do by running an operation that `materializes` that concept or
       that is `governed_by` another of its transitions, and without that the match is a word in a
       sentence rather than a state; or the process names no operation at all
-      (`activity-without-entry-operation` owns that). The end state's `type` does not change the
+      (human activities need no domain operation). The end state's `type` does not change the
       test - an `error` end state named after a lifecycle state needs an operation that reaches it
       exactly as a `complete` one does, and what keeps failure branches quiet is that a failure
       described in prose names no state. Override per-project via .blueprint-lint.yaml (e.g.

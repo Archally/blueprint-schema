@@ -34,7 +34,7 @@
  *     what separates a state from a word: "Return accepted for processing" contains the token
  *     `processing`, and where the process runs nothing that touches the concept declaring that
  *     state, the match is prose and the rule says nothing;
- *   - the process names no operations at all: `activity-without-entry-operation` owns that.
+ *   - the process names no operations at all: human activities need no domain operation.
  *
  * The end state's `type` does not change the test. `type` says how a process stops (`complete`,
  * `error`, `cancel`, `terminate`) and the chain above says whether an operation exists that puts

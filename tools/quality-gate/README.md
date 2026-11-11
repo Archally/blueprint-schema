@@ -341,3 +341,13 @@ modelled on real observed failure shapes — undescribed `one_of` counterpart ev
 actors documented via `summary` rather than `description`, map-form collections,
 scope-prefixed ids — plus false-positive guards built from genuinely terse
 descriptions, so the heuristics cannot quietly become their own noise source.
+
+## Work-process provenance
+
+Organization processes (`describes: organization`, explicit or inherited from their slice) have an
+advisory count of activities stating provenance. A valid stage, certainty or nonempty evidence
+summary counts; an empty map or list does not. Process provenance is not inherited by activities.
+The line reads `Work-process activity provenance: 1/5 stated (advisory)`; JSON adds
+`runs[].workProcessProvenance: {covered: 1, total: 5}` only where the denominator is nonzero.
+It follows whole-model, slice, changed-file, entity and file selection. This measures stated
+provenance, not verified facts, and never enters scoring, findings, thresholds or exit codes.

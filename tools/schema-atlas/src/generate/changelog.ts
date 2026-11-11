@@ -1,6 +1,6 @@
 /**
- * Atlas changelog page (Step 04) — a structural, human-usable view of schema
- * evolution. Complements (does not replace) the root release ledger (DEC-ATL-04).
+ * Atlas changelog page - a structural, human-usable view of schema
+ * evolution. Complements (does not replace) the root release ledger.
  */
 import type { ChangeEntry, SchemaDiff } from '../types.js';
 import { generatedBanner, table, cell, blocks } from '../md.js';
@@ -20,15 +20,15 @@ const KIND_ORDER: ChangeEntry['kind'][] = ['remove', 'rename', 'requiredness-cha
 
 export function renderChangelog(ctx: GenContext, diff: SchemaDiff): string {
   const parts: string[] = [generatedBanner()];
-  parts.push('# Blueprint Schema Atlas — Changelog');
+  parts.push('# Blueprint Schema Atlas - Changelog');
   parts.push(
     `A generated structural changelog for the **\`${diff.from}\` → \`${diff.to}\`** diff path. It explains ` +
-      '*what changed and why it matters to schema consumers* (DEC-ATL-16).',
+      '*what changed and why it matters to schema consumers*.',
   );
   parts.push(
     '> **Relationship to the release ledger:** the root [`CHANGELOG.md`](../../CHANGELOG.md) remains the ' +
       'authoritative release ledger (dates, version summaries). This page is the richer *structural* view, ' +
-      'derived from the schema diff (DEC-ATL-04). Where the two disagree on wording, the root ledger wins ' +
+      'derived from the schema diff. Where the two disagree on wording, the root ledger wins ' +
       'on release facts; this page wins on structural detail.',
   );
 
@@ -78,7 +78,7 @@ export function renderChangelog(ctx: GenContext, diff: SchemaDiff): string {
   }
 
   parts.push('---');
-  parts.push('_Structural diff generated from the two schema versions. Rename claims are conservative (DEC-ATL-19): `add`/`remove` unless explicitly annotated._');
+  parts.push('_Structural diff generated from the two schema versions. Rename claims are conservative: `add`/`remove` unless explicitly annotated._');
   return blocks(...parts) + '\n';
 }
 
@@ -89,7 +89,7 @@ function stripCode(s: string): string {
 function renderChange(ctx: GenContext, c: ChangeEntry): string {
   const parts: string[] = [];
   const badge = c.semver === 'major' ? '**[breaking]**' : c.semver === 'minor' ? '[additive]' : '[patch]';
-  parts.push(`- ${badge} \`${c.target}\` — ${c.summary}`);
+  parts.push(`- ${badge} \`${c.target}\` - ${c.summary}`);
   if (c.renameBasis) parts.push(`  - _Rename basis: ${c.renameBasis}_`);
   if (c.note) parts.push(`  - _Note: ${c.note}_`);
 

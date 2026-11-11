@@ -1,6 +1,6 @@
 # PrestaShop-v9
 
-> Generated from blueprint model. 3883 entities, 9389 relations.
+> Generated from blueprint model. 3886 entities, 9396 relations.
 
 ## Context Map
 
@@ -2520,6 +2520,7 @@ graph TD
         OrderService_openapi["OrderService.openapi"]
         PRT003["PRT003: Third-party systems integrating with PrestaShop over the Admin REST API using OAuth2. Not built or operated by PrestaShop; modelled so the dependency on the Admin API surface is visible."]
         PRT002["PRT002: PrestaShop v9 monolith with CQRS domain layer and Symfony framework."]
+        PRT102["PRT102: Generic tracker used by the fictional shop in the illustrative delivery process."]
         ExternalApiConsumers["ExternalApiConsumers: External systems consuming PrestaShop Admin API via OAuth2."]
         AdminApiClient["AdminApiClient: External API consumer using PrestaShop Admin REST API with OAuth2 authentication."]
         AdminApiClient_httpClient["AdminApiClient.httpClient"]
@@ -2929,6 +2930,7 @@ graph TD
         customers_TRO001["customers.TRO001"]
         customers_INQ001["customers.INQ001: Customer segmentation API"]
         customers_INQ002["customers.INQ002: Automated GDPR deletion"]
+        delivery_process_INQ001["delivery-process.INQ001: Specification approver"]
         international_GL001["international.GL001: Accurate multi-currency pricing"]
         international_GL002["international.GL002: Tax calculation accuracy"]
         international_GL003["international.GL003: Localization completeness"]
@@ -3233,6 +3235,7 @@ graph TD
         customers_UC001["customers.UC001: New customer creates an account with email, password, and basic profile."]
         customers_UC002["customers.UC002: Customer adds, edits, or deletes delivery and invoice addresses."]
         customers_UC003["customers.UC003: Agent views customer thread, replies, and resolves the issue."]
+        delivery_process_PRC001["delivery-process.PRC001: Refine and specify a storefront content change"]
         international_PRC001["international.PRC001: Multi-Currency Store Setup"]
         international_PRC002["international.PRC002: Tax Rules Configuration"]
         international_US001["international.US001: add and configure currencies for an international store"]
@@ -7494,6 +7497,10 @@ graph TD
     customers_PRC002 -.->|"process_orders_operation"| customers_QRY011
     customers_PRC002 -.->|"process_orders_operation"| customers_CMD017
     customers_PRC002 -.->|"process_orders_operation"| customers_CMD016
+    delivery_process_PRC001 -.->|"process_lane_team"| TM007
+    delivery_process_PRC001 -.->|"process_lane_team"| TM010
+    delivery_process_PRC001 -.->|"activity_uses_tool"| PRT102
+    delivery_process_PRC001 -.->|"activity_hands_over_to"| content_PRC001
     international_PRC001 -.->|"process_orders_operation"| international_CMD001
     international_PRC001 -.->|"process_orders_operation"| international_CMD005
     international_PRC001 -.->|"process_orders_operation"| international_CMD006
@@ -7595,6 +7602,7 @@ graph TD
     Orders -.->|"owned_by"| TM001
     Shipping -.->|"owned_by"| TM005
     Shop -.->|"owned_by"| TM010
+    delivery_process_INQ001 -.->|"owned_by"| TM010
     CAP107 -.->|"owned_by"| DPT001
     CAP013 -.->|"owned_by"| TM007
     CAP014 -.->|"owned_by"| TM008
@@ -8790,6 +8798,7 @@ graph TD
     customers_INQ001 -.->|"inquiry_goal"| customers_GL001
     customers_INQ002 -.->|"inquiry_goal"| customers_GL004
     customers_INQ002 -.->|"inquiry_risk"| customers_RSK003
+    delivery_process_INQ001 -.->|"inquiry_owner"| TM010
     international_INQ001 -.->|"inquiry_goal"| international_GL001
     international_INQ002 -.->|"inquiry_goal"| international_GL002
     modules_INQ001 -.->|"inquiry_goal"| modules_GL003
@@ -8992,6 +9001,7 @@ graph TD
     customers_INQ002 -.->|"inquiry_affects"| customers_CMD003
     customers_INQ002 -.->|"inquiry_affects"| customers_CN001
     customers_INQ002 -.->|"inquiry_affects"| customers_PRC001
+    delivery_process_INQ001 -.->|"inquiry_affects"| delivery_process_PRC001
     international_GL001 -.->|"goal_affects"| international_CMD005
     international_GL001 -.->|"goal_affects"| international_QRY002
     international_GL001 -.->|"goal_affects"| international_CN001
@@ -14641,7 +14651,7 @@ graph TD
 
 ## Entity Catalog
 
-**3883 entities** across 57 types.
+**3886 entities** across 57 types.
 
 | ID | Type | Name | Layer | Source |
 |----|------|------|-------|--------|
@@ -16939,6 +16949,7 @@ graph TD
 | content.INQ001 | Inquiry | Headless CMS API | governance.motivation | content/motivation.yaml |
 | customers.INQ001 | Inquiry | Customer segmentation API | governance.motivation | customers/motivation.yaml |
 | customers.INQ002 | Inquiry | Automated GDPR deletion | governance.motivation | customers/motivation.yaml |
+| delivery-process.INQ001 | Inquiry | Specification approver | governance.motivation | delivery-process/motivation.yaml |
 | international.INQ001 | Inquiry | Automated exchange rate scheduling | governance.motivation | international/motivation.yaml |
 | international.INQ002 | Inquiry | EU VAT MOSS support | governance.motivation | international/motivation.yaml |
 | modules.INQ001 | Inquiry | Hook position management gap | governance.motivation | modules/motivation.yaml |
@@ -17873,6 +17884,7 @@ graph TD
 | PRT003 | Party | Third-party systems integrating with PrestaShop over the Admin REST API using OAuth2. Not built or operated by PrestaShop; modelled so the dependency on the Admin API surface is visible. | design.arch | prestashop.arch.yaml |
 | PRT100 | Party | The PrestaShop Project | governance.org | organization.yaml |
 | PRT101 | Party | PrestaShop Partner and Expert Network | governance.org | organization.yaml |
+| PRT102 | Party | Generic tracker used by the fictional shop in the illustrative delivery process. | design.arch | prestashop.arch.yaml |
 | admin.PER001 | Persona | Merchant with a team | design.concepts | admin/identity.concepts.yaml |
 | admin.PER002 | Persona | Integration developer | design.concepts | admin/api.concepts.yaml |
 | content.PER001 | Persona | Theme designer | design.concepts | content/theme.concepts.yaml |
@@ -17897,6 +17909,7 @@ graph TD
 | content.PRC002 | Process | Theme Activation | design.process | content/story.yaml |
 | customers.PRC001 | Process | Customer account lifecycle | design.process | customers/story.yaml |
 | customers.PRC002 | Process | Customer service interaction | design.process | customers/story.yaml |
+| delivery-process.PRC001 | Process | Refine and specify a storefront content change | design.process | delivery-process/story.yaml |
 | international.PRC001 | Process | Multi-Currency Store Setup | design.process | international/story.yaml |
 | international.PRC002 | Process | Tax Rules Configuration | design.process | international/story.yaml |
 | modules.PRC001 | Process | Module Installation & Activation | design.process | modules/story.yaml |
@@ -18567,15 +18580,15 @@ graph TD
 | Subdomain | 33 |
 | Risk | 31 |
 | Association | 28 |
-| Process | 27 |
+| Process | 28 |
 | UseCase | 27 |
 | Capability | 26 |
 | Actor | 22 |
 | Enumeration | 22 |
 | Contract | 21 |
 | Dynamics | 20 |
+| Inquiry | 20 |
 | SLO | 20 |
-| Inquiry | 19 |
 | NonGoal | 15 |
 | StructuralRule | 15 |
 | BusinessDecision | 15 |
@@ -18593,9 +18606,9 @@ graph TD
 | TransitionRule | 9 |
 | Binding | 9 |
 | Migration | 6 |
+| Party | 6 |
 | ClassificationRule | 6 |
 | InfraResource | 6 |
-| Party | 5 |
 | LeveragePoint | 5 |
 | Department | 5 |
 | Milestone | 5 |
@@ -18610,7 +18623,7 @@ graph TD
 
 ## Relations
 
-**9389 relations** discovered.
+**9396 relations** discovered.
 
 | Source | Type | Target |
 |--------|------|--------|
@@ -18753,6 +18766,8 @@ graph TD
 | shop.UAC001 (UIAction) | action_triggers_operation | shop.CMD001 (Operation) |
 | shop.UAC002 (UIAction) | action_triggers_operation | shop.CMD003 (Operation) |
 | shop.UAC003 (UIAction) | action_triggers_operation | shop.CMD010 (Operation) |
+| delivery-process.PRC001 (Process) | activity_hands_over_to | content.PRC001 (Process) |
+| delivery-process.PRC001 (Process) | activity_uses_tool | PRT102 (Party) |
 | admin.CN001 (Concept) | association | admin.CN002 (Concept) |
 | admin.CN003 (Concept) | association | admin.CN002 (Concept) |
 | catalog.CN001 (Concept) | association | catalog.CN002 (Concept) |
@@ -24152,6 +24167,7 @@ graph TD
 | customers.INQ002 (Inquiry) | inquiry_affects | customers.CMD003 (Operation) |
 | customers.INQ002 (Inquiry) | inquiry_affects | customers.CN001 (Concept) |
 | customers.INQ002 (Inquiry) | inquiry_affects | customers.PRC001 (Process) |
+| delivery-process.INQ001 (Inquiry) | inquiry_affects | delivery-process.PRC001 (Process) |
 | international.INQ001 (Inquiry) | inquiry_affects | international.CMD005 (Operation) |
 | international.INQ001 (Inquiry) | inquiry_affects | international.CN003 (Concept) |
 | international.INQ001 (Inquiry) | inquiry_affects | international.PRC001 (Process) |
@@ -24201,6 +24217,7 @@ graph TD
 | orders.INQ003 (Inquiry) | inquiry_goal | orders.GL001 (Goal) |
 | shipping.INQ001 (Inquiry) | inquiry_goal | shipping.GL001 (Goal) |
 | shop.INQ001 (Inquiry) | inquiry_goal | shop.GL001 (Goal) |
+| delivery-process.INQ001 (Inquiry) | inquiry_owner | TM010 (Team) |
 | orders.INQ001 (Inquiry) | inquiry_owner | orders.ACT002 (Actor) |
 | orders.INQ003 (Inquiry) | inquiry_owner | orders.ACT002 (Actor) |
 | checkout.INQ001 (Inquiry) | inquiry_risk | checkout.RSK003 (Risk) |
@@ -25509,6 +25526,7 @@ graph TD
 | Orders (Context) | owned_by | TM001 (Team) |
 | Shipping (Context) | owned_by | TM005 (Team) |
 | Shop (Context) | owned_by | TM010 (Team) |
+| delivery-process.INQ001 (Inquiry) | owned_by | TM010 (Team) |
 | CAP107 (Capability) | owned_by | DPT001 (Department) |
 | CAP013 (Capability) | owned_by | TM007 (Team) |
 | CAP014 (Capability) | owned_by | TM008 (Team) |
@@ -25704,6 +25722,8 @@ graph TD
 | shipping.PER001 (Persona) | persona_actor | shipping.ACT001 (Actor) |
 | shop.PER001 (Persona) | persona_actor | shop.ACT001 (Actor) |
 | orders.PRC006 (Process) | process_calls_subprocess | orders.PRC005 (Process) |
+| delivery-process.PRC001 (Process) | process_lane_team | TM007 (Team) |
+| delivery-process.PRC001 (Process) | process_lane_team | TM010 (Team) |
 | admin.PRC001 (Process) | process_orders_operation | admin.CMD001 (Operation) |
 | admin.PRC001 (Process) | process_orders_operation | admin.CMD013 (Operation) |
 | admin.PRC002 (Process) | process_orders_operation | admin.CMD021 (Operation) |
@@ -28024,7 +28044,7 @@ graph TD
 | question_answered_by | 113 |
 | concepts | 100 |
 | payload_model | 97 |
-| owned_by | 87 |
+| owned_by | 88 |
 | process_orders_operation | 83 |
 | context_uses_concept | 82 |
 | use_case_operation | 77 |
@@ -28032,7 +28052,7 @@ graph TD
 | question_about | 69 |
 | user_story_actor | 68 |
 | action_triggers_operation | 66 |
-| inquiry_affects | 56 |
+| inquiry_affects | 57 |
 | screen_uses_model | 53 |
 | declared_impact | 46 |
 | use_case_actor | 43 |
@@ -28115,20 +28135,23 @@ graph TD
 | compliance_concept | 4 |
 | dept_parent | 3 |
 | risk_owner | 3 |
+| inquiry_owner | 3 |
 | leverage_depends_on | 3 |
 | hosted_on | 3 |
 | connects_to | 3 |
 | requires | 2 |
 | contract_reads | 2 |
 | contract_writes | 2 |
+| process_lane_team | 2 |
 | roadmap_mitigates_risk | 2 |
 | work_item_dependency | 2 |
-| inquiry_owner | 2 |
 | deployed_in_environment | 2 |
 | uses_resource | 2 |
 | attaches_to | 2 |
 | migration_relates_to_decision | 2 |
 | transition_rules | 1 |
+| activity_uses_tool | 1 |
+| activity_hands_over_to | 1 |
 | process_calls_subprocess | 1 |
 | use_case_secondary_actor | 1 |
 | leverage_realized_by | 1 |

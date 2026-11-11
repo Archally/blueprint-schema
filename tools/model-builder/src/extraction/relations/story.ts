@@ -68,6 +68,7 @@ export function buildStoryRelations(
     }
 
     relations.push(...buildSubprocessCalls(story, entities));
+    relations.push(...buildWorkProcessRelations(story, entities));
   }
 
   return relations;
@@ -112,5 +113,51 @@ function buildSubprocessCalls(story: Entity, entities: Entity[]): Relation[] {
     });
   }
 
+  return relations;
+}
+
+/** Activity facts join their containing process to typed declarations, never to a name-only item. */
+function buildWorkProcessRelations(process: Entity, entities: Entity[]): Relation[] {
+  const data = (process.data ?? {}) as Record<string, unknown>;
+  const relations: Relation[] = [];
+  const records = (value: unknown): Record<string, unknown>[] => Array.isArray(value)
+    ? value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object') : [];
+  const link = (reference: unknown, targetType: string, type: string, identity: string, details: Record<string, unknown>) => {
+    if (typeof reference !== 'string' || !reference) return;
+    const resolution = resolveRefDetailed(reference, entities.filter(entity => entity.type === targetType));
+    if (resolution.status !== 'resolved') return;
+    relations.push({
+      id: `${process.id}--${type}--${identity}--${resolution.handle}`,
+      source_entity_id: process.id,
+      target_entity_id: resolution.handle,
+      type,
+      data: details,
+    });
+  };
+  for (const [position, lane] of records(data.lanes).entries()) {
+    link(lane.team, ENTITY_TYPE.Team, RELATION_TYPE.ProcessLaneTeam, `lane-${position}`, { lane: position });
+  }
+  for (const activity of records(data.activities)) {
+    const activityId = activity.id;
+    if (typeof activityId !== 'string') continue;
+    for (const [position, tool] of records(activity.tools).entries()) {
+      link(tool.party, ENTITY_TYPE.Party, RELATION_TYPE.ActivityUsesTool, `${activityId}-${position}`, { activity: activityId });
+    }
+    for (const [field, direction] of [['inputs', 'input'], ['outputs', 'output']] as const) {
+      for (const [position, artifact] of records(activity[field]).entries()) {
+        link(artifact.concept, ENTITY_TYPE.Concept, RELATION_TYPE.ActivityArtifactConcept,
+          `${activityId}-${direction}-${position}`, { activity: activityId, direction });
+      }
+    }
+    for (const [position, handover] of records(activity.hands_over_to).entries()) {
+      const details = { activity: activityId, ...(typeof handover.activity === 'string' ? { receivingActivity: handover.activity } : {}) };
+      const receivingActivities = records(data.activities).filter(candidate => candidate.id === handover.activity);
+      if (typeof handover.activity === 'string' && receivingActivities.length === 1) {
+        link(process.displayId, ENTITY_TYPE.Process, RELATION_TYPE.ActivityHandsOverTo, `${activityId}-${position}-activity`, details);
+      }
+      link(handover.process, ENTITY_TYPE.Process, RELATION_TYPE.ActivityHandsOverTo, `${activityId}-${position}-process`, details);
+      link(handover.team, ENTITY_TYPE.Team, RELATION_TYPE.ActivityHandsOverTo, `${activityId}-${position}-team`, details);
+    }
+  }
   return relations;
 }

@@ -1,0 +1,292 @@
+version: "1.0.0"
+happy_path:
+  - id: training.TC007
+    name: Publish, subscribe and renew
+    summary: The scripted recording is ready for editing and the buyer can pay.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR003
+        - training.VR004
+        - training.VR005
+      concepts: [ training.CN007, training.CN008, training.CN005, training.CN006, training.CN001, training.CN002, training.CN009 ]
+    given:
+      description: The scripted recording is ready for editing and the buyer can pay.
+      state:
+        reviewResult: approved
+        initialPayment: succeeded
+        renewalPayment: succeeded
+        periodDays: 30
+        contentReview: approved
+        technicalReview: approved
+        learnerPreview: passed
+    when:
+      description: Outline objectives, prepare the code repository, agents and realistic scenarios, record, edit, obtain subject-matter and technical approval, prepare metadata, PDF, audio and tags, configure public visibility, preview, publish, subscribe and renew once.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "course: published"
+          - "subscription: active"
+          - "paidDays: 60"
+          - "acknowledgementCount: 2"
+          - "invoiceLifecycle: separate"
+          - "welcomeMessage: sent"
+          - "examplesPreparedBeforeRecording: true"
+          - "editorialPackageAfterAcceptance: true"
+          - "publicationVisibility: public"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC010
+    name: Re-record a rejected lesson
+    summary: An edited recording fails review against its script.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR003
+      concepts: [ training.CN007 ]
+    given:
+      description: An edited recording fails review against its script.
+      state:
+        course: edited
+        reviewResult: rejected
+        defect: teaching error requiring new footage
+    when:
+      description: Re-record the rejected lesson, edit it and repeat review.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "publicationBeforeApproval: false"
+          - "recordingAttempts: 2"
+          - "reviewResult: approved"
+          - "technicalReview: approved"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC023
+    name: Correct captions without recording again
+    summary: The facilitator approves teaching but the editor finds a caption defect.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR003
+      concepts: [ training.CN007 ]
+    given:
+      description: The facilitator approves teaching but the editor finds a caption defect.
+      state:
+        contentReview: approved
+        technicalReview: rejected
+        defect: caption correction
+        recordingAttempts: 1
+    when:
+      description: Return to editing, repeat both reviews and preview the corrected lessons.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "recordingAttempts: 1"
+          - "editingRepeated: true"
+          - "contentAndTechnicalApproval: true"
+          - "publicationBeforeApproval: false"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC024
+    name: Repair learner preview before launch
+    summary: Approved media is configured but the initial preview exposes a restricted lesson to an unpaid learner.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR003
+        - training.VR004
+      concepts: [ training.CN007, training.CN008 ]
+    given:
+      description: Approved media is configured but the initial preview exposes a restricted lesson to an unpaid learner.
+      state:
+        contentReview: approved
+        technicalReview: approved
+        preview: failed access restriction
+    when:
+      description: Return to platform setup, correct access and repeat learner preview before launch.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "launchBeforePreviewPass: false"
+          - "paidLearnerAccess: true"
+          - "unpaidRestrictedAccess: false"
+          - "welcomeMessageAfterLaunch: true"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC025
+    name: Replace an obsolete lesson after editing
+    summary: A reported obsolete caption can be corrected without new footage while subscribers have paid access.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR003
+        - training.VR010
+        - training.VR004
+      concepts: [ training.CN007, training.CN008 ]
+    given:
+      description: A reported obsolete caption can be corrected without new footage while subscribers have paid access.
+      state:
+        course: published
+        trigger: obsolete lesson report
+        revision: editing only
+        paidAccess: true
+    when:
+      description: Edit the candidate, obtain both approvals, preview and replace the affected lesson.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "oldEditionAvailableDuringReview: true"
+          - "recordingRepeated: false"
+          - "replacementApprovedAndPreviewed: true"
+          - "paidAccessInterrupted: false"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC026
+    name: Re-record outdated teaching at review date
+    summary: A scheduled relevance review finds teaching that needs a new recording.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR003
+        - training.VR010
+      concepts: [ training.CN007, training.CN008 ]
+    given:
+      description: A scheduled relevance review finds teaching that needs a new recording.
+      state:
+        course: published
+        trigger: reviewAt reached
+        defect: outdated teaching
+        paidAccess: true
+    when:
+      description: Revise the outline, re-record only affected lessons, edit, approve, preview and replace.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "targetedRecording: true"
+          - "bothReviewsRepeated: true"
+          - "oldEditionAvailableUntilReplacement: true"
+          - "paidAccessPreserved: true"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC027
+    name: Retire without removing existing paid access
+    summary: A relevance review chooses retirement while paid subscriptions remain.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR010
+        - training.VR004
+      concepts: [ training.CN007, training.CN008 ]
+    given:
+      description: A relevance review chooses retirement while paid subscriptions remain.
+      state:
+        course: published
+        decision: retire
+        paidPeriodsRemaining: true
+    when:
+      description: Close new sales and renewal and communicate retirement.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "newSales: closed"
+          - "renewalEnabled: false"
+          - "paidAccessUntilBoundary: true"
+          - "retirementCommunicated: true"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC028
+    name: Keep relevant lessons after review
+    summary: The review date arrives but the current edition still meets its objectives.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR010
+      concepts: [ training.CN007 ]
+    given:
+      description: The review date arrives but the current edition still meets its objectives.
+      state:
+        trigger: reviewAt reached
+        contentRelevant: true
+    when:
+      description: Confirm no change and record the next review date.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "editionUnchanged: true"
+          - "nextReviewDateRecorded: true"
+          - "paidAccessInterrupted: false"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC035
+    name: Record a pick-up after editing reveals failed sound
+    summary: Editing exposes failed sound or an omitted topic before subject-matter
+      acceptance.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR003
+      concepts:
+        - training.CN007
+    given:
+      description: Editing exposes failed sound or an omitted topic before
+        subject-matter acceptance.
+      state:
+        course: in editing
+        defect: failed sound or omitted topic
+    when:
+      description: Classify the editing gap, record a targeted retake or pick-up, edit
+        and obtain facilitator subject-matter and technical approval before
+        editorial preparation.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "gapFoundDuringEditing: true"
+          - "targetedRecordingBeforeRepeatedReview: true"
+          - "publicationBeforeAcceptance: false"
+    provenance:
+      discovery_stage: hypothesis
+      certainty: speculative
+  - id: training.TC036
+    name: Fill an editing gap with a directed animation
+    summary: Editing reveals an explanation gap suitable for an animation without
+      new footage.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR003
+      concepts:
+        - training.CN007
+    given:
+      description: Editing reveals an explanation gap suitable for an animation
+        without new footage.
+      state:
+        course: in editing
+        defect: explanation gap suitable for animation
+    when:
+      description: Direct and render the animation, return to editing, obtain both
+        approvals, add metadata, PDF, audio and tags, preview and publish
+        privately.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "animationDirectedAndRendered: true"
+          - "recordingAttempts: 1"
+          - "bothReviewsAfterAnimation: true"
+          - "editorialPackageAfterAcceptance: true"
+          - "publicationVisibility: private"
+          - "paidAccessRestrictionsPreserved: true"
+    provenance:
+      discovery_stage: hypothesis
+      certainty: speculative

@@ -1,0 +1,253 @@
+name: training
+version: "1.0.0"
+processes:
+  - id: training.PRC001
+    title: Paid workshops from planning to follow-up
+    description: Open places or an agreed closed group reach delivery and follow-up, or explicit payment, cancellation and attendance outcomes; participant and organiser requests remain actionable before start. Pauses, changes to existing subscription prices and invoice-credit terms beyond company invoicing before prepayment are outside this example.
+    describes: organization
+    initiated_by: [ training.ACT002, training.ACT001, training.ACT005 ]
+    trigger:
+      type: manual
+      description: The coordinator plans an occurrence, or a buyer requests a place or closed group.
+    activities:
+      - id: training.PA001
+        name: Choose offer and session
+        triggered_by: [ training.ACT001, training.ACT005 ]
+        inputs: [ { name: Workshop offer, concept: training.CN001 } ]
+        outputs: [ { name: Requested seat, concept: training.CN004 } ]
+        next:
+          - { to: training.PA048, condition: Closed in-company workshop is requested }
+          - { to: training.PA029, condition: New open occurrence needs planning }
+          - { to: training.PA002, condition: Existing open occurrence is already planned }
+        description: Choose a fixed-date open place or a closed workshop at the employer for its employees. Individuals and employers are both common payers; an employer may buy one or many open places. Open content has no specific company or project context.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        gateway: xor
+      - id: training.PA002
+        name: Check requested places against capacity
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Requested seat, concept: training.CN004 }, { name: Seat limit, concept: training.CN003 } ]
+        outputs: [ { name: Collection basis before any attempt, concept: training.CN005 }, { name: Seat availability, concept: training.CN003 } ]
+        next:
+          - { to: training.PA031, condition: Capacity fits and buyer is a company }
+          - { to: training.PA010, condition: Capacity is exhausted }
+          - { to: training.PA032, condition: Capacity fits and buyer is an individual }
+        gateway: xor
+        description: Check the whole requested roster before collection and agree prepayment; company billing may precede settlement.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA003
+        name: Send the paid booking confirmation
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Successful collection, concept: training.CN005 } ]
+        outputs: [ { name: Confirmed named places, concept: training.CN004 }, { name: Separate settled invoice, concept: training.CN006 }, { name: Collection acknowledgement, concept: training.CN009 } ]
+        next:
+          - { to: training.PA004 }
+        description: Send the payer one collection acknowledgement and the separate invoice, issuing it now for an individual; confirm named places without implying the occurrence will run.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA004
+        name: Review pre-start participant requests
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Confirmed seat, concept: training.CN004 } ]
+        outputs: [ { name: Delivery decision, concept: training.CN004 } ]
+        next:
+          - { to: training.PA033, condition: No participant request is pending and decisionAt is reached }
+          - { to: training.PA011, condition: Participant requests ordinary cancellation }
+          - { to: training.PA037, condition: Participant requests substitution or transfer }
+        gateway: xor
+        description: Receive cancellation, substitution or transfer requests throughout booking and preparation; determine received notice in the occurrence timezone.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA005
+        name: Select the delivery mode
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Scheduled occurrence, concept: training.CN003 } ]
+        outputs: [ { name: Delivery mode, concept: training.CN003 } ]
+        next:
+          - { to: training.PA006, condition: deliveryMode = online and facilitator available }
+          - { to: training.PA007, condition: deliveryMode = room and facilitator available }
+          - { to: training.PA036, condition: Facilitator is ill before delivery }
+        gateway: xor
+        description: Confirm delivery remains available at start; late facilitator illness follows organiser cancellation rather than no-show handling.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA006
+        name: Facilitate the online workshop
+        triggered_by: [ training.ACT003 ]
+        inputs: [ { name: Online occurrence, concept: training.CN003 }, { name: Confirmed seats, concept: training.CN004 } ]
+        outputs: [ { name: Completed online occurrence, concept: training.CN003 } ]
+        next:
+          - { to: training.PA008 }
+        description: The facilitator guides exercises with participants joining remotely.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA007
+        name: Facilitate the room workshop
+        triggered_by: [ training.ACT003 ]
+        inputs: [ { name: Room occurrence, concept: training.CN003 }, { name: Confirmed seats, concept: training.CN004 } ]
+        outputs: [ { name: Completed room occurrence, concept: training.CN003 } ]
+        next:
+          - { to: training.PA008 }
+        description: The facilitator guides exercises with participants present in the room.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA008
+        name: Record attendance or no-show
+        triggered_by: [ training.ACT003 ]
+        inputs: [ { name: Completed occurrence, concept: training.CN003 } ]
+        outputs: [ { name: Attendance outcome, concept: training.CN004 } ]
+        next:
+          - { to: training.PA009, condition: Participant attended }
+          - { to: training.PA012, condition: Participant did not attend }
+        gateway: xor
+        join:
+          mode: xor
+        description: The attendance register distinguishes participation from an unused paid seat.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA009
+        name: Send attendance documents and reconcile billing
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Attendance outcome, concept: training.CN004 }, { name: Seat payment invoice, concept: training.CN006 } ]
+        outputs: [ { name: Optional feedback, concept: training.CN004 }, { name: Reconciled invoice, concept: training.CN006 } ]
+        description: Send promised certificates only against facilitator-confirmed attendance, resources and an optional feedback request; reconcile invoice and acknowledgement separately.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        next:
+          - { to: training.PA035 }
+      - id: training.PA010
+        name: Decline the unconfirmed request
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Unconfirmed seat request, concept: training.CN004 } ]
+        outputs: [ { name: Unconfirmed request, concept: training.CN004 } ]
+        path_type: error
+        description: The buyer receives the rejection reason without acquiring a seat.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA011
+        name: Settle participant cancellation
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Pre-start cancellation, concept: training.CN004 } ]
+        outputs: [ { name: Cancelled seat, concept: training.CN004 }, { name: Cancellation settlement or linked refund, concept: training.CN005 } ]
+        path_type: compensation
+        description: Release the cancelled seat in every band; refund 100% at 14 or more calendar days, 50% at 7-13 and 0% below 7, linking any refund without erasing billing evidence.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA012
+        name: Close no-show without a refund
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: No-show attendance, concept: training.CN004 } ]
+        outputs: [ { name: Closed paid no-show, concept: training.CN004 }, { name: Retained invoice, concept: training.CN006 } ]
+        path_type: error
+        description: Only when delivery was available and no overriding refund right applies, retain the paid no-show charge and withhold the attendance certificate.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        next:
+          - { to: training.PA035 }
+      - id: training.PA029
+        name: Plan the occurrence
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Workshop offer, concept: training.CN001 } ]
+        outputs: [ { name: Planned occurrence, concept: training.CN003 } ]
+        description: For a closed workshop use the company interview to agree tailored scope and resources with the facilitator; open content has no specific company context. Set date, timezone, capacity, minimum and decision date.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        next:
+          - { to: training.PA030, condition: Closed company group is selected }
+          - { to: training.PA002, condition: Open occurrence is planned }
+        gateway: xor
+      - id: training.PA030
+        name: Agree the closed group order
+        triggered_by: [ training.ACT005 ]
+        inputs: [ { name: Closed occurrence, concept: training.CN003 } ]
+        outputs: [ { name: Named group places, concept: training.CN004 } ]
+        description: Agree scope, date, group fee and roster with the coordinator; one company order covers named learners without individual purchases.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        next:
+          - { to: training.PA002 }
+      - id: training.PA031
+        name: Send the company invoice
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Company order, concept: training.CN004 } ]
+        outputs: [ { name: Issued unpaid invoice, concept: training.CN006 } ]
+        description: Send the order invoice to the company buyer with the agreed pre-confirmation due date; billing goes separately from learner instructions.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        next:
+          - { to: training.PA032 }
+      - id: training.PA032
+        name: Collect the booking payment
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Available requested places, concept: training.CN004 } ]
+        outputs: [ { name: Collection outcome, concept: training.CN005 } ]
+        description: Collect only for available places against the agreed order; a failed attempt preserves an issued invoice as unpaid.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        next:
+          - { to: training.PA003, condition: Payment succeeds }
+          - { to: training.PA010, condition: Payment fails }
+        gateway: xor
+      - id: training.PA033
+        name: Decide whether the occurrence runs
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Tentative occurrence, concept: training.CN003 }, { name: Paid places, concept: training.CN004 } ]
+        outputs: [ { name: Occurrence decision, concept: training.CN003 } ]
+        description: At decisionAt compare open paid places with the minimum, or confirm the closed group agreement, and check facilitator availability.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        next:
+          - { to: training.PA034, condition: "Open minimum is met or closed group agreement is settled, and facilitator is available" }
+          - { to: training.PA036, condition: Below open minimum or facilitator unavailable }
+        gateway: xor
+      - id: training.PA034
+        name: Prepare learning and send reminders
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Confirmed occurrence and closed-workshop interview context when applicable, concept: training.CN003 } ]
+        outputs: [ { name: Prepared delivery, concept: training.CN003 } ]
+        description: With the facilitator prepare materials and pre-work, test resources and send learner instructions and a reminder; tailor closed workshop content to companyContext from the interview, while open content stays company-independent.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        next:
+          - { to: training.PA004, condition: Participant request arrives before start }
+          - { to: training.PA005, condition: Prepared occurrence reaches delivery and no request is pending }
+        gateway: xor
+      - id: training.PA035
+        name: Follow up with learners
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Attendance and optional feedback, concept: training.CN004 } ]
+        outputs: [ { name: Next-occurrence improvements, concept: training.CN003 } ]
+        description: Send promised resources and practice prompts, offer a route for questions and review optional feedback for the next occurrence.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA036
+        name: Resolve organiser cancellation
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Unavailable occurrence, concept: training.CN003 }, { name: Affected places, concept: training.CN004 }, { name: Collected fees, concept: training.CN005 } ]
+        outputs: [ { name: Cancelled occurrence, concept: training.CN003 }, { name: Refunded or agreed transferred places, concept: training.CN004 }, { name: Full refunds or retained transferred payments, concept: training.CN005 } ]
+        description: Below the open minimum, first set a new workshop date, then inform every registrant of both the refund and moved-date options; notify the payer separately when needed. Refund in full by default; transfer only on acceptance and available capacity. Facilitator illness also requires notice and refund or agreed transfer; retain billing evidence.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA037
+        name: Assess a substitute or later-date request
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Pre-start change request, concept: training.CN004 } ]
+        outputs: [ { name: "Substituted, transferred or unchanged booking", concept: training.CN004 } ]
+        description: An eligible notified substitute changes only the learner; one agreed no-fee transfer moves seat and payment if capacity exists, otherwise the original booking stays intact.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        next:
+          - { to: training.PA004, condition: Change accepted or refused; continue monitoring the booking in its current occurrence }
+      - id: training.PA048
+        name: Interview the company before workshop planning
+        triggered_by: [ training.ACT003 ]
+        inputs: [ { name: Company learning request, concept: training.CN001 } ]
+        outputs: [ { name: Company work and project context, concept: training.CN003 } ]
+        next:
+          - { to: training.PA029 }
+        description: Interview the company buyer about employees work, project and challenges; record companyContext to shape the closed workshop scope and examples.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+    lanes:
+      - actor: training.ACT001
+        activities: [ training.PA001 ]
+      - actor: training.ACT002
+        activities: [ training.PA002, training.PA003, training.PA004, training.PA005, training.PA009, training.PA010, training.PA011, training.PA012, training.PA029, training.PA031, training.PA032, training.PA033, training.PA034, training.PA035, training.PA036, training.PA037 ]
+      - actor: training.ACT003
+        activities: [ training.PA006, training.PA007, training.PA008, training.PA048 ]
+      - actor: training.ACT005
+        activities: [ training.PA030 ]
+    end_states:
+      - name: Attended and followed up
+        type: complete
+        from: [ training.PA035 ]
+      - name: Seat not confirmed
+        type: error
+        from: [ training.PA010 ]
+      - name: Participant cancellation settled
+        type: cancel
+        from: [ training.PA011 ]
+      - name: Organiser cancellation refunded or transferred
+        type: cancel
+        from: [ training.PA036 ]
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+user_stories: []

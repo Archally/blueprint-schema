@@ -1,0 +1,13 @@
+engineVersion: "0.1"
+rules:
+  - id: work-activity-without-lane
+    severity: info
+    description: >-
+      An organization process activity has no explicit activity, operation or actor placement. Slice describes defaults are inherited by the model builder. Ambiguous explicit membership has its own warning.
+    find:
+      entity_type: Process
+    check:
+      custom:
+        module: ./work-process.mjs
+        export: workActivityWithoutLane
+    message: 'Organization activities have no lane in process "{displayId}": {problems}.'

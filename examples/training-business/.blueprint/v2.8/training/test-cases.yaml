@@ -1,0 +1,192 @@
+version: "1.0.0"
+happy_path:
+  - id: training.TC001
+    name: Complete an online workshop
+    summary: An available online session and a customer ready to pay.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR001
+        - training.VR005
+        - training.VR006
+        - training.VR009
+      concepts: [ training.CN001, training.CN002, training.CN003, training.CN004, training.CN005, training.CN006, training.CN009 ]
+    given:
+      description: An available online session and a customer ready to pay.
+      state:
+        deliveryMode: online
+        capacity: 12
+        confirmedSeats: 11
+        payment: succeeded
+        minimumParticipants: 4
+        occurrenceConfirmed: true
+        facilitatorAvailable: true
+    when:
+      description: Plan, prepay, confirm the occurrence, prepare and remind, deliver, certify attendance and follow up.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "booking: attended"
+          - "confirmedSeats: 12"
+          - "feedback: collected"
+          - "invoiceCount: 1"
+          - "acknowledgementCount: 1"
+          - "preparationAndReminder: sent"
+          - "certificateCount: 1"
+          - "followUp: sent"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC002
+    name: Complete a room workshop
+    summary: An available room session and a customer ready to pay.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR001
+        - training.VR005
+        - training.VR006
+        - training.VR009
+      concepts: [ training.CN003, training.CN004, training.CN005, training.CN006, training.CN009 ]
+    given:
+      description: An available room session and a customer ready to pay.
+      state:
+        deliveryMode: room
+        capacity: 12
+        confirmedSeats: 0
+        payment: succeeded
+        minimumParticipants: 1
+        occurrenceConfirmed: true
+        facilitatorAvailable: true
+    when:
+      description: Run the workshop booking and delivery journey.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "booking: attended"
+          - "deliveryMode: room"
+          - "feedback: collected"
+          - "invoiceCount: 1"
+          - "acknowledgementCount: 1"
+          - "certificateCount: 1"
+          - "followUp: sent"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC003
+    name: Reject failed workshop payment
+    summary: A seat is available but collection fails.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR001
+        - training.VR005
+      concepts: [ training.CN004, training.CN005, training.CN003 ]
+    given:
+      description: A seat is available but collection fails.
+      state:
+        capacity: 12
+        confirmedSeats: 11
+        payment: failed
+    when:
+      description: Try to confirm the requested seat.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "booking: requested"
+          - "confirmedSeats: 11"
+          - "acknowledgementCount: 0"
+          - "collectedAmount: 0"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC004
+    name: Reject an exhausted workshop
+    summary: All session seats are already confirmed.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR001
+      concepts: [ training.CN003, training.CN004 ]
+    given:
+      description: All session seats are already confirmed.
+      state:
+        capacity: 12
+        confirmedSeats: 12
+    when:
+      description: Request one more seat.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "booking: requested"
+          - "collectionAttempts: 0"
+          - "confirmedSeats: 12"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC005
+    name: Cancel with exactly fourteen days notice
+    summary: A paid place is cancelled at the full voluntary-refund boundary.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR002
+        - training.VR005
+        - training.VR007
+      concepts: [ training.CN004, training.CN005, training.CN003, training.CN006, training.CN009 ]
+    given:
+      description: A paid booking exists and no overriding right changes the voluntary outcome.
+      state:
+        booking: confirmed
+        confirmedSeats: 12
+        beforeStart: true
+        noticeCalendarDays: 14
+        sessionTimeZone: UTC
+        overridingRightApplies: false
+    when:
+      description: Cancel the seat before the session starts.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "booking: cancelled"
+          - "confirmedSeats: 11"
+          - "payment: refunded"
+          - "refundPercent: 100"
+          - "linkedRefundRecordCount: 1"
+          - "invoiceRetained: true"
+          - "acknowledgementRetained: true"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC006
+    name: Close a paid no-show
+    summary: A paid confirmed participant does not join either delivery mode.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR002
+        - training.VR005
+        - training.VR009
+      concepts: [ training.CN004, training.CN005, training.CN006, training.CN009 ]
+    given:
+      description: A paid confirmed participant does not join either delivery mode.
+      state:
+        booking: confirmed
+        attended: false
+        deliveryAvailable: true
+        overridingRefundRightApplies: false
+    when:
+      description: Close workshop attendance.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "booking: no-show"
+          - "payment: succeeded"
+          - "invoiceCount: 1"
+          - "refundCount: 0"
+          - "certificateCount: 0"
+          - "acknowledgementCount: 1"
+          - "followUp: sent"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }

@@ -131,6 +131,20 @@ test("a file with no manifest entry is reported when the unit is not extras-ok",
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
+test("build output and installed dependencies inside a strict unit are not reported", () => {
+  const { root, verifier, dirFor } = makeFixture(BASE);
+  try {
+    for (const folder of ["dist", "node_modules"]) {
+      mkdirSync(join(dirFor["quality-gate"], folder, "nested"), { recursive: true });
+      writeFileSync(join(dirFor["quality-gate"], folder, "nested", "out.js"), "export {};\n", "utf8");
+    }
+    const { code, out } = run(verifier);
+    assert.equal(code, 0, out);
+    writeFileSync(join(dirFor["quality-gate"], "local-only.mjs"), "export const x = 1;\n", "utf8");
+    assert.match(run(verifier).out, /quality-gate\/local-only\.mjs is present but not in the manifest/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
 test("a unit marked extras-ok may ship files the manifest does not name", () => {
   const { root, verifier, dirFor, portDir } = makeFixture(BASE);
   try {

@@ -11,7 +11,7 @@ import { extractArch } from './arch.js';
 import { extractMotivation } from './motivation.js';
 import { extractDecisions } from './decisions.js';
 import { extractTestCases } from './testCases.js';
-import { extractStory } from './story.js';
+import { extractStory, inheritProcessDescribes } from './story.js';
 import { extractOrg } from './org.js';
 import { extractUI } from './ui.js';
 import { extractModels } from './models.js';
@@ -88,6 +88,7 @@ export function extractAllEntities(documentsByType: DocumentsBySchemaType): Enti
       entities.push(...extract(own, line));
     }
   }
+  inheritProcessDescribes(entities, documentsByType);
   return entities;
 }
 

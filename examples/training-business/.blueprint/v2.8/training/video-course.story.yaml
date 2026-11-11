@@ -1,0 +1,332 @@
+name: training
+version: "1.0.0"
+processes:
+  - id: training.PRC002
+    title: Video course production and paid subscription
+    description: Objectives lead to content and technical approval, platform preview and publication; published lessons are reviewed without interrupting paid access, and subscriptions use bounded renewal recovery. Pauses, price changes for existing subscriptions and credit-term invoicing are outside this example.
+    describes: organization
+    initiated_by: [ training.ACT003 ]
+    trigger:
+      type: manual
+      description: The facilitator starts production or reviews a published lesson on its review date or an obsolete-content report.
+    activities:
+      - id: training.PA013
+        name: Outline objectives and teaching materials
+        triggered_by: [ training.ACT003 ]
+        inputs: [ { name: Subscription course offer, concept: training.CN001 } ]
+        outputs: [ { name: Lesson script, concept: training.CN007 } ]
+        next:
+          - { to: training.PA049 }
+        description: Define objectives, lesson order, exercises, talking points and slides before recording.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA014
+        name: Record the lessons
+        triggered_by: [ training.ACT003 ]
+        inputs: [ { name: Lesson script and prepared working examples, concept: training.CN007 } ]
+        outputs: [ { name: Lesson recording, concept: training.CN007 } ]
+        next:
+          - { to: training.PA015 }
+        join:
+          mode: xor
+        description: Test sound, framing and screen readability first, then record the planned lessons or targeted replacement takes.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA015
+        name: Edit the recording
+        triggered_by: [ training.ACT004 ]
+        inputs: [ { name: Lesson recording, concept: training.CN007 } ]
+        outputs: [ { name: Edited recording, concept: training.CN007 } ]
+        next:
+          - { to: training.PA016, condition: Edited lesson is ready for subject-matter review }
+          - { to: training.PA027, condition: Editing reveals a gap or failed capture }
+        description: Editing is the largest effort after preparing good examples. Assemble lessons, sound, captions and slides; picture faults are easier to fix than sound. Route an omitted topic or failed sound to rework for a retake, pick-up recording or a directed and rendered animation.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        gateway: xor
+      - id: training.PA016
+        name: Review teaching against objectives
+        triggered_by: [ training.ACT003 ]
+        inputs: [ { name: Edited recording, concept: training.CN007 } ]
+        outputs: [ { name: Editorial decision, concept: training.CN007 } ]
+        next:
+          - { to: training.PA038, condition: Content approved }
+          - { to: training.PA027, condition: Teaching review rejects the candidate }
+        gateway: xor
+        description: The facilitator is the course subject-matter owner and reviews the edited lesson for teaching accuracy, explanations and exercises against objectives before acceptance.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA017
+        name: Publish or replace and launch lessons
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Approved recording, concept: training.CN007 } ]
+        outputs: [ { name: Published course, concept: training.CN007 } ]
+        next:
+          - { to: training.PA018, condition: A learner begins a subscription journey }
+          - { to: training.PA041, condition: Review date arrives or obsolete content is reported }
+        description: Publish the accepted, previewed candidate publicly or privately as selected, with metadata, PDF, audio and tags. Align offer and welcome message; replacement must preserve current paid access, and visibility alone grants no entitlement.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        gateway: xor
+      - id: training.PA018
+        name: Choose a subscription plan
+        triggered_by: [ training.ACT001 ]
+        inputs: [ { name: Published course, concept: training.CN007 }, { name: Subscription price and period, concept: training.CN001 } ]
+        outputs: [ { name: Requested subscription, concept: training.CN008 } ]
+        next:
+          - { to: training.PA019 }
+        description: Disclose the fixed recurring price, 30-day period, next renewal date, cancellation route and retained paid access before selection.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA019
+        name: Collect the initial period payment
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Requested subscription, concept: training.CN008 } ]
+        outputs: [ { name: Initial collection outcome, concept: training.CN005 } ]
+        next:
+          - { to: training.PA020, condition: Initial payment succeeds }
+          - { to: training.PA028, condition: Initial payment fails }
+        gateway: xor
+        description: An unpaid request must not acquire an entitlement.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA020
+        name: Grant paid access and acknowledge collection
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Successful collection, concept: training.CN005 }, { name: Published course, concept: training.CN007 } ]
+        outputs: [ { name: Active subscription, concept: training.CN008 }, { name: Separate period invoice, concept: training.CN006 }, { name: Initial collection acknowledgement, concept: training.CN009 } ]
+        next:
+          - { to: training.PA021 }
+        description: Grant the first 30-day period, send one collection acknowledgement and reconcile the separate invoice.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA021
+        name: Check renewal or cancellation
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Active paid period, concept: training.CN008 } ]
+        outputs: [ { name: Renewal decision, concept: training.CN008 } ]
+        next:
+          - { to: training.PA022, condition: Renewal enabled at the paid boundary }
+          - { to: training.PA025, condition: Subscriber cancels before the paid boundary }
+        gateway: xor
+        join:
+          mode: xor
+        description: The renewal decision respects any cancellation received before the paid boundary.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA022
+        name: Collect the renewal payment
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Renewable subscription, concept: training.CN008 } ]
+        outputs: [ { name: Renewal collection outcome, concept: training.CN005 } ]
+        next:
+          - { to: training.PA023, condition: Renewal payment succeeds }
+          - { to: training.PA024, condition: Renewal payment fails }
+        gateway: xor
+        description: Collection is attempted only for a subscription whose renewal remains enabled.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA023
+        name: Extend paid access and acknowledge renewal
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Successful renewal payment, concept: training.CN005 } ]
+        outputs: [ { name: Extended paid period, concept: training.CN008 }, { name: Separate renewal invoice, concept: training.CN006 }, { name: Renewal acknowledgement, concept: training.CN009 } ]
+        next:
+          - { to: training.PA021 }
+        description: Advance the original paid boundary by 30 days once, including recovery success; send one acknowledgement and reconcile the separate invoice.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA024
+        name: Send recovery reminder and open grace
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Failed renewal payment, concept: training.CN005 } ]
+        outputs: [ { name: Recovering subscription, concept: training.CN008 } ]
+        path_type: error
+        description: Send a payment-update reminder and allow temporary access for seven days from the original paid boundary without extending paidThrough.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        next:
+          - { to: training.PA044, condition: Recoverable decline and scheduled retry is due }
+          - { to: training.PA047, condition: Hard decline needs buyer correction }
+          - { to: training.PA046, condition: Cancellation arrives during grace }
+          - { to: training.PA045, condition: Day 7 arrives unpaid }
+        gateway: xor
+      - id: training.PA025
+        name: Stop renewal and retain paid access
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Cancellation request, concept: training.CN008 } ]
+        outputs: [ { name: Non-renewing paid subscription, concept: training.CN008 } ]
+        next:
+          - { to: training.PA026, condition: Paid access boundary is reached }
+        path_type: compensation
+        description: Stop future charging, retain access through the paid boundary and grant no voluntary prorated refund, subject to overriding rights.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA026
+        name: End access at the paid boundary
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Non-renewing paid period, concept: training.CN008 } ]
+        outputs: [ { name: Expired subscription, concept: training.CN008 } ]
+        path_type: compensation
+        description: Expiry removes access exactly when the purchased entitlement ends.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA027
+        name: Classify lesson rework
+        triggered_by: [ training.ACT004 ]
+        inputs: [ { name: Gap found in editing or rejected review, concept: training.CN007 } ]
+        outputs: [ { name: "Targeted recording, editing or animation brief", concept: training.CN007 } ]
+        next:
+          - { to: training.PA014, condition: "Teaching or capture defect, including an omitted topic or failed sound, needs a retake or pick-up recording" }
+          - { to: training.PA015, condition: Editing or captions can correct the defect }
+          - { to: training.PA050, condition: A directed and rendered animation can fill the teaching gap }
+        path_type: compensation
+        description: "Classify gaps found during editing or review: retake or pick up an omitted topic or failed sound, correct an edit-only fault, or direct and render an animation. Picture faults are easier to repair than sound; preserve the current published edition."
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        gateway: xor
+      - id: training.PA028
+        name: Decline access after initial payment failure
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Failed initial collection, concept: training.CN005 } ]
+        outputs: [ { name: Unpaid subscription request, concept: training.CN008 } ]
+        path_type: error
+        description: Initial failure grants neither access nor grace nor a paid acknowledgement; any issued invoice remains in its recorded settlement state.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA038
+        name: Review technical quality
+        triggered_by: [ training.ACT004 ]
+        inputs: [ { name: Content-approved candidate, concept: training.CN007 } ]
+        outputs: [ { name: Technical review decision, concept: training.CN007 } ]
+        description: Check sound, captions, synchronization and legibility after facilitator content approval; classify any remaining defect for editing or capture rework.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        next:
+          - { to: training.PA051, condition: Technical review approves the accepted lesson }
+          - { to: training.PA027, condition: "Sound, captions, legibility or capture requires rework" }
+        gateway: xor
+      - id: training.PA039
+        name: Configure the course platform
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: "Accepted lessons with metadata, PDF, audio and tags", concept: training.CN007 } ]
+        outputs: [ { name: Configured course candidate, concept: training.CN007 } ]
+        description: Assemble hosting, editorial downloads, offer page and welcome message; choose public or private publication visibility independently of subscription access restrictions.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        next:
+          - { to: training.PA040 }
+      - id: training.PA040
+        name: Preview the learner journey
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Configured candidate, concept: training.CN007 }, { name: Preview access states, concept: training.CN008 } ]
+        outputs: [ { name: Learner-preview result, concept: training.CN007 } ]
+        description: Check public or private visibility matches the intended release, paid subscribers can use the course and unpaid learners cannot reach restricted lessons; fix configuration before launch.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        next:
+          - { to: training.PA017, condition: Paid access works and unpaid restricted access is denied }
+          - { to: training.PA039, condition: Configuration or access preview fails }
+        gateway: xor
+      - id: training.PA041
+        name: Review published lesson relevance
+        triggered_by: [ training.ACT003 ]
+        inputs: [ { name: Published edition and reported gap, concept: training.CN007 } ]
+        outputs: [ { name: Maintenance decision and candidate brief, concept: training.CN007 } ]
+        description: On reviewAt or an obsolete-lesson report, assess the lesson against objectives and choose no change, editing, re-recording or retirement; the published edition stays available during revision.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        next:
+          - { to: training.PA043, condition: Current lessons remain accurate }
+          - { to: training.PA015, condition: Update needs editing only }
+          - { to: training.PA014, condition: Update needs targeted re-recording }
+          - { to: training.PA042, condition: Retirement is selected }
+        gateway: xor
+      - id: training.PA042
+        name: Retire the course from new sales
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Retirement decision, concept: training.CN007 }, { name: Existing paid entitlements, concept: training.CN008 } ]
+        outputs: [ { name: Retired sale offer, concept: training.CN007 }, { name: Paid access retained without renewal, concept: training.CN008 } ]
+        description: Close new sales and renewal, communicate retirement and preserve the promised edition for each existing paid period.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA043
+        name: Record the next content review
+        triggered_by: [ training.ACT003 ]
+        inputs: [ { name: Relevant published lessons, concept: training.CN007 } ]
+        outputs: [ { name: Next review date, concept: training.CN007 } ]
+        description: When no change is needed, keep the edition available and set its next review date.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA044
+        name: Retry within the recovery window
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Recovering subscription, concept: training.CN008 } ]
+        outputs: [ { name: Retry collection outcome, concept: training.CN005 }, { name: Open or resolved recovery, concept: training.CN008 } ]
+        description: Attempt recovery on days 1, 3 and 6 only while renewal remains open; success advances 30 days from the original paid boundary, never from the retry date.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        next:
+          - { to: training.PA023, condition: Recovery succeeds before day 7 and renewal is still open }
+          - { to: training.PA044, condition: "Retry fails and next day among 1, 3, 6 arrives before day 7" }
+          - { to: training.PA045, condition: Day 7 arrives unpaid }
+          - { to: training.PA046, condition: Subscriber cancels during grace }
+          - { to: training.PA047, condition: Hard decline needs correction }
+        gateway: xor
+      - id: training.PA045
+        name: Close exhausted recovery
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Unpaid recovery at day 7, concept: training.CN008 } ]
+        outputs: [ { name: Expired closed recovery, concept: training.CN008 } ]
+        description: At day 7 without successful payment, expire temporary access, waive the uncollected renewal and prohibit further retries or late collection.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA046
+        name: Close cancelled recovery
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Grace cancellation request, concept: training.CN008 } ]
+        outputs: [ { name: Cancelled closed recovery, concept: training.CN008 } ]
+        description: Cancellation during grace stops temporary access, retries and late collection immediately because the paid boundary has passed; waive the unpaid renewal.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA047
+        name: Correct the declined payment method
+        triggered_by: [ training.ACT001 ]
+        inputs: [ { name: Hard decline, concept: training.CN005 }, { name: Original grace deadline, concept: training.CN008 } ]
+        outputs: [ { name: Corrected method or unresolved recovery, concept: training.CN008 } ]
+        description: Update the payment method before a scheduled retry; a hard decline cannot be retried without correction and does not restart the seven-day clock.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+        next:
+          - { to: training.PA044, condition: Buyer corrects payment before a remaining scheduled retry }
+          - { to: training.PA045, condition: Day 7 arrives without recovery }
+          - { to: training.PA046, condition: Subscriber cancels during grace }
+        gateway: xor
+      - id: training.PA049
+        name: Prepare working examples
+        triggered_by: [ training.ACT003 ]
+        inputs: [ { name: Lesson script, concept: training.CN007 } ]
+        outputs: [ { name: Prepared examples, concept: training.CN007 } ]
+        next:
+          - { to: training.PA014 }
+        description: Prepare and try the code repository, agents and understandable real-life scenarios before recording; good examples take the most effort, followed by editing and the script.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA050
+        name: Direct and render a teaching animation
+        triggered_by: [ training.ACT004 ]
+        inputs: [ { name: Gap identified during editing, concept: training.CN007 } ]
+        outputs: [ { name: Rendered teaching animation, concept: training.CN007 } ]
+        next:
+          - { to: training.PA015 }
+        description: Direct and render an animation when it can explain a missing point without new footage; include this extra production work before returning to editing.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+      - id: training.PA051
+        name: Prepare the accepted lesson for publication
+        triggered_by: [ training.ACT002 ]
+        inputs: [ { name: Accepted lesson, concept: training.CN007 } ]
+        outputs: [ { name: Editorial package, concept: training.CN007 } ]
+        next:
+          - { to: training.PA039 }
+        description: After facilitator subject-matter acceptance and technical approval, add metadata, a PDF version, an audio version and tags before platform setup.
+        provenance: { discovery_stage: hypothesis, certainty: speculative }
+    lanes:
+      - actor: training.ACT003
+        activities: [ training.PA013, training.PA014, training.PA016, training.PA041, training.PA043, training.PA049 ]
+      - actor: training.ACT004
+        activities: [ training.PA015, training.PA038, training.PA027, training.PA050 ]
+      - actor: training.ACT002
+        activities: [ training.PA017, training.PA019, training.PA020, training.PA021, training.PA022, training.PA023, training.PA024, training.PA025, training.PA026, training.PA028, training.PA039, training.PA040, training.PA042, training.PA044, training.PA045, training.PA046, training.PA051 ]
+      - actor: training.ACT001
+        activities: [ training.PA018, training.PA047 ]
+    end_states:
+      - name: Unpaid recovery expired
+        type: error
+        from: [ training.PA045 ]
+      - name: Cancelled subscription expired
+        type: cancel
+        from: [ training.PA026, training.PA046 ]
+      - name: Initial access declined
+        type: error
+        from: [ training.PA028 ]
+      - name: Published content reviewed unchanged
+        type: complete
+        from: [ training.PA043 ]
+      - name: Retired with paid access preserved
+        type: complete
+        from: [ training.PA042 ]
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+user_stories: []

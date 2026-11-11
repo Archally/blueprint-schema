@@ -1,9 +1,9 @@
 /**
- * Identity + provenance helpers (DEC-ATL-12, DEC-ATL-13).
+ * Identity + provenance helpers.
  *
  * Internal processing uses source-true addresses (file + JSON Pointer); the
- * documentation surface uses stable slugs/anchors derived from — but not
- * replacing — that source identity.
+ * documentation surface uses stable slugs/anchors derived from - but not
+ * replacing - that source identity.
  */
 import type { Provenance, SourceRef } from './types.js';
 

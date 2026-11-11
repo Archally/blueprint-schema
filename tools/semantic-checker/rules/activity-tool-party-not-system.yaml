@@ -1,0 +1,13 @@
+engineVersion: "0.1"
+rules:
+  - id: activity-tool-party-not-system
+    severity: warn
+    description: >-
+      An activity tool names a resolved party whose kind is not system. Unresolved references remain validator errors.
+    find:
+      entity_type: Process
+    check:
+      custom:
+        module: ./work-process.mjs
+        export: activityToolPartyNotSystem
+    message: 'Activity tools name non-system parties in process "{displayId}": {problems}.'

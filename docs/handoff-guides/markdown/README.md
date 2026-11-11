@@ -34,12 +34,12 @@ knowledge is vague, mixed, or contradictory, the YAML will also be vague, mixed,
 
 Good handoff input is:
 
-- **concrete** — it names real actors, things, actions, and outcomes
-- **layer-aware** — it does not mix concepts, screens, stories, and risks into one blob
-- **vocabulary-aware** — it reuses the guide's named entities instead of inventing new labels
-- **connected** — it explains relationships, not only isolated items
-- **outcome-focused** — it explains what changes, not only what exists
-- **reviewable** — another person can read it and point out gaps or contradictions
+- **concrete** - it names real actors, things, actions, and outcomes
+- **layer-aware** - it does not mix concepts, screens, stories, and risks into one blob
+- **vocabulary-aware** - it reuses the guide's named entities instead of inventing new labels
+- **connected** - it explains relationships, not only isolated items
+- **outcome-focused** - it explains what changes, not only what exists
+- **reviewable** - another person can read it and point out gaps or contradictions
 
 ## What makes a good handoff
 
@@ -64,9 +64,9 @@ relationship between the files should be obvious to the receiver.
 
 Use these guides depending on what you are trying to capture. The family has:
 
-- **root/cross-cutting layers** — how the whole Blueprint bundle hangs together
-- **design layers** — what the system is and how it works
-- **governance layers** — why it exists, who owns it, how it changes, and how it is proven
+- **root/cross-cutting layers** - how the whole Blueprint bundle hangs together
+- **design layers** - what the system is and how it works
+- **governance layers** - why it exists, who owns it, how it changes, and how it is proven
 
 ### Root and cross-cutting guides
 

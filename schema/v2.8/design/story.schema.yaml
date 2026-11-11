@@ -314,10 +314,10 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
         description: >
           Domain operation where this activity begins. Generator follows causal chain
-          (produces/reacts_to) from here. Optional: an activity whose operation is not yet modelled
-          leaves it out, and the `activity-without-entry-operation` rule reports the gap. A
-          reference to an operation nothing declares is a cross-reference error, so the absence is
-          the honest form of "not yet", never a placeholder id.
+          (produces/reacts_to) from here. Optional: an activity without an operation describes
+          manual or human work, in either a system or an organization process. No placeholder
+          operation is needed. A reference to an operation nothing declares is a cross-reference
+          error.
       triggered_by:
         type: array
         items:

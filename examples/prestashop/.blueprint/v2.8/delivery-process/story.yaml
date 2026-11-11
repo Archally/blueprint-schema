@@ -1,0 +1,111 @@
+name: delivery-process
+version: "1.0.0"
+processes:
+  - id: delivery-process.PRC001
+    title: Refine and specify a storefront content change
+    describes: organization
+    description: Illustrative fictional shop workflow. TM007 (Content & Design Team)
+      refines content; TM010 (Core Platform Team) coordinates review. Approved
+      work reaches content.PRC001 (CMS Page Publishing).
+    trigger:
+      type: manual
+      description: A storefront content-change request is received.
+    owned_by:
+      team: TM007
+    provenance:
+      discovery_stage: hypothesis
+      certainty: speculative
+      evidence:
+        - kind: assumption
+          summary: Illustrative workflow for a fictional shop; not observed project
+            practice.
+          source: Illustrative teaching scenario of this example model
+          date: 2026-11-11
+    lanes:
+      - team: TM007
+        activities:
+          - delivery-process.PA001
+          - delivery-process.PA002
+          - delivery-process.PA004
+      - team: TM010
+        activities:
+          - delivery-process.PA003
+    activities:
+      - id: delivery-process.PA001
+        name: Record the content-change request
+        inputs:
+          - name: Content-change request
+        outputs:
+          - name: Recorded request
+        provenance:
+          discovery_stage: validated
+          certainty: confirmed
+          evidence:
+            - kind: documentation
+              summary: The teaching scenario stipulates that a content-change request is
+                recorded before design; no claim about real project practice.
+              source: Illustrative teaching scenario of this example model
+              date: 2026-11-11
+        next:
+          - to: delivery-process.PA002
+        tools:
+          - name: Issue Tracker
+            party: PRT102
+      - id: delivery-process.PA002
+        name: Design the content change
+        inputs:
+          - name: Recorded request
+        outputs:
+          - name: Content specification draft
+        provenance:
+          discovery_stage: hypothesis
+          certainty: speculative
+          evidence:
+            - kind: assumption
+              summary: Illustrative workflow for a fictional shop; not observed project
+                practice.
+              source: Illustrative teaching scenario of this example model
+              date: 2026-11-11
+        join:
+          mode: xor
+        next:
+          - to: delivery-process.PA003
+      - id: delivery-process.PA003
+        name: Review the specification
+        description: Approval authority is unresolved in delivery-process.INQ001 (Specification approver). TM010 (Core Platform Team) coordinates the review; its lane does not settle the approval authority.
+        inputs:
+          - name: Content specification draft
+        outputs:
+          - name: Approval decision
+        gateway: xor
+        next:
+          - to: delivery-process.PA004
+            condition: The specification is approved
+          - to: delivery-process.PA002
+            condition: The specification needs revision
+      - id: delivery-process.PA004
+        name: Hand over the approved specification
+        inputs:
+          - name: Content specification draft
+          - name: Approval decision
+        outputs:
+          - name: Approved content specification
+        provenance:
+          discovery_stage: hypothesis
+          certainty: speculative
+          evidence:
+            - kind: assumption
+              summary: Illustrative workflow for a fictional shop; not observed project
+                practice.
+              source: Illustrative teaching scenario of this example model
+              date: 2026-11-11
+        hands_over_to:
+          - process: content.PRC001
+    end_states:
+      - name: Ready for CMS publishing
+        type: complete
+        from:
+          - delivery-process.PA004
+    tags:
+      - illustrative
+      - work-process

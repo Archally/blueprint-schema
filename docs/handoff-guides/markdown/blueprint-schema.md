@@ -12,13 +12,13 @@ This guide helps with the **whole blueprint setup and scope**.
 
 ## Main entities in this guide
 
-- `layout` — the overall organization of the bundle, including whether it stays unified or is
+- `layout` - the overall organization of the bundle, including whether it stays unified or is
   split into slices.
-- `slice` — one named business area or technical capability inside a sliced bundle.
-- `shared` — the root-level files reused across slices instead of living inside just one slice.
-- `constitution` — the shared principles, conventions, and naming rules that govern the whole
+- `slice` - one named business area or technical capability inside a sliced bundle.
+- `shared` - the root-level files reused across slices instead of living inside just one slice.
+- `constitution` - the shared principles, conventions, and naming rules that govern the whole
   bundle.
-- `migration` — an inline or referenced change package that evolves the bundle over time.
+- `migration` - an inline or referenced change package that evolves the bundle over time.
   - Often confused with: a single design or governance file. This guide is about the whole bundle
     and how its parts fit together.
 

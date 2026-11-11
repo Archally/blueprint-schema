@@ -1,5 +1,5 @@
 /**
- * Layer map page — per-plane structure with bounded dependency diagrams (Step 03).
+ * Layer map page - per-plane structure with bounded dependency diagrams.
  */
 import { generatedBanner, table, cell, truncate, blocks } from '../md.js';
 import { fileSlug } from '../provenance.js';
@@ -10,10 +10,10 @@ export function renderLayerMap(ctx: GenContext, includeMermaid: boolean): string
   const { model, policy } = ctx;
   const parts: string[] = [generatedBanner()];
 
-  parts.push(`# Blueprint Schema Atlas — ${model.version} Layer Map`);
+  parts.push(`# Blueprint Schema Atlas - ${model.version} Layer Map`);
   parts.push(
     'Planes group schema files by concern. Dependency diagrams are **bounded per plane** so structure ' +
-      'stays readable rather than flattened into one giant graph (DEC-ATL-14).',
+      'stays readable rather than flattened into one giant graph.',
   );
 
   for (const plane of model.planes) {
@@ -37,7 +37,7 @@ export function renderLayerMap(ctx: GenContext, includeMermaid: boolean): string
     if (includeMermaid) {
       const diagram = planeDependencyDiagram(model, plane.id, policy);
       if (diagram) {
-        parts.push(`### ${plane.title} — reference dependencies`);
+        parts.push(`### ${plane.title} - reference dependencies`);
         parts.push(diagram);
       }
     }

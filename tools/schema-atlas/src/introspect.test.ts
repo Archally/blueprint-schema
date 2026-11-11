@@ -5,13 +5,13 @@ import { buildAtlasModel } from './introspect.js';
 import { resolveSchemaDir } from './schema-io.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(here, '../../..');
-const v27 = resolveSchemaDir(path.join(repoRoot, 'schema', 'v2.7'));
+const schemaRoot = process.env.BLUEPRINT_ATLAS_TEST_SCHEMA_ROOT ?? path.resolve(here, '../../../schema');
+const v27 = resolveSchemaDir(path.join(schemaRoot, 'v2.7'));
 
 describe('buildAtlasModel (v2.7)', () => {
   const model = buildAtlasModel('v2.7', v27);
 
-  it('represents the full version end to end (VAL-ATL-004)', () => {
+  it('represents the full version end to end', () => {
     expect(model.files.length).toBeGreaterThan(15);
     const rels = model.files.map((f) => f.relPath);
     expect(rels).toContain('design/domain.schema.yaml');
@@ -19,7 +19,7 @@ describe('buildAtlasModel (v2.7)', () => {
     expect(rels).toContain('metamodel.schema.yaml');
   });
 
-  it('preserves plane boundaries (DEC-ATL-14)', () => {
+  it('preserves plane boundaries', () => {
     const design = model.planes.find((p) => p.id === 'design')!;
     const governance = model.planes.find((p) => p.id === 'governance')!;
     const cross = model.planes.find((p) => p.id === 'cross-cutting')!;
@@ -28,14 +28,14 @@ describe('buildAtlasModel (v2.7)', () => {
     expect(cross.files).toContain('metamodel.schema.yaml');
   });
 
-  it('extracts typed-ID vocabulary with prefixes (VAL-ATL-007A)', () => {
+  it('extracts typed-ID vocabulary with prefixes', () => {
     const byName = new Map(model.entityTypes.map((e) => [e.name, e]));
     expect(byName.get('concept_ref')?.idPrefix).toBe('CN');
     expect(byName.get('command_ref')?.idPrefix).toBe('CMD');
     expect(byName.get('event_ref')?.idPrefix).toBe('EVT');
   });
 
-  it('extracts root requiredness, properties, and enums (VAL-ATL-007)', () => {
+  it('extracts root requiredness, properties, and enums', () => {
     const domain = model.files.find((f) => f.relPath === 'design/domain.schema.yaml')!;
     expect(domain.required).toContain('operations');
     const operation = domain.definitions.find((d) => d.name === 'operation')!;
@@ -52,7 +52,7 @@ describe('buildAtlasModel (v2.7)', () => {
     expect(idProp.type.refEntityType).toBe('operation_ref');
   });
 
-  it('produces cross-file relations with source-true addresses (DEC-ATL-13)', () => {
+  it('produces cross-file relations with source-true addresses', () => {
     expect(model.relations.length).toBeGreaterThan(0);
     const toMetamodel = model.relations.filter((r) => r.toFile === 'metamodel.schema.yaml');
     expect(toMetamodel.length).toBeGreaterThan(3);

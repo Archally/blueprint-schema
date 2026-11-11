@@ -1,0 +1,13 @@
+engineVersion: "0.1"
+rules:
+  - id: lane-team-differs-from-staffing
+    severity: warn
+    description: >-
+      A lane states an actor and a team that disagrees with the resolved actor staffing. Missing references remain validator errors.
+    find:
+      entity_type: Process
+    check:
+      custom:
+        module: ./work-process.mjs
+        export: laneTeamDiffersFromStaffing
+    message: 'Lane staffing disagrees in process "{displayId}": {problems}.'

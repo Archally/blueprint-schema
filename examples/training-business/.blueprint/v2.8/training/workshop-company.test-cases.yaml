@@ -1,0 +1,179 @@
+version: "1.0.0"
+happy_path:
+  - id: training.TC013
+    name: Refund a below-minimum occurrence
+    summary: The open occurrence misses its minimum at the checkpoint and a later date is declined.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR006
+        - training.VR005
+      concepts: [ training.CN003, training.CN004, training.CN005, training.CN006, training.CN009 ]
+    given:
+      description: The open occurrence misses its minimum at the checkpoint and a later date is declined.
+      state:
+        audienceType: open
+        minimumParticipants: 4
+        paidParticipants: 3
+        replacementAccepted: false
+    when:
+      description: At the below-minimum checkpoint first set the replacement date, then inform every registrant of both refund and moved-date options and notify the payer as needed; settle by refund unless the buyer accepts an available transfer.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "occurrence: cancelled"
+          - "refundPercent: 100"
+          - "buyerNotified: true"
+          - "invoiceAndAcknowledgementRetained: true"
+          - "attendanceAndNoShowRecorded: false"
+          - "replacementDateSetBeforeNotice: true"
+          - "everyRegistrantInformedOfBothOptions: true"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC014
+    name: Refund when the facilitator is ill
+    summary: A confirmed occurrence cannot be delivered because the facilitator is ill.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR006
+        - training.VR005
+      concepts: [ training.CN003, training.CN004, training.CN005, training.CN006 ]
+    given:
+      description: A confirmed occurrence cannot be delivered because the facilitator is ill.
+      state:
+        minimumMet: true
+        facilitatorAvailable: false
+        replacementAccepted: false
+    when:
+      description: Cancel before delivery and notify the buyer.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "occurrence: cancelled"
+          - "refundPercent: 100"
+          - "forcedCredit: false"
+          - "attendanceAndNoShowRecorded: false"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC015
+    name: Accept an organiser replacement date
+    summary: The cancelled occurrence has a later date that the buyer accepts and that has capacity.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR006
+      concepts: [ training.CN003, training.CN004, training.CN005 ]
+    given:
+      description: The cancelled occurrence has a later date that the buyer accepts and that has capacity.
+      state:
+        organiserCause: too few bookings
+        replacementAccepted: true
+        targetHasCapacity: true
+    when:
+      description: At the below-minimum checkpoint first set the replacement date, then inform every registrant of both refund and moved-date options and notify the payer as needed; settle by refund unless the buyer accepts an available transfer.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "originalOccurrence: cancelled"
+          - "targetPlaces: confirmed"
+          - "paymentRetainedForTarget: true"
+          - "additionalCollectionCount: 0"
+          - "replacementDateSetBeforeNotice: true"
+          - "everyRegistrantInformedOfBothOptions: true"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC016
+    name: Company buys several open places
+    summary: One company buyer orders three named learners in an open occurrence.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR001
+        - training.VR005
+      concepts: [ training.CN002, training.CN003, training.CN004, training.CN005, training.CN006, training.CN009 ]
+    given:
+      description: One company buyer orders three named learners in an open occurrence.
+      state:
+        audienceType: open
+        requestedPlaces: 3
+        remainingCapacity: 4
+        payerAttends: false
+    when:
+      description: Order fixed-date open places without a company-context interview; invoice the employer before payment and confirm named learners only after settlement.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "invoiceBeforePayment: true"
+          - "confirmedPlaces: 3"
+          - "payerAndParticipantsDistinct: true"
+          - "acknowledgementCount: 1"
+          - "billingAndLearnerInstructionsSeparate: true"
+          - "companyContextRequired: false"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC017
+    name: Retain an invoice after company payment fails
+    summary: A company has received its order invoice but collection fails.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR001
+        - training.VR005
+      concepts: [ training.CN002, training.CN004, training.CN005, training.CN006, training.CN009 ]
+    given:
+      description: A company has received its order invoice but collection fails.
+      state:
+        invoiceAlreadyIssued: true
+        payment: failed
+        requestedPlaces: 3
+    when:
+      description: Reconcile the failed collection without confirming places.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "confirmedPlaces: 0"
+          - "invoiceRetained: true"
+          - "invoiceSettlement: unpaid"
+          - "acknowledgementCount: 0"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC018
+    name: Deliver a closed company group
+    summary: A company agrees scope, date and group fee for a named roster.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR001
+        - training.VR006
+        - training.VR009
+      concepts: [ training.CN002, training.CN003, training.CN004, training.CN005, training.CN006 ]
+    given:
+      description: A company agrees scope, date and group fee for a named roster.
+      state:
+        audienceType: closed
+        rosterSize: 8
+        capacity: 12
+        groupAgreement: accepted
+        groupPayment: succeeded
+    when:
+      description: First interview the company about employees work, project and challenges; use the findings to agree scope, invoice, settle, tailor preparation and deliver at the employer to the roster.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "confirmedPlaces: 8"
+          - "individualPurchasesRequired: false"
+          - "groupCollectionCount: 1"
+          - "attendanceRecorded: true"
+          - "certificatesOnlyForAttendees: true"
+          - "companyInterviewBeforePlanning: true"
+          - "contentTailoredToWorkProjectAndChallenges: true"
+          - "deliveryAtEmployer: true"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }

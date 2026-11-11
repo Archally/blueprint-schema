@@ -47,42 +47,91 @@ Blueprints are plain YAML files in your Git repository. No cloud upload required
 
 ## Quick Start
 
-**1. Create a `.blueprint/v2.8/` directory** in your project:
+Use your own agent in Claude Code, Codex or Cursor to build a model of your system with Archally. The public repository supplies the Blueprint schema, local checking tools, a modeling agent, commands and method skills. Together they help you capture a shared vocabulary, flows, rules and decisions in YAML that you and your agent can read and refine. You can also write the model by hand and validate it locally. Archally Pro renderers run locally on an offline licence under separate commercial terms.
 
-```
-my-project/
-  .blueprint/v2.8/
-    blueprint.yaml
-    orders/
-      concepts.yaml
-      domain.yaml
-```
+### 1. Prepare the repository
 
-**2. Write a minimal blueprint** (two files, one concept):
-
-```yaml
-# blueprint.yaml
-version: "1.0.0"
-name: "My Service"
-```
-
-```yaml
-# orders/concepts.yaml
-version: "1.0.0"
-concepts:
-  - id: CN001
-    name: "Order"
-    stereotype: aggregate-root
-    description: "A customer's purchase request."
-```
-
-**3. Validate.** Clone this repository once, then point the validator at your model:
+With Node 22 or later installed, clone the public repository and prepare its tools:
 
 ```bash
 git clone https://github.com/Archally/blueprint-schema.git
-cd blueprint-schema && npm install
-npm run validate -- ../my-project/.blueprint/v2.8
+cd blueprint-schema
+npm install
+npm run build
 ```
+
+Open the cloned repository folder itself in your agent environment. Installation fetches dependencies; the build compiles the local tools. These are preparation steps, not a packaged installer or a one-command bootstrap.
+
+### 2. Start with your own agent
+
+The source kit contains the [blueprint-modeler agent](.agents/agents/blueprint-modeler.md), the [blueprint-new command](.agents/commands/blueprint-new.md), the [blueprint-check-all command](.agents/commands/blueprint-check-all.md), and method skills such as [ddd-modeling](.agents/skills/ddd-modeling/SKILL.md), [event-storming-modeler](.agents/skills/event-storming-modeler/SKILL.md), and [capability-mapping](.agents/skills/capability-mapping/SKILL.md). <!-- public-docs-scan:allow Codex and Cursor read this path -->
+
+The `.agents/` tree is the source kit. Generated consumer projections provide the agent and commands in `.claude/` and `.cursor/`, and the Codex custom agent in [.codex/agents/blueprint-modeler.toml](.codex/agents/blueprint-modeler.toml). Codex and Cursor read skills directly from `.agents/skills/`; Codex reads command files from `.agents/commands/`. Codex loads its custom agent after you trust the project. See the [host instructions](docs/ai-agent-kit.md#how-each-host-finds-the-kit). <!-- public-docs-scan:allow Codex and Cursor read this path -->
+
+From the cloned repository, create an empty project directory:
+
+```bash
+mkdir my-training-model
+```
+
+Keep the cloned repository open in your agent environment and give the agent this request:
+
+```text
+Run /blueprint-new my-training-model Training model.
+Use blueprint-modeler to ask about the core flow before expanding the model.
+```
+
+In Claude Code or Cursor, you can invoke `/blueprint-new my-training-model Training model` directly. In Codex, ask it to follow the linked command file as in the request above. The first argument is the project directory; the command creates `.blueprint/v2.8/` beneath it and checks the seed. It stops if the project already contains a model.
+
+After growing the model, request:
+
+```text
+Run /blueprint-check-all my-training-model/.blueprint/v2.8
+```
+
+Review the reported schema, semantic and quality findings with your agent. The kit runs this repository's local checks; it needs neither the commercial `bp` CLI nor an MCP server. For another project outside this clone, follow [Use the kit in another project](docs/ai-agent-kit.md#use-the-kit-in-another-project).
+
+### Alternative: write two files yourself
+
+From the cloned repository, create `my-training-model/.blueprint/v2.8/blueprint.yaml`:
+
+```yaml
+version: "1.0.0"
+name: "Training model"
+```
+
+Create `my-training-model/.blueprint/v2.8/training/concepts.yaml`:
+
+```yaml
+version: "1.0.0"
+concepts:
+  - id: CN001
+    name: "Workshop"
+    stereotype: aggregate-root
+    description: "A scheduled learning session with a defined capacity."
+```
+
+This two-file seed introduces CN001 (Workshop); add detail as you learn. It is separate from the worked Training business example below.
+
+### 3. Check locally
+
+From the prepared repository root, run the same checks manually on your model:
+
+```bash
+npm run validate -- my-training-model/.blueprint/v2.8 --schemas schema
+npm run check -- my-training-model/.blueprint/v2.8
+npm run quality -- my-training-model/.blueprint/v2.8
+```
+
+The validator checks schema conformance and references. Confirm that its `Schemas:` line selects v2.8 and its `Files:` line reports files validated (two for the seed above). The semantic checker reports structural issues; the quality gate reports missing or weak descriptions. A small seed can pass validation while still needing detail. The default quality command reports coverage; exit 0 alone does not mean the model is complete.
+
+### Inspect the worked example
+
+[Training business](examples/training-business/.blueprint/v2.8/) is one fictional business with paid workshops online and in a room, plus the recording of a video course and subscription access to it. Run the same three checks on `examples/training-business/.blueprint/v2.8` to see a model that passes them.
+
+### Licence boundaries
+
+The schema, examples, documentation, reference validator and agent kit use Apache 2.0. The model builder, semantic checker and quality gate use FSL-1.1-ALv2, permitting internal use, non-commercial education and research, and professional services, subject to its terms and restriction on Competing Use. See the authoritative [licence map](LICENSE) and [full FSL terms](LICENSE-FSL). Archally Pro renderers run locally on an offline licence under separate commercial terms.
 
 ## Architecture
 
@@ -454,9 +503,9 @@ npm run check -- .blueprint/v2.8
 ```
 
 <!-- BEGIN GENERATED: semantic-rules — generated from the rule pack; do not hand-edit -->
-Ships with **93 built-in rules** (3 error, 61 warn, 29 info):
+Ships with **96 built-in rules** (3 error, 63 warn, 30 info):
 
-`activity-fork-without-gateway` · `activity-steps-reverse-causal-edge` · `activity-steps-without-causal-edge` · `activity-without-entry-operation` · `aggregate-root-signals` · `assumption-unplaced` · `broker-ref-target-not-a-broker` · `capability-kind` · `capability-nested-deeper-than-two-levels` · `capability-realized-nowhere` · `contract-broker-id-superseded` · `contract-operation-missing-channel-address` · `contract-operation-missing-exchange` · `dangling-relation-endpoint` · `decision-asserted-without-evidence` · `decision-option-without-pros-cons` · `dependency-direction-disagreement` · `dispatch-with-exchange` · `empty-context` · `environment-config-key-not-declared` · `environment-named-not-declared` · `event-placed-with-producer-capability` · `event-transport-without-contract` · `events-with-produces` · `evidence-source-credentials` · `exchange-missing-payload` · `feature-user-stories-exclusive` · `feature-user-stories-mismatch` · `fitness-function-unattached` · `goal-not-advanced` · `goal-requires-cycle` · `implementation-as-is-without-code-refs` · `implementation-to-be-with-code-refs` · `imports-cycle` · `imports-target-not-library` · `inprocess-consume-without-provide` · `inprocess-dispatch-without-provider` · `inprocess-provide-without-consume` · `inprocess-reaction-unreached` · `kpi-without-metric` · `leverage-point-no-address` · `leverage-point-no-strategic-intent` · `message-channel-mismatch` · `message-queue-unread` · `missing-causal-links` · `missing-exchange-binding` · `model-without-purpose` · `model-without-represents` · `nav-via-action-screen-disagrees` · `objective-without-measurement` · `operation-exposed-by-many` · `operation-outside-every-contract` · `operation-realizes-two-capabilities` · `org-interaction-diverges-from-architecture` · `org-interaction-underived` · `org-interaction-unverifiable` · `orphan-entities` · `owner-name-matches-declared-unit` · `party-parts-disagree` · `payload-model-unbound` · `payload-schema-unresolved` · `process-end-state-unattached` · `process-end-state-unreachable` · `process-listed-order-against-causality` · `process-starts` · `requirement-confirmed-without-evidence` · `requirement-unverified` · `requirement-without-objective` · `restated-coupling` · `sent-event-without-receiver` · `service-system-is-an-organization` · `service-without-system` · `shared-document-read-without-writer` · `shared-document-write-without-reader` · `shared-store-without-common-resource` · `slo-without-metric` · `story-without-event` · `test-case-act-not-validated` · `test-case-given-carries-notes` · `translation-target-not-internal` · `unanswered-questions` · `unbound-operation` · `unbound-question` · `undeclared-exchange` · `undescribed-event` · `unevidenced-dependency` · `untested-rules` · `use-case-step-action-operation-disagrees` · `use-case-step-action-screen-disagrees` · `user-story-use-case-back-reference` · `user-story-without-acceptance-criteria` · `uses-restates-contract` · `uses-target-is-library`
+`activity-fork-without-gateway` · `activity-in-two-lanes` · `activity-steps-reverse-causal-edge` · `activity-steps-without-causal-edge` · `activity-tool-party-not-system` · `aggregate-root-signals` · `assumption-unplaced` · `broker-ref-target-not-a-broker` · `capability-kind` · `capability-nested-deeper-than-two-levels` · `capability-realized-nowhere` · `contract-broker-id-superseded` · `contract-operation-missing-channel-address` · `contract-operation-missing-exchange` · `dangling-relation-endpoint` · `decision-asserted-without-evidence` · `decision-option-without-pros-cons` · `dependency-direction-disagreement` · `dispatch-with-exchange` · `empty-context` · `environment-config-key-not-declared` · `environment-named-not-declared` · `event-placed-with-producer-capability` · `event-transport-without-contract` · `events-with-produces` · `evidence-source-credentials` · `exchange-missing-payload` · `feature-user-stories-exclusive` · `feature-user-stories-mismatch` · `fitness-function-unattached` · `goal-not-advanced` · `goal-requires-cycle` · `implementation-as-is-without-code-refs` · `implementation-to-be-with-code-refs` · `imports-cycle` · `imports-target-not-library` · `inprocess-consume-without-provide` · `inprocess-dispatch-without-provider` · `inprocess-provide-without-consume` · `inprocess-reaction-unreached` · `kpi-without-metric` · `lane-team-differs-from-staffing` · `leverage-point-no-address` · `leverage-point-no-strategic-intent` · `message-channel-mismatch` · `message-queue-unread` · `missing-causal-links` · `missing-exchange-binding` · `model-without-purpose` · `model-without-represents` · `nav-via-action-screen-disagrees` · `objective-without-measurement` · `operation-exposed-by-many` · `operation-outside-every-contract` · `operation-realizes-two-capabilities` · `org-interaction-diverges-from-architecture` · `org-interaction-underived` · `org-interaction-unverifiable` · `orphan-entities` · `owner-name-matches-declared-unit` · `party-parts-disagree` · `payload-model-unbound` · `payload-schema-unresolved` · `process-end-state-unattached` · `process-end-state-unreachable` · `process-listed-order-against-causality` · `process-starts` · `requirement-confirmed-without-evidence` · `requirement-unverified` · `requirement-without-objective` · `restated-coupling` · `sent-event-without-receiver` · `service-system-is-an-organization` · `service-without-system` · `shared-document-read-without-writer` · `shared-document-write-without-reader` · `shared-store-without-common-resource` · `slo-without-metric` · `story-without-event` · `test-case-act-not-validated` · `test-case-given-carries-notes` · `translation-target-not-internal` · `unanswered-questions` · `unbound-operation` · `unbound-question` · `undeclared-exchange` · `undescribed-event` · `unevidenced-dependency` · `untested-rules` · `use-case-step-action-operation-disagrees` · `use-case-step-action-screen-disagrees` · `user-story-use-case-back-reference` · `user-story-without-acceptance-criteria` · `uses-restates-contract` · `uses-target-is-library` · `work-activity-without-lane`
 <!-- END GENERATED: semantic-rules -->
 
 See [tools/semantic-checker/README.md](tools/semantic-checker/README.md) for rule reference, configuration, and custom rule API.

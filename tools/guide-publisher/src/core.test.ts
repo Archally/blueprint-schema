@@ -1,5 +1,9 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { extractTitle, guideOutputStem, humanizeEntityLabel, renderGuideVisuals, rewriteMarkdownLinksForHtml, splitGuideBodySections, stylizeMainEntitiesSection } from './core.js';
+import { checkPdfOutputs, extractTitle, rebaseRelativeLinksForHtml, guideOutputStem, humanizeEntityLabel, renderGuideVisuals, rewriteMarkdownLinksForHtml, splitGuideBodySections, stylizeMainEntitiesSection } from './core.js';
+import type { RenderedGuideSet } from './core.js';
 
 describe('guideOutputStem', () => {
   it('maps README.md to blueprint-handoff-atlas', () => {
@@ -91,5 +95,35 @@ describe('splitGuideBodySections', () => {
     expect(sections.introHtml).toContain('<h1>Story Handoff Guide</h1>');
     expect(sections.knowledgeAreaHtml).toContain('Plain language. Technical language.');
     expect(sections.remainingHtml).toContain('<h2>What belongs here</h2>');
+  });
+});
+describe('checkPdfOutputs', () => {
+  it('reports a PDF in a nested folder that no guide produces as an orphan', () => {
+    const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'guide-check-'));
+    try {
+      const pdfDir = path.join(repoRoot, 'docs/handoff-guides/pdf');
+      fs.mkdirSync(path.join(pdfDir, 'design/extra'), { recursive: true });
+      fs.writeFileSync(path.join(pdfDir, 'design/arch.pdf'), '%PDF-1.4\n');
+      fs.writeFileSync(path.join(pdfDir, 'design/extra/orphan.pdf'), '%PDF-1.4\n');
+      const pdfManifest = { generatedBy: 'test', sourceDir: 'docs/handoff-guides/markdown', guides: [] };
+      fs.writeFileSync(path.join(pdfDir, 'manifest.json'), `${JSON.stringify(pdfManifest, null, 2)}\n`);
+      const rendered = { guides: [{ pdfRel: 'design/arch.pdf' }], linkErrors: [], buildManifest: pdfManifest, pdfManifest } as unknown as RenderedGuideSet;
+      expect(checkPdfOutputs({ repoRoot }, rendered)).toEqual(['orphan:  docs/handoff-guides/pdf/design/extra/orphan.pdf']);
+    } finally {
+      fs.rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('rebaseRelativeLinksForHtml', () => {
+  it('points a link to the PDF folder at the same folder from the HTML preview', () => {
+    const input = 'Generated PDFs live in [`../pdf/`](../pdf/) and [the atlas](../pdf/blueprint-handoff-atlas.pdf#page=2).';
+    expect(rebaseRelativeLinksForHtml(input, '/repo/docs/guides/markdown', '/repo/docs/guides/markdown/.build'))
+      .toBe('Generated PDFs live in [`../pdf/`](../../pdf/) and [the atlas](../../pdf/blueprint-handoff-atlas.pdf#page=2).');
+  });
+
+  it('leaves guide links, anchors and external links untouched', () => {
+    const input = '[Story](design/story.html#flow) [Top](#top) [Site](https://example.org/x)';
+    expect(rebaseRelativeLinksForHtml(input, '/repo/docs/guides/markdown', '/repo/docs/guides/markdown/.build')).toBe(input);
   });
 });

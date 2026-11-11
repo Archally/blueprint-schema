@@ -2,7 +2,7 @@
 
 Use this guide when you need to describe **the few interventions that would move the system forward the most**.
 
-This guide is about choosing the **vital few priorities** — not listing every problem, and not scheduling every task.
+This guide is about choosing the **vital few priorities** - not listing every problem, and not scheduling every task.
 
 ## Knowledge area
 
@@ -10,10 +10,10 @@ This guide helps with **the most important cross-cutting priorities**. Technical
 
 ## Main entities in this guide
 
-- `leverage_point` — a prioritized intervention that would improve the system more than nearby
+- `leverage_point` - a prioritized intervention that would improve the system more than nearby
   alternatives.
-- `pareto_core` — the small committed subset of leverage points chosen as the vital few.
-- `watch_item` — something important enough to monitor but not yet promoted into a full leverage
+- `pareto_core` - the small committed subset of leverage points chosen as the vital few.
+- `watch_item` - something important enough to monitor but not yet promoted into a full leverage
   point.
   - Often confused with: a `finding` or a roadmap `work_item`. A leverage point names the
     intervention; a finding names the problem; a work item names delivery work.
@@ -46,7 +46,7 @@ This guide helps with **the most important cross-cutting priorities**. Technical
 - what delivery work or migrations will make it real
 - what goals, value streams, or capabilities it advances
 - what other leverage points it depends on or unlocks
-- what happens if it is done — and if it is not done
+- what happens if it is done - and if it is not done
 - what is only being watched for now
 
 ## Core relationships to capture

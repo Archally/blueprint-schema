@@ -1,11 +1,4 @@
-/**
- * Filesystem + YAML IO for reading versioned JSON Schema bundles.
- *
- * Mirrors the loading approach the validator uses (`tools/validator/src`), kept
- * local so the Atlas tool depends only on schema files + the `yaml` package —
- * not on any blueprint-instance tooling (DEC-ATL-11, tool placement by
- * responsibility, not folder proximity).
- */
+/** Filesystem and YAML IO for versioned JSON Schema bundles. */
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
@@ -37,7 +30,7 @@ export function loadYaml(filePath: string): unknown {
 
 /**
  * Resolve the schema directory for a version. Accepts either the version root
- * (which may contain a nested `schema/` dir — the layout `exports` in package.json
+ * (which may contain a nested `schema/` dir - the layout `exports` in package.json
  * implies) or the schema dir directly.
  */
 export function resolveSchemaDir(versionRoot: string): string {
@@ -52,7 +45,7 @@ export interface LoadedSchema {
   doc: Record<string, unknown>;
 }
 
-/** Load every `*.schema.yaml` under a version's schema dir. */
+/** Load all `*.schema.yaml` files under a version's schema dir. */
 export function loadSchemaVersion(schemaDir: string): LoadedSchema[] {
   if (!fs.existsSync(schemaDir)) {
     throw new Error(`Schema directory not found: ${schemaDir}`);

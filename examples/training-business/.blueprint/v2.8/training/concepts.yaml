@@ -1,0 +1,196 @@
+version: "1.0.0"
+concepts:
+  - id: training.CN001
+    name: Offer
+    description: A priced workshop or recorded course available to customers.
+    stereotype: value-object
+    attributes:
+      productLine: { id: training.CAT001, description: Workshop seat or video course subscription., example: workshop }
+      price: { id: training.CAT002, description: Amount payable for one seat or subscription period., example: "80" }
+      periodDays: { id: training.CAT003, description: Access period for the subscription offer., example: "30" }
+      cancellationBands: { id: training.CAT017, description: Voluntary refund percentages by received calendar-day notice in the session timezone., example: 14+:100%; 7-13:50%; below 7:0% }
+  - id: training.CN002
+    name: Customer
+    description: The buyer shared by workshop bookings and course subscriptions; individual and employer payers are both common, with neither assumed to dominate.
+    stereotype: entity
+    attributes:
+      customerKey: { id: training.CAT004, description: Stable buyer reference used on payments and invoices., example: buyer-1 }
+  - id: training.CN003
+    name: Workshop session
+    description: One scheduled occurrence with a finite seat limit.
+    stereotype: entity
+    attributes:
+      deliveryMode: { id: training.CAT005, description: Online meeting or room delivery., example: online }
+      capacity: { id: training.CAT006, description: Maximum confirmed seats for this occurrence., example: "12" }
+      startsAt: { id: training.CAT007, description: Scheduled start used to decide whether cancellation is timely., example: 2026-12-03T09:00:00Z }
+      minimumParticipants: { id: training.CAT018, description: Minimum paid participants for an open occurrence at the checkpoint., example: "4" }
+      decisionAt: { id: training.CAT019, description: Go/no-go checkpoint before preparing confirmed delivery., example: 2026-11-19T09:00:00Z }
+      audienceType: { id: training.CAT020, description: Open places or a closed company group., example: open }
+      timeZone: { id: training.CAT021, description: Timezone for received cancellation notice and start time., example: UTC }
+      groupAgreement: { id: training.CAT022, description: "Closed-workshop scope, date, group fee and roster size.", example: agreed scope and date; group fee; 8 learners }
+      companyContext:
+        id: training.CAT042
+        description: Employees work, project and challenges elicited before planning a closed workshop; absent for open occurrences.
+        example: A team needs practice diagnosing failures in its current project.
+    relationships:
+      - predicate: derived-from
+        object: training.CN001
+        cardinality: "1"
+    states: [ planned, confirmed, cancelled, completed ]
+  - id: training.CN004
+    name: Booking
+    description: "One participant place in an occurrence, ordered by an individual or company buyer."
+    stereotype: entity
+    attributes:
+      attendance: { id: training.CAT008, description: Attendance outcome at delivery completion., example: attended }
+      feedback: { id: training.CAT009, description: Optional participant response collected after delivery., example: Useful exercises }
+      participantReference: { id: training.CAT023, description: Learner attending independently of the payer., example: learner-1 }
+      orderReference: { id: training.CAT024, description: Buyer order shared by one or several participant places., example: order-1 }
+      transferCount: { id: training.CAT025, description: "Accepted later-date transfers, limited to one.", example: "0" }
+      noticeReceivedAt: { id: training.CAT026, description: Receipt timestamp used for the cancellation notice band., example: 2026-11-19T09:00:00Z }
+      certificateIssued: { id: training.CAT027, description: Attendance document issued only on facilitator-confirmed attendance., example: "false" }
+    states: [ requested, confirmed, cancelled, attended, no-show ]
+    relationships:
+      - predicate: part-of
+        object: training.CN003
+        cardinality: "1"
+      - predicate: owned-by
+        object: training.CN002
+        cardinality: "1"
+  - id: training.CN005
+    name: Payment
+    description: A collection attempt for a seat or one subscription period.
+    stereotype: entity
+    attributes:
+      amount: { id: training.CAT010, description: Amount attempted in the offer currency., example: "80" }
+      periodEnd: { id: training.CAT011, description: Paid-through boundary for a subscription payment., example: 2027-01-02T09:00:00Z }
+      acknowledgementReference: { id: training.CAT028, description: Separate evidence issued only for a successful collection., example: ack-1 }
+      refundReference: { id: training.CAT029, description: Linked refund record retaining original collection evidence., example: refund-1 }
+    states: [ pending, succeeded, failed, refunded ]
+    relationships:
+      - predicate: owned-by
+        object: training.CN002
+        cardinality: "1"
+  - id: training.CN006
+    name: Invoice
+    description: An invoice records the buyer order and amount due independently of collection evidence.
+    stereotype: entity
+    attributes:
+      paymentReference: { id: training.CAT012, description: Optional collection reference; an unpaid invoice has none., example: not-yet-collected }
+      orderReference: { id: training.CAT030, description: Buyer order billed independently of settlement., example: order-1 }
+      dueAt: { id: training.CAT031, description: Agreed settlement deadline before booking confirmation., example: 2026-11-18T09:00:00Z }
+      settlementStatus: { id: training.CAT032, description: "Unpaid, settled, refunded or waived; issued invoices are retained.", example: unpaid }
+    relationships:
+      - predicate: contains
+        object: training.CN005
+        cardinality: "0..*"
+        description: Optional settlement references can be absent before collection; an invoice is not derived from a successful payment.
+      - predicate: owned-by
+        object: training.CN002
+        cardinality: "1"
+  - id: training.CN007
+    name: Video course
+    description: A reusable teaching edition with objectives and draft revisions separate from the currently published lessons.
+    stereotype: entity
+    attributes:
+      script: { id: training.CAT013, description: Teaching outline used to record the lessons., example: Demonstration and practice }
+      reviewResult: { id: training.CAT014, description: Facilitator approval of teaching accuracy and alignment with learning objectives., example: approved }
+      learningObjectives: { id: training.CAT033, description: "Outcomes linking the outline, exercises and content review.", example: Explain and practise the example method }
+      technicalReview: { id: training.CAT034, description: "Editor decision on sound, captions and legibility.", example: approved }
+      reviewAt: { id: training.CAT035, description: Next relevance review date for published lessons., example: 2027-02-01 }
+      revisionStatus: { id: training.CAT036, description: Draft replacement state separate from the published edition., example: none }
+      availability: { id: training.CAT037, description: Retirement closes new sales and renewal while honoring paid access., example: on-sale }
+      examples:
+        id: training.CAT043
+        description: Prepared code repository, agents and understandable real-life scenarios used in recording.
+        example: A fictional repository and agent demonstrate a realistic repair scenario.
+      editorialPackage:
+        id: training.CAT044
+        description: Metadata, PDF version, audio version and tags prepared after lesson acceptance.
+        example: Lesson metadata; PDF; audio; topic tags
+      publicationVisibility:
+        id: training.CAT045
+        description: Public or private release visibility, independent of paid access restrictions.
+        example: private
+    states: [ scripted, recorded, edited, review-rejected, approved, published ]
+    relationships:
+      - predicate: derived-from
+        object: training.CN001
+        cardinality: "1"
+  - id: training.CN008
+    name: Subscription
+    description: A buyer entitlement to the published video course for a paid period.
+    stereotype: entity
+    attributes:
+      accessUntil: { id: training.CAT015, description: Exclusive end of the paid access period., example: 2027-01-02T09:00:00Z }
+      renewalEnabled: { id: training.CAT016, description: Whether another period may be charged., example: "true" }
+      graceUntil: { id: training.CAT038, description: Temporary-access end seven days after the unchanged paid boundary., example: 2027-01-09T09:00:00Z }
+      retryDays: { id: training.CAT039, description: Recovery days measured from the original paid boundary., example: "1,3,6" }
+      uncollectedRenewal: { id: training.CAT040, description: Unpaid renewal amount waived when recovery closes., example: waived }
+    states: [ pending, active, non-renewing, expired, recovering ]
+    relationships:
+      - predicate: owned-by
+        object: training.CN002
+        cardinality: "1"
+  - id: training.CN009
+    name: Collection acknowledgement
+    description: "Evidence of one successful collection, separate from the invoice and retained when a linked refund is recorded."
+    stereotype: value-object
+    attributes:
+      paymentReference: { id: training.CAT041, description: Successful collection identified by this acknowledgement., example: payment-1 }
+    relationships:
+      - predicate: derived-from
+        object: training.CN005
+        cardinality: "1"
+actors:
+  - id: training.ACT001
+    name: Participant or subscriber
+    type: role
+    description: Attends or subscribes; may pay personally or be named by a company buyer.
+    interactions:
+      - target: training.CN001
+        verb: selects
+      - target: training.CN004
+        verb: requests
+      - target: training.CN008
+        verb: subscribes
+  - id: training.ACT002
+    name: Coordinator
+    type: role
+    description: Manages offers, seats, payments, invoices and paid access.
+    interactions:
+      - target: training.CN003
+        verb: schedules
+      - target: training.CN005
+        verb: collects
+      - target: training.CN006
+        verb: issues
+      - target: training.CN008
+        verb: renews
+  - id: training.ACT003
+    name: Facilitator
+    type: role
+    description: Prepares and delivers learning, confirms attendance and approves teaching accuracy.
+    interactions:
+      - target: training.CN003
+        verb: facilitates
+      - target: training.CN007
+        verb: records
+  - id: training.ACT004
+    name: Video editor
+    type: role
+    description: Edits lessons and reviews sound, captions, synchronization and legibility.
+    interactions:
+      - target: training.CN007
+        verb: edits and reviews
+  - id: training.ACT005
+    name: Company buyer
+    type: role
+    description: Orders open places or a closed workshop for named learners and receives billing separately from participant instructions.
+    interactions:
+      - target: training.CN002
+        verb: orders as
+      - target: training.CN004
+        verb: names participants for
+      - target: training.CN006
+        verb: receives before payment

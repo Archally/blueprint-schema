@@ -12,10 +12,10 @@ This guide helps with **business journeys and scenarios**.
 
 ## Main entities in this guide
 
-- `story` — a full business journey or scenario from trigger to outcome.
-- `activity` — a meaningful chunk of work inside a story; steps live inside the activity.
-- `user_story` — a concise user-centered need, often phrased as value for an actor.
-- `use_case` — a structured interaction goal with actors, trigger, and expected result.
+- `story` - a full business journey or scenario from trigger to outcome.
+- `activity` - a meaningful chunk of work inside a story; steps live inside the activity.
+- `user_story` - a concise user-centered need, often phrased as value for an actor.
+- `use_case` - a structured interaction goal with actors, trigger, and expected result.
   - Often confused with: `transition` in the Rules guide. A story activity or step tells the
     journey; a transition tells which state change is allowed.
 
@@ -32,9 +32,9 @@ Capture things like:
 
 ## What does not belong here
 
-- full definitions of business concepts — put those in the Concepts guide
-- detailed screen behavior — put that in the Interactions guide
-- formal rules and constraints — describe them here only briefly and link them conceptually
+- full definitions of business concepts - put those in the Concepts guide
+- detailed screen behavior - put that in the Interactions guide
+- formal rules and constraints - describe them here only briefly and link them conceptually
 
 ## Core things to capture
 

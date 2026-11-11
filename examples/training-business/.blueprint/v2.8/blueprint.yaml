@@ -1,0 +1,12 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Training business
+description: >-
+  This fictional business illustrates paid workshops and subscription video course production, maintenance and access.
+  Prepayment, notice-based refunds, organiser refunds or accepted transfers, 30-day paid periods and seven-day renewal recovery are example business choices, not legal or tax requirements.
+  Applicable withdrawal, refund and complaint rights take precedence and are not modeled.
+layout:
+  mode: slices
+  slices:
+    - name: training
+      describes: organization

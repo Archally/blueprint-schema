@@ -1,0 +1,184 @@
+version: "1.0.0"
+happy_path:
+  - id: training.TC011
+    name: Cancel with exactly seven days notice
+    summary: A paid booking reaches the lower partial-refund boundary.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR002
+        - training.VR007
+      concepts: [ training.CN003, training.CN004, training.CN005 ]
+    given:
+      description: A paid booking reaches the lower partial-refund boundary.
+      state:
+        noticeCalendarDays: 7
+        sessionTimeZone: UTC
+        overridingRightApplies: false
+    when:
+      description: Cancel before start using received notice.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "seatReleased: true"
+          - "refundPercent: 50"
+          - "linkedRefundRecordCount: 1"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC012
+    name: Cancel just below seven days notice
+    summary: Received notice falls below seven full calendar days.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR002
+        - training.VR007
+      concepts: [ training.CN003, training.CN004, training.CN005 ]
+    given:
+      description: Received notice falls below seven full calendar days.
+      state:
+        noticeCalendarDays: 6
+        noticeReceived: less than seven days before start
+        sessionTimeZone: UTC
+        overridingRightApplies: false
+    when:
+      description: Cancel the paid place.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "seatReleased: true"
+          - "refundPercent: 0"
+          - "refundRecordCount: 0"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC019
+    name: Use an eligible substitute
+    summary: A buyer notifies an eligible replacement participant before start.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR008
+      concepts: [ training.CN003, training.CN004, training.CN005 ]
+    given:
+      description: A buyer notifies an eligible replacement participant before start.
+      state:
+        beforeStart: true
+        eligibleSubstitute: true
+        confirmedSeats: 8
+        collectionCount: 1
+    when:
+      description: Replace the named learner on the same booking.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "learnerReference: replaced"
+          - "confirmedSeats: 8"
+          - "collectionCount: 1"
+          - "refundCount: 0"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC020
+    name: Transfer once to an available later date
+    summary: The buyer requests a first transfer before start and the target has capacity.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR008
+      concepts: [ training.CN003, training.CN004, training.CN005 ]
+    given:
+      description: The buyer requests a first transfer before start and the target has capacity.
+      state:
+        beforeStart: true
+        transferCount: 0
+        targetHasCapacity: true
+        agreement: true
+    when:
+      description: Move the seat and payment without a transfer fee.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "oldSeatReleased: true"
+          - "targetSeatConfirmed: true"
+          - "transferCount: 1"
+          - "additionalCollectionCount: 0"
+          - "transferFee: 0"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC021
+    name: Refuse transfer to a full target
+    summary: The original paid booking exists but the desired target is full.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR008
+      concepts: [ training.CN003, training.CN004, training.CN005 ]
+    given:
+      description: The original paid booking exists but the desired target is full.
+      state:
+        transferCount: 0
+        targetHasCapacity: false
+    when:
+      description: Assess the transfer request.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "originalBookingUnchanged: true"
+          - "originalPaymentUnchanged: true"
+          - "transferCount: 0"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC022
+    name: Refuse a second voluntary transfer
+    summary: A booking has already used its one allowed later-date transfer.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR008
+      concepts: [ training.CN003, training.CN004, training.CN005 ]
+    given:
+      description: A booking has already used its one allowed later-date transfer.
+      state:
+        transferCount: 1
+        targetHasCapacity: true
+    when:
+      description: Request another transfer.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "originalBookingUnchanged: true"
+          - "additionalCollectionCount: 0"
+          - "transferCount: 1"
+          - "ordinaryCancellationStillAvailable: true"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC034
+    name: Recognize overriding rights outside voluntary terms
+    summary: An applicable withdrawal, refund or complaint right overrides a fictional voluntary term.
+    validates:
+      processes:
+        - training.PRC001
+      rules:
+        - training.VR007
+        - training.VR002
+      concepts: [ training.CN001, training.CN004, training.CN008 ]
+    given:
+      description: An applicable withdrawal, refund or complaint right overrides a fictional voluntary term.
+      state:
+        overridingRightApplies: true
+        voluntaryBandWouldRefundPercent: 0
+    when:
+      description: Assess the boundary of this example before applying its voluntary term.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "overridingRightsTakePrecedence: true"
+          - "statutoryTreatment: outside this model"
+          - "voluntaryZeroRefundNotAsserted: true"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }

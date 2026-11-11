@@ -52,6 +52,9 @@ default_tracker: github
 layout:
   mode: slices
   slices:
+    - name: delivery-process
+      description: "Illustrative storefront content-change refinement, not an observed project workflow."
+      describes: organization
     - name: admin
       description: "Back-office: employees, permissions, API clients, and the administration shell."
     - name: catalog

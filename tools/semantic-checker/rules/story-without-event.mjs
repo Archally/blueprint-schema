@@ -21,8 +21,8 @@ function stepsOf(entity) {
 /**
  * Satisfied when at least one resolved step is an event, or when one of the story's commands
  * `produces` an event - the model has then stated the outcome even though the story did not
- * spell it - or when the story names no operation at all (that is a different gap, and
- * `activity-without-entry-operation` owns it).
+ * spell it - or when the story names no operation at all (an activity without an operation can
+ * describe human work).
  *
  * The `produces` clause is what keeps this rule about ABSENCE rather than about spelling: a story
  * that names "Install Kit Packet" whose command produces "Kit Packet Installed" has an outcome,

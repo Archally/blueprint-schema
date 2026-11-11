@@ -1,0 +1,210 @@
+version: "1.0.0"
+happy_path:
+  - id: training.TC008
+    name: Expire at the seven-day recovery boundary
+    summary: All scheduled renewal retries fail during the unchanged grace window.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR004
+        - training.VR005
+        - training.VR011
+      concepts: [ training.CN008, training.CN005, training.CN006, training.CN009 ]
+    given:
+      description: A published course subscription reaches its paid boundary.
+      state:
+        subscription: active
+        renewalPayment: failed
+        accessUntil: 2027-01-02T09:00:00Z
+        retryDays:
+          - 1
+          - 3
+          - 6
+        retryOutcomes:
+          - failed
+          - failed
+          - failed
+        invoiceAlreadyIssued: true
+    when:
+      description: Send the reminder, retry on days 1, 3 and 6 and close unpaid recovery at day 7.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "subscription: expired"
+          - "paidThroughUnchanged: true"
+          - "temporaryAccessBeforeDay7: true"
+          - "temporaryAccessAtDay7: false"
+          - "reminderCount: 1"
+          - "renewalAcknowledgementCount: 0"
+          - "issuedInvoiceRetained: true"
+          - "uncollectedRenewal: waived"
+          - "lateRetriesAndCollection: prohibited"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC009
+    name: Keep cancelled access until period end
+    summary: A paid subscription has time remaining.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR004
+      concepts: [ training.CN008, training.CN005 ]
+    given:
+      description: A paid subscription has time remaining.
+      state:
+        subscription: active
+        accessUntil: 2027-01-02T09:00:00Z
+        now: 2026-12-20T09:00:00Z
+    when:
+      description: Cancel renewal and follow the subscription to its paid boundary.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "renewalEnabled: false"
+          - "accessBeforeBoundary: true"
+          - "accessAtBoundary: false"
+          - "additionalCharges: 0"
+          - "voluntaryProratedRefund: 0"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC029
+    name: Recover renewal on day three
+    summary: Renewal and day-one retry fail, then day-three payment succeeds within grace.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR004
+        - training.VR005
+        - training.VR011
+      concepts: [ training.CN008, training.CN005, training.CN009 ]
+    given:
+      description: Renewal and day-one retry fail, then day-three payment succeeds within grace.
+      state:
+        originalPaidThrough: 2027-01-02T09:00:00Z
+        retryDay1: failed
+        retryDay3: succeeded
+    when:
+      description: Send the reminder and recover on day 3, closing the remaining retry schedule.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "paidThrough: 2027-02-01T09:00:00Z"
+          - "renewalAcknowledgementCount: 1"
+          - "day6RetryCount: 0"
+          - "graceDoesNotAddPaidDays: true"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC030
+    name: Correct hard decline before retry
+    summary: The boundary charge hard-declines and the buyer updates the payment method before day 3.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR004
+        - training.VR005
+        - training.VR011
+      concepts: [ training.CN008, training.CN005, training.CN009 ]
+    given:
+      description: The boundary charge hard-declines and the buyer updates the payment method before day 3.
+      state:
+        hardDecline: true
+        correctedAtDay: 2
+        day3Result: succeeded
+    when:
+      description: Request correction, skip retry while uncorrected and collect at the remaining scheduled day.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "retryBeforeCorrectionCount: 0"
+          - "renewalAcknowledgementCount: 1"
+          - "paidBoundaryAdvanceDays: 30"
+          - "graceClockRestarted: false"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC031
+    name: Close an uncorrected hard decline
+    summary: No corrected method arrives within the original seven-day grace window.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR004
+        - training.VR005
+        - training.VR011
+      concepts: [ training.CN008, training.CN005 ]
+    given:
+      description: No corrected method arrives within the original seven-day grace window.
+      state:
+        hardDecline: true
+        corrected: false
+    when:
+      description: Send the reminder, await correction without retrying and close at day 7.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "scheduledRetriesWithoutCorrection: 0"
+          - "accessAtDay7: false"
+          - "uncollectedRenewal: waived"
+          - "lateCollection: prohibited"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC032
+    name: Cancel while renewal is recovering
+    summary: The paid boundary has passed and a subscriber cancels during grace.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR004
+        - training.VR005
+        - training.VR011
+      concepts: [ training.CN008, training.CN005, training.CN006 ]
+    given:
+      description: The paid boundary has passed and a subscriber cancels during grace.
+      state:
+        renewal: recovering
+        cancellationDay: 2
+        paidBoundaryPassed: true
+    when:
+      description: Close recovery immediately and reject any later retry or collection.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "temporaryAccess: ended"
+          - "furtherRetries: 0"
+          - "lateCollection: prohibited"
+          - "uncollectedRenewal: waived"
+          - "issuedInvoiceRetained: true"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }
+  - id: training.TC033
+    name: Reject unpaid initial access without grace
+    summary: The initial subscription charge fails for a published course.
+    validates:
+      processes:
+        - training.PRC002
+      rules:
+        - training.VR004
+        - training.VR005
+        - training.VR011
+      concepts: [ training.CN007, training.CN008, training.CN005, training.CN009 ]
+    given:
+      description: The initial subscription charge fails for a published course.
+      state:
+        course: published
+        initialPayment: failed
+    when:
+      description: Reconcile the failed initial request.
+    expected_result:
+      status: success
+      output:
+        contains:
+          - "accessGranted: false"
+          - "graceOpened: false"
+          - "acknowledgementCount: 0"
+          - "paidPeriodStarted: false"
+    provenance: { discovery_stage: hypothesis, certainty: speculative }

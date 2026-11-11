@@ -110,6 +110,9 @@ for (const [jobName, { dir: relativeDir }] of Object.entries(JOB_DIRS)) {
       if (name === "PORTED.sha256") continue; // the manifest is not one of its own entries
       const path = join(current, name);
       const key = prefix ? `${prefix}/${name}` : name;
+      // Build output and installed dependencies are never ported: `npm run build` and `npm test`
+      // write them inside a tool's directory before this check runs.
+      if (statSync(path).isDirectory() && (name === "node_modules" || name === "dist")) continue;
       if (statSync(path).isDirectory()) walk(path, key);
       else actual.set(`${jobName}/${key}`, hashNormalized(path));
     }

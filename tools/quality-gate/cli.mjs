@@ -33,6 +33,7 @@
  *              model file that did not parse (nothing in it was measured).
  */
 
+import { measureWorkProcessProvenance } from './work-process.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { collectObservations } from './collect.mjs';
@@ -146,6 +147,10 @@ function runOne(modelRoot, options, spec) {
   const structure = measureStructure({ documents, schemaIndex, structureSpec: spec.structure });
 
   const result = evaluate({ observations, spec, config, changedFiles, slice: options.slice, selection, schemaVersion, structure });
+  const workProcessProvenance = measureWorkProcessProvenance(documents, { slice: options.slice, changedFiles, selection });
+  if (workProcessProvenance.total > 0) {
+    result.workProcessProvenance = workProcessProvenance;
+  }
   result.structure = { schemaRoot: schema.root, schemaSource: schema.source ?? null, note: schema.note ?? null, ...result.structure };
 
   if (options.updateBaseline) {
@@ -236,6 +241,7 @@ function main() {
         entityMode: run.result.entityMode,
         fileMode: run.result.fileMode,
         parseErrors: run.parseErrors,
+        ...(run.result.workProcessProvenance ? { workProcessProvenance: run.result.workProcessProvenance } : {}),
         metrics: run.result.metrics,
         findings: run.result.findings.map((finding) => ({
           ...finding,

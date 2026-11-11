@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildAtlasModel } from './introspect.js';
@@ -7,9 +8,9 @@ import { diffModels, type RenameAnnotation } from './diff.js';
 import { PolicyReporter } from './policy.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(here, '../../..');
-const from = buildAtlasModel('v2.6', resolveSchemaDir(path.join(repoRoot, 'schema', 'v2.6')));
-const to = buildAtlasModel('v2.7', resolveSchemaDir(path.join(repoRoot, 'schema', 'v2.7')));
+const schemaRoot = process.env.BLUEPRINT_ATLAS_TEST_SCHEMA_ROOT ?? path.resolve(here, '../../../schema');
+const from = buildAtlasModel('v2.6', resolveSchemaDir(path.join(schemaRoot, 'v2.6')));
+const to = buildAtlasModel('v2.7', resolveSchemaDir(path.join(schemaRoot, 'v2.7')));
 
 const renames: RenameAnnotation[] = [
   { renamedFrom: 'design/rg.schema.yaml', target: 'design/infrastructure.schema.yaml', basis: 'explicitly annotated' },
@@ -18,7 +19,7 @@ const renames: RenameAnnotation[] = [
 ];
 
 describe('diffModels (v2.6 → v2.7)', () => {
-  it('classifies annotated renames instead of add/remove (VAL-ATL-011, DEC-ATL-19)', () => {
+  it('classifies annotated renames instead of add/remove', () => {
     const policy = new PolicyReporter();
     const diff = diffModels(from, to, renames, policy);
     const renameChanges = diff.changes.filter((c) => c.kind === 'rename');
@@ -31,7 +32,7 @@ describe('diffModels (v2.6 → v2.7)', () => {
     expect(diff.changes.some((c) => c.kind === 'add' && c.target === 'design/infrastructure.schema.yaml')).toBe(false);
   });
 
-  it('captures at least one add and one modify (VAL-ATL-011)', () => {
+  it('captures at least one add and one modify', () => {
     const policy = new PolicyReporter();
     const diff = diffModels(from, to, renames, policy);
     expect(diff.changes.some((c) => c.kind === 'add')).toBe(true);
@@ -48,7 +49,7 @@ describe('diffModels (v2.6 → v2.7)', () => {
     expect(diff.changes.some((c) => c.kind === 'add' && c.target === 'design/infrastructure.schema.yaml')).toBe(true);
   });
 
-  it('every change carries provenance and a conservative semver (DEC-ATL-12)', () => {
+  it('every change carries provenance and a conservative semver', () => {
     const policy = new PolicyReporter();
     const diff = diffModels(from, to, renames, policy);
     for (const c of diff.changes) {
@@ -59,10 +60,6 @@ describe('diffModels (v2.6 → v2.7)', () => {
 });
 
 describe('$ref resolution before comparison (v2.6 → v2.7)', () => {
-  // The v2.6 -> v2.7 path extracted three inline definitions into `$defs` and referenced them.
-  // Comparing the DECLARATION (`type:` vs `$ref:`) reported all three as breaking type changes,
-  // when none of them narrows what a model may say. These pin each of the three distinct shapes.
-
   const diffOf = () => diffModels(from, to, renames, new PolicyReporter());
   const at = (suffix: string) => diffOf().changes.filter((c) => c.target.endsWith(suffix));
 
@@ -80,7 +77,7 @@ describe('$ref resolution before comparison (v2.6 → v2.7)', () => {
 
   it('an enum that GAINED a value is additive, not breaking (complexity)', () => {
     // v2.6 had 6 values inline; v2.7 has 7 in metamodel `complexity_pattern`. Widening cannot
-    // break a v2.6 model. Reporting it at all is the point - reporting it as major was the bug.
+    // break a v2.6 model.
     const changes = at('/properties/complexity');
     expect(changes.filter((c) => c.summary.includes('type changed'))).toEqual([]);
     const enumChange = changes.find((c) => c.summary.includes('enum'));
@@ -88,16 +85,22 @@ describe('$ref resolution before comparison (v2.6 → v2.7)', () => {
     expect(enumChange?.summary).toContain('state-management');
   });
 
-  it('the only breaking changes left are the three annotated file renames', () => {
+  it('reports three annotated file renames, and the CLI migrations schema removal where v2.6 holds it, as breaking', () => {
     const breaking = diffOf().changes.filter((c) => c.semver === 'major');
-    expect(breaking.length).toBe(3);
-    expect(breaking.every((c) => c.kind === 'rename')).toBe(true);
+    const cliMigrationsPath = path.join(resolveSchemaDir(path.join(schemaRoot, 'v2.6')), 'governance', 'cli-migrations.schema.yaml');
+    const removals = existsSync(cliMigrationsPath)
+      ? [{ kind: 'remove', scope: 'file', target: 'governance/cli-migrations.schema.yaml' }]
+      : [];
+    expect(breaking.map(({ kind, scope, target }) => ({ kind, scope, target }))).toEqual([
+      ...removals,
+      { kind: 'rename', scope: 'file', target: 'design/rg.schema.yaml → design/infrastructure.schema.yaml' },
+      { kind: 'rename', scope: 'file', target: 'design/ui.schema.yaml → design/interactions.schema.yaml' },
+      { kind: 'rename', scope: 'file', target: 'governance/org.schema.yaml → governance/organization.schema.yaml' },
+    ]);
   });
 
   it('an unresolvable ref falls back to the conservative comparison', () => {
-    // The guarantee that makes this safe to ship: resolution is best-effort, and a ref that
-    // leaves the model must restore the old behaviour rather than silently report "no change".
-    // A def that does not exist cannot resolve, so the declared labels are compared as before.
+    // Unresolvable references compare their declared labels conservatively.
     const broken = structuredClone(to) as typeof to;
     for (const file of broken.files) file.definitions = [];
     const diff = diffModels(from, broken, renames, new PolicyReporter());

@@ -12,12 +12,12 @@ This guide helps with **goals, risks, assumptions, and trade-offs**. Technically
 
 ## Main entities in this guide
 
-- `goal` — an outcome the system or organization is trying to achieve.
-- `non_goal` — something intentionally out of scope, even if it sounds nearby.
-- `risk` — a meaningful threat to the goal or delivery outcome.
-- `assumption` — something believed true and relied on, but not guaranteed.
-- `trade_off` — a conscious balance between competing goods or constraints.
-- `inquiry` — an open question that still needs an answer.
+- `goal` - an outcome the system or organization is trying to achieve.
+- `non_goal` - something intentionally out of scope, even if it sounds nearby.
+- `risk` - a meaningful threat to the goal or delivery outcome.
+- `assumption` - something believed true and relied on, but not guaranteed.
+- `trade_off` - a conscious balance between competing goods or constraints.
+- `inquiry` - an open question that still needs an answer.
   - Often confused with: a `decision`. Motivation captures intent, uncertainty, and tension;
     decisions capture chosen direction.
 

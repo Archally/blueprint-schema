@@ -11,11 +11,11 @@ This guide helps with **proof that behavior works as expected**.
 
 ## Main entities in this guide
 
-- `test_case` — one proof scenario with setup, action, and expected result.
-- `happy_path`, `edge_cases`, and `error_cases` — the three main suites used to group `test_case`
+- `test_case` - one proof scenario with setup, action, and expected result.
+- `happy_path`, `edge_cases`, and `error_cases` - the three main suites used to group `test_case`
   entries.
-- `fitness_function` — an automated constraint that checks the architecture or model itself.
-- `validates` — the typed links that say exactly which rules, operations, concepts, stories, or UI
+- `fitness_function` - an automated constraint that checks the architecture or model itself.
+- `validates` - the typed links that say exactly which rules, operations, concepts, stories, or UI
   elements the test proves.
   - Often confused with: a `finding` in Quality. A test case proves expected behavior; a finding
     records a weakness already discovered.

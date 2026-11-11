@@ -1,0 +1,24 @@
+version: "1.0.0"
+inquiries:
+  - id: delivery-process.INQ001
+    statement: Who approves the content specification in the fictional shop?
+    summary: Specification approver
+    description: Deliberately unresolved teaching example, not a question about the
+      real project.
+    category: organizational
+    status: open
+    owner: TM010
+    owned_by:
+      team: TM010
+    affects:
+      process_activity_refs:
+        - delivery-process.PA003
+    discovery_stage: exploring
+    certainty: speculative
+    evidence:
+      - kind: assumption
+        summary: The teaching scenario leaves approval authority unknown.
+        source: Illustrative teaching scenario of this example model
+        date: 2026-11-11
+    tags:
+      - illustrative

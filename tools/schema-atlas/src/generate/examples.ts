@@ -1,5 +1,5 @@
 /**
- * Examples page — schema-native first, curated overlay examples second (DEC-ATL-18).
+ * Examples page - schema-native first, curated overlay examples second.
  *
  * All examples are labeled as examples/projections, never validation authority, and
  * carry provenance. Repo example blueprints (validated model instances) are surfaced
@@ -46,10 +46,10 @@ function findExampleBlueprints(repoRoot: string): string[] {
 export function renderExamples(ctx: GenContext, repoRoot: string): string {
   const { model, policy } = ctx;
   const parts: string[] = [generatedBanner()];
-  parts.push(`# Blueprint Schema Atlas — ${model.version} Examples`);
+  parts.push(`# Blueprint Schema Atlas - ${model.version} Examples`);
   parts.push(
     'Examples are illustrative projections, **not validation authority**. Schema-native examples come first; ' +
-      'curated examples are explicitly labeled and provenance-bearing (DEC-ATL-18).',
+      'curated examples are explicitly labeled and provenance-bearing.',
   );
 
   // 1. Schema-native examples.
@@ -66,7 +66,7 @@ export function renderExamples(ctx: GenContext, repoRoot: string): string {
   }
   if (native.length === 0) {
     policy.skip('examples-native-absent', `No JSON Schema \`examples\` keywords in ${model.version}; using curated + reference examples only.`);
-    parts.push('_No JSON Schema `examples` keywords are declared in this version (this is expected — the schema documents shapes, not instances)._');
+    parts.push('_No JSON Schema `examples` keywords are declared in this version (this is expected - the schema documents shapes, not instances)._');
   } else {
     for (const ex of native.slice(0, 50)) {
       parts.push(`- \`${formatSourceRef(sourceRef(model.version, ex.file, ex.pointer))}\`: \`${truncate(JSON.stringify(ex.value), 120)}\``);
@@ -79,18 +79,18 @@ export function renderExamples(ctx: GenContext, repoRoot: string): string {
 
   // 2. Reference example blueprints (validated model instances).
   parts.push('## Reference example models');
-  parts.push('Full example blueprints in this repository, validated against the schema — the best way to see the schema in use.');
+  parts.push('Full example blueprints in this repository, validated against the schema - the best way to see the schema in use.');
   const blueprints = findExampleBlueprints(repoRoot);
   if (blueprints.length === 0) {
     policy.skip('examples-blueprints-absent', 'No example blueprint models found under examples/.');
     parts.push('_None found under `examples/`._');
   } else {
-    // This page lives at docs/schema-atlas/<version>/examples.md — links are relative to that dir.
+    // This page lives at docs/schema-atlas/<version>/examples.md - links are relative to that dir.
     const pageDir = `docs/schema-atlas/${model.version}`;
     const rows = blueprints.map((dir) => {
       const overview = `${dir}/.specs/overview.md`;
       const hasOverview = fs.existsSync(path.join(repoRoot, overview));
-      const link = hasOverview ? `[rendered overview](${path.posix.relative(pageDir, overview)})` : '—';
+      const link = hasOverview ? `[rendered overview](${path.posix.relative(pageDir, overview)})` : '-';
       return [code(dir), link];
     });
     parts.push(table(['Example model', 'Rendered overview'], rows.map((r) => r.map(cell))));
@@ -111,7 +111,7 @@ export function renderExamples(ctx: GenContext, repoRoot: string): string {
     parts.push('_None declared. Curated examples live in overlays and are always labeled non-authoritative._');
   } else {
     for (const c of curated.sort((a, b) => a.target.localeCompare(b.target))) {
-      parts.push(`**Example for \`${c.target}\`** _(curated, non-authoritative — overlay \`${c.overlayId}\`)_:`);
+      parts.push(`**Example for \`${c.target}\`** _(curated, non-authoritative - overlay \`${c.overlayId}\`)_:`);
       parts.push('```yaml\n' + c.example.replace(/\s+$/, '') + '\n```');
     }
   }

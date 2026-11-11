@@ -1,0 +1,31 @@
+name: training
+version: "1.0.0"
+processes:
+  []
+user_stories:
+  - id: training.US001
+    actor: training.ACT001
+    goal: attend a paid workshop online or in a room
+    benefit: learn with a facilitator and receive promised attendance documents when eligible
+    acceptance_criteria:
+      - Paid named places fit capacity; company billing may precede prepayment and is separate from learner instructions.
+      - Below the open minimum a new date is set before every registrant learns of refund and moved-date options; full refund remains the default unless an available transfer is accepted.
+      - Received notice selects the 100%, 50% or 0% band; an eligible substitute or one agreed available later-date transfer is allowed.
+      - "Preparation and reminders precede delivery; attendance earns promised certificates, qualified no-shows do not, and follow-up is offered."
+      - "Applicable rights take precedence outside the modeled voluntary terms; invoice-credit terms beyond B, pauses and changes to existing subscription prices are out of scope."
+      - "Individual and employer payers are both common. Closed workshops start with a company interview shaping content; open content has no specific company context."
+    delivery_priority: must-have
+    test_cases: [ training.TC001, training.TC002, training.TC003, training.TC004, training.TC005, training.TC006, training.TC011, training.TC012, training.TC013, training.TC014, training.TC015, training.TC016, training.TC017, training.TC018, training.TC019, training.TC020, training.TC021, training.TC022, training.TC034 ]
+  - id: training.US002
+    actor: training.ACT001
+    goal: subscribe to an approved video course
+    benefit: learn during each paid period
+    acceptance_criteria:
+      - Prepare examples before recording. Editing or review gaps lead to edit corrections, retakes, pick-ups or directed and rendered animations; the facilitator approves subject matter and the editor approves technical quality.
+      - Acceptance precedes metadata, PDF, audio and tags, platform setup, visibility and learner preview, then public or private publication; maintenance preserves paid access and retirement stops new sales and renewal.
+      - A successful initial payment or renewal buys 30 days and one acknowledgement independently of invoice state.
+      - "Renewal failures send a reminder and recover within seven days with retries on days 1, 3 and 6; hard decline requires correction and grace never advances the paid boundary."
+      - "Ordinary cancellation retains paid access without a voluntary prorated refund; cancellation during grace or exhaustion closes recovery, waives the unpaid renewal and prevents late collection."
+      - "Applicable rights take precedence outside this model; pauses, changes to existing subscription prices and credit-term invoicing are out of scope."
+    delivery_priority: must-have
+    test_cases: [ training.TC007, training.TC008, training.TC009, training.TC010, training.TC023, training.TC024, training.TC025, training.TC026, training.TC027, training.TC028, training.TC029, training.TC030, training.TC031, training.TC032, training.TC033, training.TC035, training.TC036 ]

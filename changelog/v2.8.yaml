@@ -5,6 +5,50 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.89"
+    date: "2026-11-12"
+    step: "a render target names its view per slice"
+    summary: |
+      A render manifest target may state views_by_slice, a non-empty map from a slice name to a
+      view reference in the same form as view:, a file relative to the manifest with an optional
+      #section. A run narrowed to a listed slice uses that slice's view in place of view:; a slice
+      the map does not list, and a run over the whole project, keep view:. One target can so
+      deliver a differently configured page per slice without a target per slice.
+
+      Each key is a slice the model declares, written with its canonical name. `bp render`
+      refuses a key that names no declared slice, or names one in a different case, and accepts
+      the map on the arch-map, strategy-grid, service-surface, infrastructure-map and
+      contract-generator targets, refusing it on any other tool before anything renders.
+
+      BACKWARD only: existing valid manifests remain valid and select their views as before.
+      Older closed schemas, and a `bp render` that predates this version, reject a manifest
+      carrying views_by_slice. No instance migration is required.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/render.manifest.schema.yaml#/$defs/target/properties/views_by_slice"
+        notes: "Optional non-empty map from a canonical slice name to a view reference; a narrowed run on a listed slice uses it in place of view."
+  - version: "2.8.89"
+    date: "2026-11-12"
+    step: "an activity without an operation is human work"
+    summary: |
+      A process activity that states no entry_operation describes manual or human work, in a
+      process that describes the system or one that describes an organization. Leaving
+      entry_operation out is a complete statement, not a gap, and no placeholder operation is
+      needed. A reference to an operation nothing declares remains a cross-reference error.
+
+      The semantic rule activity-without-entry-operation, which reported every activity without an
+      operation, is withdrawn. Four rules read the work facts 2.8.88 added: an activity listed in
+      two lanes, a tool whose party is not a system, a lane whose team differs from the team
+      that staffs its actor, and an activity of an organization process placed in no lane.
+
+      The schema accepts the same documents as before; only the description of entry_operation
+      changes. No instance migration is required.
+    changes:
+      - kind: change
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/process_activity/properties/entry_operation"
+        notes: "Description only: an activity without an entry operation is manual or human work; acceptance unchanged."
   - version: "2.8.88"
     date: "2026-11-11"
     step: "a process can describe how an organization works"

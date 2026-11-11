@@ -43,7 +43,10 @@ npm run check -- <blueprint-dir> --config .blueprint-lint.yaml
 | `untested-rules` | warn | every business rule has an incoming `validated-by` edge (a test validates it) |
 | `activity-steps-reverse-causal-edge` | warn |
 | `activity-steps-without-causal-edge` | info |
-| `activity-without-entry-operation` | warn | every story activity names the `entry_operation` it begins with; an activity may omit it while the operation is not yet modelled, and this reports the gap |
+| `activity-in-two-lanes` | warn | reports a process in which two lanes explicitly list the same activity; an activity repeated within one lane does not count as two lanes |
+| `activity-tool-party-not-system` | warn | reports an activity tool that names a resolved party whose `kind` is not `system`; an unresolved reference stays a validator error |
+| `lane-team-differs-from-staffing` | warn | reports a lane that states an actor and a team when the team disagrees with the team that staffs the resolved actor; a missing reference stays a validator error |
+| `work-activity-without-lane` | info | reports an activity of a process that describes an organization when no lane places it by activity, operation or actor; a slice's `describes` is inherited, and an activity placed in two lanes has its own warning |
 | `activity-fork-without-gateway` | warn | reports each process activity with two or more distinct stated successors and no `gateway`; successors inferred from listed order do not count. State `xor`, `or` or `and` on the forking activity |
 | `aggregate-root-signals` | info | reports an aggregate root that no command reaches: no operation of `kind: command` names it in `materializes`, and none names a rule about it (one whose `concepts` or `concept` names the root) in `governed_by`, `preconditions` or `postconditions`. The message says whether the root declares `states` and owns a `contains` relationship; neither decides the finding |
 | `capability-kind` | error | a feature is a leaf capability with an immediate capability parent; omitted kind means capability at every depth, independently of level and tags |

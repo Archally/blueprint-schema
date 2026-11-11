@@ -1,0 +1,123 @@
+version: "1.0.0"
+validation:
+  - id: training.VR001
+    name: Confirm paid places within capacity
+    description: Individuals prepay; a company may receive its invoice first but places are confirmed only on payment. Each place identifies learner and payer; a group order must fit the remaining capacity.
+    modality: obligatory
+    concepts: [ training.CN004, training.CN002, training.CN003, training.CN005 ]
+    logic:
+      when: requestedPlaces <= remainingCapacity and payment.state = succeeded
+      then: Confirm the named paid places; keep occurrence confirmation separate.
+      else: Decline a full occurrence without collection; failed collection leaves any issued invoice unpaid.
+    on_violation:
+      action: reject
+  - id: training.VR002
+    name: Apply received-notice cancellation bands
+    description: "Pre-start cancellation releases the seat: refund 100% at 14 or more calendar days, 50% at 7-13 and 0% below 7. A paid no-show retains its charge only when delivery was available and no overriding refund right applies."
+    modality: obligatory
+    concepts: [ training.CN004, training.CN003, training.CN005, training.CN006 ]
+    logic:
+      when: participant cancels before startsAt, using noticeReceivedAt in the session timezone
+      then: Release the seat and apply the offer notice band; retain invoice and acknowledgement with a linked refund record.
+      else: Record attendance or qualified no-show; no voluntary refund after start.
+    on_violation:
+      action: reject
+  - id: training.VR003
+    name: Approve teaching and media before release
+    description: Facilitator subject-matter acceptance and editor technical approval precede editorial metadata, PDF, audio and tags, learner preview and public or private release. Editing may reveal gaps needing retakes, pick-ups or directed and rendered animations; keep any existing edition available.
+    modality: obligatory
+    concepts: [ training.CN007 ]
+    logic:
+      when: content and technical reviews approve the candidate, editorial metadata, PDF, audio and tags are ready, and learner preview passes
+      then: Publish or replace approved lessons.
+      else: Keep the candidate unpublished; edit, record a retake or pick-up, or direct and render an animation before repeated review.
+    on_violation:
+      action: reject
+  - id: training.VR004
+    name: Separate paid periods from recovery access
+    description: A successful collection buys 30 days; cancellation stops renewal and retains paid access without a voluntary prorated refund. Failed renewal permits bounded temporary access without moving the paid boundary.
+    modality: obligatory
+    concepts: [ training.CN008, training.CN007, training.CN005, training.CN002, training.CN001 ]
+    logic:
+      when: published course has successful initial or renewal payment
+      then: Start 30 days or add 30 days to the original paid boundary; acknowledge the collection.
+      else: Initial failure grants no access; a failed renewal follows bounded recovery and expires if unpaid.
+    on_violation:
+      action: reject
+  - id: training.VR005
+    name: Separate acknowledgements from invoices
+    description: Each successful collection has one acknowledgement; failures create none and never erase an issued invoice. Refunds link to the original collection while the invoice and acknowledgement remain.
+    modality: obligatory
+    concepts: [ training.CN006, training.CN005, training.CN002, training.CN009 ]
+    logic:
+      when: payment.state = succeeded
+      then: Issue one collection acknowledgement and reconcile the order invoice separately.
+      else: Issue no paid acknowledgement; preserve any issued invoice and its settlement status.
+    on_violation:
+      action: reject
+  - id: training.VR006
+    name: Resolve organiser cancellation
+    description: An open occurrence needs minimum paid participants; a closed one needs its agreed group order. Below the minimum, set a new date before notifying every registrant of refund and moved-date options; illness also requires notice and a full refund unless an available later date is accepted.
+    modality: obligatory
+    concepts: [ training.CN003, training.CN004, training.CN005, training.CN006 ]
+    logic:
+      when: minimum is not met at decisionAt or facilitator cannot deliver
+      then: For a below-minimum occurrence first set a new date, then notify every registrant of refund and moved-date options and inform payers as needed. Refund all collected fees by default; transfer only with buyer acceptance and capacity. Illness also requires notice and refund or agreed transfer.
+      else: Confirm delivery; a cancelled occurrence has neither attendance nor no-show.
+    on_violation:
+      action: reject
+  - id: training.VR007
+    name: Preserve overriding statutory rights
+    description: Applicable withdrawal, refund and complaint rights take precedence over this example's voluntary terms and are not modeled.
+    modality: obligatory
+    concepts: [ training.CN001, training.CN004, training.CN008 ]
+    logic:
+      when: applicable rights override a voluntary term
+      then: Apply the overriding rights outside this model.
+      else: Use the fictional policy without claiming legal or tax compliance.
+    on_violation:
+      action: reject
+  - id: training.VR008
+    name: Allow substitution or one agreed transfer
+    description: Before start, an eligible notified substitute keeps the same seat and payment, or one agreed later-date transfer is allowed without a fee if capacity exists. Rejection leaves the original booking intact; neither option replaces an applicable refund right.
+    modality: obligatory
+    concepts: [ training.CN003, training.CN004, training.CN005 ]
+    logic:
+      when: eligible substitute or first agreed transfer with capacity
+      then: Replace the learner with unchanged counts, or move seat and payment and increment transferCount once.
+      else: Preserve the original booking and collection; ordinary cancellation remains available.
+    on_violation:
+      action: reject
+  - id: training.VR009
+    name: Base certificates on attendance
+    description: Preparation supplies materials, instructions and a reminder; only facilitator-confirmed attendance earns a promised certificate. Follow-up supplies resources and reviews optional feedback without requiring a response.
+    modality: obligatory
+    concepts: [ training.CN003, training.CN004 ]
+    logic:
+      when: attendance criterion is confirmed by the facilitator
+      then: Send promised certificate and resources, reconcile billing and follow up.
+      else: Withhold a no-show attendance certificate and preserve the qualified billing outcome.
+    on_violation:
+      action: reject
+  - id: training.VR010
+    name: Maintain learning while preserving paid access
+    description: A review date or obsolete-lesson report prompts no change, editing, re-recording or retirement. Approve and preview replacements before switching editions; retirement stops new sales and renewal while honoring existing paid access.
+    modality: obligatory
+    concepts: [ training.CN007, training.CN008 ]
+    logic:
+      when: review date arrives or obsolete content is reported
+      then: Choose the appropriate revision or retirement; keep the current edition accessible until an approved replacement or paid expiry.
+      else: Leave the current edition available until its next review or report.
+    on_violation:
+      action: reject
+  - id: training.VR011
+    name: Bound renewal recovery to seven days
+    description: Failed renewal sends a reminder and retries on days 1, 3 and 6 in a seven-day grace window; hard decline needs buyer correction before retry. Cancellation or day-7 exhaustion stops retries and late collection, waiving the unpaid renewal.
+    modality: obligatory
+    concepts: [ training.CN008, training.CN005, training.CN009 ]
+    logic:
+      when: renewal fails at the original paid boundary
+      then: Keep the paid boundary unchanged; grant temporary access until success, cancellation or day 7; success adds 30 days from the original boundary.
+      else: Initial failure has no grace; closed recovery cannot collect later.
+    on_violation:
+      action: reject

@@ -1,5 +1,5 @@
 /**
- * Overlay loading + guard (DEC-ATL-08, DEC-ATL-17, VAL-ATL-006).
+ * Overlay loading + guard.
  *
  * Overlays are narrowly-scoped, non-authoritative, provenance-bearing inputs that
  * add human semantics the schema cannot safely express on its own. They may NEVER
@@ -22,7 +22,7 @@ const ALLOWED_CATEGORIES: ReadonlySet<OverlayCategory> = new Set<OverlayCategory
   'rename-annotation',
 ]);
 
-/** Keys that would let an overlay redefine validation truth — forbidden anywhere in an entry. */
+/** Keys that would let an overlay redefine validation truth - forbidden anywhere in an entry. */
 const FORBIDDEN_KEYS: ReadonlySet<string> = new Set([
   'type',
   'required',
@@ -56,7 +56,7 @@ function validateEntry(overlayId: string, index: number, raw: unknown): OverlayE
   for (const key of Object.keys(entry)) {
     if (FORBIDDEN_KEYS.has(key)) {
       throw new OverlayError(
-        `${overlayId}: entry ${index} uses forbidden key "${key}" — overlays may not override validation truth (DEC-ATL-17).`,
+        `${overlayId}: entry ${index} uses forbidden key "${key}" - overlays may not override validation truth.`,
       );
     }
     if (!ALLOWED_ENTRY_KEYS.has(key)) {

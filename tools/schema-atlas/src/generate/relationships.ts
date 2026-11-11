@@ -1,5 +1,5 @@
 /**
- * Relationship map — the typed-ID vocabulary (the legend) + cross-file references (Step 03).
+ * Relationship map - the typed-ID vocabulary (the legend) + cross-file references.
  */
 import { generatedBanner, table, cell, truncate, code, blocks } from '../md.js';
 import { fileSlug, formatSourceRef, sourceRef } from '../provenance.js';
@@ -8,7 +8,7 @@ import type { GenContext } from './context.js';
 export function renderRelationships(ctx: GenContext): string {
   const { model } = ctx;
   const parts: string[] = [generatedBanner()];
-  parts.push(`# Blueprint Schema Atlas — ${model.version} Relationships`);
+  parts.push(`# Blueprint Schema Atlas - ${model.version} Relationships`);
   parts.push(
     'Two relationship views: the **typed-ID vocabulary** (how entities reference each other inside a ' +
       'model) and the **cross-file references** (how schema files depend on each other). Both are derived ' +
@@ -18,7 +18,7 @@ export function renderRelationships(ctx: GenContext): string {
   // Typed-ID vocabulary.
   parts.push('## Typed-ID vocabulary');
   parts.push(
-    'Metamodel `*_ref` definitions turn a model into a navigable graph — each entity type has an ID ' +
+    'Metamodel `*_ref` definitions turn a model into a navigable graph - each entity type has an ID ' +
       'prefix (optionally context-prefixed, e.g. `billing.CN001`).',
   );
   const entityRows = model.entityTypes.map((e) => [
@@ -32,7 +32,7 @@ export function renderRelationships(ctx: GenContext): string {
   // Cross-file references.
   parts.push('## Cross-file references');
   parts.push(
-    'Aggregated `$ref` edges between schema files. The metamodel is the shared hub — most files import ' +
+    'Aggregated `$ref` edges between schema files. The metamodel is the shared hub - most files import ' +
       'its definitions.',
   );
 

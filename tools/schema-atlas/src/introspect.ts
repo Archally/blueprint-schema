@@ -1,9 +1,9 @@
 /**
- * Schema introspection — versioned JSON Schema → normalized Atlas IR (Step 02).
+ * Schema introspection - versioned JSON Schema → normalized Atlas IR.
  *
- * Reads schema truth only; never reinterprets it (DEC-ATL-01). Preserves layer,
- * slice, and nesting boundaries rather than flattening them (DEC-ATL-14). Every
- * produced element carries a source-true address (DEC-ATL-13) for provenance.
+ * Reads schema truth only; never reinterprets it. Preserves layer,
+ * slice, and nesting boundaries rather than flattening them. Every
+ * produced element carries a source-true address for provenance.
  */
 import path from 'node:path';
 import type {

@@ -631,7 +631,7 @@ it from the name.
   for every renderer and the checker: each activity's successors (`_next`) carry an `origin`,
   `stated` or `declared-order`, and each process carries where it starts (`_start`) and which
   activity leads to each end state (`_ends`).
-- **entry_operation**: Domain operation where the activity begins; the generator follows the causal chain from here. Optional - an activity whose operation is not yet modelled leaves it out, and `activity-without-entry-operation` reports the gap.
+- **entry_operation**: Domain operation where the activity begins; the generator follows the causal chain from here. Optional - an activity without an operation describes manual or human work, and no placeholder operation is needed.
 - **steps[]**: Optional convenience view of operations in activity. Domain causal links are authoritative; validator WARNS if steps contradict.
 - **next[]**: Where an activity goes next. Each entry names the following activity in `to` and may
   carry a `condition` saying what takes that branch, in the model's own terms; the condition reaches

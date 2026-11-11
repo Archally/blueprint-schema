@@ -39,7 +39,7 @@ function bar(value) {
 /**
  * @param {object} options
  * @param {string} options.modelRoot
- * @param {ReturnType<import('./evaluate.mjs').evaluate>} options.result
+ * @param {ReturnType<import('./evaluate.mjs').evaluate> & {workProcessProvenance?: {covered: number, total: number}}} options.result
  * @param {number} options.fileCount
  * @param {string[]} options.parseErrors
  * @param {number} [options.worstLimit]
@@ -74,6 +74,12 @@ export function renderReport({ modelRoot, result, fileCount, parseErrors, worstL
     );
   }
   lines.push('');
+
+  if (result.workProcessProvenance) {
+    const { covered, total } = result.workProcessProvenance;
+    lines.push(`  Work-process activity provenance: ${covered}/${total} stated (advisory)`);
+    lines.push('');
+  }
 
   // Entity and file mode lead with the entities, field by field: that is the question they ask.
   // The metric table follows, scored against the patch bar, with only the metrics that saw data.

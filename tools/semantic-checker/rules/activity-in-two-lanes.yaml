@@ -1,0 +1,13 @@
+engineVersion: "0.1"
+rules:
+  - id: activity-in-two-lanes
+    severity: warn
+    description: >-
+      Two lanes of one process explicitly list the same activity. Repeating an activity within one lane does not count as two lanes.
+    find:
+      entity_type: Process
+    check:
+      custom:
+        module: ./work-process.mjs
+        export: activityInTwoLanes
+    message: 'Activities occur in two lanes in process "{displayId}": {problems}.'

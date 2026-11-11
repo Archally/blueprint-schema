@@ -1,5 +1,5 @@
 /**
- * Overview / layer-map landing page for one schema version (Step 03).
+ * Overview / layer-map landing page for one schema version.
  * Answers "what exists / where" without raw JSON Schema reading.
  */
 import type { AtlasModel } from '../types.js';
@@ -12,10 +12,10 @@ export function renderOverview(ctx: GenContext, includeMermaid: boolean): string
   const { model } = ctx;
   const parts: string[] = [generatedBanner()];
 
-  parts.push(`# Blueprint Schema Atlas — ${model.version} Overview`);
+  parts.push(`# Blueprint Schema Atlas - ${model.version} Overview`);
   parts.push(
     'A generated, human-readable projection of the JSON Schema. **JSON Schema remains the source of truth** ' +
-      '(DEC-ATL-01); this page is a projection (DEC-ATL-02) and must not be hand-edited.',
+      'and this page is a projection that must not be hand-edited.',
   );
 
   // Counts.
@@ -56,11 +56,11 @@ export function renderOverview(ctx: GenContext, includeMermaid: boolean): string
   parts.push('## Navigate');
   parts.push(
     [
-      '- **[Layer map](./layer-map.md)** — planes, files, and dependency diagrams',
-      '- **[Entity catalog](./entity-catalog.md)** — every object definition, its properties, requiredness, and enums',
-      '- **[Relationships](./relationships.md)** — typed-ID vocabulary and cross-file references',
-      '- **[Examples](./examples.md)** — schema-native and curated examples',
-      '- **[Changelog](../changelog.md)** — schema evolution across versions',
+      '- **[Layer map](./layer-map.md)** - planes, files, and dependency diagrams',
+      '- **[Entity catalog](./entity-catalog.md)** - every object definition, its properties, requiredness, and enums',
+      '- **[Relationships](./relationships.md)** - typed-ID vocabulary and cross-file references',
+      '- **[Examples](./examples.md)** - schema-native and curated examples',
+      '- **[Changelog](../changelog.md)** - schema evolution across versions',
     ].join('\n'),
   );
 

@@ -12,11 +12,11 @@ behavior and temporal coordination**.
 
 ## Main entities in this guide
 
-- `execution` — the main runtime behavior or execution model being described.
-- `parallelism` — work that can happen at the same time without changing the intended outcome.
-- `ordering` — a sequencing rule that says what must happen before something else.
-- `race_condition` — a timing hazard where different actions can interfere with each other.
-- `resource_profile` — the runtime resource shape, such as CPU, memory, or I/O pressure, that
+- `execution` - the main runtime behavior or execution model being described.
+- `parallelism` - work that can happen at the same time without changing the intended outcome.
+- `ordering` - a sequencing rule that says what must happen before something else.
+- `race_condition` - a timing hazard where different actions can interfere with each other.
+- `resource_profile` - the runtime resource shape, such as CPU, memory, or I/O pressure, that
   affects timing behavior.
   - Often confused with: story sequencing. `ordering` here is a runtime constraint, not just a
     narrative order of steps.

@@ -392,6 +392,19 @@ export function rewriteMarkdownLinksForHtml(sourceText: string): string {
   return sourceText.replace(/\]\((?!https?:|mailto:|#)([^)]+\.md)(#[^)]+)?\)/gi, (_m, file, anchor = '') => `](${file.replace(/\.md$/i, '.html')}${anchor})`);
 }
 
+/**
+ * Rewrites relative links to files that are not guides (for example the PDF folder) so they
+ * resolve from the HTML file's folder instead of the Markdown source's folder.
+ */
+export function rebaseRelativeLinksForHtml(sourceText: string, sourceDirAbs: string, htmlDirAbs: string): string {
+  return sourceText.replace(/\]\((?!https?:|mailto:|#)([^)\s#]+)(#[^)\s]*)?\)/gi, (match, target: string, anchor = '') => {
+    if (/\.(md|html)$/i.test(target)) return match;
+    let rebased = posixPath(path.relative(htmlDirAbs, path.resolve(sourceDirAbs, target))) || '.';
+    if (target.endsWith('/') && !rebased.endsWith('/')) rebased += '/';
+    return `](${rebased}${anchor})`;
+  });
+}
+
 function annotateGuideLinks(htmlBody: string, sourceRel: string): string {
   const currentDir = path.posix.dirname(posixPath(sourceRel));
   return htmlBody.replace(/<a href="([^"]+\.html(?:#[^"]+)?)">/gi, (match, hrefWithAnchor: string) => {
@@ -718,6 +731,7 @@ export function renderGuideSet(options: PublisherOptions): RenderedGuideSet {
   const repoRoot = path.resolve(options.repoRoot);
   const sourceDir = path.resolve(repoRoot, publisherSourceDir(options));
   const sourceFiles = findMarkdownFilesRecursive(sourceDir);
+  const buildDir = path.resolve(repoRoot, options.buildDir ?? DEFAULT_BUILD_DIR);
 
   const guides: GuideArtifact[] = [];
   const linkErrors: string[] = [];
@@ -729,7 +743,8 @@ export function renderGuideSet(options: PublisherOptions): RenderedGuideSet {
     const stem = guideOutputStem(sourceRel);
     const htmlRel = `${stem}.html`;
     const pdfRel = `${stem}.pdf`;
-    const htmlBody = markdown.render(rewriteMarkdownLinksForHtml(sourceText));
+    const htmlDir = path.dirname(path.join(buildDir, htmlRel));
+    const htmlBody = markdown.render(rebaseRelativeLinksForHtml(rewriteMarkdownLinksForHtml(sourceText), path.dirname(sourceAbs), htmlDir));
     const html = renderHtmlDocument(title, sourceRel, htmlBody);
     guides.push({
       sourceRel,
@@ -837,11 +852,20 @@ export function checkPdfOutputs(options: PublisherOptions, rendered: RenderedGui
   }
 
   if (fs.existsSync(pdfDir)) {
-    const onDiskPdfs = fs.readdirSync(pdfDir).filter((entry) => entry.toLowerCase().endsWith('.pdf'));
-    for (const pdf of onDiskPdfs) {
-      if (!expectedPdfs.has(pdf)) issues.push(`orphan:  ${posixPath(path.relative(repoRoot, path.join(pdfDir, pdf)))}`);
+    for (const pdfAbs of findPdfFilesRecursive(pdfDir)) {
+      const pdfRel = posixPath(path.relative(pdfDir, pdfAbs));
+      if (!expectedPdfs.has(pdfRel)) issues.push(`orphan:  ${posixPath(path.relative(repoRoot, pdfAbs))}`);
     }
   }
 
   return issues.sort();
+}
+
+function findPdfFilesRecursive(dir: string): string[] {
+  return fs.readdirSync(dir, { withFileTypes: true })
+    .flatMap((entry) => {
+      const abs = path.join(dir, entry.name);
+      if (entry.isDirectory()) return findPdfFilesRecursive(abs);
+      return entry.isFile() && entry.name.toLowerCase().endsWith('.pdf') ? [abs] : [];
+    });
 }

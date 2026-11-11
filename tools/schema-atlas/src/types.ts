@@ -1,11 +1,11 @@
 /**
- * Blueprint Schema Atlas — intermediate model (IR) and shared contracts.
+ * Blueprint Schema Atlas - intermediate model (IR) and shared contracts.
  *
- * The Atlas is a *generated projection* of the JSON Schema (DEC-ATL-02). JSON Schema
- * stays the single source of truth (DEC-ATL-01); these types never redefine validation
- * truth — they only describe what was read from schema so it can be projected to Markdown.
+ * The Atlas is a *generated projection* of the JSON Schema. JSON Schema
+ * stays the single source of truth; these types never redefine validation
+ * truth - they only describe what was read from schema so it can be projected to Markdown.
  *
- * Identity is hybrid (DEC-ATL-13): every element carries a source-true address
+ * Identity is hybrid: every element carries a source-true address
  * (`SourceRef`: file + JSON Pointer) for internal processing, and a stable Atlas
  * `slug`/`anchor` for documentation-facing links.
  */
@@ -14,7 +14,7 @@
 export type PlaneId = 'cross-cutting' | 'design' | 'governance';
 
 /**
- * Source-true address of a schema element (DEC-ATL-13). `file` is the schema file
+ * Source-true address of a schema element. `file` is the schema file
  * path relative to the version root (e.g. `design/domain.schema.yaml`); `pointer`
  * is a JSON Pointer within that file (`""` for the whole file, `/$defs/operation`
  * for a definition). `version` is the schema version slug (e.g. `v2.7`).
@@ -29,7 +29,7 @@ export interface SourceRef {
 export interface Provenance {
   /** Schema source addresses this projection was derived from. Always at least one. */
   schema: SourceRef[];
-  /** Overlay ids that contributed non-authoritative notes/examples, if any (DEC-ATL-12). */
+  /** Overlay ids that contributed non-authoritative notes/examples, if any. */
   overlays?: string[];
 }
 
@@ -70,14 +70,14 @@ export interface DefInfo {
   kind: 'object' | 'value';
   required: string[];
   properties: PropertyInfo[];
-  /** Resolved type label — most useful for `value` defs (typed-ID refs, enums, scalars). */
+  /** Resolved type label - most useful for `value` defs (typed-ID refs, enums, scalars). */
   type: TypeInfo;
   enumValues?: string[];
   deprecated: boolean;
   pointer: string;
 }
 
-/** One schema file, normalized. Layer/slice/nesting boundaries are preserved (DEC-ATL-14). */
+/** One schema file, normalized. Layer/slice/nesting boundaries are preserved. */
 export interface SchemaFile {
   /** Path relative to the version root, POSIX form (e.g. `design/domain.schema.yaml`). */
   relPath: string;
@@ -135,10 +135,10 @@ export interface AtlasModel {
 }
 
 // ---------------------------------------------------------------------------
-// Overlay contract (DEC-ATL-08, DEC-ATL-17) — narrow, non-authoritative inputs.
+// Overlay contract - narrow, non-authoritative inputs.
 // ---------------------------------------------------------------------------
 
-/** The only overlay categories allowed (DEC-ATL-17). None may override validation truth. */
+/** The only overlay categories allowed. None may override validation truth. */
 export type OverlayCategory =
   | 'explanatory-note'
   | 'modeling-guidance'
@@ -168,7 +168,7 @@ export interface Overlay {
 }
 
 // ---------------------------------------------------------------------------
-// Diff / changelog contract (DEC-ATL-04, DEC-ATL-16, DEC-ATL-19).
+// Diff / changelog contract.
 // ---------------------------------------------------------------------------
 
 export type ChangeKind =
@@ -188,15 +188,15 @@ export interface ChangeEntry {
   scope: 'file' | 'definition' | 'property';
   /** Human-readable target address (e.g. `design/domain.schema.yaml#/$defs/operation/materializes`). */
   target: string;
-  /** Conservative semver impact (DEC-ATL-19). */
+  /** Conservative semver impact. */
   semver: SemverImpact;
   /** One-line structural summary derived from the diff. */
   summary: string;
   /** Provenance to the affected schema element(s) in both versions where relevant. */
   provenance: Provenance;
-  /** Optional curated rationale/migration note from a changelog overlay (DEC-ATL-17). */
+  /** Optional curated rationale/migration note from a changelog overlay. */
   note?: string;
-  /** For `rename`: the basis for the claim (always overlay-annotated here, DEC-ATL-19). */
+  /** For `rename`: the basis for the claim (always overlay-annotated). */
   renameBasis?: string;
 }
 
@@ -208,7 +208,7 @@ export interface SchemaDiff {
 }
 
 // ---------------------------------------------------------------------------
-// Policy (DEC-ATL-21) — explicit fail / warn / skip, never silent.
+// Policy - explicit fail / warn / skip, never silent.
 // ---------------------------------------------------------------------------
 
 export type PolicyLevel = 'fail' | 'warn' | 'skip';

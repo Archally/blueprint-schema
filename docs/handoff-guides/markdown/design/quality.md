@@ -13,15 +13,15 @@ attributes and measurable fitness**.
 
 ## Main entities in this guide
 
-- `metric` — a raw measurement of behavior, such as time, rate, or percentage.
-- `kpi` — a business-facing target built on a metric.
-- `slo` — an internal service target the team commits to.
-- `sla` — an external promise with business consequences if it is missed.
-- `security_requirement` — a rule about protecting access, data, or auditability.
-- `compliance_requirement` — a legal, regulatory, or retention obligation.
-- `resilience_requirement` — an expectation about recovery, continuity, or failure handling.
-- `finding` — a current quality weakness or defect already observed in the system.
-- `observability` — the monitoring view made from metrics, logs, traces, and events.
+- `metric` - a raw measurement of behavior, such as time, rate, or percentage.
+- `kpi` - a business-facing target built on a metric.
+- `slo` - an internal service target the team commits to.
+- `sla` - an external promise with business consequences if it is missed.
+- `security_requirement` - a rule about protecting access, data, or auditability.
+- `compliance_requirement` - a legal, regulatory, or retention obligation.
+- `resilience_requirement` - an expectation about recovery, continuity, or failure handling.
+- `finding` - a current quality weakness or defect already observed in the system.
+- `observability` - the monitoring view made from metrics, logs, traces, and events.
   - Often confused with: `leverage_point` in the Leverage guide. A `finding` states what is wrong
     now; a leverage point states a prioritized intervention to improve it.
 

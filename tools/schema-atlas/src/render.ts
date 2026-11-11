@@ -1,5 +1,5 @@
 /**
- * Atlas generation orchestrator — builds the full output file set for a version
+ * Atlas generation orchestrator - builds the full output file set for a version
  * (plus the cross-version changelog) as an in-memory map. The CLI writes it or
  * checks it against disk; keeping generation pure makes drift detection trivial.
  */

@@ -12,9 +12,9 @@ This guide helps with **screens and user interaction flow**.
 
 ## Main entities in this guide
 
-- `screen` — a UI surface a person sees.
-- `action` — something a person can do on a screen.
-- `navigation` — how one screen leads to another.
+- `screen` - a UI surface a person sees.
+- `action` - something a person can do on a screen.
+- `navigation` - how one screen leads to another.
   - Often confused with: a story step. An `action` is a user-system interaction moment; a story
     step is part of a broader business journey.
 
@@ -30,8 +30,8 @@ Capture things like:
 
 ## What does not belong here
 
-- the whole business process — capture that in the Story guide
-- full definitions of concepts — capture those in the Concepts guide
+- the whole business process - capture that in the Story guide
+- full definitions of concepts - capture those in the Concepts guide
 - technical implementation details of frontend components unless they change meaning
 
 ## Core things to capture

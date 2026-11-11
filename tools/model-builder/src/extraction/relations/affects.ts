@@ -1,7 +1,7 @@
 import type { Entity, Relation } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
-import { entityDomain, resolveOrPlaceholder } from './resolver.js';
+import { createPlaceholder, entityDomain, resolveOrPlaceholder } from './resolver.js';
 
 /**
  * Where a governance statement sticks on the domain model.
@@ -58,6 +58,31 @@ export function extractAffectsRelations(entities: Entity[], placeholders: Map<st
     if (!type) continue;
     const affects = (entity.data as { affects?: Record<string, unknown> } | undefined)?.affects;
     if (!affects || typeof affects !== 'object') continue;
+    if (entity.type === ENTITY_TYPE.Inquiry && Array.isArray(affects.process_activity_refs)) {
+      for (const reference of new Set(affects.process_activity_refs)) {
+        if (typeof reference !== 'string' || !reference) continue;
+        const matches = entities.flatMap(process => {
+          if (process.type !== ENTITY_TYPE.Process) return [];
+          const activities = (process.data as { activities?: Array<{ id?: unknown }> } | undefined)?.activities;
+          return (Array.isArray(activities) ? activities : []).filter(activity => activity?.id === reference).map(() => process);
+        });
+        let targetId: string;
+        if (matches.length === 1) {
+          targetId = matches[0]!.id;
+        } else {
+          const placeholder = createPlaceholder(reference, matches.length > 1 ? matches.map(process => process.id) : undefined);
+          placeholders.set(placeholder.id, placeholder);
+          targetId = placeholder.id;
+        }
+        relations.push({
+          id: `${entity.id}--${type}--activity-${reference}--${targetId}`,
+          source_entity_id: entity.id,
+          target_entity_id: targetId,
+          type,
+          data: { activity: reference },
+        });
+      }
+    }
     const domain = entityDomain(entity);
     const seen = new Set<string>();
     const lists: readonly string[] = entity.type === ENTITY_TYPE.Risk || entity.type === ENTITY_TYPE.Inquiry

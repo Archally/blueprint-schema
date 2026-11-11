@@ -1,10 +1,10 @@
 /**
- * Entity catalog — every schema file's root object + `$defs`, with properties,
- * requiredness, enums, deprecation, and attached overlay notes (Step 03).
+ * Entity catalog - every schema file's root object + `$defs`, with properties,
+ * requiredness, enums, deprecation, and attached overlay notes.
  *
  * This is the deep reference view. Structure is preserved (root vs definitions,
  * object vs value defs); readability comes from per-plane grouping + a TOC, not
- * from flattening (DEC-ATL-14). Every file section shows its source (DEC-ATL-12).
+ * from flattening. Every file section shows its source.
  */
 import type { DefInfo, PropertyInfo, Provenance, SchemaFile } from '../types.js';
 import { generatedBanner, table, cell, truncate, code, blocks } from '../md.js';
@@ -19,11 +19,11 @@ function enumSummary(values: string[] | undefined): string {
 
 function propRows(props: PropertyInfo[]): string[][] {
   return props.map((p) => {
-    const desc = p.deprecated ? `⚠ *deprecated* — ${truncate(p.description, 140)}` : truncate(p.description, 160);
+    const desc = p.deprecated ? `⚠ *deprecated* - ${truncate(p.description, 140)}` : truncate(p.description, 160);
     return [
       code(p.name),
       code(p.type.label),
-      p.required ? '✓' : '—',
+      p.required ? '✓' : '-',
       enumSummary(p.enumValues),
       cell(desc),
     ];
@@ -34,7 +34,7 @@ const PROP_HEADER = ['Property', 'Type', 'Req', 'Enum', 'Description'];
 
 function renderDef(def: DefInfo, file: SchemaFile, ctx: GenContext): string {
   const parts: string[] = [];
-  parts.push(`#### \`${def.name}\`${def.title ? ` — ${cell(def.title)}` : ''}`);
+  parts.push(`#### \`${def.name}\`${def.title ? ` - ${cell(def.title)}` : ''}`);
   if (def.deprecated) parts.push('> ⚠ **Deprecated definition.**');
   if (def.description) parts.push(truncate(def.description, 400));
 
@@ -77,7 +77,7 @@ function renderFile(file: SchemaFile, ctx: GenContext): string {
     parts.push(table(PROP_HEADER, propRows(file.properties)));
   }
 
-  // Definitions — object defs first (the entity shapes), then value defs (the vocabulary).
+  // Definitions - object defs first (the entity shapes), then value defs (the vocabulary).
   const objectDefs = file.definitions.filter((d) => d.kind === 'object');
   const valueDefs = file.definitions.filter((d) => d.kind === 'value');
 
@@ -102,10 +102,10 @@ function renderFile(file: SchemaFile, ctx: GenContext): string {
 export function renderEntityCatalog(ctx: GenContext): string {
   const { model } = ctx;
   const parts: string[] = [generatedBanner()];
-  parts.push(`# Blueprint Schema Atlas — ${model.version} Entity Catalog`);
+  parts.push(`# Blueprint Schema Atlas - ${model.version} Entity Catalog`);
   parts.push(
-    'Every schema file, its root object, and its definitions — with types, requiredness, enums, and ' +
-      'deprecation read directly from JSON Schema. Overlay notes are labeled non-authoritative (DEC-ATL-17).',
+    'Every schema file, its root object, and its definitions - with types, requiredness, enums, and ' +
+      'deprecation read directly from JSON Schema. Overlay notes are labeled non-authoritative.',
   );
 
   // TOC by plane.

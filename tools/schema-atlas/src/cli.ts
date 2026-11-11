@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Blueprint Schema Atlas CLI (Step 06).
+ * Blueprint Schema Atlas CLI.
  *
  *   blueprint-atlas generate   # regenerate docs/schema-atlas/**
- *   blueprint-atlas check      # drift check — fail if generated output is stale
+ *   blueprint-atlas check      # drift check - fail if generated output is stale
  *
  * Exit codes: 0 = ok · 1 = drift (check mode) · 2 = generation failure (fail policy).
  */
@@ -21,7 +21,7 @@ interface CliOptions extends GenerateOptions {
 const HELP = [
   'Usage: blueprint-atlas <generate|check> [options]',
   '',
-  'Generate (or verify) the Blueprint Schema Atlas — a human-readable projection of the JSON Schema.',
+  'Generate (or verify) the Blueprint Schema Atlas - a human-readable projection of the JSON Schema.',
   '',
   'Modes:',
   '  generate           Write the Atlas to the output directory (default)',
@@ -118,7 +118,7 @@ function main(): void {
     process.exit(0);
   }
 
-  // generate mode — write files.
+  // generate mode - write files.
   let written = 0;
   for (const [rel, content] of files) {
     const abs = path.join(outAbs, rel);

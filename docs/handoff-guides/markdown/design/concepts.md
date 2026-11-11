@@ -13,10 +13,10 @@ and business ontology**.
 
 ## Main entities in this guide
 
-- `concept` — a business thing or idea the model must name clearly and keep stable.
-- `actor` — a person, role, or external participant that does something in the domain.
-- `enumeration` — a closed list of allowed values or states.
-- `association` — a meaningful relationship between concepts.
+- `concept` - a business thing or idea the model must name clearly and keep stable.
+- `actor` - a person, role, or external participant that does something in the domain.
+- `enumeration` - a closed list of allowed values or states.
+- `association` - a meaningful relationship between concepts.
   - Often confused with: `entity` in the Architecture guide. Use `concept` here when the meaning
     matters; use `entity` there when the structural picture matters.
 
@@ -33,8 +33,8 @@ Capture things like:
 
 ## What does not belong here
 
-- a full process flow — capture that in the Story guide
-- screen behavior — capture that in the Interactions guide
+- a full process flow - capture that in the Story guide
+- screen behavior - capture that in the Interactions guide
 - detailed technical storage structures unless they matter to business meaning
 
 ## Core things to capture

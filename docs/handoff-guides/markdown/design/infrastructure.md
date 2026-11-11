@@ -12,11 +12,11 @@ covers **operational environment and platform topology**.
 
 ## Main entities in this guide
 
-- `environment` — a named operating environment such as development, staging, or production.
-- `resource` — an infrastructure element the system depends on, such as storage, compute, or
+- `environment` - a named operating environment such as development, staging, or production.
+- `resource` - an infrastructure element the system depends on, such as storage, compute, or
   messaging.
-- `topology` — the high-level deployment shape showing how environments and resources fit together.
-- `deployment_tier` — a layer inside the topology, such as edge, application, or data.
+- `topology` - the high-level deployment shape showing how environments and resources fit together.
+- `deployment_tier` - a layer inside the topology, such as edge, application, or data.
   - Often confused with: `resource_profile` in Dynamics. Infrastructure `resource` names what
     exists; Dynamics explains how runtime behavior uses it.
 

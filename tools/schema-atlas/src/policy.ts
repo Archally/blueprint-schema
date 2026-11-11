@@ -1,5 +1,5 @@
 /**
- * Explicit fail / warn / skip policy (DEC-ATL-21).
+ * Explicit fail / warn / skip policy.
  *
  * The Atlas must never silently omit material truth or degrade output without
  * signaling it. Every degradation (warn) and every optional omission (skip) is
@@ -24,7 +24,7 @@ export class PolicyReporter {
     this.add('warn', code, message);
   }
 
-  /** An optional projection was intentionally omitted. Never silent — always recorded. */
+  /** An optional projection was intentionally omitted. Never silent - always recorded. */
   skip(code: string, message: string): void {
     this.add('skip', code, message);
   }

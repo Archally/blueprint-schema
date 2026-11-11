@@ -15,10 +15,10 @@ planning and execution sequencing**.
 
 ## Main entities in this guide
 
-- `milestone` — a dated delivery target with outcomes and success criteria.
-- `work_item` — the execution-level work that makes a milestone real.
-- `blocker` — something preventing a `work_item` from moving forward.
-- `cadence` — the sprint anchor used when work is planned by sprint rather than only by date.
+- `milestone` - a dated delivery target with outcomes and success criteria.
+- `work_item` - the execution-level work that makes a milestone real.
+- `blocker` - something preventing a `work_item` from moving forward.
+- `cadence` - the sprint anchor used when work is planned by sprint rather than only by date.
   - Often confused with: a `leverage_point`. A roadmap item is delivery work or timing; a leverage
     point is the higher-level intervention being prioritized.
 

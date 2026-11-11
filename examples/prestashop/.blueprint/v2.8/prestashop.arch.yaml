@@ -24,6 +24,12 @@ parties:
     kind: system
     description: PrestaShop v9 monolith with CQRS domain layer and Symfony framework.
 
+  - id: PRT102
+    name: Issue Tracker
+    kind: system
+    description: Generic tracker used by the fictional shop in the illustrative delivery process.
+    tags: [illustrative]
+
 system_ref: PRT003
 contexts:
   - id: prestashop.BC009

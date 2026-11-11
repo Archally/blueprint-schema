@@ -1,5 +1,5 @@
 /**
- * Mermaid diagram generation — bounded structural views (DEC-ATL-05, DEC-ATL-14).
+ * Mermaid diagram generation - bounded structural views.
  *
  * Readability is achieved by BOUNDING views (per plane), not by flattening schema
  * structure. When a view would exceed a readability threshold, the reporter records
@@ -24,7 +24,7 @@ function fence(lines: string[]): string {
   return ['```mermaid', ...lines, '```'].join('\n');
 }
 
-/** Short display label for a file node — its base name without the `.schema.yaml` suffix. */
+/** Short display label for a file node - its base name without the `.schema.yaml` suffix. */
 function fileLabel(relPath: string): string {
   const base = relPath.replace(/^.*\//, '').replace(/\.schema\.ya?ml$/i, '');
   return base;

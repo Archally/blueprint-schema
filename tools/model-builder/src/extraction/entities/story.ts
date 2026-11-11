@@ -1,4 +1,4 @@
-import type { Entity } from '../../model/types.js';
+import type { DocumentsBySchemaType, Entity } from '../../model/types.js';
 import type { ParsedBlueprintDocument } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { SCHEMA_TYPE_TO_LAYER } from '../../model/entityTypes.js';
@@ -155,6 +155,8 @@ interface StoryInput {
   implementation?: unknown;
   /** The source files behind the process, as stated. Carried through, never interpreted. */
   code_refs?: unknown;
+  describes?: unknown;
+  provenance?: unknown;
 }
 
 /**
@@ -224,6 +226,8 @@ export function extractStory(doc: ParsedBlueprintDocument, line: ServedSchemaLin
         ...(s.triggers !== undefined ? { triggers: s.triggers } : {}),
         end_states: endStates,
         lanes: s.lanes ?? s.process?.lanes,
+        ...(s.describes !== undefined ? { describes: s.describes } : {}),
+        ...(s.provenance !== undefined ? { provenance: s.provenance } : {}),
         // This extractor names every field it keeps, so a field it does not name is DROPPED - which
         // is why a story could declare `tracker_ref` in a valid model and no consumer could see it.
         // Carried raw: what it means and how it becomes a link are the render kit's, not this
@@ -559,4 +563,30 @@ export function deriveProcessOrder(
   });
 
   return { activities: withSuccessors(), ...(start ? { start } : {}), starts, ends };
+}
+
+/** Apply slice defaults to extracted processes without writing to the parsed source documents.
+ * The grouped extraction caller must invoke this once it has both entities and root documents.
+ */
+export function inheritProcessDescribes(entities: Entity[], documents: DocumentsBySchemaType): void {
+  const slices = new Map<string, Set<string>>();
+  for (const document of documents.blueprint ?? []) {
+    const layout = document.data?.layout;
+    if (!isRecord(layout) || !Array.isArray(layout.slices)) continue;
+    for (const slice of layout.slices) {
+      if (!isRecord(slice) || typeof slice.name !== 'string') continue;
+      if (slice.describes !== 'system' && slice.describes !== 'organization') continue;
+      const values = slices.get(slice.name) ?? new Set<string>();
+      values.add(slice.describes);
+      slices.set(slice.name, values);
+    }
+  }
+  for (const entity of entities) {
+    if (entity.type !== ENTITY_TYPE.Process || !isRecord(entity.data)) continue;
+    if (entity.data.describes !== undefined) continue;
+    const slice = entity.fileOrigin?.replace(/\\/g, '/').split('/')[0] ?? '';
+    const values = slices.get(slice);
+    if (values?.size !== 1) continue;
+    entity.data.describes = [...values][0];
+  }
 }
