@@ -115,6 +115,8 @@ Full example blueprints in this repository, validated against the schema - the b
 | Example model | Rendered overview |
 | --- | --- |
 | `examples/ecommerce/.blueprint/v2.6` | [rendered overview](../../../examples/ecommerce/.blueprint/v2.6/.specs/overview.md) |
+| `examples/ecommerce/.blueprint/v2.8` | - |
+| `examples/eshop/.blueprint/v2.8` | - |
 | `examples/prestashop/.blueprint/v2.8` | [rendered overview](../../../examples/prestashop/.blueprint/v2.8/.specs/overview.md) |
 | `examples/training-business/.blueprint/v2.8` | - |
 

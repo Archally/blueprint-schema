@@ -1,0 +1,790 @@
+version: "1.0.0"
+name: "Customers"
+description: >
+  The customer account, and since authentication landed the shop's session
+  surface too. Two commands a person runs on their own record, one the shop
+  runs on it for them (customers.DC003), three reads, and six operations that
+  issue, resolve and revoke a session - for shoppers and for shop operators,
+  from one token store. It stopped being the smallest surface in this model on
+  the day a sign-in existed, and the reason is worth stating: a credential is a
+  field on the account record, so the context that holds who somebody is is
+  also the one that can say it is them.
+  One of the reads is the whole reason another context depends on this one,
+  because an order's prices are struck from it (customers.QRY002).
+  The context publishes no event, so nothing downstream learns that a customer
+  registered, changed their address, closed their account or signed in; every
+  other context that needs to know something about a person asks at the moment
+  it needs it and keeps nothing. Nor does any of it gate anything: a session
+  says who is asking, and no endpoint in this shop checks one before answering
+  (customers.RSK004).
+scope: customers
+owned_by:
+  team: TM003
+tags: [generic-domain, account]
+
+operations:
+  registerCustomer:
+    id: customers.CMD001
+    code_refs:
+      - path: services/customer-service/Controllers/CustomersController.cs
+        role: implementation
+        description: >
+          `[HttpPost]` on the customers controller, under its `[Route("[controller]")]`.
+    kind: command
+    name: Register Customer
+    description: >
+      Create the account a shopper needs before they can place a first order.
+      The shopper fills this in themselves on the storefront - nobody in the
+      shop creates an account on their behalf, which is what makes this
+      context self-service rather than back-office. Three fields are required:
+      a name, an email address, which is also the login, and a password. The
+      six postal fields are optional, so an account can exist before the shop
+      knows where to deliver anything, and the account page is where the rest
+      arrives (customers.CMD002). Registering does not sign anybody in: the
+      storefront follows a successful registration with Sign In Customer
+      (customers.CMD004), so a new shopper and a returning one reach a session
+      by the same path.
+    initiated_by:
+      - ACT001
+    exchange:
+      protocol: http
+      endpoint:
+        path: /customers
+        method: POST
+        group: customers
+    payload:
+      schema: "#/components/schemas/RegisterCustomerRequest"
+      contentType: application/json
+      required: true
+    responses:
+      - code: "201"
+        type: success
+        description: Account created and the customer id is returned for the shopper's first order
+        schema: "#/components/schemas/Customer"
+      - code: "400"
+        type: failure
+        description: >
+          A required field was missing, the email address was not an address, or
+          the password was shorter than eight characters
+        error: customers.ERR002
+    task_type: user-decision
+    delivery_priority: must-have
+    materializes:
+      - concept: customers.CN001
+        action: create
+        description: Creates the account every later customer id in the shop refers to
+
+  updateCustomerDetails:
+    id: customers.CMD002
+    code_refs:
+      - path: services/customer-service/Controllers/CustomersController.cs
+        role: implementation
+        description: >
+          `[HttpPut("{id}")]` on the customers controller.
+    kind: command
+    name: Update Customer Details
+    description: >
+      Replace the contact and delivery details on an existing account. An
+      unconditional whole-record replace, not a patch: the request carries the
+      whole record, so a form that renders four fields and posts four fields
+      blanks the rest. A name and an email are required and the six postal
+      fields are not, which is what lets a shopper who registered with three
+      fields save a profile at all - and equally what lets a save drop an
+      address that was there. It carries no version and no expected-current-value
+      either, so two edits in flight resolve by arrival order with neither
+      side told (customers.ASM002). Orders already placed keep the address
+      they were placed with, because nothing in this shop copies an address
+      onto an order in the first place (customers.QN003).
+    initiated_by:
+      - ACT001
+    exchange:
+      protocol: http
+      endpoint:
+        path: /customers/{id}
+        method: PUT
+        group: customers
+        parameters:
+          - name: id
+            schema: "#/components/x-field/CustomerId"
+            type: path
+            required: true
+    payload:
+      schema: "#/components/schemas/UpdateCustomerRequest"
+      contentType: application/json
+      required: true
+    responses:
+      - code: "200"
+        type: success
+        description: Details replaced, and the whole updated record is returned
+        schema: "#/components/schemas/Customer"
+      - code: "400"
+        type: failure
+        description: A required field was missing or the email address was not an address
+        error: customers.ERR002
+      - code: "404"
+        type: failure
+        description: No account with that id
+        error: customers.ERR001
+    task_type: user-decision
+    delivery_priority: should-have
+    materializes:
+      - concept: customers.CN001
+        action: update
+        description: >
+          Replaces every contact and delivery field on the account. The previous
+          values are not recorded anywhere, so a correction cannot be undone and a
+          delivery that went to the old address cannot be explained from the model.
+
+  closeCustomerAccount:
+    id: customers.CMD003
+    code_refs:
+      - path: services/customer-service/Controllers/CustomersController.cs
+        role: implementation
+        description: >
+          `[HttpDelete("{id}")]` on the customers controller. Built here in the account
+          service although the decision was taken for the storefront (customers.FN002).
+    kind: command
+    name: Close Customer Account
+    description: >
+      Remove the account. The record goes; the orders that reference it stay,
+      and stay pointing at a customer id nothing resolves any more
+      (customers.QN002). It is the one account command the shopper does not
+      make: customers.QN004 is now decided and closing an account is an
+      administrator's act (customers.DC003), which is why this operation alone
+      of the three is initiated by the operator.
+      Where the administrator performs it is decided and not yet built. The
+      decision puts the control on the storefront behind an admin role; the
+      running shop has it in the back office. The sign-in half of the gate now
+      exists - an operator signs in (customers.CMD006) and the back office is
+      closed until they do - and the role half does not: nothing in this shop
+      reads the role an operator record carries, and no endpoint on any service
+      checks a session token before answering. MIG007 holds the surface change
+      and customers.FN002 holds the gap, so neither call list in eshop.arch.yaml
+      has been moved ahead of the code.
+    initiated_by:
+      - ACT002
+    exchange:
+      protocol: http
+      endpoint:
+        path: /customers/{id}
+        method: DELETE
+        group: customers
+        parameters:
+          - name: id
+            schema: "#/components/x-field/CustomerId"
+            type: path
+            required: true
+    responses:
+      - code: "204"
+        type: success
+        description: Account removed; nothing is returned because nothing is left to return
+      - code: "404"
+        type: failure
+        description: No account with that id
+        error: customers.ERR001
+    task_type: user-decision
+    delivery_priority: could-have
+    materializes:
+      - concept: customers.CN001
+        action: delete
+        description: >
+          Deletes the account outright. This model declares no soft-delete and no
+          archive, and the `isActive` flag the concept carries is not what this
+          command writes.
+
+  getCustomer:
+    id: customers.QRY001
+    code_refs:
+      - path: services/customer-service/Controllers/CustomersController.cs
+        role: implementation
+        description: >
+          `[HttpGet("{id}")]` on the customers controller.
+    kind: query
+    name: Get Customer Profile
+    description: >
+      Read one customer's record by id. Two different people read it for two
+      different reasons - the shopper checking their own details on the
+      storefront, and an operator looking somebody up while handling a
+      question about an order - and the operation cannot tell them apart. It
+      returns the whole record to both, including the contact details, because
+      this model declares no field-level view and no permission of any kind.
+    initiated_by:
+      - ACT001
+      - ACT002
+    exchange:
+      protocol: http
+      endpoint:
+        path: /customers/{id}
+        method: GET
+        group: customers
+        parameters:
+          - name: id
+            schema: "#/components/x-field/CustomerId"
+            type: path
+            required: true
+    responses:
+      - code: "200"
+        type: success
+        description: The customer's record
+        schema: "#/components/schemas/Customer"
+      - code: "404"
+        type: failure
+        description: No account with that id
+        error: customers.ERR001
+    delivery_priority: must-have
+
+  getCustomerDiscounts:
+    id: customers.QRY002
+    code_refs:
+      - path: services/customer-service/Controllers/CustomersController.cs
+        role: implementation
+        description: >
+          `[HttpGet("{id}/discounts")]` on the customers controller. The read the orders
+          context depends on, and the one customers.FN001 is about.
+    kind: query
+    name: Get Customer Discounts
+    description: >
+      Read the standing concessions attached to one customer. Three surfaces
+      call it and only one of them is a person waiting for an answer: the order
+      flow calls it while an order is being created and strikes every line
+      price with what comes back, the back office calls it while an operator
+      answers a question about a price, and the shopper's own account page
+      calls it to list what they have. The first of those is why this is the
+      one read in this context another context depends on, and why it sits on
+      the critical path of the shop's money.
+      Two things about the answer matter more than the shape of it. An
+      account that is not active gets 200 with an empty set rather than a
+      refusal, so a suspended customer is priced at full list price and told
+      nothing; and the caller substitutes that same empty set when the read
+      fails outright (customers.ASM003). Three different situations therefore
+      arrive at the pricing step looking identical, which is customers.FN001
+      and is what customers.KPI001 counts.
+    initiated_by:
+      - ACT001
+      - ACT002
+    exchange:
+      protocol: http
+      endpoint:
+        path: /customers/{id}/discounts
+        method: GET
+        group: customers
+        parameters:
+          - name: id
+            schema: "#/components/x-field/CustomerId"
+            type: path
+            required: true
+    responses:
+      - code: "200"
+        type: success
+        description: >
+          The customer's discount set. Empty for a customer who has earned no
+          concession and equally empty for one whose account is not active -
+          the two cases are not distinguishable in this response.
+        schema: "#/components/schemas/CustomerDiscountsResponse"
+      - code: "404"
+        type: failure
+        description: No account with that id
+        error: customers.ERR001
+    delivery_priority: must-have
+
+  listCustomers:
+    id: customers.QRY003
+    code_refs:
+      - path: services/customer-service/Controllers/CustomersController.cs
+        role: implementation
+        description: >
+          `[HttpGet]` on the customers controller, answering the whole collection.
+    kind: query
+    name: List Customers
+    description: >
+      Read every active account at once - no filter, no paging, no search. The
+      back office uses it twice: as the customer list, and to put names against
+      the order book, because an order carries a customer id and nothing else
+      (orders.CN001 CAT004). It is the one operation in this model that reads
+      `isActive` (customers.CAT005), and it reads it by omission: an account
+      that is not active is absent from the result rather than marked in it, so
+      the back office cannot tell a suspended customer from one that never
+      existed while the orders they placed remain on the order book.
+    initiated_by:
+      - ACT002
+    exchange:
+      protocol: http
+      endpoint:
+        path: /customers
+        method: GET
+        group: customers
+    responses:
+      - code: "200"
+        type: success
+        description: Every active account, whole and unpaged
+        schema: "#/components/schemas/CustomerList"
+    delivery_priority: should-have
+
+  # The session surface. Six operations, added the day the shop grew one, and
+  # they are the reason this context stopped being "three commands and three
+  # reads". They sit here rather than in a context of their own because the
+  # credential is a field on the account record and the service that answers
+  # them is the account service.
+  #
+  # What they are NOT is authorization. A token says who is asking; nothing on
+  # this service, or on any other service in this shop, checks one before
+  # answering. customers.RSK004 is that gap and customers.GL001 is the goal it
+  # still fails.
+  signInCustomer:
+    id: customers.CMD004
+    code_refs:
+      - path: services/customer-service/Controllers/CustomersController.cs
+        role: implementation
+        description: >
+          `[HttpPost("sign-in")]` on the customers controller. The token it issues is the
+          opaque session key orders.SEC001 is not asking for.
+    kind: command
+    name: Sign In Customer
+    description: >
+      Exchange a shopper's login and password for a session token. The login is
+      the email address on the account, so no second identity field exists, and
+      the password is checked against a PBKDF2-SHA256 hash keyed by the account
+      id rather than by the login - which is why changing an email on the
+      account page moves the login and leaves the credential alone.
+      A refusal is one response with one body for two different situations: a
+      login the shop does not hold, and a password that does not match. That is
+      deliberate, and it is the only place in this model where two distinct
+      outcomes are made indistinguishable on purpose rather than by accident.
+      The token it issues is opaque and held in memory, so every session in the
+      shop ends when the service restarts.
+    initiated_by:
+      - ACT001
+    exchange:
+      protocol: http
+      endpoint:
+        path: /customers/sign-in
+        method: POST
+        group: customers
+    payload:
+      schema: "#/components/schemas/SignInRequest"
+      contentType: application/json
+      required: true
+    responses:
+      - code: "200"
+        type: success
+        description: Signed in; the body carries the session token and the customer it belongs to
+        schema: "#/components/schemas/CustomerSession"
+      - code: "400"
+        type: failure
+        description: The login or the password was absent from the request
+        error: customers.ERR002
+      - code: "401"
+        type: failure
+        description: >
+          The login and password were not accepted. One body for both causes, so
+          the endpoint cannot be used to find out which logins exist.
+        error: customers.ERR003
+    task_type: user-decision
+    delivery_priority: must-have
+    materializes:
+      - concept: customers.CN003
+        action: create
+        description: >
+          Creates the session the storefront then remembers as a token. Nothing
+          is written to the account record, so a sign-in leaves no trace on the
+          customer once the session is gone.
+
+  signOutCustomer:
+    id: customers.CMD005
+    code_refs:
+      - path: services/customer-service/Controllers/CustomersController.cs
+        role: implementation
+        description: >
+          `[HttpDelete("session")]` on the customers controller.
+    kind: command
+    name: Sign Out Customer
+    description: >
+      Revoke the session token the caller presents, so it resolves to nobody
+      afterwards. It answers the same way whether the token was live, already
+      revoked or never issued: there is nothing a caller can learn here that
+      they did not already know, and a screen that has signed itself out must
+      not be pulled back by a failed revoke.
+    initiated_by:
+      - ACT001
+    exchange:
+      protocol: http
+      endpoint:
+        path: /customers/session
+        method: DELETE
+        group: customers
+    responses:
+      - code: "204"
+        type: success
+        description: >
+          The token was revoked, or was already unknown. Nothing is returned
+          because the two cases are the same case from here.
+    task_type: user-decision
+    delivery_priority: must-have
+    materializes:
+      - concept: customers.CN003
+        action: delete
+        description: >
+          Removes the session. No record of it survives, so the shop cannot say
+          later that anybody signed in or out.
+
+  getCustomerSession:
+    id: customers.QRY004
+    code_refs:
+      - path: services/customer-service/Controllers/CustomersController.cs
+        role: implementation
+        description: >
+          `[HttpGet("session")]` on the customers controller.
+    kind: query
+    name: Get Customer Session
+    description: >
+      Resolve the session token a browser remembered back into the customer it
+      belongs to. It is what makes the token the only thing either front end
+      stores: the identity behind it is re-read here on every load, so a token
+      revoked elsewhere, or issued by a service that has since restarted,
+      resolves to nobody rather than to a stale name on a screen.
+      It also cleans up after itself in one case worth naming: a token whose
+      account has since been closed is revoked here rather than answered.
+    initiated_by:
+      - ACT001
+    exchange:
+      protocol: http
+      endpoint:
+        path: /customers/session
+        method: GET
+        group: customers
+    responses:
+      - code: "200"
+        type: success
+        description: The customer the token was issued for, in the same shape every other read returns
+        schema: "#/components/schemas/Customer"
+      - code: "401"
+        type: failure
+        description: >
+          No bearer token was presented, the token is not live, or it belongs to
+          an operator rather than a shopper.
+        error: customers.ERR004
+    delivery_priority: must-have
+
+  signInOperator:
+    id: customers.CMD006
+    code_refs:
+      - path: services/customer-service/Controllers/OperatorsController.cs
+        role: implementation
+        description: >
+          `[HttpPost("sign-in")]` on the operators controller. A second controller in the
+          same service, over the `/operators` collection.
+    kind: command
+    name: Sign In Operator
+    description: >
+      The same exchange as the shopper's, against the operator collection this
+      service also serves. It is the first operation this model declares over
+      that collection, and it is declared because the back office is now closed
+      until it succeeds - an operator who has not signed in reaches a sign-in
+      screen and nothing else. The rest of the operator collection stays
+      unmodelled on purpose (customers.QN005).
+      An operator record carries a role, and this operation does not read it. A
+      session says which operator is asking; no screen and no endpoint in this
+      shop consults the role, so the admin gate customers.DC003 assumes still
+      has nothing behind it.
+    initiated_by:
+      - ACT002
+    exchange:
+      protocol: http
+      endpoint:
+        path: /operators/sign-in
+        method: POST
+        group: operators
+    payload:
+      schema: "#/components/schemas/SignInRequest"
+      contentType: application/json
+      required: true
+    responses:
+      - code: "200"
+        type: success
+        description: Signed in; the body carries the session token and the operator it belongs to
+        schema: "#/components/schemas/OperatorSession"
+      - code: "400"
+        type: failure
+        description: The login or the password was absent from the request
+        error: customers.ERR002
+      - code: "401"
+        type: failure
+        description: The login and password were not accepted, in the same one body the shopper side returns
+        error: customers.ERR003
+    task_type: user-decision
+    delivery_priority: must-have
+    materializes:
+      - concept: customers.CN003
+        action: create
+        description: Creates an operator session, in the same token space the shopper's session lives in.
+
+  signOutOperator:
+    id: customers.CMD007
+    code_refs:
+      - path: services/customer-service/Controllers/OperatorsController.cs
+        role: implementation
+        description: >
+          `[HttpDelete("session")]` on the operators controller.
+    kind: command
+    name: Sign Out Operator
+    description: >
+      Revoke an operator's session token. The same shape and the same silence as
+      the shopper's sign-out, against the same token store - the two kinds of
+      session differ only in which record the token resolves to.
+    initiated_by:
+      - ACT002
+    exchange:
+      protocol: http
+      endpoint:
+        path: /operators/session
+        method: DELETE
+        group: operators
+    responses:
+      - code: "204"
+        type: success
+        description: The token was revoked, or was already unknown
+    task_type: user-decision
+    delivery_priority: must-have
+    materializes:
+      - concept: customers.CN003
+        action: delete
+        description: Removes the operator session; the back office closes on the next guarded navigation.
+
+  getOperatorSession:
+    id: customers.QRY005
+    code_refs:
+      - path: services/customer-service/Controllers/OperatorsController.cs
+        role: implementation
+        description: >
+          `[HttpGet("session")]` on the operators controller.
+    kind: query
+    name: Get Operator Session
+    description: >
+      Resolve an operator's remembered token back into the operator behind it.
+      The back office calls it once, on the first guarded navigation, and waits
+      for the answer before deciding whether anybody is signed in - which is
+      the difference between a refreshed page and a signed-out one, and the one
+      thing a token-only client cannot know without asking.
+    initiated_by:
+      - ACT002
+    exchange:
+      protocol: http
+      endpoint:
+        path: /operators/session
+        method: GET
+        group: operators
+    responses:
+      - code: "200"
+        type: success
+        description: >
+          The operator the token was issued for - a name, an email, an active
+          flag and a role, the record this model otherwise leaves unmodelled
+          (customers.QN005).
+      - code: "401"
+        type: failure
+        description: >
+          No bearer token was presented, the token is not live, or it belongs to
+          a shopper rather than an operator.
+        error: customers.ERR004
+    delivery_priority: must-have
+
+errors:
+  customerNotFound:
+    id: customers.ERR001
+    name: Customer Not Found
+    description: >
+      No account exists with the id supplied. Returned by all three
+      id-addressed operations, and the one failure a caller in another context
+      is most likely to meet, because nothing tells a context holding a
+      customer id that the account behind it has gone.
+    category: not-found
+    severity: error
+    http_status: 404
+    retry_eligible: false
+  customerDetailsRejected:
+    id: customers.ERR002
+    name: Customer Details Rejected
+    description: >
+      The submitted details failed field validation - a required field was
+      missing, or the email address was not shaped like one. It is the only
+      rule this context enforces: there is no check that the address is
+      deliverable, that the phone number is reachable or that the email
+      belongs to the person typing it.
+    category: validation
+    severity: error
+    http_status: 400
+    retry_eligible: false
+  signInRefused:
+    id: customers.ERR003
+    name: Sign In Refused
+    description: >
+      The login and password offered were not accepted. It is one failure
+      covering two situations - a login the shop holds no account for, and a
+      password that does not match the one it holds - and the body is identical
+      in both, so a caller cannot use a refusal to discover which logins exist.
+      That indistinguishability is the point of this error rather than a
+      shortcoming of it.
+    category: authorization
+    severity: warning
+    http_status: 401
+    retry_eligible: true
+  noLiveSession:
+    id: customers.ERR004
+    name: No Live Session
+    description: >
+      The caller presented no bearer token, presented one the session store does
+      not hold, or presented one belonging to the other kind of principal - an
+      operator token on a customer read, or the reverse. Sessions live in memory,
+      so every token in the shop becomes this failure when the service restarts,
+      and a front end meets it on a first load rather than on a wrong one.
+    category: authorization
+    severity: warning
+    http_status: 401
+    retry_eligible: false
+
+questions:
+  - id: customers.QN001
+    name: The discounts this shopper carries
+    statement: "Which standing discounts apply to this customer when an order is priced?"
+    description: >
+      Answered by Get Customer Discounts (customers.QRY002). The read was
+      always real - the order flow calls it while an order is being created and
+      strikes every line price with the result, the back office calls it when
+      an operator opens a customer, and the shopper's own account page calls it
+      to list what they have - and the model simply did not declare it. Declaring it is what made the second half of this question
+      answerable too: Orders reaching into this context is now a dependency in
+      eshop.arch.yaml rather than a fact only the code carried
+      (customers.DC002).
+      What the answer does not settle is what an EMPTY answer means. A customer
+      who has earned no concession, a customer whose account is not active, and
+      a customer whose discounts could not be read at all all arrive at the
+      pricing step as the same empty set. That is customers.FN001, and the
+      order it silently overcharges is what customers.KPI001 counts.
+    bounded_context_ref: BC007
+    category: measurement
+    priority: critical
+    answered_by:
+      - customers.QRY002
+    concepts:
+      - customers.CN002
+    stakeholders:
+      - ACT001
+    resolved: true
+    resolution: >
+      Modelled as customers.QRY002 and exposed on the Customers API, with the
+      Orders dependency declared in eshop.arch.yaml (customers.DC002). The
+      meaning of an empty result is carried forward as customers.FN001.
+    blocking: false
+  - id: customers.QN002
+    name: The orders of a closed account
+    statement: "After an account is closed, whose are the orders it placed?"
+    description: >
+      Unanswered. Close Customer Account removes the record, and every order
+      in the shop refers to a customer by id alone (orders.CN001 CAT004).
+      Nothing cascades, nothing archives and nothing refuses the close while
+      orders exist, so the orders survive pointing at an id that resolves to a
+      404. Neither the customer asking what happened to their last delivery
+      nor the operator reading the order list can be answered from this model.
+    bounded_context_ref: BC007
+    category: relationship
+    priority: high
+    answered_by: []
+    concepts:
+      - customers.CN001
+    stakeholders:
+      - ACT002
+    blocking: false
+  - id: customers.QN003
+    name: Where that order was sent
+    statement: "Which address was this order actually delivered to?"
+    description: >
+      Unanswered, and it is the address version of the price question the
+      storefront asks (storefront.QN003). An order holds no address; the shop
+      would read the customer's current one at the time of delivery, and
+      Update Customer Details replaces that in place with no record of what it
+      replaced. A customer who moves house between ordering and delivery
+      leaves no trace of which address was current when.
+    bounded_context_ref: BC007
+    category: temporal
+    priority: medium
+    answered_by: []
+    concepts:
+      - customers.CN001
+    stakeholders:
+      - ACT001
+    blocking: false
+  - id: customers.QN004
+    name: Who closes an account
+    statement: "Is closing an account something a customer does, or something the shop does for them?"
+    description: >
+      Decided: the shop does it. Closing an account is an administrator's act,
+      and an administrator is a user type of this system who signs in to the
+      storefront web application with an admin role - one application serving
+      two kinds of user, not a second application. The reading this model used
+      to carry, that all three account commands are the customer's own, is
+      withdrawn; customers.CMD003 is now initiated by the Shop Operator (ACT002)
+      and the other two stay with the shopper.
+      The decision is recorded in customers.DC003, and it is decided ahead of
+      the shop. Today the running shop closes an account from the back office
+      and the storefront offers no way to do it. What has changed since the
+      decision was taken is that a session now exists: an operator signs in
+      (customers.CMD006), and the back office refuses every screen until they
+      have. What has not changed is the role - nothing reads the role field an
+      operator record carries, and no endpoint in this shop checks a token
+      before answering - so the gate the decision assumes has an identity and
+      still has no permission. The surface half of this answer therefore remains
+      a change that has not been made: MIG007 holds it, customers.FN002 holds
+      the gap between the decided surface and the built one, and neither the
+      storefront's nor the back office's call list in eshop.arch.yaml has been
+      moved ahead of the code.
+    bounded_context_ref: BC007
+    category: business
+    priority: high
+    answered_by:
+      - customers.CMD003
+    concepts:
+      - customers.CN001
+    stakeholders:
+      - ACT001
+      - ACT002
+    resolved: true
+    resolution: >
+      An administrator closes an account, signing in to the storefront with an
+      admin role (customers.DC003). Pending on the design plane as MIG007; the
+      gap to the running shop is customers.FN002.
+    blocking: false
+  - id: customers.QN005
+    name: Whose record is a shop operator
+    statement: "Where does a shop operator's own record belong, and who models it?"
+    description: >
+      Unanswered, and written down so it is not mistaken for an oversight. The
+      service behind this context serves a second collection beside customers,
+      /operators, with the same five routes an account has and a record
+      carrying a name, an email, an active flag and a role. The Shop Operator
+      (ACT002) is one of those records, and this model declares no operation
+      over any of them.
+      Two of those routes are now modelled and the rest are not, and the split
+      is the answer's current shape rather than an inconsistency. Sign In
+      Operator (customers.CMD006) and Get Operator Session (customers.QRY005)
+      are declared because the back office is closed until the first of them
+      succeeds, so they are part of how the shop works and not only part of what
+      it exposes. The list, the read, the create, the update and the delete on
+      the same collection stay in exactly the state List Customers was in before
+      customers.QRY003 was written: implemented, reachable, and in none of the
+      shop's own specifications.
+      What is still undecided is where an operator record belongs. Naming it
+      here rather than modelling it remains deliberate - whether operators are
+      this context's concern or a context of their own is a decision about how
+      the shop wants to work, and authentication arriving has sharpened it
+      rather than settled it: the sessions of both kinds of person are now
+      issued by one service, from one token store, keyed by the record they
+      belong to.
+    bounded_context_ref: BC007
+    category: business
+    priority: medium
+    answered_by: []
+    concepts:
+      - customers.CN001
+    stakeholders:
+      - ACT002
+    blocking: false

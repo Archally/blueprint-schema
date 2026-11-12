@@ -1,0 +1,126 @@
+version: "1.0.0"
+name: "Checkout"
+scope: checkout
+operations:
+  addToCart:
+    id: checkout.CMD001
+    kind: command
+    name: Add to Cart
+    description: Add product with quantity to customer cart
+    initiated_by:
+      - ACT001
+    exchange:
+      protocol: http
+      endpoint:
+        path: /cart/items
+        method: POST
+        group: checkout
+    payload:
+      schema: "#/components/schemas/AddToCartRequest"
+      contentType: application/json
+      required: true
+    responses:
+      - code: "201"
+        type: success
+        description: Item added to cart
+        schema: "#/components/schemas/CartItem"
+      - code: "400"
+        type: failure
+        description: Invalid product or quantity
+        error: checkout.ERR001
+      - code: "404"
+        type: failure
+        description: Product not found in catalog
+        error: checkout.ERR002
+    produces:
+      operations:
+        - checkout.EVT001
+      mode: all
+    task_type: automated
+    materializes:
+      - concept: checkout.CN002
+        action: create
+        description: Creates the line, capturing the catalog price as the unit price
+      - concept: checkout.CN001
+        action: update
+        description: Adds the line to the cart and recomputes its item count and total
+  itemAddedToCart:
+    id: checkout.EVT001
+    kind: event
+    name: Item Added to Cart
+    description: Product was added to customer cart
+    exchange:
+      protocol: amqp
+      topic:
+        name: checkout.item-added
+        description: Published when a cart item is added
+        channel_ref: "MCH003"
+    payload:
+      schema: "#/components/schemas/ItemAddedEvent"
+      contentType: application/json
+  getCart:
+    id: checkout.QRY001
+    kind: query
+    name: Get Cart
+    description: Retrieve current shopping cart
+    initiated_by:
+      - ACT001
+    exchange:
+      protocol: http
+      endpoint:
+        path: /cart
+        method: GET
+        group: checkout
+    responses:
+      - code: "200"
+        type: success
+        description: Current cart contents
+        schema: "#/components/schemas/Cart"
+
+errors:
+  invalidCartItem:
+    id: checkout.ERR001
+    name: Invalid Cart Item
+    description: Product SKU or quantity is invalid
+    category: validation
+    severity: error
+    http_status: 400
+    retry_eligible: false
+  productNotFound:
+    id: checkout.ERR002
+    name: Product Not Found
+    description: Product SKU does not exist in catalog
+    category: not-found
+    severity: error
+    http_status: 404
+    retry_eligible: false
+
+questions:
+  - id: checkout.QN001
+    name: Cart contents
+    statement: "What is in this cart right now, and what does it total?"
+    description: >
+      The question the cart page exists to answer, and the one the customer
+      checks before committing to an order.
+    category: enumeration
+    priority: critical
+    answered_by:
+      - checkout.QRY001
+    concepts:
+      - checkout.CN001
+      - checkout.CN002
+    stakeholders:
+      - ACT001
+  - id: checkout.QN002
+    name: Added but not ordered
+    statement: "Which products are added to carts and then not ordered?"
+    description: >
+      Unanswered. Item Added to Cart is published and Order Submitted is
+      published, but nothing in this context joins the two, so the abandonment
+      the cart-to-order KPI targets cannot be attributed to a product.
+    category: measurement
+    priority: medium
+    answered_by: []
+    concepts:
+      - checkout.CN002
+    blocking: false

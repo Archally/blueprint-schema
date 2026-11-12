@@ -1,0 +1,95 @@
+# Commands named in this file use the commercial Archally Pro CLI (https://archally.pro).
+# Migration: Add loyalty program — INTENTIONALLY INVALID for demo/testing.
+# This migration is pending (not in blueprint.yaml) and contains several
+# validation errors to demonstrate how the API surfaces migration failures.
+migration:
+  id: MIG004
+  name: add-loyalty-program
+  date: "2026-02-25"
+  status: pending
+  description: "Add loyalty program concept and connect it to the orders domain."
+  depends_on: [MIG002, MIG009]   # MIG009 first, so TO-BE shows Shipments before it halts here
+  tags: [loyalty, rewards, intentionally-invalid]
+  # ⚠ Missing related_decisions and rationale → warnings
+
+changes:
+  entities:
+    # ERROR: tries to add orders.CN001 which already exists (duplicate)
+    - kind: add
+      entity_type: concept
+      target: orders.CN001
+      description: "Accidentally re-adds Order concept."
+      after:
+        id: orders.CN001
+        term: "Order"
+        definition: "Duplicate — this should fail validation."
+      reason: "This will fail: entity already exists."
+
+    # Valid add — would work if the migration passed validation
+    - kind: add
+      entity_type: concept
+      target: orders.CN050
+      description: "New concept for loyalty tier tracking."
+      after:
+        id: orders.CN050
+        term: "LoyaltyTier"
+        summary: "Customer loyalty level"
+        definition: "Tracks customer loyalty level: bronze, silver, gold, platinum."
+        states: [bronze, silver, gold, platinum]
+        initial_state: bronze
+      reason: "Loyalty tiers drive discount calculations."
+
+    # ERROR: modify with wrong before.term — current term is "Order" (after MIG002 split)
+    - kind: modify
+      entity_type: concept
+      target: orders.CN001
+      description: "Update Order to reference loyalty."
+      before:
+        id: orders.CN001
+        term: "Purchase"
+      after:
+        id: orders.CN001
+        term: "Order"
+        definition: "Purchase request header with loyalty points."
+      reason: "This will fail: before.term does not match current state."
+
+  properties:
+    # ERROR: references non-existent entity.
+    # The placeholder is deliberately NOT a well-formed typed id. This file documents failures the
+    # migration engine should reject, but it lives inside the model, so reference integrity reads it
+    # like any other document — a well-formed id here would be indistinguishable from a real
+    # dangling reference and would fail `bp validate` for the whole project.
+    - kind: set
+      target: orders.MISSING_EVENT
+      entity_type: operation
+      property: description
+      value: "Loyalty points earned after order confirmed."
+      description: "This will fail: orders.MISSING_EVENT is not declared anywhere in the model."
+
+    # ERROR: old_value mismatch on existing entity
+    - kind: set
+      target: orders.CMD001
+      entity_type: operation
+      property: description
+      value: "Submit draft order for confirmation with loyalty bonus."
+      old_value: "Submit order for processing"
+      description: "This will fail: old_value does not match current description."
+
+  relationships:
+    # Valid relationship add (but won't execute because migration fails validation)
+    - kind: add
+      subject: orders.CN050
+      predicate: related_to
+      object: orders.CN001
+      description: "LoyaltyTier relates to Order."
+
+    # ERROR: remove a relation that does not exist
+    - kind: remove
+      subject: orders.CN001
+      predicate: depends_on
+      object: catalog.CN999
+      description: "This will fail: no such edge exists."
+
+rollback:
+  automatic: false
+  data_loss: false

@@ -1,0 +1,139 @@
+version: "1.0.0"
+scope: delivery
+components:
+  schemas:
+    PrepareShipmentRequest:
+      x-model-id: MDL041
+      purpose: command-payload
+      type: object
+      description: "Request to open a shipment for an order whose stock is held"
+      represents:
+        - concept: delivery.CN001
+          kind: api
+      required:
+        - orderId
+      properties:
+        orderId:
+          $ref: "#/components/x-field/OrderReference"
+        carrier:
+          type: string
+          description: >
+            The courier the clerk intends to use. Optional, because it is often
+            not known until the parcel is on the scales.
+          example: "DPD"
+
+    Shipment:
+      x-model-id: MDL042
+      purpose: read-model
+      type: object
+      description: "A shipment and where it has got to"
+      represents:
+        - concept: delivery.CN001
+          kind: api
+      required:
+        - shipmentId
+        - orderId
+        - status
+      properties:
+        shipmentId:
+          type: string
+          format: uuid
+          description: >
+            The shipment's own identity, minted here rather than derived from
+            the order. It exists so that the day ASM002 breaks and an order
+            leaves in two parcels, there is already something to tell them
+            apart; until then it is one per order and looks redundant.
+          example: "9f1c3a52-0f6e-4a1b-9c2d-7a54e8b10c33"
+        orderId:
+          $ref: "#/components/x-field/OrderReference"
+        status:
+          type: string
+          enum:
+            - preparing
+            - dispatched
+            - delivered
+          description: >
+            How far the parcel has got. Deliberately not the order's status,
+            which lives in Orders and is set by hand there - a shipment reaching
+            `dispatched` moves nothing, because nothing subscribes to the event
+            that says so (delivery.EVT001).
+          example: "dispatched"
+        carrier:
+          type: string
+          description: "The courier holding the parcel, once one has taken it"
+          example: "DPD"
+        trackingReference:
+          type: string
+          description: >
+            What the carrier gave back when it accepted the parcel. Absent while
+            the shipment is preparing, which is why it is not required.
+          example: "DPD-4471208833"
+        dispatchedAt:
+          type: string
+          format: date-time
+          description: "When the carrier took it; absent until it does"
+          example: "2026-09-26T09:14:00Z"
+
+    ShipmentDispatchedEvent:
+      x-model-id: MDL043
+      purpose: event-payload
+      type: object
+      description: "Domain event: a parcel was handed to a carrier"
+      represents:
+        - concept: delivery.CN001
+          kind: api
+      required:
+        - eventId
+        - shipmentId
+        - orderId
+        - occurredAt
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: >
+            Identifies this publication of the fact, not the shipment it is
+            about. A consumer that sees the same eventId twice has been
+            delivered the same message twice and should ignore the second; the
+            broker gives no stronger guarantee than that.
+          example: "2b7d9e10-53c4-4f88-b1a6-0d3e9f2c7a41"
+        shipmentId:
+          type: string
+          format: uuid
+          description: >
+            Points back at the record a consumer can re-read for the current
+            state. The event says what was true at handover and is never
+            corrected; anything later lives behind Track Shipment.
+          example: "9f1c3a52-0f6e-4a1b-9c2d-7a54e8b10c33"
+        orderId:
+          $ref: "#/components/x-field/OrderReference"
+        carrier:
+          type: string
+          description: >
+            Who is carrying the parcel, carried on the event so a consumer can
+            say it without a second read. Free text because this shop has no
+            carrier list and picking one per shipment does not need one.
+          example: "DPD"
+        trackingReference:
+          type: string
+          description: >
+            What the carrier gave back when it accepted the parcel, carried here
+            so a consumer can show a customer where to look without calling this
+            context. Its format is the carrier's, not this shop's.
+          example: "DPD-4471208833"
+        occurredAt:
+          type: string
+          format: date-time
+          description: "When the handover happened"
+          example: "2026-09-26T09:14:00Z"
+
+  x-field:
+    OrderReference:
+      type: string
+      format: uuid
+      purpose: read-model
+      description: >
+        The order this shipment settles. Held as the order service's own
+        identifier and never reinterpreted here - this context adds no
+        vocabulary to it.
+      example: "c41f8b26-9a77-4d0e-8f3b-15ac2e6d7b90"

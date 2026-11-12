@@ -1,0 +1,432 @@
+version: "1.0.0"
+scope: shop-admin
+owned_by:
+  team: TM002
+tags: [back-office, ui]
+
+screens:
+  - id: shop-admin.SCR007
+    name: "Sign in"
+    summary: "The only screen a visitor without a session can reach, and the reason the rest exist."
+    description: >
+      A login, a password, and a sentence saying that the back office is closed until an operator
+      signs in. It carries no sidebar, no topbar and no activity panel - the application's chrome
+      is hidden on this screen, so the shop's first statement to a stranger is a door rather than a
+      back office with nothing in it.
+      Every other route in this application redirects here when no operator session resolves, so
+      this screen is reached far more often by being sent to it than by choosing it. A refusal says
+      that the login and the password did not match and cannot say which, because the service
+      answers both cases with one body (customers.ERR003); there is no reset, no recovery and no
+      way to create an operator from this screen.
+      The redirect is an Angular route guard, which means it decides what a browser is shown. Every
+      endpoint behind these screens still answers whoever calls it (customers.RSK004).
+    motivated_by:
+      - customers.GL001
+    processes:
+      - PRC007
+    owned_by:
+      team: TM002
+
+  - id: shop-admin.SCR001
+    name: "Products"
+    summary: "Every product the catalog holds, as the operator's working list."
+    description: >
+      The back office's landing surface, and the one the root route redirects to - for an operator
+      who has signed in, which since 2026-09-25 is the only kind this application has. It lists
+      what the catalog service currently holds and is the way into a single product, where a price
+      can be changed. The operator arrives here by default because the catalog is the only thing
+      this back office writes to directly, and because a signed-in operator is sent here rather
+      than to the sign-in screen they came from.
+    motivated_by:
+      - shop-admin.GL001
+    processes:
+      - PRC002
+    owned_by:
+      team: TM002
+
+  - id: shop-admin.SCR002
+    name: "Orders"
+    summary: "The whole order book, filterable by customer."
+    description: >
+      Every order the orders service knows about, not one customer's slice of it. This is the
+      difference between the back office and the storefront: the shopper sees their own orders,
+      the operator sees all of them, and can narrow the list to one customer.
+    motivated_by:
+      - shop-admin.GL002
+    processes:
+      - PRC003
+    owned_by:
+      team: TM002
+
+  - id: shop-admin.SCR003
+    name: "Customers"
+    summary: "The customer list the back office reads while handling a question."
+    description: >
+      Read-only here by decision. The operator uses it to put a name against the customer id an
+      order carries, and to reach a single customer's record and their standing discounts.
+    motivated_by:
+      - shop-admin.GL003
+    processes:
+      - PRC004
+    owned_by:
+      team: TM002
+
+  - id: shop-admin.SCR004
+    name: "Product detail"
+    summary: "One product, everything the catalog holds about it, and the price panel."
+    description: >
+      The screen behind a row of the product list. It shows the name, the brand, the category,
+      the SKU, the stock figure, the weight and the dimensions, and the catalog price. Beside the
+      price sits the one panel in this back office that looks like a write and is not: it asks the
+      products service to price a quantity with an optional discount and renders the quote, and
+      the screen says in its own words that nothing is persisted. The price change the model
+      declares for this context (catalog.CMD002) has no control here and no route behind it, which
+      is what shop-admin.FN001 records.
+    motivated_by:
+      - shop-admin.GL001
+    processes:
+      - PRC002
+    owned_by:
+      team: TM002
+
+  - id: shop-admin.SCR005
+    name: "Order detail"
+    summary: "One order, the customer behind it, and the only control that moves it."
+    description: >
+      The screen behind a row of the order book. It reads the order, then reads the customer the
+      order names so that a person's name stands where an id would, and it renders the lines with
+      the unit prices the order was struck at. Its header panel carries the status control: one
+      step forward along the lifecycle, or cancel. This is the only surface in either application
+      that reaches Set Order Status, so it is the only place an order's state ever changes.
+    motivated_by:
+      - shop-admin.GL002
+    processes:
+      - PRC003
+    owned_by:
+      team: TM002
+
+  - id: shop-admin.SCR006
+    name: "Customer detail"
+    summary: "One customer's record, the discounts on file, and the removal control."
+    description: >
+      The screen behind a row of the customer list. It reads the record and then the standing
+      discounts held against it - the same read the order flow makes when it prices a line, made
+      here by the operator answering a question about that customer. It also carries the one
+      destructive control in the back office: removing the record, behind a confirmation step,
+      which is Close Customer Account. The orders that named the customer stay and keep naming an
+      id nothing resolves any more (customers.QN002).
+    motivated_by:
+      - shop-admin.GL003
+    processes:
+      - PRC004
+    owned_by:
+      team: TM002
+
+actions:
+  - id: shop-admin.UAC020
+    name: "Sign in"
+    screen: shop-admin.SCR007
+    description: >
+      Offers an operator's login and password to the operator collection of the customer service
+      and, on a match, adopts the token it issues as this application's session - under its own
+      storage key, so an operator and a shopper signed in in the same browser are two separate
+      sessions. On a refusal the screen stays where it is with the one message the service returns.
+    triggers_operations:
+      - customers.CMD006
+
+  - id: shop-admin.UAC021
+    name: "Sign out"
+    screen: shop-admin.SCR001
+    description: >
+      Revokes the operator's token and forgets it. The topbar's name and role vanish with it and
+      the next navigation meets the guard, so signing out closes the back office rather than
+      leaving it open and anonymous. Declared on the product list because that is where an operator
+      lands; the topbar carries it on every screen that has one.
+    triggers_operations:
+      - customers.CMD007
+
+  - id: shop-admin.UAC001
+    name: "Orders"
+    screen: shop-admin.SCR001
+    description: >
+      The sidebar's way into the order book. It navigates; the order book is read on arrival
+      rather than by this act.
+
+  - id: shop-admin.UAC002
+    name: "Customers"
+    screen: shop-admin.SCR002
+    description: >
+      The sidebar's way into the customer list, which is how an operator turns the customer id on
+      an order into a person.
+
+  - id: shop-admin.UAC003
+    name: "Products"
+    screen: shop-admin.SCR002
+    description: >
+      The sidebar's way back to the product list. Named on the order book because that is where an
+      operator who came to look at orders returns from; the sidebar itself carries all three links
+      on every screen, and the model declares one edge per direction rather than all six.
+
+  - id: shop-admin.UAC004
+    name: "Filter the range"
+    screen: shop-admin.SCR001
+    description: >
+      Narrows the product list to what matches a name, a category, a brand or a SKU. It runs no
+      operation: the whole range is already in the browser from the read the screen made on
+      arrival, and this filters that copy. So it finds a product fast and can never find one the
+      first read did not return.
+
+  - id: shop-admin.UAC005
+    name: "Open product"
+    screen: shop-admin.SCR001
+    description: >
+      Opens one product from the list. The row is the control, and the product it names is read on
+      arrival at the detail screen rather than by this act, which is why it triggers no operation
+      of its own.
+
+  - id: shop-admin.UAC006
+    name: "Back to products"
+    screen: shop-admin.SCR004
+    description: >
+      Returns to the product list from a single product. The list re-reads the range on arrival, so
+      a price the operator has just changed elsewhere would show; nothing is carried back.
+
+  - id: shop-admin.UAC007
+    name: "Price a quantity"
+    screen: shop-admin.SCR004
+    description: >
+      Opens the price panel beside the catalog figure. It reads and writes nothing - it reveals the
+      quantity and discount fields, and the screen's own note states that what follows is a quote
+      and not a change.
+
+  - id: shop-admin.UAC008
+    name: "Calculate price"
+    screen: shop-admin.SCR004
+    description: >
+      Asks the products service what a quantity of this product would cost with the discount the
+      operator chose, and renders the answer. It triggers no operation because the model declares
+      none for it: the catalog's two reads return a product and a list, and its one price command
+      replaces the stored figure. A computed quote that persists nothing is a third thing, and
+      shop-admin.FN001 is where that gap is recorded rather than papered over with the nearest
+      operation.
+
+  - id: shop-admin.UAC022
+    name: "Change the price"
+    screen: shop-admin.SCR004
+    implementation: to-be
+    description: >
+      Replaces the product's selling price with the figure the operator types, so the next cart and
+      the next order are priced at it. This is the control the model asks this screen for: the
+      operator's process ends in setting a new selling price (shop-admin.PA003) and a test case
+      expects the corrected price to be the one the catalog then serves (shop-admin.EC001). The
+      running screen has no such control and no route behind it (shop-admin.FN001), which is why the
+      action is to be built rather than described from the code; it is not the quote panel beside
+      it, which persists nothing.
+    triggers_operations:
+      - catalog.CMD002
+
+  - id: shop-admin.UAC009
+    name: "Filter orders by customer"
+    screen: shop-admin.SCR002
+    description: >
+      Narrows the order book to one customer, and unlike the two list filters in this back office
+      it goes back to the service to do it: the same List Orders read is re-issued with a customer
+      id. That is why a filtered book is a fresh answer and a filtered product list is not.
+    triggers_operations:
+      - orders.QRY002
+
+  - id: shop-admin.UAC010
+    name: "Open order"
+    screen: shop-admin.SCR002
+    description: >
+      Opens one order from the book. The row is the control; the order and the customer behind it
+      are read on arrival at the detail screen rather than by this act.
+
+  - id: shop-admin.UAC011
+    name: "Back to orders"
+    screen: shop-admin.SCR005
+    description: >
+      Returns to the order book from a single order. The book re-reads on arrival, so a status the
+      operator has just moved shows on the row they came from.
+
+  - id: shop-admin.UAC012
+    name: "Advance the order"
+    screen: shop-admin.SCR005
+    description: >
+      Moves the order one step along the forward path - pending to confirmed, confirmed to shipped,
+      shipped to delivered - and no further than one step. The control offers only the next status,
+      so an illegal move is not offered rather than being offered and refused; the six transition
+      rules behind Set Order Status would refuse it anyway. It disappears on a delivered order,
+      because there is no step after the last one.
+    triggers_operations:
+      - orders.CMD004
+
+  - id: shop-admin.UAC013
+    name: "Cancel the order"
+    screen: shop-admin.SCR005
+    description: >
+      Takes the order out of the forward path. It is the same operation as advancing, with
+      `cancelled` as the requested status, and it is offered on every order that is neither
+      delivered nor already cancelled. Nothing downstream is told: Inventory holds the stock it
+      reserved for an order cancelled after confirmation and learns nothing (orders.TR005).
+    triggers_operations:
+      - orders.CMD004
+
+  - id: shop-admin.UAC014
+    name: "Filter the customer list"
+    screen: shop-admin.SCR003
+    description: >
+      Narrows the customer list to what matches a name, an email or a city. Like the product
+      filter it runs no operation and works on the copy the screen already read, so it searches
+      what was returned and not what the shop holds.
+
+  - id: shop-admin.UAC015
+    name: "Open customer"
+    screen: shop-admin.SCR003
+    description: >
+      Opens one customer from the list. The row is the control; the record and the discounts held
+      against it are read on arrival at the detail screen rather than by this act.
+
+  - id: shop-admin.UAC016
+    name: "Back to customers"
+    screen: shop-admin.SCR006
+    description: >
+      Returns to the customer list from a single customer. The list re-reads on arrival.
+
+  - id: shop-admin.UAC017
+    name: "Remove customer"
+    screen: shop-admin.SCR006
+    description: >
+      Asks for the removal rather than performing it: it replaces the control with a sentence
+      naming the customer and a confirmation. Nothing is read or written, which is the whole point
+      of the step - it is the only place in the back office where a control does not do what it
+      says until it is said twice.
+
+  - id: shop-admin.UAC018
+    name: "Yes, remove this customer"
+    screen: shop-admin.SCR006
+    description: >
+      Performs the removal and returns to the customer list. It is the one destructive act the back
+      office offers, and the model puts the control on the storefront behind an admin role
+      (customers.DC003) while the running shop has it here. An operator now signs in to reach this
+      screen at all, so the gate has an identity to read; it has no permission to read, because
+      nothing consults the role on an operator record and no endpoint checks a token before
+      answering - the gap customers.FN002 records and customers.RSK004 measures.
+    triggers_operations:
+      - customers.CMD003
+
+  - id: shop-admin.UAC019
+    name: "Activity"
+    screen: shop-admin.SCR001
+    description: >
+      Opens the activity panel: a running, in-memory list of the business sentences the back office
+      has produced this session - a price quoted, an order moved from one status to another, a
+      customer removed. It reaches no screen and no operation, and it holds nothing across a
+      reload. It exists to be read out loud, which is why it says "the order moved from pending to
+      confirmed" rather than naming the call that did it.
+
+navigation:
+  - id: shop-admin.UNV011
+    from: shop-admin.SCR007
+    to: shop-admin.SCR001
+    via_action: shop-admin.UAC020
+    condition: "The login and the password matched."
+    description: >
+      The door to the back office. It goes to the product list rather than back to whatever the
+      operator originally asked for, so a guard redirect loses the destination it interrupted.
+
+  - id: shop-admin.UNV012
+    from: shop-admin.SCR001
+    to: shop-admin.SCR007
+    via_action: shop-admin.UAC021
+    condition: "The operator signed out."
+    description: >
+      Back office to the door. Declared from the product list and true from every screen with a
+      topbar, in the same one-edge-per-direction convention the sidebar links use.
+
+  - id: shop-admin.UNV013
+    from: shop-admin.SCR001
+    to: shop-admin.SCR007
+    condition: "Any back-office route was asked for and no operator session resolved."
+    description: >
+      Not reached by pressing anything: it is the guard, and it applies to all six back-office
+      screens rather than only to this one. Declared once from the landing surface, because
+      declaring it six times would say the same thing five more times - the same convention the
+      sidebar edges already use. The pair with shop-admin.UNV012 is deliberate: the same two
+      screens, one by choice and one by refusal.
+
+  - id: shop-admin.UNV001
+    from: shop-admin.SCR001
+    to: shop-admin.SCR002
+    via_action: shop-admin.UAC001
+    condition: "Always available; the sidebar carries it on every screen."
+    description: "Catalog work to order work."
+
+  - id: shop-admin.UNV002
+    from: shop-admin.SCR002
+    to: shop-admin.SCR003
+    via_action: shop-admin.UAC002
+    condition: "Always available; the sidebar carries it on every screen."
+    description: "Order work to the customer behind an order."
+
+  - id: shop-admin.UNV003
+    from: shop-admin.SCR002
+    to: shop-admin.SCR001
+    via_action: shop-admin.UAC003
+    condition: "Always available; the sidebar carries it on every screen."
+    description: >
+      Order work back to catalog work. One edge per direction rather than one per sidebar pair:
+      the sidebar reaches all three sections from all three screens, and declaring six edges would
+      say the same thing five times.
+
+  - id: shop-admin.UNV004
+    from: shop-admin.SCR001
+    to: shop-admin.SCR004
+    via_action: shop-admin.UAC005
+    condition: "Always available; every row in the list is a way in."
+    description: "The product list to one product."
+
+  - id: shop-admin.UNV005
+    from: shop-admin.SCR004
+    to: shop-admin.SCR001
+    via_action: shop-admin.UAC006
+    condition: "Always available; the detail screen carries the link in its header."
+    description: "One product back to the range it belongs to."
+
+  - id: shop-admin.UNV006
+    from: shop-admin.SCR002
+    to: shop-admin.SCR005
+    via_action: shop-admin.UAC010
+    condition: "Always available; every row in the book is a way in."
+    description: "The order book to one order, which is the only screen that can move it."
+
+  - id: shop-admin.UNV007
+    from: shop-admin.SCR005
+    to: shop-admin.SCR002
+    via_action: shop-admin.UAC011
+    condition: "Always available; the detail screen carries the link in its header."
+    description: "One order back to the book, where the row shows the status just set."
+
+  - id: shop-admin.UNV008
+    from: shop-admin.SCR003
+    to: shop-admin.SCR006
+    via_action: shop-admin.UAC015
+    condition: "Always available; every row in the list is a way in."
+    description: "The customer list to one customer and the discounts on file."
+
+  - id: shop-admin.UNV009
+    from: shop-admin.SCR006
+    to: shop-admin.SCR003
+    via_action: shop-admin.UAC016
+    condition: "Always available; the detail screen carries the link in its header."
+    description: "One customer back to the list."
+
+  - id: shop-admin.UNV010
+    from: shop-admin.SCR006
+    to: shop-admin.SCR003
+    via_action: shop-admin.UAC018
+    condition: "The removal was accepted by the customer service."
+    description: >
+      One customer back to the list, but for the other reason: the record the operator was looking
+      at no longer exists, so the screen cannot stay. Same pair of screens as UNV009 and a
+      different cause, which is why both are declared.

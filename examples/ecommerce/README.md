@@ -2,6 +2,8 @@
 
 A small, **synthetic** blueprint that shows the shape of a Phase 1 model: just enough to be coherent and validate cleanly. Schema **v2.6**, 3 bounded contexts, 11 YAML files, ~23 entities.
 
+This page describes the v2.6 model. A separate, larger v2.8 ecommerce model sits in [`.blueprint/v2.8/`](./.blueprint/v2.8/) with its own [README](./.blueprint/v2.8/README.md); validate it with `npm run validate:ecommerce:v28` and check it with `npm run check:ecommerce:v28`.
+
 ```
 .blueprint/v2.6/
   blueprint.yaml          root — lists the contexts

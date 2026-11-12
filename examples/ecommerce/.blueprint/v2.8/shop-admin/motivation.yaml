@@ -1,0 +1,206 @@
+version: "1.0.0"
+scope: shop-admin
+owned_by:
+  team: TM002
+tags: [write-side, back-office]
+goals:
+  - id: shop-admin.GL001
+    statement: >
+      A manager can see the whole sellable range and correct one product's price without leaving
+      the back office.
+    summary: "The range and the price that is wrong are reachable in the same sitting."
+    priority: high
+    description: >
+      The reason this context exists at all. A shop whose prices can only be changed by whoever
+      deploys it prices by ticket and corrects by release, so the goal is not "a price can be
+      changed" but "the person who noticed can change it while they are still looking at it". The
+      cost of granting that is shop-admin.BD001's no-review policy, and KPI001 is how often it is
+      paid.
+    measure: "Fewer than 2% of products are repriced twice inside 24 hours."
+    kpi: shop-admin.KPI001
+    affects:
+      process_refs:
+        - PRC002
+      operation_refs:
+        - catalog.QRY002
+        - catalog.QRY001
+        - catalog.CMD002
+      concept_refs:
+        - shop-admin.CN001
+        - shop-admin.CN002
+    discovery_stage: hypothesis
+    certainty: probable
+
+  - id: shop-admin.GL002
+    statement: >
+      Every order reaches a terminal state because a person decided it should, not because it aged
+      out of view.
+    summary: "An order's state is always somebody's decision, and always reversible up to delivery."
+    priority: high
+    description: >
+      The shop has no scheduler, no timeout and no event that moves an order, so the whole lifecycle
+      rests on an operator opening one order and choosing. Stated as a goal rather than left implicit
+      because it is what makes the order book a work queue rather than a report: an order nobody
+      opens stays where it was placed for as long as the shop runs.
+    measure: "No order sits in a non-terminal status longer than the shop's own fulfilment window."
+    affects:
+      process_refs:
+        - PRC003
+      operation_refs:
+        - orders.QRY002
+        - orders.QRY001
+        - orders.CMD004
+      concept_refs:
+        - orders.CN001
+    discovery_stage: hypothesis
+    certainty: probable
+
+  - id: shop-admin.GL003
+    statement: >
+      An operator can answer for the shop about any customer without leaving the back office or
+      asking the customer to repeat themselves.
+    summary: "A customer id on an order becomes a person, an address and a discount set."
+    priority: medium
+    description: >
+      Orders carry customer ids and people carry names, and the gap between the two is where a
+      support conversation stalls. The back office closes it with three reads and no writes, which
+      is also the honest limit of the goal: it says the operator can explain what happened, not that
+      they can correct it. The one write on this path removes the record and is a different act
+      entirely.
+    measure: "Every customer id an order carries resolves to a record the operator can read."
+    affects:
+      process_refs:
+        - PRC004
+      operation_refs:
+        - customers.QRY003
+        - customers.QRY001
+        - customers.QRY002
+      concept_refs:
+        - customers.CN001
+    discovery_stage: hypothesis
+    certainty: probable
+
+assumptions:
+  - id: shop-admin.ASM001
+    statement: >
+      The figure on the manager's screen is the product's current price when
+      they decide to change it.
+    consequence: >
+      The only product reads in the shop are the shopper-facing ones, and a
+      catalog read may be up to a cache window old (catalog.ASM001). A manager
+      can therefore set a new price against a figure that has already moved,
+      and because Update Product Price is an unconditional replace there is
+      nothing to reject the edit. The change would be applied exactly as typed
+      and would be wrong for a reason the manager never saw.
+    domain_scope: shop-admin
+    discovery_stage: hypothesis
+    certainty: probable
+  - id: shop-admin.ASM002
+    statement: >
+      One person at a time is changing any given product.
+    consequence: >
+      Update Product Price is a PUT carrying the new price and no version,
+      precondition or expected-current-value, so two managers editing the same
+      product write over each other in whichever order the calls land. Neither
+      is told, and since the catalog keeps no history (catalog.QN003) the loss
+      leaves no trace. The assumption holds today only because the shop has
+      few managers, which is a fact about the organisation and not about the
+      system.
+    domain_scope: shop-admin
+    discovery_stage: hypothesis
+    certainty: probable
+  - id: shop-admin.ASM003
+    statement: >
+      A product that has been published can be bought.
+    consequence: >
+      Publish Product creates the catalog entry and nothing else: it produces
+      no event, and Inventory learns of the new SKU by no path in this model.
+      So a product can be browsable, priced and addable to a cart with no stock
+      record behind it, and the shopper discovers that only when Reserve Stock
+      refuses the order they have already placed. The storefront makes the
+      promise (storefront.ASM002) and Checkout carries it (checkout.ASM001);
+      this context is where the product entered the shop without one.
+    domain_scope: shop-admin
+    discovery_stage: hypothesis
+    certainty: probable
+    risk_refs:
+      - inventory.RSK001
+
+risks:
+  - id: shop-admin.RSK001
+    statement: >
+      The price change this context exists for cannot be made in the running
+      shop. The catalog service answers three routes, all of them reads or a
+      quotation, and none of the three catalog commands this model gives the
+      back office has a route or a control. A price that is wrong stays wrong
+      until somebody edits the seeded catalogue in source and redeploys.
+    summary: "A wrong price can only be corrected by a code change and a deploy."
+    likelihood: high
+    impact: high
+    affects:
+      operation_refs:
+        - catalog.CMD002
+        - catalog.CMD001
+        - catalog.CMD003
+      concept_refs:
+        - shop-admin.CN001
+        - shop-admin.CN002
+        - catalog.CN999
+      context_refs:
+        - shop-admin
+        - catalog
+      process_refs:
+        - PRC002
+    mitigation: >
+      The back office does not pretend otherwise, which is the only thing
+      standing between this and a silent failure: its product screen offers a
+      price quote, says on the screen that the service never persists it, and
+      logs it as informational rather than as a change. So the operator is told
+      the truth at the moment they need it, and there is still nothing they can
+      do.
+    contingency: >
+      Correcting a price is a deploy of the catalog service. Every hour between
+      noticing and deploying is an hour the shop sells at the wrong price, and
+      the shop has no record of what the price was before, so the correction
+      cannot be audited afterwards.
+    status: open
+    owner: ACT002
+    goal_refs:
+      - shop-admin.GL001
+    discovery_stage: validated
+    certainty: confirmed
+    evidence:
+      - kind: codebase-analysis
+        source: services/products-service/src/server.ts
+        summary: >
+          The service registers GET /health, POST /provider-states, GET
+          /products, GET /products/:id and POST /products/:id/price. The last
+          computes a figure for a quantity and a discount set and returns it;
+          no handler writes a product.
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: services/products-service/src/catalog/productCatalog.ts
+        summary: >
+          The ten products are a module-level literal in the service's own
+          source, so price, category and publication state are all compiled in.
+        confidence_impact: supports
+    tags: [operability, model-code-divergence, back-office]
+inquiries:
+  - id: shop-admin.INQ001
+    statement: How should the back-office price correction gap be resolved when the
+      model declares a price write and the running shop only quotes a price?
+    status: open
+    category: business
+    finding_refs:
+      - catalog.FN001
+      - shop-admin.FN001
+    risk_refs:
+      - shop-admin.RSK001
+    affects:
+      operation_refs:
+        - catalog.CMD002
+      concept_refs:
+        - shop-admin.CN001
+      process_refs:
+        - PRC002
+    blocking: false

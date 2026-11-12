@@ -1,0 +1,120 @@
+version: "1.0.0"
+scope: orders
+owned_by:
+  team: TM001
+goals:
+  - id: orders.GL001
+    statement: "Process orders within 2 seconds"
+    priority: high
+  - id: orders.GL002
+    statement: >
+      Every order the shop accepts is one it can actually fulfil, because the
+      stock it needs was set aside at the moment the order was taken.
+    summary: "An accepted order is an order the shop can fulfil."
+    priority: critical
+    description: >
+      The goal the reservation chain exists to serve, written down because
+      nothing else in this model states it and three separate risks turn out to
+      endanger the same thing. An order that is accepted without stock behind it
+      is not a slow order or a degraded one: it is a promise the shop has
+      already broken at the moment it was made, and the shopper finds out last.
+      Stated here rather than in inventory because the promise is made when the
+      order is taken, and that is this context's act.
+    measure: >
+      Every order in a non-cancelled status holds a reservation covering every
+      line, and no line is reserved against a count that was not decremented.
+    affects:
+      process_refs:
+        - PRC001
+      operation_refs:
+        - orders.CMD003
+        - orders.CMD001
+        - inventory.CMD001
+      concept_refs:
+        - orders.CN001
+        - inventory.CN002
+    discovery_stage: validated
+    certainty: confirmed
+
+assumptions:
+  - id: orders.ASM001
+    statement: >
+      Customers rarely need to change an order after submitting it, so
+      cancel-and-reorder is an acceptable answer.
+    consequence: >
+      If they often do, the immutability decision turns every ordinary change -
+      a wrong quantity, a second thought about an address - into a support
+      conversation and an abandoned order. The open question about changing a
+      submitted order is this assumption waiting to be answered.
+    domain_scope: orders
+    discovery_stage: hypothesis
+    certainty: probable
+risks:
+  - id: orders.RSK001
+    statement: >
+      Submit Order is the only thing in this model that starts a stock
+      reservation, and the running shop serves no route for it. The storefront
+      has the button, the client calls the path, and the orders service answers
+      404, so an order reaches `pending` with nothing set aside for it and the
+      only signal of the failure is an error panel a shopper can dismiss.
+    summary: "The one step that reserves stock is the one step the shop does not serve."
+    likelihood: very-high
+    impact: critical
+    affects:
+      operation_refs:
+        - orders.CMD001
+        - orders.EVT001
+        - orders.CMD003
+        - inventory.CMD001
+      concept_refs:
+        - orders.CN001
+        - inventory.CN002
+      context_refs:
+        - orders
+        - inventory
+        - storefront
+      process_refs:
+        - PRC001
+    mitigation: >
+      None is in place. Create Draft Order succeeds on its own and reports a
+      created order, so nothing downstream of it can tell a reserved order from
+      an unreserved one. The route exists in the orders service as a commented
+      block and the storefront control exists in full, which means the gap is a
+      decision away rather than a build away, but until the route answers there
+      is no path from an accepted order to a hold on stock.
+    contingency: >
+      Refuse the submission surface rather than leaving it in place: a button
+      that cannot succeed teaches a shopper that submitting is optional, and the
+      order it leaves behind is indistinguishable from a reserved one for
+      everybody downstream.
+    status: open
+    owner: ACT002
+    goal_refs:
+      - orders.GL002
+    discovery_stage: validated
+    certainty: confirmed
+    evidence:
+      - kind: codebase-analysis
+        source: services/orders-service/src/server.ts
+        summary: >
+          The five routes the service registers are GET /health, GET /orders,
+          GET /orders/:id, POST /orders and PUT /orders/:id/status. The handler
+          for POST /orders/:id/submit is present as a commented block and is
+          never registered.
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: apps/storefront/src/components/SubmitOrderPanel.tsx
+        summary: >
+          The storefront's only submit control calls ordersApi.submit, which
+          issues POST /orders/:id/submit, and renders the failure into an error
+          panel. Its own comment says this is what makes Inventory reserve
+          stock.
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: services/orders-service/src/server.ts
+        summary: >
+          POST /orders reads customer discounts and product prices and then
+          appends an order at status pending. It names no inventory service and
+          reserves nothing, so the draft path carries no reservation either.
+        confidence_impact: supports
+    tags: [reliability, fulfilment, model-code-divergence]

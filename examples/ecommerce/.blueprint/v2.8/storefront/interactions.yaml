@@ -1,0 +1,354 @@
+version: "1.0.0"
+scope: storefront
+owned_by:
+  team: TM003
+tags: [customer-facing, ui]
+
+screens:
+  - id: storefront.SCR001
+    name: "Shop the catalog"
+    summary: "The shop's landing surface: everything currently for sale, as one grid."
+    description: >
+      The first thing a shopper sees. It asks the catalog for what is for sale and renders one
+      tile per product; the tile carries the brand, the name and the price, and is itself the
+      way into the product. The heading stands whether or not the catalog answers, so the
+      screen identifies itself even when it has nothing to show.
+    owned_by:
+      team: TM003
+
+  - id: storefront.SCR002
+    name: "Create an account"
+    summary: "Three fields, and the shopper leaves it signed in rather than merely registered."
+    description: >
+      Where a person who has never used this shop becomes somebody it can act for. It asks for a
+      full name, a login - which is the email address - and a password of at least eight
+      characters, and it asks for nothing else: the screen says in its own words that the delivery
+      address comes later, on the account page. Until 2026-09-25 this screen was the shop's whole
+      notion of identity, offering a registration or the chance to type a customer id somebody
+      already held; there is now a separate sign-in screen (storefront.SCR008) and this one does
+      one thing.
+      Pressing Register does two calls rather than one. The account is created, and then the same
+      credentials are signed in, so a new shopper arrives on their account with a session exactly
+      as a returning one does (PRC005).
+    processes:
+      - PRC005
+    owned_by:
+      team: TM003
+
+  - id: storefront.SCR008
+    name: "Sign in"
+    summary: "The returning shopper's door, and the one every closed page redirects to."
+    description: >
+      A login and a password, and a link to the register screen for anybody who has neither. It is
+      reached three ways: from the header on any screen while nobody is signed in, from the foot of
+      the register screen, and by asking for a page that needs a session - the account and the
+      order history redirect here rather than rendering empty.
+      Its refusal is the part worth reading. The screen can say that the login and the password did
+      not match and cannot say which of them was wrong, because the service answers both cases with
+      one body (customers.ERR003). A shopper who has forgotten which email they registered under
+      learns nothing here, and this shop offers no recovery of any kind.
+    processes:
+      - PRC006
+    owned_by:
+      team: TM003
+
+  - id: storefront.SCR003
+    name: "My account"
+    summary: "The customer's own record, and the standing discounts held against it."
+    description: >
+      Shows the customer the details the shop holds about them and lets them correct those
+      details. Beside them it shows the standing discounts on file - the same read the order flow
+      makes when it prices a line, made here by the person the discounts belong to.
+      It is also where the six fields registration no longer asks for arrive, and it is closed to a
+      visitor with no session: asking for it without one redirects to the sign-in screen. That
+      redirect is made in the browser, so it decides what this shopper is shown and not what the
+      customer service will answer (customers.RSK004).
+    processes:
+      - PRC005
+    owned_by:
+      team: TM003
+
+  - id: storefront.SCR004
+    name: "My orders"
+    summary: "Order history for the signed-in customer, newest first."
+    description: >
+      Every order placed under this customer id, each row carrying its status, its lines and its
+      total. It is the shopper's half of the order book; the back office sees all of it.
+      It is closed to a visitor with no session: asking for it without one redirects to the
+      sign-in screen (storefront.UNV014), a decision made in the browser like the account's.
+    owned_by:
+      team: TM003
+
+  - id: storefront.SCR005
+    name: "Product details"
+    summary: "One product, everything the shop holds about it, and the control that orders it."
+    description: >
+      The screen a shopper reaches by opening a product from the catalog. It shows the brand, the
+      description, the price, the stock and the shipping facts, and - once the shop knows who is
+      shopping - a quantity and the control that creates the order. The largest text on it is the
+      product's name, which changes with every product, so the screen carries its own name
+      separately: a screen that can only be identified by its contents cannot be identified at all.
+    owned_by:
+      team: TM003
+
+  - id: storefront.SCR006
+    name: "Order placed"
+    summary: "The order the shop has just created, before anyone has submitted it."
+    description: >
+      Where a shopper lands the moment an order exists: its id, its lines, the prices it was
+      struck at, and a confirmation that says the order was created. Creating is not submitting
+      in this shop, so this screen also carries the one control in the whole storefront that
+      submits. Until someone uses it the order sits here, priced and unannounced.
+    owned_by:
+      team: TM003
+
+  - id: storefront.SCR007
+    name: "Order submitted"
+    summary: "The same order, after the submission the rest of the shop reacts to."
+    description: >
+      The order screen once Submit Order has been accepted. It is a view rather than a route -
+      the shopper has not gone anywhere - and it is the only surface in the storefront that
+      states the submission happened, because the submission changes no status the shopper can
+      otherwise see (orders.FN001). It exists when, and only when, the orders service accepted
+      the call.
+    owned_by:
+      team: TM003
+
+actions:
+  - id: storefront.UAC001
+    name: "Register"
+    screen: storefront.SCR001
+    description: >
+      Leaves the catalog for the register screen. It carries no intent of its own and runs no
+      command. The header holds it beside Sign in (storefront.UAC009) while nobody is signed in,
+      and replaces both with the shopper's own name and a sign-out once somebody is - so which
+      pair of controls a screen carries is the whole of what the storefront shows about a session.
+
+  - id: storefront.UAC002
+    name: "Sign in instead"
+    screen: storefront.SCR002
+    description: >
+      The link at the foot of the register screen, for a shopper who turns out to have an account
+      already. It navigates and runs nothing. Until 2026-09-25 this control did something else
+      entirely: it switched the same screen from registering to typing a customer id, which is how
+      this shop used to recognise people.
+
+  - id: storefront.UAC003
+    name: "Register"
+    screen: storefront.SCR002
+    description: >
+      Creates the account from the three fields on the screen, and then signs it in with the
+      password just chosen - two calls behind one control, which is why a shopper never sees a
+      sign-in screen after registering. A refusal from either call leaves the shopper on this
+      screen with the reason.
+    triggers_operations:
+      - customers.CMD001
+      - customers.CMD004
+
+  - id: storefront.UAC009
+    name: "Sign in"
+    screen: storefront.SCR001
+    description: >
+      The header's way to the sign-in screen, carried on every screen while nobody is signed in.
+      It navigates and runs nothing; the model declares it on the catalog because that is where a
+      returning shopper arrives.
+
+  - id: storefront.UAC010
+    name: "Sign in"
+    screen: storefront.SCR008
+    description: >
+      Offers the login and the password and, on a match, takes the token the service issues and
+      adopts it as this browser's session. On a refusal the screen stays where it is and reports
+      the one message the service returns for both causes.
+    triggers_operations:
+      - customers.CMD004
+
+  - id: storefront.UAC011
+    name: "Register"
+    screen: storefront.SCR008
+    description: >
+      The link at the foot of the sign-in screen, for a visitor with no account. The reverse of
+      storefront.UAC002, and declared separately because a shop that only offered one direction
+      would trap somebody on the wrong screen.
+
+  - id: storefront.UAC012
+    name: "Sign out"
+    screen: storefront.SCR003
+    description: >
+      Revokes the session token and forgets it, in that order from the screen's point of view: the
+      header changes back to Sign in and Register immediately, and a revoke that fails does not
+      pull the shopper back in. Declared on the account screen because that is where a signed-in
+      shopper is, and carried by the header on every screen.
+    triggers_operations:
+      - customers.CMD005
+
+  - id: storefront.UAC004
+    name: "View orders"
+    screen: storefront.SCR003
+    description: >
+      Leaves the account for the order history. The history is fetched on arrival rather than by
+      this act, which is why this action triggers no operation of its own.
+
+  - id: storefront.UAC005
+    name: "Browse"
+    screen: storefront.SCR003
+    description: >
+      Returns to the catalog. Like the identity link it lives in the header and is carried on
+      every screen; it is named on the account screen here because that is where a shopper who
+      has just identified themselves picks up what they came for.
+
+  - id: storefront.UAC006
+    name: "Open product"
+    screen: storefront.SCR001
+    description: >
+      Opens one product from the catalog grid. Each tile is itself the control, and the product
+      it names is read on arrival rather than by this act, which is why it triggers no operation
+      of its own.
+
+  - id: storefront.UAC007
+    name: "Place order"
+    screen: storefront.SCR005
+    description: >
+      Creates the order from this product and this quantity, under the customer id the session
+      holds. It prices every line through the standing discounts on the customer's record, and
+      it leaves the order created and not yet submitted - which is the whole of the difference
+      this screen pair exists to show.
+    triggers_operations:
+      - orders.CMD003
+
+  - id: storefront.UAC008
+    name: "Submit order"
+    screen: storefront.SCR006
+    description: >
+      Submits the order that was just created. It is the only control in the storefront that
+      reaches Submit Order, and the operation it runs is the one the contract surface declares
+      on the Orders service. The order's status does not move, because the states this command
+      used to move between are not states the shop holds any more (orders.FN001); what it does
+      is publish Order Submitted.
+    triggers_operations:
+      - orders.CMD001
+
+navigation:
+  - id: storefront.UNV001
+    from: storefront.SCR001
+    to: storefront.SCR002
+    via_action: storefront.UAC001
+    condition: "Nobody is signed in; the header carries it on every screen until somebody is."
+    description: "Catalog to registration, the step a first-time shopper takes before an order can exist."
+
+  - id: storefront.UNV002
+    from: storefront.SCR002
+    to: storefront.SCR003
+    via_action: storefront.UAC003
+    condition: "The account was created and the sign-in that followed it was accepted."
+    description: >
+      Registration to the account. A shopper who registers lands on their own record rather than
+      back on the catalog, because the account page is where the six fields registration did not
+      ask for arrive.
+
+  - id: storefront.UNV008
+    from: storefront.SCR001
+    to: storefront.SCR008
+    via_action: storefront.UAC009
+    condition: "Nobody is signed in; the header carries it on every screen until somebody is."
+    description: "Catalog to the sign-in screen, the returning shopper's route."
+
+  - id: storefront.UNV009
+    from: storefront.SCR008
+    to: storefront.SCR003
+    via_action: storefront.UAC010
+    condition: "The login and the password matched."
+    description: "Sign-in to the account, which is where a signed-in shopper is put down."
+
+  - id: storefront.UNV010
+    from: storefront.SCR002
+    to: storefront.SCR008
+    via_action: storefront.UAC002
+    condition: "Always available while nobody is signed in."
+    description: "Registration to sign-in, for a shopper who already has an account."
+
+  - id: storefront.UNV011
+    from: storefront.SCR008
+    to: storefront.SCR002
+    via_action: storefront.UAC011
+    condition: "Always available while nobody is signed in."
+    description: "Sign-in to registration, for a visitor who has no account to sign in to."
+
+  - id: storefront.UNV012
+    from: storefront.SCR003
+    to: storefront.SCR001
+    via_action: storefront.UAC012
+    condition: "The shopper signed out."
+    description: >
+      Account back to the catalog, with no session. The shop is browsable signed out, so signing
+      out does not put anybody on a door.
+
+  - id: storefront.UNV013
+    from: storefront.SCR003
+    to: storefront.SCR008
+    condition: "The account screen was asked for with no live session."
+    description: >
+      Not reached by pressing anything - it is the redirect the closed pages make, and it is
+      declared because a screen a person can be sent to without choosing it is part of the flow
+      graph. The order history redirects the same way, declared as its own navigation
+      (storefront.UNV014). The decision is made in the browser, so it governs what is rendered
+      and not what the service will answer.
+    code_refs:
+      - path: apps/storefront/src/pages/AccountPage.tsx
+        role: implementation
+        description: >
+          Line 48: once the session has loaded and no customer holds it, the page renders a
+          redirect to /sign-in instead of the account.
+
+  - id: storefront.UNV014
+    from: storefront.SCR004
+    to: storefront.SCR008
+    condition: "The order history was asked for with no live session."
+    description: >
+      Not reached by pressing anything - the order history sends a visitor who has no session to
+      the sign-in screen, as the account screen does (storefront.UNV013), and it is declared for the
+      same reason. The decision is made in the browser, so it governs what is rendered and not what
+      the service will answer.
+    code_refs:
+      - path: apps/storefront/src/pages/OrdersPage.tsx
+        role: implementation
+        description: >
+          Line 36: once the session has loaded and no customer holds it, the page renders a
+          redirect to /sign-in instead of the order list.
+
+  - id: storefront.UNV003
+    from: storefront.SCR003
+    to: storefront.SCR004
+    via_action: storefront.UAC004
+    condition: "A customer is signed in."
+    description: "Account to order history."
+
+  - id: storefront.UNV004
+    from: storefront.SCR003
+    to: storefront.SCR001
+    via_action: storefront.UAC005
+    condition: "Always available; the header carries it on every screen."
+    description: "Account back to the catalog, where a shopper who now has an identity can buy."
+
+  - id: storefront.UNV005
+    from: storefront.SCR001
+    to: storefront.SCR005
+    via_action: storefront.UAC006
+    condition: "Always available; every tile in the grid is a way in."
+    description: "Catalog to one product."
+
+  - id: storefront.UNV006
+    from: storefront.SCR005
+    to: storefront.SCR006
+    via_action: storefront.UAC007
+    condition: "A customer is signed in, the product is in stock, and the order was created."
+    description: "Product to the order the shop created from it."
+
+  - id: storefront.UNV007
+    from: storefront.SCR006
+    to: storefront.SCR007
+    via_action: storefront.UAC008
+    condition: "The orders service accepted the submission."
+    description: >
+      Order placed to order submitted. Same route, different view - the shopper does not move,
+      the order does.

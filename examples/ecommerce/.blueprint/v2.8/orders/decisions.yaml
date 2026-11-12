@@ -1,0 +1,156 @@
+version: "1.0.0"
+scope: orders
+decisions:
+  - id: orders.DC001
+    title: "Use async command for order submission"
+    summary: "Async pattern chosen for Submit Order to decouple from payment"
+    date: "2025-06"
+    status: accepted
+    rationale:
+      problem: "Synchronous order submission blocks the user while waiting for payment confirmation and inventory checks"
+      options:
+        - "Synchronous REST with inline validation"
+        - "Async command with eventual consistency"
+      chosen: "Async command avoids UI blocking and allows independent scaling of order and payment systems"
+    motivation_refs:
+      goals: [orders.GL001]
+    declared_impact:
+      direct:
+        concepts: [orders.CN001]
+        rules: [orders.SR001]
+        operations: [orders.CMD001]
+        tests: [orders.TC001]
+        models: [SubmitOrderRequest, Order]
+        processes: [PRC001]
+        ui:
+          screens: [SCR001]
+          actions: [UAC001]
+      transitive_hints:
+        - "Async submission affects inventory reservation timing"
+    owned_by:
+      team: TM001
+    consequences:
+      positive:
+        - "Faster perceived response time for users"
+        - "Independent scaling of order processing"
+      negative:
+        - "Eventually consistent: order status not immediate"
+  - id: orders.DC002
+    title: "One status vocabulary of five, and the lifecycle stated as legal moves"
+    summary: "Take the five states the shop's orders hold, and say which moves between them are allowed"
+    date: "2026-09"
+    status: accepted
+    rationale:
+      problem: >
+        One field on one concept carried two vocabularies. orders.CN001
+        declared draft, submitted and confirmed; the status command accepted
+        pending, confirmed, shipped, delivered and cancelled; only `confirmed`
+        was in both, so an order could hold a value the aggregate did not
+        declare and the aggregate declared two values nothing could ever write.
+        orders.QN004 recorded it and refused to pick.
+        The reason to pick now is what the disagreement was teaching, which was
+        nothing. A model and a running shop that diverge in an interesting way
+        are the most useful thing a model of a live system can say - this model
+        keeps two of those deliberately (catalog.FN001, and the whole of
+        orders.FN001). A divergence only teaches when both sides are
+        defensible, and "the aggregate lists the wrong words" has no defensible
+        side. It reads as careless authoring, and a third weak divergence of
+        the same kind crowds the two strong ones.
+      options:
+        - name: "Keep both vocabularies and keep arguing it out in orders.QN004"
+          description: "The state before this decision."
+          pros:
+            - "Costs nothing and touches no other file"
+          cons:
+            - "Reads as an authoring mistake rather than as drift, so it teaches nobody anything"
+            - "No rule in the model was expressed over the vocabulary the shop actually writes"
+        - name: "Take the aggregate's three and constrain the status command to them"
+          description: "Reconcile the other way - make the running shop wrong."
+          pros:
+            - "Keeps Submit Order, Create Draft Order and the transition rule that connects them intact"
+          cons:
+            - "Every order in the shop is in one of the five, so the model would declare states no order has ever held"
+            - "The storefront draws the same five to a shopper, so the model would disagree with the picture the customer is looking at"
+        - name: "Take the five, and state the lifecycle as legal moves rather than as a list"
+          description: >
+            One vocabulary, six transition rules, and the status command
+            enforcing them.
+          pros:
+            - "Agrees with the orders the shop holds, the statuses its API accepts and the stepper its storefront draws"
+            - "A list of words cannot say that delivered is terminal or that a step may not be skipped; transition rules can"
+          cons:
+            - "The states the three-value vocabulary carried are gone, so everything built around them is exposed (orders.FN001)"
+            - "orders.TR001 moved between two of those states and cannot stay"
+      chosen: >
+        Take the five, and state the lifecycle as the six moves that are legal:
+        orders.TR002 to orders.TR007. pending, confirmed, shipped and delivered
+        is a forward path; cancelled is reachable from every state on it except
+        the last; nothing else is allowed, so no step is skipped, none is taken
+        back, and a delivered order is final in the strong sense that it cannot
+        even be cancelled. Set Order Status enforces them and refuses an
+        illegal move with the moves that would have been legal
+        (orders.ERR006).
+        Three consequences were accepted rather than worked around. orders.TR001
+        moved an order from draft to submitted and neither state exists any
+        more, so it was removed rather than repointed - an id that keeps its
+        name and changes what it means is worse than one that goes. The second
+        x-field, AssignableOrderStatus, existed only to hold the second
+        vocabulary and went with it; the status request now references
+        OrderStatus like everything else. And the draft-then-submit design that
+        the three-value vocabulary belonged to was left standing, in three
+        operations and four test cases, because removing it would take the
+        event chain that reserves stock with it. orders.FN001 holds that, and
+        it is now the question this context puts to a reader: there is one
+        lifecycle, one operation that moves an order through it, and a whole
+        two-step design beside it with nowhere to go.
+    motivation_refs:
+      questions: [orders.QN003, orders.QN004, orders.QN005]
+    declared_impact:
+      direct:
+        concepts: [orders.CN001]
+        operations:
+          - orders.CMD004
+          - orders.CMD001
+          - orders.CMD003
+        tests: [orders.TC004, orders.ER004]
+        models: [SetOrderStatusRequest, Order]
+      transitive_hints:
+        - "Cancelling a confirmed order is legal and releases no stock, because Set Order Status publishes no event and Inventory is never told (orders.TR005)"
+        - "The only operation that reaches a cancel edge belongs to the back office, so a customer cannot cancel their own order (orders.QN003)"
+        - "The Order read-model and the List Orders status filter both carry the new vocabulary, so any consumer filtering on draft or submitted now filters on nothing"
+        - "Submit Order publishes the event that reserves stock and no longer names a state, so the chain that fulfils an order hangs off an operation with no lifecycle effect (orders.FN001)"
+    owned_by:
+      team: TM001
+    consequences:
+      positive:
+        - "One vocabulary, and it is the one the shop's orders, its API and its storefront all use"
+        - "The lifecycle is a constraint rather than a description: illegal moves are refused and the refusal says what was allowed"
+        - "The remaining divergence is sharper - a five-state machine, one operation that moves through it, and a two-step design with nowhere to go"
+      negative:
+        - "orders.TR001 was removed, and a reader of the git history will find a rule id that is not superseded by any one successor"
+        - "Three operations, one error and four test cases now describe a stage the lifecycle does not contain, and are left that way on purpose"
+        - "Nothing in the model yet says what happens to stock reserved for an order cancelled after confirmation"
+    tags: [lifecycle, reconciliation]
+
+business_decisions:
+  - id: orders.BD001
+    name: "An order is accepted only once every line is held"
+    description: >
+      Submission is not acceptance. An order is confirmed after stock has been
+      reserved for every line, and a shortage on any one of them ends the
+      process in the Insufficient Stock state rather than in a partial order.
+      The shop never confirms something it cannot ship, and the customer is told
+      before the confirmation arrives rather than after.
+    domain_scope: orders
+    linked_contexts: [inventory]
+    tags: [fulfilment]
+  - id: orders.BD002
+    name: "A submitted order is fixed; a change means a new order"
+    description: >
+      The lifecycle leads out of draft and does not lead back: resubmitting an
+      order raises Order Already Submitted. Everything downstream - the stock
+      hold, the confirmation, the figures on it - can therefore be computed once
+      from a state that will not move underneath it. What the customer does
+      instead of amending is not settled.
+    domain_scope: orders
+    tags: [lifecycle]

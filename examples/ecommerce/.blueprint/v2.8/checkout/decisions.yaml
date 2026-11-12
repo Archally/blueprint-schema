@@ -1,0 +1,58 @@
+version: "1.0.0"
+scope: checkout
+owned_by:
+  team: TM003
+decisions:
+  - id: checkout.DC001
+    title: "The cart captures the price silently, because it cannot detect a change"
+    summary: "Price captured at add time; no 'price changed' notice, because checkout is never told"
+    date: "2025-07"
+    status: accepted
+    rationale:
+      problem: >
+        A cart line holds the unit price captured when the product was added.
+        The catalog price can move afterwards, so the cart page has to decide
+        what it shows: the captured figure, the current figure, or the captured
+        figure with a notice that it is no longer current.
+      options:
+        - "Re-read the catalog on every cart render and total the cart at the current price"
+        - "Capture the price at add time and show it with a 'price changed since you added this' notice when it differs"
+        - "Capture the price at add time and show it without comment"
+      chosen: >
+        Capture and show without comment. Re-reading was rejected because the
+        total would change underneath a customer who did nothing, and every cart
+        render would fail when the catalog is unreachable. The notice was
+        rejected not because it is undesirable but because this context cannot
+        produce it: detecting a divergence needs either the catalog's current
+        figure on every render, which is the re-read option with an extra step,
+        or a PriceChanged event, which the catalog does not publish
+        (catalog.DC001). A notice that fires only sometimes is worse than none.
+    motivation_refs:
+      assumptions: [checkout.ASM001]
+    declared_impact:
+      direct:
+        concepts: [checkout.CN002, checkout.CN001]
+        operations: [checkout.CMD001, checkout.QRY001]
+        models: [MDL021, MDL022]
+      transitive_hints:
+        - "If Catalog ever publishes price events, the rejected notice option becomes available and this decision should be revisited"
+    owned_by:
+      team: TM003
+    consequences:
+      positive:
+        - "The cart total is stable: a shopper who reloads or returns the next day sees the figure they were quoted"
+        - "Rendering the cart needs no call to Catalog, so a catalog outage does not take the cart page with it"
+      negative:
+        - "A price cut does not reach a cart already holding the item, so a shopper can be charged above the current catalog price"
+        - "Nothing in this context can tell that its captured price and the catalog's have diverged, so the gap is invisible rather than measured"
+    tags: [pricing, conversion]
+business_decisions:
+  - id: checkout.BD001
+    name: "The cart is anonymous until checkout"
+    description: >
+      A cart has an identity of its own and a customer only optionally. Anyone
+      can add to a cart without signing in, and the sign-in is asked for at the
+      point the order is created rather than at the point of interest. The cost
+      is that a cart carries no customer to reach when it is abandoned.
+    domain_scope: checkout
+    tags: [conversion]

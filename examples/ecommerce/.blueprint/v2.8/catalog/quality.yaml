@@ -1,0 +1,184 @@
+version: "1.0.0"
+scope: catalog
+owned_by:
+  team: TM002
+kpis:
+  - id: catalog.KPI001
+    name: "Edge cache hit ratio"
+    description: >
+      Verifies the five-minute cache assumption from the other side: a low hit
+      ratio means the cache is not paying for the staleness it costs.
+    target: "> 90%"
+    window: "7d rolling"
+    domain_scope: catalog
+    thresholds:
+      warning: "85%"
+      critical: "70%"
+  - id: catalog.KPI002
+    name: "Products listed without a category"
+    description: >
+      Verifies the one-category rule. Any product above zero is unreachable by
+      browsing and is found only by search.
+    target: "0"
+    window: "daily"
+    domain_scope: catalog
+    thresholds:
+      warning: "1"
+      critical: "10"
+findings:
+  - id: catalog.FN001
+    title: "Update Product Price names a write the running shop does not perform"
+    summary: "The model's price command and the endpoint behind it do different things, and the name hides it"
+    kind: naming
+    quality_characteristic: functional-suitability
+    quality_subcharacteristic: functional-correctness
+    severity: high
+    status: open
+    certainty: confirmed
+    discovery_stage: validated
+    statement: >
+      This model declares Update Product Price (catalog.CMD002) as a command
+      that replaces a product's selling price, and Publish Product and Create
+      Category beside it as the rest of the catalog's write surface. Read
+      against the running shop, only part of that holds. The product service
+      exposes exactly three routes - list products, get one product, and a
+      POST on a product's price - and the third one computes a figure for a
+      quantity and a set of customer discounts and returns it. It writes
+      nothing back to the product record. The other two catalog commands,
+      Publish Product and Create Category, have no route at all.
+
+      So the model states a capability the shop does not have, and the name of
+      the route is why it is easy to miss: POST on a price reads as setting a
+      price, and it is a quotation. The back office already reached the same
+      conclusion independently - it calls the endpoint a price quote, says on
+      the screen that it does not touch the catalog price, and logs it as
+      informational rather than as a change.
+
+      This entry exists to hold that divergence rather than close it. The
+      operation is left exactly as written, because a model that quietly
+      redrew itself to match today's code would have nothing to say about the
+      difference between what a shop intends and what it runs - which is the
+      most useful thing a model of a live system can say.
+    recommendation: >
+      Do not reconcile by deleting. Three readings are open and they are
+      different decisions: the price write is intended and unbuilt, in which
+      case this is a gap in the shop; it was never intended and the model
+      inherited it from a design that moved on, in which case the operation
+      should go with a migration recording why; or the quotation is itself a
+      modellable operation in its own right, in which case Catalog gains a
+      query it does not currently have and Orders' dependency on it becomes
+      visible. Whoever picks needs the shop's intent, not the codebase.
+    affects:
+      operation_refs:
+        - catalog.CMD002
+        - catalog.CMD001
+        - catalog.CMD003
+      concept_refs:
+        - catalog.CN999
+      context_refs:
+        - catalog
+        - shop-admin
+    risk_refs:
+      - shop-admin.RSK001
+    tags: [model-code-divergence, teaching]
+
+  - id: catalog.FN002
+    title: "The product list read is declared as a paged envelope and served as a bare array"
+    summary: "ProductList declares items, total and page; GET /products answers a JSON array"
+    kind: drift
+    quality_characteristic: functional-suitability
+    quality_subcharacteristic: functional-correctness
+    severity: medium
+    status: open
+    certainty: confirmed
+    discovery_stage: validated
+    statement: >
+      ProductList (MDL011) is an object carrying an `items` array beside
+      `total`, `page` and a page size. GET /products answers the filtered array
+      itself, unwrapped, with no paging of any kind - and it filters, on
+      `isActive`, which this model does not mention either.
+      The order context declares the same envelope over its own list read and
+      the same route shape answers it, recorded as orders.FN003. Each entry
+      names the schema its own slice owns; they are one decision seen twice.
+      Distinct from catalog.FN001, which is about a write the shop does not
+      perform. This is about a read it does perform, in a shape the model does
+      not describe, and it is the one of the two that would break a generated
+      client on its first call.
+    recommendation: >
+      The paging question belongs to the shop and not to this schema - see
+      orders.FN003 for the same argument. The `isActive` filter is separate and
+      smaller: the route decides what the range is, and this model has no
+      attribute saying a product can be withdrawn from sale, so
+      catalog.CN999 is a field short of what the shop stores.
+    affects:
+      operation_refs:
+        - catalog.QRY002
+      concept_refs:
+        - catalog.CN999
+      context_refs:
+        - catalog
+        - orders
+    code_refs:
+      - path: services/products-service/src/server.ts
+        role: implementation
+        description: >
+          `app.get('/products')` filters on `isActive` and answers the array.
+    tags: [model-code-divergence, paging]
+
+  - id: catalog.FN003
+    title: "The product read-model describes a different product from the one the catalog service returns"
+    summary: "Product declares currency and inStock that do not exist; the interface carries six fields the model does not, and requires three the model leaves optional"
+    kind: drift
+    quality_characteristic: functional-suitability
+    quality_subcharacteristic: functional-correctness
+    severity: medium
+    status: open
+    certainty: confirmed
+    discovery_stage: validated
+    statement: >
+      Product (MDL010) and the `Product` interface in
+      `services/products-service/src/catalog/Product.ts` are joined by a
+      code_ref and disagree in three ways at once.
+      Two fields are declared here and exist nowhere in the code. `currency`
+      sits beside `price`, and the service carries a bare number, which is the
+      same absence orders.FN005 records on the order total. `inStock` is a
+      boolean this model derives from nothing: the interface carries a numeric
+      `stock`, so the shop answers how many rather than whether, and a reader of
+      this model would build the wrong control.
+      Six fields exist in the code and not here: `id`, `stock`, `weight`,
+      `dimensions`, `brand` and `isActive`. `id` is the product's own
+      identifier, and this model addresses a product by `sku` alone, so a
+      generated client would have no way to name the record it just read.
+      `isActive` is the field catalog.FN002 already names from the other side:
+      that entry says this context has no attribute for a product withdrawn from
+      sale, and this is the same absence measured on the schema rather than on
+      the route. They are one decision seen twice, in the way catalog.FN002 and
+      orders.FN003 are.
+      Three fields are declared here and left optional while the interface
+      requires them: `description`, `category` and `imageUrl`. A client
+      generated from this model would check three values the shop always sends.
+    recommendation: >
+      `currency` and `inStock` are the two worth deciding first, because they
+      are the two where this model states something the shop does not do.
+      `inStock` in particular is not a naming difference: a boolean and a count
+      answer different questions, and the storefront reads the count. The six
+      code-only fields split into one that matters (`id`, which is how anything
+      addresses a product) and five that are catalogue detail this model may
+      legitimately not carry; say which, rather than adding all six. The three
+      requiredness differences are a one-line correction once somebody says
+      which artefact is right.
+    affects:
+      concept_refs:
+        - catalog.CN999
+      context_refs:
+        - catalog
+        - storefront
+    code_refs:
+      - path: services/products-service/src/catalog/Product.ts
+        role: model
+        description: >
+          The interface every catalog route answers with. Carries `id`,
+          `stock`, `weight`, `dimensions`, `brand` and `isActive`; lacks
+          `currency` and `inStock`; requires `description`, `category` and
+          `imageUrl`.
+    tags: [model-code-divergence, ubiquitous-language]

@@ -1,0 +1,198 @@
+name: customers
+version: "1.0.0"
+scope: customers
+owned_by:
+  team: TM003
+tags: [generic-domain, account, authentication]
+
+# Two processes, not one, and the reason is in the shop's route table rather than
+# in a modelling preference.
+#
+# Registration (PRC005) and signing in (PRC006) share their last act and nothing
+# else. `/register` and `/sign-in` are separate routes with separate screens, the
+# header carries a link to each while nobody is signed in, and the second has an
+# entry the first can never have: a visitor who asks for `/account` or an order
+# page without a session is redirected into it. They also end differently -
+# registration has no refusal to model, and a sign-in's ordinary failure is a
+# shopper left on the screen being told which of two things went wrong without
+# being told which.
+#
+# What they do share is stated with `calls_subprocess` rather than by repeating
+# it: registration's second activity IS the sign-in process, because the
+# storefront follows a successful create with the same call a returning shopper
+# makes. That is the honest shape of "a new shopper reaches a session the way a
+# returning one does".
+processes:
+  - id: PRC005
+    title: "A shopper registers and is signed in"
+    status: implemented
+    description: >
+      How a person who has never used this shop becomes somebody it can act for.
+      Three fields open an account - a name, an email that is also the login, and
+      a password - and the postal details are not among them, which is what makes
+      this a short process with a tail rather than a form with eight boxes. The
+      address arrives later on the account page, or never.
+      The process ends with a session rather than with a record, and that is the
+      part worth watching on a board: creating the account and being signed in
+      are two operations, against two endpoints, and the storefront makes the
+      second call itself so a shopper never notices the seam.
+    initiated_by:
+      - ACT001
+    trigger:
+      type: manual
+      description: >
+        The visitor presses Register in the storefront header, which carries the
+        link on every screen while nobody is signed in.
+    activities:
+      - id: customers.PA001
+        name: "Open the account"
+        description: >
+          The three fields the shop asks for are posted and the account exists.
+          The password is checked for length on the screen and again at the
+          service; everything else the shop might want to know about this person
+          is left absent rather than invented, which is the change
+          customers.RSK001 records as closed.
+        entry_operation: customers.CMD001
+        triggered_by:
+          - ACT001
+        steps:
+          - operation_ref: customers.CMD001
+            note: >
+              A 201 and the new customer id. No event is published, so nothing
+              else in the shop learns that a customer now exists.
+        next:
+          - to: customers.PA002
+            condition: "the account was created"
+        path_type: happy
+
+      - id: customers.PA002
+        name: "Start the session"
+        description: >
+          The storefront signs the new shopper in with the credentials they just
+          chose. It is the sign-in process run as a subprocess rather than a
+          second mechanism: the same endpoint, the same token, the same refusal
+          shape a returning shopper would meet.
+        entry_operation: customers.CMD004
+        calls_subprocess: PRC006
+        next:
+          - to: customers.PA003
+            condition: "the session token was issued"
+        path_type: happy
+
+      - id: customers.PA003
+        name: "Land on the account"
+        description: >
+          The shopper arrives on their own account screen, which is where the six
+          fields registration did not ask for can be supplied. The read that
+          renders it is the profile read; the discounts beside it are the same
+          read the order flow makes when it prices a line.
+        entry_operation: customers.QRY001
+        path_type: happy
+        next:
+          - to: customers.PA004
+            condition: the shopper chooses to supply the details registration did not ask for
+
+      - id: customers.PA004
+        name: "Supply the rest of the record"
+        description: >
+          Optional, and in the running shop usually not done at all. It is on the
+          process because the shop's answer to "where does the address come from"
+          is this activity and nothing else: no operation prompts for it, no
+          screen insists, and an account can stay address-less for as long as
+          nobody tries to deliver anything.
+        entry_operation: customers.CMD002
+        path_type: happy
+    end_states:
+      - name: "The shop knows this person and is acting as them"
+        type: complete
+        description: >
+          An account exists, a session token is held by the browser, and the
+          header shows the shopper's own name. Nothing downstream was told.
+      - name: "The details were refused and no account was created"
+        type: error
+        description: >
+          The service rejected the submission - a missing field, an email that is
+          not an address, or a password under eight characters
+          (customers.ERR002). The screen says so and the shopper is still a
+          visitor.
+    lanes:
+      - actor: ACT001
+        operations:
+          - customers.CMD001
+          - customers.CMD004
+          - customers.CMD002
+
+  - id: PRC006
+    title: "A returning shopper signs in"
+    status: implemented
+    description: >
+      What a person who already has an account does to make the shop act for them
+      again. It is the shortest process in this model - one command and one read -
+      and it is declared separately because it is entered from three places
+      registration is not: the header on any screen, the link at the foot of the
+      register screen, and a redirect from any page that needs a session and did
+      not find one.
+      Its ordinary failure is the interesting part. A refusal is one response
+      with one body whether the login is unknown or the password is wrong, so the
+      screen can tell the shopper that something did not match and cannot tell
+      them which. That is deliberate, and it is the one place in this shop where
+      two outcomes are made indistinguishable on purpose.
+    initiated_by:
+      - ACT001
+    trigger:
+      type: manual
+      description: >
+        The shopper presses Sign in - from the header, from the register screen's
+        own link, or on the screen they were redirected to after asking for a page
+        that needs a session.
+    activities:
+      - id: customers.PA005
+        name: "Offer the login and the password"
+        description: >
+          The credentials go to the service, which compares the password against a
+          salted PBKDF2-SHA256 digest held against the account id. A match answers
+          with an opaque token and the customer record; anything else answers 401
+          with the one body.
+        entry_operation: customers.CMD004
+        triggered_by:
+          - ACT001
+        steps:
+          - operation_ref: customers.CMD004
+            note: >
+              The token is the only thing the browser keeps. The customer record
+              travels with it so the header can show a name without a second call.
+        next:
+          - to: customers.PA006
+            condition: "the credentials matched"
+        path_type: happy
+
+      - id: customers.PA006
+        name: "Recover the person behind the token"
+        description: >
+          Not part of signing in, and part of the process: it is what the token
+          exists for. The storefront makes this read on every later load, so a
+          token revoked elsewhere, or issued by a service that has since
+          restarted, resolves to nobody rather than to a stale name on a screen.
+          Sessions are held in memory, so a restart is the ordinary way this read
+          starts failing.
+        entry_operation: customers.QRY004
+        path_type: happy
+    end_states:
+      - name: "The shop is acting as this shopper again"
+        type: complete
+        description: >
+          A token is held, the read behind it answers, and the account and order
+          screens open. It says who the caller is and nothing about what they may
+          do (customers.RSK004).
+      - name: "The offer was refused, and the shopper is not told which half was wrong"
+        type: error
+        description: >
+          An unknown login and a wrong password produce the identical response
+          (customers.ERR003), so the screen reports one refusal for two causes.
+          The shopper stays where they are with the register link beside them.
+    lanes:
+      - actor: ACT001
+        operations:
+          - customers.CMD004
+          - customers.QRY004
+          - customers.CMD005

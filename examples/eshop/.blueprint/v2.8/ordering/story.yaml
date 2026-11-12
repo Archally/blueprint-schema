@@ -1,0 +1,94 @@
+name: ordering
+version: "1.0.0"
+scope: ordering
+processes:
+  - id: PRC001
+    title: "An order is placed, paid and shipped"
+    description: "The happy path of the eShop order flow, with the three ways it ends in a cancellation."
+    initiated_by: [ordering.ACT001]
+    trigger:
+      type: manual
+      description: The shopper checks out their basket.
+    activities:
+      - id: PA001
+        name: Place Order
+        entry_operation: ordering.CMD001
+        triggered_by: [ordering.ACT001]
+        steps:
+          - operation_ref: ordering.CMD001
+          - operation_ref: ordering.EVT001
+          - operation_ref: ordering.EVT009
+          - operation_ref: ordering.EVT002
+        next: [{to: PA002}, {to: PA003}]
+        path_type: happy
+        gateway: and
+      - id: PA002
+        name: Empty Basket
+        entry_operation: basket.CMD001
+        triggered_by: [ordering.EVT001]
+        path_type: happy
+      - id: PA003
+        name: Wait Out The Grace Period
+        entry_operation: ordering.CMD002
+        triggered_by: [ordering.ACT002]
+        steps:
+          - operation_ref: ordering.CMD002
+          - operation_ref: ordering.EVT003
+          - operation_ref: ordering.CMD003
+          - operation_ref: ordering.EVT010
+          - operation_ref: ordering.EVT004
+        next: [{to: PA004}]
+        path_type: happy
+      - id: PA004
+        name: Check Stock
+        entry_operation: catalog.CMD001
+        triggered_by: [ordering.EVT004]
+        steps:
+          - operation_ref: catalog.CMD001
+          - operation_ref: catalog.EVT001
+          - operation_ref: ordering.CMD004
+          - operation_ref: ordering.EVT011
+          - operation_ref: ordering.EVT005
+        next: [{to: PA005}]
+        path_type: happy
+      - id: PA005
+        name: Take Payment
+        entry_operation: payment.CMD001
+        triggered_by: [ordering.EVT005]
+        steps:
+          - operation_ref: payment.CMD001
+          - operation_ref: payment.EVT001
+          - operation_ref: ordering.CMD006
+          - operation_ref: ordering.EVT012
+          - operation_ref: ordering.EVT006
+          - operation_ref: catalog.CMD002
+        next: [{to: PA006}]
+        path_type: happy
+      - id: PA006
+        name: Ship
+        entry_operation: ordering.CMD008
+        triggered_by: [ordering.ACT003]
+        steps:
+          - operation_ref: ordering.CMD008
+          - operation_ref: ordering.EVT014
+          - operation_ref: ordering.EVT008
+        path_type: happy
+      - id: PA007
+        name: Cancel On Stock Shortage
+        entry_operation: ordering.CMD005
+        triggered_by: [catalog.EVT002]
+        path_type: error
+      - id: PA008
+        name: Cancel On Failed Payment
+        entry_operation: ordering.CMD007
+        triggered_by: [payment.EVT002]
+        steps:
+          - operation_ref: ordering.CMD007
+          - operation_ref: ordering.EVT013
+          - operation_ref: ordering.EVT007
+        path_type: error
+    end_states:
+      - name: Shipped
+        type: complete
+      - name: Cancelled
+        type: error

@@ -1,0 +1,878 @@
+version: 1.1.0
+name: E-Shop Infrastructure
+description: "Intended (to-be) e-shop runtime for eight services across seven contexts. All
+  resources, placement, traffic, exposure, tiers, environment configurations and bindings describe
+  the target only. No deployment or IaC evidence is asserted. Each environment realizes its own
+  isolated copy of this logical topology; resource ids identify roles, not shared live instances.
+  RT001 is the neutral application-runtime need contract used here: an HTTP-serving process with a
+  service endpoint, realized by the named container resource. No module or version is claimed to
+  exist."
+environments:
+  - id: ENV001
+    name: development
+    env_class: development
+    substrate: cloud
+    provider: aws
+    tags:
+      - to-be
+      - isolated-target
+  - id: ENV002
+    name: staging
+    env_class: staging
+    substrate: cloud
+    provider: aws
+    tags:
+      - to-be
+      - isolated-target
+  - id: ENV003
+    name: production
+    env_class: production
+    substrate: cloud
+    provider: aws
+    tags:
+      - to-be
+      - isolated-target
+resources:
+  - id: IR001
+    kind: cdn
+    name: Edge CDN and Gateway
+    summary: Intended public HTTPS entry for web assets and uncached API routes
+    owner:
+      team: TM002
+    platform:
+      name: aws
+      type: cloudfront
+    environments:
+      ENV001:
+        params:
+          intent: to-be
+      ENV002:
+        params:
+          intent: to-be
+      ENV003:
+        params:
+          intent: to-be
+    tags:
+      - edge
+      - cdn
+    implementation: to-be
+    description: Intended (to-be) resource in each isolated environment; no deployed instance is asserted.
+    relations:
+      - type: routes_to
+        target: IR012
+        description: "Intended (to-be): serves the storefront through the edge."
+      - type: routes_to
+        target: IR013
+        description: "Intended (to-be): serves the operator web app through the edge."
+      - type: routes_to
+        target: IR002
+        description: "Intended (to-be): forwards catalog and operator product API requests."
+      - type: routes_to
+        target: IR003
+        description: "Intended (to-be): forwards order API requests."
+      - type: routes_to
+        target: IR004
+        description: "Intended (to-be): forwards stock API requests."
+      - type: routes_to
+        target: IR005
+        description: "Intended (to-be): forwards cart API requests."
+      - type: routes_to
+        target: IR014
+        description: "Intended (to-be): forwards account and session API requests."
+    hosting_model: managed-service
+    exposure: public
+    exposure_detail: "Intended (to-be): only public ingress; cache public assets and catalog reads,
+      bypass cache for authenticated and mutation traffic. Operator API routes require authorization
+      at ingress; this is a target control, not a claim about current code."
+  - id: IR002
+    kind: api
+    name: Catalog API
+    summary: Serves product catalog queries
+    owner:
+      team: TM002
+    platform:
+      name: k8s
+      type: deployment
+    environments:
+      ENV001:
+        params:
+          intent: to-be
+      ENV002:
+        params:
+          intent: to-be
+      ENV003:
+        params:
+          intent: to-be
+    implementation: to-be
+    description: "Intended (to-be): shared product process hosts ProductQueryService and
+      ProductCatalogAdminService, with separate public read and operator write routes."
+    relations:
+      - type: hosted_on
+        target: IR016
+        description: "Intended (to-be): runs on the managed application cluster."
+      - type: connects_to
+        target: IR009
+        description: "Intended (to-be): uses Catalog Database."
+      - type: connects_to
+        target: IR007
+        description: "Intended (to-be): uses Session Cache."
+      - type: connects_to
+        target: IR010
+        description: "Intended (to-be): uses Secrets Vault."
+      - type: connects_to
+        target: IR011
+        description: "Intended (to-be): uses Observability Stack."
+    hosting_model: container
+    exposure: internal
+  - id: IR003
+    kind: api
+    name: Orders API
+    summary: Handles order lifecycle commands and queries
+    owner:
+      team: TM001
+    platform:
+      name: k8s
+      type: deployment
+    environments:
+      ENV001:
+        params:
+          intent: to-be
+      ENV002:
+        params:
+          intent: to-be
+      ENV003:
+        params:
+          intent: to-be
+    implementation: to-be
+    description: Intended (to-be) resource in each isolated environment; no deployed instance is asserted.
+    relations:
+      - type: hosted_on
+        target: IR016
+        description: "Intended (to-be): runs on the managed application cluster."
+      - type: connects_to
+        target: IR008
+        description: "Intended (to-be): uses Orders Database."
+      - type: connects_to
+        target: IR006
+        description: "Intended (to-be): uses Shop Event Bus."
+      - type: connects_to
+        target: IR014
+        description: "Intended (to-be): uses Customer API."
+      - type: connects_to
+        target: IR010
+        description: "Intended (to-be): uses Secrets Vault."
+      - type: connects_to
+        target: IR011
+        description: "Intended (to-be): uses Observability Stack."
+    hosting_model: container
+    exposure: internal
+  - id: IR004
+    kind: api
+    name: Inventory API
+    summary: Stock reservation and availability checks
+    owner:
+      team: TM002
+    platform:
+      name: k8s
+      type: deployment
+    environments:
+      ENV001:
+        params:
+          intent: to-be
+      ENV002:
+        params:
+          intent: to-be
+      ENV003:
+        params:
+          intent: to-be
+    implementation: to-be
+    description: "Intended (to-be): inventory owns a separate logical database inside the Orders
+      Database PostgreSQL instance. Orders and inventory have distinct credentials and no
+      cross-schema access."
+    relations:
+      - type: hosted_on
+        target: IR016
+        description: "Intended (to-be): runs on the managed application cluster."
+      - type: connects_to
+        target: IR008
+        description: "Intended (to-be): uses Orders Database."
+      - type: connects_to
+        target: IR006
+        description: "Intended (to-be): uses Shop Event Bus."
+      - type: connects_to
+        target: IR010
+        description: "Intended (to-be): uses Secrets Vault."
+      - type: connects_to
+        target: IR011
+        description: "Intended (to-be): uses Observability Stack."
+    hosting_model: container
+    exposure: internal
+  - id: IR005
+    kind: api
+    name: Checkout API
+    summary: Cart management and payment initiation
+    owner:
+      team: TM003
+    platform:
+      name: k8s
+      type: deployment
+    environments:
+      ENV001:
+        params:
+          intent: to-be
+      ENV002:
+        params:
+          intent: to-be
+      ENV003:
+        params:
+          intent: to-be
+    implementation: to-be
+    description: Intended (to-be) resource in each isolated environment; no deployed instance is asserted.
+    relations:
+      - type: hosted_on
+        target: IR016
+        description: "Intended (to-be): runs on the managed application cluster."
+      - type: connects_to
+        target: IR007
+        description: "Intended (to-be): uses Session Cache."
+      - type: connects_to
+        target: IR006
+        description: "Intended (to-be): uses Shop Event Bus."
+      - type: connects_to
+        target: IR010
+        description: "Intended (to-be): uses Secrets Vault."
+      - type: connects_to
+        target: IR011
+        description: "Intended (to-be): uses Observability Stack."
+    hosting_model: container
+    exposure: internal
+  - id: IR006
+    kind: broker
+    name: Shop Event Bus
+    summary: Central message broker for domain events
+    owner:
+      team: TM001
+    platform:
+      name: k8s
+      type: rabbitmq-cluster
+    environments:
+      ENV001:
+        params:
+          intent: to-be
+      ENV002:
+        params:
+          intent: to-be
+      ENV003:
+        params:
+          intent: to-be
+    implementation: to-be
+    description: Intended (to-be) resource in each isolated environment; no deployed instance is asserted.
+    relations:
+      - type: hosted_on
+        target: IR016
+        description: "Intended (to-be): runs on the managed application cluster."
+    hosting_model: container
+    exposure: private
+  - id: IR007
+    kind: cache
+    name: Session Cache
+    summary: Intended shared Redis instance with separate cart and catalog cache keyspaces
+    owner:
+      team: TM003
+    platform:
+      name: k8s
+      type: redis
+    environments:
+      ENV001:
+        params:
+          intent: to-be
+      ENV002:
+        params:
+          intent: to-be
+      ENV003:
+        params:
+          intent: to-be
+    implementation: to-be
+    description: Intended (to-be) resource in each isolated environment; no deployed instance is asserted.
+    relations:
+      - type: hosted_on
+        target: IR016
+        description: "Intended (to-be): runs on the managed application cluster."
+    hosting_model: container
+    exposure: private
+  - id: IR008
+    kind: database
+    name: Orders Database
+    summary: Persistent storage for orders aggregate
+    owner:
+      team: TM001
+    platform:
+      name: aws
+      type: rds-postgres
+    environments:
+      ENV001:
+        params:
+          intent: to-be
+      ENV002:
+        params:
+          intent: to-be
+      ENV003:
+        params:
+          intent: to-be
+    implementation: to-be
+    description: "Intended (to-be): one managed PostgreSQL instance holds separate orders and inventory
+      logical databases and credentials; no shared-table access."
+    relations: []
+    hosting_model: managed-service
+    exposure: private
+  - id: IR009
+    kind: database
+    name: Catalog Database
+    summary: Product catalog and category data
+    owner:
+      team: TM002
+    platform:
+      name: aws
+      type: rds-postgres
+    environments:
+      ENV001:
+        params:
+          intent: to-be
+      ENV002:
+        params:
+          intent: to-be
+      ENV003:
+        params:
+          intent: to-be
+    implementation: to-be
+    description: Intended (to-be) resource in each isolated environment; no deployed instance is asserted.
+    relations: []
+    hosting_model: managed-service
+    exposure: private
+  - id: IR010
+    kind: vault
+    name: Secrets Vault
+    summary: Central secret store for credentials + signing keys
+    owner:
+      team: TM001
+    platform:
+      name: aws
+      type: secrets-manager
+    environments:
+      ENV001:
+        params:
+          intent: to-be
+      ENV002:
+        params:
+          intent: to-be
+      ENV003:
+        params:
+          intent: to-be
+    implementation: to-be
+    description: Intended (to-be) resource in each isolated environment; no deployed instance is asserted.
+    relations: []
+    hosting_model: managed-service
+    exposure: private
+  - id: IR011
+    kind: observability
+    name: Observability Stack
+    summary: Metrics, traces, and dashboards (Prometheus + Grafana + OTel)
+    owner:
+      team: TM001
+    platform:
+      name: k8s
+      type: helm-bundle
+    environments:
+      ENV001:
+        params:
+          intent: to-be
+      ENV002:
+        params:
+          intent: to-be
+      ENV003:
+        params:
+          intent: to-be
+    implementation: to-be
+    description: Intended (to-be) resource in each isolated environment; no deployed instance is asserted.
+    relations:
+      - type: hosted_on
+        target: IR016
+        description: "Intended (to-be): runs on the managed application cluster."
+    hosting_model: container
+    exposure: internal
+  - id: IR012
+    kind: service
+    name: Storefront Runtime
+    summary: Storefront Runtime for the intended e-shop runtime
+    description: "Intended (to-be): storefront asset server and server-side cart-event adapter. Browser
+      API traffic returns through the public gateway; the adapter alone reaches the private broker.
+      This adapter is target design, not an existing deployment claim."
+    platform:
+      name: k8s
+      type: deployment
+    hosting_model: container
+    exposure: internal
+    implementation: to-be
+    environments:
+      ENV001:
+        params:
+          intent: to-be
+      ENV002:
+        params:
+          intent: to-be
+      ENV003:
+        params:
+          intent: to-be
+    relations:
+      - type: hosted_on
+        target: IR016
+        description: "Intended (to-be): runs on the managed application cluster."
+      - type: connects_to
+        target: IR006
+        description: "Intended (to-be): server-side storefront event adapter consumes cart events; no
+          browser-to-broker access."
+      - type: connects_to
+        target: IR011
+        description: "Intended (to-be): sends runtime telemetry to Observability Stack."
+  - id: IR013
+    kind: service
+    name: Shop Admin Runtime
+    summary: Shop Admin Runtime for the intended e-shop runtime
+    description: "Intended (to-be): serves the back-office assets. Operator browser API traffic returns
+      through the public gateway; the gateway must authorize operator routes."
+    platform:
+      name: k8s
+      type: deployment
+    hosting_model: container
+    exposure: internal
+    implementation: to-be
+    environments:
+      ENV001:
+        params:
+          intent: to-be
+      ENV002:
+        params:
+          intent: to-be
+      ENV003:
+        params:
+          intent: to-be
+    relations:
+      - type: hosted_on
+        target: IR016
+        description: "Intended (to-be): runs on the managed application cluster."
+      - type: connects_to
+        target: IR011
+        description: "Intended (to-be): sends runtime telemetry to Observability Stack."
+  - id: IR014
+    kind: api
+    name: Customer API
+    summary: Customer API for the intended e-shop runtime
+    description: Intended (to-be) resource in each isolated environment; no deployed instance is asserted.
+    platform:
+      name: k8s
+      type: deployment
+    hosting_model: container
+    exposure: internal
+    implementation: to-be
+    environments:
+      ENV001:
+        params:
+          intent: to-be
+      ENV002:
+        params:
+          intent: to-be
+      ENV003:
+        params:
+          intent: to-be
+    relations:
+      - type: hosted_on
+        target: IR016
+        description: "Intended (to-be): runs on the managed application cluster."
+      - type: connects_to
+        target: IR015
+        description: "Intended (to-be): uses Customers Database."
+      - type: connects_to
+        target: IR010
+        description: "Intended (to-be): uses Secrets Vault."
+      - type: connects_to
+        target: IR011
+        description: "Intended (to-be): uses Observability Stack."
+  - id: IR015
+    kind: database
+    name: Customers Database
+    summary: Customers Database for the intended e-shop runtime
+    description: Intended (to-be) resource in each isolated environment; no deployed instance is asserted.
+    platform:
+      name: aws
+      type: rds-postgres
+    hosting_model: managed-service
+    exposure: private
+    implementation: to-be
+    environments:
+      ENV001:
+        params:
+          intent: to-be
+      ENV002:
+        params:
+          intent: to-be
+      ENV003:
+        params:
+          intent: to-be
+    relations: []
+  - id: IR016
+    kind: cluster
+    name: Application Cluster
+    summary: Application Cluster for the intended e-shop runtime
+    description: Intended (to-be) resource in each isolated environment; no deployed instance is asserted.
+    platform:
+      name: aws
+      type: managed-kubernetes
+    hosting_model: managed-service
+    exposure: private
+    implementation: to-be
+    environments:
+      ENV001:
+        params:
+          intent: to-be
+      ENV002:
+        params:
+          intent: to-be
+      ENV003:
+        params:
+          intent: to-be
+    relations: []
+topology:
+  tiers:
+    - name: edge-tier
+      description: "Intended (to-be): edge-tier resources."
+      resource_refs:
+        - IR001
+      region: global
+      replicas: 1
+    - name: api-tier
+      description: "Intended (to-be): api-tier resources."
+      resource_refs:
+        - IR002
+        - IR003
+        - IR004
+        - IR005
+        - IR014
+      services:
+        - ProductQueryService
+        - ProductCatalogAdminService
+        - OrderService
+        - InventoryService
+        - CheckoutService
+        - CustomerService
+      region: eu-west-1
+      replicas: 2
+    - name: messaging-tier
+      description: "Intended (to-be): messaging-tier resources."
+      resource_refs:
+        - IR006
+      region: eu-west-1
+    - name: cache-tier
+      description: "Intended (to-be): cache-tier resources."
+      resource_refs:
+        - IR007
+      region: eu-west-1
+      replicas: 2
+    - name: data-tier
+      description: "Intended (to-be): data-tier resources."
+      resource_refs:
+        - IR008
+        - IR009
+        - IR015
+        - IR010
+      region: eu-west-1
+    - name: observability-tier
+      description: "Intended (to-be): observability-tier resources."
+      resource_refs:
+        - IR011
+      region: eu-west-1
+    - name: web-tier
+      description: "Intended (to-be): web-tier resources."
+      resource_refs:
+        - IR012
+        - IR013
+      services:
+        - StorefrontWebApp
+        - ShopAdminWebApp
+    - name: platform-tier
+      description: "Intended (to-be): platform-tier resources."
+      resource_refs:
+        - IR016
+  constraints:
+    - "Intended (to-be): the edge is the sole public entry; application endpoints are internal and
+      broker, cache, databases, vault and cluster are private."
+    - "Intended (to-be): all container workloads use the application cluster; private connectivity
+      to managed databases and vault is required."
+    - "Intended (to-be): each environment provisions its own topology with isolated state and
+      credentials."
+    - "Intended (to-be): orders and inventory share a PostgreSQL instance but use separate logical
+      databases and credentials."
+bindings:
+  - id: BND001
+    type_ref: RT001
+    need_ref: ProductQueryService-runtime
+    environment_ref: ENV001
+    resource_ref: IR002
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): ProductQueryService runtime in development is realized by Catalog
+      API. No deployed module or version is asserted."
+  - id: BND002
+    type_ref: RT001
+    need_ref: ProductCatalogAdminService-runtime
+    environment_ref: ENV001
+    resource_ref: IR002
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): ProductCatalogAdminService runtime in development is realized by
+      Catalog API. No deployed module or version is asserted."
+  - id: BND003
+    type_ref: RT001
+    need_ref: OrderService-runtime
+    environment_ref: ENV001
+    resource_ref: IR003
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): OrderService runtime in development is realized by Orders API. No
+      deployed module or version is asserted."
+  - id: BND004
+    type_ref: RT001
+    need_ref: InventoryService-runtime
+    environment_ref: ENV001
+    resource_ref: IR004
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): InventoryService runtime in development is realized by Inventory
+      API. No deployed module or version is asserted."
+  - id: BND005
+    type_ref: RT001
+    need_ref: CheckoutService-runtime
+    environment_ref: ENV001
+    resource_ref: IR005
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): CheckoutService runtime in development is realized by Checkout API.
+      No deployed module or version is asserted."
+  - id: BND006
+    type_ref: RT001
+    need_ref: StorefrontWebApp-runtime
+    environment_ref: ENV001
+    resource_ref: IR012
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): StorefrontWebApp runtime in development is realized by Storefront
+      Runtime. No deployed module or version is asserted."
+  - id: BND007
+    type_ref: RT001
+    need_ref: ShopAdminWebApp-runtime
+    environment_ref: ENV001
+    resource_ref: IR013
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): ShopAdminWebApp runtime in development is realized by Shop Admin
+      Runtime. No deployed module or version is asserted."
+  - id: BND008
+    type_ref: RT001
+    need_ref: CustomerService-runtime
+    environment_ref: ENV001
+    resource_ref: IR014
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): CustomerService runtime in development is realized by Customer API.
+      No deployed module or version is asserted."
+  - id: BND009
+    type_ref: RT001
+    need_ref: ProductQueryService-runtime
+    environment_ref: ENV002
+    resource_ref: IR002
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): ProductQueryService runtime in staging is realized by Catalog API.
+      No deployed module or version is asserted."
+  - id: BND010
+    type_ref: RT001
+    need_ref: ProductCatalogAdminService-runtime
+    environment_ref: ENV002
+    resource_ref: IR002
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): ProductCatalogAdminService runtime in staging is realized by Catalog
+      API. No deployed module or version is asserted."
+  - id: BND011
+    type_ref: RT001
+    need_ref: OrderService-runtime
+    environment_ref: ENV002
+    resource_ref: IR003
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): OrderService runtime in staging is realized by Orders API. No
+      deployed module or version is asserted."
+  - id: BND012
+    type_ref: RT001
+    need_ref: InventoryService-runtime
+    environment_ref: ENV002
+    resource_ref: IR004
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): InventoryService runtime in staging is realized by Inventory API. No
+      deployed module or version is asserted."
+  - id: BND013
+    type_ref: RT001
+    need_ref: CheckoutService-runtime
+    environment_ref: ENV002
+    resource_ref: IR005
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): CheckoutService runtime in staging is realized by Checkout API. No
+      deployed module or version is asserted."
+  - id: BND014
+    type_ref: RT001
+    need_ref: StorefrontWebApp-runtime
+    environment_ref: ENV002
+    resource_ref: IR012
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): StorefrontWebApp runtime in staging is realized by Storefront
+      Runtime. No deployed module or version is asserted."
+  - id: BND015
+    type_ref: RT001
+    need_ref: ShopAdminWebApp-runtime
+    environment_ref: ENV002
+    resource_ref: IR013
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): ShopAdminWebApp runtime in staging is realized by Shop Admin
+      Runtime. No deployed module or version is asserted."
+  - id: BND016
+    type_ref: RT001
+    need_ref: CustomerService-runtime
+    environment_ref: ENV002
+    resource_ref: IR014
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): CustomerService runtime in staging is realized by Customer API. No
+      deployed module or version is asserted."
+  - id: BND017
+    type_ref: RT001
+    need_ref: ProductQueryService-runtime
+    environment_ref: ENV003
+    resource_ref: IR002
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): ProductQueryService runtime in production is realized by Catalog
+      API. No deployed module or version is asserted."
+  - id: BND018
+    type_ref: RT001
+    need_ref: ProductCatalogAdminService-runtime
+    environment_ref: ENV003
+    resource_ref: IR002
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): ProductCatalogAdminService runtime in production is realized by
+      Catalog API. No deployed module or version is asserted."
+  - id: BND019
+    type_ref: RT001
+    need_ref: OrderService-runtime
+    environment_ref: ENV003
+    resource_ref: IR003
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): OrderService runtime in production is realized by Orders API. No
+      deployed module or version is asserted."
+  - id: BND020
+    type_ref: RT001
+    need_ref: InventoryService-runtime
+    environment_ref: ENV003
+    resource_ref: IR004
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): InventoryService runtime in production is realized by Inventory API.
+      No deployed module or version is asserted."
+  - id: BND021
+    type_ref: RT001
+    need_ref: CheckoutService-runtime
+    environment_ref: ENV003
+    resource_ref: IR005
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): CheckoutService runtime in production is realized by Checkout API.
+      No deployed module or version is asserted."
+  - id: BND022
+    type_ref: RT001
+    need_ref: StorefrontWebApp-runtime
+    environment_ref: ENV003
+    resource_ref: IR012
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): StorefrontWebApp runtime in production is realized by Storefront
+      Runtime. No deployed module or version is asserted."
+  - id: BND023
+    type_ref: RT001
+    need_ref: ShopAdminWebApp-runtime
+    environment_ref: ENV003
+    resource_ref: IR013
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): ShopAdminWebApp runtime in production is realized by Shop Admin
+      Runtime. No deployed module or version is asserted."
+  - id: BND024
+    type_ref: RT001
+    need_ref: CustomerService-runtime
+    environment_ref: ENV003
+    resource_ref: IR014
+    outputs:
+      - name: endpoint
+        type: uri
+        description: Intended (to-be) service endpoint; no address assigned.
+    description: "Intended (to-be): CustomerService runtime in production is realized by Customer API.
+      No deployed module or version is asserted."

@@ -1,0 +1,40 @@
+version: "1.0.0"
+scope: inventory
+concepts:
+  - id: inventory.CN001
+    code_refs:
+      - path: services/inventory-service/Models/StockLevel.cs
+        role: model
+        description: >
+          Available, reserved and total against one SKU, as the inventory service reports
+          them.
+    term: "StockLevel"
+    summary: "Available quantity for a SKU"
+    definition: "Current stock count for a product in a warehouse"
+  - id: inventory.CN002
+    code_refs:
+      - path: services/inventory-service/Models/Reservation.cs
+        role: model
+        description: >
+          The hold itself. The class carries an `ExpiresAt` this concept does not, so a
+          hold in the running shop lapses and nothing in the model says when.
+    term: "Reservation"
+    summary: "A hold placed on stock for one order line"
+    definition: >
+      A claim on a quantity of a SKU, made when an order is submitted and held
+      until the order is fulfilled, the hold is released, or the hold expires.
+    states:
+      - name: active
+      - name: fulfilled
+      - name: released
+      - name: expired
+    initial_state: active
+    terminal_states: [fulfilled, released, expired]
+actors:
+  - id: inventory.ACT002
+    name: "Warehouse Manager"
+    type: human
+    summary: "Manages physical stock levels and replenishment"
+    responsibilities:
+      - "Monitor stock levels and availability"
+      - "Handle stock discrepancies"

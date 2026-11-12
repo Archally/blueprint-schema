@@ -1,0 +1,28 @@
+# Bulk tag payment operations for microservice extraction.
+# A metadata-only migration: it labels candidates without changing domain entities.
+migration:
+  id: MIG003
+  name: tag-payment-operations
+  date: "2026-02-22"
+  status: pending
+  description: "Tag all payment-related operations for upcoming payment microservice extraction."
+  tags: [payment, extraction-prep]
+
+changes:
+  meta:
+    - kind: bulk-tag
+      target: "checkout"
+      value: "extraction-candidate"
+      filter:
+        entity_type: operation
+        slice: checkout
+      description: "Mark all payment/checkout operations as extraction candidates."
+
+    - kind: note
+      target: "MIG003"
+      value: "This migration prepares for payment service extraction planned in Q3. No model changes — tagging only."
+      description: "Documentation note for reviewers."
+
+rollback:
+  automatic: true
+  data_loss: false

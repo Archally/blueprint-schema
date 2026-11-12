@@ -1,0 +1,19 @@
+version: "1.0.0"
+scope: catalog
+concepts:
+  - id: catalog.CN999
+    code_refs:
+      - path: services/products-service/src/catalog/Product.ts
+        role: model
+        description: >
+          The `Product` interface the product service holds its range in. Two of this
+          concept's attributes are not on it and two of its fields are not here: the class
+          carries `stock` and `weight`, which this concept leaves to Inventory and to
+          nobody.
+    term: "Product"
+    summary: "A sellable item (laptop or electronics)"
+    definition: "Catalog entry with SKU, name, price, and category"
+  - id: catalog.CN002
+    term: "Category"
+    summary: "Product grouping (e.g. Laptops, Monitors)"
+    definition: "Hierarchical classification for browsing and search"

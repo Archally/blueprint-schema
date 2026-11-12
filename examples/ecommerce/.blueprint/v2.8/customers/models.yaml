@@ -1,0 +1,527 @@
+version: "1.0.0"
+scope: customers
+components:
+  schemas:
+    RegisterCustomerRequest:
+      x-model-id: MDL034
+      code_refs:
+        - path: services/customer-service/Models/CreateCustomerRequest.cs
+          role: model
+          description: >
+            The registration body, named `CreateCustomerRequest` in the code and
+            `RegisterCustomerRequest` here. Measured 2026-09-25 the class requires three
+            fields - Name, Email and Password - and Password is declared by no property of
+            this schema, so the shop demands a value the model does not mention.
+      purpose: command-payload
+      description: >
+        Everything a shopper types to register. Three fields are required and six
+        are not, and that split is this shape's statement about the shop: a
+        person becomes a customer by choosing a login and a password, and the
+        address arrives later or not at all. There is a partial account, and the
+        account page (customers.CMD002) is where it stops being one.
+        The password is here and it is nowhere else: no read in this context
+        returns it, and the service holds only a salted PBKDF2-SHA256 digest of
+        it. This payload is the one place in the model where the clear text
+        exists, which is what a payload for a sign-up looks like when it is
+        honest about that.
+      represents:
+        - concept: customers.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              name: customers.CAT002
+              email: customers.CAT003
+              address: customers.CAT004
+        - concept: customers.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              email: customers.CAT012
+              password: customers.CAT013
+      type: object
+      required:
+        - name
+        - email
+        - password
+      properties:
+        name:
+          type: string
+          description: "The person's full name, kept as one string because the shop never splits it"
+          example: "Alice Johnson"
+        email:
+          $ref: "#/components/x-field/EmailAddress"
+        password:
+          type: string
+          minLength: 8
+          description: >
+            The password this person will sign in with. At least eight
+            characters, checked on the screen and again at the service, and
+            stored only as a salted PBKDF2-SHA256 digest - so this field travels
+            once and is never returned by anything.
+          example: "correct-horse-battery"
+        phone:
+          type: string
+          description: "Contact number, optional at registration; stored as typed, with no format imposed and none checked"
+          example: "+1-555-0100"
+        address:
+          type: string
+          description: "Street line of the delivery address, optional at registration"
+          example: "742 Evergreen Terrace"
+        city:
+          type: string
+          description: "City of the delivery address, optional at registration"
+          example: "Springfield"
+        state:
+          type: string
+          description: "State or region, optional at registration - and meaningless in countries that have no such thing"
+          example: "OR"
+        zip:
+          type: string
+          description: "Postal code, optional at registration and unvalidated against the country"
+          example: "97477"
+        country:
+          type: string
+          description: "Country, optional at registration and free text rather than an ISO code"
+          example: "USA"
+
+    UpdateCustomerRequest:
+      x-model-id: MDL035
+      code_refs:
+        - path: services/customer-service/Models/UpdateCustomerRequest.cs
+          role: model
+          description: >
+            The account-update body. Same name on both sides, and the one request class in
+            this service whose name the model did not have to translate.
+      purpose: command-payload
+      description: >
+        The same postal fields as registration, in the same required-and-optional
+        split, and no password - a credential is set once at registration and
+        nothing in this model changes one. The point worth noticing is still that
+        an update replaces the whole record rather than patching part of it: any
+        field left out of the request is left out of the account, so the
+        optionality that lets a three-field shopper save a profile is the same
+        optionality that lets a save silently drop an address.
+      represents:
+        - concept: customers.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              name: customers.CAT002
+              email: customers.CAT003
+              address: customers.CAT004
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+          description: "The person's full name, replacing whatever was there"
+          example: "Alice Johnson-Meyer"
+        email:
+          $ref: "#/components/x-field/EmailAddress"
+        phone:
+          type: string
+          description: "Contact number, optional; replaces whatever was there, including with nothing"
+          example: "+1-555-0100"
+        address:
+          type: string
+          description: "Street line of the delivery address, optional"
+          example: "1 Riverside Walk"
+        city:
+          type: string
+          description: "City of the delivery address, optional"
+          example: "Springfield"
+        state:
+          type: string
+          description: "State or region of the delivery address, optional"
+          example: "OR"
+        zip:
+          type: string
+          description: "Postal code of the delivery address, optional"
+          example: "97475"
+        country:
+          type: string
+          description: "Country of the delivery address, optional"
+          example: "USA"
+
+    Customer:
+      x-model-id: MDL036
+      code_refs:
+        - path: services/customer-service/Models/Customer.cs
+          role: model
+          description: >
+            The customer record the service returns from every read on the collection.
+      purpose: read-model
+      description: >
+        The whole account as this context returns it, to the shopper reading
+        their own record and to an operator reading somebody else's. There is
+        one shape for both, which is the model saying plainly that no
+        field-level view and no permission exist here.
+      represents:
+        - concept: customers.CN001
+          kind: persistence
+          mapping:
+            strategy: property-map
+            property_map:
+              customerId: customers.CAT001
+              name: customers.CAT002
+              email: customers.CAT003
+              address: customers.CAT004
+              isActive: customers.CAT005
+      type: object
+      required:
+        - id
+        - name
+        - email
+        - phone
+        - address
+        - city
+        - state
+        - zip
+        - country
+        - isActive
+      properties:
+        id:
+          $ref: "#/components/x-field/CustomerId"
+        name:
+          type: string
+          description: "The person's full name"
+          example: "Alice Johnson"
+        email:
+          $ref: "#/components/x-field/EmailAddress"
+        phone:
+          type: string
+          description: "Contact number as the customer typed it"
+          example: "+1-555-0100"
+        address:
+          type: string
+          description: "Street line of the delivery address"
+          example: "742 Evergreen Terrace"
+        city:
+          type: string
+          description: "City of the delivery address"
+          example: "Springfield"
+        state:
+          type: string
+          description: "State or region of the delivery address"
+          example: "OR"
+        zip:
+          type: string
+          description: "Postal code of the delivery address"
+          example: "97477"
+        country:
+          type: string
+          description: "Country of the delivery address"
+          example: "USA"
+        isActive:
+          type: boolean
+          description: >
+            Whether the account is live. Returned to every caller and acted on
+            by two of them, both by omission rather than by decision: List
+            Customers leaves an inactive account out of its result, and Get
+            Customer Discounts answers for one with an empty discount set. No
+            operation writes it.
+          example: true
+
+    Discount:
+      x-model-id: MDL037
+      code_refs:
+        - path: services/customer-service/Models/Discount.cs
+          role: model
+          description: >
+            The discount line the account carries into an order's price.
+      purpose: shared
+      description: >
+        One standing concession on a customer's account. Shared rather than a
+        read-model because the order flow receives this exact shape when it
+        prices a line, so it is a wire format between two contexts and not
+        only a page's data.
+      represents:
+        - concept: customers.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              discountType: customers.CAT006
+              amount: customers.CAT007
+              percentage: customers.CAT008
+      type: object
+      required:
+        - type
+        - amount
+      properties:
+        type:
+          type: string
+          description: >
+            What kind of concession this is. Free text, not a closed set, so
+            two shops' worth of vocabulary can accumulate here with nothing to
+            stop it.
+          example: "loyalty"
+        amount:
+          type: number
+          format: double
+          minimum: 0
+          description: "Absolute reduction in the order's currency; zero when the concession is proportional"
+          example: 10
+        percentage:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: "Proportional reduction, when the concession is expressed that way instead"
+          example: 5
+        description:
+          type: string
+          description: "Why this customer has it, in words a support operator can read out"
+          example: "Loyalty tier: 5% off every order"
+
+
+    CustomerDiscountsResponse:
+      x-model-id: MDL039
+      code_refs:
+        - path: services/customer-service/Models/CustomerDiscountsResponse.cs
+          role: model
+          description: >
+            The wrapper the discounts read answers with: a customer id and a list. An empty
+            list is the one customers.FN001 is about - the class cannot say which of the
+            three situations produced it.
+      purpose: shared
+      description: >
+        The envelope Get Customer Discounts answers with: the customer the
+        concessions belong to, and the concessions. Shared rather than a
+        read-model because the order flow deserializes this exact shape while
+        it prices a line, so it is a wire format between two contexts before it
+        is a page's data. The customer id is echoed back although the caller
+        supplied it in the path, which is what lets a caller holding several
+        responses tell them apart.
+      represents:
+        - concept: customers.CN002
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              discountType: customers.CAT006
+              amount: customers.CAT007
+              percentage: customers.CAT008
+      type: object
+      required:
+        - customerId
+        - discounts
+      properties:
+        customerId:
+          $ref: "#/components/x-field/CustomerId"
+        discounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Discount"
+          description: >
+            Every standing concession on the account, in no stated order. An
+            empty array is the answer for a customer who has earned none and
+            equally for one whose account is not active, and the caller
+            substitutes an empty array of its own when the read fails, so the
+            three cases are indistinguishable downstream (customers.FN001).
+          example: []
+
+    CustomerList:
+      x-model-id: MDL040
+      purpose: read-model
+      description: >
+        Every active account, as List Customers returns it: a bare array with
+        no envelope, no total and no cursor, so a caller cannot tell a complete
+        answer from a truncated one. Accounts that are not active are absent
+        rather than flagged, which is the one place in this model where
+        `isActive` changes what a caller sees.
+      represents:
+        - concept: customers.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              customerId: customers.CAT001
+              name: customers.CAT002
+              email: customers.CAT003
+              isActive: customers.CAT005
+      type: array
+      items:
+        $ref: "#/components/schemas/Customer"
+    SignInRequest:
+      x-model-id: MDL044
+      code_refs:
+        - path: services/customer-service/Models/SignInRequest.cs
+          role: model
+          description: >
+            The credentials body, shared by both sign-in routes. The field is called `Login`
+            rather than `Email`, although for a shopper the email is the login.
+      purpose: command-payload
+      description: >
+        A login and a password offered in exchange for a session token. One shape
+        serves both sign-ins, the shopper's and the operator's, because the
+        credential is the same kind of thing on both records and the shop had no
+        reason to invent two.
+        Both fields are required, and that is the whole of the validation the
+        shape carries: nothing here says the login looks like an email address,
+        although in practice it always is one, and nothing says how long the
+        password must be - the length rule lives on registration
+        (RegisterCustomerRequest) and a sign-in only has to match what was
+        already stored.
+      represents:
+        - concept: customers.CN004
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              login: customers.CAT012
+              password: customers.CAT013
+      type: object
+      required:
+        - login
+        - password
+      properties:
+        login:
+          type: string
+          description: >
+            The account's login, which is the email address on the record. Named
+            `login` rather than `email` because that is what the field is for
+            here: it identifies rather than contacts.
+          example: "john.doe@example.com"
+        password:
+          type: string
+          description: >
+            The password as typed. It is compared against a stored PBKDF2-SHA256
+            digest and then discarded; no response in this model returns it or
+            anything derived from it.
+          example: "shopper-demo-2026"
+
+    CustomerSession:
+      x-model-id: MDL045
+      code_refs:
+        - path: services/customer-service/Models/CustomerSession.cs
+          role: model
+          description: >
+            What a shopper's sign-in answers with: the opaque token and the customer record
+            behind it. The token is a key into this service's own store, which is why it is
+            not the JWT orders.SEC001 asks for.
+      purpose: read-model
+      description: >
+        What a successful shopper sign-in hands back: the token to send on later
+        requests, and the customer it was issued for. The customer travels with
+        the token so the storefront can render a name without a second call, and
+        the token travels alone thereafter - it is the only thing the browser
+        keeps, and Get Customer Session (customers.QRY004) is how the person
+        behind it is recovered on the next load.
+      represents:
+        - concept: customers.CN003
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              token: customers.CAT009
+        - concept: customers.CN001
+          kind: api
+          mapping:
+            strategy: same-names
+      type: object
+      required:
+        - token
+        - customer
+      properties:
+        token:
+          type: string
+          description: >
+            Opaque session token, sent back as `Authorization: Bearer <token>`.
+            It is a key into one service's in-memory map: it carries no claims,
+            no signature and no expiry, and it means nothing anywhere else.
+          example: "s_7f3c19a84e2b46d1"
+        customer:
+          $ref: "#/components/schemas/Customer"
+
+    OperatorSession:
+      x-model-id: MDL046
+      code_refs:
+        - path: services/customer-service/Models/OperatorSession.cs
+          role: model
+          description: >
+            The operator half of the same shape, over the `/operators` collection.
+      purpose: read-model
+      description: >
+        The operator half of the same answer: a token in the same token space,
+        and the operator record it belongs to. The operator is described inline
+        rather than as a schema of its own because this model declares no
+        operator concept and no other operation over that collection - the
+        session is the one place the shop's own specifications meet an operator
+        record, and customers.QN005 is where that is left open.
+      represents:
+        - concept: customers.CN003
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              token: customers.CAT009
+      type: object
+      required:
+        - token
+        - operator
+      properties:
+        token:
+          type: string
+          description: >
+            Opaque session token, indistinguishable in shape from a shopper's and
+            held in the same store. What separates them is the principal kind
+            recorded against it (customers.CAT010), which is why an operator
+            token is refused by the customer session read.
+          example: "s_2b8de41c05f7a396"
+        operator:
+          type: object
+          description: >
+            The signed-in operator, as the service returns it. Its `role` is the
+            field customers.DC003 wants an admin gate to read, and nothing in
+            this shop reads it.
+          required:
+            - id
+            - name
+            - email
+            - role
+          properties:
+            id:
+              type: string
+              description: "Opaque operator identifier, the key the session token resolves to"
+              example: "operator-4"
+            name:
+              type: string
+              description: "The operator's full name, shown in the back office topbar beside their role"
+              example: "Nina Osei"
+            email:
+              type: string
+              format: email
+              description: "The operator's address, which is also the login they sign in with"
+              example: "nina.osei@example.com"
+            role:
+              type: string
+              description: >
+                What the shop calls this operator's job. Free text, read by no
+                gate, and the empty seat customers.FN002 records.
+              example: "support"
+            isActive:
+              type: boolean
+              description: "Whether the operator record is live. No operation in this model writes it"
+              example: true
+
+  x-field:
+    CustomerId:
+      type: string
+      description: >
+        Opaque customer identifier. The only part of a customer that leaves
+        this context on anything other than a direct read - every order in the
+        shop carries one and nothing else about the person.
+      example: "customer-1"
+    EmailAddress:
+      type: string
+      format: email
+      description: >
+        Contact address. Checked for shape and never for reachability, so a
+        well-formed address nobody reads is indistinguishable here from a
+        working one.
+      example: "alice@example.com"

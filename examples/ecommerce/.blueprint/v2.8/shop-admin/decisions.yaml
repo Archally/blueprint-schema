@@ -1,0 +1,72 @@
+version: "1.0.0"
+scope: shop-admin
+owned_by:
+  team: TM002
+tags: [write-side, back-office]
+decisions:
+  - id: shop-admin.DC001
+    title: "Call the catalog admin API directly; stage nothing"
+    summary: "The back office is a client of Catalog, with no store of its own and no draft state"
+    date: "2025-09"
+    status: accepted
+    rationale:
+      problem: >
+        A back office that maintains a product range can either hold the range
+        itself - a staging copy the manager edits freely, reviews as a whole
+        and publishes in one act - or it can be a thin surface over the
+        commands Catalog already exposes, where each edit is an immediate call
+        and there is nothing to review because there is nothing held back.
+      options:
+        - "Stage the range locally, let the manager edit and review, then publish the batch to Catalog"
+        - "Call Publish Product, Update Product Price and Create Category directly and hold nothing"
+      chosen: >
+        Call directly. Staging buys a review step and a bulk change, and costs
+        a second copy of the product range that has to be reconciled with the
+        real one. Catalog publishes no events (catalog.DC001), so a staged copy
+        could only be refreshed by polling and could diverge without anyone
+        finding out - the same objection that settled storefront.DC001 on the
+        read side. The three commands already exist, already carry their rules,
+        and are already exposed by catalog-admin-api, so the direct route needs
+        no capability the shop does not have. What it gives up is stated in
+        shop-admin.BD001 rather than hidden here.
+    motivation_refs:
+      assumptions: [shop-admin.ASM001, shop-admin.ASM002, shop-admin.ASM003]
+      questions: [shop-admin.QN002]
+    declared_impact:
+      direct:
+        concepts: [shop-admin.CN001, shop-admin.CN002]
+        operations:
+          - catalog.CMD001
+          - catalog.CMD002
+          - catalog.CMD003
+      transitive_hints:
+        - "Every manager action is a live change to what shoppers see, with no interval in which it could be checked"
+        - "This context handles no operation of its own by design; the empty-context warning it raises is the shape, not a gap"
+        - "If Catalog ever published a ProductPriceChanged event, both the staging option and the confirmation shop-admin.QN002 asks for become buildable"
+    owned_by:
+      team: TM002
+    consequences:
+      positive:
+        - "One copy of the product range exists, and Catalog owns it"
+        - "A correction reaches shoppers as fast as a mistake does"
+        - "Every rule that governs a catalog change is applied in the context accountable for it, not re-implemented here"
+      negative:
+        - "No review step, so a mistyped price is live immediately (shop-admin.BD001)"
+        - "No batch: repricing a category is one call per product, and a half-finished batch leaves the range inconsistent with no record that it was ever a batch"
+        - "No undo, because nothing anywhere recorded the previous value (shop-admin.QN002)"
+    tags: [integration, write-side]
+business_decisions:
+  - id: shop-admin.BD001
+    name: "A catalog change is live the moment it is saved"
+    description: >
+      There is no draft, no approval and no scheduled effective date. The
+      manager who types a price is the only person who sees it before shoppers
+      do. The shop accepts this because the alternative - a review queue - puts
+      a person between a wrong price and its correction, and the shop judges a
+      slow correction worse than a fast mistake. The cost is that the blast
+      radius of a typo is every shopper reading that product until someone
+      notices, and nothing in the model notices: Catalog raises no event, keeps
+      no history and has no rule bounding how far a price may move in one edit.
+    domain_scope: shop-admin
+    linked_contexts: [catalog]
+    tags: [governance, risk]

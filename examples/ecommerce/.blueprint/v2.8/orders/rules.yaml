@@ -1,0 +1,179 @@
+version: "1.1.0"
+scope: orders
+owned_by:
+  team: TM001
+structural:
+  - id: orders.SR001
+    code_refs:
+      - path: services/orders-service/src/server.ts
+        role: validation
+        description: >
+          Enforced on the create route: the body is refused with 400 when `items` is absent
+          or empty, so no order is ever stored with no line.
+    name: "Order must have items"
+    summary: "An order requires at least one line"
+    logic:
+      then: "Order.lines.count > 0"
+    modality: necessary
+    concepts: [orders.CN001]
+
+# The Order lifecycle, stated as the six moves that are legal and nothing else.
+#
+# It is a forward path with one exit. pending, confirmed, shipped, delivered is the path;
+# cancelled is reachable from every state on it except the last. Everything else is
+# refused: no step may be skipped, no step may be taken back, and a delivered order is
+# final in the strong sense - it cannot even be cancelled.
+#
+# These six replace orders.TR001, which moved an order from draft to submitted. Neither of
+# those states exists any more (orders.DC002), so the rule that moved between them could
+# not stay. What each of these rules is a statement about is orders.CMD004, the one
+# operation that performs a transition; and what none of them is a statement about is who
+# may perform it, because nothing in this shop asks.
+transition:
+  - id: orders.TR002
+    code_refs:
+      - path: services/orders-service/src/server.ts
+        role: validation
+        description: >
+          The forward-path branch of `validNextStatuses`: `pending` is at index 0 of
+          ORDER_FORWARD_PATH, so the only forward move it offers is `confirmed`. The path
+          itself is declared in src/orders/OrderStatus.ts.
+    name: "Confirm a pending order"
+    summary: "pending to confirmed - the first step of the forward path"
+    concept: orders.CN001
+    from: pending
+    to: confirmed
+    modality: obligatory
+    rationale: >
+      An order is accepted before anything is picked for it. It is the only
+      move out of pending other than cancelling, so an order cannot be shipped
+      without having been confirmed first.
+    on_violation:
+      action: reject
+      code: 400
+      message: "Cannot move an order from its current status to that one"
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: "the order service's status endpoint"
+          summary: >
+            The forward path and the cancel exit are computed per current
+            status and the move is refused when the requested status is not in
+            the result.
+          confidence_impact: supports
+
+  - id: orders.TR003
+    code_refs:
+      - path: services/orders-service/src/server.ts
+        role: validation
+        description: >
+          The cancel branch of `validNextStatuses`, which adds `cancelled` for every status
+          that is neither `cancelled` nor `delivered`. One branch produces this rule,
+          orders.TR005 and orders.TR007 alike - the code does not distinguish the three.
+    name: "Cancel a pending order"
+    summary: "pending to cancelled - before anything has been promised"
+    concept: orders.CN001
+    from: pending
+    to: cancelled
+    modality: permitted
+    rationale: >
+      The cheapest cancellation there is: nothing has been reserved on the
+      strength of this order and nothing has moved. It is the one cancel edge a
+      customer would plausibly want themselves, and no customer-facing
+      operation reaches it (orders.QN003).
+    on_violation:
+      action: reject
+      code: 400
+
+  - id: orders.TR004
+    code_refs:
+      - path: services/orders-service/src/server.ts
+        role: validation
+        description: >
+          The forward-path branch of `validNextStatuses` at `confirmed`, whose successor in
+          ORDER_FORWARD_PATH is `shipped`.
+    name: "Ship a confirmed order"
+    summary: "confirmed to shipped - the second step of the forward path"
+    concept: orders.CN001
+    from: confirmed
+    to: shipped
+    modality: obligatory
+    rationale: >
+      The order leaves the shop. Recorded by an operator from outside anything
+      this model describes - nothing in the shop observes a parcel being
+      handed over, so this transition is a person's report and not an
+      observation.
+    on_violation:
+      action: reject
+      code: 400
+
+  - id: orders.TR005
+    code_refs:
+      - path: services/orders-service/src/server.ts
+        role: validation
+        description: >
+          The same cancel branch as orders.TR003. Nothing here releases the reservation the
+          submission placed, which is what this rule's rationale warns about.
+    name: "Cancel a confirmed order"
+    summary: "confirmed to cancelled - after acceptance, before dispatch"
+    concept: orders.CN001
+    from: confirmed
+    to: cancelled
+    modality: permitted
+    rationale: >
+      An order the shop has accepted can still be stopped while it is in the
+      building. Stock was reserved against it when it was submitted
+      (inventory.CMD001) and nothing in this transition releases that
+      reservation, so cancelling here leaves stock held for an order that will
+      never ship.
+    on_violation:
+      action: reject
+      code: 400
+
+  - id: orders.TR006
+    code_refs:
+      - path: services/orders-service/src/server.ts
+        role: validation
+        description: >
+          The last forward move `validNextStatuses` offers: `shipped` is at the final index
+          but one, so its successor is `delivered` and `delivered` itself yields an empty
+          list - terminal, including for cancelling.
+    name: "Deliver a shipped order"
+    summary: "shipped to delivered - the last step of the forward path"
+    concept: orders.CN001
+    from: shipped
+    to: delivered
+    modality: obligatory
+    rationale: >
+      The order arrived. Terminal, so this is the last thing that can be
+      recorded about an order that went well, and the shop keeps no record of
+      when it was recorded or by whom.
+    on_violation:
+      action: reject
+      code: 400
+
+  - id: orders.TR007
+    code_refs:
+      - path: services/orders-service/src/server.ts
+        role: validation
+        description: >
+          The same cancel branch again. That the most arguable edge in this lifecycle is
+          produced by the same two lines as the least arguable one is the point: the code
+          states a blanket rule where the model states six separate ones.
+    name: "Cancel a shipped order"
+    summary: "shipped to cancelled - after dispatch, before arrival"
+    concept: orders.CN001
+    from: shipped
+    to: cancelled
+    modality: permitted
+    rationale: >
+      Legal, and the one edge in this lifecycle worth arguing about. An order
+      already with the carrier can be cancelled outright, and the model has no
+      state for a parcel that is in transit to a customer who is no longer
+      expecting it. Whether a returned, refused or recalled delivery is the
+      same thing as a cancellation is a question this vocabulary cannot ask.
+    on_violation:
+      action: reject
+      code: 400

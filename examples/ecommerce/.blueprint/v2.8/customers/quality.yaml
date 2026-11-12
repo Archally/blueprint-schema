@@ -1,0 +1,223 @@
+version: "1.0.0"
+scope: customers
+owned_by:
+  team: TM003
+tags: [generic-domain, account]
+metrics:
+  - id: customers.MT001
+    name: Consumer-pact interactions the customer service fails
+    description: >
+      How many of the interactions its three consumers' pacts state (the order service, the
+      back office and the storefront) the running customer service does not honour. The
+      pacts are generated from this model, so a failure is a place where the service and the
+      model disagree about what the service answers, and the count falls as either is
+      corrected. customers.FF001 holds the line on it.
+    type: custom
+    unit: count
+    quality_characteristic: compatibility
+    quality_subcharacteristic: interoperability
+    collection:
+      method: automated
+      source: "the three consumer pacts the contract generator writes from this model"
+      status: measured
+      probe_ref: PRB003
+      # The results are the verifier's report, produced on each run and not stored. The
+      # command runs from the shop repository's root, with the customer service listening.
+      results_location: make verify-customer-service
+kpis:
+  - id: customers.KPI001
+    name: "Orders priced with an empty discount set"
+    description: >
+      Measures customers.ASM003 directly. The order flow falls back to no
+      discounts when it cannot read them, so this counts the orders a customer
+      was overcharged on without anybody being told. It is countable only from
+      the order side - this context never learns that a read of it failed -
+      which is itself the point: the context that causes the loss cannot see
+      it.
+    target: "0"
+    window: "7d rolling"
+    domain_scope: customers
+    thresholds:
+      warning: "1"
+      critical: "10"
+  - id: customers.KPI002
+    name: "Accounts sharing an email address"
+    description: >
+      Measures customers.ASM001. Every duplicate is a person the shop is
+      treating as two customers, each with their own discount history and
+      neither with the full one. Nothing in the model prevents it and nothing
+      reports it, so the figure says how much of the loyalty programme is
+      leaking rather than how well it works.
+    target: "0"
+    window: "30d rolling"
+    domain_scope: customers
+    thresholds:
+      warning: "1"
+      critical: "25"
+findings:
+  - id: customers.FN001
+    title: "Three different situations reach the pricing step as one empty discount set"
+    summary: "Nothing earned, account not active, and read failed are indistinguishable at the caller"
+    kind: missing-abstraction
+    quality_characteristic: functional-suitability
+    quality_subcharacteristic: functional-correctness
+    severity: high
+    status: open
+    certainty: confirmed
+    discovery_stage: validated
+    statement: >
+      Get Customer Discounts (customers.QRY002) answers 200 with an empty
+      discount set in two different situations. A customer who has earned no
+      concession gets one, and so does a customer whose account is not active -
+      the service looks the account up, finds it, sees the flag, and returns
+      nothing rather than refusing. The order flow then adds a third: when the
+      read fails for any reason it substitutes an empty set of its own and
+      carries on (customers.ASM003).
+      All three arrive at the pricing step as the same value, and the price
+      struck from it is the full list price. Nobody is told in any of the three
+      cases. The customer sees a total they have no way to question, the
+      operator sees an order priced correctly by the only record anyone keeps,
+      and this context never learns that a read of it was answered emptily or
+      failed at all. customers.KPI001 counts the resulting orders from the
+      order side, which is the only side that can see them, and it cannot say
+      which of the three causes produced any one of them.
+    recommendation: >
+      Do not fix this by making the empty set an error - two of the three cases
+      are legitimate answers. The distinction the caller needs is between an
+      answer and the absence of one. Three readings are open and they are
+      different decisions: the response gains a field that says why it is empty,
+      in which case Customers has to decide what an inactive account means to a
+      price; the order flow stops substituting and refuses to price without
+      discounts, in which case an outage here stops the shop rather than quietly
+      discounting it; or the shop accepts the loss and instruments it, which is
+      what customers.KPI001 already does and is the only one of the three that
+      is built. Whoever picks needs to know what the shop owes a suspended
+      customer, which is not a fact the code carries.
+    affects:
+      operation_refs:
+        - customers.QRY002
+        - orders.CMD003
+      concept_refs:
+        - customers.CN001
+        - customers.CN002
+      context_refs:
+        - customers
+        - orders
+    risk_refs:
+      - customers.RSK003
+    tags: [pricing, silent-failure]
+
+  - id: customers.FN002
+    title: "Account closure is decided for the storefront and built in the back office"
+    summary: "A decided surface with no code, a built surface the decision retires, and a role nothing reads"
+    kind: drift
+    quality_characteristic: functional-suitability
+    quality_subcharacteristic: functional-appropriateness
+    severity: medium
+    status: open
+    certainty: confirmed
+    discovery_stage: validated
+    statement: >
+      customers.DC003 decided that closing an account is an administrator's
+      act, performed on the storefront under an admin role. The running shop
+      does neither half of that. The storefront has no way to close an account
+      at all - its customer client carries a read, a create and an update and
+      no delete - and the back office has the delete, on the customer detail
+      screen, reached by anybody who can open the back office.
+      The admin role now has half of what it needs and not the other half, and
+      this entry was rewritten on 2026-09-25 because the first half arrived. A
+      session exists: the customer service issues an opaque token at
+      /operators/sign-in (customers.CMD006), the back office refuses every screen
+      until an operator has one, and each front end re-reads the person behind its
+      token on every load. So an operator is now a named caller rather than
+      whoever opened a page.
+      The missing half is the role. An operator record carries one, and nothing
+      reads it: not the sign-in, not the session read, not a screen, not an
+      endpoint. And nothing checks a token before answering either
+      (customers.RSK004), so a gate written against the role today would be a
+      browser-side redirect over an open service. The identity half of the
+      decision has a home; the permission half has none.
+      This entry exists so the decision does not read as a description. MIG007
+      holds the model change and is deliberately not applied; neither call list
+      in eshop.arch.yaml has been moved ahead of the code.
+    recommendation: >
+      The change is small in the storefront and not small overall. Adding the
+      call and a control is a few lines in the storefront's API client and its
+      account page, and removing the back office's delete is a similar amount
+      in the other direction. The cost is still the gate between them, and the
+      sign-in that landed made it cheaper rather than unnecessary: an admin role
+      that means anything now needs a service to read the token it already has,
+      which is customers.RSK004's work and not a second sign-in. Until an
+      endpoint refuses a caller, an admin-only control on a public storefront is
+      a hidden button rather than a permission - and the storefront serving two
+      kinds of user is still the decision about operators (customers.QN005) that
+      has to come first.
+    decision_refs:
+      - customers.DC003
+    migration_ref: MIG007
+    affects:
+      operation_refs:
+        - customers.CMD003
+        - customers.CMD006
+        - customers.QRY005
+      concept_refs:
+        - customers.CN001
+        - customers.CN003
+      context_refs:
+        - customers
+        - storefront
+        - shop-admin
+    risk_refs:
+      - customers.RSK004
+    tags: [governance, surface, authentication, authorization]
+
+  - id: customers.FN003
+    title: "Both session shapes are fully required in the model and carry no requiredness in the class"
+    summary: "token and the principal are required on CustomerSession and OperatorSession here; neither class says so"
+    kind: drift
+    quality_characteristic: functional-suitability
+    quality_subcharacteristic: functional-correctness
+    severity: low
+    status: open
+    certainty: confirmed
+    discovery_stage: validated
+    statement: >
+      CustomerSession (MDL045) requires `token` and `customer`; OperatorSession
+      (MDL046) requires `token` and `operator`. Every field name matches its
+      class one for one, and neither `CustomerSession.cs` nor
+      `OperatorSession.cs` carries a data annotation, so the classes state no
+      requiredness at all.
+      These are what a sign-in answers with, so the claim is about what the
+      service always sends rather than about what it will accept. A storefront
+      generated from this model would read `token` without checking it; a
+      storefront generated from the class would check it. Both classes do in
+      fact always populate both fields, which is why this is low severity and
+      why it is still a disagreement: nothing in either artefact says the other
+      is wrong, and nothing enforces either reading.
+      Recorded here and in inventory.FN002 as two entries rather than one,
+      because each names the schemas its own slice owns. They are the same
+      observation about the same language.
+    recommendation: >
+      This is the cheaper half of the same question inventory.FN002 asks, and it
+      should be answered the same way for the whole shop rather than twice. If a
+      read-model in this model may state requiredness the code does not enforce,
+      say so once, in the model README, and this entry closes as accepted. If it
+      may not, both classes take the C# `required` modifier and the claim moves
+      to where it can be checked.
+    affects:
+      concept_refs:
+        - customers.CN003
+      context_refs:
+        - customers
+    code_refs:
+      - path: services/customer-service/Models/CustomerSession.cs
+        role: model
+        description: >
+          No data annotation, so `token` and `customer` are stated required only
+          by the model.
+      - path: services/customer-service/Models/OperatorSession.cs
+        role: model
+        description: >
+          No data annotation, so `token` and `operator` are stated required only
+          by the model.
+    tags: [model-code-divergence, validation]

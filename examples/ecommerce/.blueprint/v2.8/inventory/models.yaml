@@ -1,0 +1,137 @@
+version: "1.0.0"
+scope: inventory
+components:
+  schemas:
+    ReserveStockRequest:
+      x-model-id: MDL030
+      code_refs:
+        - path: services/inventory-service/Models/ReserveStockRequest.cs
+          role: model
+          description: >
+            The reservation body the inventory controller binds. `OrderId` is a `Guid` in the
+            class and a string in this schema.
+      purpose: command-payload
+      type: object
+      description: "Request to reserve stock for an order line"
+      required:
+        - productSku
+        - quantity
+        - orderId
+      properties:
+        productSku:
+          $ref: "#/components/x-field/ProductSku"
+        quantity:
+          type: integer
+          minimum: 1
+          description: "Number of units to reserve"
+        orderId:
+          type: string
+          format: uuid
+          description: "Order that requires this reservation"
+
+    Reservation:
+      x-model-id: MDL031
+      code_refs:
+        - path: services/inventory-service/Models/Reservation.cs
+          role: model
+          description: >
+            What a successful reservation answers with, including the expiry the model does
+            not carry: the class holds `ExpiresAt`, so a reservation in the running shop
+            lapses and nothing in this model says when.
+      purpose: read-model
+      type: object
+      description: "Active stock reservation"
+      required:
+        - reservationId
+        - productSku
+        - quantity
+        - status
+      properties:
+        reservationId:
+          type: string
+          format: uuid
+        productSku:
+          $ref: "#/components/x-field/ProductSku"
+        quantity:
+          type: integer
+          minimum: 1
+        orderId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - active
+            - fulfilled
+            - released
+            - expired
+        expiresAt:
+          type: string
+          format: date-time
+
+    StockLevel:
+      x-model-id: MDL032
+      code_refs:
+        - path: services/inventory-service/Models/StockLevel.cs
+          role: model
+          description: >
+            The stock read's answer: available, reserved and total against one SKU.
+      purpose: read-model
+      type: object
+      description: "Current stock level for a product"
+      required:
+        - productSku
+        - available
+        - reserved
+      properties:
+        productSku:
+          $ref: "#/components/x-field/ProductSku"
+        available:
+          type: integer
+          minimum: 0
+          description: "Units available for sale"
+        reserved:
+          type: integer
+          minimum: 0
+          description: "Units reserved by pending orders"
+        total:
+          type: integer
+          minimum: 0
+          description: "Total units in warehouse"
+
+    StockReservedEvent:
+      x-model-id: MDL033
+      purpose: event-payload
+      type: object
+      description: "Domain event: stock reserved for an order"
+      required:
+        - eventId
+        - productSku
+        - quantity
+        - orderId
+        - occurredAt
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        productSku:
+          $ref: "#/components/x-field/ProductSku"
+        quantity:
+          type: integer
+          minimum: 1
+        orderId:
+          type: string
+          format: uuid
+        remainingStock:
+          type: integer
+          minimum: 0
+        occurredAt:
+          type: string
+          format: date-time
+
+  x-field:
+    ProductSku:
+      type: string
+      description: "Unique product SKU identifier"
+      pattern: "^[A-Z0-9-]{3,20}$"
+      example: "LAPTOP-001"

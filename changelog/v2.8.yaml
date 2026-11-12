@@ -5,6 +5,39 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.90"
+    date: "2026-11-12"
+    step: "ecommerce v2.8 and eShop are public examples"
+    summary: |
+      Two v2.8 models join the examples. examples/ecommerce/.blueprint/v2.8 is the complete
+      ecommerce teaching model, with its contexts, architecture, governance and nine migration
+      files. MIG004 (Add loyalty program) is an intentionally invalid migration that shows how a
+      replay reports an error, so a full TO-BE replay stops there; the other migrations replay
+      within their own dependency closures. examples/eshop/.blueprint/v2.8 models one order journey
+      through dotnet/eShop, the .NET reference application, and keeps its attribution: dotnet/eShop
+      is licensed under the MIT licence, (c) .NET Foundation and Contributors.
+
+      The v2.6 ecommerce example is unchanged and independent: validate:examples, check:examples
+      and render:ecommerce still read examples/ecommerce/.blueprint/v2.6. Four new commands check
+      the v2.8 models, validate:ecommerce:v28, validate:eshop:v28, check:ecommerce:v28 and
+      check:eshop:v28, and CI runs all four. docs/2026-11-12-ecommerce-and-eshop-examples.md names
+      the validation command of each example.
+
+      A model is not the schema: the set of documents the schema accepts is unchanged from 2.8.89.
+      No instance migration is required.
+    changes:
+      - kind: add
+        semver: none
+        target: examples/ecommerce/.blueprint/v2.8
+        notes: "The complete ecommerce v2.8 model and its nine migration files; MIG004 (Add loyalty program) stays as the replay's negative example."
+      - kind: add
+        semver: none
+        target: examples/eshop/.blueprint/v2.8
+        notes: "One order journey through dotnet/eShop, with its MIT licence attribution."
+      - kind: docs
+        semver: none
+        target: docs/2026-11-12-ecommerce-and-eshop-examples.md
+        notes: "The three ecommerce and eShop example directories and the validation command of each."
   - version: "2.8.89"
     date: "2026-11-12"
     step: "a render target names its view per slice"

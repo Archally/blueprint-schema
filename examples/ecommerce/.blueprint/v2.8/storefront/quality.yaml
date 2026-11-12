@@ -1,0 +1,181 @@
+version: "1.0.0"
+scope: storefront
+owned_by:
+  team: TM003
+tags: [read-side, customer-facing]
+# Two metrics and the two service levels set on them. Neither metric carries a result:
+# `collection` says whether each is measured, by which instrument (eshop.arch.yaml
+# `probes`) and, once it is, where its results are kept.
+metrics:
+  - id: storefront.MT001
+    name: Shop availability
+    description: >
+      Share of the time the shop answers a shopper at all, read as the four services
+      answering their health routes. The storefront holds no state of its own
+      (storefront.DC001), so its availability is the composition of theirs and this is the
+      one place the model states it.
+    type: availability
+    unit: "%"
+    quality_characteristic: reliability
+    quality_subcharacteristic: availability
+    collection:
+      method: automated
+      source: "the GET /health route of each of the four services"
+      # The routes exist and the preflight script reads them once before a demo. Nothing
+      # polls them on a schedule or keeps the answers, so the instrument is there and the
+      # measurement is not.
+      status: not-measured
+      probe_ref: PRB001
+  - id: storefront.MT002
+    name: Storefront interaction latency
+    description: >
+      How long a shopper waits, from the act on a storefront screen to the answer on it, for
+      each act that calls a service: registering, signing in or out, placing an order and
+      submitting it (storefront/interactions.yaml, `triggers_operations`). It is what the
+      shopper experiences, so it includes the browser's round trip and not only the
+      service's own time, which is what orders.MT001 reads on one of these five.
+    type: latency
+    unit: ms
+    measures:
+      operations:
+        - customers.CMD001
+        - customers.CMD004
+        - customers.CMD005
+        - orders.CMD003
+        - orders.CMD001
+    quality_characteristic: performance-efficiency
+    quality_subcharacteristic: time-behaviour
+    collection:
+      method: automated
+      source: "a timer in the storefront around each act that calls a service"
+      # Nothing in the storefront times an interaction today. PRB002 is that timer,
+      # declared before it exists, and WI016 is the work that builds it.
+      status: no-instrument
+      probe_ref: PRB002
+      work_item_ref: WI016
+slos:
+  - id: storefront.SLO001
+    name: The shop runs around the clock
+    description: >
+      The shop is open to shoppers at every hour of every day, with no maintenance window.
+      The figure is a proposal: nobody has agreed one yet, and the provenance says so.
+      `window` holds the service hours the requirement names; the period the percentage is
+      taken over, a calendar month, is stated in `target`.
+    target: "Available 24/7, at least 99.9% of every calendar month"
+    objective:
+      comparator: ge
+      value: 99.9
+    metric: storefront.MT001
+    window: "24/7"
+    provenance:
+      discovery_stage: hypothesis
+      certainty: speculative
+      evidence:
+        - kind: assumption
+          date: "2026-10-04"
+          summary: >
+            99.9% is a figure proposed for the demonstration. The product owner has stated
+            the 24/7 requirement and no figure for it.
+  - id: storefront.SLO002
+    name: Storefront interactions answer within one second
+    description: >
+      A shopper's act on a storefront screen does not keep them waiting longer than one
+      second, for 99 of every 100 such acts. Agreed by the product owner; it cannot be read
+      yet, because the instrument it needs is still to be built (storefront.MT002).
+    target: "99% of storefront interactions answer within 1 s"
+    objective:
+      comparator: lt
+      value: 1000
+      statistic: p99
+    metric: storefront.MT002
+    operations:
+      - customers.CMD001
+      - customers.CMD004
+      - customers.CMD005
+      - orders.CMD003
+      - orders.CMD001
+    provenance:
+      discovery_stage: committed
+      certainty: confirmed
+      evidence:
+        - kind: stakeholder-signoff
+          source: "product owner"
+          date: "2026-10-04"
+          summary: >
+            The product owner set this budget: a storefront interaction does not block for
+            longer than one second for 99% of interactions. The instrument that reads it is
+            placed on the roadmap as WI016.
+kpis:
+  - id: storefront.KPI001
+    name: "Page render success rate"
+    description: >
+      Verifies storefront.ASM001 from the other side. Because nothing is cached,
+      this number is the composition of four upstreams' availability and not a
+      property the storefront can improve on its own.
+    target: "> 99.5%"
+    window: "30d rolling"
+    domain_scope: storefront
+    thresholds:
+      warning: "99.5%"
+      critical: "98%"
+  - id: storefront.KPI002
+    name: "Product pages rendered without an availability line"
+    description: >
+      Counts the degradation storefront.BD001 permits. Every one of these is a
+      shopper shown a product with nothing said about whether it can be bought,
+      so the figure is how often the policy is actually being exercised rather
+      than merely allowed.
+    target: "< 1%"
+    window: "7d rolling"
+    domain_scope: storefront
+    thresholds:
+      warning: "1%"
+      critical: "5%"
+findings:
+  - id: storefront.FN001
+    title: "The product page is described as composing two contexts and composes two different ones"
+    summary: "ProductPage says catalog plus inventory; the page reads catalog and orders, and takes availability off the product"
+    kind: drift
+    quality_characteristic: maintainability
+    quality_subcharacteristic: analysability
+    severity: low
+    status: open
+    certainty: confirmed
+    discovery_stage: validated
+    statement: >
+      ProductPage (storefront.CN001) is defined as the product detail a shopper
+      reads, with name, price and category from the catalog and availability
+      from inventory, and its definition gives that split as the reason it is a
+      concept here rather than a copy of an upstream shape: Catalog knows
+      nothing of stock and Inventory knows nothing of price.
+      The page does compose two contexts and they are not those two. It imports
+      the products client and the orders client, and no inventory client
+      exists in the storefront at all. Availability comes off the catalog
+      product's own `stock` field, which the product service has carried all
+      along and catalog.CN999 does not declare.
+      The consequence is small and specific: the concept's own justification is
+      wrong, so a reader takes the storefront to depend on Inventory when it
+      does not. The dependency this context declares on Inventory in
+      eshop.arch.yaml rests on the same reading.
+    recommendation: >
+      Two questions, and the second is the interesting one. Where should
+      availability live - if stock belongs to Inventory then the product service
+      holding a `stock` field is the divergence and this page is merely
+      believing it; if the catalog is allowed to carry a display-time stock
+      figure then catalog.CN999 is missing an attribute and Inventory's boundary
+      is narrower than the model says. Until that is settled, correcting the
+      definition to name what the page reads is honest and cheap.
+    affects:
+      concept_refs:
+        - storefront.CN001
+      context_refs:
+        - storefront
+        - catalog
+        - inventory
+    code_refs:
+      - path: apps/storefront/src/pages/ProductPage.tsx
+        role: implementation
+        description: >
+          The composition itself. Its imports are the measurement: productsApi
+          and ordersApi, and nothing from inventory.
+    tags: [model-code-divergence, boundaries]

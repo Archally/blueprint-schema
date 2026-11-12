@@ -1,0 +1,39 @@
+version: "1.0.0"
+scope: storefront
+owned_by:
+  team: TM003
+tags: [read-side, customer-facing]
+concepts:
+  - id: storefront.CN001
+    code_refs:
+      - path: apps/storefront/src/pages/ProductPage.tsx
+        role: implementation
+        description: >
+          Where the product detail is composed and then discarded. The page reads the
+          catalog and the order service and calls no inventory API: availability comes off
+          the catalog product's own `stock` field, so the two contexts this concept names
+          are not the two the page uses.
+    term: "ProductPage"
+    stereotype: read-model
+    summary: "What a shopper sees on one product, composed from two contexts"
+    definition: >
+      The product detail a shopper reads: name, price and category from the
+      catalog, availability from inventory. It is assembled when the page is
+      requested and kept nowhere afterwards. No upstream context holds this
+      shape - Catalog knows nothing of stock and Inventory knows nothing of
+      price - which is why it is a concept here rather than a copy of one of
+      theirs.
+  - id: storefront.CN002
+    code_refs:
+      - path: apps/storefront/src/pages/OrdersPage.tsx
+        role: implementation
+        description: >
+          The shopper's own list, scoped by the signed-in customer id the page holds.
+    term: "OrderHistory"
+    stereotype: read-model
+    summary: "A customer's own orders, as the storefront lists them"
+    definition: >
+      The list of orders belonging to the signed-in customer, with the detail
+      of any one of them on request. Orders owns the orders; this concept is
+      the shopper-facing reading of them, scoped to one customer and showing
+      only what a customer is allowed to see of their own order.

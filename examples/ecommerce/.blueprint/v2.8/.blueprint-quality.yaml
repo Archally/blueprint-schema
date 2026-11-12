@@ -1,0 +1,19 @@
+# Blueprint quality-gate configuration - ecommerce (the teaching model).
+#
+# One deferral, and it is a statement about the shop rather than about unfinished
+# modelling work.
+
+slice_deferrals:
+  customers:
+    - metric: domain.command.produces
+      reason: >
+        The Customers context publishes no event, by decision (customers.DC001) and
+        in fact: the running service has no broker binding of any kind, so none of
+        Register, Update or Close Customer Account has an event to declare. Giving
+        the three commands a `produces` link would state something the shop does
+        not do, and would also undo the property the decision was taken for - a
+        context nothing subscribes to is a context that can be replaced, which is
+        the whole point of classifying its domain `generic-domain`. Retire this
+        entry if and when the context starts publishing; customers.QN002 is the
+        question that would drive it.
+      expires: 2026-12-31

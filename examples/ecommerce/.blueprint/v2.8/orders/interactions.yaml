@@ -1,0 +1,41 @@
+version: "1.0.0"
+scope: orders
+owned_by:
+  team: TM001
+screens:
+  - id: SCR001
+    name: "Order List"
+    description: "Paginated list of customer orders with status filters"
+    uses_models: [OrderList]
+    processes: [PRC001]
+    owned_by:
+      team: TM001
+  - id: SCR002
+    name: "Order Detail"
+    description: "Full order view with line items, status, and actions"
+    uses_models: [Order, OrderLine]
+    processes: [PRC001]
+    validated_by: [orders.TC001]
+    owned_by:
+      team: TM001
+actions:
+  - id: UAC001
+    name: "Submit Order"
+    description: "Customer submits a draft order for processing"
+    screen: SCR002
+    triggers_operations: [orders.CMD001]
+  - id: UAC002
+    name: "View Order Details"
+    description: "Navigate to order detail from list"
+    screen: SCR001
+    triggers_operations: [orders.QRY001]
+navigation:
+  - id: UNV001
+    description: "List to Detail — click order row to view details"
+    from: SCR001
+    to: SCR002
+    condition: "Order selected from list"
+  - id: UNV002
+    description: "Detail to List — back button returns to order list"
+    from: SCR002
+    to: SCR001

@@ -569,6 +569,8 @@ quick start for each host, how to check that it works, and how to use the kit in
 
 A working e-commerce example with 3 bounded contexts (catalog, orders, payments) is included in [`examples/ecommerce/`](examples/ecommerce/). Run `npm run validate:examples` to verify it.
 
+Two v2.8 models sit beside it. [`examples/ecommerce/.blueprint/v2.8/`](examples/ecommerce/.blueprint/v2.8/) is a larger, separate ecommerce teaching model with migrations; [`examples/eshop/.blueprint/v2.8/`](examples/eshop/.blueprint/v2.8/) models one order journey through dotnet/eShop. Run `npm run validate:ecommerce:v28` and `npm run validate:eshop:v28` to validate them, and `npm run check:ecommerce:v28` and `npm run check:eshop:v28` for the semantic checker. [docs/2026-11-12-ecommerce-and-eshop-examples.md](docs/2026-11-12-ecommerce-and-eshop-examples.md) lists all three.
+
 ## Versioning
 
 This package follows [SemVer](https://semver.org/):

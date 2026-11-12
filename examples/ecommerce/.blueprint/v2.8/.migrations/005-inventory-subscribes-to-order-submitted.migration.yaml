@@ -1,0 +1,159 @@
+# Commands named in this file use the commercial Archally Pro CLI (https://archally.pro).
+# Act 2 of the context-map history. APPLIED: listed in blueprint.yaml `migrations:`,
+# and every property it sets is already the value the model files carry.
+#
+# Read this one next to 006. Together they are the record of a contradiction that
+# arrived quietly and sat in the model until somebody read it out loud.
+#
+# Targets are typed ids (`BC003`, `SVC004`, `PA002`) because that is what
+# `bp migration check` resolves: it walks the parsed YAML for a record whose `id:` equals
+# the target. MIG006 spells the same two contexts as `Orders` and `Inventory`, for the
+# different verb that has to read it. See the header of 006 for the measured difference.
+schemaVersion: "2.8.0"
+migration:
+  id: MIG005
+  name: inventory-subscribes-to-order-submitted
+  date: "2026-05-12"
+  status: applied
+  author: "platform team"
+  description: >
+    Move the trigger for Reserve Stock off the synchronous call and onto the event bus.
+    Inventory now subscribes to the Orders event Order Submitted and reserves stock when
+    it arrives, instead of waiting for the Order System to call POST /inventory/reserve.
+    The subscription came with a dependency declaration, and that declaration is where
+    this migration did damage nobody saw: Inventory now says it is `conformist` and
+    `downstream` on Orders, while Orders has said exactly that about Inventory since the
+    day the two contexts were drawn. Two contexts that are each downstream of the other
+    describe a relationship that cannot exist. Conformist means the downstream side gives
+    up its own model and takes the upstream one whole because it has no leverage to
+    negotiate; if both sides do that, neither has a model left to conform to, and the
+    pattern names one upstream where there are now none. Nothing in the toolchain
+    objected. The schema accepts both declarations, the validator resolves every
+    reference in them, and the semantic checker has no rule that reads a pair of
+    dependencies together. The change was correct in what it set out to do, was reviewed,
+    and shipped, and it silently invalidated a statement about how two teams work
+    together. That statement stayed wrong until a human read the context map.
+  rationale: >
+    The synchronous call coupled order submission to inventory availability: a slow or
+    unavailable Inventory service held the customer's submit request open. Publishing
+    Order Submitted and letting Inventory react removes that wait, which is the right
+    call and is not in question here.
+    What this migration did not do is remove the path it replaced. Reserve Stock still
+    declares `initiated_by: inventory.ACT001` (the Order System) and still exposes
+    POST /inventory/reserve, so the model now carries the act-1 synchronous integration
+    and the act-2 asynchronous one side by side. That residue is the visible fingerprint
+    of this change: a reader who wonders why one command has both a caller and a
+    subscription is looking at the moment the trigger moved.
+    The conformist declaration was the honest reflex of whoever wrote it. Inventory does
+    take the Orders event as Orders defines it, with no translation layer
+    (`language_boundary: false`). What the author could not see, writing in one context's
+    file, was that the other context had already claimed the same role.
+  related_decisions: [orders.DC001]
+  tags: [integration, context-map, orders, inventory]
+
+changes:
+  # Everything below is a property set, on purpose. A set is idempotent, so replaying this
+  # applied migration over a model that already carries its effects is a no-op, and
+  # `bp migration check` can verify each one against the files.
+  properties:
+    # --- the subscription itself ---
+    - kind: set
+      target: inventory.CMD001
+      entity_type: operation
+      property: reacts_to.0.operation
+      value: orders.EVT001
+      description: "Reserve Stock now reacts to the Orders event instead of waiting to be called."
+      reason: "Decouple order submission from inventory availability."
+      group: "bus-subscription"
+    - kind: set
+      target: inventory.CMD001
+      entity_type: operation
+      property: reacts_to.0.policy
+      value: reserve-on-order-submit
+      description: "The reactive policy: every submitted order reserves stock."
+      group: "bus-subscription"
+
+    # --- the contract that carries it ---
+    - kind: set
+      target: SVC004
+      entity_type: service
+      property: contracts.asyncapi.receive.0
+      value: orders.EVT001
+      description: >
+        InventoryService's asyncapi contract now receives orders.EVT001. This is the line
+        that makes the subscription real to a generator: without it the domain reacts_to
+        has no transport behind it.
+      group: "bus-subscription"
+
+    # --- the story caught up ---
+    - kind: set
+      target: PA002
+      entity_type: process-activity
+      property: triggered_by.0
+      value: orders.EVT001
+      old_value: ACT003
+      description: >
+        The Reserve Stock activity of PRC001 is triggered by the event now, not by the
+        Order System calling in.
+      group: "bus-subscription"
+
+    # --- and the declaration that broke the context map ---
+    - kind: set
+      target: BC003
+      entity_type: context
+      property: dependencies.0.name
+      value: Orders
+      description: "Inventory declares a dependency on Orders for the first time."
+      reason: "A context that consumes another context's event depends on it, and should say so."
+      group: "conformist-collision"
+    - kind: set
+      target: BC003
+      entity_type: context
+      property: dependencies.0.relationship
+      value: conformist
+      description: >
+        The second conformist. Orders already declares `conformist` on Inventory, so as of
+        this line both contexts claim to have surrendered their model to the other.
+      group: "conformist-collision"
+    - kind: set
+      target: BC003
+      entity_type: context
+      property: dependencies.0.direction
+      value: downstream
+      description: >
+        The second downstream. A conformist relationship has exactly one upstream and one
+        downstream end; this model now has two downstream ends and no upstream at all.
+      group: "conformist-collision"
+
+  relationships:
+    - kind: add
+      subject: inventory.CMD001
+      predicate: reacts_to
+      object: orders.EVT001
+      edge_properties:
+        policy: reserve-on-order-submit
+        condition: "order submitted"
+      description: "The new causal edge: an Orders event now drives an Inventory command."
+      reason: "Reserve stock automatically when an order is submitted."
+      group: "bus-subscription"
+
+  meta:
+    - kind: note
+      target: "MIG005"
+      value: >
+        No gate catches the state this migration leaves behind. `bp validate` resolves
+        every reference in both dependency blocks. `bp check` reads each context on its
+        own and reports `restated-coupling` on both, which is about the coupling field
+        rather than the relationship. Whether "both ends declare themselves downstream of
+        each other" should become a semantic rule is an open question, not a decision.
+      description: "What was watching when this shipped, and what was not."
+
+rollback:
+  automatic: true
+  data_loss: false
+  warnings:
+    - >
+      Rolling this back returns Reserve Stock to the synchronous path. The HTTP endpoint
+      and `initiated_by: inventory.ACT001` were never removed, so the caller still works;
+      what is lost is the subscription, the contract line that carries it, and Inventory's
+      dependency declaration on Orders.

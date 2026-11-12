@@ -1,6 +1,6 @@
 {
   "name": "@archally/blueprint-schema",
-  "version": "2.8.89",
+  "version": "2.8.90",
   "description": "YAML-based schema for digital system modeling - domain-first multi-method specification format",
   "license": "SEE LICENSE IN LICENSE",
   "author": "Adam Walkowski <adam.walkowski@inperceptic.com>",
@@ -52,6 +52,10 @@
     "doc-snippets": "node tools/doc-snippet-validate/cli.mjs docs/modeling-guide.md docs/file-conventions.md docs/schema-reference.md --schemas schema/v2.8",
     "coverage-check:examples": "node tools/coverage-check/cli.mjs src/Core/Domain/Cart/CartStatus.php src/BrandNew/Feature.php --model examples/prestashop/.blueprint/v2.8",
     "check:examples": "node tools/semantic-checker/dist/cli.js examples/ecommerce/.blueprint/v2.6",
+    "validate:ecommerce:v28": "node tools/validator/src/cli.mjs examples/ecommerce/.blueprint/v2.8 --schemas schema/v2.8",
+    "validate:eshop:v28": "node tools/validator/src/cli.mjs examples/eshop/.blueprint/v2.8 --schemas schema/v2.8",
+    "check:ecommerce:v28": "node tools/semantic-checker/dist/cli.js examples/ecommerce/.blueprint/v2.8",
+    "check:eshop:v28": "node tools/semantic-checker/dist/cli.js examples/eshop/.blueprint/v2.8",
     "quality": "node tools/quality-gate/cli.mjs",
     "quality:examples": "node tools/quality-gate/cli.mjs examples/prestashop/.blueprint/v2.8 --strict",
     "atlas": "node tools/schema-atlas/dist/cli.js generate",

@@ -1,0 +1,425 @@
+version: "1.0.0"
+name: "Shop Admin journeys"
+scope: shop-admin
+owned_by:
+  team: TM002
+tags: [back-office, journey]
+
+processes:
+  # The first process of this back office, added the day it acquired a door.
+  # Every other process here now begins after this one has finished, which is
+  # why their triggers say so rather than leaving it to be guessed.
+  - id: PRC007
+    title: "An operator opens a closed back office"
+    status: implemented
+    description: >
+      What an operator does before they can do anything else. The back office has
+      exactly one screen a visitor without a session can reach, and it is this
+      one: every other route carries a guard that redirects to it. So this is not
+      a preamble to the other three processes - it is the process that makes them
+      reachable, and the only one in this model whose subject is the application
+      rather than the shop.
+      It borrows the shopper's mechanism wholesale. The same service issues the
+      token, from the same store, with the same one-body refusal; the only
+      difference is which collection the login is looked up in and which key the
+      browser remembers it under. That symmetry was a decision, and it is why
+      there is one session notion in this shop rather than two.
+      What it is not is a permission check. An operator record carries a role and
+      nothing reads it, and no endpoint on any service consults a token before
+      answering - so this process closes a screen and leaves four services open
+      (customers.RSK004, customers.FN002).
+    initiated_by:
+      - ACT002
+    trigger:
+      type: manual
+      description: >
+        The operator opens the back office at any address. Without a session every
+        one of them answers with the sign-in screen, so the process starts whether
+        or not that is what they meant to do.
+    activities:
+      - id: shop-admin.PA011
+        name: "Offer an operator login and password"
+        description: >
+          The credentials go to the operator collection of the customer service.
+          A match answers with a token and the operator record, including the
+          role nothing in this shop reads; a mismatch answers 401 with the one
+          body that does not say which half was wrong.
+        entry_operation: customers.CMD006
+        triggered_by:
+          - ACT002
+        steps:
+          - operation_ref: customers.CMD006
+            note: >
+              The token lands in this application's own storage key, so a shopper
+              signed in on the storefront in the same browser is a separate
+              session.
+        next:
+          - to: shop-admin.PA012
+            condition: "the credentials matched"
+        path_type: happy
+
+      - id: shop-admin.PA012
+        name: "Resolve the remembered token"
+        description: >
+          Done once, on the first guarded navigation, and the guard waits for the
+          answer rather than reading a not-yet-loaded operator as signed out -
+          which is the difference between a page refresh and a sign-out. A token
+          the service no longer holds resolves to nobody and the operator meets
+          the sign-in screen again.
+        entry_operation: customers.QRY005
+        path_type: happy
+    end_states:
+      - name: "The back office is open and says whose it is"
+        type: complete
+        description: >
+          The topbar carries the operator's name and their role, the sidebar
+          exists, and the product list has loaded. Nothing about what they may do
+          has been established.
+      - name: "The door stays shut, and the operator is not told which half was wrong"
+        type: error
+        description: >
+          The refusal is the same response for an unknown login and a wrong
+          password (customers.ERR003), so the screen reports one failure for two
+          causes. No navigation exists from here except trying again.
+    lanes:
+      - actor: ACT002
+        operations:
+          - customers.CMD006
+          - customers.QRY005
+          - customers.CMD007
+
+  - id: PRC002
+    title: "Manage the sellable range"
+    status: draft
+    description: >
+      What an operator does to the catalog, from the range as a whole down to one product's price.
+      It is the only process in this model whose closing act has no route behind it: Update Product
+      Price is what the model says a back-office operator does (the Shop Operator, ACT002, initiates it, and
+      shop-admin.CN001 exists to hold the figure while they decide), and the running back office
+      offers a price quote instead. The process states what the model states; shop-admin.FN001
+      states the disagreement. Neither is hidden inside the other.
+    initiated_by:
+      - ACT002
+    trigger:
+      type: manual
+      description: >
+        The operator opens the back office, having already signed in (PRC007) - every route but the
+        sign-in refuses a visitor without a session. The root route then redirects to the product
+        list, so the range is on screen before any decision is taken.
+    activities:
+      - id: shop-admin.PA001
+        name: "Read the published range"
+        description: >
+          The whole catalog, as one list. This is the answer to shop-admin.QN001 and the only
+          question of that context's three the shop can answer at all. The read is the
+          shopper-facing one: nothing in the model says the back office goes through a different
+          door for it.
+        entry_operation: catalog.QRY002
+        triggered_by:
+          - ACT002
+        steps:
+          - operation_ref: catalog.QRY002
+            note: >
+              The whole range in one call. Narrowing it afterwards is a filter over what came back,
+              not a second read, so nothing the first call omitted can be found.
+        next:
+          - to: shop-admin.PA002
+            condition: "the operator has a product in mind"
+        path_type: happy
+
+      - id: shop-admin.PA002
+        name: "Read one product"
+        description: >
+          Everything the catalog holds about one product, including the price the operator is about
+          to judge. shop-admin.ASM001 lives here: the figure on the screen may be up to a cache
+          window old, and nothing downstream will reject an edit made against a stale one.
+        entry_operation: catalog.QRY001
+        steps:
+          - operation_ref: catalog.QRY001
+            note: "The figure the operator reads is the one the next activity replaces."
+        next:
+          - to: shop-admin.PA003
+            condition: "the price on the page is not the price the range should carry"
+        path_type: happy
+
+      - id: shop-admin.PA003
+        name: "Set a new selling price"
+        description: >
+          The operator commits the new figure. It is an unconditional replace: no review step, no
+          version check, no record of what it replaced (catalog.QN003), and no event for anything
+          downstream to react to (catalog.DC001). shop-admin.CN001 is the last point at which the
+          old price and the new one are both known, and this activity is where that stops being
+          true.
+        entry_operation: catalog.CMD002
+        steps:
+          - operation_ref: catalog.CMD002
+            note: >
+              Carts and orders already holding the item keep the price they captured
+              (catalog.BD001), so this changes what the shop will charge next and nothing it has
+              charged.
+        path_type: happy
+    end_states:
+      - name: "The range carries the new figure"
+        type: complete
+        description: >
+          The catalog's price is the one the operator typed, and no trace of the previous one exists
+          anywhere in the shop.
+      - name: "The operator leaves the range as they found it"
+        type: cancel
+        description: >
+          The operator read the range, read a product and decided nothing needed changing. Nothing
+          records that they looked, which is why shop-admin.QN003 cannot be answered.
+    lanes:
+      - actor: ACT002
+        operations:
+          - catalog.QRY002
+          - catalog.QRY001
+          - catalog.CMD002
+
+  - id: PRC003
+    title: "Move an order through its lifecycle"
+    status: draft
+    description: >
+      The only process in this shop that changes an order's state. Set Order Status is the one
+      operation that moves orders.CN001 through the five states it declares, and the order detail
+      screen is the only surface in either application that reaches it - so everything an order's
+      status ever becomes, it becomes here, chosen by a person. The lifecycle is not driven by any
+      event: nothing in the shop advances an order on its own, and nothing is told when a person
+      does.
+    initiated_by:
+      - ACT002
+    trigger:
+      type: manual
+      description: >
+        The operator opens the order book, which is the whole book and not one customer's slice of
+        it. They are signed in by then, because the route refuses them otherwise (PRC007).
+    activities:
+      - id: shop-admin.PA004
+        name: "Read the order book"
+        description: >
+          Every order the shop holds, whoever placed it. The back office differs from the storefront
+          here and nowhere else in what it reads: the same List Orders operation answers both, and
+          only the operator calls it without a customer id.
+        entry_operation: orders.QRY002
+        triggered_by:
+          - ACT002
+        steps:
+          - operation_ref: orders.QRY002
+            note: >
+              Called without a customer id for the whole book, and re-issued with one when the
+              operator narrows it. Unlike the product and customer filters this one goes back to the
+              service, so a narrowed book is a fresh answer.
+          - operation_ref: customers.QRY003
+            note: >
+              A second read the screen makes on arrival, so that a customer's name stands where the
+              order only carries an id. It is not fatal if it fails: the book falls back to the raw
+              ids.
+        next:
+          - to: shop-admin.PA005
+            condition: "one order needs looking at"
+        path_type: happy
+
+      - id: shop-admin.PA005
+        name: "Read one order"
+        description: >
+          The order, its lines and the prices it was struck at, plus the customer it names. Two
+          contexts answer one screen, and the order's own copy of the prices is what is shown -
+          not the catalog's current figures, which PRC002 may have moved since.
+        entry_operation: orders.QRY001
+        steps:
+          - operation_ref: orders.QRY001
+            note: "The order with its lines and the status the control will move."
+          - operation_ref: customers.QRY001
+            note: >
+              The customer behind the id, read so the header can name a person. Non-fatal: the
+              screen falls back to the id.
+        gateway: xor
+        next:
+          - to: shop-admin.PA006
+            condition: "the order should move one step further along the forward path"
+          - to: shop-admin.PA007
+            condition: "the order should not be fulfilled at all"
+        path_type: happy
+
+      - id: shop-admin.PA006
+        name: "Advance the order one step"
+        description: >
+          The operator moves the order to the next status and no further. The control offers one
+          step, so an illegal move is never offered; the six transition rules would refuse it in any
+          case, naming the moves that would have been legal (orders.ERR006). Repeating this activity
+          is what walks an order from pending to delivered, one operator decision at a time.
+        entry_operation: orders.CMD004
+        steps:
+          - operation_ref: orders.CMD004
+            note: >
+              No event is produced and no history is kept: the previous status is overwritten and
+              the operator who chose it is not recorded (orders.QN005).
+        next:
+          - to: shop-admin.PA006
+            condition: "the order has not reached the end of the forward path"
+        path_type: happy
+
+      - id: shop-admin.PA007
+        name: "Cancel the order"
+        description: >
+          The same operation with `cancelled` as the requested status, offered on any order that is
+          neither delivered nor already cancelled. It is the process's own escape rather than a
+          failure: nothing went wrong, the order is simply not going to be fulfilled.
+        entry_operation: orders.CMD004
+        steps:
+          - operation_ref: orders.CMD004
+            note: >
+              Inventory is holding stock for an order cancelled after confirmation and is never told
+              (orders.TR005), so the reservation outlives the order that needed it.
+        path_type: happy
+    end_states:
+      - name: "Order Delivered"
+        type: complete
+        description: >
+          The end of the forward path, reached by four operator decisions and no automatic step.
+          Nothing further can be done to the order: the status control offers neither an advance nor
+          a cancel.
+        from: [shop-admin.PA006]
+      - name: "Order Cancelled"
+        type: cancel
+        description: >
+          The order will not be fulfilled. The state is terminal for the operator, and it is the one
+          outcome that leaves a reservation behind somewhere nobody is looking.
+        from: [shop-admin.PA007]
+    lanes:
+      - actor: ACT002
+        operations:
+          - orders.QRY002
+          - orders.QRY001
+          - orders.CMD004
+
+  - id: PRC004
+    title: "Answer a question about a customer"
+    status: draft
+    description: >
+      What the back office does with the customer list, which is almost all reading. An operator
+      holding a customer id from an order turns it into a person, sees the standing discounts that
+      priced their orders, and - if that is what the conversation was about - removes the record.
+      The removal is the only write, and it is the only destructive act in either application.
+    initiated_by:
+      - ACT002
+    trigger:
+      type: manual
+      description: >
+        The operator opens the customer list, usually carrying an id they read on an order, and
+        already signed in - the route refuses them otherwise (PRC007).
+    activities:
+      - id: shop-admin.PA008
+        name: "Read the customer list"
+        description: >
+          Every customer the shop holds. Narrowing it by name, email or city is a filter over the
+          copy already returned, so the list finds a customer quickly and can never find one this
+          read did not include.
+        entry_operation: customers.QRY003
+        triggered_by:
+          - ACT002
+        steps:
+          - operation_ref: customers.QRY003
+            note: "The same read the order book makes, so that an order's customer id has a name."
+        next:
+          - to: shop-admin.PA009
+            condition: "one customer is the subject of the question"
+        path_type: happy
+
+      - id: shop-admin.PA009
+        name: "Read one customer and their discounts"
+        description: >
+          The record, then the standing discounts held against it. The discount read is the same one
+          the order flow makes when it prices a line, made here by the person answering for the
+          shop - which is what makes this the screen where a disputed total gets explained.
+        entry_operation: customers.QRY001
+        triggered_by:
+          - ACT002
+        steps:
+          - operation_ref: customers.QRY001
+            note: "The record itself: name, email, address, and whether the account is active."
+          - operation_ref: customers.QRY002
+            note: >
+              The discounts that priced this customer's orders. An empty set is indistinguishable
+              from a service that failed to answer, because the screen renders both as no discounts.
+        next:
+          - to: shop-admin.PA010
+            condition: "the record is to be removed"
+        path_type: happy
+
+      - id: shop-admin.PA010
+        name: "Remove the customer record"
+        description: >
+          Behind a confirmation naming the customer, the operator removes the record. The model puts
+          this control on the storefront behind an administrator role (customers.DC003) and the
+          running shop has it here with no sign-in to hang a gate on, which customers.FN002 records.
+        entry_operation: customers.CMD003
+        triggered_by:
+          - ACT002
+        steps:
+          - operation_ref: customers.CMD003
+            note: >
+              The record goes and the orders that named it stay, pointing at an id nothing resolves
+              any more (customers.QN002).
+        path_type: happy
+    end_states:
+      - name: "The operator can answer for the shop"
+        type: complete
+        description: >
+          A name, an address and a discount set stand where a customer id was. Nothing was changed,
+          and nothing records that the question was asked.
+      - name: "The record is gone and its orders are not"
+        type: complete
+        description: >
+          The customer no longer exists and every order they placed still names them. The shop is
+          now holding orders whose customer cannot be read, which is a state it has no way to
+          report on.
+    lanes:
+      - actor: ACT002
+        operations:
+          - customers.QRY003
+          - customers.QRY001
+          - customers.QRY002
+          - customers.CMD003
+
+use_cases:
+  - id: shop-admin.UC001
+    name: "Open the order book and the customer behind it"
+    summary: "An operator crosses from catalog work to the whole order book and on to the customer list."
+    description: >
+      The back office's orientation path. An operator starts where the shop's own writes happen,
+      moves to the order book, which is the only place the shop sees every customer's orders at
+      once, and on to the customer list, which is how a customer id on an order becomes a person.
+      Three screens, three reads, three different contexts answering them.
+    primary_actor: ACT002
+    goal: "The operator is looking at the customer list, having passed through the whole order book."
+    preconditions:
+      - "The back office is reachable and the three services behind it answer."
+    postconditions:
+      - "No data was changed; every step of this journey is a read."
+    main_scenario:
+      - step: 1
+        action: "The operator arrives at the product list, which the back office opens on."
+        screen: shop-admin.SCR001
+        operation: catalog.QRY002
+      - step: 2
+        action: "The operator crosses to the order book."
+        screen: shop-admin.SCR001
+        ui_action: shop-admin.UAC001
+      - step: 3
+        action: "The order book lists every order, whoever placed it."
+        screen: shop-admin.SCR002
+        operation: orders.QRY002
+      - step: 4
+        action: "The operator crosses to the customer list."
+        screen: shop-admin.SCR002
+        ui_action: shop-admin.UAC002
+      - step: 5
+        action: "The customer list names the people the order book only holds ids for."
+        screen: shop-admin.SCR003
+        operation: customers.QRY003
+    delivery_priority: should-have
+    status: ready
+    processes:
+      - PRC003
+      - PRC004

@@ -1,0 +1,248 @@
+version: "1.0.0"
+scope: orders
+components:
+  schemas:
+    SubmitOrderRequest:
+      x-model-id: MDL001
+      purpose: command-payload
+      represents:
+        - concept: orders.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              orderId: CAT001
+      type: object
+      description: "Request to submit a draft order"
+      required:
+        - orderId
+      properties:
+        orderId:
+          $ref: "#/components/x-field/OrderId"
+        note:
+          type: string
+          description: "Optional customer note"
+          maxLength: 500
+
+    Order:
+      x-model-id: MDL002
+      code_refs:
+        - path: services/orders-service/src/orders/Order.ts
+          role: model
+          description: >
+            The `Order` interface the order service returns from every order route. Its
+            `items` are typed `OrderItem[]`, which is MDL003 under another name.
+      purpose: read-model
+      represents:
+        - concept: orders.CN001
+          kind: persistence
+          mapping:
+            strategy: property-map
+            property_map:
+              orderId: CAT001
+              status: CAT002
+              totalAmount: CAT003
+              customerId: CAT004
+        - concept: orders.CN002
+          kind: persistence
+          mapping:
+            strategy: same-names
+      type: object
+      description: "Order aggregate with lines and status"
+      required:
+        - orderId
+        - customerId
+        - status
+        - lines
+        - createdAt
+      properties:
+        orderId:
+          $ref: "#/components/x-field/OrderId"
+        customerId:
+          $ref: "#/components/x-field/CustomerId"
+        status:
+          $ref: "#/components/x-field/OrderStatus"
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderLine"
+          minItems: 1
+        totalAmount:
+          $ref: "#/components/x-field/MoneyAmount"
+        currency:
+          $ref: "#/components/x-field/CurrencyCode"
+        note:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        submittedAt:
+          type: string
+          format: date-time
+
+    OrderLine:
+      x-model-id: MDL003
+      code_refs:
+        - path: services/orders-service/src/orders/OrderItem.ts
+          role: model
+          description: >
+            The line-item shape, named `OrderItem` in the code and `OrderLine` here. Two
+            field-level differences go with the name: the code calls the product reference
+            `productId` where this schema calls it `sku`, and the code carries a
+            `totalPrice` this schema does not declare. This reference identifies the
+            implementation shape to compare when reconciling those differences.
+      purpose: shared
+      represents:
+        - concept: orders.CN002
+          kind: persistence
+          mapping:
+            strategy: property-map
+            property_map:
+              sku: CAT005
+              quantity: CAT006
+              unitPrice: CAT007
+      type: object
+      description: "Single item line in an order"
+      required:
+        - sku
+        - quantity
+        - unitPrice
+      properties:
+        sku:
+          type: string
+          description: "Product SKU"
+        productName:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        unitPrice:
+          $ref: "#/components/x-field/MoneyAmount"
+
+    OrderList:
+      x-model-id: MDL005
+      purpose: read-model
+      represents:
+        - concept: orders.CN001
+          kind: api
+          mapping:
+            strategy: same-names
+      type: object
+      description: "Paginated list of orders"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+    OrderSubmittedEvent:
+      x-model-id: MDL004
+      purpose: event-payload
+      represents:
+        - concept: orders.CN001
+          kind: event
+          mapping:
+            strategy: property-map
+            property_map:
+              orderId: CAT001
+              customerId: CAT004
+              totalAmount: CAT003
+      type: object
+      description: "Domain event: order submitted"
+      required:
+        - eventId
+        - orderId
+        - customerId
+        - occurredAt
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        orderId:
+          $ref: "#/components/x-field/OrderId"
+        customerId:
+          $ref: "#/components/x-field/CustomerId"
+        totalAmount:
+          $ref: "#/components/x-field/MoneyAmount"
+        lineCount:
+          type: integer
+        occurredAt:
+          type: string
+          format: date-time
+
+    SetOrderStatusRequest:
+      x-model-id: MDL038
+      purpose: command-payload
+      description: >
+        One field: the status to move to. There is no expected-current-status
+        and no reason field, so the request carries neither a precondition the
+        caller can state nor a note explaining the decision. The first of those
+        is now the service's job rather than a gap - the move is checked
+        against the order's current status whether or not the caller says what
+        it thought that was - but the second still means an order's status can
+        be read afterwards and the move behind it cannot (orders.QN005).
+      represents:
+        - concept: orders.CN001
+          kind: api
+          mapping:
+            strategy: property-map
+            property_map:
+              status: CAT002
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: "#/components/x-field/OrderStatus"
+
+  x-field:
+    OrderId:
+      type: string
+      format: uuid
+      description: "Unique order identifier"
+      example: "550e8400-e29b-41d4-a716-446655440000"
+    CustomerId:
+      type: string
+      format: uuid
+      description: "Customer identifier"
+    OrderStatus:
+      type: string
+      description: >
+        The five states an order can be in, and the whole of the vocabulary -
+        this context used to carry a second list for the status command and no
+        longer does (orders.DC002). The values are not interchangeable and the
+        order matters: pending, confirmed, shipped and delivered are a path,
+        and cancelled leaves it. Which moves between them are legal is not
+        expressible in an enum and lives on the concept as orders.TR002 to
+        orders.TR007.
+      enum:
+        - pending
+        - confirmed
+        - shipped
+        - delivered
+        - cancelled
+      example: "shipped"
+    MoneyAmount:
+      type: number
+      format: double
+      description: "Monetary amount in minor units"
+      minimum: 0
+    CurrencyCode:
+      type: string
+      description: "ISO 4217 currency code"
+      pattern: "^[A-Z]{3}$"
+      example: "USD"
+
+  x-parameter:
+    OrderIdPath:
+      $ref: "#/components/x-field/OrderId"
+      name: id
+      in: path
+      required: true
+      description: "Order ID path parameter"

@@ -1,0 +1,32 @@
+version: "1.0.0"
+name: eShop infrastructure (workshop slice)
+description: >
+  The one piece of infrastructure the order flow's messaging depends on: the RabbitMQ server
+  every service publishes its integration events to and receives them from. Its exchange, the
+  routing key per event and the queue per consuming service are not infrastructure; they are
+  the channels the contracts name.
+environments:
+  - development
+resources:
+  - id: IR001
+    kind: broker
+    name: RabbitMQ (eventbus)
+    summary: The RabbitMQ server behind the event bus, started by the .NET Aspire AppHost as the resource `eventbus`.
+    description: >
+      One RabbitMQ server for the whole application. The AppHost declares it as the Aspire
+      resource `eventbus` and passes its connection to every service that publishes or subscribes,
+      which reaches it through the shared `EventBusRabbitMQ` library. Aspire supplies the real
+      connection at start-up; the `development` host below is the conventional local RabbitMQ
+      address, stated so the generated AsyncAPI documents name a server.
+    hosting_model: container
+    environments:
+      development:
+        host: localhost:5672
+    platform:
+      name: aspire
+      type: rabbitmq
+    code_refs:
+      - path: src/eShop.AppHost/AppHost.cs
+        role: implementation
+      - path: src/EventBusRabbitMQ/RabbitMQEventBus.cs
+        role: implementation

@@ -1,0 +1,504 @@
+# Commands named in this file use the commercial Archally Pro CLI (https://archally.pro).
+version: 1.0.0
+scope: orders
+owned_by:
+  team: TM001
+metrics:
+  - id: orders.MT001
+    name: Order submission latency
+    description: >
+      Wall-clock time a submission takes, measured on orders.CMD001 at the
+      service. It is the raw signal behind the two-second goal; the business
+      reading of it is orders.KPI002, which takes the p95 rather than the
+      distribution.
+    type: latency
+    unit: ms
+    measures:
+      operations:
+        - orders.CMD001
+    quality_characteristic: performance-efficiency
+    quality_subcharacteristic: time-behaviour
+    collection:
+      method: automated
+      source: APM
+      frequency: continuous
+  - id: orders.MT002
+    name: Order submission success rate
+    description: >
+      Share of submissions the service accepts, measured on orders.CMD001. It is
+      the signal behind orders.SLO001 and orders.KPI001, and the one number that
+      would have shown the submit route answering 404 (orders.RSK001) without
+      anybody reading the code.
+    type: error-rate
+    unit: "%"
+    measures:
+      operations:
+        - orders.CMD001
+    quality_characteristic: reliability
+    quality_subcharacteristic: maturity
+    collection:
+      method: automated
+      source: APM
+      frequency: continuous
+  - id: orders.MT003
+    name: Contract test suite run time
+    description: >
+      Wall-clock time of the order-to-products contract suites, consumer and provider,
+      measured once under each of two test runners when the suites moved from Jest to
+      Vitest. It measures the toolchain rather than the shop, which is why it names no
+      quality characteristic of the product.
+    type: custom
+    unit: ms
+    collection:
+      method: automated
+      source: "a script that ran each suite under each runner and timed it"
+      frequency: one-off
+      status: measured
+      results_location: .archive/contract-tests/benchmark-results.json
+slos:
+  - id: orders.SLO001
+    name: Order API availability
+    description: >
+      The availability promise over the three operations a shopper depends on to
+      place an order and see it afterwards. Breaching it pages a person, which is
+      what distinguishes it from the KPIs: those are read, this one wakes somebody.
+    target: 99.9%
+    metric: orders.MT002
+    window: 30d rolling
+    operations:
+      - orders.CMD001
+      - orders.QRY001
+      - orders.QRY002
+    error_budget: 0.1%
+    breach:
+      action: Page on-call engineer
+      notification: orders-team@shop.example
+  - id: orders.SLO002
+    name: Order submission latency p95
+    description: >
+      The latency half of the same promise, on submission alone. Stated at p95
+      rather than as an average because the tail is what a shopper experiences as
+      the shop being slow.
+    target: < 500ms
+    metric: orders.MT001
+    window: 30d rolling
+    operations:
+      - orders.CMD001
+    breach:
+      action: Investigate the latency increase and restore the target
+security:
+  - id: orders.SEC001
+    name: JWT authentication
+    description: >
+      Every order endpoint is to require a bearer token. The requirement stands
+      and is still unmet, and the shape of the gap changed on 2026-09-25 rather
+      than closing: the shop now issues a bearer token, and it is deliberately
+      not the one this entry asks for.
+      Two things are wrong at once, and they are worth keeping apart. The token
+      is opaque - a key into one service's in-memory map, with no claims and no
+      signature - so a second service could not verify it if it wanted to, which
+      is exactly the property a JWT would have bought and the reason the shop
+      chose against it: stateless cross-service verification is machinery this
+      shop does not do, and a JWT on a slide would have implied that it did. And
+      no order endpoint reads any token at all, opaque or signed
+      (customers.RSK004). So the requirement has something to point at for the
+      first time and still nothing to attach to.
+      The entry is kept as written rather than downgraded to what was built. A
+      requirement rewritten to match the code stops being a requirement, and the
+      distance between this one and the session the shop has is the measurement
+      worth keeping.
+    type: authentication
+    requirement: All order API endpoints require valid JWT bearer token
+    standard: JWT
+    operations:
+      - orders.CMD001
+      - orders.QRY001
+      - orders.QRY002
+      - orders.CMD003
+      - orders.CMD004
+      - customers.QRY002
+  - id: orders.SEC002
+    name: Order ownership authorization
+    description: >
+      A customer may read their own orders and no others. It presupposes an
+      authenticated caller, and since 2026-09-25 the shop has one: a shopper
+      signs in and the storefront knows whose orders it is showing. That is not
+      enough to make this rule enforceable, and the reason is the whole of
+      customers.RSK004 - the orders service is told a customer id in a query
+      string and is told nothing about who is asking, so it cannot compare the
+      two. Both order reads still answer any caller for any customer.
+      The one thing that changed is where the fix would go. It is no longer
+      blocked on the shop having an identity; it is blocked on a service
+      checking one.
+    type: authorization
+    requirement: Customers can only access their own orders
+    operations:
+      - orders.QRY001
+      - orders.QRY002
+compliance:
+  - id: orders.CMP001
+    name: Order data retention
+    description: >
+      An order carries the customer's name and address, so it is personal data
+      under GDPR and may be kept for seven years and then anonymised rather than
+      deleted, because the order total itself is an accounting record.
+    regulation: GDPR
+    requirement: Order data containing PII must be retained for max 7 years
+    concepts:
+      - orders.CN001
+    retention:
+      period: 7y
+      action: anonymize
+resilience:
+  - id: orders.RES001
+    name: Order service availability
+    description: >
+      How orders.SLO001 is intended to be met: more than one zone and room to
+      scale, so that losing a node costs latency rather than the order book. It
+      states the intent; nothing in infrastructure.yaml places a second zone yet.
+    type: availability
+    target: 99.9%
+    strategy: Multi-AZ deployment with auto-scaling
+kpis:
+  - id: orders.KPI001
+    name: "Order submission success rate"
+    description: >
+      The share of submissions that are accepted. Closes the chain from the
+      two-second processing goal through the submission error-rate metric.
+    metric: orders.MT002
+    goal: orders.GL001
+    target: "> 99%"
+    window: "30d rolling"
+    domain_scope: orders
+    thresholds:
+      warning: "99%"
+      critical: "97%"
+  - id: orders.KPI002
+    name: "Order submission latency p95"
+    description: >
+      The business reading of the same goal: what a customer waits for after
+      pressing Submit.
+    metric: orders.MT001
+    goal: orders.GL001
+    target: "< 500ms"
+    window: "30d rolling"
+    domain_scope: orders
+    thresholds:
+      warning: "500ms"
+      critical: "2000ms"
+findings:
+  - id: orders.FN001
+    title: "A draft-then-submit stage survives in three operations and a lifecycle that no longer has it"
+    summary: "Create, submit and resubmit were built around two states the Order no longer declares"
+    kind: drift
+    quality_characteristic: maintainability
+    quality_subcharacteristic: modularity
+    severity: high
+    status: open
+    certainty: confirmed
+    discovery_stage: validated
+    statement: >
+      Until orders.DC002 this context carried two status vocabularies for one
+      field. The Order aggregate declared draft, submitted and confirmed; Set
+      Order Status accepted pending, confirmed, shipped, delivered and
+      cancelled; only `confirmed` was in both. Reconciling to the five the
+      shop's orders actually hold removed the smaller of the two, and left
+      behind everything that had been built around it.
+      What is left. Submit Order (orders.CMD001) is a POST on an order's
+      /submit path whose whole purpose was to move it from draft to submitted;
+      it no longer names a state this lifecycle contains, and no route in the
+      running shop answers that path either. Create Draft Order
+      (orders.CMD003) still calls itself a draft although what it creates is a
+      pending order. Order Already Submitted (orders.ERR003) is a conflict over
+      a state that is gone, and no operation raises it. Three test cases -
+      orders.TC001, orders.EC001 and orders.ER001 - set up their given state as
+      `orderStatus: draft`, and orders.ER003 as `submitted`.
+      The exposure is the point of the reconciliation rather than a cost of
+      it. Before, the model declared a lifecycle nothing moved through and a
+      second list of words that did; the disagreement read as careless
+      authoring and taught nothing. Now it declares one lifecycle of five
+      states with six legal moves, one operation that performs them, and a
+      whole two-step design sitting beside it with nowhere to go. That is a
+      question a room can be asked: what were these three operations for, and
+      is the answer that the shop lost a review step or that the model invented
+      one?
+    recommendation: >
+      Do not reconcile this one by deleting either. Three readings are open and
+      they are different decisions. The draft-then-submit stage is intended and
+      unbuilt, in which case the shop is missing a review step and the
+      lifecycle needs two more states rather than the operations needing
+      removal. It was never intended and the model inherited it, in which case
+      Submit Order, the Order Submitted event it publishes and the Inventory
+      subscription that consumes it all have to move somewhere, because that
+      chain is the only thing that reserves stock and it currently hangs off
+      the operation with no state. Or the two-step is real in the business and
+      was collapsed in the code for speed, in which case this is a gap in the
+      shop and not in the model. Whoever picks needs to know whether anybody
+      ever reviewed an order between building it and sending it.
+    affects:
+      operation_refs:
+        - orders.CMD001
+        - orders.CMD003
+        - orders.EVT001
+      concept_refs:
+        - orders.CN001
+      context_refs:
+        - orders
+        - inventory
+      process_refs:
+        - PRC001
+    decision_refs:
+      - orders.DC002
+    risk_refs:
+      - orders.RSK001
+    tags: [lifecycle, drift]
+
+  - id: orders.FN002
+    title: "The order service's request bodies and this model's payload schemas do not line up"
+    summary: "One declared payload describes another operation's body; the other is declared by no type at all"
+    kind: drift
+    quality_characteristic: functional-suitability
+    quality_subcharacteristic: functional-appropriateness
+    severity: high
+    status: open
+    certainty: confirmed
+    discovery_stage: validated
+    statement: >
+      Two of this context's three write operations have a route in the running
+      shop, and neither one's declared payload is the body that route reads.
+      Create Draft Order (orders.CMD003) declares its payload as
+      SubmitOrderRequest (MDL001), whose properties are an order id and an
+      optional note. The route it names, POST /orders, binds
+      `CreateOrderRequest` - a customer id and a list of product id and
+      quantity pairs. The two shapes have no field in common, and this model
+      declares no schema for the one the route accepts, so the body a shopper
+      actually sends is unmodelled while a body nothing sends is modelled and
+      wired to a command.
+      Set Order Status (orders.CMD004) is the opposite absence. Its payload,
+      SetOrderStatusRequest (MDL038), is a real shape - the route reads a
+      `status` off the body and refuses anything outside the five states - but
+      the route destructures it inline and no file declares it, so there is
+      nothing for a code reference to name. The shape exists and its
+      declaration does not.
+      The reason to hold both in one entry is that they are the same mistake
+      seen from two sides. MDL001 survived the removal of the draft-then-submit
+      stage (orders.FN001) still attached to a command, because nothing checks
+      that a declared payload matches the body its operation's route binds. Had
+      anything checked, MDL001 would have been the first thing it caught.
+    recommendation: >
+      Two of the three moves are cheap and one is a decision. Declare the body
+      POST /orders actually takes, as a command-payload model on
+      orders.CMD003 - that closes the divergence and gives the generated
+      contract something true to say. Extract the status body into its own
+      type in the order service, which makes orders.MDL038 (SetOrderStatusRequest)
+      referenceable like the service's other named request shapes. What is left is
+      MDL001 itself: whether it goes depends on the same unanswered question
+      orders.FN001 asks, because a submit payload is only wrong if submission
+      is.
+    affects:
+      operation_refs:
+        - orders.CMD003
+        - orders.CMD004
+      concept_refs:
+        - orders.CN001
+      context_refs:
+        - orders
+    code_refs:
+      - path: services/orders-service/src/orders/CreateOrderRequest.ts
+        role: model
+        description: >
+          The request shape this model does not declare. It exists as its own
+          file, so the gap is in the model rather than in the code.
+      - path: services/orders-service/src/server.ts
+        role: implementation
+        description: >
+          Both routes. The create route binds CreateOrderRequest; the status
+          route reads its one field off an untyped body.
+    decision_refs:
+      - orders.DC002
+    tags: [model-code-divergence, payloads]
+
+  - id: orders.FN003
+    title: "The order list read is declared as a paged envelope and served as a bare array"
+    summary: "OrderList declares items, total and page; GET /orders answers a JSON array"
+    kind: drift
+    quality_characteristic: functional-suitability
+    quality_subcharacteristic: functional-correctness
+    severity: medium
+    status: open
+    certainty: confirmed
+    discovery_stage: validated
+    statement: >
+      OrderList (MDL005) is an object with an `items` array beside `total`,
+      `page` and a page size, which is the shape a paged collection read
+      answers with. GET /orders answers `res.json(orders)` - the array itself,
+      with no envelope and no paging of any kind. A client generated from this
+      model would read `response.items` and find undefined on the first call.
+      The same divergence exists in the catalog context and is recorded there
+      as catalog.FN002, because the model it is about is that context's own.
+      Two entries rather than one: each names the schema its own slice owns,
+      and whoever fixes one should see that the other is the same decision.
+      Worth separating from orders.FN002 although both are payload shapes: a
+      request body a route does not accept is a wiring mistake, while this is a
+      convention the model applies and the shop does not. Paging is a real
+      design question - the shop has none, and the model has not decided whether
+      that is a gap or a simplification.
+    recommendation: >
+      Decide paging first and shape second. If the shop is to page its
+      collections, this schema is a requirement and belongs in the roadmap; if
+      it is not, the envelope is describing a capability nothing has and the
+      schema should become the array the route returns. Reconciling the shape
+      without answering the question would silently settle it.
+    affects:
+      operation_refs:
+        - orders.QRY002
+      concept_refs:
+        - orders.CN001
+      context_refs:
+        - orders
+        - catalog
+    code_refs:
+      - path: services/orders-service/src/server.ts
+        role: implementation
+        description: >
+          `app.get('/orders')` answers the array, optionally filtered by a
+          customerId query parameter and never wrapped.
+    tags: [model-code-divergence, paging]
+
+  - id: orders.FN004
+    title: "Four events, a declared broker, and no messaging anywhere in the shop"
+    summary: "The event-driven half of this model has no implementation at all, and nothing says so"
+    kind: drift
+    quality_characteristic: functional-suitability
+    quality_subcharacteristic: functional-completeness
+    severity: high
+    status: open
+    certainty: confirmed
+    discovery_stage: validated
+    statement: >
+      This model describes a shop that talks to itself over a message bus.
+      Order Submitted (orders.EVT001), Item Added to Cart (checkout.EVT001) and
+      Stock Reserved (inventory.EVT001) each carry a topic; IR006 in
+      infrastructure.yaml is a RabbitMQ cluster with a host per environment;
+      four contracts in eshop.arch.yaml are asyncapi contracts naming those
+      topics; and two cross-context policies - reserve-on-order-submit and
+      confirm-on-stock-reserved - are the only thing that carries an order from
+      submission to confirmation.
+      None of it exists. A case-insensitive search across all four services for
+      kafka, rabbit, amqp, an event bus or a publish call returns nothing. The
+      two services that would publish are an Express app and an ASP.NET
+      controller that answer HTTP and return; the orders service calls the
+      customers and products services directly over HTTP, which is the
+      integration this shop actually has.
+      Send Order Confirmation (orders.CMD002) is where the absence is most
+      visible, and it is the one operation in this model with no exchange block
+      at all - `bp validate` has been reporting that as a gap warning. It
+      reacts to Stock Reserved, and Stock Reserved is published by nothing, so
+      the step that tells a customer their order was accepted is triggered by
+      an event that is never raised.
+      Delivery's event is deliberately excluded from this entry. Every entity in
+      that slice carries hypothesis and speculative provenance and none carries
+      a code reference, which is the slice saying out loud that it is a design
+      rather than a description. These three say nothing of the kind, and that
+      asymmetry is the defect: a reader cannot tell the unbuilt-and-declared
+      from the unbuilt-and-admitted.
+    recommendation: >
+      The cheapest honest move is provenance, not code: mark the three events
+      and their payload models the way the delivery slice marks its own, so the
+      model stops asserting a transport it does not have. That is a smaller
+      change than it sounds, and it makes the two policies read as intent
+      instead of as behaviour. What it does not settle is what the shop should
+      do instead. Today the orders service reaches for the customers and
+      products services synchronously inside the create route, so the
+      alternative to the bus is already in the code and is not written down
+      anywhere in this model. Either the bus is the plan, in which case these
+      events are a roadmap item, or the synchronous calls are, in which case
+      this model is missing the integration it actually has.
+    affects:
+      operation_refs:
+        - orders.EVT001
+        - orders.CMD002
+        - inventory.EVT001
+        - checkout.EVT001
+      context_refs:
+        - orders
+        - inventory
+        - checkout
+      process_refs:
+        - PRC001
+    code_refs:
+      - path: services/orders-service/src/server.ts
+        role: implementation
+        description: >
+          The create route, where the orders service integrates with two other
+          services by calling them over HTTP in line. This is the integration
+          the shop has, in place of the events the model declares.
+    risk_refs:
+      - checkout.RSK001
+    tags: [model-code-divergence, messaging, teaching]
+
+  - id: orders.FN005
+    title: "The order read-model and the order service's own interfaces are two different shapes"
+    summary: "Order and OrderLine disagree with Order.ts and OrderItem.ts on nine field names and on what is required"
+    kind: drift
+    quality_characteristic: functional-suitability
+    quality_subcharacteristic: functional-correctness
+    severity: medium
+    status: open
+    certainty: confirmed
+    discovery_stage: validated
+    statement: >
+      Order (MDL002) names an order's identifier `orderId` and its line
+      collection `lines`; the interface the service returns from every order
+      route, `Order` in `Order.ts`, calls the same two `id` and `items`. That is
+      a vocabulary disagreement and not a missing field: each side has the
+      thing, spelled the other way.
+      Three fields exist in this model and nowhere in the interface. `currency`
+      is declared beside `totalAmount` and the service carries an amount with no
+      currency at all, so every price in the running shop is a bare number.
+      `note` is the free-text field SubmitOrderRequest (MDL001) also carries and
+      that nothing in the shop reads, already half-recorded as orders.FN002.
+      `submittedAt` is the timestamp of the draft-then-submit stage the
+      lifecycle no longer has, which is orders.FN001 seen in the shape of the
+      read-model rather than in the shape of the operations.
+      One field exists in the interface and not here: `updatedAt`, which the
+      service maintains and this model does not mention. And the interface
+      requires `totalAmount`, which this schema declares optional, so a client
+      generated from the model would treat an always-present number as one it
+      has to check for.
+      OrderLine (MDL003) is the same disagreement one level down. It calls the
+      product reference `sku` where `OrderItem.ts` calls it `productId`; the
+      interface carries a `totalPrice` this schema does not declare, and
+      requires `productName`, which this schema declares and leaves optional.
+      Filed as one entry rather than two because it is one fact about one
+      aggregate seen on the two types that make it up.
+    recommendation: >
+      Do not settle this by renaming one side to match the other before deciding
+      which vocabulary the business uses. `orderId`, `lines` and `sku` are the
+      ubiquitous language this model claims; `id`, `items` and `productId` are
+      what the service returns to its callers, and changing those is a breaking
+      change to a published shape. The three that are not naming are separable
+      and smaller: `currency` is a real gap in the shop, `updatedAt` is a real
+      gap in the model, and `totalAmount` requiredness is a one-line correction
+      in whichever artefact is wrong.
+    affects:
+      concept_refs:
+        - orders.CN001
+        - orders.CN002
+      context_refs:
+        - orders
+    code_refs:
+      - path: services/orders-service/src/orders/Order.ts
+        role: model
+        description: >
+          `id`, `items` and `updatedAt` on one side; `orderId`, `lines`,
+          `currency`, `note` and `submittedAt` on the other; `totalAmount`
+          required here and optional in the model.
+      - path: services/orders-service/src/orders/OrderItem.ts
+        role: model
+        description: >
+          `productId` and `totalPrice` on one side, `sku` on the other, and
+          `productName` required here and optional in the model.
+    risk_refs:
+      - orders.RSK001
+    tags: [model-code-divergence, ubiquitous-language]

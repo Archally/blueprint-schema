@@ -1,0 +1,18 @@
+version: "1.0.0"
+scope: catalog
+owned_by:
+  team: TM002
+assumptions:
+  - id: catalog.ASM001
+    statement: >
+      Product details change rarely enough to be served from a five-minute edge
+      cache without a shopper seeing a stale price.
+    consequence: >
+      If prices move faster than the cache window, shoppers browse at one price
+      and add to cart at another. The catalog price stops being the quote the
+      pricing decision promises, and the difference shows up as cart-page
+      surprises rather than as an error anyone can measure.
+    domain_scope: catalog
+    discovery_stage: hypothesis
+    certainty: probable
+    risk_refs: []

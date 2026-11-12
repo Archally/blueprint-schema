@@ -1,0 +1,14 @@
+version: "1.0.0"
+scope: checkout
+concepts:
+  - id: checkout.CN001
+    term: "Cart"
+    summary: "Shopping cart with selected products"
+    definition: "Temporary basket of items before checkout"
+  - id: checkout.CN002
+    term: "CartItem"
+    summary: "One product line in a shopping cart"
+    definition: >
+      A product, a quantity, and the unit price captured when the product was
+      added. The captured price is what the cart totals, not whatever the
+      catalog shows later.

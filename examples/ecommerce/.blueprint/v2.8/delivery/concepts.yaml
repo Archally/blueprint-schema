@@ -1,0 +1,40 @@
+version: "1.0.0"
+scope: delivery
+
+# Nothing in this folder is implemented. Every entity here carries a `provenance`
+# block saying so: discovery_stage `hypothesis`, certainty `speculative`, and no
+# evidence, because there is none to cite. That is the opposite of the rest of
+# this model, where provenance (where it appears at all) reads `validated` /
+# `confirmed` with a codebase-analysis record under it. No entity in this folder
+# carries `code_refs`, for the same reason: there is no code to point at.
+concepts:
+  - id: delivery.CN001
+    term: "Shipment"
+    stereotype: aggregate-root
+    summary: "One parcel handed to a carrier against one confirmed order"
+    definition: >
+      The physical dispatch of an order: what was packed, which carrier took it,
+      and where it has got to. One shipment settles one order in this design -
+      the shop has never split an order across two parcels, and modelling a
+      split before anyone has needed one would be inventing a requirement.
+    states:
+      - name: preparing
+      - name: dispatched
+      - name: delivered
+    initial_state: preparing
+    terminal_states: [delivered]
+    provenance:
+      discovery_stage: hypothesis
+      certainty: speculative
+
+actors:
+  - id: delivery.ACT001
+    name: "Dispatch Clerk"
+    type: human
+    summary: "Packs a confirmed order and hands it to a carrier"
+    responsibilities:
+      - "Pick and pack the lines of a confirmed order"
+      - "Choose a carrier and record the tracking reference it returns"
+    provenance:
+      discovery_stage: hypothesis
+      certainty: speculative

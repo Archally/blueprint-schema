@@ -1,0 +1,212 @@
+version: "1.0.0"
+scope: orders
+happy_path:
+  - id: orders.TC001
+    name: "Submit valid order"
+    summary: "Order with items submits successfully"
+    validates:
+      operations: [orders.CMD001]
+      rules: [orders.SR001]
+      concepts: [orders.CN001]
+      models: [SubmitOrderRequest, Order]
+      processes: [PRC001]
+    given:
+      description: "A draft order with 2 line items exists"
+      state:
+        orderStatus: draft
+        lineCount: 2
+        totalAmount: 299.98
+    expected_result:
+      code: 200
+      status: success
+      model:
+        $ref: "#/components/schemas/Order"
+      output:
+        contains:
+          - "submitted"
+    note: >
+      No automated test runs this case end to end. The closest is the contract-surface
+      probe, contract-tests/demo/generated/orders-surface.generated.test.ts, which POSTs
+      the submit route at an order the shop already holds and accepts 200, 400 or 404: it
+      sets up no two-line draft order and asserts neither 200 nor `submitted`. Missing: a
+      test that creates a two-line draft order, submits it and asserts 200 with the order
+      submitted. The shop has no submit route at rest (orders.FN001), so that test would
+      be red today.
+
+  - id: orders.TC002
+    name: "Retrieve existing order"
+    summary: "Get order by ID returns full details"
+    validates:
+      operations: [orders.QRY001]
+    given:
+      description: "A submitted order exists"
+      state:
+        orderStatus: submitted
+    expected_result:
+      code: 200
+      status: success
+      model:
+        $ref: "#/components/schemas/Order"
+    note: >
+      No automated test runs this case end to end. The closest are the contract-surface
+      probe, which reads a real order but accepts 200 or 404 and never reads the body, and
+      the back office's orders-api.service.spec.ts and order-detail.spec.ts, which assert
+      against a mocked backend. Missing: a test that reads an existing order from the
+      running service and asserts 200 with an Order. The shop has no `submitted` status to
+      set the given state up with (orders.FN001).
+
+  - id: orders.TC003
+    name: "List customer orders"
+    summary: "List returns paginated orders for customer"
+    validates:
+      operations: [orders.QRY002]
+    given:
+      description: "Customer has 5 orders in various states"
+      state:
+        orderCount: 5
+    expected_result:
+      code: 200
+      status: success
+      model:
+        $ref: "#/components/schemas/OrderList"
+    note: >
+      No automated test runs this case end to end. The closest are the contract-surface
+      probe, which calls GET /orders unfiltered and asserts 200 only, and the back office's
+      orders-api.service.spec.ts and order-list.spec.ts, which assert the customerId query
+      string against a mocked backend. Missing: a test that lists one customer's five
+      orders from the running service and asserts 200 with the paged OrderList, which the
+      service does not serve today: it answers a bare array (orders.FN003).
+
+  - id: orders.TC004
+    name: "Move an order to its next status"
+    summary: "A legal transition is accepted and the order is returned in its new status"
+    validates:
+      operations: [orders.CMD004]
+      transitions: [orders.TR002, orders.TR004, orders.TR006]
+      concepts: [orders.CN001]
+      models: [SetOrderStatusRequest, Order]
+    given:
+      description: "A confirmed order, being shipped by an operator"
+      state:
+        orderStatus: confirmed
+        requestedStatus: shipped
+    expected_result:
+      code: 200
+      status: success
+      model:
+        $ref: "#/components/schemas/Order"
+      output:
+        contains:
+          - "shipped"
+    code_refs:
+      - path: contract-tests/orders-service/order-status.test.ts
+        role: test
+        description: >
+          Runs this case against the running orders service: creates an order of its own,
+          moves it to confirmed, asks for shipped, and asserts 200 with the same order
+          returned as shipped. The Order shape is asserted on the fields the model and the
+          code name alike (orders.FN005 records the rest).
+
+edge_cases:
+  - id: orders.EC001
+    name: "Submit order at line limit"
+    summary: "Order with maximum allowed lines submits"
+    validates:
+      rules: [orders.SR001]
+      operations: [orders.CMD001]
+    given:
+      description: "A draft order with 100 line items"
+      state:
+        orderStatus: draft
+        lineCount: 100
+    expected_result:
+      code: 200
+      status: success
+    note: >
+      No automated test. Missing: a test that submits a draft order of 100 lines and
+      asserts 200. The shop declares no line limit and has no submit route at rest
+      (orders.FN001), so there is nothing yet for that test to run against.
+
+error_cases:
+  - id: orders.ER001
+    name: "Submit empty order"
+    summary: "Order with zero lines fails validation"
+    validates:
+      rules: [orders.SR001]
+      operations: [orders.CMD001]
+    given:
+      description: "A draft order with no line items"
+      state:
+        orderStatus: draft
+        lineCount: 0
+    expected_result:
+      code: 400
+      status: failure
+      output:
+        contains:
+          - "Order.lines.count > 0"
+    note: >
+      No automated test. Missing: a test that submits a draft order with no lines and
+      asserts 400. The shop's POST /orders refuses an order with no items, but that is
+      creating an order, not submitting one; the submit route this case needs exists only
+      as the commented block in services/orders-service/src/server.ts (orders.FN001).
+
+  - id: orders.ER002
+    name: "Submit non-existent order"
+    summary: "Submitting unknown order ID returns 404"
+    validates:
+      operations: [orders.CMD001]
+    given:
+      description: "No order exists for the given ID"
+    expected_result:
+      code: 404
+      status: failure
+    note: >
+      No automated test. The contract-surface probe addresses the submit route at an order
+      the shop does hold, so the unknown-id case is never exercised. Missing: a test that
+      submits an order id no order has and asserts 404.
+
+  - id: orders.ER003
+    name: "Submit already submitted order"
+    summary: "Re-submitting returns 409 conflict"
+    validates:
+      operations: [orders.CMD001]
+    given:
+      description: "Order is already in submitted state"
+      state:
+        orderStatus: submitted
+    expected_result:
+      code: 409
+      status: failure
+    note: >
+      No automated test. Missing: a test that submits the same order twice and asserts
+      409. No route in the shop answers 409, and its lifecycle has no submitted status
+      (orders.FN001).
+
+  - id: orders.ER004
+    name: "Move an order backwards"
+    summary: "A status the lifecycle does not reach from here is refused, with the moves that would have been legal"
+    validates:
+      operations: [orders.CMD004]
+      transitions: [orders.TR003, orders.TR005, orders.TR007]
+      concepts: [orders.CN001]
+    given:
+      description: >
+        A delivered order, which is terminal - it has no forward step left and
+        cannot be cancelled either, so every requested status is refused
+      state:
+        orderStatus: delivered
+        requestedStatus: pending
+    expected_result:
+      code: 400
+      status: failure
+      output:
+        contains:
+          - "delivered"
+    code_refs:
+      - path: contract-tests/orders-service/order-status.test.ts
+        role: test
+        description: >
+          Runs this case against the running orders service: creates an order of its own,
+          moves it through confirmed and shipped to delivered, asks for pending, and asserts
+          400 with a body naming delivered, then reads the order back still delivered.

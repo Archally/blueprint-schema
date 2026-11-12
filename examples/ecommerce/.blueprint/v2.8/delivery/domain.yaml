@@ -1,0 +1,164 @@
+version: "1.0.0"
+name: "Shipments"
+scope: delivery
+
+# Unbuilt, and the model says so per entity rather than in prose: every
+# operation below carries `provenance` with discovery_stage `hypothesis` and
+# certainty `speculative`, and none carries `code_refs`. Read together those two
+# facts are the claim - this is a design judgement with no implementation and no
+# evidence behind it, which is exactly what this folder is here to demonstrate.
+operations:
+  prepareShipment:
+    id: delivery.CMD001
+    kind: command
+    name: Prepare Shipment
+    description: >
+      Open a shipment for an order whose stock is held, so a clerk can pick,
+      pack and hand it to a carrier.
+      It subscribes to Stock Reserved and not to anything from Orders, because
+      Orders publishes nothing a shipping context could subscribe to. Submit
+      Order raises the model's only order event, and it fires before the order
+      is confirmed; Set Order Status (orders.CMD004), the one operation that
+      ever moves an order through its lifecycle, produces no event at all and
+      says so in its own description. So the signal this context would like -
+      an order was confirmed - does not exist, and the nearest one that does is
+      the same event Send Order Confirmation reacts to. delivery.QN002 holds
+      the gap and delivery.ASM001 holds what this design is assuming while the
+      gap is open.
+    initiated_by:
+      - delivery.ACT001
+    exchange:
+      protocol: http
+      endpoint:
+        path: /shipments
+        method: POST
+        group: delivery
+    payload:
+      schema: "#/components/schemas/PrepareShipmentRequest"
+      contentType: application/json
+      required: true
+    responses:
+      - code: "201"
+        type: success
+        description: Shipment opened in preparing
+        schema: "#/components/schemas/Shipment"
+    produces:
+      operations:
+        - delivery.EVT001
+      mode: all
+    reacts_to:
+      - operation: inventory.EVT001
+        policy: prepare-on-stock-reserved
+        condition: stock reserved for every line of the order
+    task_type: automated
+    materializes:
+      - concept: delivery.CN001
+        action: create
+        description: Creates the Shipment in its initial state, preparing
+    provenance:
+      discovery_stage: hypothesis
+      certainty: speculative
+
+  shipmentDispatched:
+    id: delivery.EVT001
+    kind: event
+    name: Shipment Dispatched
+    description: >
+      A parcel left the building and a carrier has it. This is the fact the
+      rest of the shop would need in order to stop treating the order as
+      outstanding, and nothing in this model subscribes to it yet - Orders
+      moves an order to shipped by hand, through Set Order Status.
+    exchange:
+      protocol: amqp
+      topic:
+        name: delivery.shipment-dispatched
+        description: Published when a shipment is handed to a carrier
+        channel_ref: "MCH008"
+    payload:
+      schema: "#/components/schemas/ShipmentDispatchedEvent"
+      contentType: application/json
+    provenance:
+      discovery_stage: hypothesis
+      certainty: speculative
+
+  trackShipment:
+    id: delivery.QRY001
+    kind: query
+    name: Track Shipment
+    description: >
+      Where a parcel has got to, read by the order it belongs to rather than by
+      a shipment id, because that is the identifier every caller already holds.
+    exchange:
+      protocol: http
+      endpoint:
+        path: /shipments/by-order/{orderId}
+        method: GET
+        group: delivery
+        parameters:
+          - name: orderId
+            schema: "#/components/x-field/OrderReference"
+            type: path
+            required: true
+    responses:
+      - code: "200"
+        type: success
+        description: The shipment for that order, and where it is
+        schema: "#/components/schemas/Shipment"
+      - code: "404"
+        type: failure
+        description: No shipment has been opened for that order
+        error: delivery.ERR001
+    provenance:
+      discovery_stage: hypothesis
+      certainty: speculative
+
+errors:
+  shipmentNotFound:
+    id: delivery.ERR001
+    name: Shipment Not Found
+    description: >
+      No shipment exists for that order. Not necessarily a mistake: an order
+      whose stock is not yet reserved has no shipment, and neither has one
+      nobody has picked.
+    category: not-found
+    severity: error
+    http_status: 404
+    retry_eligible: false
+
+questions:
+  - id: delivery.QN001
+    name: Parcel whereabouts
+    statement: "Where is the parcel for this order?"
+    description: >
+      The question the shopper asks and the back office is asked. Answered here
+      by reading the shipment the order owns.
+    category: measurement
+    priority: critical
+    answered_by:
+      - delivery.QRY001
+    concepts:
+      - delivery.CN001
+    stakeholders:
+      - delivery.ACT001
+
+  - id: delivery.QN002
+    name: Confirmation signal
+    statement: "What tells the shipping side that an order was confirmed?"
+    description: >
+      Unanswered, and unanswerable from this model as it stands. Orders has one
+      event, Order Submitted, and it fires before confirmation. Set Order
+      Status produces none. So a shipping context has nothing to listen for and
+      Prepare Shipment subscribes to Inventory's Stock Reserved instead - which
+      says that stock is held, not that the order survived. An order cancelled
+      after confirmation (orders.TR005) tells neither Inventory nor this
+      context, so a parcel would be picked for it.
+      This is the question that decides whether Shipments can be built as drawn,
+      and it belongs to Orders rather than here.
+    category: temporal
+    priority: critical
+    answered_by: []
+    concepts:
+      - delivery.CN001
+    stakeholders:
+      - delivery.ACT001
+    blocking: true

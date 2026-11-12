@@ -1,0 +1,81 @@
+version: "1.0.0"
+scope: checkout
+owned_by:
+  team: TM003
+assumptions:
+  - id: checkout.ASM001
+    statement: >
+      A product the catalog showed as in stock is still available when the
+      customer submits the order.
+    consequence: >
+      If it is not, the customer learns of the shortage only after committing:
+      no stock is held while the item sits in the cart, so the first check is
+      the reservation at submission, and its failure surfaces as an order that
+      cannot be placed rather than as a product that cannot be added.
+    domain_scope: checkout
+    discovery_stage: hypothesis
+    certainty: probable
+    risk_refs:
+      - inventory.RSK001
+
+risks:
+  - id: checkout.RSK001
+    statement: >
+      This context describes a cart the shop does not have, and it describes it
+      as though it ran. A Checkout service, an OpenAPI contract exposing three
+      operations and a storefront client calling them are all declared here, and
+      the word `cart` appears nowhere in the running shop except in the
+      storefront's own README, where it is listed under what the API does not
+      offer.
+    summary: "A cart service with a contract and a caller, and no cart in the shop."
+    likelihood: high
+    impact: high
+    affects:
+      operation_refs:
+        - checkout.CMD001
+        - checkout.QRY001
+        - checkout.EVT001
+      concept_refs:
+        - checkout.CN001
+        - checkout.CN002
+      context_refs:
+        - checkout
+        - storefront
+        - orders
+      process_refs:
+        - PRC001
+    mitigation: >
+      None, and the asymmetry is the point: the delivery slice describes an
+      unbuilt context too, and marks every entity in it hypothesis and
+      speculative with no code reference, which is what lets a reader tell a
+      design from a description. Nothing in this slice carries that marking, so
+      a generated contract, a contract test or a reader arrives believing the
+      cart answers.
+    contingency: >
+      Either give this slice the provenance the delivery slice carries, so the
+      model stops asserting a surface that is not there, or record a decision
+      that the shop orders one product at a time and let the cart go with it.
+      Leaving it as written is the one option that costs somebody a wasted
+      integration.
+    status: open
+    owner: ACT001
+    goal_refs:
+      - orders.GL002
+    discovery_stage: validated
+    certainty: confirmed
+    evidence:
+      - kind: documentation
+        source: apps/storefront/README.md
+        summary: >
+          Under "What the API doesn't offer": "No cart. An order is placed
+          directly from a product page for one product and a quantity." The app
+          declines to pretend otherwise.
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: apps/, services/
+        summary: >
+          A case-insensitive search for `cart` across both application folders
+          and all four services returns one file, that README. No route, no
+          model and no client carries the word.
+        confidence_impact: supports
+    tags: [model-code-divergence, honesty, surface]

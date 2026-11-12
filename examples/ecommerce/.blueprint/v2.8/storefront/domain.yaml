@@ -1,0 +1,70 @@
+version: "1.0.0"
+name: "Storefront"
+description: >
+  The shopper's surface. This context owns no operations: every question below
+  is answered by a query belonging to an upstream context, and every button a
+  shopper presses runs a command belonging to one. The storefront's own work is
+  composing the answers into a page and carrying the intent back out. The empty
+  operations map is the model stating that, not an omission.
+scope: storefront
+owned_by:
+  team: TM003
+tags: [read-side, customer-facing]
+
+operations: {}
+
+questions:
+  - id: storefront.QN001
+    name: Buyable right now
+    statement: "Can a shopper buy this product right now, and at what price?"
+    description: >
+      The question a product page exists to answer, and the reason this context
+      has a concept of its own: neither upstream answers it alone. Catalog
+      returns the price and knows nothing of stock; Inventory returns the stock
+      and knows nothing of price. The answer is composed here and stored
+      nowhere.
+    category: existence
+    priority: critical
+    answered_by:
+      - catalog.QRY001
+      - inventory.QRY001
+    concepts:
+      - storefront.CN001
+    stakeholders:
+      - ACT001
+  - id: storefront.QN002
+    name: My past orders
+    statement: "What has this customer ordered before, and what became of it?"
+    description: >
+      The first half is answered: List Orders returns the customer's orders and
+      Get Order returns one of them. The second half is answered only as far as
+      the order's own state goes - nothing in this shop models a shipment, so
+      "where is it" stops at whatever status Orders last wrote.
+    category: enumeration
+    priority: high
+    answered_by:
+      - orders.QRY002
+      - orders.QRY001
+    concepts:
+      - storefront.CN002
+    stakeholders:
+      - ACT001
+  - id: storefront.QN003
+    name: What the page showed
+    statement: "What did the product page show this shopper at the moment they added the item?"
+    description: >
+      Unanswered, and unanswerable from anywhere in this shop. The storefront
+      composes the page at render time and keeps no record of what it composed.
+      Catalog overwrote the price in place and kept no history
+      (catalog.QN003). Checkout holds the price it captured at add time, but
+      that is the figure it captured and not the figure that was displayed, and
+      nothing joins the two. A shopper disputing what they were shown cannot be
+      answered, and the storefront is where the record would have to be kept.
+    category: temporal
+    priority: medium
+    answered_by: []
+    concepts:
+      - storefront.CN001
+    stakeholders:
+      - ACT001
+    blocking: false

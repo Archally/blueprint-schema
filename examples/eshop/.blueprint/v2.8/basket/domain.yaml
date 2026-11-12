@@ -1,0 +1,66 @@
+version: "1.0.0"
+name: Basket
+scope: basket
+operations:
+  emptyBasketOnOrder:
+    id: basket.CMD001
+    kind: command
+    dispatch: inprocess
+    name: Empty Basket
+    description: Deletes the shopper's basket from the store once their order has started.
+    reacts_to:
+      - operation: ordering.EVT001
+        policy: When an order starts, empty the basket
+    task_type: automated
+    code_refs:
+      - path: src/Basket.API/IntegrationEvents/EventHandling/OrderStartedIntegrationEventHandler.cs
+        role: implementation
+  getBasket:
+    id: basket.QRY001
+    kind: query
+    name: Get Basket
+    description: >
+      Returns the signed-in shopper's basket, each line a product id and a quantity. A caller
+      the token does not identify gets an empty basket, not an error.
+    initiated_by: [ordering.ACT001]
+    exchange:
+      protocol: grpc
+      method:
+        name: BasketApi.Basket/GetBasket
+    code_refs:
+      - path: src/Basket.API/Grpc/BasketService.cs
+        role: implementation
+  updateBasket:
+    id: basket.CMD002
+    kind: command
+    name: Update Basket
+    description: >
+      Replaces the shopper's basket with the lines sent and returns the basket as stored.
+      Refused with Unauthenticated when the token identifies no shopper, and with NotFound
+      when the store returns no basket. Raises no event.
+    initiated_by: [ordering.ACT001]
+    exchange:
+      protocol: grpc
+      method:
+        name: BasketApi.Basket/UpdateBasket
+    task_type: user-decision
+    code_refs:
+      - path: src/Basket.API/Grpc/BasketService.cs
+        role: implementation
+  deleteBasket:
+    id: basket.CMD003
+    kind: command
+    name: Delete Basket
+    description: >
+      Deletes the shopper's basket. The storefront calls it right after it submits an order,
+      so a placed order empties the basket twice: here, and by Empty Basket (basket.CMD001)
+      when Ordering announces the order started. Raises no event.
+    initiated_by: [ordering.ACT001]
+    exchange:
+      protocol: grpc
+      method:
+        name: BasketApi.Basket/DeleteBasket
+    task_type: user-decision
+    code_refs:
+      - path: src/Basket.API/Grpc/BasketService.cs
+        role: implementation

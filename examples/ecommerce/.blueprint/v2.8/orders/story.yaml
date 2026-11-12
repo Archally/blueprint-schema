@@ -1,0 +1,122 @@
+name: orders
+version: "1.0.0"
+scope: orders
+processes:
+  - title: "Customer submits order"
+    id: PRC001
+    description: "Happy path: customer places items in cart, submits order, inventory is reserved, confirmation sent."
+    initiated_by:
+      - ACT001
+    activities:
+      - id: PA001
+        name: "Submit Order"
+        description: "Customer submits the draft order for processing."
+        entry_operation: "orders.CMD001"
+        triggered_by:
+          - ACT001
+        steps:
+          - operation_ref: "orders.CMD001"
+            note: "Validate order has items (orders.SR001)"
+          - operation_ref: "orders.EVT001"
+            note: "Order Submitted event published"
+        next: [{to: PA002}]
+        path_type: happy
+
+      - id: PA002
+        name: "Reserve Stock"
+        description: "Reserve inventory for each order line item."
+        entry_operation: "inventory.CMD001"
+        triggered_by:
+          - orders.EVT001
+        steps:
+          - operation_ref: "inventory.CMD001"
+            note: "Reserve inventory for order line"
+          - operation_ref: "inventory.EVT001"
+            note: "Stock Reserved event published"
+        path_type: happy
+        next:
+          - to: PA003
+          - to: PA004
+        gateway: and
+
+      - id: PA003
+        name: "Send Confirmation"
+        description: "Email order confirmation to customer."
+        entry_operation: "orders.CMD002"
+        triggered_by:
+          - inventory.EVT001
+        path_type: happy
+
+      # The process declares "Order Confirmed" as its completing end state, and until this
+      # activity existed nothing in it reached that state: the three activities stopped at the
+      # confirmation email. orders.CMD004 is the only operation that moves an order through the
+      # lifecycle, and it was simply never placed on the path.
+      - id: PA004
+        name: "Confirm Order"
+        description: "An operator moves the order to confirmed."
+        entry_operation: "orders.CMD004"
+        triggered_by:
+          - inventory.EVT001
+        path_type: happy
+
+    trigger:
+      type: manual
+      description: "Customer clicks Submit Order button"
+    end_states:
+      - name: "Order Confirmed"
+        type: complete
+        description: "Order submitted, stock reserved, confirmation sent"
+      - name: "Insufficient Stock"
+        type: error
+        description: "Stock reservation failed for one or more lines"
+    lanes:
+      - actor: ACT001
+        operations:
+          - orders.CMD001
+
+use_cases:
+  - id: orders.UC001
+    name: "Place Order"
+    summary: "Customer places an order; system validates, reserves stock, and confirms."
+    description: >
+      Customer-facing use case that exercises the full happy path plus error
+      branches for stock shortage and notification failure. Anchors the
+      `orders` context's most critical workflow.
+    primary_actor: ACT001
+    goal: "Customer has a confirmed order with stock reserved and a confirmation receipt."
+    preconditions:
+      - "Customer is authenticated"
+      - "Shopping cart has at least one item"
+    postconditions:
+      - "Order is persisted with a unique orderId"
+      - "Stock is reserved for all requested items"
+      - "Customer has received confirmation"
+    main_scenario:
+      - step: 1
+        action: "Customer submits the order via checkout"
+        operation: orders.CMD001
+        # Declared rather than inferred. Two UI Actions now trigger this
+        # operation - this context's own, and the storefront's Submit order -
+        # so the step has to say which one it means.
+        ui_action: UAC001
+      - step: 2
+        action: "System reserves stock for each line item"
+        operation: inventory.CMD001
+      - step: 3
+        action: "System emails order confirmation"
+        operation: orders.CMD002
+      - step: 4
+        action: "Customer queries the final order state"
+        operation: orders.QRY001
+    extensions:
+      - step: 2
+        condition: "Insufficient stock for one or more items"
+        action: "Reject the order, notify customer with replacement suggestions, refund any held charges"
+      - step: 3
+        condition: "Email delivery fails"
+        action: "Retry via SMS fallback; mark notification as pending for audit"
+    user_stories: []
+    processes:
+      - PRC001
+    delivery_priority: must-have
+    status: ready

@@ -1,0 +1,350 @@
+version: "1.0.0"
+name: Ordering
+scope: ordering
+operations:
+  createOrder:
+    id: ordering.CMD001
+    kind: command
+    name: Create Order
+    description: >
+      Turn the shopper's basket into an order in the Submitted state. Idempotent per
+      request: the x-requestid header identifies the command.
+    initiated_by: [ordering.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /api/orders
+        method: POST
+    responses:
+      - code: "200"
+        type: success
+        description: Order created
+      - code: "400"
+        type: failure
+        description: Missing or empty request id
+    produces:
+      operations: [ordering.EVT001, ordering.EVT009]
+      mode: all
+    materializes:
+      - concept: ordering.CN001
+        action: create
+      - concept: ordering.CN004
+        action: create
+        description: The buyer is created on their first order, and a new payment method is added to it.
+    task_type: user-decision
+    code_refs:
+      - path: src/Ordering.API/Application/Commands/CreateOrderCommandHandler.cs
+        role: implementation
+  confirmGracePeriod:
+    id: ordering.CMD002
+    kind: command
+    dispatch: inprocess
+    name: Confirm Grace Period
+    description: >
+      Every few seconds the order processor looks for Submitted orders older than the grace
+      period. It reads them straight out of the ordering database (ordering.DOC001), not
+      through the ordering API.
+    initiated_by: [ordering.ACT002]
+    produces:
+      operations: [ordering.EVT003]
+      mode: all
+    task_type: automated
+    code_refs:
+      - path: src/OrderProcessor/Services/GracePeriodManagerService.cs
+        role: implementation
+  setAwaitingValidation:
+    id: ordering.CMD003
+    kind: command
+    dispatch: inprocess
+    name: Set Awaiting Validation
+    reacts_to:
+      - operation: ordering.EVT003
+        policy: When the grace period is over, ask for stock
+    produces:
+      operations: [ordering.EVT010]
+      mode: all
+    materializes:
+      - concept: ordering.CN001
+        action: update
+        description: Submitted to AwaitingValidation
+    task_type: automated
+  setStockConfirmed:
+    id: ordering.CMD004
+    kind: command
+    dispatch: inprocess
+    name: Set Stock Confirmed
+    reacts_to:
+      - operation: catalog.EVT001
+        policy: When stock is confirmed, ask for payment
+    produces:
+      operations: [ordering.EVT011]
+      mode: all
+    materializes:
+      - concept: ordering.CN001
+        action: update
+        description: AwaitingValidation to StockConfirmed
+    task_type: automated
+  setStockRejected:
+    id: ordering.CMD005
+    kind: command
+    dispatch: inprocess
+    name: Set Stock Rejected
+    description: >
+      Cancels the order when any line is out of stock. Unlike Cancel Order it raises no
+      domain event, so no Order Cancelled is published: the storefront and webhooks are not
+      told (ordering.QN002).
+    reacts_to:
+      - operation: catalog.EVT002
+        policy: When stock is rejected, cancel the order
+    materializes:
+      - concept: ordering.CN001
+        action: update
+        description: AwaitingValidation to Cancelled
+    task_type: automated
+  setPaid:
+    id: ordering.CMD006
+    kind: command
+    dispatch: inprocess
+    name: Set Paid
+    reacts_to:
+      - operation: payment.EVT001
+        policy: When payment succeeds, mark the order paid
+    produces:
+      operations: [ordering.EVT012]
+      mode: all
+    materializes:
+      - concept: ordering.CN001
+        action: update
+        description: StockConfirmed to Paid
+    task_type: automated
+  cancelOrder:
+    id: ordering.CMD007
+    kind: command
+    name: Cancel Order
+    description: Refused once the order is Paid or Shipped.
+    initiated_by: [ordering.ACT001]
+    reacts_to:
+      - operation: payment.EVT002
+        policy: When payment fails, cancel the order
+    exchange:
+      protocol: http
+      endpoint:
+        path: /api/orders/cancel
+        method: PUT
+    produces:
+      operations: [ordering.EVT013]
+      mode: all
+    materializes:
+      - concept: ordering.CN001
+        action: update
+        description: Any state except Paid and Shipped, to Cancelled
+    task_type: user-decision
+  shipOrder:
+    id: ordering.CMD008
+    kind: command
+    name: Ship Order
+    description: Refused unless the order is Paid.
+    initiated_by: [ordering.ACT003]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /api/orders/ship
+        method: PUT
+    produces:
+      operations: [ordering.EVT014]
+      mode: all
+    materializes:
+      - concept: ordering.CN001
+        action: update
+        description: Paid to Shipped
+    task_type: manual
+  getOrders:
+    id: ordering.QRY001
+    kind: query
+    name: Get My Orders
+    initiated_by: [ordering.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /api/orders
+        method: GET
+  getOrder:
+    id: ordering.QRY002
+    kind: query
+    name: Get Order
+    initiated_by: [ordering.ACT001]
+    exchange:
+      protocol: http
+      endpoint:
+        path: /api/orders/{orderId}
+        method: GET
+  submittedOrders:
+    id: ordering.DOC001
+    kind: document
+    name: Submitted Orders
+    description: >
+      The rows of the orders table with status Submitted and their order date. Written by
+      the ordering API, read directly by the order processor.
+  # Domain events: raised by the Order aggregate and handled inside the ordering API. None of them
+  # leaves Ordering; six integration events below state which of them they are the published form of.
+  # A domain event is named after the state of ordering.CN001 Order it enters; an integration event
+  # after the message other contexts receive, its topic name without IntegrationEvent. A published
+  # name is never renamed: a domain event whose state name equals one reads "Order Moved To <state>".
+  orderSubmittedDomain:
+    id: ordering.EVT009
+    kind: event
+    name: Order Submitted
+    description: >
+      Raised by a new order as it is created in the Submitted state. Its handler verifies the buyer
+      and their payment method, creating either on a first order, and then publishes Order Status
+      Changed To Submitted. Not Order Started, the message that empties the basket: the
+      create-order handler publishes that one itself. eShop names this class
+      OrderStartedDomainEvent.
+    code_refs:
+      - path: src/Ordering.Domain/Events/OrderStartedDomainEvent.cs
+        role: model
+  orderAwaitingValidationDomain:
+    id: ordering.EVT010
+    kind: event
+    name: Order Awaiting Validation
+    description: >
+      Raised when a submitted order moves to AwaitingValidation, carrying its order items. Its
+      handler publishes the integration event that asks Catalog to check the stock.
+    code_refs:
+      - path: src/Ordering.Domain/Events/OrderStatusChangedToAwaitingValidationDomainEvent.cs
+        role: model
+  orderStockConfirmedDomain:
+    id: ordering.EVT011
+    kind: event
+    name: Order Moved To Stock Confirmed
+    description: >
+      Raised when an order awaiting validation moves to StockConfirmed. Its handler publishes the
+      integration event the payment processor charges the order on. Not Order Stock Confirmed,
+      the message Catalog publishes and this order reacts to.
+    code_refs:
+      - path: src/Ordering.Domain/Events/OrderStatusChangedToStockConfirmedDomainEvent.cs
+        role: model
+  orderPaidDomain:
+    id: ordering.EVT012
+    kind: event
+    name: Order Paid
+    description: >
+      Raised when a stock-confirmed order moves to Paid, carrying its order items. Its handler
+      publishes the integration event Catalog removes the stock on.
+    code_refs:
+      - path: src/Ordering.Domain/Events/OrderStatusChangedToPaidDomainEvent.cs
+        role: model
+  orderCancelledDomain:
+    id: ordering.EVT013
+    kind: event
+    name: Order Cancelled
+    description: >
+      Raised when an order is cancelled by the shopper or because payment failed. A cancellation
+      for rejected stock raises none (ordering.QN002).
+    code_refs:
+      - path: src/Ordering.Domain/Events/OrderCancelledDomainEvent.cs
+        role: model
+  orderShippedDomain:
+    id: ordering.EVT014
+    kind: event
+    name: Order Shipped
+    description: >
+      Raised when a paid order moves to Shipped. Its handler publishes the integration event,
+      which nothing in this slice reads.
+    code_refs:
+      - path: src/Ordering.Domain/Events/OrderShippedDomainEvent.cs
+        role: model
+  # Integration events: published on the event bus.
+  orderStarted:
+    id: ordering.EVT001
+    kind: event
+    name: Order Started
+    description: Published as soon as the order is created; the basket reacts by emptying itself.
+    exchange:
+      protocol: amqp
+      topic:
+        name: OrderStartedIntegrationEvent
+        channel_ref: MCH001
+  orderSubmitted:
+    id: ordering.EVT002
+    kind: event
+    name: Order Status Changed To Submitted
+    translates: [ordering.EVT009]
+    description: The order has been accepted and its buyer verified or created.
+    exchange:
+      protocol: amqp
+      topic:
+        name: OrderStatusChangedToSubmittedIntegrationEvent
+        channel_ref: MCH001
+  gracePeriodConfirmed:
+    id: ordering.EVT003
+    kind: event
+    name: Grace Period Confirmed
+    description: A submitted order is older than the grace period and can no longer be cancelled for free.
+    exchange:
+      protocol: amqp
+      topic:
+        name: GracePeriodConfirmedIntegrationEvent
+        channel_ref: MCH001
+  orderAwaitingValidation:
+    id: ordering.EVT004
+    kind: event
+    name: Order Status Changed To Awaiting Validation
+    translates: [ordering.EVT010]
+    description: Carries the product ids and units Catalog must check.
+    exchange:
+      protocol: amqp
+      topic:
+        name: OrderStatusChangedToAwaitingValidationIntegrationEvent
+        channel_ref: MCH001
+  orderStockConfirmed:
+    id: ordering.EVT005
+    kind: event
+    name: Order Status Changed To Stock Confirmed
+    translates: [ordering.EVT011]
+    description: The order moved to StockConfirmed.
+    exchange:
+      protocol: amqp
+      topic:
+        name: OrderStatusChangedToStockConfirmedIntegrationEvent
+        channel_ref: MCH001
+  orderPaid:
+    id: ordering.EVT006
+    kind: event
+    name: Order Status Changed To Paid
+    translates: [ordering.EVT012]
+    description: The order moved to Paid; carries the units Catalog removes from stock.
+    exchange:
+      protocol: amqp
+      topic:
+        name: OrderStatusChangedToPaidIntegrationEvent
+        channel_ref: MCH001
+  orderCancelled:
+    id: ordering.EVT007
+    kind: event
+    name: Order Status Changed To Cancelled
+    translates: [ordering.EVT013]
+    description: The order was cancelled by the shopper or because payment failed. Not published when stock is rejected.
+    exchange:
+      protocol: amqp
+      topic:
+        name: OrderStatusChangedToCancelledIntegrationEvent
+        channel_ref: MCH001
+  orderShipped:
+    id: ordering.EVT008
+    kind: event
+    name: Order Status Changed To Shipped
+    translates: [ordering.EVT014]
+    description: The order moved to Shipped.
+    exchange:
+      protocol: amqp
+      topic:
+        name: OrderStatusChangedToShippedIntegrationEvent
+        channel_ref: MCH001
+questions:
+  - id: ordering.QN001
+    bounded_context_ref: BC001
+    statement: Who ships an order? The ship endpoint exists and no user interface in the repository calls it.
+  - id: ordering.QN002
+    bounded_context_ref: BC001
+    statement: Should a stock-rejected cancellation be published like any other cancellation?

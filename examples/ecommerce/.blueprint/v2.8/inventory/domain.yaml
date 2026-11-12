@@ -1,0 +1,149 @@
+version: "1.0.0"
+name: "Inventory"
+scope: inventory
+operations:
+  reserveStock:
+    id: inventory.CMD001
+    code_refs:
+      - path: services/inventory-service/Controllers/InventoryController.cs
+        role: implementation
+        description: >
+          `[HttpPost("reserve")]` on the inventory controller, under the controller's own
+          `[Route("inventory")]`.
+    kind: command
+    name: Reserve Stock
+    description: Reserve quantity for an order line
+    initiated_by:
+      - ACT003
+    exchange:
+      protocol: http
+      endpoint:
+        path: /inventory/reserve
+        method: POST
+        group: inventory
+    payload:
+      schema: "#/components/schemas/ReserveStockRequest"
+      contentType: application/json
+      required: true
+    responses:
+      - code: "200"
+        type: success
+        description: Stock reserved successfully
+        schema: "#/components/schemas/Reservation"
+      - code: "409"
+        type: failure
+        description: Insufficient stock
+        error: inventory.ERR001
+    produces:
+      operations:
+        - inventory.EVT001
+      mode: all
+    reacts_to:
+      - operation: orders.EVT001
+        policy: reserve-on-order-submit
+        condition: order submitted
+    task_type: automated
+    materializes:
+      - concept: inventory.CN001
+        action: update
+        description: Moves the requested quantity from available to reserved
+      - concept: inventory.CN002
+        action: create
+        description: Creates the hold the order is confirmed against
+  stockReserved:
+    id: inventory.EVT001
+    kind: event
+    name: Stock Reserved
+    description: Inventory was reserved for an order line
+    exchange:
+      protocol: amqp
+      topic:
+        name: inventory.stock-reserved
+        description: Published when stock is reserved for an order
+        channel_ref: "MCH002"
+    payload:
+      schema: "#/components/schemas/StockReservedEvent"
+      contentType: application/json
+  checkStock:
+    id: inventory.QRY001
+    code_refs:
+      - path: services/inventory-service/Controllers/InventoryController.cs
+        role: implementation
+        description: >
+          `[HttpGet("{sku}/stock")]` on the inventory controller.
+    kind: query
+    name: Check Stock
+    description: Check available stock for a product
+    exchange:
+      protocol: http
+      endpoint:
+        path: /inventory/{sku}/stock
+        method: GET
+        group: inventory
+        parameters:
+          - name: sku
+            schema: "#/components/x-field/ProductSku"
+            type: path
+            required: true
+    responses:
+      - code: "200"
+        type: success
+        description: Current stock level
+        schema: "#/components/schemas/StockLevel"
+
+errors:
+  insufficientStock:
+    id: inventory.ERR001
+    name: Insufficient Stock
+    description: Not enough stock to fulfill reservation
+    category: conflict
+    severity: error
+    http_status: 409
+    retry_eligible: true
+
+questions:
+  - id: inventory.QN001
+    name: Sellable quantity
+    statement: "How many units of a SKU can be sold right now?"
+    description: >
+      Available stock, not total stock: units already held by an active
+      reservation cannot be sold again.
+    category: measurement
+    priority: critical
+    answered_by:
+      - inventory.QRY001
+    concepts:
+      - inventory.CN001
+    stakeholders:
+      - inventory.ACT002
+  - id: inventory.QN002
+    name: Reservation holder
+    statement: "Which order is holding a reservation for this SKU?"
+    description: >
+      Unanswered. A Reservation records the order that caused it, but checkStock
+      returns only the aggregate counts, so a warehouse manager investigating a
+      discrepancy cannot get from a held unit back to the order holding it.
+    category: relationship
+    priority: high
+    answered_by: []
+    concepts:
+      - inventory.CN002
+      - inventory.CN001
+    stakeholders:
+      - inventory.ACT002
+    blocking: false
+  - id: inventory.QN003
+    name: Abandoned holds
+    statement: "What becomes of a reservation for an order that is never confirmed?"
+    description: >
+      Unanswered. A Reservation carries an expiry and an expired state, so the
+      policy exists, but no operation in this context moves a reservation into
+      it - the stock stays held.
+    category: temporal
+    priority: high
+    answered_by: []
+    concepts:
+      - inventory.CN002
+    stakeholders:
+      - inventory.ACT002
+    blocking: false

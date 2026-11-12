@@ -1,0 +1,191 @@
+# Commands named in this file use the commercial Archally Pro CLI (https://archally.pro).
+version: "2.0.0"
+schemaVersion: "2.8.0"
+name: "E-Shop Laptops & Electronics"
+
+# Where the code this model describes lives. It is a SEPARATE repository from the one
+# holding this file, so every `code_ref` below resolves against the tree named here and
+# not against the tree this file sits in.
+#
+# The URL, branch and provider are what a viewer joins with a `code_ref` path to build a
+# clickable link. They do not make a ref resolve: Archally Pro's `bp coverage-check`
+# resolves a ref against `--code-root`, and reports a ref written in the cross-repo
+# `org/repo#path` form as `unverifiable`. So every `code_ref` in this model is written
+# BARE - a path relative to the shop repository's root - which is the form the audit can
+# check and the form the schema calls same-repo.
+#
+# One repository, so no `repositories:` map. The map is keyed by the `org/repo` prefix and
+# exists for a model whose refs span several repositories; this model's code is all in one
+# and reaching for the map would buy a second mechanism with nothing to disambiguate.
+repository:
+  url: "https://github.com/AdamWalkowski/ecommerce-demo"
+  branch: "main"
+  provider: "github"
+
+# The filesystem: eight folders under this directory, each holding one bounded context's model.
+#
+# Eight folders, five domains. That is the whole reason this block is worth reading: the two
+# partitions are not the same partition, and in most published example models they accidentally
+# are. `merchandising` is written down in two folders (catalog and shop-admin), `shopping` in two
+# (storefront and checkout), `fulfilment` in two (orders and inventory), `customers` in one and
+# `delivery` in one.
+# A folder is where a file lives; a domain is a region of the business. Nothing here declares
+# which domain a folder belongs to, and nothing should: a context names its domain with
+# `domain_ref` in eshop.arch.yaml, and the folder-to-domain link is read back from there.
+layout:
+  mode: slices
+  slices:
+    - name: catalog
+      description: >
+        The product range itself - what is for sale, under which category, at what price. The
+        commands here are the ones the back office calls; the queries are the ones both the
+        storefront and the back office read.
+      owner:
+        team: TM002
+    - name: shop-admin
+      description: >
+        The back-office surface over that same range. A separate folder from catalog because it is
+        a separate bounded context with its own language and its own questions - and the same
+        domain, because both exist to answer what the shop sells.
+      owner:
+        team: TM002
+    - name: storefront
+      description: >
+        Everything a shopper touches. Holds no domain state: every read and every write in this
+        folder belongs to a context declared in another one.
+      owner:
+        team: TM003
+    - name: checkout
+      description: >
+        The cart between browsing and ordering - the one place a price is captured and held rather
+        than displayed and forgotten.
+      owner:
+        team: TM003
+    - name: orders
+      description: >
+        The order lifecycle, from a draft raised out of a cart to a confirmed order. The only
+        folder carrying a process, a story and test cases, because it is the only one with a
+        lifecycle long enough to need them.
+      owner:
+        team: TM001
+    - name: inventory
+      description: >
+        Stock levels and the reservation that settles an order. Shares the fulfilment domain with
+        orders and is kept apart from it because reservation is a contention problem and order
+        state is a lifecycle problem.
+      owner:
+        team: TM001
+    - name: customers
+      description: >
+        The customer account - who the shopper is and what discounts ride on them. The only folder
+        in this model that holds a whole domain on its own, which is what makes the other six a
+        useful comparison rather than a rule.
+      owner:
+        team: TM003
+    - name: delivery
+      description: >
+        Getting a confirmed order out of the door and to the customer. The only folder in this
+        model that describes a region of the business no code implements - every entity in it
+        carries speculative provenance and none carries a code_ref, which is what says so.
+      owner:
+        team: TM001
+
+# The problem space: five regions of the retail business. Three are realized by two bounded
+# contexts each and two by a single context.
+# This is not the folder layout. Eight slice folders hold eight contexts, and they group into five
+# domains, so the partition below cannot be read off the filesystem - which is the reason it is
+# written down. A context names its home here through `domain_ref` in eshop.arch.yaml.
+#
+# The boundaries follow what the model can be measured to say:
+#  - PRC001, the model's only business process, touches orders (5 operations) and inventory (3) and
+#    nothing else. Splitting that pair would cut the one process in half, so fulfilment holds both.
+#  - Orders and Inventory are joined by exactly two cross-context reactive policies, one in each
+#    direction: reserve-on-order-submit and confirm-on-stock-reserved.
+#  - ShopAdmin owns no operations of its own. It exists to call Catalog's three commands, and the
+#    person at its screen is the one who initiates them, the Shop Operator (ACT002), so the two
+#    contexts answer one question: what does the shop sell?
+#  - Checkout and Inventory have zero relations between them. catalog <-> storefront is the densest
+#    context pair in the model, which is why Storefront's home is shopping and not fulfilment.
+#  - Shipments is the one context here that consumes an event without belonging to the domain that
+#    raises it: it reacts to Inventory's Stock Reserved from outside fulfilment, because the signal
+#    it actually wants - an order was confirmed - is not published by anything (delivery.QN002).
+#    fulfilment ends at a confirmed order, by its own description; delivery starts after.
+#
+# A home is not a coverage claim. Storefront reads Catalog, Orders and Inventory to compose its
+# pages; naming shopping as its home neither states nor limits that.
+domains:
+  - id: DMN001
+    name: merchandising
+    description: >
+      What the shop sells, and who decides it: the range of laptops and electronics on offer, the
+      prices they carry, and the categories a shopper finds them under - together with the back
+      office the people making those decisions work through. A specialist retailer competes on the
+      range it chooses, so this is where the business differentiates.
+    type: core-domain
+    complexity: crud
+    model_traits: [information-holder]
+  - id: DMN002
+    name: shopping
+    description: >
+      The customer's journey from browsing to a submitted order: finding a product, deciding on it,
+      collecting it in a cart, and handing over the intent to buy. Everything the shopper touches
+      and nothing that happens after they stop watching - this region holds no outcome of its own,
+      it carries intent to the regions that own it.
+    type: supporting-domain
+    complexity: presentation
+    model_traits: [interfacer, drafter]
+  - id: DMN003
+    name: fulfilment
+    description: >
+      Turning a submitted order into a confirmed one. What a shopper is told at checkout is a
+      promise until the stock behind it is reserved and the order is confirmed; this is where that
+      promise is settled, and the only region of this model where it can fail.
+    type: core-domain
+    complexity: state-management
+    model_traits: [controller, coordinator]
+  - id: DMN004
+    name: customers
+    description: >
+      Who the shopper is, and what the shop has already promised them: the account a person
+      registers for themselves, the details they keep current, and the discount lines that ride on
+      that account into the price of every order they place. This is the one region of the shop
+      that no retailer wins on. A specialist electronics retailer competes on the range it chooses
+      and on getting an order out of the door, not on knowing how to store a name, an address and
+      a percentage - which is exactly what `generic-domain` names: necessary, and available off
+      the shelf. That this shop happens to have written the code itself does not move the
+      classification. The type grades how much competitive advantage a region carries, not who
+      built it, and reading it honestly is what tells a team that this is the first part of the
+      model a bought product could replace without anyone noticing the difference.
+    type: generic-domain
+    complexity: crud
+    model_traits: [information-holder]
+  - id: DMN005
+    name: delivery
+    description: >
+      Getting a confirmed order out of the door and into the customer's hands: picking and packing
+      what was bought, choosing who carries it, and being able to say where it has got to.
+      Named `delivery` rather than `shipping` because this model already has a domain called
+      `shopping`, and on a projected context map the two differ by one letter.
+      Classified `supporting-domain` and not core: the shop competes on the range it chooses and
+      on how quickly an order leaves the building, but it does not own a van, negotiate a rate or
+      run a route - it hands a parcel to a third party and reports what that party says back.
+      It is also the one region here that no code implements. That is not what the type means and
+      does not change it; where the model says it is `provenance` on each entity in the delivery
+      folder, and the absence of a `code_ref` on any of them.
+    type: supporting-domain
+    complexity: state-management
+    model_traits: [controller, interfacer]
+
+# Migrations: file refs listed here are "applied" (define AS-IS state).
+# Files in .migrations/ NOT listed here are "pending" (visible in TO-BE).
+#
+# MIG005 is the only applied migration. It is the record of how Orders and Inventory
+# came to declare `conformist / downstream` on each other, which is a contradiction in
+# the pattern's own terms and is the state the model files carry today. Run
+# `bp migration check ecommerce` to confirm every property it claims to have set is the
+# value the files hold.
+#
+# MIG006 is the correction and is deliberately NOT listed: it is pending, it shows in
+# TO-BE, and its targets still carry the act-2 values.
+migrations:
+  - file: .migrations/005-inventory-subscribes-to-order-submitted.migration.yaml

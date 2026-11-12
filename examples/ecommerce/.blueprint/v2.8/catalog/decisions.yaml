@@ -1,0 +1,70 @@
+version: "1.0.0"
+scope: catalog
+owned_by:
+  team: TM002
+decisions:
+  - id: catalog.DC001
+    title: "Catalog publishes no events; readers hold a timed copy"
+    summary: "Downstream reads the catalog on a TTL instead of being told when it changed"
+    date: "2025-07"
+    status: accepted
+    rationale:
+      problem: >
+        Four contexts read this catalog and none of them is told when a product
+        is published, repriced, or recategorised. Either the catalog starts
+        publishing facts onto the shop event bus so readers can invalidate what
+        they hold, or readers keep a copy that goes stale on a timer and nobody
+        is notified at all.
+      options:
+        - "Publish ProductPublished / PriceChanged / CategoryCreated onto the shop event bus and let each reader invalidate its copy"
+        - "Publish nothing; readers serve from a five-minute cache and refresh on expiry"
+      chosen: >
+        Publish nothing. The catalog price is a quote and not a contract
+        (catalog.BD001): checkout captures its own unit price when a line is
+        created and orders captures it again, so no reader is ever charging from
+        the catalog's live figure. Freshness that nothing downstream spends is
+        freshness not worth an event bus subscription in every reader, and a
+        reader that polls on expiry needs no ordering, no replay, and no
+        dead-letter handling.
+    motivation_refs:
+      assumptions: [catalog.ASM001]
+      questions: [catalog.QN003]
+    declared_impact:
+      direct:
+        concepts: [catalog.CN999, catalog.CN002]
+        operations: [catalog.CMD001, catalog.CMD002, catalog.CMD003]
+      transitive_hints:
+        - "Checkout cannot warn that a captured price has diverged, because nothing tells it the catalog price moved (checkout.DC001)"
+        - "A storefront read model would have to be rebuilt by polling rather than driven by events (storefront.DC001)"
+    owned_by:
+      team: TM002
+    consequences:
+      positive:
+        - "No reader has to subscribe to a broker to show a product"
+        - "The three admin commands stay free of publishing concerns and cannot half-fail between the write and the event"
+      negative:
+        - "A price correction reaches shoppers only when a cache expires, which is what makes catalog.ASM001 load-bearing"
+        - "No record of what the price was before it changed: catalog.QN003 stays unanswered and the decision is the reason"
+        - "Every command in this context shows as having no produces link, which is the shape this decision chose"
+    tags: [integration, pricing]
+business_decisions:
+  - id: catalog.BD001
+    name: "The catalog price is a quote, not a contract"
+    description: >
+      The catalog holds the current asking price. A cart captures the price when
+      the item is added and an order captures it again when the line is created,
+      and neither is rewritten when the catalog price later changes. A shopper is
+      therefore charged the price they were shown, and a price correction never
+      reaches back into carts or orders already holding the product.
+    domain_scope: catalog
+    linked_contexts: [checkout, orders]
+    tags: [pricing]
+  - id: catalog.BD002
+    name: "A product belongs to exactly one category"
+    description: >
+      Categories are a single browsing tree, not a tagging scheme. Every product
+      sits in one category and is reached through one path, which is what lets a
+      category listing be complete and a category count be a number rather than
+      an estimate. Cross-selling is handled by search, not by multiple homes.
+    domain_scope: catalog
+    tags: [taxonomy]

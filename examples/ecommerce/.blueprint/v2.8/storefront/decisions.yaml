@@ -1,0 +1,72 @@
+version: "1.0.0"
+scope: storefront
+owned_by:
+  team: TM003
+tags: [read-side, customer-facing]
+decisions:
+  - id: storefront.DC001
+    title: "Compose every page at read time; keep no read model"
+    summary: "Live queries on each render instead of a storefront-owned copy kept current"
+    date: "2025-08"
+    status: accepted
+    rationale:
+      problem: >
+        The storefront renders pages out of four other contexts. It can either
+        hold its own copy of what it displays, kept current from the event bus,
+        and render each page from that one local store; or it can call the
+        upstream queries every time a page is requested and hold nothing.
+      options:
+        - "Maintain a storefront-owned read model, updated from the shop event bus, and render from it"
+        - "Call the upstream queries on every render and keep nothing"
+      chosen: >
+        Call on every render. A maintained copy has to be told when it is
+        wrong, and the upstream whose data moves most - Catalog - publishes
+        nothing at all (catalog.DC001). Its half of the copy would therefore
+        have to be refreshed by polling, which is this option with a store
+        added, and a store that can be stale without anyone finding out. The
+        model as it stands exposes six queries and this context calls all six,
+        so read-time composition needs no capability the shop does not already
+        have.
+    motivation_refs:
+      assumptions: [storefront.ASM001, storefront.ASM002, storefront.ASM003]
+      questions: [storefront.QN003]
+    declared_impact:
+      direct:
+        concepts: [storefront.CN001, storefront.CN002]
+        operations:
+          - catalog.QRY001
+          - catalog.QRY002
+          - inventory.QRY001
+          - checkout.QRY001
+          - orders.QRY001
+          - orders.QRY002
+      transitive_hints:
+        - "Every upstream query is now on a page-render path, so its latency is a shopper-visible latency"
+        - "This context handles no operation of its own by design; the empty-context warning it raises is the shape, not a gap"
+        - "If Catalog ever publishes events, the rejected read-model option becomes buildable and this decision should be revisited"
+    owned_by:
+      team: TM003
+    consequences:
+      positive:
+        - "Nothing to rebuild, reconcile or invalidate: the shop has one copy of each fact and it is upstream"
+        - "A change to a product or an order is visible as soon as its owning context serves it"
+      negative:
+        - "Availability is the product of four upstreams rather than of one local store (storefront.ASM001)"
+        - "Nothing records what a page showed, which is why storefront.QN003 has no answer anywhere in the shop"
+        - "A read-heavy page multiplies into several upstream calls, and no budget for that fan-out is stated"
+    tags: [integration, read-side]
+business_decisions:
+  - id: storefront.BD001
+    name: "A page degrades rather than fails, except where the data is the page"
+    description: >
+      An upstream that does not answer costs the shopper the part of the page
+      it supplied, not the page. A product page without Inventory renders with
+      no availability line; the header cart badge without Checkout renders
+      empty. The exception is Catalog: its data is the page, so a product page
+      without it does not render at all. The cost of degrading is that a
+      shopper can be shown a product with no indication of whether it can be
+      bought, and nothing on the page distinguishes that from an item the shop
+      is simply not saying anything about.
+    domain_scope: storefront
+    linked_contexts: [catalog, inventory, checkout]
+    tags: [resilience]

@@ -1,0 +1,546 @@
+# Commands named in this file use the commercial Archally Pro CLI (https://archally.pro).
+---
+version: "1.0.0"
+schemaVersion: "2.8.0"
+owned_by:
+  party: PRT001
+tags: [roadmap, demo, as-is-vs-to-be]
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  E-SHOP: WHAT EXISTS, AND WHAT IS ONLY DESCRIBED
+#
+#  One line runs down this chart, and it is the only thing it is for. To the left
+#  of it, every bar is something a reader can go and run, open or replay. To the
+#  right, every bar is something this model says and no code does yet. A bar's
+#  `status` says which side it is on; `confidence` says how much the placement of
+#  an open bar is worth.
+#
+#  Read the two together. `achieved` plus `committed` is a fact. `planned` plus
+#  `tentative` is a sentence somebody wrote down, placed where it would go if it
+#  were true. Nothing here is `committed` unless it has already shipped, and that
+#  is a deliberate rule rather than an accident of drafting: a roadmap that awards
+#  confidence to work nobody has started is the failure mode this chart exists to
+#  make visible.
+#
+#  WHAT IS DELIBERATELY NOT ON THIS CHART. The migration files dated February
+#  carry `status: pending` and `status: draft` in their own front matter, and the
+#  bars covering them do not claim their CONTENT shipped. What shipped is the
+#  chapter: a written, replayable record of a change, one of which is invalid on
+#  purpose. The bars are named for that, never for the feature the migration
+#  describes, so nobody reads "loyalty programme" off this chart and goes looking
+#  for one. Of the seven chapters exactly one, MIG005, has been applied to the
+#  files; `blueprint.yaml` lists that one and no other.
+#
+#  Sources, once, so no entry repeats them:
+#    migrations   .migrations/00{1..7}-*.migration.yaml  (`bp node ecommerce MIG00N`)
+#    applied set  blueprint.yaml `migrations:`           (one entry: MIG005)
+#    the shop     a separate repository, first commit 2025-09-14, still running.
+#                 Four runnable Node/Angular units and two .NET services, the
+#                 second of them (inventory) added 2026-09-24. SDK 10.0.302.
+#                 Messaging dependencies across all eight manifests - six
+#                 package.json, two .csproj in the solution: zero.
+#    event gap    four operations in this model carry `kind: event` (checkout,
+#                 delivery, inventory, orders) and `infrastructure.yaml` declares a
+#                 `broker` named Shop Event Bus. None of the four is published or
+#                 consumed by anything that runs.
+#  Measured 2026-09-25.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# The axis origin and tick size. Two-week sprints from mid-February 2026, which is
+# the first date anything below carries; the shop itself is older than this window
+# and WI001 says so in its note rather than dragging the axis back five months to
+# accommodate one bar.
+cadence:
+  anchor_sprint: 1
+  anchor_start: "2026-02-16"
+  sprint_length_days: 14
+
+milestones:
+  # ── Behind us ──────────────────────────────────────────────────────────────
+  - id: MS001
+    name: "The model matches the shop that runs"
+    description: >
+      The point at which this model stopped being a sketch of an e-shop and became a
+      description of a particular one. Eight bounded contexts over five domains, every
+      operation traced to a service that answers it, and the first change to the running
+      system recorded as a replayable migration rather than as a commit message.
+    target_date: "2026-05-12"
+    status: achieved
+    deliverables:
+      - kind: operation
+        ref: orders.CMD001
+        description: "Submit Order, as the shop actually exposes it over HTTP."
+      - kind: operation
+        ref: inventory.CMD001
+        description: "Reserve Stock, the operation the order settles against."
+      - kind: migration
+        ref: MIG005
+        description: >
+          The one migration in this model whose effects are in the files. It moved the
+          trigger for Reserve Stock off a synchronous call and onto the event bus.
+    success_criteria:
+      - "bp validate exits 0 with no schema and no cross-reference errors"
+      - "Every context in eshop.arch.yaml names the domain it realizes with domain_ref"
+      - "bp migration check confirms every property MIG005 claims to have set is the value the files hold"
+    realizes_decisions: [orders.DC001, inventory.DC001]
+    advances_goals: [orders.GL001]
+    owned_by:
+      team: TM001
+    tags: [as-is, shipped]
+
+  - id: MS002
+    name: "What the model does not know is on the record"
+    description: >
+      The harder half, and the reason this model is worth showing to a room. Four findings
+      name places where the model and the code disagree; two corrections are written as
+      migrations and deliberately left unapplied, so the files still carry the state the
+      shop is in; and one whole domain is described with nothing behind it and marked
+      speculative in every entity, rather than quietly drawn as though it were real.
+    target_date: "2026-09-23"
+    status: achieved
+    deliverables:
+      - kind: operation
+        ref: delivery.CMD001
+        description: >
+          Prepare Shipment: modelled, not implemented. Carries provenance hypothesis /
+          speculative and no code_refs, which is the pair that says so.
+      - kind: operation
+        ref: delivery.QRY001
+        description: "Track Shipment, on the same footing: described, with nothing behind it."
+    success_criteria:
+      - "Every entity in the delivery slice carries provenance with certainty speculative and no code_refs"
+      - "Four findings (catalog.FN001, customers.FN001, customers.FN002, orders.FN001) each name an entity the disagreement is about"
+      - "MIG006 and MIG007 build and are absent from blueprint.yaml migrations, so TO-BE shows them and AS-IS does not"
+    dependencies: [MS001]
+    owned_by:
+      team: TM001
+    tags: [as-is, shipped, honesty]
+
+  # ── Ahead of us ────────────────────────────────────────────────────────────
+  - id: MS003
+    name: "The events the model draws actually leave their service"
+    description: >
+      The largest single gap between this model and this shop. Four operations are declared
+      as events and an event bus is declared in infrastructure.yaml, and not one message is
+      published or consumed by anything that runs: every interaction in the shop is an HTTP
+      call. This milestone closes that, and applies the two corrections that have been
+      sitting staged since September.
+    target_date: "2026-12-18"
+    status: planned
+    deliverables:
+      - kind: migration
+        ref: MIG006
+        description: "Applied: Orders and Inventory stop each declaring themselves downstream of the other."
+      - kind: migration
+        ref: MIG007
+        description: "Applied: account closure moves onto the storefront, behind an admin role."
+      - kind: operation
+        ref: orders.EVT001
+        description: "Order Submitted, published for the first time rather than only declared."
+      - kind: operation
+        ref: inventory.EVT001
+        description: "Stock Reserved, consumed by something other than a diagram."
+    success_criteria:
+      - "A broker is reachable in the environment infrastructure.yaml places one in"
+      - "At least one service declares a messaging dependency, where today all eight manifests declare none"
+      - "The asyncapi contracts on SVC003 and SVC004 are generated from the model and checked against what the code emits"
+    dependencies: [MS002]
+    realizes_decisions: [orders.DC001]
+    advances_goals: [orders.GL001, orders.GL002]
+    # Redirected 2026-09-25: customers.RSK002 closed when the shop grew a sign-in, and what
+    # this milestone would reduce is the residual - no endpoint checks the token (customers.RSK004).
+    mitigates_risks: [orders.RSK001, customers.RSK004]
+    owned_by:
+      team: TM001
+    tags: [to-be]
+
+  - id: MS004
+    name: "Inventory and Shipments exist in code, or the model says why not"
+    description: >
+      Two contexts this model describes, one served in part and the other not at all.
+      Inventory has a service in eshop.arch.yaml, an OpenAPI contract and three operations;
+      a .NET 10 unit added 2026-09-24 serves the two HTTP ones on :3004, and the third, the
+      Stock Reserved event, has nothing publishing it - nor is the Order Submitted
+      subscription its asyncapi contract declares wired anywhere. Shipments has a whole
+      slice and not even a unit. The milestone is written with two acceptable outcomes on
+      purpose: either the code arrives, or the model retires the claim. What is not
+      acceptable is a third year of either context reading as though it were wholly running.
+    target_date: "2027-03-26"
+    status: planned
+    deliverables:
+      - kind: operation
+        ref: inventory.QRY001
+        description: "Check Stock, answered by a process rather than by a contract."
+      - kind: operation
+        ref: delivery.EVT001
+        description: "Shipment Dispatched, raised by a shipping service that exists."
+    success_criteria:
+      - "Every operation in the inventory slice carries a code_ref, or the slice records why it cannot"
+      - "The delivery slice either loses its speculative provenance or gains a written decision to retire it"
+    dependencies: [MS003]
+    realizes_decisions: [inventory.DC001]
+    advances_goals: [orders.GL002]
+    mitigates_risks: [inventory.RSK001]
+    owned_by:
+      team: TM002
+    tags: [to-be, unfunded]
+
+work_items:
+  # ── Behind us: three lanes, all achieved, all committed ────────────────────
+  - id: WI001
+    kind: foundation
+    name: "The shop, HTTP only"
+    description: >
+      Four Node and Angular units plus one .NET service, serving a catalogue, a cart, orders,
+      customers, a storefront and a back office. It is the substrate every other bar on this
+      chart is about, and it has been running continuously underneath all of them. The shop's
+      second .NET unit, inventory, is not part of this lane: it arrived 2026-09-24 and belongs
+      to WI014.
+    status: achieved
+    confidence: committed
+    progress: 100
+    start_sprint: 1
+    end_sprint: 16
+    owned_by:
+      team: TM001
+    note: >
+      No milestone rollup on purpose: the shop is the substrate every milestone below is
+      measured against, not a thing any one of them delivered.
+      The bar starts at this chart's origin, not at the shop's. First commit is 2025-09-14,
+      five months before sprint 1, and drawing it would have bought an accurate left edge at
+      the price of a fifth of the axis being empty. Nothing is hidden by the trim: the shop's
+      one relevant property is constant across the whole window, which is that it speaks
+      HTTP and has never published a message.
+    tags: [as-is, substrate]
+
+  - id: WI002
+    kind: epic
+    name: "The model catches up"
+    description: >
+      Writing down what is already running, and then recording the first change to it in a
+      form that can be replayed rather than retold.
+    milestone: MS001
+    status: achieved
+    confidence: committed
+    progress: 100
+    start_sprint: 1
+    end_sprint: 7
+    owned_by:
+      team: TM001
+    tags: [as-is, shipped]
+    children:
+      - id: WI003
+        kind: subscope
+        name: "Eight contexts, five domains"
+        description: >
+          Eight slice folders holding eight bounded contexts, grouped into five regions of
+          the business. The two partitions are not the same partition and the model says so
+          explicitly: merchandising is written in two folders, shopping in two, fulfilment in
+          two, customers and delivery in one each. A context names its domain with domain_ref
+          in eshop.arch.yaml, so the grouping is read back from the model rather than guessed
+          off the filesystem.
+        status: achieved
+        confidence: committed
+        progress: 100
+        start_sprint: 1
+        end_sprint: 4
+        owned_by:
+          team: TM001
+        tags: [as-is]
+
+      - id: WI004
+        kind: subscope
+        name: "Four chapters, one broken"
+        description: >
+          The teaching set: a concept addition, an aggregate split, a bulk tagging pass, and
+          one migration written to fail so that a reader can see what the tooling says when a
+          change does not hold. What shipped here is the record and its replay, not the four
+          features the records describe. All four are still pending or draft in their own
+          front matter and none is listed in blueprint.yaml.
+        status: achieved
+        confidence: committed
+        progress: 100
+        start_sprint: 1
+        end_sprint: 2
+        owned_by:
+          team: TM001
+        note: >
+          MIG001 add-payment-retry-concept, MIG002 split-order-aggregate, MIG003
+          tag-payment-operations, MIG004 add-loyalty-program. MIG004 is the deliberately
+          broken one: it re-adds a concept that already exists, and the duplicate it creates
+          is the one gap warning bp validate reports against this model.
+        tags: [as-is, teaching-fixture]
+
+      - id: WI005
+        kind: subscope
+        name: "Reservation moves onto the bus"
+        description: >
+          The one migration in this model that was applied. It moved the trigger for Reserve
+          Stock from a synchronous call onto a subscription, and the subscription arrived with
+          a dependency declaration that left Orders and Inventory each claiming to be
+          downstream of the other. Two contexts cannot both be the conformist side of one
+          relationship. Nothing in the toolchain objected: the schema accepts both, every
+          reference in them resolves, and no rule reads a pair of dependencies together. The
+          statement stayed wrong until a person read the context map.
+        status: achieved
+        confidence: committed
+        progress: 100
+        start_sprint: 7
+        end_sprint: 7
+        owned_by:
+          team: TM001
+        realizes_decisions: [orders.DC001]
+        tags: [as-is, shipped]
+
+  - id: WI006
+    kind: epic
+    name: "The gaps written down"
+    description: >
+      Three different shapes of not-knowing, each given the field the schema has for it
+      rather than a comment: a disagreement with the code becomes a finding, a correction
+      that has not been made becomes an unapplied migration, and a design with nothing behind
+      it becomes speculative provenance.
+    milestone: MS002
+    status: achieved
+    confidence: committed
+    progress: 100
+    start_sprint: 13
+    end_sprint: 16
+    owned_by:
+      team: TM001
+    tags: [as-is, shipped, honesty]
+    children:
+      - id: WI007
+        kind: subscope
+        name: "Four findings, four disagreements"
+        description: >
+          A write the running shop does not perform (catalog.FN001); three different
+          situations arriving at the pricing step as one indistinguishable empty set
+          (customers.FN001); a decision made for the storefront and built in the back office
+          (customers.FN002); and a draft-then-submit stage surviving in three operations after
+          the lifecycle that needed it was removed (orders.FN001).
+        status: achieved
+        confidence: committed
+        progress: 100
+        start_sprint: 13
+        end_sprint: 15
+        owned_by:
+          team: TM001
+        tags: [as-is, findings]
+
+      - id: WI008
+        kind: subscope
+        name: "Two corrections, not applied"
+        description: >
+          MIG006 replaces the mutually conformist declarations with published-language on both
+          sides. MIG007 moves the surface for closing an account onto the storefront, which is
+          what customers.DC003 decided and what no running code does. Neither is listed in
+          blueprint.yaml, so the files still carry the state the shop is in and the two
+          migrations are what a TO-BE view adds to it. That is the separation the whole model
+          is built to demonstrate, and applying either would destroy it.
+        status: achieved
+        confidence: committed
+        progress: 100
+        start_sprint: 16
+        end_sprint: 16
+        owned_by:
+          team: TM001
+        realizes_decisions: [customers.DC003]
+        tags: [as-is, staged]
+
+      - id: WI009
+        kind: subscope
+        name: "A domain with no code behind it"
+        description: >
+          The delivery slice: one bounded context, four operations, a service in the arch file,
+          and no implementation anywhere. Every entity carries provenance reading hypothesis
+          and speculative, none carries a code_ref, and the service is deliberately absent from
+          infrastructure.yaml because there is nothing deployed to place in a tier. Writing it
+          surfaced a defect nobody had noticed: Orders publishes nothing a shipping context
+          could subscribe to, so Prepare Shipment has to react to Inventory's Stock Reserved,
+          which says stock is held rather than that the order survived.
+        status: achieved
+        confidence: committed
+        progress: 100
+        start_sprint: 16
+        end_sprint: 16
+        owned_by:
+          team: TM001
+        note: >
+          delivery.QN002 holds the open question about the missing confirmation signal and
+          delivery.ASM001 holds what the design assumes while it stays open. Both are blocking
+          in the sense that matters: they decide whether this context can be built as drawn.
+        tags: [as-is, speculative]
+
+  # ── Ahead of us: nothing committed, and the confidence says how much less ──
+  - id: WI010
+    kind: epic
+    name: "The corrections applied"
+    description: >
+      Both are already written, reviewed and buildable, which is why this is the only open
+      lane with any estimated work in it. What has not happened is the decision to apply them
+      and, for one of the two, the code change that would make the model true.
+    milestone: MS003
+    status: planned
+    confidence: estimated
+    start_sprint: 17
+    end_sprint: 21
+    owned_by:
+      team: TM001
+    tags: [to-be]
+    children:
+      - id: WI011
+        kind: subscope
+        name: "Neither context is downstream now"
+        description: >
+          Apply MIG006. Both sides become published-language with direction peer, which is what
+          the pair actually has: two published events with payload schemas that are part of a
+          contract, and neither context deferring to the other's model. This is a model change
+          with no code behind it, which is the entire reason it is cheap.
+        status: planned
+        confidence: estimated
+        start_sprint: 17
+        end_sprint: 18
+        owned_by:
+          team: TM001
+        realizes_decisions: [orders.DC001]
+        tags: [to-be, model-only]
+
+      - id: WI012
+        kind: subscope
+        name: "Closure moves to the storefront"
+        description: >
+          Apply MIG007, and then do the part the migration cannot: the back office's delete
+          still exists in code and was never declared in eshop.arch.yaml, so applying the
+          migration alone leaves the shop with two ways to do what customers.DC003 says has
+          one. Retiring the back-office control is a code change and is what makes this
+          tentative rather than estimated.
+        status: planned
+        confidence: tentative
+        start_sprint: 19
+        end_sprint: 21
+        owned_by:
+          team: TM003
+        realizes_decisions: [customers.DC003]
+        # customers.RSK002 closed on 2026-09-25 when an operator sign-in landed. The risk this
+        # work still reduces is the residual one: a role nothing reads over endpoints nothing
+        # gates (customers.RSK004).
+        mitigates_risks: [customers.RSK004]
+        blockers:
+          - text: >
+              customers.QN004 (who closes an account) and customers.QN005 (whose record is a
+              shop operator) are both open, and the second decides whether an admin role is
+              something this model can express at all. The sign-in that landed on 2026-09-25
+              narrowed the second without answering it: two operations over the operator
+              collection are now modelled and the rest are not.
+        tags: [to-be]
+
+  - id: WI013
+    kind: epic
+    name: "The events actually sent"
+    description: >
+      Today this shop is HTTP end to end. Four operations carry kind event, two asyncapi
+      contracts name a brokerId of shop-event-bus, infrastructure.yaml declares the broker,
+      and the measured count of messaging dependencies across all seven service manifests is
+      zero. Everything on the model side of this is already written; none of it is wired.
+    milestone: MS003
+    status: planned
+    confidence: estimated
+    start_sprint: 18
+    end_sprint: 22
+    owned_by:
+      team: TM001
+    realizes_decisions: [orders.DC001]
+    advances_goals: [orders.GL001, orders.GL002]
+    mitigates_risks: [orders.RSK001]
+    note: >
+      Estimated rather than tentative because the shape is fully specified: the model already
+      names which service sends each message, which receives it, over which broker, with which
+      payload schema. What is unknown is effort, not design.
+    blockers:
+      - text: >
+          No broker runs in any environment. infrastructure.yaml declares Shop Event Bus as a
+          k8s resource, and that declaration has never been provisioned.
+    tags: [to-be, the-big-one]
+
+  - id: WI014
+    kind: epic
+    name: "Inventory gets built"
+    description: >
+      SVC004 is declared in eshop.arch.yaml with an OpenAPI contract exposing Reserve Stock and
+      Check Stock, and an asyncapi contract that sends Stock Reserved and receives Order
+      Submitted. The HTTP half is built: a .NET 10 unit at services/inventory-service, added
+      2026-09-24, listens on :3004 and serves both exposed operations, making it the shop's
+      second .NET unit alongside the customer service. What this lane still covers is the
+      asyncapi half - nothing publishes Stock Reserved and nothing subscribes to Order
+      Submitted.
+    milestone: MS004
+    status: planned
+    confidence: tentative
+    start_sprint: 21
+    end_sprint: 26
+    owned_by:
+      team: TM002
+    realizes_decisions: [inventory.DC001]
+    advances_goals: [orders.GL002]
+    mitigates_risks: [inventory.RSK001]
+    depends_on: [WI013]
+    note: >
+      Tentative on scope as much as on date. Inventory's asyncapi contract is half the work and
+      it cannot be built before a broker exists, so this lane's left edge is a consequence of
+      WI013 rather than a choice.
+    tags: [to-be, dotnet]
+
+  - id: WI015
+    kind: epic
+    name: "Shipments built, or cut"
+    description: >
+      The delivery slice describes a context no process serves. Two outcomes are acceptable and
+      they are written here together on purpose: either a shipping service is built and the
+      slice loses its speculative provenance, or a decision retires the claim and the slice goes
+      with it. The failure mode this lane guards against is neither happening, and the model
+      continuing to draw a context that reads as real to anyone who does not check provenance.
+    milestone: MS004
+    status: planned
+    confidence: tentative
+    start_sprint: 24
+    end_sprint: 29
+    buffer_end_sprint: 30
+    owned_by:
+      team: TM001
+    depends_on: [WI013, WI014]
+    blockers:
+      - text: >
+          delivery.QN002 is open, and it is the question that decides whether this context can
+          be built as drawn: what tells the shipping side that an order was confirmed. Prepare
+          Shipment reacts to Stock Reserved, which says stock is held rather than that the
+          order survived, and an order cancelled after confirmation tells neither context. The
+          blocker clears when that question carries an answer, not when a signal merely exists.
+    note: >
+      The widest bar on this chart and the least load-bearing. Everything in it is a design
+      judgement with no evidence behind it, which is exactly what the slice's own provenance
+      blocks say, and the buffer tail is an admission that even the shape of the work is a
+      guess.
+    tags: [to-be, speculative, unfunded]
+
+  # ── An instrument rather than a feature ───────────────────────────────────
+  - id: WI016
+    kind: task
+    name: "The storefront times its interactions"
+    description: >
+      Build PRB002: a timer in the storefront around every act that calls a service, whose
+      readings are kept somewhere a person can find them. Until it exists storefront.MT002 has
+      no instrument and the one-second budget the product owner agreed (storefront.SLO002)
+      cannot be read, met or missed. The work ends when the metric's `collection` can say
+      `measured` and name where the results are.
+    status: planned
+    confidence: tentative
+    start_sprint: 17
+    end_sprint: 18
+    owned_by:
+      team: TM003
+    note: >
+      Tentative because where the readings are kept is undecided. infrastructure.yaml declares
+      an observability stack (IR011), and no service or app in the shop carries a telemetry
+      library that would send to it, so choosing the destination is part of the work.
+    tags: [to-be, instrument]

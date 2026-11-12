@@ -1,0 +1,49 @@
+version: "1.0.0"
+name: Catalog
+scope: catalog
+operations:
+  checkOrderStock:
+    id: catalog.CMD001
+    kind: command
+    dispatch: inprocess
+    name: Check Order Stock
+    description: Compares each line's units with the item's available stock; any shortfall rejects the whole order.
+    reacts_to:
+      - operation: ordering.EVT004
+        policy: When an order awaits validation, check its stock
+    produces:
+      operations: [catalog.EVT001, catalog.EVT002]
+      mode: one_of
+    task_type: automated
+    code_refs:
+      - path: src/Catalog.API/IntegrationEvents/EventHandling/OrderStatusChangedToAwaitingValidationIntegrationEventHandler.cs
+        role: implementation
+  removeStock:
+    id: catalog.CMD002
+    kind: command
+    dispatch: inprocess
+    name: Remove Stock
+    reacts_to:
+      - operation: ordering.EVT006
+        policy: When an order is paid, take its units out of stock
+    task_type: automated
+  orderStockConfirmed:
+    id: catalog.EVT001
+    kind: event
+    name: Order Stock Confirmed
+    description: Every line of the order is in stock.
+    exchange:
+      protocol: amqp
+      topic:
+        name: OrderStockConfirmedIntegrationEvent
+        channel_ref: MCH001
+  orderStockRejected:
+    id: catalog.EVT002
+    kind: event
+    name: Order Stock Rejected
+    description: At least one line of the order is out of stock; the event lists which.
+    exchange:
+      protocol: amqp
+      topic:
+        name: OrderStockRejectedIntegrationEvent
+        channel_ref: MCH001

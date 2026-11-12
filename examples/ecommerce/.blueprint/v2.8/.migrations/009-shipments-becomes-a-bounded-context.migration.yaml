@@ -1,0 +1,143 @@
+# PENDING: deliberately NOT listed in blueprint.yaml `migrations:`. The model files carry the shop
+# as it is, and as it is there is no Shipments context: nothing in the delivery folder is built.
+# The delivery domain, its operations, concepts and models stay in the files, because they state
+# the design; what this migration adds is the bounded context and the service that would carry
+# them. Before it, the three delivery operations belong to no context and the context map shows
+# none for them. After it, Shipments is a context card holding Prepare Shipment, Shipment
+# Prepared and Get Shipment.
+#
+# WHY ITS TARGETS ARE SPELLED BY NAME. The same reason MIG006's, MIG007's and MIG008's are: a
+# pending migration has to BUILD, and the replay engine resolves a context or a service against
+# the built entity graph, where both are keyed by name. The context and the service are added
+# with the ids an arch file would give them (`BC008`, `SVC009`) and keyed by their names
+# (`Shipments`, `ShipmentService`), as a built arch file keys them, so that MIG008, which depends
+# on this migration, finds them where it always looked, and delivery.QN001 and QN002 resolve
+# `bounded_context_ref: BC008` to the context.
+schemaVersion: "2.8.0"
+migration:
+  id: MIG009
+  name: shipments-becomes-a-bounded-context
+  date: "2026-10-08"
+  status: pending
+  author: "architect"
+  description: >
+    Shipments becomes a bounded context. Today the delivery domain (DMN005) is designed and not
+    built: its operations, concepts and models are in the model, and no context and no service
+    carries them, so the context map shows no Shipments. This migration adds the Shipments
+    context (BC008) realizing the delivery domain, its ShipmentService (SVC009) with the
+    shipments-api contract exposing Prepare Shipment and Get Shipment and the shipments-events
+    contract sending Shipment Prepared, and its dependency on Inventory, whose Stock Reserved
+    event opens every shipment.
+  rationale: >
+    The delivery folder was written as a proposal - every entity in it carries provenance
+    hypothesis / speculative and none carries a code_ref. Declaring the context and its service
+    in the model files said more than that: it drew a context on the AS-IS map that nothing
+    runs. Holding the context and the service here keeps AS-IS to what exists and shows
+    Shipments at the point in time where it is introduced. MIG008, which moves Shipments onto
+    an Orders event, depends on this migration because it rewrites the dependency and the
+    contract added here.
+  tags: [context-map, delivery, shipments, new-context]
+
+changes:
+  entities:
+    - kind: add
+      entity_type: context
+      target: Shipments
+      description: "The Shipments bounded context, realizing the delivery domain."
+      group: "shipments-context"
+      after:
+        id: BC008
+        name: Shipments
+        kind: support
+        domain_ref: DMN005
+        summary: >
+          Getting a confirmed order out of the door: what was packed, who carries it, and where it
+          has got to. Bounded context BC008. Nothing in this context is implemented: every entity
+          in the delivery folder carries provenance reading hypothesis / speculative, and none
+          carries a code_ref.
+        responsibilities:
+          - "Open a shipment for an order whose stock is held, and carry it to dispatch"
+          - "Record which carrier took the parcel and what reference it gave back"
+          - "Answer where a parcel is, read by the order it settles"
+          - "Own no order state - the order's own status belongs to Orders and is set there by hand"
+        dependencies:
+          - name: Inventory
+            bounded_context_ref: BC003
+            relationship: conformist
+            direction: downstream
+            language_boundary: false
+            description: >
+              Consumes Stock Reserved. Prepare Shipment (delivery.CMD001) reacts to it, so every
+              shipment this context opens originates in an Inventory event. It is a dependency of
+              necessity rather than of design: the event this context wants is an order being
+              confirmed, and Orders raises none (delivery.QN002, delivery.ASM001).
+        services:
+          - id: SVC009
+            name: ShipmentService
+            kind: api
+
+    - kind: add
+      entity_type: service
+      target: ShipmentService
+      description: "The proposed service that carries the three delivery operations."
+      group: "shipments-context"
+      after:
+        id: SVC009
+        name: ShipmentService
+        kind: api
+        summary: >
+          Service SVC009. Proposed. One command a dispatch clerk runs, one read, and one event
+          nothing in this model subscribes to yet.
+        provenance:
+          discovery_stage: hypothesis
+          certainty: speculative
+        contracts:
+          openapi:
+            contract_name: shipments-api
+            expose:
+              - delivery.CMD001
+              - delivery.QRY001
+          asyncapi:
+            contract_name: shipments-events
+            send:
+              - delivery.EVT001
+            receive:
+              - inventory.EVT001
+            brokerId: shop-event-bus
+        _context: Shipments
+
+  relationships:
+    - kind: add
+      subject: Shipments
+      predicate: contains
+      object: ShipmentService
+      description: "The Shipments context contains the Shipment Service."
+      group: "shipments-context"
+
+    - kind: add
+      subject: Shipments
+      predicate: context_depends_on
+      object: Inventory
+      edge_properties:
+        relationship: conformist
+        direction: downstream
+        language_boundary: false
+      description: "Shipments depends on Inventory, whose Stock Reserved opens a shipment."
+      group: "shipments-context"
+
+  properties:
+    - kind: set
+      target: delivery.QN001
+      entity_type: question
+      property: bounded_context_ref
+      value: BC008
+      description: "Parcel whereabouts is a question of the Shipments context."
+      group: "shipments-questions"
+
+    - kind: set
+      target: delivery.QN002
+      entity_type: question
+      property: bounded_context_ref
+      value: BC008
+      description: "Confirmation signal is a question of the Shipments context."
+      group: "shipments-questions"

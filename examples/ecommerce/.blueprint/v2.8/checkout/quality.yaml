@@ -1,0 +1,29 @@
+version: "1.0.0"
+scope: checkout
+owned_by:
+  team: TM003
+kpis:
+  - id: checkout.KPI001
+    name: "Cart-to-order conversion"
+    description: >
+      The share of carts that reach a submitted order. The verification the
+      anonymous-cart decision is bought with: removing the sign-in barrier is
+      worth its cost only if it converts.
+    target: "> 25%"
+    window: "30d rolling"
+    domain_scope: checkout
+    thresholds:
+      warning: "20%"
+      critical: "15%"
+  - id: checkout.KPI002
+    name: "Cart items rejected for stock at submission"
+    description: >
+      The share of submitted orders that fail on Insufficient Stock. Measures
+      how often the in-stock assumption is wrong at the only moment the customer
+      finds out.
+    target: "< 2%"
+    window: "30d rolling"
+    domain_scope: checkout
+    thresholds:
+      warning: "2%"
+      critical: "5%"

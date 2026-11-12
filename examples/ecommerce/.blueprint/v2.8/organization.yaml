@@ -1,0 +1,36 @@
+version: "1.0.0"
+parties:
+  - id: PRT001
+    name: "E-Shop"
+    description: "Online laptop and electronics retailer"
+    departments:
+      - id: DPT001
+        name: "Engineering"
+        description: "Software engineering and platform development"
+        teams: [TM001, TM002]
+      - id: DPT002
+        name: "Product"
+        description: "Product management and design"
+        teams: [TM003]
+    teams:
+      - id: TM001
+        name: "Order Platform Team"
+        description: "Owns order processing and fulfillment"
+        contact:
+          email: orders@eshop.example
+          slack: "#team-orders"
+        tags: [core, orders]
+      - id: TM002
+        name: "Catalog & Inventory Team"
+        description: "Owns product catalog and stock management"
+        contact:
+          email: catalog@eshop.example
+          slack: "#team-catalog"
+        tags: [core, catalog, inventory]
+      - id: TM003
+        name: "Checkout Experience Team"
+        description: "Owns shopping cart and checkout flow"
+        contact:
+          email: checkout@eshop.example
+          slack: "#team-checkout"
+        tags: [core, checkout, ux]

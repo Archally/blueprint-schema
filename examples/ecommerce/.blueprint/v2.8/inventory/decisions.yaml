@@ -1,0 +1,70 @@
+version: "1.0.0"
+scope: inventory
+owned_by:
+  team: TM002
+decisions:
+  - id: inventory.DC001
+    title: "Stock is held one order line at a time; the all-or-nothing belongs to Orders"
+    summary: "Reserve Stock takes a single line, so this context never parses an order"
+    date: "2025-06"
+    status: accepted
+    rationale:
+      problem: >
+        An order is accepted only once every line is held (orders.BD001), so
+        somewhere the holds for a multi-line order have to be treated as one
+        outcome. That can happen here, by making a reservation atomic across
+        the whole order, or above here, by holding each line separately and
+        letting Orders decide what a shortage on any one of them means.
+      options:
+        - "Reserve Stock accepts a whole order and succeeds only if every line can be held"
+        - "Reserve Stock accepts one order line; Orders treats a shortage on any line as an order-level failure"
+      chosen: >
+        One line per call. An atomic multi-line hold would put Orders'
+        vocabulary inside this context's boundary: Inventory would have to know
+        that an order has lines, that a line carries a SKU and a quantity, and
+        that the same SKU appearing on two lines is one quantity to check and
+        not two. Per-line holds keep Check Stock's answer a number about a SKU
+        rather than a verdict about an order, and they keep retry at the level
+        the error was raised at - inventory.ERR001 is retry_eligible, and
+        retrying one line must not re-attempt the lines that already succeeded.
+    motivation_refs:
+      assumptions: [inventory.ASM001]
+      questions: [inventory.QN002]
+    declared_impact:
+      direct:
+        concepts: [inventory.CN002, inventory.CN001]
+        operations: [inventory.CMD001, inventory.EVT001, inventory.QRY001]
+      transitive_hints:
+        - "Orders owns the compensation: releasing the lines that did succeed when a later line fails is not an operation in this context"
+    owned_by:
+      team: TM002
+    consequences:
+      positive:
+        - "This context reads nothing of an order but the id that caused a hold"
+        - "A retryable shortage is retried for the one line that was short"
+      negative:
+        - "A partial hold is a reachable state, and no operation here releases the lines that already succeeded"
+        - "Cleaning one up means getting from a held unit back to the order holding it, which inventory.QN002 records as unanswered"
+    tags: [reservation, boundaries]
+business_decisions:
+  - id: inventory.BD001
+    name: "Stock is held at order submission, never at checkout"
+    description: >
+      Reserve Stock reacts to Order Submitted and to nothing else. Putting a
+      product in a cart therefore holds no stock: browsing shoppers cannot
+      exhaust the warehouse, and the last unit belongs to whoever submits first
+      rather than to whoever adds to their cart first. The cost is that a cart
+      can contain something that is gone by the time the order is placed.
+    domain_scope: inventory
+    linked_contexts: [checkout, orders]
+    tags: [reservation]
+  - id: inventory.BD002
+    name: "A hold expires rather than lasting forever"
+    description: >
+      A reservation carries an expiry from the moment it is made. Stock held for
+      an order that never completes returns to sale on its own, so an abandoned
+      checkout costs the shop a delay and not the unit. No operation in this
+      context enforces the expiry yet; the policy is stated and the mechanism is
+      an open question.
+    domain_scope: inventory
+    tags: [reservation]

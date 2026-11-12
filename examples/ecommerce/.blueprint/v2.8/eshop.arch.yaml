@@ -1,0 +1,695 @@
+# Commands named in this file use the commercial Archally Pro CLI (https://archally.pro).
+version: 1.0.0
+name: E-Shop Laptops & Electronics
+parties:
+  - id: PRT002
+    name: Shop
+    kind: system
+
+system_ref: PRT002
+contexts:
+  - id: BC001
+    name: Catalog
+    kind: core
+    domain_ref: DMN001
+    summary: Product catalog for laptops and electronics
+    services:
+      - id: SVC001
+        code_refs:
+          - path: services/products-service/src/server.ts
+            role: implementation
+            description: >
+              The entry file of the process that serves both of this service's operations. It
+              also serves the only route behind SVC002, so the shop runs one product process
+              where this model declares two services (catalog.FN001).
+        name: ProductQueryService
+        kind: api
+        summary: Serves product and category data
+        needs:
+          - id: ProductQueryService-runtime
+            type_ref: RT001
+            description: >
+              Intended (to-be) application runtime: an HTTP-serving process with a service
+              endpoint. Bindings select its resource in each environment; no deployment is asserted.
+        contracts:
+          openapi:
+            contract_name: catalog-api
+            expose:
+              - catalog.QRY001
+              - catalog.QRY002
+        resource_refs: [IR002]
+      - id: SVC002
+        name: ProductCatalogAdminService
+        kind: api
+        summary: Maintains the product range, prices, and category tree
+        needs:
+          - id: ProductCatalogAdminService-runtime
+            type_ref: RT001
+            description: >
+              Intended (to-be) application runtime: an HTTP-serving process with a service
+              endpoint. Bindings select its resource in each environment; no deployment is asserted.
+        contracts:
+          openapi:
+            contract_name: catalog-admin-api
+            expose:
+              - catalog.CMD001
+              - catalog.CMD002
+              - catalog.CMD003
+        resource_refs: [IR002]
+
+  - id: BC002
+    name: Orders
+    kind: core
+    domain_ref: DMN003
+    summary: Order lifecycle and submission
+    dependencies:
+      - name: Customers
+        bounded_context_ref: BC007
+        # No `coupling` here, for the reason the other contract-backed pairs in
+        # this file give: the contracts compute it, and they carry the direction
+        # and the operation too.
+        relationship: conformist
+        direction: downstream
+        language_boundary: false
+        description: >
+          Reads a customer's standing discounts while an order is being created,
+          and strikes every line price with what comes back
+          (customers.QRY002). Conformist in the strict sense: the order service
+          holds the discount shape this context publishes, field for field under
+          the same names, translates nothing and enforces none of Customers'
+          rules. Downstream because nothing in Customers knows the order flow
+          exists or was shaped by it - it publishes no event, so this dependency
+          is a read made at the moment it is needed and nothing else.
+          It is the dependency that prices the shop. A read that fails is not
+          treated as a failure: the order flow substitutes an empty discount set
+          and carries on at full list price with nobody told (customers.ASM003,
+          counted by customers.KPI001, and the wider case customers.FN001).
+      - name: Inventory
+        coupling: message
+        relationship: conformist
+        direction: downstream
+        language_boundary: false
+        description: >
+          Consumes Stock Reserved. It is the trigger for Send Order Confirmation
+          (orders.CMD002) and the only thing that moves an Order from submitted to
+          confirmed, which is this context's only terminal state.
+    services:
+      - id: SVC003
+        code_refs:
+          - path: services/orders-service/src/server.ts
+            role: implementation
+            description: >
+              The entry file of the order process. Four of the five operations this service
+              exposes are routes here; the fifth, orders.CMD001, is the commented block at the
+              foot of the file (orders.FN001).
+        name: OrderService
+        kind: api
+        summary: Order commands and queries
+        needs:
+          - id: OrderService-runtime
+            type_ref: RT001
+            description: >
+              Intended (to-be) application runtime: an HTTP-serving process with a service
+              endpoint. Bindings select its resource in each environment; no deployment is asserted.
+        contracts:
+          openapi:
+            contract_name: orders-api
+            expose:
+              - orders.CMD003
+              - orders.CMD001
+              - orders.QRY001
+              - orders.QRY002
+              # The one write this context offers that the shopper does not make.
+              # Everything above is the customer's own act; this one is the shop's.
+              - orders.CMD004
+          asyncapi:
+            contract_name: orders-events
+            send:
+              - orders.EVT001
+              # The confirmation job this service queues for its own worker (to-be, orders.FN004).
+              - orders.CMD002
+# === DEMO: UNCOMMENT THIS TOO === bp check asks for it once the event exists ===
+#              - orders.EVT002
+# === END DEMO ===
+            receive:
+              - inventory.EVT001
+            broker_ref: IR006
+            subscription:
+              channel_ref: MCH005
+          httpClient:
+            contract_name: orders-client
+            call:
+              # The one read this service makes across a context boundary, and
+              # it is on the path that prices an order rather than the path that
+              # identifies a customer. Declaring it is what lets the Orders to
+              # Customers dependency above be derived rather than asserted.
+              - customers.QRY002
+          arazzo:
+            contract_name: orders-workflow
+            workflows:
+              - PRC001
+              - PRC002
+              - PRC003
+              - PRC004
+              - PRC005
+              - PRC006
+              - PRC007
+        resource_refs: [IR003]
+
+  - id: BC003
+    name: Inventory
+    kind: support
+    domain_ref: DMN003
+    summary: Stock levels and reservation
+    dependencies:
+      - name: Orders
+        coupling: message
+        relationship: conformist
+        direction: downstream
+        language_boundary: false
+        description: >
+          Consumes Order Submitted. Reserve Stock (inventory.CMD001) reacts to it,
+          so every reservation this context makes originates in an Orders event.
+    services:
+      - id: SVC004
+        code_refs:
+          - path: services/inventory-service/Program.cs
+            role: implementation
+            description: >
+              The entry file of the inventory process, which registers the controller both of
+              this service's operations are routes on.
+        name: InventoryService
+        kind: api
+        summary: Reserve and release stock
+        needs:
+          - id: InventoryService-runtime
+            type_ref: RT001
+            description: >
+              Intended (to-be) application runtime: an HTTP-serving process with a service
+              endpoint. Bindings select its resource in each environment; no deployment is asserted.
+        contracts:
+          openapi:
+            contract_name: inventory-api
+            expose:
+              - inventory.CMD001
+              - inventory.QRY001
+          asyncapi:
+            contract_name: inventory-events
+            send:
+              - inventory.EVT001
+            receive:
+              - orders.EVT001
+            broker_ref: IR006
+            subscription:
+              channel_ref: MCH006
+        resource_refs: [IR004]
+
+  - id: BC004
+    name: Checkout
+    kind: support
+    domain_ref: DMN002
+    summary: Cart and checkout flow
+    services:
+      - id: SVC005
+        name: CheckoutService
+        kind: api
+        summary: Cart and add-to-cart
+        needs:
+          - id: CheckoutService-runtime
+            type_ref: RT001
+            description: >
+              Intended (to-be) application runtime: an HTTP-serving process with a service
+              endpoint. Bindings select its resource in each environment; no deployment is asserted.
+        contracts:
+          openapi:
+            contract_name: checkout-api
+            expose:
+              - checkout.CMD001
+              - checkout.QRY001
+          asyncapi:
+            contract_name: checkout-events
+            send:
+              - checkout.EVT001
+            broker_ref: IR006
+        resource_refs: [IR005]
+
+  - id: BC005
+    name: Storefront
+    kind: support
+    domain_ref: DMN002
+    summary: >
+      Customer-facing web storefront - everything a shopper touches, in one place.
+      It reads from five contexts to compose its pages and carries the shopper's
+      write intents to the contexts that own them.
+    responsibilities:
+      - "Render browse, search, and product detail pages"
+      - "Render the cart page and the customer's order history"
+      - "Render the shopper's own account, and carry their registration and their corrections to Customers"
+      - "Carry the shopper's add-to-cart and order intents to Checkout and Orders"
+      - "Hold no domain state of its own - every read and every write belongs to an upstream context"
+    dependencies:
+      - name: Catalog
+        coupling: http
+        relationship: conformist
+        direction: downstream
+        language_boundary: false
+        description: Reads product and category data for browse, search, and product pages.
+      - name: Orders
+        coupling: http
+        relationship: conformist
+        direction: downstream
+        language_boundary: false
+        description: >
+          Reads a customer's orders to render order history and order detail, and
+          calls Create Draft Order and Submit Order when the shopper checks out.
+          The storefront decides nothing about an order: it carries the intent and
+          Orders applies every rule that governs it.
+      - name: Inventory
+        coupling: http
+        relationship: conformist
+        direction: downstream
+        language_boundary: false
+        description: Reads stock levels to show availability on the product page.
+      - name: Customers
+        bounded_context_ref: BC007
+        # No `coupling` here, for the reason ShopAdmin -> Catalog gives below: the
+        # contracts already compute it for this pair, and they carry the direction
+        # and the operations too.
+        relationship: conformist
+        direction: downstream
+        language_boundary: false
+        description: >
+          Carries the shopper's own account acts to the context that owns them:
+          registering, and correcting their details afterwards. It also reads the
+          profile back to render it, and the discounts on it - the same read the
+          order flow makes when it prices, called here by the person the
+          discounts belong to. Conformist in the strict sense - the storefront
+          adopts the customer model whole, adds no field of its own and enforces
+          none of the validation, which belongs to Customers. The shopper never
+          sees a customer id; the storefront holds it and every other context in
+          this model receives it.
+      - name: Checkout
+        # HTTP calls and the event subscription below derive this dependency.
+        # No single coupling value describes both transports.
+        relationship: conformist
+        direction: downstream
+        language_boundary: false
+        description: >
+          Reads the current cart to render the cart page and the header cart badge,
+          calls Add to Cart when the shopper presses the button, and subscribes to
+          Item Added to Cart so the badge and the cart page stay fresh without
+          polling. The storefront sends the SKU and the quantity; the price the
+          line is charged at is captured by Checkout, not by the page that
+          displayed it (storefront.ASM003).
+    services:
+      - id: SVC006
+        code_refs:
+          - path: apps/storefront/src/main.tsx
+            role: implementation
+            description: >
+              The entry file of the shopper-facing application. What it calls is in
+              src/api/client.ts; this ref names the process, per the convention stated in the
+              model README.
+        name: StorefrontWebApp
+        kind: webapp
+        summary: >
+          Server-rendered storefront. It calls the read side of every upstream
+          context to compose a page, and the five customer-initiated commands a
+          shopper triggers from one.
+        needs:
+          - id: StorefrontWebApp-runtime
+            type_ref: RT001
+            description: >
+              Intended (to-be) application runtime: an HTTP-serving process with a service
+              endpoint. Bindings select its resource in each environment; no deployment is asserted.
+        contracts:
+          httpClient:
+            contract_name: storefront-client
+            call:
+              - catalog.QRY001
+              - catalog.QRY002
+              - orders.QRY001
+              - orders.QRY002
+              - inventory.QRY001
+              - checkout.QRY001
+              - customers.QRY001
+              # The shopper's own discounts, listed on their account page. The
+              # same read the order flow makes when it prices, called here by
+              # the person the discounts belong to.
+              - customers.QRY002
+              # The write side. Each of these is initiated_by a Customer, and the
+              # storefront is the only surface a customer has, so it is the caller.
+              - checkout.CMD001
+              - orders.CMD003
+              - orders.CMD001
+              # The shopper's own account. Registering and correcting are here;
+              # Close Customer Account (customers.CMD003) is NOT, and its
+              # absence is now a measured gap rather than an open question.
+              # customers.DC003 decided that closure belongs on this surface
+              # under an admin role. The storefront has no way to close an
+              # account, and while a session now exists the role behind that gate
+              # does not: nothing reads an operator's role and no endpoint checks
+              # a token (customers.RSK004). MIG007 holds the change and
+              # customers.FN002 holds the gap, so this list is not moved ahead of
+              # the code.
+              - customers.CMD001
+              - customers.CMD002
+              # The session. Registering is followed by a sign-in made from here,
+              # so a new shopper and a returning one take the same path; the
+              # session read runs on every load to turn the remembered token back
+              # into a person; and the sign-out revokes it. The token is the only
+              # thing this application stores.
+              - customers.CMD004
+              - customers.CMD005
+              - customers.QRY004
+          asyncapi:
+            contract_name: storefront-events
+            receive:
+              - checkout.EVT001
+            broker_ref: IR006
+            subscription:
+              channel_ref: MCH007
+
+  - id: BC006
+    name: ShopAdmin
+    kind: support
+    domain_ref: DMN001
+    summary: >
+      Back-office surface for the people who decide what the shop sells, and who
+      answer for what it has already sold. It owns no operations and holds no
+      state; it gives operations belonging to three other contexts a screen and a
+      sequence.
+    responsibilities:
+      - "Publish new products into the sellable range"
+      - "Set and adjust selling prices"
+      - "Maintain the category tree shoppers browse by"
+      - "Read the order book, and move an order to its next status"
+      - "Look up a customer while handling a question about their order"
+      - "Hold no copy of the range, the order book or the customer list - each belongs to the context that owns it"
+    dependencies:
+      - name: Catalog
+        bounded_context_ref: BC001
+        # No `coupling` here on purpose. The contracts already compute it for
+        # this pair, and they carry the direction, the operations and the broker
+        # as well; `relationship` is the part they cannot state.
+        relationship: conformist
+        direction: downstream
+        language_boundary: false
+        description: >
+          Calls the catalog admin commands directly, with no staging copy in
+          between (shop-admin.DC001). Conformist in the strict sense: the back
+          office adopts Catalog's product and category model whole, adds no
+          concept of its own to what it sends, and applies none of the rules -
+          every one of them belongs to Catalog.
+      - name: Orders
+        bounded_context_ref: BC002
+        # No `coupling` - the contracts compute it for this pair.
+        relationship: conformist
+        direction: downstream
+        language_boundary: false
+        description: >
+          Reads the whole order book, not one customer's slice of it, and moves an
+          order to its next status with Set Order Status (orders.CMD004). This is
+          the only place in the model where the shop writes to an order rather than
+          the shopper doing it, and the only write this back office makes outside
+          the catalog. Conformist: the status vocabulary is Orders', the transition
+          rules are Orders', and this context adds neither.
+      - name: Customers
+        bounded_context_ref: BC007
+        # No `coupling` here, for the reason the Catalog dependency above gives:
+        # the contracts already compute it for this pair, and they carry the
+        # direction and the operations too.
+        relationship: conformist
+        direction: downstream
+        language_boundary: false
+        description: >
+          Reads a customer's record while an operator is handling a question
+          about their order, reads the standing discounts on the same screen,
+          and reads the whole customer list - once as the customer list, and
+          once to put a name against the customer id an order carries.
+          Read-only in this model, and that is now a statement with a date on
+          it. The running shop also closes accounts from here, and
+          customers.DC003 has decided closure belongs on the storefront under
+          an admin role instead. This list is therefore not the whole of what
+          the back office calls: the delete it still has is a surface the
+          decision retires, held as customers.FN002 rather than declared here
+          as though it were settled.
+    services:
+      - id: SVC007
+        code_refs:
+          - path: apps/shop-admin/src/main.ts
+            role: implementation
+            description: >
+              The entry file of the back-office application.
+        name: ShopAdminWebApp
+        kind: webapp
+        summary: >
+          Back-office web app. It calls operations belonging to Catalog, Orders and
+          Customers and holds nothing of its own: it publishes no event, exposes no
+          operation and answers no query.
+        needs:
+          - id: ShopAdminWebApp-runtime
+            type_ref: RT001
+            description: >
+              Intended (to-be) application runtime: an HTTP-serving process with a service
+              endpoint. Bindings select its resource in each environment; no deployment is asserted.
+        contracts:
+          httpClient:
+            contract_name: shop-admin-client
+            call:
+              # Each is initiated_by ACT002 Shop Operator, and this is
+              # the surface that human acts through.
+              - catalog.CMD001
+              - catalog.CMD002
+              - catalog.CMD003
+              # The read side of the same catalogue. An operator cannot change a
+              # product without first finding it, so the two queries the storefront
+              # uses to browse are called here as well. The same operation read by
+              # two contexts is the normal case, not a duplication: what differs is
+              # who is asking and what they do next.
+              - catalog.QRY001
+              - catalog.QRY002
+              # The order book, read whole rather than per customer, and the one
+              # order write the shop makes rather than the shopper.
+              - orders.QRY001
+              - orders.QRY002
+              - orders.CMD004
+              # A customer, looked up while answering a question about their
+              # order; their standing discounts on the same screen; and the
+              # whole customer list, which this surface needs twice - once as
+              # the customer list itself and once to put a name against the
+              # customer id an order carries.
+              - customers.QRY001
+              - customers.QRY002
+              - customers.QRY003
+              # The operator session. The back office is closed until the sign-in
+              # succeeds - every route but the sign-in screen redirects a visitor
+              # without one - and the session read runs once on the first guarded
+              # navigation to resolve a remembered token. Both are browser-side
+              # decisions about what to show, not service-side decisions about
+              # what to answer (customers.RSK004).
+              - customers.CMD006
+              - customers.CMD007
+              - customers.QRY005
+
+  - id: BC007
+    name: Customers
+    kind: generic
+    domain_ref: DMN004
+    summary: >
+      The customer account: who a shopper is, and what the shop has already
+      promised them. Classified `generic` because the domain it realizes is
+      generic (DMN004) - it is the one context here a bought product could
+      stand in for without the shop losing anything it competes on. It is also
+      the smallest context in the model, with four operations and no event, and
+      the two facts are the same fact.
+    responsibilities:
+      - "Hold one account per shopper, and be the only place their name, address and email exist"
+      - "Answer with a customer's standing discounts when an order is being priced - the read Orders depends on"
+      - "Answer with the active account list the back office puts names to its order book from"
+      - "Publish nothing - a context nobody subscribes to is a context that can be replaced"
+    services:
+      - id: SVC008
+        code_refs:
+          - path: services/customer-service/Program.cs
+            role: implementation
+            description: >
+              The entry file of the account process, which registers both the customers and the
+              operators controller - twelve operations across two collections, from one
+              process.
+        name: CustomerService
+        kind: api
+        summary: >
+          The account API, and since authentication landed the shop's session API
+          too. Two commands a person runs on their own record, one the shop runs
+          on it for them, three reads - one of which prices every order in the
+          shop - and six operations that issue, resolve and revoke a session for
+          either kind of person.
+        needs:
+          - id: CustomerService-runtime
+            type_ref: RT001
+            description: >
+              Intended (to-be) application runtime: an HTTP-serving process with a service
+              endpoint. Bindings select its resource in each environment; no deployment is asserted.
+        contracts:
+          openapi:
+            contract_name: customers-api
+            expose:
+              - customers.CMD001
+              - customers.CMD002
+              - customers.CMD003
+              - customers.QRY001
+              # The read the order flow depends on, and the list read the back
+              # office composes its two screens from. Both were built and called
+              # long before they were modelled (customers.DC002).
+              - customers.QRY002
+              - customers.QRY003
+              # The session surface. It is exposed by THIS service for both kinds
+              # of person - a shopper and a shop operator - because the credential
+              # is a field on the record and this is the service that holds the
+              # records. Nothing here gates anything: these six are the only
+              # operations on this service that consult a token at all, and the
+              # other six answer whoever calls them (customers.RSK004).
+              - customers.CMD004
+              - customers.CMD005
+              - customers.QRY004
+              # The operator half, against the /operators collection this service
+              # also serves. The first two operations this model declares over
+              # that collection; the rest of it stays unmodelled (customers.QN005).
+              - customers.CMD006
+              - customers.CMD007
+              - customers.QRY005
+        resource_refs: [IR014]
+
+  # Shipments (BC008, realizing DMN005) and its ShipmentService (SVC009) are not declared here.
+  # Nothing in the delivery folder is built, so the shop as it is has no Shipments context:
+  # .migrations/009-shipments-becomes-a-bounded-context.migration.yaml adds it, pending.
+
+# The instruments the quality metrics name in `collection.probe_ref`. Each says the one
+# question it answers and whether it exists yet; none of them carries a result. Where a
+# metric's results are kept is the metric's own `collection.results_location`.
+probes:
+  - id: PRB001
+    name: Service health endpoints
+    question: "Does each of the four services answer its health route right now?"
+    summary: >
+      The GET /health route every service exposes, read once by the preflight script before a
+      demo. It answers up or down at the moment it is asked and keeps no history.
+    source_kind: running system
+    attention_control: owned
+    status: active
+    implementation: as-is
+    blind_spots:
+      - omitted_fact: >
+          Whether a service was up at any moment the route was not asked. Nothing polls the
+          routes on a schedule or records the answers, so an outage between two reads leaves no
+          trace.
+        basis: declared
+      - omitted_fact: >
+          Whether the storefront and the back office answer. Both apps are served by their dev
+          servers and have no health route of their own.
+        basis: declared
+    code_refs:
+      - path: preflight.sh
+        role: test
+        description: "Reads the four health routes once and reports which units answer."
+      - path: services/products-service/src/server.ts
+        role: implementation
+        description: "The products service's GET /health route."
+      - path: services/orders-service/src/server.ts
+        role: implementation
+        description: "The orders service's GET /health route."
+      - path: services/customer-service/Controllers/HealthController.cs
+        role: implementation
+        description: "The customer service's health route."
+      - path: services/inventory-service/Controllers/HealthController.cs
+        role: implementation
+        description: "The inventory service's health route."
+    owned_by:
+      team: TM001
+  - id: PRB002
+    name: Storefront interaction timing
+    question: "How long does each storefront interaction keep the shopper waiting for its answer?"
+    summary: >
+      To be built: a timer in the storefront that records, for every act a shopper takes that
+      calls a service, how long the screen waits for the answer, and ships the readings
+      somewhere they are kept.
+    source_kind: running system
+    attention_control: owned
+    status: candidate
+    implementation: to-be
+    owned_by:
+      team: TM003
+  - id: PRB003
+    name: Customer service pact verifier
+    question: "Does the running customer service honour every interaction its three consumers' pacts state?"
+    summary: >
+      Replays every interaction of the three consumers' pacts against the running customer
+      service and reports each as verified, failed or not set up.
+    source_kind: running system
+    attention_control: owned
+    status: active
+    implementation: as-is
+    blind_spots:
+      - omitted_fact: >
+          Any interaction no consumer's pact states. The verifier checks what the model says the
+          consumers call and nothing the service answers beyond it.
+        basis: declared
+    code_refs:
+      - path: contract-tests/customer-service/verify.mjs
+        role: test
+        description: "The verifier and the provider-state handlers that put the service into each state a pact names."
+    owned_by:
+      team: TM003
+
+channels:
+  - id: MCH001
+    name: orders.submitted
+    kind: topic
+    broker_ref: IR006
+    description: Designed Order Submitted destination. Its existing inline topic
+      name is retained; no AMQP exchange type is stated.
+  - id: MCH002
+    name: inventory.stock-reserved
+    kind: topic
+    broker_ref: IR006
+    description: Designed Stock Reserved destination consumed by the order service.
+      No AMQP exchange type is stated.
+  - id: MCH003
+    name: checkout.item-added
+    kind: topic
+    broker_ref: IR006
+    description: Designed Item Added to Cart destination consumed by the storefront.
+      No AMQP exchange type is stated.
+  - id: MCH004
+    name: orders.send-confirmation
+    kind: queue
+    broker_ref: IR006
+    description: Designed confirmation work queue. The model sends jobs here but
+      declares no receiving contract; orders.FN004 remains open.
+  - id: MCH005
+    name: orders-events
+    kind: queue
+    broker_ref: IR006
+    description: Designed OrderService subscription for its existing receive list.
+      The queue name reuses the contract identity; it is not a provisioned queue.
+  - id: MCH006
+    name: inventory-events
+    kind: queue
+    broker_ref: IR006
+    description: Designed InventoryService subscription for its existing receive
+      list. The queue name reuses the contract identity; it is not a provisioned
+      queue.
+  - id: MCH007
+    name: storefront-events
+    kind: queue
+    broker_ref: IR006
+    description: Designed StorefrontWebApp subscription for its existing receive
+      list. The queue name reuses the contract identity; it is not a provisioned
+      queue.
+  - id: MCH008
+    name: delivery.shipment-dispatched
+    kind: topic
+    description: Speculative Shipment Dispatched destination, retaining the topic
+      already declared by delivery.EVT001. No service contract or broker placement
+      is stated in the model.

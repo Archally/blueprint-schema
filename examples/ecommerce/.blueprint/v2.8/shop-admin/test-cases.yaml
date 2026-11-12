@@ -1,0 +1,87 @@
+version: "1.0.0"
+scope: shop-admin
+owned_by:
+  team: TM002
+tags: [write-side, back-office]
+
+# One test, and it does not pass. It exercises the price write this model gives
+# the back office (catalog.CMD002) from the only surface the model gives it, and
+# the running shop has neither the route nor the control - shop-admin.RSK001 is
+# the risk, shop-admin.FN001 and catalog.FN001 are the findings that say why.
+# Written as an edge case rather than a happy path: a red result states the gap
+# deterministically, and the case turns green on the day the gap closes.
+edge_cases:
+  - id: shop-admin.EC001
+    name: A price corrected in the back office is the price the catalog then serves
+    summary: The intended price write, exercised end to end. Red against the running
+      shop, which is the point.
+    description: "Exercises catalog.CMD002 from the only surface this model gives
+      it: an operator opens a product in the back office, sets a new selling
+      price, and the catalog read afterwards returns the new figure. It is written
+      as an edge case rather than a happy path because it does not pass and is not
+      expected to until the shop has a price write - shop-admin.RSK001 is the risk
+      it measures, and shop-admin.FN001 and catalog.FN001 are the findings that
+      say why it cannot pass today."
+    validates:
+      operations:
+        - catalog.CMD002
+        - catalog.QRY001
+      concepts:
+        - shop-admin.CN001
+        - catalog.CN999
+      processes:
+        - PRC002
+      ui:
+        screens:
+          - shop-admin.SCR004
+        actions:
+          - shop-admin.UAC008
+    given:
+      description: A published product with a known selling price, opened on the back
+        office product detail screen by an operator.
+      state:
+        productPublished: true
+        operatorOnProductDetail: true
+    expected_result:
+      status: success
+      code: 200
+      output:
+        contains:
+          - the new selling price, read back from the catalog
+    counter_example:
+      description: Guards against the price quote being mistaken for a price change.
+        The control the back office does have computes a figure for a quantity and
+        a discount set and returns it; the catalog record is untouched and the
+        next read serves the old price.
+      wrong_expect: A 200 from the price endpoint is treated as a successful price change.
+      wrong_output: The quote response carries the new figure and a subsequent product
+        read still carries the old one.
+    note: "Expected to fail until a route persists a product price. While it fails
+      it is the deterministic statement of shop-admin.RSK001: a wrong price cannot
+      be corrected without a deploy. When it passes, that risk closes. No automated
+      test runs it end to end yet. The closest,
+      apps/shop-admin/src/app/features/products/product-detail/product-detail.spec.ts,
+      asserts the counter-example (a quote leaves the catalog price untouched), not the
+      expected result. Missing: a test that writes a price through the back office and
+      reads it back from the catalog, which needs the route this case measures."
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: services/products-service/src/server.ts
+          summary: >
+            The catalog service registers five routes and none of them writes a
+            product, so the assertion this test makes cannot be satisfied by the
+            shop as it stands. That is what the test records rather than a defect
+            in the test.
+          confidence_impact: supports
+        - kind: codebase-analysis
+          source: apps/shop-admin/src/app/features/products/product-detail/product-detail.html
+          summary: >
+            The product detail screen prints "Catalog price. products-service has
+            no endpoint that changes it." beside the figure, and the quote form
+            below it says the service only returns a quote and never persists one.
+            There is no control for this test to drive either.
+          confidence_impact: supports
+    tags: [expected-red, model-code-divergence]

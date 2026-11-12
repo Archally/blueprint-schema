@@ -1,0 +1,71 @@
+version: "1.0.0"
+scope: storefront
+owned_by:
+  team: TM003
+tags: [read-side, customer-facing]
+goals:
+  - id: storefront.GL001
+    statement: >
+      A change to the shop can be released to the customers it is meant for and to no
+      others, so a new behaviour is tried on a few shoppers before every shopper meets it.
+    summary: "An update reaches selected customers only."
+    priority: medium
+    description: >
+      The product owner's goal behind storefront.FF001. Nothing in the shop can do it today:
+      each unit is deployed whole and every shopper meets the same version of it, so the
+      constraint the fitness function states does not hold yet.
+    discovery_stage: validated
+    certainty: confirmed
+    evidence:
+      - kind: stakeholder-signoff
+        source: "product owner"
+        date: "2026-10-04"
+        summary: >
+          The product owner stated the requirement that the product can be updated for
+          selected customers only, and classified it as maintainability / modifiability.
+assumptions:
+  - id: storefront.ASM001
+    statement: >
+      Catalog answers every time a page is rendered.
+    consequence: >
+      Catalog is the one upstream this context cannot degrade past: a product
+      page without a price and a name is not a degraded page, it is no page.
+      The storefront holds no copy to fall back to (storefront.DC001), so a
+      Catalog outage is a storefront outage and the storefront's availability
+      can be no higher than Catalog's. Nothing in the model states Catalog's
+      availability, so the ceiling is unknown rather than merely low.
+    domain_scope: storefront
+    discovery_stage: hypothesis
+    certainty: probable
+  - id: storefront.ASM002
+    statement: >
+      The figure Check Stock returns is a fair basis for telling a shopper the
+      product is available.
+    consequence: >
+      Browsing holds no stock (inventory.BD001), so the number is a snapshot of
+      a quantity anyone else can take. A shopper shown "in stock" can still be
+      refused at submission, and this context both creates that expectation and
+      has no part in the reservation that disappoints it. Checkout records the
+      same exposure from the far end (checkout.ASM001); the storefront is where
+      the promise was actually made.
+    domain_scope: storefront
+    discovery_stage: hypothesis
+    certainty: probable
+    risk_refs:
+      - inventory.RSK001
+  - id: storefront.ASM003
+    statement: >
+      The price the storefront renders from Catalog is the price the cart will
+      capture when the shopper adds the item.
+    consequence: >
+      Two things have to hold for that, and neither is guaranteed. The catalog
+      price can move between the render and the add, and the storefront's read
+      may itself be up to a cache window old (catalog.ASM001). The cart captures
+      whatever the catalog says at add time and shows it without comment
+      (checkout.DC001), so a shopper who was quoted one figure on the product
+      page can find another on the cart page with nothing explaining it.
+      Neither context can detect the divergence, which makes the cart-page
+      total the first and only place it surfaces.
+    domain_scope: storefront
+    discovery_stage: hypothesis
+    certainty: probable

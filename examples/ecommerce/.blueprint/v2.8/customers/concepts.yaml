@@ -1,0 +1,184 @@
+version: "1.0.0"
+scope: customers
+owned_by:
+  team: TM003
+tags: [generic-domain, account]
+concepts:
+  - id: customers.CN001
+    code_refs:
+      - path: services/customer-service/Models/Customer.cs
+        role: model
+        description: >
+          The account record, and the whole of what the shop knows about a shopper. It
+          carries no password field - the credential is held apart from the record
+          (customers.CN004).
+    term: "Customer"
+    stereotype: aggregate-root
+    summary: "The account a shopper registers for themselves, and the only place the shop knows who they are"
+    definition: >
+      A person the shop can name, reach and bill: a name, an email address, a
+      phone number and one postal address, plus a flag saying whether the
+      account is still active. Since authentication landed it also carries the
+      credential a person signs in with (customers.CN004), and only three of
+      those fields are needed to open one - a name, an email and a password -
+      so an account can exist before the shop knows where to deliver anything.
+      Everything else in the shop refers to this
+      person by an opaque customer id and holds none of these fields - Orders
+      keeps the id on the order and nothing more (orders.CN001 CAT004), and
+      Checkout keeps no identity at all. That concentration is what makes this
+      a whole bounded context rather than four columns on an order, and it is
+      also what makes the context replaceable: nothing outside it reads a
+      customer's name.
+    attributes:
+      customerId:
+        id: customers.CAT001
+        description: "Opaque identifier the rest of the shop refers to this person by"
+        example: "customer-1"
+      name:
+        id: customers.CAT002
+        description: "The person's full name, as they typed it when registering"
+        example: "Alice Johnson"
+      email:
+        id: customers.CAT003
+        description: "Contact address, and in practice the only way the shop can reach them about an order"
+        example: "alice@example.com"
+      postalAddress:
+        id: customers.CAT004
+        description: >
+          Where a delivery would go, held as one flat set of lines rather than
+          a structured address - street, city, state, postcode and country.
+        example: "742 Evergreen Terrace, Springfield, OR 97477, USA"
+      isActive:
+        id: customers.CAT005
+        description: >
+          Whether the account is live. No operation writes it, and the two that
+          read it both act by leaving something out rather than by saying
+          anything: List Customers (customers.QRY003) omits an inactive account
+          from the customer list, and Get Customer Discounts
+          (customers.QRY002) answers for one with an empty discount set. So an
+          account can be inactive, invisible to the back office and priced at
+          full list price without a single operation reporting the fact
+          (customers.FN001).
+        example: "true"
+  - id: customers.CN002
+    code_refs:
+      - path: services/customer-service/Models/Discount.cs
+        role: model
+        description: >
+          The concession line, as the account service holds it.
+    term: "Discount"
+    stereotype: value-object
+    summary: "A standing price concession attached to a customer, and the one thing another context asks this one for"
+    definition: >
+      A named reason to charge this person less: a type, an amount, optionally
+      a percentage, and a description. It has no identity of its own and
+      exists only as part of the set attached to one customer. It is the only
+      part of a customer that leaves this context routinely - the order flow
+      reads the set at the moment an order is created so the price is struck
+      with it - and nothing in this shop records which discount was applied to
+      which order afterwards, so the concession is visible in the price and
+      nowhere else.
+    attributes:
+      discountType:
+        id: customers.CAT006
+        description: "What kind of concession this is, as a free string rather than a closed set"
+        example: "loyalty"
+      amount:
+        id: customers.CAT007
+        description: "Absolute reduction, in the order's currency"
+        example: "10.00"
+      percentage:
+        id: customers.CAT008
+        description: "Proportional reduction, when the concession is expressed that way instead"
+        example: "5"
+  - id: customers.CN003
+    code_refs:
+      - path: services/customer-service/Services/SessionStore.cs
+        role: implementation
+        description: >
+          The one place a session exists: a token-to-principal map in process memory. The
+          file's own header states what it deliberately is not - not a JWT, not
+          persistent, not expiring - which is the same distance orders.SEC001 measures.
+    term: "Session"
+    stereotype: entity
+    summary: "The live claim that somebody is who they said they were, held as one opaque token"
+    definition: >
+      A token, and the record it stands for: either a customer or a shop
+      operator. It has identity - the token is the identity - and a lifecycle
+      of exactly two events, issued at a sign-in and revoked at a sign-out, with
+      nothing in between and no expiry. It is held in the service's memory and
+      nowhere else, so every session in the shop ends when the service restarts,
+      and neither front end stores anything but the token.
+      It is an entity rather than a value object because two sessions with the
+      same principal are two different sessions: revoking one leaves the other
+      live, which is the whole reason the token and not the customer id is what
+      a browser keeps.
+      What a session is not is a permission. It says who is asking and it is
+      consulted by exactly two operations, the two session reads; nothing else
+      in this shop looks at one before answering (customers.RSK004).
+    attributes:
+      sessionToken:
+        id: customers.CAT009
+        description: >
+          Opaque bearer token, sent back on later requests. It carries no claims
+          and no signature - it is a key into a map, so it means nothing to
+          anybody who cannot read that map, which is one service.
+        example: "s_7f3c19a84e2b46d1"
+      principalKind:
+        id: customers.CAT010
+        description: >
+          Whether the token belongs to a shopper or to a shop operator. One token
+          space serves both, so this is what stops an operator token answering a
+          customer read and the other way round.
+        example: "customer"
+      principalId:
+        id: customers.CAT011
+        description: >
+          The customer or operator record the token was issued for. Keyed by
+          record id rather than by login, which is why changing an email address
+          moves the login and leaves every live session standing.
+        example: "customer-1"
+  - id: customers.CN004
+    code_refs:
+      - path: services/customer-service/Services/PasswordHasher.cs
+        role: implementation
+        description: >
+          The hash half: PBKDF2-SHA256 at 100k iterations with a per-password salt, and
+          the format the stored string takes.
+      - path: services/customer-service/Services/CustomerService.cs
+        role: implementation
+        description: >
+          Where the hash is kept - a private dictionary keyed by customer id, beside the
+          records rather than on them. The login half is the `Email` field on
+          Models/Customer.cs, so no file declares this concept as a type.
+    term: "Credential"
+    stereotype: value-object
+    summary: "What a person proves themselves with: their login, and a hash of the password they chose"
+    definition: >
+      The login and the password hash held against one account. The login is the
+      email address already on the record, so the shop invented no second
+      identity field; the password exists only as a PBKDF2-SHA256 digest with a
+      per-password salt, and the clear text is present nowhere the shop can read
+      it back.
+      It is a value object because it has no identity of its own: it belongs to
+      the account it is held against, and replacing it is replacing the whole of
+      it. Not every account has one - the accounts the shop seeds for a
+      demonstration mostly do not, and an account without a credential simply
+      cannot sign in, with nothing anywhere saying why.
+      Nothing in this model changes a credential once it is set. There is no
+      password change, no reset and no expiry, which is the honest reading of a
+      shop that has a sign-in and not yet an account-security surface.
+    attributes:
+      login:
+        id: customers.CAT012
+        description: >
+          What a person types into the login field: the email address on their
+          own record. The same field for shoppers and for operators.
+        example: "alice@example.com"
+      passwordHash:
+        id: customers.CAT013
+        description: >
+          PBKDF2-SHA256 digest of the chosen password with a per-password salt.
+          It leaves the service in no response and appears in no payload this
+          model declares.
+        example: "pbkdf2-sha256$100000$<salt>$<digest>"

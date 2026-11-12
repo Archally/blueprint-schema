@@ -1,0 +1,150 @@
+version: "1.0.0"
+scope: inventory
+owned_by:
+  team: TM002
+kpis:
+  - id: inventory.KPI001
+    name: "Reservation success rate"
+    description: >
+      The share of reservation attempts that succeed rather than raising
+      Insufficient Stock. Reads as a verification of both the shelf-accuracy
+      assumption and the decision to accept orders on a reservation.
+    target: "> 98%"
+    window: "30d rolling"
+    domain_scope: inventory
+    owner: inventory.ACT002
+    thresholds:
+      warning: "98%"
+      critical: "95%"
+  - id: inventory.KPI002
+    name: "Reservations reaching expiry"
+    description: >
+      The share of reservations that expire instead of being fulfilled or
+      released. A rising number means the reservation window is shorter than
+      real checkout time, which is the assumption it verifies.
+    target: "< 1%"
+    window: "30d rolling"
+    domain_scope: inventory
+    thresholds:
+      warning: "1%"
+      critical: "5%"
+findings:
+  - id: inventory.FN001
+    title: "The infrastructure layer's local hosts are shifted by one service"
+    summary: "Inventory API names the account service's port, Checkout API names inventory's, and the account service has no resource"
+    kind: drift
+    quality_characteristic: maintainability
+    quality_subcharacteristic: analysability
+    severity: medium
+    status: open
+    certainty: confirmed
+    discovery_stage: validated
+    statement: >
+      infrastructure.yaml places four APIs on local ports. Two of the four name
+      a port that belongs to a different service, and the shift is systematic
+      rather than random.
+      IR004 is called Inventory API and its development host is
+      http://localhost:3003. The inventory service binds 3004 - stated in its
+      own Program.cs and in the Makefile's INVENTORY_PORT - and 3003 is the
+      account service. IR005 is called Checkout API and its development host is
+      http://localhost:3004, which is the inventory service. IR002 (3001) and
+      IR003 (3002) are correct.
+      So the list reads as though it were written before the inventory service
+      existed, when four contexts mapped to four ports in declaration order. The
+      inventory service was added on 2026-09-24 and took 3004; nothing moved the
+      resource that already claimed it.
+      The absence beside it is the account service, which has twelve operations
+      and two controllers and no infrastructure resource at all. A reader
+      counting deployed things from this file counts four APIs where the shop
+      runs four services, and gets a different four.
+    recommendation: >
+      Correct IR004 to 3004 and give the account service its own resource on
+      3003. IR005 is the one that needs a decision rather than an edit: there is
+      no checkout service to place, so the resource is describing something
+      that does not exist, which is checkout.RSK001 reaching the infrastructure
+      layer. Either it goes with the rest of that context's speculative
+      surface, or it is marked as intent the way the delivery slice marks its
+      own.
+    affects:
+      operation_refs:
+        - inventory.CMD001
+        - inventory.QRY001
+      context_refs:
+        - inventory
+        - checkout
+        - customers
+    code_refs:
+      - path: services/inventory-service/Program.cs
+        role: configuration
+        description: >
+          Where the inventory service states the port it serves on, which is
+          3004 and not the 3003 IR004 claims.
+      - path: Makefile
+        role: configuration
+        description: >
+          The one place the whole port map is written down in the shop
+          repository, and the authority this finding was measured against.
+    risk_refs:
+      - checkout.RSK001
+    tags: [model-code-divergence, infrastructure]
+
+  - id: inventory.FN002
+    title: "The inventory service's model classes state almost no requiredness, where this model states a good deal"
+    summary: "Eight fields across ReserveStockRequest, Reservation and StockLevel are required here and carry no [Required] in the class"
+    kind: drift
+    quality_characteristic: functional-suitability
+    quality_subcharacteristic: functional-correctness
+    severity: low
+    status: open
+    certainty: confirmed
+    discovery_stage: validated
+    statement: >
+      Every field name in this context's three code-joined schemas matches its
+      class, one for one. What does not match is what each side says must be
+      there.
+      ReserveStockRequest (MDL030) requires `quantity`; the class annotates it
+      `[Range(1, int.MaxValue)]` and never says the field must be present, so
+      the class states a bound on a value and this model states an obligation to
+      send one.
+      Reservation (MDL031) requires `reservationId`, `productSku`, `quantity`
+      and `status`; `Reservation.cs` carries no data annotation at all.
+      StockLevel (MDL032) requires `productSku`, `available` and `reserved`;
+      `StockLevel.cs` carries none either.
+      The reading that matters is the one about the two classes with no
+      annotations. They are read-models rather than request bodies, so nothing
+      binds them and no validator runs over them, and their requiredness is
+      therefore a claim about what the shop always sends rather than about what
+      it accepts. This model makes that claim and the classes make none, which
+      means a consumer generated from either artefact would be built on a
+      different promise. That is worth stating even where the running shop
+      happens to populate every field today.
+    recommendation: >
+      Decide per class rather than in one sweep, because the two cases are
+      different. For ReserveStockRequest, a request body, the question is
+      whether the shop should reject a payload with no `quantity`; if yes the
+      class is a `[Required]` short. For the two read-models the question is
+      whether this model should be making a requiredness claim about a shape no
+      validator enforces; if the answer is that it should, the classes are where
+      the claim belongs and C# has `required` for it.
+    affects:
+      concept_refs:
+        - inventory.CN001
+        - inventory.CN002
+      context_refs:
+        - inventory
+    code_refs:
+      - path: services/inventory-service/Models/ReserveStockRequest.cs
+        role: model
+        description: >
+          `quantity` carries `[Range]` and no `[Required]`.
+      - path: services/inventory-service/Models/Reservation.cs
+        role: model
+        description: >
+          No data annotation anywhere, so `reservationId`, `productSku`,
+          `quantity` and `status` are stated required only by the model.
+      - path: services/inventory-service/Models/StockLevel.cs
+        role: model
+        description: >
+          No data annotation anywhere, so `productSku`, `available` and
+          `reserved` are stated required only by the model.
+    tags: [model-code-divergence, validation]

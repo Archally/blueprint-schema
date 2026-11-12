@@ -1,0 +1,139 @@
+# What the shop can do, and which part of the model does it.
+#
+# Each capability names the modules that realize it in `realized_in`: a bounded context (BC###),
+# whose operations are the ones its services provide, or a domain (DMN###), whose operations are
+# the ones in its folder. One exception is stated operation by operation: the Customers context
+# issues sessions for shoppers and for shop operators from one token store, and the operator half
+# belongs to the back office, so Back-office Access lists those three operations and the Customers
+# context's default no longer reaches them.
+#
+# Range and Pricing has one feature, Selling Price Change, which lists Update Product Price as its
+# own. A listed operation takes its capabilities from the listings alone, so Range and Pricing lists
+# it too and both levels state it; the rest of the Catalog context still comes from the module.
+#
+# Importance follows the type of the domain each capability sits in (blueprint.yaml `domains`);
+# nothing here states a maturity the model does not, so only Delivery and Selling Price Change,
+# which no code implements, carry one.
+version: "1.0.0"
+tags: [capability-map]
+
+capabilities:
+  - id: CAP001
+    name: Merchandising
+    level: 1
+    description: >
+      Deciding what the shop sells, at what price and under which category, and running the back
+      office the people making those decisions work through. The shop competes on the range it
+      chooses, which is why this is a core capability.
+    strategic_importance: critical
+    certainty: probable
+    owned_by: { team: TM002 }
+    children:
+      - id: CAP002
+        name: Range and Pricing
+        level: 2
+        description: >
+          Publishing a product, changing its price and creating the categories a shopper finds it
+          under, together with the product reads the storefront and the back office both rely on.
+        children:
+          - id: CAP010
+            name: Selling Price Change
+            kind: feature
+            level: 3
+            description: "An operator replacing the selling price of a product already in
+              the range, so the next cart and the next order are priced at the new figure.
+              The model specifies it (Update Product Price, its process activity and its
+              test case) and no code performs it yet: no back-office control reaches it
+              and no route serves it, which shop-admin.FN001 and catalog.FN001 record."
+            operations:
+              - catalog.CMD002
+            maturity: emerging
+            strategic_importance: critical
+            certainty: speculative
+            owned_by:
+              team: TM002
+        realized_in: [BC001]
+        strategic_importance: critical
+        certainty: probable
+        owned_by: { team: TM002 }
+        operations: [catalog.CMD002]
+      - id: CAP003
+        name: Back-office Access
+        level: 2
+        description: >
+          Letting a shop operator into the back office and out again, and saying who is signed in.
+          The back office belongs to merchandising (its context names that domain), while the
+          sessions are issued by the Customers context, so these operations are listed here one by
+          one rather than taken from a module.
+        operations: [customers.CMD006, customers.CMD007, customers.QRY005]
+        strategic_importance: high
+        certainty: probable
+        owned_by: { team: TM003 }
+
+  - id: CAP004
+    name: Shopping
+    level: 1
+    description: >
+      Letting a shopper collect products in a cart and see what the cart holds before an order is
+      raised from it. It carries the shopper's intent to the capabilities that settle it and holds
+      no outcome of its own.
+    realized_in: [BC004]
+    strategic_importance: medium
+    certainty: probable
+    owned_by: { team: TM003 }
+
+  - id: CAP005
+    name: Order Fulfilment
+    level: 1
+    description: >
+      Turning a submitted order into a confirmed one: the order's lifecycle and the stock that must
+      be reserved behind it. This is where the promise made to a shopper at checkout is settled.
+    strategic_importance: critical
+    certainty: probable
+    owned_by: { team: TM001 }
+    children:
+      - id: CAP006
+        name: Order Handling
+        level: 2
+        description: >
+          Raising a draft order from a cart, submitting it, moving it through its statuses,
+          confirming it to the customer and letting shopper and operator read it back.
+        realized_in: [BC002]
+        strategic_importance: critical
+        certainty: probable
+        owned_by: { team: TM001 }
+      - id: CAP007
+        name: Stock Reservation
+        level: 2
+        description: >
+          Checking how much of a product is in stock and reserving it for an order, so a confirmed
+          order is never one the shop cannot supply.
+        realized_in: [BC003]
+        strategic_importance: critical
+        certainty: probable
+        owned_by: { team: TM001 }
+
+  - id: CAP008
+    name: Delivery
+    level: 1
+    description: >
+      Getting a confirmed order to the customer: preparing the shipment, handing it to a carrier and
+      saying where it has got to. No code implements it yet, so it is realized by its domain alone
+      and no context.
+    realized_in: [DMN005]
+    maturity: emerging
+    strategic_importance: medium
+    certainty: speculative
+    owned_by: { team: TM001 }
+
+  - id: CAP009
+    name: Customer Accounts
+    level: 1
+    description: >
+      Keeping the account a shopper registers for themselves: their details, the discounts that ride
+      on the account into every order's prices, closing it, and signing the shopper in and out. The
+      shop needs it and does not compete on it.
+    realized_in: [BC007, DMN004]
+    strategic_importance: low
+    certainty: probable
+    owned_by: { team: TM003 }

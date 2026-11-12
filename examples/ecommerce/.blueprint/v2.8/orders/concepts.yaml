@@ -1,0 +1,91 @@
+version: "1.0.0"
+scope: orders
+owned_by:
+  team: TM001
+concepts:
+  - id: orders.CN001
+    code_refs:
+      - path: services/orders-service/src/orders/Order.ts
+        role: model
+        description: >
+          The order record the service returns from every order route, with the five-state
+          `status` orders.TR002 to orders.TR007 move between.
+    term: "Order"
+    summary: "Customer purchase request"
+    definition: "Collection of items with shipping and payment intent"
+    attributes:
+      orderId:
+        id: CAT001
+        description: "Unique order identifier"
+        example: "ORD-2026-0042"
+      status:
+        id: CAT002
+        description: >
+          Current order lifecycle state, one of the five this concept declares.
+          It holds one value and no history: the previous one is overwritten,
+          so an order shows where it is and never how it got there
+          (orders.QN005).
+        example: "shipped"
+      totalAmount:
+        id: CAT003
+        description: "Sum of all line item amounts"
+        example: "299.99"
+      customerId:
+        id: CAT004
+        description: "Reference to the ordering customer"
+        example: "CUST-001"
+    states:
+      - name: pending
+        description: >
+          Where an order starts. Creating one puts it here and nothing else
+          does, so this is the only state an order can be in without anybody
+          having decided anything about it.
+      - name: confirmed
+        description: >
+          The shop has accepted the order. It is the one value this lifecycle
+          shares with the three-state vocabulary this concept used to declare,
+          and the only place the two ever agreed.
+      - name: shipped
+        description: "The order has left the shop and is with the carrier."
+      - name: delivered
+        description: >
+          The order arrived. Terminal, and terminal in the strong sense: it
+          cannot even be cancelled afterwards, so a delivery that goes wrong
+          has no state in this lifecycle to express it.
+      - name: cancelled
+        description: >
+          The order will not be fulfilled. Reachable from every state except
+          delivered, and terminal once reached - there is no way back, and
+          nothing records who cancelled it or why (orders.QN005).
+    initial_state: pending
+    terminal_states: [delivered, cancelled]
+    transition_rules:
+      - orders.TR002
+      - orders.TR003
+      - orders.TR004
+      - orders.TR005
+      - orders.TR006
+      - orders.TR007
+  - id: orders.CN002
+    code_refs:
+      - path: services/orders-service/src/orders/OrderItem.ts
+        role: model
+        description: >
+          The line, called `OrderItem` in the code. Its product reference is `productId`
+          where this concept's attribute is a SKU.
+    term: "OrderLine"
+    summary: "Single line item within an order"
+    definition: "Represents a specific product, quantity, and price in an order"
+    attributes:
+      sku:
+        id: CAT005
+        description: "Stock keeping unit"
+        example: "LAPTOP-X1-2026"
+      quantity:
+        id: CAT006
+        description: "Number of items"
+        example: "2"
+      unitPrice:
+        id: CAT007
+        description: "Price per unit"
+        example: "149.99"

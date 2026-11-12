@@ -1,0 +1,41 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: "eShop order flow (workshop slice)"
+description: >
+  A symbolic model of the order flow of dotnet/eShop, the .NET reference application
+  (MIT licence, (c) .NET Foundation and Contributors). It covers one journey: an order is
+  placed, waits out a grace period, has its stock confirmed by Catalog, is paid by the
+  payment processor and is shipped or cancelled. Identity, webhooks, the storefront UI,
+  catalog administration and semantic search are outside this slice.
+repository:
+  url: "https://github.com/Archally/eShop-blueprint"
+  branch: "archally-workshop"
+  provider: "github"
+layout:
+  mode: slices
+  slices:
+    - name: ordering
+      description: The order lifecycle and the buyer who places it. The core of the slice.
+    - name: catalog
+      description: Only the stock check an order triggers. The product range itself is out of the slice.
+    - name: payment
+      description: A simulated payment gateway that answers succeeded or failed.
+    - name: basket
+      description: The basket clean-up an order triggers, and the gRPC API the storefront reads and changes the basket through.
+domains:
+  - id: DMN001
+    name: ordering
+    description: Turning a buyer's basket into an order and carrying it to shipped or cancelled.
+    type: core-domain
+  - id: DMN002
+    name: catalog
+    description: The product range and the stock that can be promised to an order.
+    type: supporting-domain
+  - id: DMN003
+    name: payment
+    description: Taking the money for an order through a payment provider.
+    type: generic-domain
+  - id: DMN004
+    name: basket
+    description: What a buyer collects before checking out.
+    type: supporting-domain

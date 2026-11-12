@@ -1,0 +1,218 @@
+# Commands named in this file use the commercial Archally Pro CLI (https://archally.pro).
+# PENDING: deliberately NOT listed in blueprint.yaml `migrations:`, so the model files still
+# carry the surface the shop actually has, and this is the change that has not happened yet.
+#
+# It is the recorded form of the demonstration block in `orders/domain.yaml`. That block is
+# commented out between a `DEMO: UNCOMMENT THIS` banner and its END twin, and uncommenting it
+# performs the FIRST TWO changes below and nothing else. The rest is here because a comment can
+# only ADD lines: the third change redirects an edge that already exists, and the fourth and fifth
+# rewrite entries already written in `eshop.arch.yaml`. Neither is expressible by deleting a `#`.
+# So the live edit is the half a room can watch, and this file is the whole of it. They do not
+# disagree; one is a prefix of the other, and the note at the bottom says which lines are which.
+#
+# WHY ITS TARGETS ARE SPELLED BY NAME. The same reason MIG006's and MIG007's are: a pending
+# migration has to BUILD, and the replay engine resolves a context or a service against the built
+# entity graph, where both are keyed by name. `bp migration check` resolves by `id:` and is what an
+# APPLIED migration needs. Operations are spelled by id, which resolves in both.
+schemaVersion: "2.8.0"
+migration:
+  id: MIG008
+  name: orders-publishes-order-confirmed
+  date: "2026-09-23"
+  status: pending
+  depends_on: [MIG009]
+  author: "architect"
+  description: >
+    Give Orders an event for the one thing it does to an order that anybody outside it cares
+    about, and move the shipping side onto it.
+    Today Orders has exactly one event. Order Submitted (orders.EVT001) fires from Submit Order,
+    before the order is confirmed, and it is what makes Inventory reserve stock. The operation
+    that actually moves an order through its lifecycle is Set Order Status (orders.CMD004) - the
+    only one, by its own description and by the six transition rules orders.TR002 to orders.TR007
+    that govern it - and it publishes nothing. So the fact "this order was accepted" exists in the
+    order service and leaves no trace anybody can subscribe to.
+    This migration adds orders.EVT002 Order Confirmed, has Set Order Status produce it on the
+    pending-to-confirmed move (orders.TR002), puts it on the shop event bus under the Order
+    Service's asyncapi contract, and redirects Prepare Shipment (delivery.CMD001) from Inventory's
+    Stock Reserved onto it. The Shipments context's single dependency moves from Inventory to
+    Orders with it, because after this the only thing that opens a shipment is an Orders event.
+  rationale: >
+    Prepare Shipment subscribes to Stock Reserved because that was the nearest available signal,
+    not because it is the right one. delivery.QN002 states the gap and is marked blocking; the
+    Shipments dependency in eshop.arch.yaml calls itself "a dependency of necessity rather than of
+    design" in its own prose. Stock Reserved says stock is held. It does not say the order
+    survived, and the difference is not academic: orders.TR005 makes cancelling a confirmed order
+    legal, Set Order Status performs it silently, and nothing tells Inventory or Shipments. A
+    parcel gets picked for an order that no longer exists.
+    Publishing the confirmation is the smaller half of closing that. The larger half is telling
+    somebody when an order LEAVES confirmed - cancelled, shipped, delivered - and this migration
+    deliberately does not attempt it. One event for one move is a change a team can reason about;
+    an event per transition is a design decision about whether this context becomes event-sourced,
+    and orders.QN005 (the order keeps no history of how it got here) is the question that has to
+    be answered first. What this migration buys is that the shipping side stops inferring an
+    order's fate from an inventory fact.
+    Not chosen: having Send Order Confirmation (orders.CMD002) publish it. That operation emails
+    the customer and writes no status; making it the producer of Order Confirmed would assert a
+    state change it does not make, and would contradict Set Order Status's claim to be the only
+    operation that moves an order. It was considered because it is the operation that sits on the
+    Order Flow story, which is the one place a reader would see the new event appear without
+    opening a contract. Being visible is not a reason to record something untrue.
+  related_decisions: [orders.DC002]
+  tags: [events, orders, delivery, context-map, integration]
+
+changes:
+  entities:
+    - kind: add
+      entity_type: operation
+      target: orders.EVT002
+      description: >
+        The fact that an order was accepted, published where another context can hear it.
+      reason: >
+        delivery.QN002 asks what tells the shipping side that an order was confirmed. Before this
+        there is no answer, because the operation that confirms produces nothing.
+      group: "order-confirmed"
+      after:
+        id: orders.EVT002
+        kind: event
+        name: Order Confirmed
+        description: >
+          An order reached confirmed. The signal delivery.QN002 asks for, and the one this
+          context has never published.
+        exchange:
+          protocol: amqp
+          topic:
+            name: orders.confirmed
+            description: Published when an order reaches confirmed
+        reacts_to:
+          - operation: orders.CMD004
+            policy: emit-on-confirmed
+
+  relationships:
+    - kind: add
+      subject: orders.CMD004
+      predicate: produces
+      object: orders.EVT002
+      edge_properties:
+        mode: all
+      description: "Set Order Status publishes Order Confirmed."
+      reason: >
+        It is the operation that performs orders.TR002, pending to confirmed. Its own description
+        records that it produces no event and names that as one of two things it still does not
+        do; this is the first of the two.
+      group: "order-confirmed"
+
+    - kind: redirect
+      subject: delivery.CMD001
+      predicate: reacts_to
+      object: inventory.EVT001
+      new_object: orders.EVT002
+      edge_properties:
+        policy: prepare-on-order-confirmed
+        condition: the order reached confirmed
+      description: >
+        Prepare Shipment stops listening to Stock Reserved and listens to Order Confirmed.
+      reason: >
+        Stock being held is not the order surviving. This is the edge delivery.QN002 was opened
+        against, and the one the block in orders/domain.yaml cannot perform, because redirecting
+        an edge means removing a line and a comment can only add one.
+      group: "shipments-onto-orders"
+
+    - kind: redirect
+      subject: Shipments
+      predicate: context_depends_on
+      object: Inventory
+      new_object: Orders
+      edge_properties:
+        relationship: conformist
+        direction: downstream
+      description: "The Shipments context now depends on Orders rather than on Inventory."
+      reason: >
+        The context map is drawn from the edge rather than from the dependency entry, so rewriting
+        the entry alone would change the file and leave the old arrow on the picture. Both are
+        needed, for the reason MIG006 states at length.
+      group: "shipments-onto-orders"
+
+  properties:
+    - kind: append
+      target: OrderService
+      entity_type: service
+      property: contracts.asyncapi.send
+      value: orders.EVT002
+      description: >
+        The Order Service publishes it. Without this line the model declares an event no service
+        sends, which `bp check` reports as `unbound-operation`, and no asyncapi channel is
+        generated for it.
+      reason: "An event with a topic and no contract says it travels and not who publishes it."
+      group: "order-confirmed"
+
+    - kind: set
+      target: ShipmentService
+      entity_type: service
+      property: contracts.asyncapi.receive.0
+      value: orders.EVT002
+      old_value: inventory.EVT001
+      description: "The Shipment Service subscribes to Order Confirmed instead of Stock Reserved."
+      reason: >
+        The contract is what binds an operation to a context and what a generator reads. Leaving
+        Stock Reserved here would have Shipments receiving an event nothing in it reacts to.
+      group: "shipments-onto-orders"
+
+    - kind: set
+      target: Shipments
+      entity_type: context
+      property: dependencies.0.name
+      value: Orders
+      old_value: Inventory
+      description: "The declared dependency names Orders."
+      group: "shipments-onto-orders"
+
+    - kind: set
+      target: Shipments
+      entity_type: context
+      property: dependencies.0.bounded_context_ref
+      value: BC002
+      old_value: BC003
+      description: "And resolves to the Orders bounded context."
+      group: "shipments-onto-orders"
+
+  meta:
+    - kind: note
+      target: "MIG008"
+      value: >
+        Which lines the demonstration block performs. Uncommenting the block in
+        orders/domain.yaml adds orders.EVT002 and the produces edge from orders.CMD004 - the first
+        entity change and the first relationship change above, minus the `exchange` block, which
+        the live block omits so that uncommenting swaps one semantic-check warning for another
+        rather than adding two. Everything else here is a rewrite of an existing line and a
+        comment cannot perform one.
+      description: "The relationship between this file and the block a room watches."
+    - kind: note
+      target: "MIG008"
+      value: >
+        What this does NOT close. delivery.QN002 stays open after this migration, because the
+        question is what tells the shipping side about an order's fate and this answers only the
+        confirmation half of it. An order cancelled after confirmation (orders.TR005) still
+        publishes nothing, so a shipment opened on Order Confirmed can still be picked for an
+        order that has since been cancelled - a narrower window than today's and the same failure.
+        Closing it needs an event per lifecycle exit, which is the decision orders.QN005 blocks.
+      description: "The half of the gap that survives this change."
+    - kind: note
+      target: "MIG008"
+      value: >
+        What was watching. Nothing in the toolchain would have reported the state this migration
+        corrects. `bp check` does flag `missing-causal-links` on orders.CMD004, which is the
+        closest any rule comes, but it is one of nine such findings in this model and says nothing
+        about the context that needed the event. Prepare Shipment subscribing to an event that
+        means something narrower than it needs is a modelling judgement, and no rule reads it. It
+        is recorded as delivery.QN002 and delivery.ASM001 because that is the only place it could
+        be recorded.
+      description: "Why this is a question in the model rather than a finding from a gate."
+
+rollback:
+  automatic: true
+  data_loss: false
+  warnings:
+    - >
+      Rolling this back returns Prepare Shipment to Stock Reserved and leaves orders.EVT002 with
+      no subscriber, which is a worse state than either end of this migration - an event published
+      for nobody. Roll back the whole group or none of it.

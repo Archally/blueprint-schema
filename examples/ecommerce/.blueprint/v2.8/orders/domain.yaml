@@ -1,0 +1,493 @@
+version: "1.0.0"
+name: "Orders"
+scope: orders
+operations:
+  submitOrder:
+    id: orders.CMD001
+    kind: command
+    name: Submit Order
+    description: >
+      Submit an order for confirmation. It is the second half of a two-step
+      place-an-order design - create, review, submit - and after the lifecycle
+      was reconciled to the five states the shop's orders actually hold
+      (orders.DC002) it is the operation with nowhere to move an order to.
+      Submitting does not change the status, because the states it used to move
+      between, draft and submitted, are not states of an order any more. What
+      it still does is publish Order Submitted, which is what makes Inventory
+      reserve stock, so the step is load-bearing and its effect on the order
+      itself is now unstated. orders.FN001 holds that.
+    initiated_by:
+      - ACT001
+    exchange:
+      protocol: http
+      endpoint:
+        path: /orders/{id}/submit
+        method: POST
+        group: orders
+        parameters:
+          - name: id
+            schema: "#/components/x-field/OrderId"
+            type: path
+            required: true
+    payload:
+      schema: "#/components/schemas/SubmitOrderRequest"
+      contentType: application/json
+      required: true
+    responses:
+      - code: "200"
+        type: success
+        description: Order submitted successfully
+        schema: "#/components/schemas/Order"
+      - code: "400"
+        type: failure
+        description: Order validation failed
+        error: orders.ERR001
+      - code: "404"
+        type: failure
+        description: Order not found
+        error: orders.ERR002
+    governed_by:
+      - rule: orders.SR001
+    produces:
+      operations:
+        - orders.EVT001
+      mode: all
+    task_type: automated
+    # v2.6 fields
+    delivery_priority: must-have
+    materializes:
+      - concept: orders.CN001
+        action: update
+        description: >
+          Marks the order as submitted in the design this operation belongs to,
+          and writes no status the reconciled lifecycle declares. The six
+          transition rules on orders.CN001 contain no edge this command takes
+          (orders.FN001).
+  createDraftOrder:
+    id: orders.CMD003
+    code_refs:
+      - path: services/orders-service/src/server.ts
+        role: implementation
+        description: >
+          `app.post('/orders')` in the order service's route table. The route creates an
+          order in `pending`, not in `draft` - see orders.FN001 on the name.
+    kind: command
+    name: Create Draft Order
+    description: >
+      Open an order from the customer's cart, so it can be reviewed and then
+      submitted. It is the operation that puts an Order into `pending`, the
+      lifecycle's initial state and the only state reachable without anybody
+      deciding anything. It also reads the customer's standing discounts
+      (customers.QRY002) and strikes every line price with them, which is the
+      reach across a context boundary the Orders to Customers dependency
+      records.
+    initiated_by:
+      - ACT001
+    exchange:
+      protocol: http
+      endpoint:
+        path: /orders
+        method: POST
+        group: orders
+    payload:
+      schema: "#/components/schemas/SubmitOrderRequest"
+      contentType: application/json
+      required: true
+    responses:
+      - code: "201"
+        type: success
+        description: Draft order created
+        schema: "#/components/schemas/Order"
+      - code: "400"
+        type: failure
+        description: Order has no line items
+        error: orders.ERR001
+    governed_by:
+      - rule: orders.SR001
+    task_type: user-decision
+    delivery_priority: must-have
+    materializes:
+      - concept: orders.CN001
+        action: create
+        description: Creates the Order in its initial state, pending
+      - concept: orders.CN002
+        action: create
+        description: >
+          Creates one line per cart item, capturing the quantity and the unit
+          price the order is charged at.
+
+  orderSubmitted:
+    id: orders.EVT001
+    kind: event
+    name: Order Submitted
+    description: Order was submitted for processing
+    exchange:
+      protocol: amqp
+      topic:
+        name: orders.submitted
+        description: Published when an order is submitted
+        filters:
+          - name: routing-key
+            ref: orders.submitted.{priority}
+        channel_ref: "MCH001"
+    payload:
+      schema: "#/components/schemas/OrderSubmittedEvent"
+      contentType: application/json
+    delivery_priority: must-have
+  getOrder:
+    id: orders.QRY001
+    code_refs:
+      - path: services/orders-service/src/server.ts
+        role: implementation
+        description: >
+          `app.get('/orders/:id')` in the order service's route table.
+    kind: query
+    name: Get Order
+    description: Retrieve order by ID
+    initiated_by:
+      - ACT001
+    exchange:
+      protocol: http
+      endpoint:
+        path: /orders/{id}
+        method: GET
+        group: orders
+        parameters:
+          - name: id
+            schema: "#/components/x-field/OrderId"
+            type: path
+            required: true
+    responses:
+      - code: "200"
+        type: success
+        description: Order details
+        schema: "#/components/schemas/Order"
+      - code: "404"
+        type: failure
+        description: Order not found
+        error: orders.ERR002
+    delivery_priority: must-have
+  listOrders:
+    id: orders.QRY002
+    code_refs:
+      - path: services/orders-service/src/server.ts
+        role: implementation
+        description: >
+          `app.get('/orders')` in the order service's route table.
+    kind: query
+    name: List Orders
+    description: List orders for current customer
+    initiated_by:
+      - ACT001
+      - ACT002
+    exchange:
+      protocol: http
+      endpoint:
+        path: /orders
+        method: GET
+        group: orders
+        parameters:
+          - name: status
+            schema: "#/components/x-field/OrderStatus"
+            type: query
+            required: false
+          - name: limit
+            schema: "#/components/x-field/PageLimit"
+            type: query
+            required: false
+    responses:
+      - code: "200"
+        type: success
+        description: List of orders
+        schema: "#/components/schemas/OrderList"
+
+  setOrderStatus:
+    id: orders.CMD004
+    code_refs:
+      - path: services/orders-service/src/server.ts
+        role: implementation
+        description: >
+          `app.put('/orders/:id/status')` in the order service's route table. The six legal
+          moves orders.TR002 to orders.TR007 are computed here, per current status.
+    kind: command
+    name: Set Order Status
+    description: >
+      Move an order to its next status. It is the one write on an order that
+      the shopper does not make - an operator picks the new status in the back
+      office - and it is the ONLY operation in this model that moves an order
+      through the lifecycle orders.CN001 declares. Everything the order's state
+      ever becomes, it becomes here.
+      It is a real transition and not an assignment. The requested value is
+      checked against the order's current one, and a move the six rules
+      orders.TR002 to orders.TR007 do not contain is refused with the moves
+      that would have been legal (orders.ERR006). So a delivered order cannot
+      be sent back to pending, a step cannot be skipped, and a delivered order
+      cannot be cancelled.
+      Two things it still does not do. It produces no event, so nothing
+      downstream learns that an order was cancelled or shipped - Inventory
+      holds stock reserved for an order cancelled after confirmation
+      (orders.TR005) and is never told. And it keeps no history: the previous
+      status is overwritten and the operator who chose it is not recorded
+      (orders.QN005).
+    initiated_by:
+      - ACT002
+    exchange:
+      protocol: http
+      endpoint:
+        path: /orders/{id}/status
+        method: PUT
+        group: orders
+        parameters:
+          - name: id
+            schema: "#/components/x-field/OrderId"
+            type: path
+            required: true
+    payload:
+      schema: "#/components/schemas/SetOrderStatusRequest"
+      contentType: application/json
+      required: true
+    responses:
+      - code: "200"
+        type: success
+        description: Status assigned, and the whole updated order is returned
+        schema: "#/components/schemas/Order"
+      - code: "400"
+        type: failure
+        description: The status was missing, or was not one of the five the lifecycle declares
+        error: orders.ERR005
+      - code: "400"
+        type: failure
+        description: >
+          The status is a real one but not a legal move from the order's current
+          status; the refusal names the moves that would have been legal
+        error: orders.ERR006
+      - code: "404"
+        type: failure
+        description: Order not found
+        error: orders.ERR002
+    task_type: user-decision
+    delivery_priority: should-have
+    governed_by:
+      - rule: orders.TR002
+      - rule: orders.TR003
+      - rule: orders.TR004
+      - rule: orders.TR005
+      - rule: orders.TR006
+      - rule: orders.TR007
+    materializes:
+      - concept: orders.CN001
+        action: update
+        description: >
+          Moves the order to the requested status when one of the six transition
+          rules allows it. The previous value is overwritten and not recorded,
+          so the order's own history cannot be reconstructed from this model
+          (orders.QN005).
+# === DEMO: UNCOMMENT THIS === Orders publishes a fact when an order is confirmed ===
+#     produces:
+#       operations:
+#         - orders.EVT002
+#       mode: all
+#   orderConfirmed:
+#     id: orders.EVT002
+#     kind: event
+#     name: Order Confirmed
+#     description: >
+#       An order reached confirmed. The signal delivery.QN002 asks for, and
+#       the one this context has never published.
+#     exchange:
+#       protocol: amqp
+#       topic:
+#         name: orders.confirmed
+#         description: Published when an order reaches confirmed
+#     reacts_to:
+#       - operation: orders.CMD004
+#         policy: emit-on-confirmed
+# === END DEMO ===
+
+  sendOrderConfirmation:
+    id: orders.CMD002
+    kind: command
+    name: Send Order Confirmation
+    description: >
+      Email the order confirmation to the customer once every line item's stock
+      is reserved. Named by the Order Flow story and the Place Order use case as
+      the step that follows reservation. It is designed as a job on the order
+      service's own work queue, orders.send-confirmation on the shop event bus,
+      which no service runs yet (orders.FN004).
+    implementation: to-be
+    exchange:
+      protocol: amqp
+      queue:
+        name: orders.send-confirmation
+        description: >
+          The order service's work queue for confirmation emails. When Stock
+          Reserved arrives, the service puts one job on this queue and its own
+          worker takes it; one message, one email.
+        channel_ref: "MCH004"
+    initiated_by:
+      - ACT003
+    reacts_to:
+      - operation: inventory.EVT001
+        policy: confirm-on-stock-reserved
+    delivery_priority: must-have
+
+errors:
+  orderValidationFailed:
+    id: orders.ERR001
+    name: Order Validation Failed
+    description: Order does not meet submission requirements
+    category: validation
+    severity: error
+    http_status: 400
+    retry_eligible: false
+    related_rules:
+      - orders.SR001
+  orderNotFound:
+    id: orders.ERR002
+    name: Order Not Found
+    description: Requested order does not exist
+    category: not-found
+    severity: error
+    http_status: 404
+    retry_eligible: false
+  orderStatusRejected:
+    id: orders.ERR005
+    name: Order Status Rejected
+    description: >
+      The requested status was absent, or was not one of the five values the
+      Order lifecycle declares. A vocabulary failure and nothing more - it says
+      the word is not a status, not that the move is wrong, and the two are
+      answered separately because a caller can fix one and has to rethink the
+      other.
+    category: validation
+    severity: error
+    http_status: 400
+    retry_eligible: false
+  orderTransitionRejected:
+    id: orders.ERR006
+    name: Order Transition Rejected
+    description: >
+      The requested status exists but is not a legal move from the one the
+      order is in. The refusal carries the order's current status and the moves
+      that would have been legal from it, so a caller is told what it may do
+      rather than only that it may not do this. It is the one failure in this
+      model that hands back a piece of the domain rule it just enforced, and it
+      is how a back office that has gone stale learns that somebody else moved
+      the order first.
+    category: conflict
+    severity: error
+    http_status: 400
+    retry_eligible: false
+  orderAlreadySubmitted:
+    id: orders.ERR003
+    name: Order Already Submitted
+    description: Order has already been submitted and cannot be resubmitted
+    category: conflict
+    severity: warning
+    http_status: 409
+    retry_eligible: false
+
+questions:
+  - id: orders.QN001
+    name: Order state
+    statement: "What state is a customer's order in?"
+    description: >
+      The question the order-tracking page exists to answer, and the one the
+      draft-submitted-confirmed lifecycle was drawn to make answerable.
+    category: measurement
+    priority: critical
+    answered_by:
+      - orders.QRY001
+    concepts:
+      - orders.CN001
+    motivated_by:
+      - orders.GL001
+    stakeholders:
+      - ACT001
+  - id: orders.QN002
+    name: Customer order history
+    statement: "Which orders has this customer placed, and in what state is each?"
+    description: >
+      Answered from this context's own records. Filterable by state, which is
+      what makes the order list useful rather than merely complete.
+    category: enumeration
+    priority: high
+    answered_by:
+      - orders.QRY002
+    concepts:
+      - orders.CN001
+    stakeholders:
+      - ACT001
+  - id: orders.QN003
+    name: Changing a submitted order
+    statement: "Can a customer still change an order once it has been submitted?"
+    description: >
+      Unanswered, and sharper than it was. The lifecycle now has a cancel edge
+      out of every state except delivered (orders.TR003, orders.TR005,
+      orders.TR007), so cancelling an order is a thing this shop can express -
+      and the only operation that reaches those edges is Set Order Status,
+      which is the back office's. A customer who wants to cancel has to ask
+      somebody to do it for them, and nothing in this model records that they
+      asked. Amendment is not expressible at all: there is no edge, no
+      operation and no state for an order that changed.
+    category: behavioral
+    priority: high
+    answered_by: []
+    concepts:
+      - orders.CN001
+      - orders.CN002
+    stakeholders:
+      - ACT001
+    blocking: false
+  - id: orders.QN004
+    name: One status vocabulary
+    statement: "Which set of statuses can an order actually be in?"
+    description: >
+      Decided: pending, confirmed, shipped, delivered, cancelled. This context
+      used to answer the question twice - the aggregate declared draft,
+      submitted and confirmed, while Set Order Status accepted a different five
+      and wrote any of them onto the same field - and the two answers shared
+      one value. That is not a divergence a reader can learn anything from; it
+      reads as an authoring mistake, and orders.DC002 removed it by taking the
+      five the shop's orders actually hold.
+      The lifecycle is now stated as six legal moves rather than a list of
+      words (orders.TR002 to orders.TR007), and Set Order Status enforces them.
+      What the reconciliation exposed rather than settled is on the other side:
+      three operations and an error were built around a draft-then-submit stage
+      this lifecycle does not contain. orders.FN001 is where that sits.
+    bounded_context_ref: BC002
+    category: data
+    priority: critical
+    answered_by:
+      - orders.CMD004
+    concepts:
+      - orders.CN001
+    stakeholders:
+      - ACT001
+      - ACT002
+    resolved: true
+    resolution: >
+      One vocabulary of five, declared on orders.CN001, with the six legal
+      moves as orders.TR002 to orders.TR007 and orders.CMD004 enforcing them
+      (orders.DC002).
+    blocking: false
+  - id: orders.QN005
+    name: How an order got here
+    statement: "What states has this order been through, and who moved it?"
+    description: >
+      Unanswered. Set Order Status assigns the new value over the old one and
+      records neither the previous status nor the operator who chose it, and
+      the command publishes no event for anything downstream to keep. An order
+      that reads `cancelled` therefore cannot be distinguished from one
+      cancelled in error and put back, and a customer asking why their order
+      moved can be answered only from whatever the operator remembers.
+    bounded_context_ref: BC002
+    category: temporal
+    priority: high
+    answered_by: []
+    concepts:
+      - orders.CN001
+    stakeholders:
+      - ACT001
+      - ACT002
+    blocking: false

@@ -1,0 +1,85 @@
+version: "1.0.0"
+scope: shop-admin
+owned_by:
+  team: TM002
+tags: [write-side, back-office]
+findings:
+  - id: shop-admin.FN001
+    title: "The back office prices a quantity; the price change this context owns has no control and no route"
+    summary: "One endpoint computes a quote nobody stores, and the operation that stores a price is reachable from nowhere."
+    kind: drift
+    quality_characteristic: functional-suitability
+    quality_subcharacteristic: functional-completeness
+    severity: medium
+    status: open
+    certainty: confirmed
+    discovery_stage: validated
+    statement: >
+      The model says a back-office operator changes a selling price: catalog.CMD002 is a PUT on an
+      admin path, the Shop Operator (ACT002) initiates it, shop-admin.CN001 exists only to hold the figure while
+      the operator decides, and this context's first assumption is about the staleness of the number
+      they decide against. The running back office has no such control. What its product screen
+      offers instead is a POST that computes a price for a quantity with an optional discount and
+      returns it; the screen's own note says the service never persists a quote, and the products
+      client's comment says the service serves no publish and no create-category endpoint either.
+      So two things are true at once. A price quote exists in the code and in no operation of this
+      model, which is why shop-admin.UAC008 triggers nothing: naming catalog.CMD002 there would
+      assert a write that does not happen, and naming a catalog read would assert a read that does
+      not answer this question. And catalog.CMD002 exists in the model with an actor, a payload
+      shape, a concept and a process activity behind it, and with no control anywhere that reaches
+      it. The same holds for catalog.CMD001 and catalog.CMD003, which the model gives this context's
+      actor and the back office offers no surface for.
+    recommendation: >
+      Do not resolve this by deleting either side. The question a room can be asked is which artefact
+      is behind: a shop that cannot change a price from its back office is missing the feature the
+      model already specifies, and a model that specifies three admin commands no surface reaches is
+      describing a back office somebody intended rather than the one that runs. If the answer is that
+      the commands are intended, the quote endpoint still needs an operation of its own, because
+      computing a price is a different question from storing one and the model currently has no way
+      to ask it. If the answer is that the quote is all the shop will ever have, then this context's
+      one write disappears and shop-admin.CN001 loses its reason to exist.
+    affects:
+      operation_refs:
+        - catalog.CMD001
+        - catalog.CMD002
+        - catalog.CMD003
+      concept_refs:
+        - shop-admin.CN001
+        - catalog.CN999
+      context_refs:
+        - shop-admin
+        - catalog
+      process_refs:
+        - PRC002
+    risk_refs:
+      - shop-admin.RSK001
+kpis:
+  - id: shop-admin.KPI001
+    name: "Products repriced twice within 24 hours"
+    description: >
+      The correction rate, and the price of shop-admin.BD001's no-review
+      policy: a second edit to one product inside a day is usually the first
+      one being taken back. It is countable only from this context's own
+      calls - Catalog keeps no history to count from (catalog.QN003) - so the
+      figure says how often a change was retracted and can never say what it
+      was retracted from.
+    target: "< 2%"
+    window: "30d rolling"
+    domain_scope: shop-admin
+    thresholds:
+      warning: "2%"
+      critical: "5%"
+  - id: shop-admin.KPI002
+    name: "Published products with no stock record after one hour"
+    description: >
+      Measures shop-admin.ASM003 directly: each one is a product a shopper can
+      find, price and add to a cart that no reservation will ever succeed for.
+      Computing it means joining this context's publish calls against
+      Inventory, and nothing in the model joins them, so the number is a
+      statement of what the shop would have to build before it could know.
+    target: "0"
+    window: "7d rolling"
+    domain_scope: shop-admin
+    thresholds:
+      warning: "1"
+      critical: "5"

@@ -1,0 +1,76 @@
+version: "1.0.0"
+name: "Shop Admin"
+description: >
+  The back office. This context owns no operations: every change a manager
+  makes is a command belonging to Catalog, and this context's work is giving
+  those commands a surface and a sequence. The empty operations map is the
+  model stating that, not an omission - the same shape the Storefront has on
+  the read side.
+scope: shop-admin
+owned_by:
+  team: TM002
+tags: [write-side, back-office]
+
+operations: {}
+
+questions:
+  - id: shop-admin.QN001
+    name: The current range
+    statement: "Which products are published right now, and what is each priced at?"
+    description: >
+      The question a manager answers before every decision this context exists
+      to make, and the only one of the three here that the shop can answer.
+      List Products returns the range and Get Product returns one entry. Both
+      are the shopper-facing reads: they are initiated_by the Customer (ACT001), and
+      nothing in the model says whether a back-office screen uses them or some
+      other path. The answer exists; which door the back office goes through
+      for it is not stated anywhere.
+    bounded_context_ref: BC006
+    category: enumeration
+    priority: critical
+    answered_by:
+      - catalog.QRY002
+      - catalog.QRY001
+    concepts:
+      - shop-admin.CN002
+    stakeholders:
+      - ACT002
+  - id: shop-admin.QN002
+    name: Did that land, and what did it replace
+    statement: "After I change a price, what was the old one and did the change take effect?"
+    description: >
+      Unanswered, and the gap is this context's sharpest. Update Product Price
+      replaces the figure in place and keeps no record of the previous one
+      (catalog.QN003), and Catalog publishes no event when it does
+      (catalog.DC001), so there is nothing to subscribe to and nothing to look
+      back at. The manager has the command's 200 response and nothing else. A
+      mistyped price is therefore both instant and invisible: it can only be
+      found by someone reading the product page, and corrected by typing the
+      figure they believe was there before.
+    bounded_context_ref: BC006
+    category: temporal
+    priority: high
+    answered_by: []
+    concepts:
+      - shop-admin.CN001
+    stakeholders:
+      - ACT002
+    blocking: false
+  - id: shop-admin.QN003
+    name: The forgotten corner of the range
+    statement: "Which products has nobody touched since the day they were published?"
+    description: >
+      Unanswered. Nothing in the shop records when a catalog entry was last
+      changed, so a product published once and never revisited is
+      indistinguishable from one priced deliberately this morning. The manager
+      who owns the range cannot find the part of it nobody is managing, which
+      is the part most likely to be wrong.
+    bounded_context_ref: BC006
+    category: temporal
+    priority: medium
+    answered_by: []
+    concepts:
+      - shop-admin.CN002
+    stakeholders:
+      - ACT002
+    blocking: false

@@ -1,0 +1,93 @@
+version: "1.0.0"
+scope: catalog
+components:
+  schemas:
+    Product:
+      x-model-id: MDL010
+      code_refs:
+        - path: services/products-service/src/catalog/Product.ts
+          role: model
+          description: >
+            The `Product` interface the product service serves from both of its read routes.
+            It carries three fields this schema does not declare - `stock`, `weight` and
+            `dimensions` - so the shop returns more than the model says it does.
+      purpose: read-model
+      type: object
+      description: "Product detail view for catalog display"
+      required:
+        - sku
+        - name
+        - price
+      properties:
+        sku:
+          $ref: "#/components/x-field/ProductSku"
+        name:
+          type: string
+          description: "Product display name"
+          maxLength: 255
+        description:
+          type: string
+          description: "Product description"
+        category:
+          $ref: "#/components/x-field/CategoryName"
+        price:
+          type: number
+          format: double
+          minimum: 0
+          description: "Unit price"
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          description: "ISO 4217 currency code"
+        imageUrl:
+          type: string
+          format: uri
+          description: "Main product image URL"
+        inStock:
+          type: boolean
+          description: "Whether product is currently available"
+
+    ProductList:
+      x-model-id: MDL011
+      purpose: read-model
+      type: object
+      description: "Paginated product listing"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        total:
+          type: integer
+          description: "Total number of matching products"
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+  x-field:
+    ProductSku:
+      type: string
+      description: "Unique product SKU identifier"
+      pattern: "^[A-Z0-9-]{3,20}$"
+      example: "LAPTOP-001"
+    CategoryName:
+      type: string
+      description: "Product category name"
+      maxLength: 100
+      example: "Electronics"
+    SearchQuery:
+      type: string
+      description: "Free-text search query"
+      maxLength: 200
+    PageLimit:
+      type: integer
+      description: "Maximum number of items per page"
+      minimum: 1
+      maximum: 100
+      default: 20
+    PageOffset:
+      type: integer
+      description: "Number of items to skip for pagination"
+      minimum: 0
+      default: 0

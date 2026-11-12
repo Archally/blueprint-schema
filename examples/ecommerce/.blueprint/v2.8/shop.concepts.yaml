@@ -1,0 +1,199 @@
+# The people who use the shop, declared once for the whole model.
+#
+# A person who acts in several bounded contexts is one actor here, not one actor per context.
+# What differs between contexts is what the person does there, and that is stated in the
+# actor's `responsibilities` and `interactions`; a way of being that person (a shopper at a
+# screen) is a persona of the actor. Participants that are not these two people - the Order
+# System, the Warehouse Manager, the Dispatch Clerk - stay with the context that knows them.
+version: "1.0.0"
+concepts: []
+actors:
+  - id: ACT001
+    name: "Customer"
+    type: human
+    summary: "The person who registers, shops, fills a cart and places orders - one person in every context"
+    description: >
+      The one person every customer-facing context acts for. Customers is the only
+      context that knows them by name; everywhere else they are a customer id on an
+      order or the implied owner of a cart. They register and correct their own
+      details, browse and read the range, fill a cart and place and submit an order,
+      always through the storefront, where they appear as the Shopper persona. The
+      storefront carries each intent to the context that owns the command, so the
+      act belongs to Catalog, Checkout, Customers or Orders and only the button
+      belongs to the storefront. Closing an account is not theirs: customers.DC003
+      decided it is the shop's act, so a customer who is finished with the shop asks
+      rather than presses.
+      Since 2026-10-28 one actor: it replaces catalog.ACT001, checkout.ACT001,
+      customers.ACT001 and orders.ACT001, each named Customer, and storefront.ACT001,
+      named Shopper, which is now the persona PER001.
+    responsibilities:
+      - "Browse the product catalog by category and search it"
+      - "Read a product's details and its availability before deciding"
+      - "Register an account before placing a first order"
+      - "Sign in, which is what turns the account into a session the shop acts under, and sign out"
+      - "Keep their own contact and delivery details current"
+      - "Add products to the shopping cart and review the cart before checkout"
+      - "Create a draft order from the cart and submit it for processing"
+      - "Review their own past orders"
+    interactions:
+      - target: catalog.QRY002
+        verb: reads
+        description: "Browses and searches the product range"
+      - target: catalog.QRY001
+        verb: reads
+        description: "Opens a product's detail page, fetched by SKU"
+      - target: inventory.QRY001
+        verb: reads
+        description: "Sees the availability line on the product page"
+      - target: customers.CMD001
+        verb: initiates
+        description: "Registers, which is the act that makes them a customer at all"
+      - target: customers.CMD004
+        verb: initiates
+        description: >
+          Signs in with the email they registered under and the password they
+          chose, and receives the token the storefront then works under
+      - target: customers.CMD005
+        verb: initiates
+        description: "Signs out, which revokes the token and nothing else"
+      - target: customers.QRY004
+        verb: reads
+        description: >
+          Not by pressing anything: the storefront makes this read on every load
+          to turn the remembered token back into the person
+      - target: customers.CMD002
+        verb: initiates
+        description: "Corrects their own details - an unconditional replace of every field, not a patch"
+      - target: customers.QRY001
+        verb: reads
+        description: "Reads their own profile back"
+      - target: customers.QRY002
+        verb: reads
+        description: "Reads the discounts on their own account - the same read that prices their orders"
+      - target: checkout.CMD001
+        verb: initiates
+        description: "Adds a product to the cart from the product page"
+      - target: checkout.QRY001
+        verb: reads
+        description: "Opens the cart page and the header cart badge"
+      - target: orders.CMD003
+        verb: initiates
+        description: "Turns the cart into a draft order at the start of checkout"
+      - target: orders.CMD001
+        verb: initiates
+        description: "Submits the draft order for confirmation"
+      - target: orders.QRY002
+        verb: reads
+        description: "Lists their own past orders"
+    personas:
+      - id: PER001
+        name: "Shopper"
+        description: >
+          The customer as the storefront knows them: someone at a screen. The
+          storefront holds no account, owns no cart, keeps no order and takes no
+          payment. Since 2026-09-25 it holds one thing, the opaque session token the
+          customer service issued, in browser storage, so "who is shopping" is a
+          question it asks Customers on every load rather than a customer id it
+          remembers.
+        context: "At the storefront, before signing in or under a session token after it"
+        goals:
+          - "Find a product and know whether it is available before deciding"
+          - "Put it in the cart and place the order without leaving the storefront"
+          - "Find their own past orders once signed in"
+        behaviors:
+          - "Signs in from the sign-in screen or immediately after registering; the account and both order screens stay closed until they do"
+          - "Signs out from the header, which closes the same three screens again"
+
+  - id: ACT002
+    name: "Shop Operator"
+    type: human
+    summary: "The person at the back-office screen - maintains the range, moves orders along and answers questions about customers"
+    description: >
+      The one person in the back office, whichever context records what they do.
+      Catalog sees them maintaining the range, Orders sees them moving an order
+      through its lifecycle, Customers sees them reading customer records and closing
+      an account, and shop-admin is the screen they do all of it from. Shop-admin
+      grants no permission, records no identity and keeps no history of what they did:
+      every act is a command another context owns and governs. An operator is a
+      different kind of user from a customer, not a customer with a flag: the customer
+      service keeps operators in a collection of their own, with a role on the record
+      that nothing reads; the sign-in and the session read are declared over it, the
+      rest is open in customers.QN005. On an order, what is checked is the shape of the
+      move, not the judgement behind it: the six transition rules refuse a skipped,
+      reversed or terminal step, and whether the order really shipped is this person's
+      word, since the shop has no signal for it.
+      Since 2026-10-28 one actor: it replaces shop-admin.ACT001 (Shop Operator),
+      catalog.ACT002 (Catalog Manager), customers.ACT002 (Support Operator) and
+      orders.ACT003 (Fulfilment Operator), which the model already described as the
+      same person seen from four contexts.
+    responsibilities:
+      - "Sign in to the back office, which is closed until they do, and sign out"
+      - "Add new products to the sellable range and keep their details current"
+      - "Set and adjust selling prices"
+      - "Maintain the category tree shoppers browse by"
+      - "Read the order book across all customers"
+      - "Record that an order has moved to its next status"
+      - "Cancel an order on a customer's behalf, since no customer-facing operation can (orders.QN003)"
+      - "Look up a customer, and read the customer list and a customer's standing discounts, while answering a question about an order or a price"
+      - "Close an account when the shop decides it should be closed"
+    interactions:
+      - target: customers.CMD006
+        verb: initiates
+        description: >
+          Signs in to the back office. The first operation this model declares
+          over the operator collection, and the one that opens every other screen
+      - target: customers.CMD007
+        verb: initiates
+        description: "Signs out, which closes the back office on the next navigation"
+      - target: customers.QRY005
+        verb: reads
+        description: >
+          Made by the back office rather than by the operator, once per load, to
+          decide whether a remembered token still names anybody
+      - target: catalog.CMD001
+        verb: initiates
+        description: "Publishes a product, which makes it browsable and buyable in the same act"
+      - target: catalog.CMD002
+        verb: initiates
+        description: "Changes a selling price, with no review step and no undo"
+      - target: catalog.CMD003
+        verb: initiates
+        description: "Creates a browsing category products can then be published into"
+      - target: orders.QRY002
+        verb: reads
+        description: "Reads the order book to find the orders needing attention"
+      - target: orders.CMD004
+        verb: initiates
+        description: >
+          Moves an order to its next status. The move is checked against the
+          lifecycle; the judgement behind it is not checked by anything.
+      - target: customers.QRY001
+        verb: reads
+        description: "Opens one customer's record from the back office"
+      - target: customers.QRY002
+        verb: reads
+        description: "Reads the concessions on an account, the same read the order flow makes when it prices"
+      - target: customers.QRY003
+        verb: reads
+        description: "Reads every active account, whole - there is no search and no paging to narrow it"
+      - target: customers.CMD003
+        verb: initiates
+        description: >
+          Closes an account. Decided as this actor's act (customers.DC003);
+          where they press it is MIG007, not yet the running shop.
+  - id: ACT003
+    name: "Order System"
+    type: system
+    summary: "Order processing system that triggers stock reservation"
+    responsibilities:
+      - "Request stock reservation when order is submitted"
+      - "Send the order confirmation email once every line's stock is reserved"
+    interactions:
+      - target: inventory.CMD001
+        verb: initiates
+        description: "Reserves stock for an order line"
+      - target: orders.CMD002
+        verb: initiates
+        description: >
+          Sends the order confirmation: the order service's own worker takes the
+          job from orders.send-confirmation once Stock Reserved arrives

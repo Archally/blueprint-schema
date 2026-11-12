@@ -12,6 +12,12 @@ jobs:
       - run: npm run build
       - run: npm run validate:examples
       - run: npm run check:examples
+      # The v2.8 ecommerce and eShop examples, each checked on its own. The v2.6 commands above
+      # keep reading the v2.6 example.
+      - run: npm run validate:ecommerce:v28
+      - run: npm run validate:eshop:v28
+      - run: npm run check:ecommerce:v28
+      - run: npm run check:eshop:v28
       - run: npm test
       # Ported-file integrity. tools/quality-gate/, tools/semantic-checker/rules/ and
       # tools/port/ are maintained upstream in the Archally monorepo and copied here;

@@ -1,0 +1,222 @@
+version: "1.0.0"
+name: "Catalog"
+scope: catalog
+operations:
+  getProduct:
+    id: catalog.QRY001
+    code_refs:
+      - path: services/products-service/src/server.ts
+        role: implementation
+        description: >
+          The product service's route table. `app.get('/products/:id')` is this query; the
+          path parameter is named `id` there and holds a SKU.
+    kind: query
+    name: Get Product
+    description: Fetch product by SKU for display or cart
+    initiated_by:
+      - ACT001
+      - ACT002
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products/{sku}
+        method: GET
+        group: catalog
+        parameters:
+          - name: sku
+            schema: "#/components/x-field/ProductSku"
+            type: path
+            required: true
+    responses:
+      - code: "200"
+        type: success
+        description: Product details
+        schema: "#/components/schemas/Product"
+      - code: "404"
+        type: failure
+        description: Product not found
+        error: catalog.ERR001
+  listProducts:
+    id: catalog.QRY002
+    code_refs:
+      - path: services/products-service/src/server.ts
+        role: implementation
+        description: >
+          `app.get('/products')` in the product service's route table, answering the whole
+          range unfiltered.
+    kind: query
+    name: List Products
+    description: Search and list products with filtering
+    initiated_by:
+      - ACT001
+      - ACT002
+    exchange:
+      protocol: http
+      endpoint:
+        path: /products
+        method: GET
+        group: catalog
+        parameters:
+          - name: category
+            schema: "#/components/x-field/CategoryName"
+            type: query
+            required: false
+          - name: q
+            schema: "#/components/x-field/SearchQuery"
+            type: query
+            required: false
+          - name: limit
+            schema: "#/components/x-field/PageLimit"
+            type: query
+            required: false
+          - name: offset
+            schema: "#/components/x-field/PageOffset"
+            type: query
+            required: false
+    responses:
+      - code: "200"
+        type: success
+        description: Paginated product list
+        schema: "#/components/schemas/ProductList"
+
+  publishProduct:
+    id: catalog.CMD001
+    kind: command
+    name: Publish Product
+    description: Add a new sellable product to the catalog under one category
+    initiated_by:
+      - ACT002
+    exchange:
+      protocol: http
+      endpoint:
+        path: /admin/products
+        method: POST
+        group: catalog-admin
+    payload:
+      schema: "#/components/schemas/Product"
+      contentType: application/json
+      required: true
+    responses:
+      - code: "201"
+        type: success
+        description: Product published and visible to shoppers
+        schema: "#/components/schemas/Product"
+    task_type: user-decision
+    materializes:
+      - concept: catalog.CN999
+        action: create
+        description: Creates the catalog entry shoppers browse and buy from
+  updateProductPrice:
+    id: catalog.CMD002
+    kind: command
+    name: Update Product Price
+    description: Change the selling price of a product already in the catalog
+    initiated_by:
+      - ACT002
+    exchange:
+      protocol: http
+      endpoint:
+        path: /admin/products/{sku}/price
+        method: PUT
+        group: catalog-admin
+        parameters:
+          - name: sku
+            schema: "#/components/x-field/ProductSku"
+            type: path
+            required: true
+    responses:
+      - code: "200"
+        type: success
+        description: New price is in effect for subsequent reads
+        schema: "#/components/schemas/Product"
+      - code: "404"
+        type: failure
+        description: Product not found
+        error: catalog.ERR001
+    task_type: user-decision
+    materializes:
+      - concept: catalog.CN999
+        action: update
+        description: >
+          Replaces the product's selling price. Carts and orders already holding
+          the item keep the price they captured (catalog.BD001).
+  createCategory:
+    id: catalog.CMD003
+    kind: command
+    name: Create Category
+    description: Add a browsing category products can be published into
+    initiated_by:
+      - ACT002
+    exchange:
+      protocol: http
+      endpoint:
+        path: /admin/categories
+        method: POST
+        group: catalog-admin
+    responses:
+      - code: "201"
+        type: success
+        description: Category is available for product assignment and browsing
+    task_type: user-decision
+    materializes:
+      - concept: catalog.CN002
+        action: create
+        description: Creates the grouping shoppers browse by and listProducts filters on
+
+errors:
+  productNotFound:
+    id: catalog.ERR001
+    name: Product Not Found
+    description: Product with given SKU does not exist
+    category: not-found
+    severity: error
+    http_status: 404
+    retry_eligible: false
+
+questions:
+  - id: catalog.QN001
+    name: Category contents
+    statement: "Which products are currently listed in a given category?"
+    description: >
+      The browsing experience is built on this answer, and it is the question
+      that makes the category tree worth maintaining at all.
+    category: enumeration
+    priority: critical
+    answered_by:
+      - catalog.QRY002
+    concepts:
+      - catalog.CN002
+      - catalog.CN999
+    stakeholders:
+      - ACT001
+  - id: catalog.QN002
+    name: Current price
+    statement: "What is the product's current selling price?"
+    description: >
+      Answered from the catalog entry alone. Checkout and orders keep their own
+      copies of the price, so this answer is about the catalog's figure, not
+      about what any particular cart or order will be charged.
+    category: measurement
+    priority: critical
+    answered_by:
+      - catalog.QRY001
+    concepts:
+      - catalog.CN999
+    stakeholders:
+      - ACT001
+      - ACT002
+  - id: catalog.QN003
+    name: Price history
+    statement: "When was a product's price last changed, and by whom?"
+    description: >
+      Unanswered. updateProductPrice replaces the price in place and the catalog
+      keeps no record of the previous one, so neither a shopper disputing a
+      charge nor a manager reviewing margin can be answered from this context.
+    category: temporal
+    priority: medium
+    answered_by: []
+    concepts:
+      - catalog.CN999
+    stakeholders:
+      - ACT002
+    blocking: false

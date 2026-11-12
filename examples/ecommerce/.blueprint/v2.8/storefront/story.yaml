@@ -1,0 +1,150 @@
+version: "1.0.0"
+name: "Storefront journeys"
+scope: storefront
+owned_by:
+  team: TM003
+tags: [customer-facing, journey]
+
+processes: []
+
+use_cases:
+  - id: storefront.UC001
+    name: "Sign in and find my orders"
+    summary: "A returning shopper names the customer id they hold and reaches their order history."
+    description: >
+      The shortest complete path through the storefront that needs no order to be placed first:
+      arrive, sign in, and reach what the shop already holds under that identity. Every step is a
+      screen a shopper can see and an act they can perform; the three reads along the way belong to
+      three different contexts, which is what makes this journey worth stating in one place rather
+      than three.
+      Rewritten on 2026-09-25, when the shop grew a sign-in. Until then a returning shopper
+      identified themselves by typing a customer id the shop had issued them, on the same screen
+      registration used, and the journey was a description of that.
+    primary_actor: ACT001
+    goal: "The shopper is signed in and is looking at the orders placed under their account."
+    preconditions:
+      - "The shopper already has an account and knows the password they registered with."
+    postconditions:
+      - "The browser holds the session token for the rest of the visit, and nothing else."
+      - "The shopper is on their own order history."
+    main_scenario:
+      - step: 1
+        action: "The shopper opens the shop and the catalog lists what is for sale."
+        screen: storefront.SCR001
+        operation: catalog.QRY002
+      - step: 2
+        action: "The shopper leaves the catalog for the sign-in screen, from the header."
+        screen: storefront.SCR001
+        ui_action: storefront.UAC009
+      - step: 3
+        action: "The shopper offers their login and password, and the service issues a session token."
+        screen: storefront.SCR008
+        ui_action: storefront.UAC010
+        operation: customers.CMD004
+      - step: 4
+        action: "The account screen shows the details and the standing discounts on file."
+        screen: storefront.SCR003
+        operation: customers.QRY002
+      - step: 5
+        action: "The shopper opens their order history."
+        screen: storefront.SCR003
+        ui_action: storefront.UAC004
+      - step: 6
+        action: "The history lists every order placed under this customer's id."
+        screen: storefront.SCR004
+        operation: orders.QRY002
+    alternative_flows:
+      - step: 3
+        condition: "The login and the password do not match what the shop holds"
+        action: >
+          The sign-in screen stays where it is and reports one refusal. It cannot say which half was
+          wrong, because the service answers an unknown login and a wrong password identically
+          (customers.ERR003), and this shop offers no recovery.
+      - step: 4
+        condition: "The shopper had asked for the account screen before signing in"
+        action: >
+          The account screen was never rendered: the guard redirected them to step 3 and the
+          destination they asked for is not remembered, so they arrive on the account rather than
+          where they were going.
+    delivery_priority: must-have
+    status: ready
+
+  - id: storefront.UC002
+    name: "Buy something and submit the order"
+    summary: "A shopper identifies themselves, picks a product, adds it to the cart, places the order and submits it."
+    description: >
+      The journey the shop exists for, and the only one that reaches Submit Order from the
+      outside. The shopper adds the product and its quantity to the cart before placing an
+      order from those cart items. It ends on the operation the contract surface declares on the
+      Orders service, so the two checks meet on one operation from opposite sides: the contract asks whether the
+      service exposes it, this asks whether a person can get to it. Placing and submitting are
+      two steps here because they are two operations in the model, and the pair of screens at
+      the end is what makes that visible rather than asserted.
+    primary_actor: ACT001
+    goal: "An order exists under the shopper's id and has been submitted."
+    preconditions:
+      - "The shopper already has an account and knows the password they registered with."
+      - "The catalog holds at least one product in stock."
+    postconditions:
+      - "The shop holds a new order under this customer id, priced with their standing discounts."
+      - "Submit Order has been accepted and Order Submitted has been published."
+      - "The order's status is unchanged, which is what orders.FN001 records."
+    main_scenario:
+      - step: 1
+        action: "The shopper opens the shop and the catalog lists what is for sale."
+        screen: storefront.SCR001
+        operation: catalog.QRY002
+      - step: 2
+        action: "The shopper leaves the catalog for the sign-in screen, from the header."
+        screen: storefront.SCR001
+        ui_action: storefront.UAC009
+      - step: 3
+        action: "The shopper offers their login and password, and the service issues a session token."
+        screen: storefront.SCR008
+        ui_action: storefront.UAC010
+        operation: customers.CMD004
+      - step: 4
+        action: "The account screen shows the details and the standing discounts on file."
+        screen: storefront.SCR003
+        operation: customers.QRY002
+      - step: 5
+        action: "Now identified, the shopper goes back to the catalog to buy."
+        screen: storefront.SCR003
+        ui_action: storefront.UAC005
+      - step: 6
+        action: "The shopper opens a product."
+        screen: storefront.SCR001
+        ui_action: storefront.UAC006
+      - step: 7
+        action: "The product screen shows what the catalog holds about it, and its price."
+        screen: storefront.SCR005
+        operation: catalog.QRY001
+      - step: 8
+        action: "The shopper adds the product and its quantity to the cart."
+        screen: storefront.SCR005
+        operation: checkout.CMD001
+      - step: 9
+        action: "The shopper places the order from the cart, which creates it and prices its lines."
+        screen: storefront.SCR005
+        ui_action: storefront.UAC007
+        operation: orders.CMD003
+      - step: 10
+        action: "The order exists, with its id, its lines and the prices it was struck at."
+        screen: storefront.SCR006
+        operation: orders.QRY001
+      - step: 11
+        action: "The shopper submits it, which is the step the rest of the shop reacts to."
+        screen: storefront.SCR006
+        ui_action: storefront.UAC008
+        operation: orders.CMD001
+      - step: 12
+        action: "The order screen states that the submission was accepted."
+        screen: storefront.SCR007
+    alternative_flows:
+      - step: 11
+        condition: "The orders service exposes no route for Submit Order"
+        action: >
+          The submission fails and the screen says so. The order stays created and unsubmitted,
+          which is the state orders.FN001 describes.
+    delivery_priority: must-have
+    status: ready

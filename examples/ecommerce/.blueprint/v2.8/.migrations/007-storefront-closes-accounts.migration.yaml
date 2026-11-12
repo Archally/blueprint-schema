@@ -1,0 +1,110 @@
+# Commands named in this file use the commercial Archally Pro CLI (https://archally.pro).
+# PENDING: deliberately NOT listed in blueprint.yaml `migrations:`, so the model files
+# still carry the surface the shop actually has and this is the change that has not
+# happened yet.
+#
+# It exists because a ruling arrived ahead of the code. customers.DC003 decided that
+# closing an account is an administrator's act performed on the storefront under an admin
+# role. Half of that decision was already true and has been written straight into the
+# files: closure is the operator's act, so customers.CMD003 is now initiated by
+# customers.ACT002. The other half - WHERE the administrator presses it - is not true of
+# anything that runs, and declaring it in eshop.arch.yaml would have created a new
+# model-code divergence by answering a question, which is the opposite of what a ruling is
+# for. This file holds that half instead. customers.FN002 holds the gap.
+#
+# WHY ITS TARGETS ARE SPELLED BY NAME. The same reason MIG006's are: a pending migration
+# has to BUILD, and the replay engine resolves a context or a service against the built
+# entity graph, where both are keyed by name. `bp migration check` resolves by `id:` and
+# is what an APPLIED migration needs. Spell each file for the verb that has to read it.
+schemaVersion: "2.8.0"
+migration:
+  id: MIG007
+  name: storefront-closes-accounts
+  date: "2026-09-20"
+  status: pending
+  author: "architect"
+  description: >
+    Move the surface for Close Customer Account onto the storefront, behind an admin role,
+    and say on the Storefront context that it serves two kinds of user rather than one.
+    The operation does not change and neither does the API behind it. What changes is
+    which application calls it and who is holding the mouse: today the back office has the
+    control and anybody who can open the back office can use it; after this, the storefront
+    has it and only a signed-in administrator sees it.
+    Nothing here removes the back office's delete, because the model never declared it -
+    it is in the code and not in eshop.arch.yaml. Retiring it is a code change, and until
+    it is made the shop has two ways to do what customers.DC003 decided has one.
+  rationale: >
+    One application serving two kinds of user, rather than one application per kind. An
+    administrator is an operator, and an operator is already a different kind of user in
+    the service behind Customers - its own collection, with a role on the record, and
+    deliberately not a flag on the customer. So the admin role has somewhere to sit. What it
+    had nowhere to be presented from was a sign-in, and on 2026-09-25 it acquired one:
+    customer-service issues an opaque session token at /operators/sign-in
+    (customers.CMD006) and the back office is closed until an operator has it.
+    That removed the first of this migration's two prerequisites and not the second, so it
+    is still pending. Nothing reads the role on an operator record, and no endpoint on any
+    service in this shop checks a session token before answering (customers.RSK004).
+    Applying this migration today would therefore still put an admin-only control on a
+    public storefront with nothing to gate it, which is a hidden button and not a
+    permission. The remaining prerequisites are a service that refuses an unauthorized
+    caller, and the decision about operators (customers.QN005) that would say which callers
+    those are.
+  related_decisions: [customers.DC003]
+  tags: [governance, surface, authentication, customers, storefront]
+
+changes:
+  properties:
+    - kind: set
+      target: StorefrontWebApp
+      entity_type: service
+      property: contracts.httpClient.call.12
+      value: customers.CMD003
+      description: >
+        The storefront calls Close Customer Account. This is the line that makes the
+        decision real to a generator and to the context map: without it the storefront's
+        client declares the two account writes a shopper makes and not the one an
+        administrator makes.
+      reason: "customers.DC003: closure is an administrator's act, performed on this surface."
+      group: "admin-on-storefront"
+
+    - kind: set
+      target: Storefront
+      entity_type: context
+      property: responsibilities.5
+      value: "Serve two kinds of user - the shopper, and the administrator who closes an account under an admin role"
+      description: >
+        The context's own statement of what it is for. It has said five things about the
+        shopper and nothing about anybody else; after this it serves two audiences and
+        every page in it has an audience question it did not have before.
+      group: "admin-on-storefront"
+
+  meta:
+    - kind: note
+      target: "MIG007"
+      value: >
+        What this migration does NOT contain, and why. It carries no change to the
+        ShopAdmin client, because the model never declared the delete that lives there -
+        the back office's customer detail screen calls DELETE /customers/{id} and
+        eshop.arch.yaml says the back office is read-only on Customers. Removing a call
+        the model does not make is not a model change. The measured gap is
+        customers.FN002.
+      description: "The half of the decision that is a code change rather than a model one."
+    - kind: note
+      target: "MIG007"
+      value: >
+        No gate catches the state this leaves behind either. `bp validate` resolves every
+        reference in a call list whether or not the code makes the call, and `bp check`
+        reads each service's contract on its own. A model that declares a call nothing
+        makes and a model that declares one everything makes look identical to the whole
+        toolchain. That is the reason this file exists rather than an edit to
+        eshop.arch.yaml.
+      description: "What was watching, and what was not."
+
+rollback:
+  automatic: true
+  data_loss: false
+  warnings:
+    - >
+      Rolling this back returns the storefront's client to the two account writes a shopper
+      makes and leaves customers.CMD003 with no declared caller at all - which is the state
+      the files carry now, and is honest only for as long as customers.FN002 records why.

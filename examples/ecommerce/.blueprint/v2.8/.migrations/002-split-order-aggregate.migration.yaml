@@ -1,0 +1,56 @@
+# Migration: Split Order aggregate for partial fulfillment.
+# Validates against the v2.8 migration schema, migration.schema.yaml.
+migration:
+  id: MIG002
+  name: split-order-aggregate
+  date: "2026-02-20"
+  status: draft
+  description: "Split Order into Order (header) and OrderLineItem (detail) for partial fulfillment."
+  depends_on: [MIG001]
+  related_decisions: [orders.DC001]
+  breaking: true
+  semver_impact: major
+  rationale: "Current Order aggregate too large. Partial fulfillment requires line-item granularity."
+
+changes:
+  entities:
+    - kind: split
+      entity_type: concept
+      target: orders.CN001
+      description: "Split Order into Order (header) and OrderLineItem (detail)."
+      before:
+        id: orders.CN001
+        term: "Order"
+        definition: "Collection of items with shipping and payment intent"
+      after:
+        - id: orders.CN001
+          term: "Order"
+          summary: "Purchase request header."
+          definition: "Purchase request header. Order-level data only."
+        - id: orders.CN030
+          term: "OrderLineItem"
+          summary: "Single product line."
+          definition: "Single product line. Independently fulfillable."
+      reason: "Enable partial fulfillment at line-item level."
+      group: "order-split"
+
+  relationships:
+    - kind: add
+      subject: orders.CN001
+      predicate: contains
+      object: orders.CN030
+      description: "Order contains OrderLineItems."
+      group: "order-split"
+
+  meta:
+    - kind: tag-add
+      target: orders.CN030
+      value: "aggregate-root"
+      description: "OrderLineItem becomes its own aggregate root."
+      group: "order-split"
+
+rollback:
+  automatic: true
+  data_loss: false
+  warnings:
+    - "If generators produced artifacts from TO-BE state, those artifacts reference orders.CN030 which will not exist after rollback."

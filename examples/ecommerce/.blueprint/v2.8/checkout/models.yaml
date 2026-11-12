@@ -1,0 +1,104 @@
+version: "1.0.0"
+scope: checkout
+components:
+  schemas:
+    AddToCartRequest:
+      x-model-id: MDL020
+      purpose: command-payload
+      type: object
+      description: "Request to add a product to the shopping cart"
+      required:
+        - productSku
+        - quantity
+      properties:
+        productSku:
+          type: string
+          description: "SKU of the product to add"
+        quantity:
+          type: integer
+          minimum: 1
+          description: "Number of units to add"
+
+    CartItem:
+      x-model-id: MDL021
+      purpose: read-model
+      type: object
+      description: "Single item in a shopping cart"
+      required:
+        - productSku
+        - productName
+        - quantity
+        - unitPrice
+      properties:
+        productSku:
+          type: string
+        productName:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        unitPrice:
+          type: number
+          format: double
+          minimum: 0
+        lineTotal:
+          type: number
+          format: double
+          minimum: 0
+
+    Cart:
+      x-model-id: MDL022
+      purpose: read-model
+      type: object
+      description: "Shopping cart with items and totals"
+      required:
+        - cartId
+        - items
+      properties:
+        cartId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartItem"
+        itemCount:
+          type: integer
+          minimum: 0
+        totalAmount:
+          type: number
+          format: double
+          minimum: 0
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+
+    ItemAddedEvent:
+      x-model-id: MDL023
+      purpose: event-payload
+      type: object
+      description: "Domain event: item added to cart"
+      required:
+        - eventId
+        - cartId
+        - productSku
+        - quantity
+        - occurredAt
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        cartId:
+          type: string
+          format: uuid
+        productSku:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        occurredAt:
+          type: string
+          format: date-time

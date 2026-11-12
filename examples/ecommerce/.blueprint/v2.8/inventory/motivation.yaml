@@ -1,0 +1,99 @@
+version: "1.0.0"
+scope: inventory
+owned_by:
+  team: TM002
+assumptions:
+  - id: inventory.ASM001
+    statement: >
+      The reservation window outlasts the time a customer needs to finish
+      paying and have the order confirmed.
+    consequence: >
+      If it does not, a hold expires while its own order is still in flight. The
+      stock returns to sale, is sold to someone else, and the first order reaches
+      confirmation with nothing left to fulfil it - the worst moment to discover
+      a shortage, because the customer has already committed.
+    domain_scope: inventory
+    discovery_stage: hypothesis
+    certainty: probable
+  - id: inventory.ASM002
+    statement: >
+      The recorded stock count matches what is actually on the warehouse shelf.
+    consequence: >
+      If the count is high, reservations succeed for units that do not exist and
+      the shop accepts orders it cannot fulfil. If it is low, sellable stock sits
+      invisible. The Warehouse Manager exists in this model precisely because
+      this assumption is known to drift.
+    domain_scope: inventory
+    discovery_stage: exploring
+    certainty: speculative
+    risk_refs:
+      - inventory.RSK001
+
+risks:
+  - id: inventory.RSK001
+    statement: >
+      This shop keeps two stock counts and decrements neither. The catalog
+      service holds a per-product `stock` it only ever reads, and this context
+      holds an available/reserved pair nothing in the shop calls, so the same
+      unit can be sold without limit and both counts still read as they did on
+      the day they were seeded.
+    summary: "Two stock counts, neither of them decremented by an order."
+    likelihood: very-high
+    impact: critical
+    affects:
+      operation_refs:
+        - inventory.CMD001
+        - inventory.QRY001
+        - catalog.QRY001
+        - orders.CMD003
+      concept_refs:
+        - inventory.CN001
+        - inventory.CN002
+        - catalog.CN999
+      context_refs:
+        - inventory
+        - catalog
+        - orders
+      process_refs:
+        - PRC001
+    mitigation: >
+      Partial and in the wrong place. The catalog service refuses to price a
+      quantity larger than its own `stock` figure, which stops one oversized
+      order and nothing else, because that figure never moves. Reserve Stock in
+      this context does decrement correctly and under a lock, and no caller
+      reaches it.
+    contingency: >
+      Until an order consumes stock somewhere, treat every availability figure
+      in this shop as a catalogue fact rather than a promise, and reconcile
+      against the warehouse before dispatch rather than at the point of sale.
+    status: open
+    owner: inventory.ACT002
+    goal_refs:
+      - orders.GL002
+    discovery_stage: validated
+    certainty: confirmed
+    evidence:
+      - kind: codebase-analysis
+        source: services/products-service/src/server.ts
+        summary: >
+          `stock` appears three times in the whole service and all three are
+          reads inside the price handler: a comparison, an error message and an
+          `available` field in the response. No route writes it.
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: services/inventory-service/Services/InventoryService.cs
+        summary: >
+          The reservation path decrements Available and increments Reserved
+          under a lock, and the seeded levels match the catalog's ten products
+          figure for figure. Nothing outside this service calls the route that
+          runs it.
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: services/products-service/src/catalog/productCatalog.ts
+        summary: >
+          A product carries both an `id` ('1') and a `sku` ('WBH-001'). Catalog
+          routes are keyed by id, this context is keyed by sku, and the only
+          place the two are joined is the product record itself, so even a
+          caller that wanted to reserve would need a lookup no service performs.
+        confidence_impact: supports
+    tags: [reliability, fulfilment, data-consistency]

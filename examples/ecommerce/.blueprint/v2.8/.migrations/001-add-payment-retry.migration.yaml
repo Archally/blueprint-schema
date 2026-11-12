@@ -1,0 +1,132 @@
+# Commands named in this file use the commercial Archally Pro CLI (https://archally.pro).
+# Migration: Add payment retry concept and operations to the checkout domain.
+#
+# Status corrected from `applied` to `pending` on 2026-09-20. It declared `applied` and
+# was not: its target checkout.CN025 is declared by no model file, and it is not listed
+# in blueprint.yaml's `migrations:`. While that list was empty the claim was inert,
+# because `bp migration check` reads only listed migrations and had nothing to read. The
+# list is no longer empty, so a file claiming `applied` from outside it is a
+# contradiction a reader would trip over.
+#
+# Rebased onto today's model on 2026-10-03. The Submit Order description it sets was
+# rewritten on 2026-09-20, when the order lifecycle was reconciled to the five states the
+# code holds (orders.DC002, orders.FN001). That rewrite is the model's considered state, so
+# the proposal moves rather than the model: `old_value` is today's text and `value` adds
+# the retry sentence to it. With the old text, every TO-BE build halted here.
+migration:
+  id: MIG001
+  name: add-payment-retry-concept
+  date: "2026-02-18"
+  status: pending
+  description: "Add PaymentRetry concept to model payment retry behavior with exponential backoff."
+  related_decisions: [orders.DC001]
+  rationale: "Payment gateway timeouts require structured retry logic to avoid lost orders."
+  tags: [payment, reliability]
+
+changes:
+  entities:
+    - kind: add
+      entity_type: concept
+      target: checkout.CN025
+      description: "New concept representing a payment retry attempt."
+      after:
+        id: checkout.CN025
+        term: "PaymentRetry"
+        summary: "Tracks retry attempts for failed payments"
+        definition: "A tracked attempt to re-process a failed payment with backoff strategy."
+        states: [scheduled, in-progress, succeeded, exhausted]
+        initial_state: scheduled
+        terminal_states: [succeeded, exhausted]
+      reason: "Payment failures need structured retry tracking."
+
+    - kind: add
+      entity_type: operation
+      target: checkout.CMD050
+      description: "Command to initiate a payment retry."
+      after:
+        id: checkout.CMD050
+        name: "Retry Payment"
+        kind: command
+        task_type: automated
+        description: "System retries a failed payment with exponential backoff."
+      reason: "Automated retry on payment failure."
+
+    - kind: add
+      entity_type: operation
+      target: checkout.EVT051
+      description: "Event emitted when all retry attempts are exhausted."
+      after:
+        id: checkout.EVT051
+        name: "Payment Retry Exhausted"
+        kind: event
+        description: "Fact: all retry attempts have been exhausted for a payment."
+      reason: "Downstream processes need to know when retries give up."
+
+  relationships:
+    - kind: add
+      subject: checkout.CMD050
+      predicate: targets
+      object: checkout.CN025
+      description: "Retry Payment command operates on PaymentRetry concept."
+
+    - kind: add
+      subject: checkout.CMD050
+      predicate: produces
+      object: checkout.EVT051
+      edge_properties:
+        mode: one_of
+      description: "Retry produces PaymentRetryExhausted when all attempts fail."
+
+  properties:
+    - kind: append
+      target: CheckoutService
+      entity_type: service
+      property: contracts.inprocess.provide
+      value: checkout.CMD050
+      description: >
+        The Checkout Service carries Retry Payment. The retry is started by the service itself on a
+        backoff timer, not called over a wire, so it is provided in-process: an `expose:` would
+        assert an endpoint Retry Payment does not have.
+      reason: "Without a provider Retry Payment belongs to no context, and the context map draws it on no card."
+
+    - kind: append
+      target: CheckoutService
+      entity_type: service
+      property: contracts.inprocess.provide
+      value: checkout.EVT051
+      description: >
+        And raises Payment Retry Exhausted, which declares no topic, so it is provided in-process
+        for the same reason.
+      reason: "The event belongs to the context whose command produces it."
+
+    - kind: set
+      target: orders.CMD001
+      entity_type: operation
+      property: description
+      value: >
+        Submit an order for confirmation. It is the second half of a two-step
+        place-an-order design - create, review, submit - and after the lifecycle
+        was reconciled to the five states the shop's orders actually hold
+        (orders.DC002) it is the operation with nowhere to move an order to.
+        Submitting does not change the status, because the states it used to move
+        between, draft and submitted, are not states of an order any more. What
+        it still does is publish Order Submitted, which is what makes Inventory
+        reserve stock, so the step is load-bearing and its effect on the order
+        itself is now unstated. orders.FN001 holds that.
+        Payment processing it triggers retries a failed payment with backoff
+        (checkout.CMD050).
+      old_value: >
+        Submit an order for confirmation. It is the second half of a two-step
+        place-an-order design - create, review, submit - and after the lifecycle
+        was reconciled to the five states the shop's orders actually hold
+        (orders.DC002) it is the operation with nowhere to move an order to.
+        Submitting does not change the status, because the states it used to move
+        between, draft and submitted, are not states of an order any more. What
+        it still does is publish Order Submitted, which is what makes Inventory
+        reserve stock, so the step is load-bearing and its effect on the order
+        itself is now unstated. orders.FN001 holds that.
+      description: "Update Submit Order description to reference payment retry behavior."
+
+rollback:
+  automatic: true
+  data_loss: false

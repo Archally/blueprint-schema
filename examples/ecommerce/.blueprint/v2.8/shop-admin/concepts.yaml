@@ -1,0 +1,40 @@
+version: "1.0.0"
+scope: shop-admin
+owned_by:
+  team: TM002
+tags: [write-side, back-office]
+concepts:
+  - id: shop-admin.CN001
+    code_refs:
+      - path: apps/shop-admin/src/app/features/products/product-detail/product-detail.ts
+        role: implementation
+        description: >
+          Where the new figure exists before it is committed: an `editingPrice` signal and
+          a quote request, and no write. The screen says so, which is the back office
+          having reached catalog.FN001's conclusion on its own.
+    term: "PriceChange"
+    stereotype: value-object
+    summary: "The new figure a manager is about to commit, and the only place it exists before it does"
+    definition: >
+      A product, a new selling price, and the person about to set it. It is
+      composed on the back-office screen and handed to Update Product Price,
+      and from that moment nothing holds it: Catalog overwrites the old figure
+      in place and keeps no record of what it replaced (catalog.QN003). The
+      concept is here because this is the last point in the shop at which the
+      old price and the new one are both known.
+  - id: shop-admin.CN002
+    code_refs:
+      - path: apps/shop-admin/src/app/features/products/product-list/product-list.ts
+        role: implementation
+        description: >
+          The range as a manager reads it: the whole product list with a text filter over
+          it, held in one component.
+    term: "ProductRange"
+    stereotype: read-model
+    summary: "What the shop sells, as a manager thinks of it - a whole, not a row"
+    definition: >
+      The set of products currently published, grouped by the categories they
+      are browsed under. Catalog owns each product and each category
+      separately; nothing upstream holds the range as one object, and a manager
+      deciding what to add or reprice is reasoning about exactly that shape.
+      It is composed on request from the catalog and kept nowhere.

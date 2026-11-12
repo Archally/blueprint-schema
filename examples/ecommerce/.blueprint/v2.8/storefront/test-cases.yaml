@@ -1,0 +1,55 @@
+version: "1.0.0"
+scope: storefront
+owned_by:
+  team: TM003
+tags: [customer-facing, quality]
+
+fitness_functions:
+  - id: storefront.FF001
+    name: Updates reach selected customers only
+    description: >
+      A constraint stated as a check rather than as a level: it holds or it does not, and no
+      metric reads it. It is the quality requirement and its own verification at once. Today
+      it does not hold, because every unit of the shop is deployed whole and every shopper
+      meets the same version (storefront.GL001).
+    scope: cross-cutting
+    assertion: "The product can be updated for selected customers only."
+    severity: error
+    quality_characteristic: maintainability
+    quality_subcharacteristic: modifiability
+    verifies:
+      goals:
+        - storefront.GL001
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: stakeholder-signoff
+          source: "product owner"
+          date: "2026-10-04"
+          summary: >
+            The product owner stated this constraint and decided its quality characteristic,
+            maintainability / modifiability.
+
+  - id: storefront.FF002
+    name: Storefront interactions stay within their one-second budget
+    description: >
+      Guards storefront.SLO002 release by release. It reads storefront.MT002, which has no
+      instrument yet (WI016), so until PRB002 exists this check cannot run and reports
+      nothing either way.
+    scope: operation
+    assertion: "Every release keeps the p99 of storefront interaction latency below the 1,000 ms of storefront.SLO002."
+    severity: error
+    metric: storefront.MT002
+    verifies:
+      slos:
+        - storefront.SLO002
+    provenance:
+      discovery_stage: hypothesis
+      certainty: probable
+      evidence:
+        - kind: assumption
+          date: "2026-10-04"
+          summary: >
+            Proposed as the release check for the agreed budget of storefront.SLO002. The
+            budget is agreed; this way of guarding it is not yet.

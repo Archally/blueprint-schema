@@ -1,0 +1,218 @@
+version: "1.0.0"
+name: eShop order flow
+parties:
+  - id: PRT001
+    name: eShop
+    kind: system
+system_ref: PRT001
+channels:
+  - id: MCH001
+    name: eshop_event_bus
+    kind: topic
+    broker_ref: IR001
+    description: >
+      The one RabbitMQ exchange every integration event is published to, with the event's class
+      name as routing key. A direct exchange: each service's queue receives exactly the routing
+      keys it bound, one binding per event the service subscribes to.
+    bindings:
+      amqp:
+        exchange_type: direct
+  - id: MCH002
+    name: Ordering
+    kind: queue
+    broker_ref: IR001
+    description: The ordering API's own durable queue, named by its subscription client name.
+  - id: MCH003
+    name: Catalog
+    kind: queue
+    broker_ref: IR001
+    description: The catalog API's own durable queue, named by its subscription client name.
+  - id: MCH004
+    name: Basket
+    kind: queue
+    broker_ref: IR001
+    description: The basket API's own durable queue, named by its subscription client name.
+  - id: MCH005
+    name: PaymentProcessor
+    kind: queue
+    broker_ref: IR001
+    description: The payment processor's own durable queue, named by its subscription client name.
+contexts:
+  - id: BC001
+    name: Ordering
+    kind: core
+    domain_ref: DMN001
+    summary: The order lifecycle, from a basket turned into an order to shipped or cancelled.
+    dependencies:
+      - name: Catalog
+        bounded_context_ref: BC002
+        relationship: customer-supplier
+        direction: downstream
+        description: Ordering asks for a stock check by event and waits for the answer by event.
+      - name: Payment
+        bounded_context_ref: BC003
+        relationship: customer-supplier
+        direction: downstream
+        description: Ordering asks for payment by event and reacts to succeeded or failed.
+    services:
+      - id: SVC001
+        name: ordering-api
+        kind: api
+        summary: Order commands and queries, and the outbox that publishes the order events.
+        code_refs:
+          - path: src/Ordering.API/Program.cs
+            role: implementation
+        contracts:
+          openapi:
+            contract_name: ordering-api
+            expose:
+              - ordering.CMD001
+              - ordering.CMD007
+              - ordering.CMD008
+              - ordering.QRY001
+              - ordering.QRY002
+          asyncapi:
+            contract_name: ordering-events
+            broker_ref: IR001
+            subscription:
+              channel_ref: MCH002
+            send:
+              - ordering.EVT001
+              - ordering.EVT002
+              - ordering.EVT004
+              - ordering.EVT005
+              - ordering.EVT006
+              - ordering.EVT007
+              - ordering.EVT008
+            receive:
+              - ordering.EVT003
+              - catalog.EVT001
+              - catalog.EVT002
+              - payment.EVT001
+              - payment.EVT002
+          shareddata:
+            contract_name: ordering-db
+            write:
+              - ordering.DOC001
+          inprocess:
+            provide:
+              - ordering.CMD003
+              - ordering.CMD004
+              - ordering.CMD005
+              - ordering.CMD006
+              - ordering.EVT009
+              - ordering.EVT010
+              - ordering.EVT011
+              - ordering.EVT012
+              - ordering.EVT013
+              - ordering.EVT014
+      - id: SVC002
+        name: order-processor
+        kind: worker
+        summary: The grace period clock. Reads the ordering database directly.
+        code_refs:
+          - path: src/OrderProcessor/Program.cs
+            role: implementation
+        contracts:
+          asyncapi:
+            contract_name: order-processor-events
+            broker_ref: IR001
+            send:
+              - ordering.EVT003
+          shareddata:
+            contract_name: ordering-db-reader
+            read:
+              - ordering.DOC001
+          inprocess:
+            provide:
+              - ordering.CMD002
+  - id: BC002
+    name: Catalog
+    kind: support
+    domain_ref: DMN002
+    summary: The product range and its stock. Only the stock check is in this slice.
+    services:
+      - id: SVC003
+        name: catalog-api
+        kind: api
+        code_refs:
+          - path: src/Catalog.API/Program.cs
+            role: implementation
+        contracts:
+          asyncapi:
+            contract_name: catalog-events
+            broker_ref: IR001
+            subscription:
+              channel_ref: MCH003
+            send:
+              - catalog.EVT001
+              - catalog.EVT002
+            receive:
+              - ordering.EVT004
+              - ordering.EVT006
+          inprocess:
+            provide:
+              - catalog.CMD001
+              - catalog.CMD002
+  - id: BC003
+    name: Payment
+    kind: generic
+    domain_ref: DMN003
+    summary: A simulated payment gateway.
+    services:
+      - id: SVC004
+        name: payment-processor
+        kind: worker
+        code_refs:
+          - path: src/PaymentProcessor/Program.cs
+            role: implementation
+        contracts:
+          asyncapi:
+            contract_name: payment-events
+            broker_ref: IR001
+            subscription:
+              channel_ref: MCH005
+            send:
+              - payment.EVT001
+              - payment.EVT002
+            receive:
+              - ordering.EVT005
+          inprocess:
+            provide:
+              - payment.CMD001
+  - id: BC004
+    name: Basket
+    kind: support
+    domain_ref: DMN004
+    summary: The shopper's basket, held in Redis, read and changed by the storefront over gRPC.
+    dependencies:
+      - name: Ordering
+        bounded_context_ref: BC001
+        relationship: conformist
+        direction: downstream
+        description: Empties the basket when Ordering says an order has started.
+    services:
+      - id: SVC005
+        name: basket-api
+        kind: api
+        code_refs:
+          - path: src/Basket.API/Program.cs
+            role: implementation
+        contracts:
+          protobuf:
+            contract_name: basket-api
+            file: src/Basket.API/Proto/basket.proto
+            expose:
+              - basket.QRY001
+              - basket.CMD002
+              - basket.CMD003
+          asyncapi:
+            contract_name: basket-events
+            broker_ref: IR001
+            subscription:
+              channel_ref: MCH004
+            receive:
+              - ordering.EVT001
+          inprocess:
+            provide:
+              - basket.CMD001

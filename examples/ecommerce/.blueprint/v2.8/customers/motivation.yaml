@@ -1,0 +1,456 @@
+version: "1.0.0"
+scope: customers
+owned_by:
+  team: TM003
+tags: [generic-domain, account]
+assumptions:
+  - id: customers.ASM001
+    statement: >
+      A person registers once, before their first order, and the account they
+      register is the one they keep.
+    consequence: >
+      Nothing in the shop detects a second account for the same person. Email
+      is not unique in anything this model declares, and no operation searches
+      by it, so a shopper who registers again rather than looking up their old
+      account arrives as a new customer with no discounts and no history. The
+      shop would see two customers and a first order each, which is exactly
+      what a loyalty discount is supposed to prevent.
+    domain_scope: customers
+    discovery_stage: hypothesis
+    certainty: probable
+  - id: customers.ASM002
+    statement: >
+      One person at a time is editing any given account.
+    consequence: >
+      Update Customer Details is a whole-record replace carrying no version
+      and no expected-current-value, so two edits in flight land in arrival
+      order and the later one wins every field. Neither party is told, and
+      since this context keeps no history the loss leaves nothing behind. The
+      assumption holds today because the only editor is the account's owner on
+      one device - a fact about how people shop, not about the system, and one
+      that stops holding the moment a support operator can edit on their
+      behalf (customers.QN004).
+    domain_scope: customers
+    discovery_stage: hypothesis
+    certainty: probable
+  - id: customers.ASM003
+    statement: >
+      This context is reachable whenever an order is being priced.
+    consequence: >
+      The order flow reads a customer's discounts while it builds an order and
+      proceeds with an empty discount set if the read fails. So an outage here
+      does not stop the shop - it quietly prices orders at full list price,
+      and the customer who was owed a loyalty discount is charged more with no
+      error raised on either side. It is the failure mode most worth knowing
+      about in this model, because it is invisible in every artefact except
+      the customer's bill.
+    domain_scope: customers
+    discovery_stage: hypothesis
+    certainty: probable
+    risk_refs:
+      - customers.RSK003
+
+goals:
+  - id: customers.GL001
+    statement: >
+      A customer record and the orders that hang off it are read and changed
+      only by the person they belong to, or by an operator the shop has
+      recognised as one.
+    summary: "A record answers to somebody, and the shop can say who."
+    priority: critical
+    description: >
+      Written down because three parts of this model already assumed it and
+      nothing stated it. Orders declares JWT bearer tokens on every order
+      endpoint and ownership authorization on the reads; this context's own
+      decision about closing an account places the act behind an admin role; and
+      the back office offers a delete on a customer. All three presuppose a shop
+      that knows who is asking, and this is the goal that says so.
+      Half of it is now met and the half is worth being precise about. The shop
+      can say who: a shopper and an operator each sign in, each gets a session,
+      and each front end knows which person it is showing. What it cannot do is
+      the second clause of the statement - "only by" - because no endpoint on any
+      service consults a session before answering. The goal was written so the
+      gap would have something to be a gap in; the gap is now narrower and
+      sharper, and customers.RSK004 is where it lives.
+    measure: >
+      No operation in this model that names an identity or a role can be
+      performed by a caller that presented neither. Met today by nothing: the two
+      session reads are the only operations in the shop that consult a token, and
+      they consult it to answer who the caller is rather than to decide whether
+      they may ask.
+    affects:
+      process_refs:
+        - PRC004
+        - PRC005
+        - PRC006
+        - PRC007
+      operation_refs:
+        - customers.CMD002
+        - customers.CMD003
+        - customers.CMD004
+        - customers.CMD006
+        - customers.QRY001
+        - customers.QRY004
+        - customers.QRY005
+        - orders.QRY001
+      concept_refs:
+        - customers.CN001
+        - customers.CN003
+        - orders.CN001
+    discovery_stage: validated
+    certainty: confirmed
+
+  - id: customers.GL002
+    statement: >
+      A customer is charged the price their discounts entitle them to, and when
+      the shop cannot establish what that is, somebody is told.
+    summary: "The bill reflects the discounts, or the shop says it could not tell."
+    priority: high
+    description: >
+      The discount read is the only thing standing between a loyal customer and
+      the list price, and the order flow is written to carry on without it. That
+      makes silent overcharging the ordinary failure of this context rather than
+      an exceptional one, and the goal is stated with its second clause because
+      the first clause alone is unreachable: an outage will happen, and what
+      matters is whether it leaves a trace.
+    measure: >
+      Every order priced without a discount set is either a customer who has
+      earned none, or is counted.
+    kpi: customers.KPI001
+    affects:
+      process_refs:
+        - PRC001
+      operation_refs:
+        - customers.QRY002
+        - orders.CMD003
+      concept_refs:
+        - customers.CN002
+        - orders.CN002
+    discovery_stage: validated
+    certainty: confirmed
+
+risks:
+  # Closed 2026-09-25. Kept rather than deleted: the risk is what made the case
+  # for the change, and a register holding only live risks cannot show that
+  # anything was ever fixed.
+  - id: customers.RSK001
+    statement: >
+      Registration used to ask a shopper for a login and a password and send the
+      customer service eight required fields, six of which it invented - address,
+      city, state and country as the literal string `Not provided`, the phone as
+      `000-000-0000` and the postal code as `00000` - and every one of those
+      passed the service's own required-field validation because they were
+      non-empty strings.
+      It no longer happens. The six postal fields are optional on both the create
+      and the update payload, the function that fabricated them is deleted, and
+      registration sends the three fields it collects. An account created today
+      holds an empty address rather than a plausible false one, which is a
+      difference a reader of the record can act on.
+    summary: "Registration no longer fabricates six postal fields, because it no longer has to."
+    likelihood: very-high
+    impact: high
+    affects:
+      operation_refs:
+        - customers.CMD001
+        - customers.CMD002
+        - customers.QRY001
+        - delivery.CMD001
+      concept_refs:
+        - customers.CN001
+      context_refs:
+        - customers
+        - storefront
+        - delivery
+      process_refs:
+        - PRC004
+    mitigation: >
+      Applied, and it removed the cause rather than managing it: the six postal
+      fields became optional in the service, so registration had nothing left to
+      fabricate, and the function that fabricated them was deleted rather than
+      documented. An address is now either something a person typed or visibly
+      absent, and the account page is the declared place the absent ones arrive
+      (customers.CMD002).
+      What the fix does not do is give the shop a way to ask. No operation
+      prompts a shopper for the missing six, so an account can stay
+      address-less indefinitely - a smaller and more honest problem than the one
+      it replaced, and one a shipment surface would have to face.
+    contingency: >
+      Treat every address in this shop as unverified until a person confirms it,
+      and do not let a parcel be prepared from one. That still holds: optional is
+      not verified, and the shop has no shipment surface to test it against.
+    status: closed
+    owner: ACT002
+    goal_refs:
+      - shop-admin.GL003
+    discovery_stage: validated
+    certainty: confirmed
+    evidence:
+      - kind: codebase-analysis
+        source: apps/storefront/src/lib/deriveCustomerDraft.ts
+        summary: >
+          The function that turned a login into an eight-field draft, with six
+          fields as module constants. It no longer exists, and neither does its
+          test; no caller remains, and registration posts the three fields the
+          form collects.
+        confidence_impact: invalidates
+      - kind: codebase-analysis
+        source: services/customer-service/Models/CreateCustomerRequest.cs
+        summary: >
+          Three properties carry [Required] - Name, Email and Password - and the
+          six postal properties are `string?` with no attribute. Measured against
+          the running service: a create carrying only a name, an email and a
+          password answers 201, and the same shape answered 400 before the
+          change. UpdateCustomerRequest carries the same six in the same shape,
+          so a profile can be saved before an address exists.
+        confidence_impact: invalidates
+      - kind: codebase-analysis
+        source: the shop repository, every .cs, .ts, .tsx, .json and .md file
+        summary: >
+          A search for `Not provided` across the whole repository returns nothing,
+          and the customer service has no persistence at all - its only file
+          access reads the Swagger XML. So a placeholder record could only ever
+          have lived in the memory of a running process, and restarting removes
+          one.
+        confidence_impact: invalidates
+    tags: [data-quality, silent-failure, model-code-divergence, closed]
+
+  # Closed 2026-09-25, and split: what closed is the absence of authentication,
+  # and what remains is the absence of authorization. They were one entry while
+  # neither existed; they are two now, because one of them is fixed and reading
+  # them as one would hide that. The residual is customers.RSK004.
+  - id: customers.RSK002
+    statement: >
+      Nothing in this shop used to authenticate anybody. The registration screen
+      collected a password, validated that it was not empty and never sent it; no
+      service exposed a sign-in, a token or a session; and the storefront
+      remembered who was shopping as a customer id in browser storage, so naming
+      somebody else's id was the whole of impersonating them.
+      All four halves of that are now false. A password is required at
+      registration and stored as a salted PBKDF2-SHA256 digest; the customer
+      service issues an opaque session token at /customers/sign-in and at
+      /operators/sign-in, resolves it at the matching session read and revokes it
+      on sign-out; both front ends store that token and nothing else, and re-read
+      the person behind it on every load; and the back office refuses every screen
+      until an operator has signed in.
+      What this risk does NOT cover, and never did while it had nothing to
+      contrast with, is whether a token is checked before a service answers. It is
+      not. That is customers.RSK004, and it is why closing this entry is not the
+      same as the shop being safe.
+    summary: "The shop now authenticates. Whether it authorizes is customers.RSK004."
+    likelihood: very-high
+    impact: critical
+    affects:
+      operation_refs:
+        - customers.CMD001
+        - customers.CMD002
+        - customers.CMD003
+        - customers.QRY001
+        - customers.QRY003
+        - orders.QRY001
+        - orders.QRY002
+        - orders.CMD004
+      concept_refs:
+        - customers.CN001
+        - orders.CN001
+      context_refs:
+        - customers
+        - storefront
+        - orders
+        - shop-admin
+      process_refs:
+        - PRC004
+    mitigation: >
+      Applied: a sign-in was built, on both surfaces, with a real password hash.
+      It is deliberately the smallest thing that makes "log in" a true statement -
+      not a JWT, not persistent across a restart, not expiring - and the service
+      says so in a comment of its own beside the session store, as do both
+      application guides.
+      The part of this risk that the fix does not reach is the part that matters
+      most, and it was moved rather than dropped: customers.RSK004 carries it.
+    contingency: >
+      Superseded by customers.RSK004's, which asks for the same thing for a
+      narrower reason: keep both applications and all four services off the public
+      internet. The difference between a shopper and an operator is no longer
+      which page they opened, but it is still not enforced by anything a service
+      checks.
+    status: closed
+    owner: ACT002
+    goal_refs:
+      - customers.GL001
+    discovery_stage: validated
+    certainty: confirmed
+    evidence:
+      - kind: codebase-analysis
+        source: apps/storefront/src/pages/RegisterPage.tsx, apps/storefront/src/pages/SignInPage.tsx
+        summary: >
+          Registration posts a name, a login and a password and then calls the
+          sign-in, so a new shopper reaches a session by the path a returning one
+          uses. A second page exists for signing in alone, at /sign-in, and the
+          header carries a route to each.
+        confidence_impact: invalidates
+      - kind: codebase-analysis
+        source: services/customer-service/Controllers/CustomersController.cs, services/customer-service/Controllers/OperatorsController.cs
+        summary: >
+          Six session routes now exist where none did: POST sign-in, GET session
+          and DELETE session, on /customers and again on /operators. A refusal is
+          401 with one body for an unknown login and for a wrong password.
+        confidence_impact: invalidates
+      - kind: documentation
+        source: apps/storefront/README.md, apps/shop-admin/README.md
+        summary: >
+          Both guides describe the session as built and name what it is not: not
+          a JWT, not persistent, not expiring, and not authorization - only the
+          session endpoints check the token.
+        confidence_impact: invalidates
+    tags: [security, authentication, model-code-divergence, closed]
+
+  # The residual of customers.RSK002, split out when the authentication half of
+  # it closed. It is a new entry rather than a rewrite because the two are
+  # different problems with different fixes, and rolling them together is what
+  # let the shop read "we have a sign-in now" as "we are safe now".
+  - id: customers.RSK004
+    statement: >
+      The shop knows who is asking and asks nobody to prove they may. A session
+      token is issued at sign-in, resolved by two reads and revoked at sign-out,
+      and no other endpoint on any of the four services looks at one: every
+      customer read, every customer write, the account deletion, the whole order
+      book and every catalogue command answer whoever calls them. So anybody who
+      can reach a service can still read, change or delete any customer and any
+      order by knowing an id, exactly as before - the difference is only that a
+      screen now says a name beside the top of the page.
+      Two consequences are worth separating from the general statement. An
+      operator record carries a role and nothing reads it, so the admin gate
+      customers.DC003 assumes cannot exist yet (customers.FN002). And the two
+      route guards that do exist - the storefront's on /account and the orders
+      pages, the back office's on every screen but its sign-in - run in the
+      browser, so they decide what a person is shown and not what a service will
+      answer.
+    summary: "Authentication is built and gates nothing: no service endpoint checks a token."
+    likelihood: very-high
+    impact: critical
+    affects:
+      operation_refs:
+        - customers.CMD002
+        - customers.CMD003
+        - customers.QRY001
+        - customers.QRY003
+        - orders.QRY001
+        - orders.QRY002
+        - orders.CMD004
+        - catalog.CMD002
+      concept_refs:
+        - customers.CN001
+        - customers.CN003
+        - orders.CN001
+      context_refs:
+        - customers
+        - storefront
+        - orders
+        - shop-admin
+      process_refs:
+        - PRC004
+    mitigation: >
+      None yet, and the shop is explicit about it in four places rather than
+      quiet: the comment above the session store, both application guides, and
+      the operator controller's own class documentation, each saying that a
+      session says who is asking and never what they may do. Naming a gap is not
+      closing one.
+      What the sign-in did buy is the thing a gate needs and could not have
+      before: a caller identity a service could check. Orders' JWT requirement
+      (orders.SEC001) and its ownership rule (orders.SEC002) still have nothing
+      to attach to, because the token is not a JWT and no order endpoint reads
+      any token at all.
+    contingency: >
+      Keep both applications and all four services off the public internet and
+      treat the pair as one trusted network. A browser-side guard is a courtesy to
+      the person using the screen, not a control over the person calling the
+      service, and nothing in this shop yet tells the two apart.
+    status: open
+    owner: ACT002
+    goal_refs:
+      - customers.GL001
+    discovery_stage: validated
+    certainty: confirmed
+    evidence:
+      - kind: codebase-analysis
+        source: services/customer-service/Controllers/CustomersController.cs
+        summary: >
+          Of the nine actions on the controller, three consult the session store -
+          the sign-in that issues, the session read that resolves and the sign-out
+          that revokes. The other six, including DELETE /customers/{id}, take no
+          token and check none.
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: services/customer-service/Controllers/OperatorsController.cs
+        summary: >
+          Its own class documentation states the boundary: "That is authentication
+          only: no endpoint on this service checks a token before answering, so an
+          operator session says who is asking and never what they are allowed to
+          do."
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: apps/shop-admin/src/app/app.routes.ts
+        summary: >
+          Every route but the sign-in carries operatorGuard, and the guard is an
+          Angular route guard: it redirects a browser and reaches no service. The
+          storefront's equivalent redirect on /account and the order pages has the
+          same reach.
+        confidence_impact: supports
+    tags: [security, authorization, gap]
+
+  - id: customers.RSK003
+    statement: >
+      When the order flow cannot read a customer's discounts it substitutes an
+      empty set and prices the order at full list price. The customer is
+      overcharged, the operator sees an order priced correctly by the only
+      record anyone keeps, and this context never learns that a read of it was
+      answered emptily or failed at all.
+    summary: "A failed discount read is charged to the customer and told to nobody."
+    likelihood: medium
+    impact: high
+    affects:
+      operation_refs:
+        - customers.QRY002
+        - orders.CMD003
+      concept_refs:
+        - customers.CN002
+        - orders.CN002
+      context_refs:
+        - customers
+        - orders
+      process_refs:
+        - PRC001
+    mitigation: >
+      The fallback is deliberate and keeps the shop taking orders through an
+      outage of this context, which is a real property and the reason it was
+      written. What it does not do is leave a mark: the substitution is a
+      console warning in the order service and nothing in the order record says
+      the price was struck without discounts.
+    contingency: >
+      customers.KPI001 counts the affected orders from the order side, which is
+      the only side that can see them, and cannot say which of the three causes
+      produced any one of them. Refunding on a complaint is the whole of the
+      recovery path.
+    status: open
+    owner: ACT002
+    goal_refs:
+      - customers.GL002
+    discovery_stage: validated
+    certainty: confirmed
+    evidence:
+      - kind: codebase-analysis
+        source: services/orders-service/src/server.ts
+        summary: >
+          The POST /orders handler wraps getCustomerDiscounts in a try/catch and
+          on any error logs a warning and continues with an empty array, with
+          the comment "Continue with empty discounts if customer service fails".
+        confidence_impact: supports
+      - kind: codebase-analysis
+        source: services/customer-service/Services/CustomerService.cs
+        summary: >
+          GetCustomerDiscountsAsync returns an empty list when the customer is
+          not active, and the lookup the controller guards on does not filter by
+          that flag, so an inactive account reaches the caller as a 200 with no
+          discounts rather than as a refusal.
+        confidence_impact: supports
+    tags: [pricing, silent-failure]

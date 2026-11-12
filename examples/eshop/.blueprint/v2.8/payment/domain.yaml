@@ -1,0 +1,40 @@
+version: "1.0.0"
+name: Payment
+scope: payment
+operations:
+  processPayment:
+    id: payment.CMD001
+    kind: command
+    dispatch: inprocess
+    name: Process Payment
+    description: Simulated. A configuration flag decides whether every payment succeeds or every payment fails.
+    reacts_to:
+      - operation: ordering.EVT005
+        policy: When stock is confirmed, take the payment
+    produces:
+      operations: [payment.EVT001, payment.EVT002]
+      mode: one_of
+    task_type: automated
+    code_refs:
+      - path: src/PaymentProcessor/IntegrationEvents/EventHandling/OrderStatusChangedToStockConfirmedIntegrationEventHandler.cs
+        role: implementation
+  paymentSucceeded:
+    id: payment.EVT001
+    kind: event
+    name: Order Payment Succeeded
+    description: The payment was taken.
+    exchange:
+      protocol: amqp
+      topic:
+        name: OrderPaymentSucceededIntegrationEvent
+        channel_ref: MCH001
+  paymentFailed:
+    id: payment.EVT002
+    kind: event
+    name: Order Payment Failed
+    description: The payment was refused.
+    exchange:
+      protocol: amqp
+      topic:
+        name: OrderPaymentFailedIntegrationEvent
+        channel_ref: MCH001

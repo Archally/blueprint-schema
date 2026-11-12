@@ -1,0 +1,36 @@
+version: "1.0.0"
+scope: delivery
+owned_by:
+  team: TM001
+assumptions:
+  - id: delivery.ASM001
+    statement: >
+      Stock being reserved for an order is a safe stand-in for that order having
+      been confirmed.
+    consequence: >
+      If it is not, this context picks and packs for orders that were never
+      confirmed, and for orders cancelled after confirmation - which orders.TR005
+      permits and which nothing publishes. The parcel is the expensive half of
+      that mistake: stock can be released with a write, a dispatched parcel
+      cannot. The assumption exists only because Orders raises no event on
+      confirmation (delivery.QN002); it is not a judgement about the business,
+      it is what the available events force.
+    domain_scope: delivery
+    discovery_stage: hypothesis
+    certainty: speculative
+    risk_refs:
+      - orders.RSK001
+
+  - id: delivery.ASM002
+    statement: >
+      One confirmed order leaves the building as one parcel.
+    consequence: >
+      If it does not - a bulky monitor and a mouse going separately, or a line
+      back-ordered - then Shipment as drawn cannot hold the case: it has one
+      status, one carrier and one tracking reference, so a second parcel has
+      nowhere to live and the order's real state is whatever the first parcel
+      says. This is the assumption most likely to break first, and it breaks
+      the aggregate rather than a field.
+    domain_scope: delivery
+    discovery_stage: hypothesis
+    certainty: speculative

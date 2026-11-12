@@ -1,0 +1,29 @@
+version: "1.0.0"
+scope: customers
+owned_by:
+  team: TM003
+tags: [generic-domain, account, quality]
+
+fitness_functions:
+  - id: customers.FF001
+    name: Consumer-pact failures on the customer service never rise
+    description: >
+      A ratchet. It does not demand that every consumer pact passes today; it demands that
+      no change makes the service and the model disagree in more places than they did
+      before. Each correction, in the service or in the model the pacts are generated from,
+      lowers the line for every later change.
+    scope: dependency
+    assertion: >
+      No change to the customer service, or to the model its consumers' pacts are generated
+      from, fails more consumer-pact interactions than the verifier reported before it.
+    severity: error
+    metric: customers.MT001
+    provenance:
+      discovery_stage: hypothesis
+      certainty: probable
+      evidence:
+        - kind: assumption
+          date: "2026-10-04"
+          summary: >
+            Proposed as a ratchet over the verifier PRB003 already runs. Nobody has agreed to
+            block a change on it yet.

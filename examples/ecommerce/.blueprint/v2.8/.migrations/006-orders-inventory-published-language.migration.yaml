@@ -1,0 +1,142 @@
+# Commands named in this file use the commercial Archally Pro CLI (https://archally.pro).
+# Act 3. PENDING: deliberately NOT listed in blueprint.yaml `migrations:`, so the model
+# files still carry the act-2 values and this is the change that has not happened yet.
+#
+# This is the correction to MIG005. Read that one first.
+#
+# WHY ITS TARGETS ARE SPELLED DIFFERENTLY FROM MIG005'S. MIG005 addresses the two
+# contexts as `BC002` and `BC003`; this file addresses them as `Orders` and `Inventory`.
+# That is not a style choice, and it is not a mistake in either file. The two verbs that
+# read a migration resolve a target differently, and the difference is measurable:
+#
+#   `bp migration check` walks the parsed YAML for a record whose `id:` equals the
+#   target, so a context answers to `BC003` and to nothing else.
+#
+#   the migration replay engine behind `--version` resolves against the built entity
+#   graph, where a context is keyed by its NAME, so it answers to `Inventory` and reports
+#   `Property set targets non-existent entity: BC003`.
+#
+# Each file is spelled for the verb that has to read it. MIG005 is applied and listed, so
+# `bp migration check` must be able to verify it against the files. MIG006 is pending, so
+# what has to work is building it: `--version MIG006` applies it and exits 0. An operation
+# id like `inventory.CMD001` resolves in both; a context, a service and a process activity
+# resolve in only one each. That divergence is a defect in the toolchain and is recorded
+# in the plan rather than worked around silently here.
+schemaVersion: "2.8.0"
+migration:
+  id: MIG006
+  name: orders-inventory-published-language
+  date: "2026-09-20"
+  status: pending
+  author: "architect"
+  description: >
+    Replace the two mutually conformist declarations between Orders and Inventory with
+    `published-language` on both sides, direction `peer`.
+    Conformist was the wrong name for this from the moment the second subscription landed.
+    It names a downstream that adopts an upstream model whole because it has no leverage
+    to negotiate, and it has exactly one upstream end. Orders and Inventory both claim the
+    downstream end, which leaves the pair with no upstream and each context conforming to
+    a model the other has given up. That is not a relationship a team can act on.
+    What the two contexts actually have is a pair of published events, Order Submitted and
+    Stock Reserved, each with a payload schema that is part of a contract rather than one
+    side's internal shape. Neither context defers to the other; they agree on two messages
+    and are otherwise free. `published-language` is the pattern with that meaning, and
+    `peer` is the direction that goes with it: both sides consume and both sides publish.
+  rationale: >
+    This changes no code and no operation. It changes what the context map says, which is
+    what a team reads when it decides whether it may change a message shape. Under
+    `conformist` the answer is "upstream decides and we follow", and with both sides
+    claiming downstream the map gave no answer at all. Under `published-language` the
+    answer is "the two event schemas are a contract; change them together or version
+    them", which is the rule the teams already follow in practice.
+    Not chosen: `customer-supplier`, which would have kept a single direction and made one
+    team's backlog answerable to the other's. That is a truthful description of some pairs
+    and not of this one, because both directions here carry a published event rather than
+    a request one side makes of the other.
+  related_decisions: [orders.DC001]
+  tags: [context-map, orders, inventory, correction]
+
+changes:
+  properties:
+    - kind: set
+      target: Orders
+      entity_type: context
+      property: dependencies.1.relationship
+      value: published-language
+      old_value: conformist
+      description: "Orders stops calling itself conformist on Inventory."
+      group: "peer-pair"
+    - kind: set
+      target: Orders
+      entity_type: context
+      property: dependencies.1.direction
+      value: peer
+      old_value: downstream
+      description: >
+        Orders publishes Order Submitted and consumes Stock Reserved. That is peer, not
+        downstream.
+      group: "peer-pair"
+    - kind: set
+      target: Inventory
+      entity_type: context
+      property: dependencies.0.relationship
+      value: published-language
+      old_value: conformist
+      description: "Inventory stops calling itself conformist on Orders."
+      group: "peer-pair"
+    - kind: set
+      target: Inventory
+      entity_type: context
+      property: dependencies.0.direction
+      value: peer
+      old_value: downstream
+      description: "Inventory publishes Stock Reserved and consumes Order Submitted. Peer."
+      group: "peer-pair"
+
+  # The SAME correction stated a second time, on the graph rather than on the file.
+  # Both are needed and neither is redundant, because they are read by different consumers.
+  # `properties` above rewrites the two `dependencies[]` entries, which is what the model
+  # FILES say once this migration is applied. A context_depends_on edge, though, is
+  # materialised from those entries when the model is BUILT - before any migration is
+  # layered on - so an edge that already exists keeps the attributes it was born with.
+  # Every graph consumer, the context map included, reads the edge. Without the block
+  # below the migration changes the two contexts and draws the old pattern.
+  relationships:
+    - kind: modify
+      subject: Orders
+      predicate: context_depends_on
+      object: Inventory
+      edge_properties:
+        relationship: published-language
+        direction: peer
+      description: "The Orders-to-Inventory edge reads published-language, peer."
+      reason: >
+        The context map is drawn from the edge, so the edge has to carry the pattern the
+        file now declares.
+      group: "peer-pair"
+    - kind: modify
+      subject: Inventory
+      predicate: context_depends_on
+      object: Orders
+      edge_properties:
+        relationship: published-language
+        direction: peer
+      description: "The Inventory-to-Orders edge reads published-language, peer."
+      reason: >
+        The same correction on the other end. Both ends are peers or neither is.
+      group: "peer-pair"
+
+  meta:
+    - kind: note
+      target: "MIG006"
+      value: >
+        Whether the toolchain should have caught the MIG005 state on its own is an open
+        question and is not decided here. A rule that reads a pair of dependencies
+        together and reports two ends of one conformist relationship both declaring
+        `downstream` would have found it the day it landed. Whether that rule belongs in
+        the semantic checker, and at what severity, is for the schema owners.
+      description: "The open question this migration does not answer."
+
+rollback:
+  automatic: true
+  data_loss: false

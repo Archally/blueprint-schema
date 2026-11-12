@@ -1,0 +1,228 @@
+version: "1.0.0"
+scope: customers
+owned_by:
+  team: TM003
+tags: [generic-domain, account]
+decisions:
+  - id: customers.DC001
+    title: "Keep the customer account a context of its own, and keep it replaceable"
+    summary: "Identity and discounts live behind one small API that the rest of the shop reaches only by id"
+    date: "2025-11"
+    status: accepted
+    rationale:
+      problem: >
+        A shop needs to know who it is selling to. Those facts - a name, an
+        address, a standing discount - can live on the order that needs them,
+        where they are close to the thing being priced and never go stale
+        relative to it; or they can live in one place everything else refers
+        to by id. The first is how most small shops start, and it is why a
+        retailer with a five-year-old codebase has the same address in four
+        tables.
+      options:
+        - "Carry name, address and discount fields on the order that needs them"
+        - "Hold one account behind a small API and let every other context refer to it by id"
+      chosen: >
+        Hold one account. The whole of this shop refers to a person by an
+        opaque customer id and by nothing else: Orders keeps the id on the
+        order (orders.CN001 CAT004), Checkout keeps no identity at all, and
+        the storefront knows the person only as somebody at a screen
+        (the Shopper persona, PER001, of ACT001). That concentration is the decision's real
+        product - because nothing outside this context reads a customer's
+        name, the whole context is replaceable by something bought, and the
+        model says so by classifying its domain `generic-domain` (DMN004).
+        The cost is paid by the order flow, which must reach across a context
+        boundary while pricing a line, and by everything that would want to
+        know what a record used to say, since this context keeps no history of
+        any kind.
+    motivation_refs:
+      assumptions: [customers.ASM001, customers.ASM002, customers.ASM003]
+      questions: [customers.QN002, customers.QN003]
+    declared_impact:
+      direct:
+        concepts: [customers.CN001, customers.CN002]
+        operations:
+          - customers.CMD001
+          - customers.CMD002
+          - customers.CMD003
+          - customers.QRY001
+      transitive_hints:
+        - "Every order in the shop holds a customer id whose resolution this context can withdraw at any moment"
+        - "Pricing an order depends on a read across a context boundary, so a slow or absent customer service is a pricing problem, not only a profile one"
+        - "If this context ever published a CustomerRegistered or CustomerClosed event, customers.QN002 becomes answerable and the replaceability this decision bought becomes harder to keep"
+    owned_by:
+      team: TM003
+    consequences:
+      positive:
+        - "One copy of a person's details exists, and one context owns it"
+        - "Nothing outside this context reads a name, an address or an email, so the context can be swapped for a bought one"
+        - "A discount changes in one place and is in force on the next order priced anywhere in the shop"
+      negative:
+        - "An order cannot be priced while this context is unreachable, and the shop's own fallback is to price it with no discounts at all (customers.ASM003)"
+        - "Closing an account leaves every order it placed pointing at an id that resolves to nothing (customers.QN002)"
+        - "No history of any kind, so neither an address change nor a discount change can be reconstructed after the fact"
+    tags: [strategic, generic-domain]
+  - id: customers.DC002
+    title: "Model the discount read, and let the Orders dependency follow it"
+    summary: "The read that prices every order becomes an operation, so the dependency it creates can be declared"
+    date: "2026-09"
+    status: accepted
+    rationale:
+      problem: >
+        This context was modelled at the three commands and one query an
+        account needs, and the read that matters most to the shop's money was
+        not among them. Get customer discounts is called while an order is
+        being created and every line price is struck with what it returns, and
+        the back office calls it again while an operator answers a question
+        about a price. Leaving it out had a second cost that was easy to miss:
+        a dependency cannot be declared without the operation it runs over, so
+        Orders reaching into this context was a fact the code carried and the
+        context map did not. The list read beside it was in the same state -
+        built, called by the back office twice, and in none of the shop's own
+        specifications.
+      options:
+        - "Leave both reads out, on the grounds that this context is deliberately small"
+        - "Model the discount read only, since it is the one another context depends on"
+        - "Model both reads, and declare the dependency the first one creates"
+      chosen: >
+        Model both. The discount read is customers.QRY002 and the list read is
+        customers.QRY003, and Orders now declares a conformist, downstream
+        dependency on this context in eshop.arch.yaml, carried by the call the
+        order service makes. Conformist because the order service takes this
+        context's discount shape whole - its own copy of the type is the same
+        four fields under the same names, it translates nothing and enforces
+        none of this context's rules - and downstream because nothing here
+        knows the order flow exists or was shaped by it.
+        The smallness this context was keeping is not what it looked like. Four
+        operations were never the reason it is replaceable; what makes it
+        replaceable is that nothing outside it reads a name or an address
+        (customers.DC001), and two more reads over the same small record do not
+        change that. What they change is that the context map now shows the
+        coupling that prices every order in the shop.
+    motivation_refs:
+      assumptions: [customers.ASM003]
+      questions: [customers.QN001]
+    declared_impact:
+      direct:
+        concepts: [customers.CN001, customers.CN002]
+        operations:
+          - customers.QRY002
+          - customers.QRY003
+          - orders.CMD003
+      transitive_hints:
+        - "Orders is now visibly coupled to this context on the path that prices an order, not only on the path that identifies a customer"
+        - "An empty discount set means three different things and the response cannot say which (customers.FN001)"
+        - "The list read is the first operation in this model to act on `isActive`, and it acts by omitting the account rather than reporting it"
+        - "The same defect one collection over - a built, called, unspecified list read on /operators - is left unmodelled and recorded as customers.QN005"
+    owned_by:
+      team: TM003
+    consequences:
+      positive:
+        - "The read that prices every order is an operation, so a generator, a context map and an impact query can all see it"
+        - "Orders to Customers is declared, and the declared context map now matches the one derived from the contracts"
+        - "customers.QN001 is answered, and what it could not answer is carried forward as a finding rather than lost"
+      negative:
+        - "This context is no longer four operations, and the argument that its size is what makes it replaceable has to be made on the right grounds"
+        - "Two more reads means two more callers to keep working when this context is swapped for a bought one"
+        - "The list read returns every active account with no paging, so it gets slower with the shop and nothing in the model says when that stops being acceptable"
+    tags: [context-map, pricing]
+
+  - id: customers.DC003
+    title: "An administrator closes an account, from the storefront, under an admin role"
+    summary: "Closure is the shop's act, on the shopper's surface, gated by a role an operator carries"
+    date: "2026-09"
+    status: accepted
+    rationale:
+      problem: >
+        customers.QN004 recorded that this model and the running shop disagreed
+        about who closes an account, and refused to pick a side because the
+        choice is about how the shop wants to work rather than a fact to be
+        read off either artefact. The shop has now picked.
+      options:
+        - name: "The shopper closes their own account"
+          description: >
+            The reading this model carried: all three account commands are the
+            customer's own, acting through the storefront.
+          pros:
+            - "Consistent with registration and correction, which are already the shopper's"
+            - "Needs no role, no sign-in and no second kind of user"
+          cons:
+            - "A closure leaves every order the account placed pointing at an id that resolves to nothing (customers.QN002), and a consequence that size is not the shopper's to trigger unreviewed"
+            - "It is not what the running shop does, so it was a divergence rather than a description"
+        - name: "The back office closes it"
+          description: >
+            What the running shop does today: the delete sits on the back
+            office's customer detail screen.
+          pros:
+            - "Already built, and already an operator's act"
+            - "Keeps the public storefront free of a control most of its users must not see"
+          cons:
+            - "Commits the shop to a second application per kind of user, which is the shape the shop is trying to move away from"
+            - "Reached by anybody who can open the back office, so it is no more gated than the storefront would be"
+        - name: "An administrator closes it from the storefront, under an admin role"
+          description: >
+            One application serving two kinds of user, with the control gated
+            by a role the operator record already has a field for.
+          pros:
+            - "One surface with roles rather than one surface per kind of user"
+            - "The role sits on an operator, who is already a distinct kind of user in the service behind this context"
+          cons:
+            - "No service in this system issues a session or a token, so the gate has nothing to read"
+            - "Decided ahead of the shop, which is a new gap between model and code (customers.FN002)"
+      chosen: >
+        An administrator closes it, and does so on the storefront under an
+        admin role. Two things follow that are worth separating.
+        The first is about who: closure is the shop's act, not the shopper's,
+        so customers.CMD003 is initiated by the operator and the other two
+        account commands stay with the customer. That half agrees with the
+        running shop, which already closes accounts from the back office, and
+        the model has been corrected to it.
+        The second is about where, and it is decided ahead of the shop. One
+        application serves two kinds of user rather than two applications
+        serving one each, so the control belongs on the storefront behind a
+        role. An administrator is an operator, and an operator is a different
+        kind of user from a customer - the service keeps them in a collection
+        of their own with a role on the record, deliberately not a flag on the
+        customer, because a role flag on a customer would settle in code the
+        question this model exists to keep open.
+    motivation_refs:
+      questions: [customers.QN004, customers.QN005]
+    declared_impact:
+      direct:
+        concepts: [customers.CN001]
+        operations:
+          - customers.CMD003
+      transitive_hints:
+        - "The storefront now serves two kinds of user, so every page in it has an audience question it did not have before"
+        - "An admin role needs a sign-in, and no service in this system issues a session or a token of any kind"
+        - "Operators become something this shop has to model rather than mention, which is customers.QN005"
+        - "The back office keeps a delete the decision retires, so two surfaces can close an account until one of them is removed"
+    owned_by:
+      team: TM003
+    consequences:
+      positive:
+        - "customers.QN004 is answered, and the model and the running shop agree about who closes an account"
+        - "One application with roles, rather than a second application per kind of user"
+        - "The admin role sits on the operator record that already carries a role field, so the identity half of the decision has a home"
+      negative:
+        - "The surface half is decided and not built, which is a new gap between the model and the shop - held as customers.FN002 and MIG007 rather than declared as if it were done"
+        - "An admin-only control on a public storefront is a hidden button until this system has a sign-in, and it has none"
+        - "Until the back office's delete is removed, the shop has two ways to do what has just been decided has one"
+    tags: [governance, surface, authentication]
+
+business_decisions:
+  - id: customers.BD001
+    name: "A customer's details are theirs to set, and nobody checks them"
+    description: >
+      The shop takes what the shopper types. An email address is checked for
+      shape and never for reachability; a postal address is checked for
+      presence and never for deliverability; a phone number is not checked at
+      all. The shop accepts this because the alternative - verification mail,
+      address lookup, a confirmed state an account has to pass through - puts
+      a queue between a person and their first order, and a specialist
+      retailer with a small range judges an abandoned registration worse than
+      an undeliverable one. The cost lands at the far end: a delivery that
+      cannot arrive and a confirmation email that is never read look, from
+      inside this model, exactly like ones that worked.
+    domain_scope: customers
+    linked_contexts: [orders, storefront]
+    tags: [governance, risk]

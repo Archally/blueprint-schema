@@ -1,0 +1,80 @@
+version: "1.0.0"
+scope: ordering
+concepts:
+  - id: ordering.CN001
+    term: Order
+    stereotype: aggregate-root
+    summary: A buyer's request to purchase catalog items, shipped to one address.
+    identity: Integer order number assigned by the ordering database.
+    code_refs:
+      - path: src/Ordering.Domain/AggregatesModel/OrderAggregate/Order.cs
+        role: model
+    attributes:
+      orderDate:
+        id: CAT001
+        description: When the order was placed, in UTC.
+      status:
+        id: CAT002
+        description: Where the order is in its lifecycle. One value, no history.
+      description:
+        id: CAT003
+        description: A free-text note the lifecycle overwrites on every transition.
+    states:
+      - name: Submitted
+        description: The order exists and its grace period is running. Only here can the buyer cancel without a trace.
+      - name: AwaitingValidation
+        description: The grace period ended; Catalog is asked whether every line is in stock.
+      - name: StockConfirmed
+        description: Every line is in stock; payment is requested.
+      - name: Paid
+        description: Payment succeeded. The order can no longer be cancelled.
+      - name: Shipped
+        description: The order has left the shop. Terminal.
+      - name: Cancelled
+        description: The order will not be fulfilled. Terminal.
+    initial_state: Submitted
+    terminal_states: [Shipped, Cancelled]
+  - id: ordering.CN002
+    term: Order Item
+    stereotype: entity
+    summary: One product line of an order, with units, unit price and discount.
+    code_refs:
+      - path: src/Ordering.Domain/AggregatesModel/OrderAggregate/OrderItem.cs
+        role: model
+  - id: ordering.CN003
+    term: Address
+    stereotype: value-object
+    summary: The shipping address of an order, compared by value.
+    code_refs:
+      - path: src/Ordering.Domain/AggregatesModel/OrderAggregate/Address.cs
+        role: model
+  - id: ordering.CN004
+    term: Buyer
+    stereotype: aggregate-root
+    summary: The ordering side of a signed-in user, holding the payment methods they have used.
+    identity: The identity provider's user id (IdentityGuid).
+    code_refs:
+      - path: src/Ordering.Domain/AggregatesModel/BuyerAggregate/Buyer.cs
+        role: model
+  - id: ordering.CN005
+    term: Payment Method
+    stereotype: entity
+    summary: A card a buyer has paid with, matched on card type, number and expiry.
+    code_refs:
+      - path: src/Ordering.Domain/AggregatesModel/BuyerAggregate/PaymentMethod.cs
+        role: model
+actors:
+  - id: ordering.ACT001
+    name: Shopper
+    type: human
+    description: A signed-in customer of the online store.
+  - id: ordering.ACT002
+    name: Grace period clock
+    type: time
+    description: Fires when a submitted order is older than the configured grace period.
+  - id: ordering.ACT003
+    name: Fulfilment operator
+    type: role
+    description: >
+      Whoever marks an order shipped. No user interface in the repository calls the ship
+      endpoint, so who this is remains an open question (ordering.QN001).
