@@ -3,6 +3,7 @@ import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 import { createPlaceholder, entityDomain, resolveRef, resolveRefDetailed } from './resolver.js';
 import type { OperationDetail } from '../entities/story.js';
+import { declarationOrigin } from './linkEvidence.js';
 
 /**
  * Build Story → Operation relations from Story entities' operationsDetail.
@@ -122,7 +123,7 @@ function buildWorkProcessRelations(process: Entity, entities: Entity[]): Relatio
   const relations: Relation[] = [];
   const records = (value: unknown): Record<string, unknown>[] => Array.isArray(value)
     ? value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object') : [];
-  const link = (reference: unknown, targetType: string, type: string, identity: string, details: Record<string, unknown>) => {
+  const link = (reference: unknown, targetType: string, type: string, identity: string, details: Record<string, unknown>, selector?: string) => {
     if (typeof reference !== 'string' || !reference) return;
     const resolution = resolveRefDetailed(reference, entities.filter(entity => entity.type === targetType));
     if (resolution.status !== 'resolved') return;
@@ -132,14 +133,26 @@ function buildWorkProcessRelations(process: Entity, entities: Entity[]): Relatio
       target_entity_id: resolution.handle,
       type,
       data: details,
+      ...(selector ? { origin_ref: declarationOrigin(process, selector) } : {}),
     });
   };
-  for (const [position, lane] of records(data.lanes).entries()) {
+  // A lane has no declaration id: retain its original position, including malformed siblings.
+  const lanes = Array.isArray(data.lanes) ? data.lanes : [];
+  for (const [position, lane] of lanes.entries()) {
+    if (!lane || typeof lane !== 'object') continue;
     link(lane.team, ENTITY_TYPE.Team, RELATION_TYPE.ProcessLaneTeam, `lane-${position}`, { lane: position });
+    link(lane.actor, ENTITY_TYPE.Actor, RELATION_TYPE.ProcessLaneActor, `lane-${position}`,
+      { lane: position }, `lanes[${position}].actor`);
   }
   for (const activity of records(data.activities)) {
     const activityId = activity.id;
     if (typeof activityId !== 'string') continue;
+    // triggered_by also accepts operations. Only an exact, unique Actor declaration counts here.
+    const triggers = Array.isArray(activity.triggered_by) ? activity.triggered_by : [];
+    for (const [position, reference] of triggers.entries()) {
+      link(reference, ENTITY_TYPE.Actor, RELATION_TYPE.ActivityTriggeredByActor, `${activityId}-${position}`,
+        { activity: activityId }, `activities[id=${encodeURIComponent(activityId)}].triggered_by[${position}]`);
+    }
     for (const [position, tool] of records(activity.tools).entries()) {
       link(tool.party, ENTITY_TYPE.Party, RELATION_TYPE.ActivityUsesTool, `${activityId}-${position}`, { activity: activityId });
     }

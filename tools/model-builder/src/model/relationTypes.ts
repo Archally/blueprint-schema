@@ -164,6 +164,10 @@ export const RELATION_TYPE = {
   // story.schema: an activity runs another process as a subprocess (process → process)
   ProcessCallsSubprocess: 'process_calls_subprocess',
   ProcessLaneTeam: 'process_lane_team',
+  // story.schema: lane actor, from its containing process; the edge retains the lane position.
+  ProcessLaneActor: 'process_lane_actor',
+  // story.schema: activity triggered_by actor, from its process; operations are not actor edges.
+  ActivityTriggeredByActor: 'activity_triggered_by_actor',
   ActivityUsesTool: 'activity_uses_tool',
   ActivityArtifactConcept: 'activity_artifact_concept',
   ActivityHandsOverTo: 'activity_hands_over_to',
